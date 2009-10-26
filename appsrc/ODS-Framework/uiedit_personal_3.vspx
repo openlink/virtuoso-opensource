@@ -133,7 +133,7 @@
             		  <![CDATA[
             		    <script type="text/javascript">
             		    <?vsp
-                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo(\'c_th_%d\', \'c_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
+                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateField1(\'c_th_%d\', \'c_fld_1_%d\', null, null, {value: \'%s\'});});})', N, N, WUO_NAME));
             		    ?>
             		    </script>
             		  ]]>

@@ -32,96 +32,121 @@
 
   <v:method name="favorites2json" arglist="">
     <![CDATA[
-      declare fID, fType, fItems any;
-      declare favorites vector;
+      declare fID, fOntology, fItems any;
+      declare fItemTypes vector;
 
-      favorites := vector ();
       fID := 0;
-      fType := '';
+      fOntology := '';
+      fItemTypes := vector ();
       fItems := vector ();
-      for (select WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
+      for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
       {
-        if (fType <> WUF_TYPE)
+        if (fOntology <> WUF_TYPE)
         {
-          if (fType <> '')
-            favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
+          if (fOntology <> '')
+            fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
           fID := fID + 1;
-          fType := WUF_TYPE;
+          fOntology := WUF_TYPE;
           fItems := vector ();
         }
-        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'label', WUF_LABEL, 'uri', WUF_URI))));
+        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
       }
       if (length (fItems))
-        favorites := vector_concat (favorites, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'class', fType, 'items', fItems))));
-      return favorites;
+        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
+      return ODS..obj2json (fItemTypes, 10);
 	  ]]>
 	</v:method>
 
   <v:method name="savePersonal_6" arglist="">
     <![CDATA[
-      declare params any;
-
-      params := self.vc_page.vc_event.ve_params;
       if (self.vc_is_valid = 0)
         return;
 
-      declare N, id integer;
-      declare suffix, suffix2, tmp varchar;
-      declare IDf, V, parts any;
+      declare params any;
+      declare N, M, L integer;
+      declare re, reParts any;
+      declare ontologies, IDs any;
+      declare ontology, ontologyNo, ontologyName, ontologyItems any;
+      declare item, itemID, itemNo, itemName, itemProperties any;
+      declare property, propNo, propName, propValue, propType any;
 
-      IDf := vector ();
-      V := vector ('Book', 'text/*', 'Image', 'image/*', 'Music', 'audio/*', 'Video', 'video/*');
+      params := self.vc_page.vc_event.ve_params;
+      IDs := vector ();
+      ontologies := vector ();
       for (N := 0; N < length (params); N := N + 4)
       {
-        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
+        if (not isstring(params[N+1]) or trim (params[N+1]) = '')
+          goto _skip;
+        re := 'r_fld_2_([0-9]+)';
+        if (regexp_like(params[N], re))
         {
-          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
-          suffix := subseq (params[N], parts[2], parts[3]);
-          suffix2 := subseq (params[N], parts[4], parts[5]);
-          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
-          if (id <> -1)
+          reParts := regexp_parse(re, params[N], 0);
+          ontologyNo := subseq (params[N], reParts[2], reParts[3]);
+          ontologyName := trim (params[N+1]);
+          ontologyItems := vector ();
+          for (M := 0; M < length (params); M := M + 4)
           {
-            tmp := get_keyword ('f_fld_3_'||suffix, params);
-            update WA_USER_FAVORITES
-                set WUF_TYPE = get_keyword_ucase (tmp, V, tmp),
-                    WUF_LABEL = trim (params[N+1]),
-                    WUF_URI = trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, ''))
-              where WUF_ID = id;
-            IDf := vector_concat (IDf, vector (id));
+            if (not isstring(params[M+1]) or trim (params[M+1]) = '')
+              goto _skip2;
+            re := 'r_item_'||ontologyNo||'_fld_2_([0-9]+)';
+            if (regexp_like(params[M], re))
+            {
+              reParts := regexp_parse(re, params[M], 0);
+              itemNo := subseq (params[M], reParts[2], reParts[3]);
+              itemName := trim (params[M+1]);
+              itemID := cast (get_keyword ('r_item_'||ontologyNo||'_fld_1_'||itemNo, params, -1) as integer);
+              if (itemID <> -1)
+                IDs := vector_concat (IDs, vector (itemID));
+              itemProperties := vector ();
+              for (L := 0; L < length (params); L := L + 4)
+              {
+                if (not isstring(params[L+1]) or trim (params[L+1]) = '')
+                  goto _skip3;
+                re := 'r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_1_([0-9]+)';
+                if (regexp_like(params[L], re))
+                {
+                  reParts := regexp_parse(re, params[L], 0);
+                  propNo := subseq (params[L], reParts[2], reParts[3]);
+                  propName := trim (params[L+1]);
+                  propValue := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params);
+                  propType := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params, 'data');
+                  property := vector_concat (self.jsonObject(), vector ('name', propName, 'value', propValue, 'type', propType));
+                  itemProperties := vector_concat (itemProperties, vector (property));
+                }
+              _skip3:;
+              }
+              item := vector ('id', itemID, 'className', itemName, 'properties', itemProperties);
+              ontologyItems := vector_concat (ontologyItems, vector (item));
+            }
+          _skip2:;
+          }
+          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
+          ontologies := vector_concat (ontologies, vector (ontology));
+        }
+      _skip:;
+      }
+      delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id and not ODS.ODS_API.vector_contains(IDs, WUF_ID);
+      for (N := 0; N < length (ontologies); N := N + 1)
+      {
+        ontology := ontologies[N];
+        ontologyItems := get_keyword ('items', ontology);
+        for (M := 0; M < length (ontologyItems); M := M + 1)
+        {
+          item := ontologyItems[M];
+          itemID := get_keyword ('id', item);
+          if (itemID = -1)
+          {
+            insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
+              values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize (get_keyword ('properties', item)), self.u_id);
+          } else {
+            update DB.DBA.WA_USER_FAVORITES
+               set WUF_TYPE = get_keyword ('ontology', ontology),
+                   WUF_CLASS = get_keyword ('className', item),
+                   WUF_PROPERTIES = serialize (get_keyword ('properties', item))
+             where WUF_ID = itemID;
           }
         }
       }
-      for (select WUF_ID as _id from WA_USER_FAVORITES where WUF_U_ID = self.u_id) do
-      {
-        for (N := 0; N < length (IDf); N := N + 1)
-        {
-          if (IDf[N] = _id)
-            goto _exit3;
-        }
-        delete from WA_USER_FAVORITES where WUF_ID = _id;
-      _exit3:;
-      }
-      for (N := 0; N < length (params); N := N + 4)
-      {
-        if (regexp_like(params[N], 'f_prop_([0-9]+)_fld_1_([0-9]+)') and (trim (params[N+1]) <> ''))
-        {
-          parts := regexp_parse('f_prop_([0-9]+)_fld_1_([0-9]+)', params [N], 0);
-          suffix := subseq (params[N], parts[2], parts[3]);
-          suffix2 := subseq (params[N], parts[4], parts[5]);
-          id := cast (get_keyword ('f_prop_'||suffix||'_fld_3_'||suffix2, params, '-1') as integer);
-          if (id = -1)
-          {
-            tmp := get_keyword ('f_fld_3_'||suffix, params);
-            insert into WA_USER_FAVORITES ( WUF_TYPE, WUF_LABEL, WUF_URI, WUF_U_ID)
-              values (get_keyword_ucase (tmp, V, tmp), trim (params[N+1]), trim (get_keyword ('f_prop_'||suffix||'_fld_2_'||suffix2, params, '')), self.u_id);
-          }
-        }
-      }
-
-      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
-
-      -- change user_text data
-      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
     ]]>
   </v:method>
 
@@ -142,13 +167,13 @@
       <table class="ctl_grp">
         <tr>
           <td width="800px">
-            <table id="f_tbl" class="listing">
+            <table id="r_tbl" class="listing">
               <thead>
                 <tr class="listing_header_row">
                   <th>
                     <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
                   </th>
-                  <th width="100%" colspan="2">
+                  <th width="100%">
                     Favorite Type
                   </th>
                   <th width="80px">
@@ -156,28 +181,28 @@
                   </th>
                 </tr>
               </thead>
-              <tbody id="f_tbody">
-                <tr id="f_tr_no">
-                  <td colspan="4">
-                    <b>No Elements</b>
+              <tbody id="r_tbody">
+                <tr id="r_tr_no">
+                  <td></td>
+                  <td colspan="2">
+                    <b><i>No Favorite Types</i></b>
           </td>
         </tr>
               </tbody>
       </table>
-            <input type="hidden" id="f_no" name="f_no" value="1" />
+            <input type="hidden" id="r_no" name="r_no" value="1" />
           </td>
           <td valign="top" nowrap="nowrap">
-            <input type="button" value="Add" onclick="javascript: updateRow('f', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Type'}, fld_3: {mode: 5, cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+            <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
           </td>
         </tr>
       </table>
       <script type="text/javascript">
         <![CDATA[
           ODSInitArray.push ( function () {
-            OAT.Loader.loadFeatures(["ajax2", "json", "ws"], function(){
-              FT.prefix = 'f';
-              FT.items = <?vsp http (replace (ODS..obj2json (self.favorites2json ()), 'class:', 'objectClass:')); ?>;
-              FT.showItems();
+            OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
+              RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
+              RDF.showItemTypes();
             });
           });
         ]]>
