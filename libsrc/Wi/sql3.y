@@ -902,7 +902,7 @@ references
 	: REFERENCES q_table_name opt_column_commalist opt_referential_triggered_action referential_state
 		{
 		  caddr_t *l = (caddr_t *) $4;
-		  $$ = t_listst (9, FOREIGN_KEY, NULL, $2, $3, NULL, l[0], l[1], NULL, $5);
+		  $$ = t_listst (9, FOREIGN_KEY, NULL, $2, $3, NULL, l[0], l[1], NULL, (ptrlong) $5);
 		}
 	;
 
