@@ -68,12 +68,84 @@ create procedure b3s_page_get_type (in val any)
 ;
 
 create procedure 
-b3s_parse_inf (in sid varchar, in params any)
+b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
+{
+   declare sid, refr varchar;
+
+   sid := get_keyword ('sid', _params); 
+
+   if (sid is null) {
+     refr := http_request_header (http_request_header (), 'Referer', null, null);
+
+     if (refr is not null)
+       {
+         declare ht, pars any; 
+         ht := WS.WS.PARSE_URI (refr);
+         pars := ht[4];
+         pars := split_and_decode (pars);
+         sid := get_keyword ('sid', pars);
+       }
+   }
+
+   if (sid is not null) connection_set ('sid', sid);
+}
+;
+
+create procedure
+b3s_render_fct_link ()
+{
+  declare sid varchar;
+  sid := connection_get ('sid');
+
+  if (sid is not null)
+    return ('/fct/facet.vsp?sid='||sid||'&cmd=refresh');  
+  else
+    return '';
+}
+;
+
+create procedure
+b3s_render_inf_opts () 
+{
+  declare inf varchar;
+  declare f int;
+  f := 0;
+  inf := connection_get ('inf');
+
+  for select RS_NAME from SYS_RDF_SCHEMA do 
+    {
+      if (RS_NAME = inf) 
+        {
+          http (sprintf ('<option value="%s" selected="true">%s</option>', RS_NAME, RS_NAME));
+          f := 1;
+        }
+      else 
+        http (sprintf ('<option value="%s">%s</option>', RS_NAME, RS_NAME));
+    }
+
+  if (f = 0)
+    http ('<option value="**none**" selected="true">None</option>');
+  else 
+    http ('<option value="**none**">None</option>');
+}
+;
+
+create procedure
+b3s_sas_selected ()
+{
+  if (connection_get ('sas') = 'yes') 
+    return ' checked="true" ';
+  else 
+    return ''; 
+}
+;
+ 
+create procedure 
+b3s_parse_inf (in sid varchar, inout params any)
 {
   declare _sas, _inf varchar;
 
-  _sas := null; 
-  _inf := null;
+  _sas := _inf := null; 
 
   if (sid is not null)
     { 
@@ -99,7 +171,7 @@ b3s_parse_inf (in sid varchar, in params any)
 
   if (_sas is not null)
     {
-      if (_sas = '1')
+      if (_sas = '1' or _sas = 'yes')
         connection_set ('sas', 'yes');
       else 
         connection_set ('sas', null);
@@ -130,15 +202,17 @@ b3s_render_inf_clause ()
 ;
 
 create procedure
-b3s_render_inf_params () 
+b3s_render_ses_params () 
 {
-  declare i,s varchar;
+  declare i,s,ifp,sid varchar;
 
   i := connection_get ('inf');
   s := connection_get ('sas');
+  sid := connection_get ('sid');
 
   if (i is not null) i := '&inf=' || i;
   if (s is not null) i := i || '&sas=' || s;
+  if (sid is not null) i := i || '&sid=' || sid;
 
   if (i is not null) return i;
   else return '';
@@ -226,7 +300,8 @@ create procedure b3s_label_get (inout data any, in langs any)
 }
 ;
 
-create procedure b3s_rel_print (in val any, in rel any, in flag int := 0)
+create procedure 
+b3s_rel_print (in val any, in rel any, in flag int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;

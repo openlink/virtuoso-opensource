@@ -34,13 +34,14 @@ a.describe {margin-right: 6px}
 tr:hover {
   background-color: #ddd;}
 
-#PG { width: 1000px; 
-      text-align: left; margin: 10px auto 10px auto; background-color: #fff;}
+#PG { width: 100%; 
+      text-align: left;
+      background-color: #fff;}
 
 #HD { 
   width: 100%; 
   float: left; 
-  height: 60px;
+  height: 70px;
   text-align: center; 
   background-image: url(/fct/images/bg_header.png);
   border-bottom: 1px solid #226;}
@@ -56,6 +57,58 @@ tr:hover {
   padding: 0}
 
 #HD h1 a { color: #fff}
+
+#main_menu {
+  margin: 0; padding: 0;
+  float: right;
+  clear: right;
+  list-style-type: none;
+  list-style-image: none;
+  list-style-position: outside;
+  list-style-type: none;
+  margin-right: 12px;
+  min-width: 500px;
+}
+
+#main_menu li { float: left }
+
+#main_menu li a {
+  color: #e9f2f7;
+  display: block;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 34px;
+  padding:0 10px;
+  text-shadow:1px 1px 1px #333333;
+  text-decoration: none;
+}
+
+#main_menu li a.sel {
+  -moz-background-clip:border;
+  -moz-background-inline-policy:continuous;
+  -moz-background-origin:padding;
+  -moz-border-radius-topleft:3px;
+  -moz-border-radius-topright:3px;
+  background:#E4F2FD none repeat scroll 0 0;
+  color:#555555;
+  text-shadow:1px 1px 1px #C6D9E9;	
+}
+
+li#mnu_settings a {
+  -moz-background-clip:border;
+  -moz-background-inline-policy:continuous;
+  -moz-background-origin:padding;
+  -moz-border-radius-topleft:3px;
+  -moz-border-radius-topright:3px;
+  background:#44ee66 none repeat scroll 0 0;
+  color:#555555;
+  text-shadow:1px 1px 1px #C6D9E9;
+  margin-left: 20px;
+}
+
+li#mnu_settings ul {}
+li#mnu_settings ul li { }
 
 #h1 div.page-resource-uri {float: left}
 
@@ -79,6 +132,17 @@ a.logo { margin-left: 10px; float: left;}
       padding-bottom: 10px; 
       margin-left: auto; margin-right: auto;}
 
+#MD div#settings { 
+  margin: 10px;
+}
+
+#MD div#settings label { }
+#MD div#settings label.ckb {}
+#MD div#settings input.ckb {}
+#MD div#settings ul { list-style-type: none; padding: 0;}
+#MD div#settings ul li { padding: 0;}
+#MD div#settings td:hover {background: inherited}
+#MD div#settings tr:hover {background: inherited}
 #FT { width: 100%; float: left; 
       border-top: 1px solid #335;
       text-align: center;
@@ -89,13 +153,12 @@ a.logo { margin-left: 10px; float: left;}
 span.copyright { font-size: 8pt; color: #888}
 
 div.page_resource_info {
-  width: 100%; float: left; clear: left;
+  float: left; clear: left;
   text-align: left;
-  margin-top: 15px; 
+  margin: 15px; 
 }
 
-div.page_resource_info h2 { display: inline; padding: 0; margin-left: 10px;}
-div.page_resource_info p { padding: 0; margin-left: 10px;}
+div.page_resource_info h2 { display: inline; padding: 0;}
 
 td.rnk { margin: 0; padding: 0; }
 img.rnk { float: left; clear: left; margin-top: 1px;}
@@ -374,9 +437,9 @@ div#top_ctr {
 
 div.error_msg { margin: 5px; }
 div.error_msg h2 {}
-div.error_msg div.body {}
+div.error_msg div.body { margin: 10px;}
 div.error_msg div.nav { margin-top: 10px;}
-div.error_msg div.diag { font-size: 8pt }
+div.error_msg div.diag { margin: 10px; font-size: 8pt }
 div.error_msg div.diag h3 {}
 
 div.facet_ctr {

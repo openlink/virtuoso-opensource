@@ -96,3 +96,33 @@ function expand(i) {
     span.removeChild(span.firstChild);
     span.insertBefore(long_literal_texts[i], span.firstChild);
 }
+
+function uri_parms_string (p_obj)
+{
+    var parms_s = '?';
+    for (var p in p_obj) {
+	parms_s = parms_s + p + '=' + escape(p_obj[p]).replace('+', '%2B').replace('#', '%23') + '&';
+    }
+    return parms_s.substring(0,parms_s.length-1);
+}
+
+function inf_cb () 
+{
+    var loc = window.location;
+    var href = loc.protocol+'//'+loc.host+loc.pathname;
+    var parms = OAT.Dom.uriParams();
+
+    parms['inf'] = $v('inf_sel');
+    window.location = href+uri_parms_string(parms);
+}
+
+function sas_cb () 
+{
+    var loc = window.location;
+    var href = loc.protocol+'//'+loc.host+loc.pathname;
+    var parms = OAT.Dom.uriParams();
+
+    if ($('sas_ckb').checked) parms['sas'] = 'yes';
+    else parms['sas'] = 'no';
+    window.location = href+uri_parms_string(parms);
+}
