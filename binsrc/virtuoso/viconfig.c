@@ -255,7 +255,7 @@ char *c_repl_server_enable;
 #endif
 int32 c_use_array_params = 0;
 int32 c_num_array_params = 10;
-int32 c_server_thread_sz = 50000;
+int32 c_server_thread_sz = 60000;
 int32 c_main_thread_sz = 140000;
 int32 c_future_thread_sz = 140000;
 int32 c_vdb_no_stmt_cache = 0;
@@ -762,9 +762,9 @@ cfg_setup (void)
     c_server_default_language_name = 0;
 
   if (cfg_getlong (pconfig, section, "ServerThreadSize", &c_server_thread_sz) == -1)
-    c_server_thread_sz = 50000;
-  if (c_server_thread_sz < 50000)
-    c_server_thread_sz = 50000;
+    c_server_thread_sz = 60000;
+  if (c_server_thread_sz < 60000)
+    c_server_thread_sz = 60000;
 
   if (cfg_getlong (pconfig, section, "MainThreadSize", &c_main_thread_sz) == -1)
     c_main_thread_sz = 140000; /* was 100000 */
