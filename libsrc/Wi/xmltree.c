@@ -9574,7 +9574,20 @@ xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi
           data = (unsigned char *)(head[attrctr-1]);
           SUM64(data,lon,medn,hin)
           data = (unsigned char *)(head[attrctr]);
-          SUM64(data,lon,medn,hin)
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF(data))
+            {
+              int item_ctr;
+              caddr_t *items = (caddr_t *)data;
+              DO_BOX_FAST (caddr_t, item, item_ctr, items)
+                {
+                  SUM64(item,lon,medn,hin)
+                }
+              END_DO_BOX_FAST;
+            }
+          else
+            {
+              SUM64(data,lon,medn,hin)
+            }
           loxor ^= lon; medxor ^= medn; hixor ^= hin;
         }
       lo += loxor; med += lo; hi += med;
@@ -9698,6 +9711,63 @@ bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   GPF_T1 ("__xsd_type: bad ret");
   return NULL;
 }
+
+int
+xte_subtrees_are_equal (caddr_t *node1, caddr_t *node2)
+{
+  dtp_t dtp = DV_TYPE_OF (node1);
+  int len, ctr;
+  if (DV_TYPE_OF (node2) != dtp)
+    return 0;
+  switch (dtp)
+    {
+    case DV_LONG_INT: return (unbox ((caddr_t)(node1)) == unbox ((caddr_t)(node2)));
+    case DV_SHORT_STRING: len = box_length (node1); return ((len == box_length (node2)) && !memcmp (node1, node2, len));
+    case DV_UNAME: return node1 == node2;
+    case DV_ARRAY_OF_POINTER:
+      {
+         len = BOX_ELEMENTS (node1);
+         if (len != BOX_ELEMENTS (node2))
+           return 0;
+         for (ctr = len; ctr--; /* no step */)
+           {
+             if (!xte_subtrees_are_equal ((caddr_t *)(node1[ctr]), (caddr_t *)(node2[ctr])))
+               return 0;
+           }
+         return 1;
+      }
+    }
+  return 0;
+}
+
+int
+xe_compare_content (xml_entity_t *xe1, xml_entity_t *xe2, int compare_uris_and_dtds)
+{
+  xml_tree_ent_t *xte1, *xte2;
+  caddr_t val1, val2;
+  if (!XE_IS_TREE (xe1) || !XE_IS_TREE (xe2))
+    return DVC_NOORDER;
+  xte1 = (xml_tree_ent_t *)xe1;
+  xte2 = (xml_tree_ent_t *)xe2;
+  if (xte1->xte_current == xte2->xte_current)
+    return DVC_MATCH;
+  val1 = xte1->xe_attr_name;
+  val2 = xte1->xe_attr_name;
+  if ((val1 || val2) && !strcmp (val1 ? val1 : "", val2 ? val2 : ""))
+    return DVC_NOORDER;
+  if (compare_uris_and_dtds && (xte1->xe_doc.xtd != xte2->xe_doc.xtd))
+    {
+      const char *uri1 = xte1->xe_doc.xd->xd_uri;
+      const char *uri2 = xte2->xe_doc.xd->xd_uri;
+      if (!strcmp (uri1 ? uri1 : "", uri2 ? uri2 : ""))
+        return DVC_NOORDER;
+      if (((NULL != xte1->xe_doc.xd->xd_dtd) && (0 != xte1->xe_doc.xd->xd_dtd->ed_is_filled)) ||
+        ((NULL != xte2->xe_doc.xd->xd_dtd) && (0 != xte2->xe_doc.xd->xd_dtd->ed_is_filled)) )
+        return DVC_NOORDER; /* we don't try to compare filled DTDs or a filled and non-filled */
+    }
+  return (xte_subtrees_are_equal ((caddr_t *)(xte1->xte_current), (caddr_t *)(xte2->xte_current)) ? DVC_MATCH : DVC_NOORDER);
+}
+
 
 xml_ns_2dict_t *xml_global_ns_2dict = NULL;
 dk_mutex_t *xml_global_ns_2dict_mutex = NULL;

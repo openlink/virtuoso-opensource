@@ -773,7 +773,7 @@ static const char *sparp_known_get_params[] = {
     "get:login", "get:method", "get:proxy", "get:query", "get:refresh", "get:soft", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
-    "input:grab-depth", "input:grab-limit", "sql:log-enable", "sql:signal-void-variables", NULL };
+    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:log-enable", "sql:signal-void-variables", NULL };
 
 static const char *sparp_var_defines[] = { NULL };
 
@@ -817,6 +817,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_output_dict_format_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:route")) {
           sparp->sparp_env->spare_output_route_name = t_box_dv_uname_string (value); return; }
+      if (!strcmp (param, "output:maxrows")) {
+          sparp->sparp_env->spare_output_maxrows = box_num_nonull (unbox (value)); return; }
     }
   if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
@@ -1007,6 +1009,16 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           return; }
       if (!strcmp (param, "sql:param") || !strcmp (param, "sql:params")) {
           t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
+          return; }
+      if (!strcmp (param, "sql:globals-mode")) {
+          if (DV_STRING != DV_TYPE_OF (value))
+            spar_error (sparp, "define sql:globals-mode should have string value");
+          if (!strcmp (value, "XSLT"))
+            sparp->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONAMED;
+          else if (!strcmp (value, "SQL"))
+            sparp->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_PLAIN;
+          else
+            spar_error (sparp, "define sql:globals-mode should have value \"XSLT\" or \"SQL\"");
           return; }
       if (!strcmp (param, "sql:log-enable")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
@@ -1742,6 +1754,14 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       final_output_format_name = env->spare_output_format_name;
       break;
     }
+#if 0 /* this makes visible buggy codegen for CONSTRUCT with formatters and LIMIT */
+  if (NULL != sparp->sparp_env->spare_output_maxrows)
+    {
+      boxint hard_lim = unbox (sparp->sparp_env->spare_output_maxrows);
+      if (unbox (limit) > hard_lim)
+        limit = t_box_num_nonull (hard_lim);
+    }
+#endif
   return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     final_output_format_name,
@@ -3060,7 +3080,7 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_good_graph_bmk);
   /* no copy for spare_selids */
   ENV_COPY (spare_global_var_names);
-  ENV_COPY (spare_globals_are_numbered);
+  ENV_COPY (spare_globals_mode);
   ENV_COPY (spare_global_num_offset);
   /* no copy for spare_acc_qm_sqls */
   /* no copy for spare_qm_default_table */

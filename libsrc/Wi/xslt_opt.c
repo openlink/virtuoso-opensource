@@ -95,6 +95,8 @@ xsl_is_xpath_attr (char * attr)
       ||  0 == strcmp (attr, "count")
       ||  0 == strcmp (attr, "pattern")
       ||  0 == strcmp (attr, "use")
+      ||  0 == strcmp (attr, "sparql")
+      ||  0 == strcmp (attr, "sql")
       )
     return 1;
   return 0;

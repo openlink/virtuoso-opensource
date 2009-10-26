@@ -1910,8 +1910,6 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
     default:
       spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not supports literals of type %s", dv_type_title (dtp));
       }
-
-tmpbuf_filled:
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
 }
@@ -3621,15 +3619,28 @@ ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
   char *coloncolon = strstr (vname, "::");
   if ((NULL != coloncolon) && (vname != coloncolon))
     vname = coloncolon + 1;
-  if (env->spare_globals_are_numbered)
+  switch (env->spare_globals_mode)
     {
-      char buf[30];
-      int pos = dk_set_position_of_string (env->spare_global_var_names, vname);
-      if (0 > pos)
-        spar_sqlprint_error ("ssg_" "print_global_param(): unexpected global variable name");
-      snprintf (buf, sizeof (buf), " :%d", pos + env->spare_global_num_offset);
-      ssg_puts (buf);
+    case SPARE_GLOBALS_ARE_COLONUMBERED:
+      {
+        char buf[30];
+        int pos = dk_set_position_of_string (env->spare_global_var_names, vname);
+        if (0 > pos)
+          spar_sqlprint_error ("ssg_" "print_global_param(): unexpected global variable name");
+        snprintf (buf, sizeof (buf), " :%d", pos + env->spare_global_num_offset);
+        ssg_puts (buf);
+        return;
+      }
+    case SPARE_GLOBALS_ARE_COLONAMED:
+      ssg_putchar (' ');
+      ssg_puts (vname);
       return;
+    case SPARE_GLOBALS_ARE_PLAIN:
+      break;
+#ifndef NDEBUG
+    default:
+      GPF_T1 ("ssg_" "print_global_param(): bad mode");
+#endif
     }
   if (isdigit (vname[1])) /* Numbered parameter */
     {
@@ -6238,7 +6249,7 @@ from_printed:
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
           if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, (ccaddr_t) ft_arg1, SQL_ATOM_UTF8_ONLY);
+            ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
           else
             ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
           for (argctr = 2; argctr < argcount; argctr += 2)

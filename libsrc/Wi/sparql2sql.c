@@ -5552,7 +5552,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
   sparp_of_seed->sparp_expr->_.req_top.limit = t_box_num (SPARP_MAXLIMIT);
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
-  sparp_of_seed->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
   sparp_of_seed->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
   sparp_of_seed->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
@@ -5562,7 +5562,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
   sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
-  sparp_of_iter->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_iter->sparp_env->spare_global_num_offset = 1;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
@@ -5573,7 +5573,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
   sparp_of_final->sparp_expr->_.req_top.shared_spare = sparp_of_final->sparp_env;
-  sparp_of_final->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_final->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_final->sparp_env->spare_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */
   for (sub_sparp_ctr = 3; sub_sparp_ctr--; /* no step */)

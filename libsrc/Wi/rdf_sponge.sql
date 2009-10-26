@@ -1364,7 +1364,8 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
         }
       else
 	{
-	  signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+          return null;
 	}
     }
 graph_is_ready:

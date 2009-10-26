@@ -319,7 +319,12 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'sql'	, 'sql:'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'vcard'	, 'http://www.w3.org/2001/vcard-rdf/3.0#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xf'	, 'http://www.w3.org/2004/07/xpath-functions'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xml'	, 'http://www.w3.org/XML/1998/namespace'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xsd'	, 'http://www.w3.org/2001/XMLSchema#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xsl10'	, 'http://www.w3.org/XSL/Transform/1.0'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xsl1999'	, 'http://www.w3.org/1999/XSL/Transform'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'xslwd'	, 'http://www.w3.org/TR/WD-xsl'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'yago'	, 'http://dbpedia.org/class/yago/'	, 2);
 }
 ;
@@ -1022,6 +1027,7 @@ retry_unrdf:
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_ID, in lang varchar, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
 {
   declare t, dt_twobyte, lang_twobyte int;
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
 retry_unrdf:
   t := __tag (v);
   if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
@@ -1072,6 +1078,14 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
+          if (__tag of XML = __tag (parsed))
+            {
+              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+              values (g_iid, iri_to_id (s_uri), p_iid,
+                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+                  parsed, iri_to_id (o_type), null ) );
+              return;
+            }
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -1835,6 +1849,15 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
+          if (__tag of XML = __tag (parsed))
+            {
+              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+              values (g_iid, iri_to_id (s_uri), p_iid,
+                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (
+                  parsed, iri_to_id (o_type), null,
+                  g_iid, p_iid, ro_id_dict ) );
+              return;
+            }
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
