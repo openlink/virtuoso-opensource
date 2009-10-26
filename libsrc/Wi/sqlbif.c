@@ -5571,6 +5571,13 @@ bif_isarray (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_isvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "isvector");
+  return box_bool (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg0));
+}
+
+caddr_t
 bif_isuname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "isuname");
@@ -13983,6 +13990,7 @@ sql_bif_init (void)
   bif_define_typed ("isstring", bif_isstring, &bt_integer);
   bif_define_typed ("isbinary", bif_isbinary, &bt_integer);
   bif_define_typed ("isarray", bif_isarray, &bt_integer);
+  bif_define_typed ("isvector", bif_isvector, &bt_integer);
   bif_define_typed ("isiri_id", bif_isiri_id, &bt_integer);
   bif_define_typed ("is_named_iri_id", bif_is_named_iri_id, &bt_integer);
   bif_define_typed ("is_bnode_iri_id", bif_is_bnode_iri_id, &bt_integer);
