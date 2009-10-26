@@ -413,18 +413,18 @@ again:
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
        else if (_url like 'mailto:%')
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/goout.gif" title="Send Mail" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/mail.png" title="Send Mail" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
 	 }
        else if (_url like 'tel:%')
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/goout.gif" title="Make Call" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/phone.gif" title="Make Call" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
 	 }
        else
 	 {
 	   usual_iri:
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (prop = __id2in (rdf_sas_iri ()))
-	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/html.png" title="Open Actual (X)HTML page" border="0"/></a>', _url));
 	 }
 
      }

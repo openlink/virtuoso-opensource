@@ -68,18 +68,18 @@
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<sioc:container_of rdf:resource="{$resourceURL}"/>
-				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-				<dcterms:subject rdf:resource="{$resourceURL}"/>
+			    <foaf:topic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="concat('Offer of ', GetSingleItemResponse/Item/Title)"/></rdfs:label>
+			    <rdfs:label><xsl:value-of select="GetSingleItemResponse/Item/Title"/></rdfs:label>
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>

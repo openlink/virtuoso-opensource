@@ -4565,10 +4565,25 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (in canon any, in secret_key any)
+{
+  declare url, StringToSign, hmacKey, signed any;
+
+  StringToSign := concat('GET\necs.amazonaws.com\n/onca/xml\n', canon);
+  if (not xenc_key_exists ('amazon_key'))
+    hmacKey := xenc_key_RAW_read ('amazon_key', encode_base64(secret_key));
+  signed := xenc_hmac_sha1_digest (StringToSign, 'amazon_key');
+  xenc_key_remove ('amazon_key');
+  signed := replace(replace(signed, '+', '%2B'), '=', '%3D');
+  url := concat('http://ecs.amazonaws.com/onca/xml?', canon, '&Signature=', signed);
+  return url;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
+  declare xd, xd_utf8, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
   declare pos integer;
   asin := null;
   declare exit handler for sqlstate '*'
@@ -4591,7 +4606,6 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/o/ASIN/%s', 0);
       asin := rtrim (tmp[2], '/');
     }
-    
   else if (new_origin_uri like 'http://%amazon.%/%/product-reviews/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/product-reviews/%s', 0);
@@ -4649,22 +4663,74 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     return 0;
     
     datenow := replace(date_iso8601 (dt_set_tz (now(), 0)), ':', '%3A');
-  canon := sprintf('AWSAccessKeyId=%s&ItemId=%s&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
-  StringToSign := concat('GET\necs.amazonaws.com\n/onca/xml\n', canon);
-  if (not xenc_key_exists ('amazon_key'))		
-    hmacKey := xenc_key_RAW_read ('amazon_key', encode_base64(secret_key));
-  signed := xenc_hmac_sha1_digest (StringToSign, 'amazon_key');
-  xenc_key_remove ('amazon_key');
-  signed := replace(replace(signed, '+', '%2B'), '=', '%3D');
-  url := concat('http://ecs.amazonaws.com/onca/xml?', canon, '&Signature=', signed);
+
+  -- Note: Query parameter/value pairs *must* be sorted by byte value before the query string is signed.
+  --       Lowercase parameters will come after uppercase ones in the canonical query string.
+
+  canon := sprintf('AWSAccessKeyId=%s&Condition=All&ItemId=%s&MerchantId=All&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+  url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar)));
-  xd := serialize_to_UTF8_xml (xt);
+  xd_utf8 := serialize_to_UTF8_xml (xt);
+
+   {
+     declare mlist varchar;
+     declare xdMerchants, merchantIds any;
+     declare strTmp varchar;
+
+     -- Extract the merchantIds contained in initial AWS query response
+     mlist := '';
+     merchantIds := xpath_eval('//Offer/Merchant/MerchantId', xd, 0);
+     foreach (any mid in merchantIds) do
+     {
+       declare id varchar;
+       id := cast(mid as varchar);
+       if (length (mlist))
+         mlist := mlist || '%2C';
+       mlist := mlist || id ;
+     }
+
+     -- Query AWS to get the names of these merchants
+     canon := sprintf('AWSAccessKeyId=%s&Operation=SellerLookup&SellerId=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', 
+  	api_key, mlist, datenow);
+     url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
+     tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+     if (hdr[0] not like 'HTTP/1._ 200 %')
+     --  signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+     --  leave legalName of gr:BusinessEntity instances as MERCHANTID_<merchantId>
+       goto skip_merchantid2name;
+
+     xdMerchants := xtree_doc (tmp);
+
+     -- strTmp := cast (tmp as varchar);
+     -- string_to_file('/tmp/amazon_response.xml', strTmp, 0);
+
+     foreach (any mid in merchantIds) do
+     {
+       declare id, sellerName varchar;
+       declare sName, sNickname any;
+       id := cast(mid as varchar);
+       sellerName := '';
+       sName := xpath_eval('//Seller[SellerId="' || id || '"]/SellerName', xdMerchants);
+       sNickname := xpath_eval('//Seller[SellerId="' || id || '"]/Nickname', xdMerchants);
+
+       if (sName is not null)
+	 sellerName := cast (sName as varchar);
+       else if (sNickname is not null)
+	 sellerName := cast (sNickname as varchar);
+
+      -- Replace MERCHANTID_xxx placeholders with seller name
+      if (length(sellerName))
+       xd_utf8 := replace (xd_utf8, 'MERCHANTID_' || id, sellerName);
+     }
+   }
+skip_merchantid2name:
+
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
-  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd_utf8, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
 ;
@@ -5457,7 +5523,7 @@ try_grddl:
   reg := '';
   doc_base := get_keyword ('http-redirect-to', opts, new_origin_uri);
   DB.DBA.RDF_LOAD_GRDDL_REC (doc_base, graph_iri, new_origin_uri, dest, xt, mdta, reg, '', 0, opts);
-  if (mdta) -- It is recognized as GRDDL and data is loaded, stop there WAS: is_grddl and xpath_eval ('/html', xt) is null)
+  if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1' and mdta) -- It is recognized as GRDDL, data is loaded (testing the grddl only mode)
     goto ret;
   try_rdfa:;
   -- RDFa
@@ -5480,6 +5546,9 @@ try_grddl:
 	rdfa_end:;
       }
   }  
+  -- we process grddl & rdfa both should give us same result    
+  if (mdta) -- It is recognized as GRDDL and data is loaded, stop there WAS: is_grddl and xpath_eval ('/html', xt) is null)
+    goto ret;
   cnt := (sparql define input:storage "" select count(*) { graph `iri(?:thisgr)` { ?s ?p ?o }}) - cnt;
   if (cnt > 0)
     mdta := mdta + 1;
@@ -5770,6 +5839,16 @@ create procedure DB.DBA.SYS_DOI_SPONGE_UP (in local_iri varchar, in get_uri varc
     {
       signal ('RDFZZ', 'This version of Virtuoso Sponger do not support "doi" IRI scheme');
     }
+}
+;
+
+create procedure DB.DBA.SYS_FEED_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare url varchar;
+  url := 'http:' || subseq (get_uri, 5);
+  options := vector_concat (vector ('get:uri', url), options);
+  return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
+      'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
 }
 ;
 

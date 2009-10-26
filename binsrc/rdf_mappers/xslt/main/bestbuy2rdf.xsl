@@ -70,17 +70,17 @@
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{$resourceURL}"/>
-				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<foaf:topic rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="concat('Offer of ', products/product/name)"/></rdfs:label>
+			    <rdfs:label><xsl:value-of select="products/product/name"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->

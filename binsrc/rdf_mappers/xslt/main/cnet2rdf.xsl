@@ -75,15 +75,15 @@
 				<xsl:otherwise>
 					<rdf:Description rdf:about="{$docproxyIRI}">
 						<rdf:type rdf:resource="&bibo;Document"/>
-					<sioc:container_of rdf:resource="{$resourceURL}"/>
-					<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<foaf:topic rdf:resource="{$resourceURL}"/>
 					<!--
 					<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Vendor')}"/>
 					<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 					 -->
-					<dcterms:subject rdf:resource="{$resourceURL}"/>
+					<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					</rdf:Description>
 
 	               		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
