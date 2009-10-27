@@ -2184,12 +2184,12 @@ iri_cast_talis_json_qname (query_instance_t *qi, caddr_t iri_or_id, caddr_t *iri
               iri_ret[0] = BNODE_IID_TO_TALIS_JSON_LABEL (iid);
             else
               iri_ret[0] = key_id_to_iri (qi, iid);
-            return (NULL != iri_ret[0]);
+            return (NULL != iri_ret[0] && DV_DB_NULL != DV_TYPE_OF (iri_ret[0]));
           }
         is_bnode_ret[0] = 0;
         iri_is_new_box_ret[0] = 1;
         iri_ret[0] = key_id_to_iri (qi, iid);
-        return (NULL != iri_ret[0]);
+        return (NULL != iri_ret[0] && DV_DB_NULL != DV_TYPE_OF (iri_ret[0]));
       }
     }
   return 0;
