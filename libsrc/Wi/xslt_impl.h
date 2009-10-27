@@ -55,28 +55,29 @@ extern int xte_is_xsl (caddr_t * xte);
 #define XSLT_EL_ELEMENT_RDFQNAME		12
 #define XSLT_EL_FALLBACK			13
 #define XSLT_EL_FOR_EACH			14
-#define XSLT_EL_IF				15
-#define XSLT_EL_IMPORT				16
-#define XSLT_EL_INCLUDE				17
-#define XSLT_EL_KEY				18
-#define XSLT_EL_MESSAGE				19
-#define XSLT_EL_NAMESPACE_ALIAS			20
-#define XSLT_EL_NUMBER				21
-#define XSLT_EL_OTHERWISE			22
-#define XSLT_EL_OUTPUT				23
-#define XSLT_EL_PARAM				24
-#define XSLT_EL_PRESERVE_SPACE			25
-#define XSLT_EL_PROCESSING_INSTRUCTION		26
-#define XSLT_EL_SORT				27
-#define XSLT_EL_STRIP_SPACE			28
-#define XSLT_EL_STYLESHEET			29
-#define XSLT_EL_TEMPLATE			30
-#define XSLT_EL_TRANSFORM			31
-#define XSLT_EL_TEXT				32
-#define XSLT_EL_VALUE_OF			33
-#define XSLT_EL_VARIABLE			34
-#define XSLT_EL_WHEN				35
-#define XSLT_EL_WITH_PARAM			36
+#define XSLT_EL_FOR_EACH_ROW			15
+#define XSLT_EL_IF				16
+#define XSLT_EL_IMPORT				17
+#define XSLT_EL_INCLUDE				18
+#define XSLT_EL_KEY				19
+#define XSLT_EL_MESSAGE				20
+#define XSLT_EL_NAMESPACE_ALIAS			21
+#define XSLT_EL_NUMBER				22
+#define XSLT_EL_OTHERWISE			23
+#define XSLT_EL_OUTPUT				24
+#define XSLT_EL_PARAM				25
+#define XSLT_EL_PRESERVE_SPACE			26
+#define XSLT_EL_PROCESSING_INSTRUCTION		27
+#define XSLT_EL_SORT				28
+#define XSLT_EL_STRIP_SPACE			29
+#define XSLT_EL_STYLESHEET			30
+#define XSLT_EL_TEMPLATE			31
+#define XSLT_EL_TRANSFORM			32
+#define XSLT_EL_TEXT				33
+#define XSLT_EL_VALUE_OF			34
+#define XSLT_EL_VARIABLE			35
+#define XSLT_EL_WHEN				36
+#define XSLT_EL_WITH_PARAM			37
 
 #define XSLT_ELGRP_PCDATA			0x0001
 #define XSLT_ELGRP_RESELS			0x0002
@@ -142,6 +143,8 @@ extern int xte_is_xsl (caddr_t * xte);
 #define XSLT_ATTR_APPLYTEMPLATES_MODE		(XSLT_ATTR_FIRST_SPECIAL + 1) /* not required */
 #define XSLT_ATTR_CALLTEMPLATE_NAME		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
 #define XSLT_ATTR_FOREACH_SELECT		(XSLT_ATTR_FIRST_SPECIAL + 0) /* required */
+#define XSLT_ATTR_FOREACHROW_SPARQL		(XSLT_ATTR_FIRST_SPECIAL + 0) /* not required */
+#define XSLT_ATTR_FOREACHROW_SQL		(XSLT_ATTR_FIRST_SPECIAL + 1) /* not required */
 /* XSLT_ATTR_GENERIC_XMLNS is (XSLT_ATTR_FIRST_SPECIAL + 0) for xsl:attribute or xsl:element */
 #define XSLT_ATTR_ATTRIBUTEORELEMENT_NAME	(XSLT_ATTR_FIRST_SPECIAL + 1) /* required */
 #define XSLT_ATTR_ATTRIBUTEORELEMENT_NAMESPACE	(XSLT_ATTR_FIRST_SPECIAL + 2) /* not required */

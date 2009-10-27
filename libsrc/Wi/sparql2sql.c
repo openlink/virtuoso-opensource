@@ -284,6 +284,8 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
   ssg_valmode_t native;
   if ((SPAR_FUNCALL == curr->type) && curr->_.funcall.agg_mode)
     return SPAR_GPT_NODOWN;
+  if ((SPAR_ALIAS == curr->type) && !memcmp (curr->_.alias.aname, "ctor-", 5))
+    return SPAR_GPT_NODOWN;
   if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
     return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
   varname = curr->_.var.vname;
@@ -306,7 +308,7 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
 {
   SPART **retvals = query->_.req_top.retvals;
   caddr_t retvalmode_name, formatmode_name;
-  if (0 == sparp->sparp_query_uses_aggregates)
+  if ((0 == sparp->sparp_query_uses_aggregates) || (0 != BOX_ELEMENTS_0 (query->_.req_top.groupings)))
     return;
   retvalmode_name = query->_.req_top.retvalmode_name;
   formatmode_name = query->_.req_top.formatmode_name;
@@ -4952,7 +4954,7 @@ sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
     return;
   sparp_rewrite_retvals (sparp, safely_copy_retvals);
-  if (sparp->sparp_env->spare_grab.rgc_pview_mode)
+  if ((sparp->sparp_env->spare_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
     {
       sparp_rewrite_grab (sparp);
       return;
@@ -5552,7 +5554,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
   sparp_of_seed->sparp_expr->_.req_top.limit = t_box_num (SPARP_MAXLIMIT);
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
-  sparp_of_seed->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
   sparp_of_seed->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
   sparp_of_seed->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
@@ -5562,7 +5564,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
   sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
-  sparp_of_iter->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_iter->sparp_env->spare_global_num_offset = 1;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
@@ -5573,7 +5575,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
   sparp_of_final->sparp_expr->_.req_top.shared_spare = sparp_of_final->sparp_env;
-  sparp_of_final->sparp_env->spare_globals_are_numbered = 1;
+  sparp_of_final->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_final->sparp_env->spare_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */
   for (sub_sparp_ctr = 3; sub_sparp_ctr--; /* no step */)
@@ -5588,7 +5590,9 @@ sparp_rewrite_grab (sparp_t *sparp)
       ssg.ssg_sparp = sub_sparp;
       ssg.ssg_tree = sub_sparp->sparp_expr;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+      ssg.ssg_seealso_enabled = (sub_sparp_ctr < 2) ? 1 : 0;
       ssg_make_sql_query_text (&ssg);
+      ssg.ssg_seealso_enabled = 0;
       sql_texts [sub_sparp_ctr] = t_strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
     }

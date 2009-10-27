@@ -49,12 +49,14 @@ create procedure DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (inout ses any, in colnames a
 create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varchar)
 {
   declare ses integer;
+  ses := 0;
+  if (strchr (accept, ' ') is not null)
+    accept := subseq (accept, strchr (accept, ' ')+1);
   http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
   http_flush (1);
-  ses := 0;
   DB.DBA.SPARQL_RSET_XML_WRITE_NS (ses);
   DB.DBA.SPARQL_RSET_XML_WRITE_HEAD (ses, colnames);
-  http ('\n <results distinct="false" ordered="true">');
+  http ('\n <results>');
   return colnames;
 }
 ;
@@ -1169,6 +1171,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
+      -- dbg_obj_princ ('__ask_retval case: accept=', accept, 'ret_mime=', ret_mime, ', ret_format=', ret_format);
+      -- dbg_obj_princ ('rset[0][0]=', case (length (rset)) when 0 then 'out-of-boundary' else rset[0][0] end);
       if ((1 = length (rset)) and (185 = __tag(rset[0][0])))
         {
           http (rset[0][0], ses);
@@ -1225,6 +1229,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
+      else if (ret_format = 'RDFA;XHTML')
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1563,7 +1569,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
-
+  -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
       for (declare i int, i := 0; i < length (params); i := i + 2)
@@ -1682,6 +1688,7 @@ http('    format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n');
 http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
+http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -2115,6 +2122,8 @@ host_found:
             full_query := 'define output:format ' || fmtttl || full_query;
         }
     }
+  if (maxrows > 0)
+    full_query := sprintf ('define output:maxrows %d ', maxrows) || full_query;
   --http ('<!-- Query:\n' || query || '\n-->\n', 0);
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('full_query = ', full_query);
@@ -2252,6 +2261,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
+      else if ('application/xhtml+xml' = mime)
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
       rc := DB.DBA.DAV_RES_UPLOAD (split, out_ses, mime, old_perms, old_uid, old_gid, uid, pwd);
       if (isinteger (rc) and rc < 0)
         signal ('RDFXX', sprintf ('Unable to change "%.200s" in DAV: %s', split, DB.DBA.DAV_PERROR (rc)));

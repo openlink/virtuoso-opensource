@@ -509,7 +509,13 @@ extern shuric_cache_t *xpath_eval_cache;
 extern caddr_t * xpt_text_exp (XT * tree, XT * ctx_node);
 
 extern int snprint_xdl (char *buffer, size_t buflength, xp_debug_location_t *xdl);
+extern caddr_t sqlr_make_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst);
 extern void sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst);
+extern caddr_t sqlr_make_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 4, 5)))
+#endif
+;
 extern void sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 4, 5)))

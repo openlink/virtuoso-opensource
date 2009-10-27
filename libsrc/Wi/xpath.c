@@ -5233,8 +5233,8 @@ fine:
 }
 
 
-void
-sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst)
+caddr_t
+sqlr_make_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst)
 {
   du_thread_t *self;
   char temp[2000];
@@ -5245,11 +5245,29 @@ sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_locat
   snprint_xdl (temp+n, sizeof(temp)-n, xdl);
   temp[sizeof(temp)-1] = '\0';
   err = srv_make_new_error (code, virt_code, "%s", temp);
-  self = THREAD_CURRENT_THREAD;
+  return err;
+}
+
+void
+sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst)
+{
+  caddr_t err = sqlr_make_new_error_xdl_base (code, virt_code, xdl, string, vlst);
+  du_thread_t *self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   longjmp_splice (self->thr_reset_ctx, RST_ERROR);
 }
 
+
+caddr_t
+sqlr_make_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)
+{
+  caddr_t *err;
+  va_list vlst;
+  va_start (vlst, string);
+  err = sqlr_make_new_error_xdl_base (code, virt_code, xdl, string, vlst);
+  va_end (vlst);
+  return err;
+}
 
 void
 sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)

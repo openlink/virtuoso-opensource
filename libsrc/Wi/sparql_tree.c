@@ -3827,6 +3827,11 @@ spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses)
       SES_PRINT (ses, ((NULL != var->_.var.tabid) ? var->_.var.tabid : var->_.var.selid));
     }
   SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr));
+  if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
+    {
+      sprintf (buf, "; parent #%d", eq->e_external_src_idx);
+      SES_PRINT (ses, buf);
+    }
   SES_PRINT (ses, ")");
 }
 
@@ -4229,6 +4234,10 @@ sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
       for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
         {
           spar_dbg_printf ((" %s", eq->e_varnames[varname_ctr]));
+        }
+      if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
+        {
+          spar_dbg_printf (("; parent #%d", eq->e_external_src_idx));
         }
       spar_dbg_printf ((")"));
     } END_SPARP_FOREACH_GP_EQUIV;

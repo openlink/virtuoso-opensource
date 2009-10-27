@@ -750,6 +750,7 @@ typedef struct spar_sqlgen_s
   const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
   int			ssg_line_count;		/*!< Number of lines of generated SQL code */
+  int			ssg_seealso_enabled;	/*!< Flags if \c ssg_print_fld_var_restrictions_ex() (or the like) should generate calls of RDF_GRAB_SEEALSO; they should for "init" and "iter" of a pview, but not for "final" */
 /* SPARQL-D Codegen temporary values */
   const char *		ssg_sd_service_name;	/*!< Name of the destination endpoint that will receive the fragment that is printed ATM (for error reporting) */
   int			ssg_sd_flags;		/*!< Bitmask of SPARP_SPARQLD_xxx flags, see below */

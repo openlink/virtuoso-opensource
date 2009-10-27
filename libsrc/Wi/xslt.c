@@ -52,7 +52,7 @@ extern "C" {
 #endif
 #include "xslt_impl.h"
 #include "bif_xper.h" /* for write_escaped_attvalue */
-
+#include "shcompo.h"
 
 #define xslt_instantiate_children(xp,xstree) \
 do { \
@@ -1501,6 +1501,244 @@ xslt_for_each (xparse_ctx_t * xp, caddr_t * xstree)
 }
 
 
+void
+xslt_for_each_row (xparse_ctx_t * xp, caddr_t * xstree)
+{
+  int query_is_sparql = 0;
+  xp_query_t * stmt_text_sel;
+  caddr_t *query_texts_set, query_text, query_final_text;
+  int proc_parent_is_saved = 0;
+  query_instance_t *qi = xp->xp_qi;
+  client_connection_t *cli = qi->qi_client;
+  shcompo_t *query_shc = NULL;
+  query_t *qr = NULL;
+  caddr_t err = NULL;
+  dk_set_t warnings = NULL;
+  caddr_t *params = NULL;
+  int param_ofs;
+  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  dk_set_t proc_resultset = NULL;
+  local_cursor_t *lc = NULL;
+  int cols_count, col_ctr;
+  PROC_SAVE_VARS;
+  stmt_text_sel = (xp_query_t *) xslt_arg_value (xstree, XSLT_ATTR_FOREACHROW_SPARQL);
+  if (NULL != stmt_text_sel)
+    query_is_sparql = 1;
+  else
+    stmt_text_sel = (xp_query_t *) xslt_arg_value (xstree, XSLT_ATTR_FOREACHROW_SQL);
+  query_texts_set = (caddr_t*) xslt_eval_1 (xp, stmt_text_sel, xp->xp_current_xe, XQ_NODE_SET, DV_UNKNOWN);
+  xp_temp (xp, (caddr_t) query_texts_set);
+  if (1 != BOX_ELEMENTS (query_texts_set))
+    sqlr_new_error_xdl ("XS370", "XS072", &(stmt_text_sel->xqr_xdl), "sparql or sql attribute in xsl:for-each-row must return exactly one value");
+  query_text = query_texts_set[0];
+  if (DV_STRING != DV_TYPE_OF (query_text))
+    {
+      if (DV_XML_ENTITY == DV_TYPE_OF (query_text))
+        {
+          xml_entity_t *xe = (xml_entity_t *)query_text;
+          caddr_t sval = NULL;
+          xe->_->xe_string_value (xe, &sval, DV_STRING);
+          query_text = sval;
+        }
+      else
+        sqlr_new_error_xdl ("XS370", "XS068", &(stmt_text_sel->xqr_xdl), "sparql or sql attribute in xsl:for-each-row must return a single string");
+    }
+  if (query_is_sparql)
+    {
+      query_final_text = box_dv_short_strconcat ("sparql define sql:globals-mode \"XSLT\" ", query_text);
+      if (query_text != query_texts_set[0])
+        dk_free_box (query_text);
+    }
+  else
+    query_final_text = (query_text != query_texts_set[0]) ? query_text : box_copy (query_text);
+  PROC_SAVE_PARENT;
+  proc_parent_is_saved = 1;
+  warnings = sql_warnings_save (NULL);
+  cli->cli_resultset_max_rows = -1;
+  cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
+  cli->cli_resultset_data_ptr = &proc_resultset;
+  query_shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, query_final_text, qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+  if (NULL == err)
+    {
+      shcompo_recompile_if_needed (&query_shc);
+      if (NULL != query_shc->shcompo_error)
+        err = box_copy_tree (query_shc->shcompo_error);
+    }
+  if (NULL != err)
+    goto err_generated;
+  qr = (query_t *)(query_shc->shcompo_data);
+  params = (caddr_t *)dk_alloc_box_zero (dk_set_length (qr->qr_parms) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  xp_temp (xp, (caddr_t) params);
+  param_ofs = 0;
+  DO_SET (state_slot_t *, ssl, &qr->qr_parms)
+    {
+      char *name = ssl->ssl_name;
+      xqi_binding_t *xb;
+      if ((NULL == name) || (':' != name[0]) || alldigits (name+1))
+        {
+          err = sqlr_make_new_error_xdl ("XS370", "XS069", &(stmt_text_sel->xqr_xdl), "%s parameter of the query can not be bound, only named parameters can be associated with XSLT variables of the context", ((NULL!=name) ? name : "anonymous"));
+          goto err_generated; /* see below */
+        }
+      for (xb = xp->xp_locals; (NULL != xb) && (NULL != xb->xb_name); xb = xb->xb_next)
+        {
+          if (!strcmp (name+1, xb->xb_name))
+            goto xb_found; /* see below */
+        }
+      for (xb = xp->xp_globals; NULL != xb; xb = xb->xb_next)
+        {
+          if (!strcmp (name+1, xb->xb_name))
+            goto xb_found; /* see below */
+        }
+      err = sqlr_make_new_error_xdl ("XS370", "XS070", &(stmt_text_sel->xqr_xdl), "%s%.100s parameter of the query can not be bound, there's no corresponding XSLT variable $%.100s",
+        query_is_sparql ? "$" : "", name, name+1 );
+      goto err_generated; /* see below */
+xb_found:
+      params[param_ofs++] = box_copy (name);
+      params[param_ofs++] = box_copy_tree (xb->xb_value);
+    }
+  END_DO_SET ()
+  err = qr_exec (cli, qr, qi, NULL, NULL, &lc,
+      params, NULL, 1);
+  memset (params, 0, param_ofs * sizeof (caddr_t));
+  xp_temp_free (xp, (caddr_t) params);
+  params = NULL;
+  if (err)
+    goto err_generated; /* see below */
+  if ((NULL == lc) || !(qr->qr_select_node))
+    {
+      err = sqlr_make_new_error_xdl ("XS370", "XS071", &(stmt_text_sel->xqr_xdl), "%s statement did not produce any (even empty) result-set",
+        query_is_sparql ? "SPARQL" : "SQL");
+      goto err_generated; /* see below */
+    }
+  PROC_RESTORE_SAVED;
+  proc_parent_is_saved = 0;
+  if (proc_comp)
+    {
+      dk_free_tree ((caddr_t) proc_comp);
+      proc_comp = NULL;
+    }
+  if (proc_resultset)
+    {
+      dk_free_tree (list_to_array (proc_resultset));
+      proc_resultset = NULL;
+    }
+  comp = qr_describe (qr, NULL);
+  cols_count = BOX_ELEMENTS (comp->sc_columns);
+  for (col_ctr = cols_count; col_ctr--; /* no step */)
+    {
+      col_desc_t *cd = (col_desc_t *)(comp->sc_columns[col_ctr]);
+      NEW_VARZ (xqi_binding_t, xb);
+      xb->xb_name = box_dv_uname_string (cd->cd_name);
+      xb->xb_value = NULL;
+      xb->xb_next = xp->xp_locals;
+      xp->xp_locals = xb;
+    }
+  while (lc_next (lc))
+    {
+      xqi_binding_t *saved_locals = xp->xp_locals;
+      xqi_binding_t *xb = saved_locals;
+      for (col_ctr = 0; col_ctr < cols_count; col_ctr++)
+        {
+          dk_free_tree (xb->xb_value);
+          xb->xb_value = box_copy_tree (lc_nth_col (lc, col_ctr));
+          xb = xb->xb_next;
+	}
+      xslt_instantiate_children (xp, xstree);
+    }
+  for (col_ctr = cols_count; col_ctr--; /* no step */)
+    {
+      xqi_binding_t *xb = xp->xp_locals;
+      dk_free_box (xb->xb_name);
+      dk_free_tree (xb->xb_value);
+      xp->xp_locals = xb->xb_next;
+      dk_free (xb, sizeof (xqi_binding_t));
+    }
+  err = lc->lc_error;
+  lc->lc_error = NULL;
+  lc_free (lc);
+  if (err)
+    goto err_generated; /* see below */
+#if 0
+    { /* handle procedure resultsets */
+      if (n_args > 5 && ssl_is_settable (args[5]) && proc_comp)
+	qst_set (qst, args[5], (caddr_t) proc_comp);
+      else
+	dk_free_tree ((caddr_t) proc_comp);
+
+      if (n_args > 6 && ssl_is_settable (args[6]) && proc_resultset)
+        {
+          caddr_t ** rset = ((caddr_t **)list_to_array (dk_set_nreverse (proc_resultset)));
+#ifdef MALLOC_DEBUG
+          dk_check_tree (qst_get (qst, args[6]));
+          dk_check_tree (rset);
+#endif
+	  qst_set (qst, args[6], (caddr_t) rset);
+#ifdef MALLOC_DEBUG
+          dk_check_tree (qst_get (qst, args[6]));
+#endif
+        }
+      else if (n_args > 6 && ssl_is_settable (args[6]) && lc)
+	qst_set (qst, args[6], box_num (lc->lc_row_count));
+      else
+        {
+	  dk_free_tree (list_to_array (proc_resultset));
+          if (n_args > 6 && ssl_is_settable (args[6]))
+            {
+#ifdef MALLOC_DEBUG
+              dk_check_tree (qst_get (qst, args[6]));
+#endif
+	      qst_set (qst, args[6], NEW_DB_NULL);
+            }
+        }
+      if (lc)
+	{
+	  err = lc->lc_error;
+	  lc->lc_error = NULL;
+	  lc_free (lc);
+	  if (err)
+	    {
+	      res = bif_exec_error (qst, args, err);
+	      goto done;
+	    }
+	}
+    }
+#endif
+
+  dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+#if 0
+
+  xslt_sort (xp, xstree, set);
+  ctx_sz = BOX_ELEMENTS (set);
+  XP_CTX_POS_GET (xp, save_size, save_pos);
+  DO_BOX (xml_entity_t *, xe, inx2, set)
+    {
+      dtp_t xe_dtp = DV_TYPE_OF (xe);
+      if (DV_XML_ENTITY != xe_dtp)
+	sqlr_new_error_xdl ("XS370", "XS012", &(sel->xqr_xdl), "Not an entity is returned");
+      xp->xp_current_xe = xe;
+      XP_CTX_POS (xp, ctx_sz, inx2 + 1);
+      xslt_instantiate_children (xp, xstree);
+    }
+  END_DO_BOX;
+  XP_CTX_POS (xp, save_size, save_pos);
+  xp_temp_free (xp, (caddr_t) set);
+  xp->xp_current_xe = old_xe;
+#endif
+  return;
+err_generated:
+  if (lc)
+    lc_free (lc);
+  if (params)
+    xp_temp_free (xp, (caddr_t) params);
+  if (NULL != query_shc)
+    shcompo_release (query_shc);
+  if (proc_parent_is_saved)
+    PROC_RESTORE_SAVED;
+  xp_temp_free (xp, (caddr_t) query_texts_set);
+  sqlr_resignal (err);
+}
+
+
 caddr_t
 xslt_attr_or_element_qname (xparse_ctx_t * xp, caddr_t * elt, int use_deflt)
 {
@@ -2530,7 +2768,7 @@ xslt_top (query_instance_t * qi, xml_entity_t * xe, xslt_sheet_t * xsh, caddr_t 
     }
   if (NULL != excl_val)
     {
-      DO_SET (caddr_t ***, chld, &(xn->xn_children))
+      DO_SET (caddr_t **, chld, &(xn->xn_children))
         {
           if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)chld)) &&
             (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((void*)(chld[0]))) &&
@@ -4115,6 +4353,12 @@ xslt_init (void)
   xslt_define ("for-each"		, XSLT_EL_FOR_EACH		, xslt_for_each			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS | XSLT_ELGRP_SORT	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "select"		, XSLT_ATTR_FOREACH_SELECT		),
 	xslt_arg_eol);
+#ifndef NDEBUG /* temporarily, while the feature is an experimental draft */
+  xslt_define ("for-each-row"		, XSLT_EL_FOR_EACH_ROW		, xslt_for_each_row		, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS	,
+	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sparql"		, XSLT_ATTR_FOREACHROW_SPARQL		),
+	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sql"		, XSLT_ATTR_FOREACHROW_SQL		),
+	xslt_arg_eol);
+#endif
   xslt_define ("if"			, XSLT_EL_IF			, xslt_if			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_TMPL	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "test"		, XSLT_ATTR_IFORWHEN_TEST		),
 	xslt_arg_eol);

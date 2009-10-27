@@ -152,6 +152,10 @@ typedef struct rdf_grab_config_s {
     caddr_t	rgc_loader_name;	/*!< Name of function that actually load the resource */
 } rdf_grab_config_t;
 
+#define SPARE_GLOBALS_ARE_PLAIN		0	/*!< Global parameters are printed without quotes and a colon, so "?:paramname" in query becomes "paramname" in SQL. This is the default so it's value is zero. */
+#define SPARE_GLOBALS_ARE_COLONUMBERED	1	/*!< Global parameters are numbered in output so ?:a ?:b ?:a ?:c becomes :0 :1 :0 :2 */
+#define SPARE_GLOBALS_ARE_COLONAMED	2	/*!< Global parameters are named parameters in output so ?:a ?:b ?:a ?:c becomes :a :b :a :c */
+
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
@@ -168,6 +172,7 @@ typedef struct sparp_env_s
     caddr_t             spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
     caddr_t             spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
+    caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
     caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
@@ -205,8 +210,8 @@ typedef struct sparp_env_s
     dk_set_t		spare_selids;			/*!< Select IDs of GPs */
     caddr_t		spare_top_retval_selid;		/*!< Select ID for variables in result set and ORDER BY clauses */
     dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
-    int			spare_globals_are_numbered;	/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
-    int			spare_global_num_offset;	/*!< If spare_globals_are_numbered then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
+    int			spare_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
+    int			spare_global_num_offset;	/*!< If \c spare_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
     dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
     dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
     caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */

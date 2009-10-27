@@ -315,6 +315,12 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON"; return;
       default: return;
       }
+  if (!strcmp (name, "RDFA;XHTML"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML"; return;
+      default: return;
+      }
   if (!strcmp (name, "_JAVA_"))
     switch (subtype)
       {
@@ -1904,8 +1910,6 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
     default:
       spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not supports literals of type %s", dv_type_title (dtp));
       }
-
-tmpbuf_filled:
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
 }
@@ -3615,7 +3619,9 @@ ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
   char *coloncolon = strstr (vname, "::");
   if ((NULL != coloncolon) && (vname != coloncolon))
     vname = coloncolon + 1;
-  if (env->spare_globals_are_numbered)
+  switch (env->spare_globals_mode)
+    {
+    case SPARE_GLOBALS_ARE_COLONUMBERED:
     {
       char buf[30];
       int pos = dk_set_position_of_string (env->spare_global_var_names, vname);
@@ -3624,6 +3630,17 @@ ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
       snprintf (buf, sizeof (buf), " :%d", pos + env->spare_global_num_offset);
       ssg_puts (buf);
       return;
+    }
+    case SPARE_GLOBALS_ARE_COLONAMED:
+      ssg_putchar (' ');
+      ssg_puts (vname);
+      return;
+    case SPARE_GLOBALS_ARE_PLAIN:
+      break;
+#ifndef NDEBUG
+    default:
+      GPF_T1 ("ssg_" "print_global_param(): bad mode");
+#endif
     }
   if (isdigit (vname[1])) /* Numbered parameter */
     {
@@ -4648,10 +4665,11 @@ ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_valu
         ssg_print_tmpl (ssg, field->qmvFormat, "(^{alias-0}^.^{column-0}^ is not null)", tabid, field, NULL, NULL_ASNAME);
     }
 /* SPONGE_SEEALSO () as a fake filter for a variable */
-  if ((SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
+  if ((NULL != env->spare_grab.rgc_sa_preds) &&
+    ssg->ssg_seealso_enabled &&
+    (SPAR_VARIABLE == SPART_TYPE (fld_tree)) &&
     !(SPART_VARR_IS_LIT & tree_restr) &&
     !(SPART_VARR_EXTERNAL & tree_restr) &&
-    (NULL != env->spare_grab.rgc_sa_preds) &&
     ((0 <= dk_set_position_of_string (env->spare_grab.rgc_sa_vars, fld_tree->_.var.vname)) ||
       (0 <= dk_set_position_of_string (env->spare_grab.rgc_vars, fld_tree->_.var.vname)) ) )
     {

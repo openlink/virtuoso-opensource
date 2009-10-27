@@ -71,7 +71,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
     return 0;
   if (isiri_id (val))
     {
-      if (val >= min_bnode_iri_id ())
+      if (is_bnode_iri_id (val))
         return 0;
       val := id_to_iri (val);
     }
@@ -108,9 +108,17 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   return 0;
   }
 end_of_sponge:
+  commit work;
   recov := get_keyword_ucase ('get:error-recovery', env);
   if (recov is not null)
+    {
+      whenever sqlstate '*' goto end_of_recov;
     call (recov) (__SQL_STATE, __SQL_MESSAGE);
+      commit work;
+      return 0;
+end_of_recov:
+      rollback work;
+    }
   return 0;
 }
 ;
@@ -230,7 +238,9 @@ DB.DBA.RDF_GRAB (
     }
   commit work;
   aq_wait_all (aq);
+  commit work;
   DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
+  commit work;
   if (dict_size (grabbed) >= doc_limit)
     goto final_exec;
   for (iter_ctr := 0; iter_ctr <= depth; iter_ctr := iter_ctr + 1)
@@ -243,7 +253,7 @@ DB.DBA.RDF_GRAB (
         signal (stat, msg);
       rcount := length (rset);
       colcount := length (metas[0]);
-      -- dbg_obj_princ ('DB.DBA.RDF_GRAB: rset=', rset);
+      -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, '/', depth, ' rset is ', rcount, ' rows * ', colcount, ' cols');
       for (rctr := 0; rctr < rcount; rctr := rctr + 1)
         {
           declare colctr integer;
@@ -252,9 +262,9 @@ DB.DBA.RDF_GRAB (
               declare val any;
               declare dest varchar;
               val := rset[rctr][colctr];
-              if (isiri_id (val) and __rgs_ack_cbk (val, uid, 4))
+              if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
                 {
-                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (): dynamic IRI aq_request ', vector (val, '...', grab_params, doc_limit));
+                  -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (val, grabbed, grab_params, doc_limit));
                   if (dict_size (grabbed) >= doc_limit)
@@ -264,7 +274,9 @@ DB.DBA.RDF_GRAB (
         }
       commit work;
       aq_wait_all (aq);
+      commit work;
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
+      commit work;
       if (old_doc_count = dict_size (grabbed))
         goto final_exec;
     }
@@ -971,7 +983,10 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
   if (lower (url) like 'https://%')
     is_https := 1;
 
-  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy);
+  if (proxy is null)
+    content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt);
+  else
+    content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
   redirects := redirects - 1;
 
   if (hdr[0] not like 'HTTP/1._ 200 %')
@@ -1273,7 +1288,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
   declare perms integer;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
@@ -1281,7 +1296,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
   else
     dest := local_iri := graph_iri;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ') set local_iri=', local_iri);
   perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
@@ -1359,7 +1374,8 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
       else
 	{
-	  signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+          return null;
 	}
     }
 graph_is_ready:

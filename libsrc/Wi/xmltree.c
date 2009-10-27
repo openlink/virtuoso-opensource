@@ -9596,11 +9596,14 @@ again:
             ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
             if (NULL == res)
               return (ccaddr_t)((ptrlong)2);
+            box_flags (res) |= BF_IRI;
             return box_copy (res);
           }
         dtp = ((rb->rb_is_outlined) ? ((rdf_bigbox_t *)rb)->rbb_box_dtp : DV_TYPE_OF (rb->rb_box));
         goto again; /* see above */
       }
+    case DV_XML_ENTITY:
+      return uname_rdf_ns_uri_XMLLiteral;
     default:
       return (ccaddr_t)((ptrlong)1);
     }
