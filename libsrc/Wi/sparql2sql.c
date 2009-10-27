@@ -284,6 +284,8 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
   ssg_valmode_t native;
   if ((SPAR_FUNCALL == curr->type) && curr->_.funcall.agg_mode)
     return SPAR_GPT_NODOWN;
+  if ((SPAR_ALIAS == curr->type) && !memcmp (curr->_.alias.aname, "ctor-", 5))
+    return SPAR_GPT_NODOWN;
   if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
     return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
   varname = curr->_.var.vname;
@@ -306,7 +308,7 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
 {
   SPART **retvals = query->_.req_top.retvals;
   caddr_t retvalmode_name, formatmode_name;
-  if (0 == sparp->sparp_query_uses_aggregates)
+  if ((0 == sparp->sparp_query_uses_aggregates) || (0 != BOX_ELEMENTS_0 (query->_.req_top.groupings)))
     return;
   retvalmode_name = query->_.req_top.retvalmode_name;
   formatmode_name = query->_.req_top.formatmode_name;

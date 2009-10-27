@@ -818,7 +818,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       if (!strcmp (param, "output:route")) {
           sparp->sparp_env->spare_output_route_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:maxrows")) {
-          sparp->sparp_env->spare_output_maxrows = box_num_nonull (unbox (value)); return; }
+          sparp->sparp_env->spare_output_maxrows = t_box_num_nonull (unbox (value)); return; }
     }
   if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
@@ -1754,14 +1754,12 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       final_output_format_name = env->spare_output_format_name;
       break;
     }
-#if 0 /* this makes visible buggy codegen for CONSTRUCT with formatters and LIMIT */
   if (NULL != sparp->sparp_env->spare_output_maxrows)
     {
       boxint hard_lim = unbox (sparp->sparp_env->spare_output_maxrows);
       if (unbox (limit) > hard_lim)
         limit = t_box_num_nonull (hard_lim);
     }
-#endif
   return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     final_output_format_name,
