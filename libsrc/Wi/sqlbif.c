@@ -5562,6 +5562,13 @@ bif_isarray (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_isvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "isvector");
+  return box_bool (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg0));
+}
+
+caddr_t
 bif_isuname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "isuname");
@@ -5894,6 +5901,34 @@ bif_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
     }
   return 0;
+}
+
+caddr_t
+bif_transparent_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+  int good_arg_idx = -1;
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks(qst,args,argctr);
+      dtp_t dtp = DV_TYPE_OF (arg);
+      switch (dtp)
+        {
+        case DV_DB_NULL: return NEW_DB_NULL;
+        case DV_SHORT_INT:
+        case DV_LONG_INT:
+        case DV_CHARACTER:
+        case DV_C_SHORT:    /* These are  */
+        case DV_C_INT:    /*  not needed? */
+          if (0 == unbox (arg))
+            continue;
+        /* no break */
+        default: good_arg_idx = argctr;
+        }
+    }
+  if (0 <= good_arg_idx)
+    return box_copy_tree (bif_arg_nochecks(qst,args,good_arg_idx));
+  return (caddr_t)0;
 }
 
 caddr_t
@@ -7431,7 +7466,10 @@ bif_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int inx;
   for (inx = 0; inx < len; inx++)
   {
-    res[inx] = box_copy_tree (bif_arg (qst, args, inx, "vector"));
+    caddr_t arg = bif_arg (qst, args, inx, "vector");
+    if (DV_LONG_INT == DV_TYPE_OF (arg) && 0 == unbox (arg))
+      arg = NULL; /* an int 0 must be a null, not an int box with 0.  Need for making parse trees in pl */
+    res[inx] = box_copy_tree (arg);
   }
   return ((caddr_t) res);
 }
@@ -13664,6 +13702,7 @@ sql_bif_init (void)
   bif_define_typed ("isstring", bif_isstring, &bt_integer);
   bif_define_typed ("isbinary", bif_isbinary, &bt_integer);
   bif_define_typed ("isarray", bif_isarray, &bt_integer);
+  bif_define_typed ("isvector", bif_isvector, &bt_integer);
   bif_define_typed ("isiri_id", bif_isiri_id, &bt_integer);
   bif_define_typed ("is_named_iri_id", bif_is_named_iri_id, &bt_integer);
   bif_define_typed ("is_bnode_iri_id", bif_is_bnode_iri_id, &bt_integer);
@@ -13689,6 +13728,7 @@ sql_bif_init (void)
   bif_define_typed ("ifnull", bif_ifnull, &bt_any);
   bif_define_typed ("__and", bif_and, &bt_integer);
   bif_define_typed ("__or", bif_or, &bt_integer);
+  bif_define_typed ("__transparent_or", bif_transparent_or, &bt_any);
   bif_define_typed ("__not", bif_not, &bt_integer);
 
 /* Comparison functions */
