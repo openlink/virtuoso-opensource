@@ -385,7 +385,8 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
 	{
 	  if (for_ses)
 	    for_ses->dks_n_threads--;
-	  dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
+	  if (NULL != dkt->dkt_requests[0])
+	    dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
 	  dk_free (dkt, sizeof (dk_thread_t));
 	  max_future_threads = --future_thread_count;
 	  dkt = NULL;
