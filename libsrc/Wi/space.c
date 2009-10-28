@@ -345,7 +345,7 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
   page_leave_as_deleted (buf);
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(MTX_DEBUG)
 void bing () {}
 #endif
 
