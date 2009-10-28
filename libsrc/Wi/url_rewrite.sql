@@ -1119,10 +1119,10 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	     best_variant := variant;
 	   else
 	     {
-	   s := string_output ();
-	   http_dav_url (variant, null, s);
-	   s := string_output_string (s);
-	   best_variant := s;
+	       s := string_output ();
+	       http_dav_url (variant, null, s);
+	       s := string_output_string (s);
+	       best_variant := s;
 	     }
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;
