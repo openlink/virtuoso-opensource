@@ -82,9 +82,9 @@
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
-	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 
-	      arr := sql_split_text (self.body_v);
+	      arr := sql_split_text (Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v);
 	      res := make_array (length (arr) + 1, 'any');
 
 	      inx := 0;
@@ -199,7 +199,7 @@
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
-	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 	    }
 	   if (self.body_o is null and self.owl)
              {
@@ -318,7 +318,7 @@
 	  <?vsp } ?>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
-	  <v:button action="simple" name="cncl" value="Cancel">
+	  <v:button action="simple" name="cncl" value="Start Over">
 	  <v:on-post><![CDATA[
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
@@ -327,6 +327,7 @@
 	      self.vc_redirect ('db_rdf_objects.vspx');
 	      ]]></v:on-post>
       </v:button>
+      <?vsp if (self.text_e = 0) { ?>
 	  <v:button action="simple" name="apply" value="Apply Changes">
 	  <v:on-post><![CDATA[
 	      declare path any;
@@ -334,7 +335,7 @@
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
-	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
+	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
              if (self.owl)
                {
 	         path := concat('/DAV/temp/', self.sid, '.n3');
@@ -351,6 +352,7 @@
     </v:button>
     <v:button action="simple" name="b_loc_save1" value="Save Data Mappings" xhtml_onclick="javascript:saveSQL()" enabled="--self.exist_sql"/>
     <v:button action="simple" name="b_loc_save2" value="Save Ontology Mappings" xhtml_onclick="javascript:saveOwl()" enabled="--self.owl"/>
+    <?vsp } ?>
     <v:button name="back" action="simple" value="Back" enabled="--self.text_e">
 	  <v:on-post><![CDATA[
 	      self.text_e := 0;
@@ -400,7 +402,7 @@
                   self.vc_is_valid := 0;
                   return;
   	        };
-              YAC_DAV_RES_UPLOAD (self.filename.ufl_value, self.body_v, 'text/plain', '110100000N',
+              YAC_DAV_RES_UPLOAD (self.filename.ufl_value, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, 'text/plain', '110100000N',
                                   connection_get('vspx_user'), null, connection_get('vspx_user'));
               self.sc_1.vc_enabled := 1;
               self.sc_1.vc_data_bind (e);

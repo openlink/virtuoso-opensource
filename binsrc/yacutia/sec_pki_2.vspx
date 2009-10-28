@@ -291,7 +291,7 @@
                       ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="save_btn" value="--case when self.vhost is not null then 'Save' else 'Add new' end">
+                <v:button action="simple" name="save_btn" value="--case when self.vhost is not null then 'Save' else 'Save' end">
                   <v:on-post>
                       <![CDATA[
 
@@ -390,14 +390,21 @@
                       ]]>
                   </v:on-post>
                 </v:button>
-		<v:button action="simple" name="nxt" value="Configure ODS Endpoint" enabled="--check_package ('Framework')">
+              </td>
+            </tr>
+	</table>
+	<br/>
+	<?vsp 
+	  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '*ini*'and HP_HOST not like '*sslini*')) {
+	?>
+		<v:button action="simple" name="nxt" value="Configure ODS Endpoints" enabled="--check_package ('Framework')">
 		    <v:on-post><![CDATA[
 			self.vc_redirect ('sec_pki_3.vspx');
        ]]></v:on-post>
 		</v:button>
-              </td>
-            </tr>
-          </table>
+		<?vsp 
+		}
+	?>
         </v:form>
 		   <!-- bottom of security layout -->
                       </td>
