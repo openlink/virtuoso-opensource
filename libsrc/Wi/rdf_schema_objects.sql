@@ -132,7 +132,7 @@ create procedure rdf_view_ns_get (in cols any, in f int)
   nss := dict_to_vector (dict, 1);
   for (declare i int, i := 0; i < length (nss); i := i + 2)
     {
-      if (cols [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
+      if (nss [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
 	{
 	  if (f)
 	    http (sprintf ('@prefix %s: <%s> . \n', nss[i], nss[i+1]), ses);
@@ -168,18 +168,10 @@ create procedure rdf_view_ns_get_1 (in cols any, inout dict any)
 ;
 
 create procedure
-RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+RDF_VIEW_DROP_STMT (in qualifier varchar)
 {
-   declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
-   declare total_select, total_tb, total, qual, pkcols any;
-   declare vname, mask varchar;
-
-   ret := make_array (2, 'any');
-   rdf_view_tbl_pk_cols (_tbls, pkcols);
-   cols := rdf_view_tbl_opts (_tbls, cols);
-   sparql_pref := 'SPARQL\n';
-   uriqa_str := '^{URIQADefaultHost}^';
-   sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   declare drop_map any;
+   declare  mask varchar;
 
    drop_map := '';
    mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
@@ -192,6 +184,23 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    {
      drop_map := drop_map || sprintf ('SPARQL drop silent quad map <%s> .;\n', "o");
    }
+ return drop_map;
+}
+;
+
+create procedure
+RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+{
+   declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
+   declare total_select, total_tb, total, qual, pkcols any;
+   declare vname, mask varchar;
+
+   ret := make_array (2, 'any');
+   rdf_view_tbl_pk_cols (_tbls, pkcols);
+   cols := rdf_view_tbl_opts (_tbls, cols);
+   sparql_pref := 'SPARQL\n';
+   uriqa_str := '^{URIQADefaultHost}^';
+   sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
 
    --for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
    --   drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-%s\n;\n', ns, qualifier, rdf_view_tb (name_part (_tbls[xx], 2)));
@@ -270,7 +279,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    if (gen_stat)
      create_view_stmt := create_view_stmt || sparql_pref || ns || rdf_view_create_void_view (qualifier, _tbls, gen_stat, cols, pkcols) || '\n;\n\n';
 
-   return drop_map || create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
+   return create_class_stmt || '\n\n' || create_count_count || create_view_stmt;
 }
 ;
 
@@ -903,7 +912,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     vector(''path''),
     1,
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
-    vector(''path'', ''path'', ''*accept*''),
+    vector(''path'', ''*accept*''),
     null,
     ''(text/rdf.n3)|(application/rdf.xml)'',
     2,
