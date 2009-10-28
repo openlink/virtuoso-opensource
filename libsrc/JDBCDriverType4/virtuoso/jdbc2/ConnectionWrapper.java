@@ -836,11 +836,11 @@ public class ConnectionWrapper implements java.sql.Connection {
       if (ex == null)
         return;
       String SQLstate = ex.getSQLState();
-      if (SQLstate != null && SQLstate.startsWith("08"))
+      if (SQLstate != null && SQLstate.startsWith("08") && pconn != null)
         pconn.sendErrorEvent(ex);
 
       int vendor = ex.getErrorCode();
-      if (vendor != VirtuosoException.OK && vendor != VirtuosoException.MISCERROR)
+      if (vendor != VirtuosoException.OK && vendor != VirtuosoException.MISCERROR && pconn != null)
         pconn.sendErrorEvent(ex);
   }
 
