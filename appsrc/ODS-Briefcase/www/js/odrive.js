@@ -1255,6 +1255,8 @@ ODRIVE.aclRowCreate = function (aclEnable, rowEnable, values)
       OAT.Dom.option('Inherited', '3', field);
     if (values && values.inheritance)
       field.value = values.inheritance;
+    else
+      field.value = 1;
     if (!aclEnable || !rowEnable)
       field.disabled = true;
     td.appendChild(field);

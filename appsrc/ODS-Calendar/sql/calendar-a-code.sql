@@ -2746,6 +2746,352 @@ create procedure CAL.WA.tz_string (
 }
 ;
 
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.tz_array ()
+{
+  return vector (
+    'Pacific/Apia', -11*60+00,
+    'Pacific/Midway', -11*60+00,
+    'Pacific/Niue', -11*60+00,
+    'Pacific/Pago_Pago', -11*60+00,
+    'Pacific/Fakaofo', -10*60+00,
+    'Pacific/Honolulu', -10*60+00,
+    'Pacific/Johnston', -10*60+00,
+    'Pacific/Rarotonga', -10*60+00,
+    'Pacific/Tahiti', -10*60+00,
+    'Pacific/Marquesas', -09*60+30,
+    'America/Anchorage', -09*60+00,
+    'Pacific/Gambier', -09*60+00,
+    'America/Los_Angeles', -08*60+00,
+    'America/Tijuana', -08*60+00,
+    'America/Vancouver', -08*60+00,
+    'America/Whitehorse', -08*60+00,
+    'Pacific/Pitcairn', -08*60+00,
+    'America/Dawson_Creek', -07*60+00,
+    'America/Denver', -07*60+00,
+    'America/Edmonton', -07*60+00,
+    'America/Hermosillo', -07*60+00,
+    'America/Mazatlan', -07*60+00,
+    'America/Phoenix', -07*60+00,
+    'America/Yellowknife', -07*60+00,
+    'America/Belize', -06*60+00,
+    'America/Chicago', -06*60+00,
+    'America/Costa_Rica', -06*60+00,
+    'America/El_Salvador', -06*60+00,
+    'America/Guatemala', -06*60+00,
+    'America/Managua', -06*60+00,
+    'America/Mexico_City', -06*60+00,
+    'America/Regina', -06*60+00,
+    'America/Tegucigalpa', -06*60+00,
+    'America/Winnipeg', -06*60+00,
+    'Pacific/Easter', -06*60+00,
+    'Pacific/Galapagos', -06*60+00,
+    'America/Bogota', -05*60+00,
+    'America/Cayman', -05*60+00,
+    'America/Grand_Turk', -05*60+00,
+    'America/Guayaquil', -05*60+00,
+    'America/Havana', -05*60+00,
+    'America/Iqaluit', -05*60+00,
+    'America/Jamaica', -05*60+00,
+    'America/Lima', -05*60+00,
+    'America/Montreal', -05*60+00,
+    'America/Nassau', -05*60+00,
+    'America/New_York', -05*60+00,
+    'America/Panama', -05*60+00,
+    'America/Port-au-Prince', -05*60+00,
+    'America/Toronto', -05*60+00,
+    'America/Caracas', -04*60+30,
+    'America/Anguilla', -04*60+00,
+    'America/Antigua', -04*60+00,
+    'America/Aruba', -04*60+00,
+    'America/Asuncion', -04*60+00,
+    'America/Barbados', -04*60+00,
+    'America/Boa_Vista', -04*60+00,
+    'America/Campo_Grande', -04*60+00,
+    'America/Cuiaba', -04*60+00,
+    'America/Curacao', -04*60+00,
+    'America/Dominica', -04*60+00,
+    'America/Grenada', -04*60+00,
+    'America/Guadeloupe', -04*60+00,
+    'America/Guyana', -04*60+00,
+    'America/Halifax', -04*60+00,
+    'America/La_Paz', -04*60+00,
+    'America/Manaus', -04*60+00,
+    'America/Martinique', -04*60+00,
+    'America/Montserrat', -04*60+00,
+    'America/Port_of_Spain', -04*60+00,
+    'America/Porto_Velho', -04*60+00,
+    'America/Puerto_Rico', -04*60+00,
+    'America/Rio_Branco', -04*60+00,
+    'America/Santiago', -04*60+00,
+    'America/Santo_Domingo', -04*60+00,
+    'America/St_Kitts', -04*60+00,
+    'America/St_Lucia', -04*60+00,
+    'America/St_Thomas', -04*60+00,
+    'America/St_Vincent', -04*60+00,
+    'America/Thule', -04*60+00,
+    'America/Tortola', -04*60+00,
+    'Antarctica/Palmer', -04*60+00,
+    'Atlantic/Bermuda', -04*60+00,
+    'Atlantic/Stanley', -04*60+00,
+    'America/St_Johns', -03*60+30,
+    'America/Araguaina', -03*60+00,
+    'America/Argentina/Buenos_Aires', -03*60+00,
+    'America/Bahia', -03*60+00,
+    'America/Belem', -03*60+00,
+    'America/Cayenne', -03*60+00,
+    'America/Fortaleza', -03*60+00,
+    'America/Godthab', -03*60+00,
+    'America/Maceio', -03*60+00,
+    'America/Miquelon', -03*60+00,
+    'America/Montevideo', -03*60+00,
+    'America/Paramaribo', -03*60+00,
+    'America/Recife', -03*60+00,
+    'America/Sao_Paulo', -03*60+00,
+    'Antarctica/Rothera', -03*60+00,
+    'America/Noronha', -02*60+00,
+    'Atlantic/South_Georgia', -02*60+00,
+    'America/Scoresbysund', -01*60+00,
+    'Atlantic/Azores', -01*60+00,
+    'Atlantic/Cape_Verde', -01*60+00,
+    'Africa/Abidjan', +00*60+00,
+    'Africa/Accra', +00*60+00,
+    'Africa/Bamako', +00*60+00,
+    'Africa/Banjul', +00*60+00,
+    'Africa/Bissau', +00*60+00,
+    'Africa/Casablanca', +00*60+00,
+    'Africa/Conakry', +00*60+00,
+    'Africa/Dakar', +00*60+00,
+    'Africa/El_Aaiun', +00*60+00,
+    'Africa/Freetown', +00*60+00,
+    'Africa/Lome', +00*60+00,
+    'Africa/Monrovia', +00*60+00,
+    'Africa/Nouakchott', +00*60+00,
+    'Africa/Ouagadougou', +00*60+00,
+    'Africa/Sao_Tome', +00*60+00,
+    'America/Danmarkshavn', +00*60+00,
+    'Atlantic/Canary', +00*60+00,
+    'Atlantic/Faroe', +00*60+00,
+    'Atlantic/Reykjavik', +00*60+00,
+    'Atlantic/St_Helena', +00*60+00,
+    'Etc/GMT', +00*60+00,
+    'Europe/Dublin', +00*60+00,
+    'Europe/Lisbon', +00*60+00,
+    'Europe/London', +00*60+00,
+    'Africa/Algiers', +01*60+00,
+    'Africa/Bangui', +01*60+00,
+    'Africa/Brazzaville', +01*60+00,
+    'Africa/Ceuta', +01*60+00,
+    'Africa/Douala', +01*60+00,
+    'Africa/Kinshasa', +01*60+00,
+    'Africa/Lagos', +01*60+00,
+    'Africa/Libreville', +01*60+00,
+    'Africa/Luanda', +01*60+00,
+    'Africa/Malabo', +01*60+00,
+    'Africa/Ndjamena', +01*60+00,
+    'Africa/Niamey', +01*60+00,
+    'Africa/Porto-Novo', +01*60+00,
+    'Africa/Tunis', +01*60+00,
+    'Africa/Windhoek', +01*60+00,
+    'Europe/Amsterdam', +01*60+00,
+    'Europe/Andorra', +01*60+00,
+    'Europe/Belgrade', +01*60+00,
+    'Europe/Berlin', +01*60+00,
+    'Europe/Brussels', +01*60+00,
+    'Europe/Budapest', +01*60+00,
+    'Europe/Copenhagen', +01*60+00,
+    'Europe/Gibraltar', +01*60+00,
+    'Europe/Luxembourg', +01*60+00,
+    'Europe/Madrid', +01*60+00,
+    'Europe/Malta', +01*60+00,
+    'Europe/Monaco', +01*60+00,
+    'Europe/Oslo', +01*60+00,
+    'Europe/Paris', +01*60+00,
+    'Europe/Prague', +01*60+00,
+    'Europe/Rome', +01*60+00,
+    'Europe/Stockholm', +01*60+00,
+    'Europe/Tirane', +01*60+00,
+    'Europe/Vaduz', +01*60+00,
+    'Europe/Vienna', +01*60+00,
+    'Europe/Warsaw', +01*60+00,
+    'Europe/Zurich', +01*60+00,
+    'Africa/Blantyre', +02*60+00,
+    'Africa/Bujumbura', +02*60+00,
+    'Africa/Cairo', +02*60+00,
+    'Africa/Gaborone', +02*60+00,
+    'Africa/Harare', +02*60+00,
+    'Africa/Johannesburg', +02*60+00,
+    'Africa/Kigali', +02*60+00,
+    'Africa/Lubumbashi', +02*60+00,
+    'Africa/Lusaka', +02*60+00,
+    'Africa/Maputo', +02*60+00,
+    'Africa/Maseru', +02*60+00,
+    'Africa/Mbabane', +02*60+00,
+    'Africa/Tripoli', +02*60+00,
+    'Asia/Amman', +02*60+00,
+    'Asia/Beirut', +02*60+00,
+    'Asia/Damascus', +02*60+00,
+    'Asia/Gaza', +02*60+00,
+    'Asia/Jerusalem', +02*60+00,
+    'Asia/Nicosia', +02*60+00,
+    'Europe/Athens', +02*60+00,
+    'Europe/Bucharest', +02*60+00,
+    'Europe/Chisinau', +02*60+00,
+    'Europe/Helsinki', +02*60+00,
+    'Europe/Istanbul', +02*60+00,
+    'Europe/Kaliningrad', +02*60+00,
+    'Europe/Kiev', +02*60+00,
+    'Europe/Minsk', +02*60+00,
+    'Europe/Riga', +02*60+00,
+    'Europe/Sofia', +02*60+00,
+    'Europe/Tallinn', +02*60+00,
+    'Europe/Vilnius', +02*60+00,
+    'Africa/Addis_Ababa', +03*60+00,
+    'Africa/Asmara', +03*60+00,
+    'Africa/Dar_es_Salaam', +03*60+00,
+    'Africa/Djibouti', +03*60+00,
+    'Africa/Kampala', +03*60+00,
+    'Africa/Khartoum', +03*60+00,
+    'Africa/Mogadishu', +03*60+00,
+    'Africa/Nairobi', +03*60+00,
+    'Antarctica/Syowa', +03*60+00,
+    'Asia/Aden', +03*60+00,
+    'Asia/Baghdad', +03*60+00,
+    'Asia/Bahrain', +03*60+00,
+    'Asia/Kuwait', +03*60+00,
+    'Asia/Qatar', +03*60+00,
+    'Asia/Riyadh', +03*60+00,
+    'Europe/Moscow', +03*60+00,
+    'Indian/Antananarivo', +03*60+00,
+    'Indian/Comoro', +03*60+00,
+    'Indian/Mayotte', +03*60+00,
+    'Asia/Tehran', +03*60+30,
+    'Asia/Baku', +04*60+00,
+    'Asia/Dubai', +04*60+00,
+    'Asia/Muscat', +04*60+00,
+    'Asia/Tbilisi', +04*60+00,
+    'Asia/Yerevan', +04*60+00,
+    'Europe/Samara', +04*60+00,
+    'Indian/Mahe', +04*60+00,
+    'Indian/Mauritius', +04*60+00,
+    'Indian/Reunion', +04*60+00,
+    'Asia/Kabul', +04*60+30,
+    'Asia/Aqtau', +05*60+00,
+    'Asia/Aqtobe', +05*60+00,
+    'Asia/Ashgabat', +05*60+00,
+    'Asia/Dushanbe', +05*60+00,
+    'Asia/Karachi', +05*60+00,
+    'Asia/Tashkent', +05*60+00,
+    'Asia/Yekaterinburg', +05*60+00,
+    'Indian/Kerguelen', +05*60+00,
+    'Indian/Maldives', +05*60+00,
+    'Asia/Calcutta', +05*60+30,
+    'Asia/Colombo', +05*60+30,
+    'Asia/Katmandu', +05*60+45,
+    'Antarctica/Mawson', +06*60+00,
+    'Antarctica/Vostok', +06*60+00,
+    'Asia/Almaty', +06*60+00,
+    'Asia/Bishkek', +06*60+00,
+    'Asia/Dhaka', +06*60+00,
+    'Asia/Omsk', +06*60+00,
+    'Asia/Thimphu', +06*60+00,
+    'Indian/Chagos', +06*60+00,
+    'Asia/Rangoon', +06*60+30,
+    'Indian/Cocos', +06*60+30,
+    'Antarctica/Davis', +07*60+00,
+    'Asia/Bangkok', +07*60+00,
+    'Asia/Hovd', +07*60+00,
+    'Asia/Jakarta', +07*60+00,
+    'Asia/Krasnoyarsk', +07*60+00,
+    'Asia/Phnom_Penh', +07*60+00,
+    'Asia/Saigon', +07*60+00,
+    'Asia/Vientiane', +07*60+00,
+    'Indian/Christmas', +07*60+00,
+    'Antarctica/Casey', +08*60+00,
+    'Asia/Brunei', +08*60+00,
+    'Asia/Choibalsan', +08*60+00,
+    'Asia/Hong_Kong', +08*60+00,
+    'Asia/Irkutsk', +08*60+00,
+    'Asia/Kuala_Lumpur', +08*60+00,
+    'Asia/Macau', +08*60+00,
+    'Asia/Makassar', +08*60+00,
+    'Asia/Manila', +08*60+00,
+    'Asia/Shanghai', +08*60+00,
+    'Asia/Singapore', +08*60+00,
+    'Asia/Taipei', +08*60+00,
+    'Asia/Ulaanbaatar', +08*60+00,
+    'Australia/Perth', +08*60+00,
+    'Asia/Dili', +09*60+00,
+    'Asia/Jayapura', +09*60+00,
+    'Asia/Pyongyang', +09*60+00,
+    'Asia/Seoul', +09*60+00,
+    'Asia/Tokyo', +09*60+00,
+    'Asia/Yakutsk', +09*60+00,
+    'Pacific/Palau', +09*60+00,
+    'Australia/Adelaide', +09*60+30,
+    'Australia/Darwin', +09*60+30,
+    'Antarctica/DumontDUrville', +10*60+00,
+    'Asia/Vladivostok', +10*60+00,
+    'Australia/Brisbane', +10*60+00,
+    'Australia/Hobart', +10*60+00,
+    'Australia/Sydney', +10*60+00,
+    'Pacific/Guam', +10*60+00,
+    'Pacific/Port_Moresby', +10*60+00,
+    'Pacific/Saipan', +10*60+00,
+    'Pacific/Truk', +10*60+00,
+    'Asia/Magadan', +11*60+00,
+    'Pacific/Efate', +11*60+00,
+    'Pacific/Guadalcanal', +11*60+00,
+    'Pacific/Kosrae', +11*60+00,
+    'Pacific/Noumea', +11*60+00,
+    'Pacific/Ponape', +11*60+00,
+    'Pacific/Norfolk', +11*60+30,
+    'Asia/Kamchatka', +12*60+00,
+    'Pacific/Auckland', +12*60+00,
+    'Pacific/Fiji', +12*60+00,
+    'Pacific/Funafuti', +12*60+00,
+    'Pacific/Kwajalein', +12*60+00,
+    'Pacific/Majuro', +12*60+00,
+    'Pacific/Nauru', +12*60+00,
+    'Pacific/Tarawa', +12*60+00,
+    'Pacific/Wake', +12*60+00,
+    'Pacific/Wallis', +12*60+00,
+    'Pacific/Enderbury', +13*60+00,
+    'Pacific/Tongatapu', +13*60+00,
+    'Pacific/Kiritimati', +14*60+00
+  );
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.tz_name (in tzValue integer)
+{
+  declare timezones, N any;
+
+  timezones := CAL.WA.tz_array ();
+  for (N := 0; N < length (timezones); N := N + 2)
+    if (timezones[N+1] = tzValue)
+      return timezones[N];
+  return 'Etc/GMT';
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure CAL.WA.tz_value (in tzName varchar)
+{
+  declare timezones, N any;
+
+  timezones := CAL.WA.tz_array ();
+  for (N := 0; N < length (timezones); N := N + 2)
+    if (timezones[N] = tzName)
+      return timezones[N+1];
+  return 0;
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 -- Durations
@@ -3190,6 +3536,9 @@ create procedure CAL.WA.settings (
 create procedure CAL.WA.settings_init (
   inout settings any)
 {
+  declare tz integer;
+
+  tz := cast (get_keyword ('timeZone', settings, '0') as integer);
   CAL.WA.set_keyword ('chars', settings, cast (get_keyword ('chars', settings, '60') as integer));
   CAL.WA.set_keyword ('rows', settings, cast (get_keyword ('rows', settings, '10') as integer));
   CAL.WA.set_keyword ('atomVersion', settings, get_keyword ('atomVersion', settings, '1.0'));
@@ -3198,7 +3547,8 @@ create procedure CAL.WA.settings_init (
   CAL.WA.set_keyword ('weekStarts', settings, get_keyword ('weekStarts', settings, 'm'));
   CAL.WA.set_keyword ('timeFormat', settings, get_keyword ('timeFormat', settings, 'e'));
   CAL.WA.set_keyword ('dateFormat', settings, get_keyword ('dateFormat', settings, 'dd.MM.yyyy'));
-  CAL.WA.set_keyword ('timeZone', settings, cast (get_keyword ('timeZone', settings, '0') as integer));
+  CAL.WA.set_keyword ('timeZone', settings, tz);
+  CAL.WA.set_keyword ('timeZoneName', settings, get_keyword ('timeZoneName', settings, case when tz = 0 then 'Etc/GMT' else CAL.WA.tz_name (tz) end));
   CAL.WA.set_keyword ('showTasks', settings, cast (get_keyword ('showTasks', settings, '0') as integer));
 
   CAL.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
@@ -3313,6 +3663,30 @@ create procedure CAL.WA.settings_usedTimeZone (
     tmp := cast (tmp as integer) * 60;
   }
   return tmp;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_timeZoneName (
+  in settings any,
+  in defaultValue any := 'Etc/GMT')
+{
+  return get_keyword ('timeZoneName', settings, defaultValue);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_timeZoneName2 (
+  in domain_id integer)
+{
+  declare tz integer;
+  declare settings any;
+
+  tz := CAL.WA.settings_timeZone2 (domain_id);
+  settings := CAL.WA.settings (domain_id);
+  return get_keyword ('timeZoneName', settings, case when tz = 0 then 'Etc/GMT' else CAL.WA.tz_name (tz) end);
 }
 ;
 
@@ -5162,7 +5536,8 @@ create procedure CAL.WA.export_vcal (
 
   tz := CAL.WA.settings_timeZone2 (domain_id);
   url := sprintf ('http://%s%s/%U/calendar/%U/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
-  tzID := sprintf ('GMT%s%04d', case when cast (tz as integer) < 0 then '-' else '+' end,  tz);
+  -- tzID := sprintf ('GMT%s%04d', case when cast (tz as integer) < 0 then '-' else '+' end,  tz);
+  tzID := CAL.WA.settings_timeZoneName2 (domain_id);
   tzName := sprintf ('GMT %s%02d:00', case when cast (tz as integer) < 0 then '-' else '+' end,  abs(floor (tz / 60)));
 
   sStream := string_output();

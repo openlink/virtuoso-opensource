@@ -4071,8 +4071,8 @@ create procedure ODRIVE.WA.send_mail (
   in _body varchar,
   in _path varchar)
 {
-  declare _id, _what, _iri any;
-  declare _smtp_server, _from_address, _to_address, _message any;
+  declare N, _id, _what, _iri any;
+  declare _smtp_server, _from_address, _to_address, _toUsers, _toBody, _message any;
 
   if ((select max (WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length (max (WS_SMTP)) from WA_SETTINGS) = 0)
   {
@@ -4086,6 +4086,19 @@ create procedure ODRIVE.WA.send_mail (
      _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
      _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
 
+    if (exists (select 1 from SYS_USERS where U_ID = _to and U_IS_ROLE = 1))
+    {
+      _toUsers := vector ();
+      for (select UG_UID from DB.DBA.SYS_USER_GROUP, DB.DBA.SYS_USERS where UG_GID = _to and U_ID = UG_UID and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0) do
+        _toUsers := vector_concat (_toUsers, vector (UG_UID));
+    } else {
+      _toUsers := vector (_to);
+    }
+    _toBody := _body;
+    for (N := 0; N < length (_toUsers); N := N + 1)
+    {
+      _to := _toUsers[N];
+      _body := _toBody;
     _body := replace (_body, '%resource_path%', _path);
     _body := replace (_body, '%resource_uri%', SIOC..post_iri_ex (_iri, _id));
     _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
@@ -4100,10 +4113,11 @@ create procedure ODRIVE.WA.send_mail (
       {
         return;
       };
-      -- dbg_obj_print ('', _smtp_server, _from_address, _to_address, _message);
+        --dbg_obj_print (_from_address, _to_address);
       smtp_send (_smtp_server, _from_address, _to_address, _message);
     }
   }
+}
 }
 ;
 
@@ -4120,6 +4134,7 @@ create procedure ODRIVE.WA.acl_send_mail (
   declare oACLs, oACL, nACLs, nACL, settings, text any;
 
   settings := ODRIVE.WA.settings (_from);
+  text := ODRIVE.WA.settings_mailShare (settings);
   oACLs := ODRIVE.WA.acl_vector (_old_acl);
   nACLs := ODRIVE.WA.acl_vector (_new_acl);
   for (N := 0; N < length (nACLs); N := N + 1)
@@ -4129,7 +4144,6 @@ create procedure ODRIVE.WA.acl_send_mail (
       if (nACLs[N][0] = oACLs[M][0])
         goto _skip;
     }
-    text := ODRIVE.WA.settings_mailShare (settings);
     ODRIVE.WA.send_mail (_instance, _from, nACLs[N][0], text, _path);
   _skip:;
   }
@@ -4140,7 +4154,6 @@ create procedure ODRIVE.WA.acl_send_mail (
       if (oACLs[N][0] = nACLs[M][0])
         goto _skip2;
     }
-    text := ODRIVE.WA.settings_mailUnshare (settings);
     ODRIVE.WA.send_mail (_instance, _from, oACLs[N][0], text, _path);
   _skip2:;
   }

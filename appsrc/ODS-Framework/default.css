@@ -992,6 +992,10 @@ div.contents {
 }
 
 /* ComboList */
+/* ComboList */
+.combo_list {
+  display: inline;
+}
 .combo_list_list {
   background-color: white;
   border: 1px solid black;

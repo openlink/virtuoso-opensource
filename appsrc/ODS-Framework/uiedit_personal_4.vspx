@@ -137,7 +137,7 @@
             		  <![CDATA[
             		    <script type="text/javascript">
             		    <?vsp
-                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateRowCombo4(\'d_th_%d\', \'d_fld_1_%d\', {mode: 4, value: \'%s\'});});})', N, N, WUB_EVENT));
+                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateField4(\'d_th_%d\', \'d_fld_1_%d\', null, null, {mode: 4, value: \'%s\'});});})', N, N, WUB_EVENT));
             		    ?>
             		    </script>
             		  ]]>

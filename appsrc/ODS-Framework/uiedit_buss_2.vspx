@@ -121,7 +121,7 @@
             		  <![CDATA[
             		    <script type="text/javascript">
             		    <?vsp
-                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function(){updateRowCombo(\'d_th_%d\', \'d_fld_1_%d\', {value: \'%s\'});});})', N, N, WUO_NAME));
+                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function(){updateField1(\'d_th_%d\', \'d_fld_1_%d\', null, null, {value: \'%s\'});});})', N, N, WUO_NAME));
             		    ?>
             		    </script>
             		  ]]>

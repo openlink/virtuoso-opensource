@@ -5447,21 +5447,18 @@
                               <v:select-list name="s_timeZone">
                                 <v:on-init>
                                   <![CDATA[
-                                    declare i, j integer;
-                                    declare x, y any;
+                                    declare N integer;
+                                    declare timezones, x, y any;
 
-                                    x := make_array (26, 'any');
-                                    y := make_array (26, 'any');
+                                    timezones := CAL.WA.tz_array();
+                                    x := make_array (length (timezones)/2+1, 'any');
+                                    y := make_array (length (timezones)/2+1, 'any');
                                     x[0] := '';
                                     y[0] := '- Not selected -';
-                                    i := -12;
-                                    j := 1;
-                                    while (i <= 12)
+                                    for (N := 1; N < length (x); N := N + 1)
                                     {
-                                      x[j] := cast (i*60 as varchar);
-                                      y[j] := self.showTimeZone (i);
-                                      i := i + 1;
-                                      j := j + 1;
+                                      x[N] := timezones[(N-1)*2];
+                                      y[N] := x[N];
                                     }
                                     control.vsl_item_values := x;
                                     control.vsl_items := y;
@@ -5470,7 +5467,7 @@
                                 </v:on-init>
                                 <v:before-data-bind>
                                   <![CDATA[
-                                    control.ufl_value := CAL.WA.settings_timeZone (self.settings, 'timeZone', null);
+                                    control.ufl_value := CAL.WA.settings_timeZoneName (self.settings, null);
                                   ]]>
                                 </v:before-data-bind>
                               </v:select-list>
@@ -5573,8 +5570,12 @@
                           self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
                           self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
                           CAL.WA.remove_keyword ('timeZone', self.settings);
+                          CAL.WA.remove_keyword ('timeZoneName', self.settings);
                           if (not is_empty_or_null (self.s_timeZone.ufl_value))
-                          self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
+                          {
+                            self.settings := CAL.WA.set_keyword ('timeZoneName', self.settings, self.s_timeZone.ufl_value);
+                            self.settings := CAL.WA.set_keyword ('timeZone', self.settings, CAL.WA.tz_value (self.s_timeZone.ufl_value));
+                          }
                           self.settings := CAL.WA.set_keyword ('showTasks', self.settings, self.s_showTasks.ufl_selected);
 
                           self.settings := CAL.WA.set_keyword ('conv', self.settings, s_conv);

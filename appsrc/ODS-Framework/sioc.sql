@@ -1382,7 +1382,7 @@ create procedure sioc_user_wishlist_delete (in user_id integer, in wl_id integer
   }
 };
 
-create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_type varchar, in f_label varchar, in f_uri varchar)
+create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_type varchar, in f_label varchar, in f_uri varchar, in f_class varchar, in f_properties any)
 {
   declare user_name any;
   declare graph_iri, forum_iri, user_iri, iri any;
@@ -1399,12 +1399,27 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_t
   iri := favorite_item_iri (forum_iri, f_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
 
-  ods_sioc_post (graph_iri, iri, forum_iri, user_iri, f_label, null, null);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (f_class));
   DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioct_iri ('likes'), iri);
-  if (length (f_type))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, dc_iri ('format'), f_type);
-  if (length (f_uri))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), f_uri);
+  f_properties := deserialize (f_properties);
+  foreach (any property in f_properties) do
+  {
+    declare propertyType, propertyName, propertyValue any;
+
+    propertyType := get_keyword ('type', property);
+    propertyValue := get_keyword ('value', property);
+    propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
+    if (propertyType = 'data')
+    {
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+    }
+    else if (propertyType = 'object')
+    {
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+    }
+  }
 };
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
@@ -2158,7 +2173,7 @@ create procedure fill_ods_sioc (in doall int := 0)
           sioc_user_wishlist (WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES);
 		    }
 		  notCreated := 1;
-		  for select WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
+		  for select WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI, WUF_CLASS, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
 		    {
 		      -- create FavoriteThings Container
 		      if (notCreated)
@@ -2168,7 +2183,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		        sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, U_NAME);
 		        notCreated := 0;
 		      }
-          sioc_user_favorite (WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI);
+          sioc_user_favorite (WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI, WUF_CLASS, WUF_PROPERTIES);
 		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
@@ -2985,7 +3000,7 @@ create trigger WA_USER_FAVORITES_SIOC_I after insert on DB.DBA.WA_USER_FAVORITES
     forum_iri := favorite_forum_iri (forum_name, user_name);
     sioc_forum (graph_iri, graph_iri, forum_iri, forum_name, 'FavoriteThings', null, null, user_name);
   }
-  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI);
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI, N.WUF_CLASS, N.WUF_PROPERTIES);
 };
 
 create trigger WA_USER_FAVORITES_SIOC_U after update on DB.DBA.WA_USER_FAVORITES referencing old as O, new as N
@@ -2995,7 +3010,7 @@ create trigger WA_USER_FAVORITES_SIOC_U after update on DB.DBA.WA_USER_FAVORITES
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI);
+  sioc_user_favorite (N.WUF_U_ID, N.WUF_ID, N.WUF_TYPE, N.WUF_LABEL, N.WUF_URI, N.WUF_CLASS, N.WUF_PROPERTIES);
 };
 
 create trigger WA_USER_FAVORITES_SIOC_D after delete on DB.DBA.WA_USER_FAVORITES referencing old as O
@@ -4166,7 +4181,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
         {
             ?container foaf:maker ?person;
               a sioct:FavoriteThings;
-              rdfs:label ?label.
+            OPTIONAL {?container sioc:container_of ?grSubject.
+                      ?grSubject ?grProperty ?grObject.
+                     }.
   	      }
 	      }
 	    }

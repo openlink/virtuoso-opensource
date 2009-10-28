@@ -516,7 +516,9 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'dc',   'http://purl.org/dc/elements/1.1/',
                  'foaf', 'http://xmlns.com/foaf/0.1/',
                  'sioc', 'http://rdfs.org/sioc/ns#',
-                 'sioct','http://rdfs.org/sioc/types#'
+                 'sioct','http://rdfs.org/sioc/types#',
+                 'mo',   'http://purl.org/ontology/mo/',
+                 'book', 'http://purl.org/NET/book/vocab#'
                 );
 }
 ;
@@ -1864,7 +1866,7 @@ grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
 create procedure ODS.ODS_API.vector_contains(
   in aVector any,
-  in aValue varchar)
+  in aValue any)
 {
   declare N integer;
 

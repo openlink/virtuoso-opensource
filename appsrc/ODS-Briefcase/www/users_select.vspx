@@ -161,8 +161,9 @@
                   group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where (a.U_ID=b.GROUP_ID) and (a.U_IS_ROLE=1) and (b.USER_ID=c.U_ID) and (c.U_NAME=\'%s\') and (upper(a.U_NAME) like upper(\'%s\') and (a.U_ID<>5) and (a.U_ID<>6))', ODRIVE.WA.session_user(self.vc_page.vc_event.ve_params), self.v_mask);
                 }
               }
-              if (self.v_filter <> 'g') {
-                user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
+              if (self.v_filter <> 'g')
+              {
+                user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (U_ACCOUNT_DISABLED=0) and (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
               }
               if (user_sql = '') {
                 control.ds_sql := group_sql;

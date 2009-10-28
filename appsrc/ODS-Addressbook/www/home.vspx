@@ -450,6 +450,46 @@
     ]]>
   </v:method>
 
+  <v:method name="saveData" arglist="">
+    <![CDATA[
+      declare N integer;
+      declare suffix, tmp, acl, params any;
+
+      params := self.vc_page.vc_event.ve_params;
+
+      self.v_hState := get_keyword ('ab_hState', params, '');
+      self.v_bState := get_keyword ('ab_bState', params, '');
+
+      tmp := vector ();
+      acl := vector ();
+      self.v_interests := '';
+      self.v_relationships := '';
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'a_fld_1_', '');
+          self.v_interests := self.v_interests || trim (params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, params, '')) || '\n';
+        }
+        else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          if (not AB.WA.vector_contains (tmp, trim (params [N+1])))
+          {
+            tmp := vector_concat (tmp, vector (trim (params [N+1])));
+            self.v_relationships := self.v_relationships || trim (params [N+1]) || '\n';
+          }
+        }
+        else if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 's_fld_2_', '');
+          acl := vector_concat (acl, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
+        }
+      }
+      acl := vector_concat (vector (vector ('v1.0', length (acl))), acl);
+      self.v_acl := serialize (acl);
+    ]]>
+  </v:method>
+
   <vm:pagetitle>AddressBook</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -2159,11 +2199,12 @@
                   			    <![CDATA[
                   			      declare lat, lng double precision;
 
+                                  self.saveData();
                   			      if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS (
                             		        trim (coalesce (self.ab_hAddress1.ufl_value, '')),
                             		        trim (coalesce (self.ab_hAddress2.ufl_value, '')),
                             		        trim (coalesce (self.ab_hCity.ufl_value, '')),
-                                            trim (get_keyword ('ab_hState', e.ve_params, '')),
+                                            trim (self.v_hState),
                             		        trim (coalesce (self.ab_hCode.ufl_value, '')),
                             		        trim (coalesce (self.ab_hCountry.ufl_value, '')),
                             		        lat,
@@ -2375,12 +2416,13 @@
                   			    <![CDATA[
                   			      declare lat, lng double precision;
 
+                                  self.saveData();
                   			      if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS
                   			               (
                             		         trim (coalesce (self.ab_bAddress1.ufl_value, '')),
                             		         trim (coalesce (self.ab_bAddress2.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCity.ufl_value, '')),
-                                             trim (get_keyword ('ab_bState', e.ve_params, '')),
+                                             trim (self.v_bState),
                             		         trim (coalesce (self.ab_bCode.ufl_value, '')),
                             		         trim (coalesce (self.ab_bCountry.ufl_value, '')),
                             		         lat,
@@ -2677,7 +2719,7 @@
                 <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
-                      declare N, suffix, tmp, tmp_r any;
+                      declare N, tmp any;
 
                       declare exit handler for SQLSTATE '*'
                       {
@@ -2690,34 +2732,7 @@
                       resignal;
                     };
 
-                      -- interests
-                      tmp := vector ();
-                      tmp_r := vector ();
-                      self.v_interests := '';
-                      self.v_relationships := '';
-                      for (N := 0; N < length (e.ve_params); N := N + 4)
-                      {
-                        if ((e.ve_params [N] like 'a_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-                        {
-                          suffix := replace (e.ve_params [N], 'a_fld_1_', '');
-                          self.v_interests := self.v_interests || trim (e.ve_params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, e.ve_params, '')) || '\n';
-                        }
-                        else if ((e.ve_params [N] like 'b_fld_1_%') and (trim (e.ve_params [N+1]) <> ''))
-                        {
-                          if (not AB.WA.vector_contains (tmp_r, trim (e.ve_params [N+1])))
-                          {
-                            tmp_r := vector_concat (tmp_r, vector (trim (e.ve_params [N+1])));
-                          self.v_relationships := self.v_relationships || trim (e.ve_params [N+1]) || '\n';
-                        }
-                        }
-                        else if ((e.ve_params [N] like 's_fld_2_%') and (trim (e.ve_params [N+1]) <> ''))
-                        {
-                          suffix := replace (e.ve_params [N], 's_fld_2_', '');
-                          tmp := vector_concat (tmp, vector (vector (get_keyword ('s_fld_1_'||suffix, e.ve_params, ''), get_keyword ('s_fld_2_'||suffix, e.ve_params, ''), get_keyword ('s_fld_3_'||suffix, e.ve_params, ''))));
-                        }
-                      }
-                      tmp := vector_concat (vector (vector ('v1.0', length (tmp))), tmp);
-                      self.v_acl := serialize (tmp);
+                      self.saveData();
 
                     self.v_kind := cast (self.ab_kind.ufl_value as integer);
                     self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
@@ -2859,7 +2874,7 @@
                     self.v_yahoo         := case when self.v_kind then '' else trim (self.ab_yahoo.ufl_value) end;
                     self.v_msn           := case when self.v_kind then '' else trim (self.ab_msn.ufl_value) end;
                       self.v_hCountry      := case when self.v_kind then '' else trim (get_keyword ('ab_hCountry', e.ve_params)) end;
-                      self.v_hState        := case when self.v_kind then '' else trim (get_keyword ('ab_hState', e.ve_params)) end;
+                      self.v_hState        := case when self.v_kind then '' else trim (self.v_hState) end;
                     self.v_hCity         := case when self.v_kind then '' else trim (self.ab_hCity.ufl_value) end;
                     self.v_hCode         := case when self.v_kind then '' else trim (self.ab_hCode.ufl_value) end;
                     self.v_hAddress1     := case when self.v_kind then '' else trim (self.ab_hAddress1.ufl_value) end;
@@ -2870,8 +2885,8 @@
                     self.v_hFax          := case when self.v_kind then '' else trim (self.ab_hFax.ufl_value) end;
                     self.v_hMail         := case when self.v_kind then '' else trim (self.ab_hMail.ufl_value) end;
                     self.v_hWeb          := case when self.v_kind then '' else trim (self.ab_hWeb.ufl_value) end;
-                      self.v_bCountry      := trim (get_keyword ('ab_bCountry', e.ve_params));
-                      self.v_bState        := trim (get_keyword ('ab_bState', e.ve_params));
+                      self.v_bCountry      := trim (self.ab_bCountry.ufl_value);
+                      self.v_bState        := trim (self.v_bState);
                     self.v_bCity         := trim (self.ab_bCity.ufl_value);
                     self.v_bCode         := trim (self.ab_bCode.ufl_value);
                     self.v_bAddress1     := trim (self.ab_bAddress1.ufl_value);

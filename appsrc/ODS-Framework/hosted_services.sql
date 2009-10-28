@@ -3593,6 +3593,8 @@ wa_exec_no_error_log(
       WUF_ID integer identity,
       WUF_U_ID integer,
       WUF_TYPE varchar,
+      WUF_CLASS varchar,
+      WUF_PROPERTIES long varchar,
       WUF_LABEL varchar,
       WUF_URI varchar,
 
@@ -3600,10 +3602,12 @@ wa_exec_no_error_log(
      )'
 );
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_TYPE', 'varchar');
+wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_CLASS', 'varchar');
+wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_PROPERTIES', 'long varchar');
 wa_exec_no_error('create index WA_USER_FAVORITES_USER on WA_USER_FAVORITES (WUF_U_ID)');
 
-create procedure wa_favorites_upgrade() {
-
+create procedure wa_favorites_upgrade()
+{
   if (registry_get ('__wa_favorites_upgrade') = 'done')
     return;
   registry_set ('__wa_favorites_upgrade', 'done');
@@ -3619,6 +3623,52 @@ create procedure wa_favorites_upgrade() {
 }
 ;
 wa_favorites_upgrade();
+
+create procedure wa_favorites_upgrade2()
+{
+  declare _class, _properties, _property any;
+
+  if (registry_get ('__wa_favorites_upgrade2') = 'done')
+    return;
+
+  for (select WUF_ID _id, WUF_TYPE _type, WUF_LABEL _label, WUF_URI _uri from DB.DBA.WA_USER_FAVORITES) do
+  {
+    if (_type = 'text/*')
+    {
+      _type := 'http://purl.org/NET/book/vocab#';
+      _class := 'book:Book';
+    }
+    else if (_type = 'audio/*')
+    {
+      _type := 'http://purl.org/ontology/mo/';
+      _class := 'mo:Record';
+    }
+    else
+    {
+      _type := 'http://rdfs.org/sioc/ns#';
+      _class := 'sioc:Item';
+    }
+    _properties := vector ();
+    if (not is_empty_or_null (_label))
+    {
+      _property := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('name', 'dc:title', 'value', _label, 'type', 'data'));
+      _properties := vector_concat (_properties, vector (_property));
+    }
+    if (not is_empty_or_null (_uri))
+    {
+      _property := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('name', 'rdfs:seeAlso', 'value', _uri, 'type', 'data'));
+      _properties := vector_concat (_properties, vector (_property));
+    }
+    update DB.DBA.WA_USER_FAVORITES
+       set WUF_TYPE = _type,
+           WUF_CLASS = _class,
+           WUF_PROPERTIES = serialize (_properties)
+     where WUF_ID = _id;
+  }
+  registry_set ('__wa_favorites_upgrade2', 'done');
+}
+;
+wa_favorites_upgrade2();
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {

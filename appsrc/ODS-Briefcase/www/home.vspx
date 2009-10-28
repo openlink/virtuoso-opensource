@@ -956,7 +956,7 @@
           self.toolbarShow ('upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
         ?>
       </div>
-      <div style="clear: both;"></div>
+      <br style="clear: both;" />
       <?vsp
         if (0)
         {

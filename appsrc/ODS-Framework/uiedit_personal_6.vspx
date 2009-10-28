@@ -30,85 +30,130 @@
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <v:method name="favorites2json" arglist="">
+    <![CDATA[
+      declare fID, fOntology, fItems any;
+      declare fItemTypes vector;
+
+      fID := 0;
+      fOntology := '';
+      fItemTypes := vector ();
+      fItems := vector ();
+      for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
+      {
+        if (fOntology <> WUF_TYPE)
+        {
+          if (fOntology <> '')
+            fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
+          fID := fID + 1;
+          fOntology := WUF_TYPE;
+          fItems := vector ();
+        }
+        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+      }
+      if (length (fItems))
+        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
+      return ODS..obj2json (fItemTypes, 10);
+	  ]]>
+	</v:method>
+
   <v:method name="savePersonal_6" arglist="">
     <![CDATA[
-      declare params any;
-
-      params := self.vc_page.vc_event.ve_params;
       if (self.vc_is_valid = 0)
         return;
 
-      WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
+      declare params any;
+      declare N, M, L integer;
+      declare re, reParts any;
+      declare ontologies, IDs any;
+      declare ontology, ontologyNo, ontologyName, ontologyItems any;
+      declare item, itemID, itemNo, itemName, itemProperties any;
+      declare property, propNo, propName, propValue, propType any;
 
-      declare N integer;
-      declare suffix, tmp_m varchar;
-
-      tmp_m := '';
+      params := self.vc_page.vc_event.ve_params;
+      IDs := vector ();
+      ontologies := vector ();
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        if (not isstring(params[N+1]) or trim (params[N+1]) = '')
+          goto _skip;
+        re := 'r_fld_2_([0-9]+)';
+        if (regexp_like(params[N], re))
         {
-          suffix := replace (params [N], 'm_fld_1_', '');
-          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+          reParts := regexp_parse(re, params[N], 0);
+          ontologyNo := subseq (params[N], reParts[2], reParts[3]);
+          ontologyName := trim (params[N+1]);
+          ontologyItems := vector ();
+          for (M := 0; M < length (params); M := M + 4)
+          {
+            if (not isstring(params[M+1]) or trim (params[M+1]) = '')
+              goto _skip2;
+            re := 'r_item_'||ontologyNo||'_fld_2_([0-9]+)';
+            if (regexp_like(params[M], re))
+            {
+              reParts := regexp_parse(re, params[M], 0);
+              itemNo := subseq (params[M], reParts[2], reParts[3]);
+              itemName := trim (params[M+1]);
+              itemID := cast (get_keyword ('r_item_'||ontologyNo||'_fld_1_'||itemNo, params, -1) as integer);
+              if (itemID <> -1)
+                IDs := vector_concat (IDs, vector (itemID));
+              itemProperties := vector ();
+              for (L := 0; L < length (params); L := L + 4)
+              {
+                if (not isstring(params[L+1]) or trim (params[L+1]) = '')
+                  goto _skip3;
+                re := 'r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_1_([0-9]+)';
+                if (regexp_like(params[L], re))
+                {
+                  reParts := regexp_parse(re, params[L], 0);
+                  propNo := subseq (params[L], reParts[2], reParts[3]);
+                  propName := trim (params[L+1]);
+                  propValue := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params);
+                  propType := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params, 'data');
+                  property := vector_concat (self.jsonObject(), vector ('name', propName, 'value', propValue, 'type', propType));
+                  itemProperties := vector_concat (itemProperties, vector (property));
+                }
+              _skip3:;
+              }
+              item := vector ('id', itemID, 'className', itemName, 'properties', itemProperties);
+              ontologyItems := vector_concat (ontologyItems, vector (item));
+            }
+          _skip2:;
+          }
+          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
+          ontologies := vector_concat (ontologies, vector (ontology));
+        }
+      _skip:;
+      }
+      delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id and not ODS.ODS_API.vector_contains(IDs, WUF_ID);
+      for (N := 0; N < length (ontologies); N := N + 1)
+      {
+        ontology := ontologies[N];
+        ontologyItems := get_keyword ('items', ontology);
+        for (M := 0; M < length (ontologyItems); M := M + 1)
+        {
+          item := ontologyItems[M];
+          itemID := get_keyword ('id', item);
+          if (itemID = -1)
+          {
+            insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
+              values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize (get_keyword ('properties', item)), self.u_id);
+          } else {
+            update DB.DBA.WA_USER_FAVORITES
+               set WUF_TYPE = get_keyword ('ontology', ontology),
+                   WUF_CLASS = get_keyword ('className', item),
+                   WUF_PROPERTIES = serialize (get_keyword ('properties', item))
+             where WUF_ID = itemID;
+          }
         }
       }
-      self.messaging := tmp_m;
-      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
-
-      WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
-
-      -- change user_text data
-      WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
     ]]>
   </v:method>
-
-  <v:variable persist="0" name="uicq" type="varchar" default="''"/>
-  <v:variable persist="0" name="uskype" type="varchar" default="''"/>
-  <v:variable persist="0" name="uaim" type="varchar" default="''"/>
-  <v:variable persist="0" name="uyahoo" type="varchar" default="''"/>
-  <v:variable persist="0" name="umsn" type="varchar" default="''"/>
-  <v:variable persist="0" name="messaging" type="any" default="null"/>
-
-  <v:variable name="sav10" type="varchar" default="'1'" />
-  <v:variable name="sav11" type="varchar" default="'1'" />
-  <v:variable name="sav12" type="varchar" default="'1'" />
-  <v:variable name="sav13" type="varchar" default="'1'" />
-  <v:variable name="sav14" type="varchar" default="'1'" />
 
   <v:before-data-bind>
     <![CDATA[
       declare tmp any;
 
-      select WAUI_ICQ,
-             WAUI_SKYPE,
-             WAUI_AIM,
-             WAUI_YAHOO,
-             WAUI_MSN,
-             WAUI_MESSAGING
-        INTO self.uicq,
-             self.uskype,
-             self.uaim,
-             self.uyahoo,
-             self.umsn,
-             self.messaging
-        FROM WA_USER_INFO,
-             DB.DBA.SYS_USERS
-       where WAUI_U_ID = U_ID
-         and U_NAME = self.u_name;
-
-      tmp := WA_USER_VISIBILITY(self.u_name);
-      if (tmp is not null and length (tmp) >= 14 )
-      {
-        self.sav10 := tmp[10];
-        self.sav11 := tmp[11];
-        self.sav12 := tmp[12];
-        self.sav13 := tmp[13];
-        self.sav14 := tmp[14];
-      }
       if (e.ve_is_post and e.ve_button = self.page_form)
       {
         self.usr_personal_6.vc_focus := 1;
@@ -119,99 +164,49 @@
 
   <v:form name="usr_personal_6" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
-      <table id="m_tbl" class="ctl_grp">
-        <tr>
-          <th width="180px"><label for="u_icq">ICQ Number</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_icq"
-                    value="--self.uicq"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_10" value="self.sav10" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_skype">Skype ID</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_skype"
-                    value="--self.uskype"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_11" value="self.sav11" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_aim">AIM Name</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_aim"
-                    value="--self.uaim"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_12" value="self.sav12" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_yahoo">Yahoo! ID</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_yahoo"
-                    value="--self.uyahoo"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_13" value="self.sav13" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_msn">MSN Messenger</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_msn"
-                    value="--self.umsn"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_14" value="self.sav14" />
-          </td>
-        </tr>
-        <?vsp
-          declare N integer;
-
-          N := 0;
-          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
-          {
-        ?>
-        <tr id="m_tr_<?V N ?>">
-          <td>
-            <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
-          </td>
-          <td>
-            <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
-          </td>
-          <td>
-            <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
-          </td>
-        </tr>
-        <?vsp
-            N := N + 1;
-          }
-        ?>
-      </table>
-      <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
       <table class="ctl_grp">
         <tr>
-          <th width="180px"><label for="set_personal_6">Set access for all fields as </label></th>
-          <td class="ctrl">
-            <v:select-list name="set_personal_6" xhtml_id="set_personal_6" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
-              <v:item name="*no change*"  value="0" />
-              <v:item name="public"  value="1" />
-              <v:item name="friends" value="2" />
-              <v:item name="private" value="3" />
-            </v:select-list>
+          <td width="800px">
+            <table id="r_tbl" class="listing">
+              <thead>
+                <tr class="listing_header_row">
+                  <th>
+                    <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                  </th>
+                  <th width="100%">
+                    Favorite Type
+                  </th>
+                  <th width="80px">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="r_tbody">
+                <tr id="r_tr_no">
+                  <td></td>
+                  <td colspan="2">
+                    <b><i>No Favorite Types</i></b>
+          </td>
+        </tr>
+              </tbody>
+      </table>
+            <input type="hidden" id="r_no" name="r_no" value="1" />
+          </td>
+          <td valign="top" nowrap="nowrap">
+            <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
           </td>
         </tr>
       </table>
+      <script type="text/javascript">
+        <![CDATA[
+          ODSInitArray.push ( function () {
+            OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
+              RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
+              RDF.showItemTypes();
+            });
+          });
+        ]]>
+      </script>
       <br />
       <div>
         <v:button name="user_c_personal_6" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
