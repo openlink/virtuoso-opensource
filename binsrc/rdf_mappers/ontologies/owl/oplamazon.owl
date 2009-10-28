@@ -1,0 +1,209 @@
+<!--
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
+  to handle product descriptions from the Amazon Web Service.
+ 
+  See:
+  Technical Documentation for Amazon Product Advertising API
+  http://developer.amazonwebservices.com/connect/entry.jspa?externalID=2850&categoryID=19
+--> 
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/amazon#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplamz="http://www.openlinksw.com/schemas/amazon#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/amazon">
+        <creator xmlns="http://purl.org/dc/elements/1.1/"
+            rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
+    </owl:Ontology>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#ASIN">
+        <rdfs:comment>Amazon Standard Item Number - an alphanumeric token that uniquely identifies items in the Amazon marketplace</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>ASIN</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#DetailPageURL">
+        <rdfs:comment>DetailPageURL</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>DetailPageURL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/amazon#Product">
+        <rdfs:comment>A specialization of the GoodRelations ProductOrService class for describing Amazon products</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>Product</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#availability">
+        <rdfs:comment>how soon is an item dispatched</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>availability</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#color">
+        <rdfs:comment>color</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>color</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#condition">
+        <rdfs:comment>condition of the item - new/used/refurbished</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>condition</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#conditionNote">
+        <rdfs:comment>notes on the condition of the item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>condition note</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#feature">
+        <rdfs:comment>a description of a feature of the item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>feature</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#hasListPrice">
+        <rdfs:comment>manufacturer's list price</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>list price</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#UnitPriceSpecification"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#itemHeight">
+        <rdfs:comment>the item's height</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>item height</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#itemLength">
+        <rdfs:comment>the item's length</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>item length</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#itemWeight">
+        <rdfs:comment>the item's weight</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>item weight</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#itemWidth">
+        <rdfs:comment>the item's width</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>item width</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#merchantId">
+        <rdfs:comment>Amazon assigned MerchantID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>merchantID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#offerListingId">
+        <rdfs:comment>Amazon assigned offer listing ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>offer listing ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#packageHeight">
+        <rdfs:comment>the package's height</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>package height</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#packageLength">
+        <rdfs:comment>the package's length</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>package length</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#packageWeight">
+        <rdfs:comment>the package's weight</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>package weight</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#packageWidth">
+        <rdfs:comment>the package's width</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>package width</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#productGroup">
+        <rdfs:comment>the product group to which the item belongs</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>product group</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/amazon#vendorSynopsisUrl">
+        <rdfs:comment>URL of brief details of Amazon merchant or seller</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/amazon#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/amazon"/>
+        <rdfs:label>vendor synopsis URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+

@@ -218,7 +218,7 @@ directory_init() {
   #
   #  Install minimal OAT toolkit
   #
-  for i in loader.js bootstrap.js animation.js slidebar.js
+  for i in loader.js bootstrap.js animation.js slidebar.js resize.js
   do
       cp ../oat/toolkit/$i vad/vsp/rdf_mappers/rdfdesc/oat/
   done

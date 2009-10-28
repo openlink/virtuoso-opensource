@@ -1,0 +1,124 @@
+<!--
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
+  to handle product descriptions from the Ebay Web Service.
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/ebay#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplamz="http://www.openlinksw.com/schemas/amazon#"
+    xmlns:oplebay="http://www.openlinksw.com/schemas/ebay#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/amazon#Product">
+        <rdfs:comment>A specialization of the GoodRelations ProductOrService class for describing eBay products</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>Product</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+    </owl:Class>
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/ebay">
+        <creator xmlns="http://purl.org/dc/elements/1.1/"
+            rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/ebay#ProductDetail">
+        <rdfs:comment>A name/value pair describing a product detail or feature</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>ProductDetail</rdfs:label>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#category">
+        <rdfs:comment>Product categories to which the item belongs</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>category</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#description">
+        <rdfs:comment>Product description</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/ebay#detail">
+        <rdfs:comment>Detail - a name/value pair describing a product feature</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>Detail</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/ebay#ProductDetail"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#detail_name">
+        <rdfs:comment>Detail name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#ProductDetail"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>detail_name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#detail_value">
+        <rdfs:comment>Detail value</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#ProductDetail"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>detail_value</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#eBayStoreURL">
+        <rdfs:comment>seller's eBay store URL</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>eBayStoreURL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#format">
+        <rdfs:comment>Product format - for media products such as computer software</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>format</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#image">
+        <rdfs:comment>Image of item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>image</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#longDescription">
+        <rdfs:comment>Long product description</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>longDescription</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/ebay#productId">
+        <rdfs:comment>Product ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/ebay#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/ebay"/>
+        <rdfs:label>productId</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+

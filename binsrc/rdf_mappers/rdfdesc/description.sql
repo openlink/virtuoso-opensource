@@ -2,7 +2,6 @@
 --
 --  $Id$
 --
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -50,21 +49,76 @@ cb:source_description rdfs:subPropertyOf foaf:name .
 <http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
 gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
+<http://purl.org/ontology/mo/MusicArtist> rdfs:subClassOf foaf:Person .
 foaf:maker rdfs:subClassOf dc:creator .
+<http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
 
+--
+-- make a vector of languages and their quality 
+--
+create procedure rdfdesc_get_lang_acc (in lines any)
+{
+  declare accept, itm varchar;
+  declare i, l, q int;
+  declare ret, arr any;
+
+  accept := 'en';
+  if (lines is not null)
+    {
+      accept := http_request_header_full (lines, 'Accept-Language', 'en');
+    }
+  arr := split_and_decode (accept, 0, '\0\0,;');
+  q := 0;
+  l := length (arr);
+  ret := make_array (l, 'any');
+  for (i := 0; i < l; i := i + 2)
+    {
+      declare tmp any;
+      itm := trim(arr[i]);
+      if (itm like '%-%')
+	itm := subseq (itm, 0, strchr (itm, '-'));
+      q := arr[i+1];
+      if (q is null)
+	q := 1.0;
+      else
+	{
+	  tmp := split_and_decode (q, 0, '\0\0=');
+	  if (length (tmp) = 2)
+	    q := atof (tmp[1]);
+	  else
+	    q := 1.0;
+	}
+      ret[i] := itm;
+      ret[i+1] := q;
+    }
+  return ret;
+}
+;
+
+create procedure rdfdesc_str_lang_check (in lang any, in acc any)
+{
+  if (not length (lang))
+    return 1;
+  else if (position (lang, acc) > 0)
+    return 1;
+  else if (position ('*', acc) > 0)
+    return 1;
+  return 0;
+}
+;
+
 create procedure rdfdesc_get_lang_by_q (in accept varchar, in lang varchar)
 {
-  declare format, itm varchar;
+  declare itm varchar;
   declare arr, q any;
   declare i, l int;
 
   arr := split_and_decode (accept, 0, '\0\0,;');
   q := 0;
   l := length (arr);
-  format := null;
   for (i := 0; i < l; i := i + 2)
     {
       declare tmp any;
@@ -278,7 +332,7 @@ create procedure rdfdesc_http_url (in url varchar)
       url := ltrim (url, '/');
       url := pref || url_sch || '/' || url;
     }
-  url := replace (url, '#', '%23');
+  url := replace (url, '#', '%01');
   return url;
 };
 
@@ -297,9 +351,10 @@ create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, 
 }
 ;
 
-create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any, in rel int := 1)
+create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any, in rel int := 1, inout acc any)
 {
    declare lang, rdfs_type, rdfa, prop_l, prop_n  any;
+   declare visible int;
 
    if (__tag (_object) = 230)
      {
@@ -318,7 +373,9 @@ create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any
        endg:;
      }
    rdfa := rdfdesc_rel_print (prop, rel, null, 1, lang);
-   http ('\t<li><span class="literal">');
+   visible := rdfdesc_str_lang_check (lang, acc);
+
+   http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 again:
    if (__tag (_object) = 246)
      {
@@ -349,16 +406,24 @@ again:
 	   whenever not found goto usual_iri;
 	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where 
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
-	   http (sprintf ('<iframe src="%s" width="100%%" height="300" frameborder="0"><p>Your browser does not support iframes.</p></iframe>', src));
+	   http (sprintf ('<div id="x_content" style="width:100%%; height:300px;margin-top:3px;margin-bottom:3px;"><iframe src="%s" width="100%%" height="100%% frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
        else if (http_mime_type (_url) like 'image/%' and _url not like 'http://%/about/id/%')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, rdfdesc_http_url (_url), _url));
+       else if (_url like 'mailto:%')
+	 {
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/mail.png" title="Send Mail" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	 }
+       else if (_url like 'tel:%')
+	 {
+	   http (sprintf ('<a class="uri" %s href="%s">%s&nbsp;<img src="images/phone.gif" title="Make Call" border="0"/></a>', rdfa, _url, rdfdesc_uri_curie(_url, _label)));
+	 }
        else
 	 {
 	   usual_iri:
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (prop = __id2in (rdf_sas_iri ()))
-	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/html.png" title="Open Actual (X)HTML page" border="0"/></a>', _url));
 	 }
 
      }

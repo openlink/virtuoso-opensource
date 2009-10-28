@@ -5,11 +5,12 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars any;
-   declare iri_type, iri_uri, links varchar;
-   declare do_sponge, proxy_iri_fn int;
+   declare iri_type, iri_uri, links, langs varchar;
+   declare do_sponge, local_lookup, proxy_iri_fn int;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
+   langs := rdfdesc_get_lang_acc (lines);
    gr := get_keyword ('g', params, '');
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '') -- case when /about/html/www.cname/path i.e. when no scheme the default is http
@@ -21,16 +22,20 @@
      proxy_iri_fn := null;
    connection_set ('proxy_iri_fn', proxy_iri_fn); -- setup proxy iri function
 
-   _G := replace (gr, '%23', '#');
+   _G := replace (gr, '%01', '#');
    _S := get_keyword ('res', params);
    do_sponge := 0;
+   local_lookup := 0;
    if (_S is null)
      {
        do_sponge := 1;
        _S := _G; 
    }
    else
-     _S := replace (_S, '%23', '#');
+     _S := replace (_S, '%01', '#');
+
+   if (_S like 'feed:%')
+     _S := 'http:' || subseq (_S, 5);
 
    arr := rfc1808_parse_uri (_G);
    if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
@@ -38,7 +43,15 @@
    -- enable to stop sponge for #fragment 
    --if (arr[5] <> '')  
    --  do_sponge := 0; 
+   arr[0] := lower (arr[0]);
+   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi') and arr[0] not like 'urn:lsid:%')
+     {
+       do_sponge := 0;
+       local_lookup := 1;
+     }
    arr [5] := '';
+   if (arr[0] = 'feed')
+     arr[0] := 'http';
    _G := DB.DBA.vspx_uri_compose (arr);
 
    if (arr[1] = host and arr[2] like '/about/id/%')
@@ -88,7 +101,7 @@
        DB.DBA.RM_DO_SPONGE (_G);
        commit work;
      }
-   else if (_S like 'nodeID://%')
+   else if (_S like 'nodeID://%' or local_lookup = 1)
      {
        -- blank node is subject
        exec (sprintf ('sparql define input:storage "" select ?g where { graph ?g { <%S> ?p ?o . }} limit 1', _S),
@@ -150,6 +163,8 @@
 
   if (not length (label))
     label := _S;
+   if (label like 'http%://%')
+     label := rdfdesc_uri_curie (label);
    links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
    links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
    links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
@@ -212,7 +227,7 @@
 
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (label); ?></a></h1>
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
@@ -258,7 +273,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT, PRED, true_label, 1);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label, 1, langs);
 	      }
 	   exec_close (h2);
 
@@ -293,7 +308,7 @@
 	      {	
                 declare OBJECT any;
 		OBJECT := data [0];
-		rdfdesc_http_print_r (OBJECT, PRED, true_label, 0);
+		rdfdesc_http_print_r (OBJECT, PRED, true_label, 0, langs);
 	      }
 	   exec_close (h2);
 

@@ -29,12 +29,14 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
-<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
+<!ENTITY oplebay "http://www.openlinksw.com/schemas/ebay#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -48,10 +50,11 @@
     xmlns:book="&book;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
-    xmlns:rdfs="&rdfs;"
+    xmlns:review="&review;"
     xmlns:owl="&owl;"
     xmlns:cl="&cl;"
-    xmlns:oplbb="&oplbb;"
+    xmlns:ebay="&ebay;"
+    xmlns:oplebay="&oplebay;"
     >
 
     <xsl:output method="xml" indent="yes" encoding="utf-8" />
@@ -62,8 +65,13 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<!-- For testing with Xalan XSLT processor 
+  	<xsl:variable name="resourceURL" select="$baseUri"/>
+  	<xsl:variable  name="docIRI" select="$baseUri"/>
+  	<xsl:variable  name="docproxyIRI" select="$baseUri"/>
+	-->
 
-    <xsl:template match="/">
+    <xsl:template match="/ebay:GetSingleItemResponse">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
@@ -71,62 +79,146 @@
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
+				<!-- Xalan
+			    <foaf:topic rdf:resource="{concat ($baseUri, '#', 'Vendor')}"/>
+			    <foaf:topic rdf:resource="{concat ($baseUri, '#', 'Offer')}"/>
+				-->
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
-			<gr:Offering rdf:about="{$resourceURL}">
-				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+			<!-- Xalan 
+			<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offer')}">
+			-->
+			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="concat('Offer of ', GetSingleItemResponse/Item/Title)"/></rdfs:label>
+			    <rdfs:label><xsl:value-of select="ebay:Item/ebay:Title"/></rdfs:label>
+				<!-- Xalan 
+			    <gr:includes rdf:resource="{$resourceURL}"/>
+				-->
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
+			    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="ebay:Item/ebay:EndTime"/></gr:validThrough>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
+			    <xsl:if test="count(//ebay:ShipToLocations) = 1">
 			    <gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+			    </xsl:if>
 			    <xsl:apply-templates mode="offering" />
 			</gr:Offering>
 
+			<!-- Xalan 
+	        <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
+			-->
 	        <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
 			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
+		        <gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
+				<!-- Xalan 
+		        <gr:offers rdf:resource="{concat ($baseUri, '#', 'Offer')}"/>
+				-->
+				<xsl:variable name="store"><xsl:value-of select="//ebay:Storefront/ebay:StoreName"/></xsl:variable>
+				<xsl:variable name="seller"><xsl:value-of select="//ebay:Seller/ebay:UserID"/></xsl:variable>
+				<xsl:choose>
+					<xsl:when test="$seller != ''">
+		        		<rdfs:label><xsl:value-of select="$seller"/></rdfs:label>
+		        		<gr:legalName><xsl:value-of select="$seller"/></gr:legalName>
+					</xsl:when>
+					<xsl:when test="$store != ''">
+		        		<rdfs:label><xsl:value-of select="$store"/></rdfs:label>
+		        		<gr:legalName><xsl:value-of select="$store"/></gr:legalName>
+						<oplebay:eBayStoreURL><xsl:value-of select="//ebay:Storefront/ebay:StoreURL"/></oplebay:eBayStoreURL>
+					</xsl:when>
+					<xsl:otherwise>
 		          <rdfs:label>Ebay Co., Inc.</rdfs:label>
 		          <gr:legalName>Ebay Co., Inc.</gr:legalName>
-		          <gr:offers rdf:resource="{$resourceURL}"/>
 			  <foaf:homepage rdf:resource="http://www.ebay.com" />
 			  <owl:sameAs rdf:resource="http://www.ebay.com" />
+			  			<!-- Xalan 
+						<rdfs:seeAlso rdf:resource="{concat ('http://www.ebay.com')}"/>
+			  			-->
 			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.ebay.com')}"/>
+					</xsl:otherwise>
+				</xsl:choose>
 	        </gr:BusinessEntity>
 	        
+			<!-- Xalan 
+			<rdf:Description rdf:about="{$resourceURL}">
+			-->
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-			    <rdf:type rdf:resource="&oplbb;Product" />
+			    <rdf:type rdf:resource="&oplebay;Product" />
+			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <gr:hasMakeAndModel>
+				<!-- Xalan 
+	            <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
+				-->
 	            <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
-	                <rdf:type rdf:resource="&oplbb;Product"/>
-				    <xsl:apply-templates select="GetSingleItemResponse/Item" mode="manufacturer" /> 
+	                <rdf:type rdf:resource="&oplebay;Product"/>
+
+					<xsl:variable name="brand" 
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value"/>
+					<xsl:variable name="make"
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
+					<xsl:variable name="model"
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
+					<xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
+		            	<rdfs:comment>
+							<xsl:choose>
+								<xsl:when test="string-length($make) &gt; 0">
+									<xsl:value-of select="$make"/>
+								</xsl:when>
+								<xsl:when test="string-length($brand) &gt; 0">
+									<xsl:value-of select="$brand"/>
+								</xsl:when>
+							</xsl:choose>
+							<xsl:if test="string-length($model) &gt; 0">
+								<xsl:if test="string-length(concat($brand, $model)) &gt; 0">
+									<xsl:text> </xsl:text>
+								</xsl:if>
+								<xsl:value-of select="$model"/>
+							</xsl:if>
+						</rdfs:comment>
+					</xsl:if>
+
+					<!-- Remove
+				    <xsl:apply-templates select="ebay:GetSingleItemResponse/ebay:Item" mode="manufacturer" /> 
+					-->
+				    <xsl:apply-templates select="ebay:Item" mode="manufacturer" /> 
                  </rdf:Description>
                </gr:hasMakeAndModel>
                <xsl:choose>
-					<xsl:when test="substring-before(GetSingleItemResponse/Item/PrimaryCategoryName, ':') = 'Books'">
+					<!-- Remove
+					<xsl:when test="substring-before(ebay:GetSingleItemResponse/ebay:Item/ebay:PrimaryCategoryName, ':') = 'Books'">
+					-->
+					<xsl:when test="substring-before(ebay:Item/ebay:PrimaryCategoryName, ':') = 'Books'">
 						<rdf:type rdf:resource="&bibo;Book"/>
 						<rdf:type rdf:resource="&book;Book"/>
-						<xsl:apply-templates select="GetSingleItemResponse/Item" mode="bibo" />
+						<!-- Remove
+						<xsl:apply-templates select="ebay:GetSingleItemResponse/ebay:Item" mode="bibo" />
+						-->
+						<xsl:apply-templates select="ebay:Item" mode="bibo" />
 					</xsl:when>
 					<xsl:otherwise/>
 				</xsl:choose>
-			   <xsl:apply-templates select="GetSingleItemResponse/Item" />
+			   <!-- Remove
+			   <xsl:apply-templates select="ebay:GetSingleItemResponse/ebay:Item" />
+			   -->
+			   <xsl:apply-templates select="ebay:Item" />
 			</rdf:Description>
 		</rdf:RDF>
     </xsl:template>
 
-    <xsl:template match="Item">
+    <xsl:template match="ebay:Item">
         <xsl:apply-templates select="*"/>
     </xsl:template>
     
-    <xsl:template match="Item/ConvertedCurrentPrice" mode="offering">
+    <xsl:template match="ebay:Item/ebay:ConvertedCurrentPrice" mode="offering">
 		<gr:hasPriceSpecification>
+		  <!-- Xalan 
+		  <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'ConvertedCurrentPrice')}">
+		  -->
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ConvertedCurrentPrice')}">
 			<rdfs:label>Converted Current Price</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
@@ -136,7 +228,7 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
     
-    <xsl:template match="Item/ViewItemURLForNaturalSearch">
+    <xsl:template match="ebay:Item/ebay:ViewItemURLForNaturalSearch">
     <xsl:if test="string-length(.) &gt; 0">
 			<xsl:element namespace="&rdfs;" name="seeAlso">
 	    <xsl:attribute name="rdf:resource">
@@ -146,41 +238,38 @@
 	</xsl:if>
     </xsl:template>
     
-    <xsl:template match="Item/Title">
+    <xsl:template match="ebay:Item/ebay:Title">
 	<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
 	<dc:title><xsl:value-of select="."/></dc:title>
     </xsl:template>
-    <xsl:template match="Item/Description">
-	<!--oplbb:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:description-->
-	<oplbb:longDescription rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplbb:longDescription>
+    <xsl:template match="ebay:Item/ebay:Description">
+	<!--oplebay:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplebay:description-->
+	<oplebay:longDescription rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplebay:longDescription>
     </xsl:template>
-    <xsl:template match="Item/ItemId">
-	<oplbb:productId><xsl:value-of select="."/></oplbb:productId>
+    <xsl:template match="ebay:Item/ebay:ItemId">
+	<oplebay:productId><xsl:value-of select="."/></oplebay:productId>
     </xsl:template>
-    <xsl:template match="Item/PrimaryCategoryName">
-	<oplbb:category><xsl:value-of select="."/></oplbb:category>
+    <xsl:template match="ebay:Item/ebay:PrimaryCategoryName">
+	<oplebay:category><xsl:value-of select="."/></oplebay:category>
     </xsl:template>
-    <xsl:template match="Item/ItemSpecifics/NameValueList[Name='Format']">
-	<oplbb:format rdf:datatype="&xsd;string"><xsl:value-of select="Value"/></oplbb:format>
+    <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[Name='Format']">
+	<oplebay:format rdf:datatype="&xsd;string"><xsl:value-of select="ebay:Value"/></oplebay:format>
     </xsl:template>
-    <xsl:template match="Item/ItemSpecifics/NameValueList[Name='ISBN-13']">
-	<gr:hasEAN_UCC-13><xsl:value-of select="Value"/></gr:hasEAN_UCC-13>
+    <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[Name='ISBN-13']">
+	<gr:hasEAN_UCC-13><xsl:value-of select="ebay:Value"/></gr:hasEAN_UCC-13>
     </xsl:template>
-    <xsl:template match="product/onSale">
-	<oplbb:onSale rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:onSale>
-    </xsl:template>
-    <xsl:template match="Item/GalleryURL">
+    <xsl:template match="ebay:Item/ebay:GalleryURL">
 	<xsl:if test="string-length(.) &gt; 0">
-	    <xsl:element namespace="&oplbb;" name="image">
+	    <xsl:element namespace="&oplebay;" name="image">
 		<xsl:attribute name="rdf:resource">
 			<xsl:value-of select="."/>
 		</xsl:attribute>
 	    </xsl:element>
 	</xsl:if>
     </xsl:template>
-    <xsl:template match="Item/PictureURL">
+    <xsl:template match="ebay:Item/ebay:PictureURL">
 	<xsl:if test="string-length(.) &gt; 0">
-	    <xsl:element namespace="&oplbb;" name="image">
+	    <xsl:element namespace="&oplebay;" name="image">
 		<xsl:attribute name="rdf:resource">
 			<xsl:value-of select="."/>
 		</xsl:attribute>
@@ -188,25 +277,35 @@
 	</xsl:if>
     </xsl:template>
     
-    <xsl:template match="Item/ItemSpecifics/NameValueList[Name='Brand']" mode="manufacturer">
+	<!--
+    <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']" mode="manufacturer">
+	-->
+    <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']" mode="manufacturer">
 	<gr:hasManufacturer>
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<rdfs:label>Manufacturer</rdfs:label>
-		<gr:legalName><xsl:value-of select="Value"/></gr:legalName>
+		<!-- Xalan 
+	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
+		-->
+		<rdfs:comment>Manufacturer</rdfs:comment>
+		<gr:legalName><xsl:value-of select="ebay:Value"/></gr:legalName>
+		<rdfs:label><xsl:value-of select="ebay:Value"/></rdfs:label>
 	    </gr:BusinessEntity>
 	</gr:hasManufacturer>
     </xsl:template>
     
-	<xsl:template match="Item/ItemSpecifics/NameValueList">
-	<oplbb:detail>
-	    <xsl:element namespace="&oplbb;" name="ProductDetail">
+	<xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList">
+	<oplebay:detail>
+	    <xsl:element namespace="&oplebay;" name="ProductDetail">
 	        <xsl:attribute name='rdf:about'>
 	            <xsl:value-of select="concat(vi:proxyIRI ($baseUri, '', 'Detail_'), position())"/>
+				<!-- Xalan 
+	            <xsl:value-of select="concat($baseUri, '#', 'Detail_', position())"/>
+				-->
 		</xsl:attribute>
-		<oplbb:detail_name rdf:datatype="&xsd;string"><xsl:value-of select="Name"/></oplbb:detail_name>
-		<oplbb:detail_value rdf:datatype="&xsd;string">
+		<oplebay:detail_name rdf:datatype="&xsd;string"><xsl:value-of select="ebay:Name"/></oplebay:detail_name>
+		<oplebay:detail_value rdf:datatype="&xsd;string">
 			<xsl:variable name="val"/>
-			<xsl:for-each select="Value">
+			<xsl:for-each select="ebay:Value">
 				<xsl:choose>
 					<xsl:when test="$val = ''">
 						<xsl:variable name="val">
@@ -221,17 +320,60 @@
 				</xsl:choose>
 			</xsl:for-each>
 			<xsl:value-of select="$val"/>
-		</oplbb:detail_value>
+		</oplebay:detail_value>
 	    </xsl:element>
-	</oplbb:detail>
+	</oplebay:detail>
     </xsl:template>
     
-    <xsl:template match="Item/Location">
+    <xsl:template match="ebay:Item/ebay:Location">
 		<gr:availableAtOrFrom>
 			<xsl:value-of select="."/>
 		</gr:availableAtOrFrom>
     </xsl:template>
 
+	<!-- Reviews -->
+
+	<xsl:template match="/ebay:FindReviewsAndGuidesResponse">
+		<rdf:RDF>
+			<rdf:Description rdf:about="{$docproxyIRI}">
+				<xsl:for-each select="//ebay:ReviewDetails/ebay:Review">
+					<!-- Xalan
+				  	<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Review_', ebay:UserID)}"/>
+				  	-->
+				  	<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Review_', ebay:UserID))}"/>
+				</xsl:for-each>
+			</rdf:Description>
+
+			<rdf:Description rdf:about="{$resourceURL}">
+				<xsl:apply-templates/>
+			</rdf:Description>
+		</rdf:RDF>
+	</xsl:template>
+
+    <xsl:template match="ebay:ReviewDetails/ebay:AverageRating">
+		<review:rating><xsl:value-of select="."/></review:rating>
+    </xsl:template>
+    
+    <xsl:template match="ebay:ReviewDetails/ebay:Review">
+		<review:hasReview>
+			<!-- Xalan
+			<review:Review rdf:about="{concat ($baseUri, '#', 'Review_', ebay:UserID)}">
+			-->
+			<review:Review rdf:about="{vi:proxyIRI ($baseUri, '', concat('Review_', ebay:UserID))}">
+				<rdfs:label><xsl:value-of select="ebay:Title"/></rdfs:label>
+				<review:title><xsl:value-of select="ebay:Title"/></review:title>
+				<!-- FIX : Add URL prefix to review profile on eBay?
+				<review:reviewer><xsl:value-of select="concat('http://www.amazon.com/gp/pdp/profile/', amz:CustomerId)"/></review:reviewer>
+				-->
+				<review:reviewer><xsl:value-of select="ebay:UserID"/></review:reviewer>
+				<review:rating><xsl:value-of select="ebay:Rating"/></review:rating>
+				<dc:dateTime><xsl:value-of select="ebay:CreationTime"/></dc:dateTime>
+				<review:text><xsl:value-of select="ebay:Text"/></review:text>
+				<rdfs:seeAlso rdf:resource="{ebay:URL}"/>
+			</review:Review>
+		</review:hasReview>
+	</xsl:template>
+    
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />
