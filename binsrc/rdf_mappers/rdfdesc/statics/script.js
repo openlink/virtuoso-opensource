@@ -1,9 +1,14 @@
-var featureList = ["slidebar"];
+var featureList = ["slidebar", "resize"];
 
 function init() {
   var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500, handleWidth: 15, handleOpenImg: "whats_this_open_hndl_15w.png", handleCloseImg: "whats_this_close_hndl_15w.png"});
 	init_long_list ();
 	init_long_literals();
+  var restrict = function(x,y) { return (x < 25); }
+  if ($('x_content'))
+    {
+      OAT.Resize.create($('x_content'),$('x_content'),OAT.Resize.TYPE_Y,restrict);
+    }
 }
 
 var long_literal_counter = 0;
