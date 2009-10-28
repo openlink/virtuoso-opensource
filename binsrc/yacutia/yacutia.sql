@@ -5553,7 +5553,7 @@ create procedure y_check_host (in host varchar, in listen varchar, in port varch
 }
 ;
 
-create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path varchar)
+create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path varchar, in sec varchar := null)
 {
   declare pos, port any;
   pos := strrchr (host, ':');
@@ -5566,6 +5566,9 @@ create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path 
     port := ':'||server_http_port ();
   else
     port := '';
+  if (sec = 'SSL')
+    return sprintf ('https://%s%s%s/', host, port, rtrim(path, '/'));
+  else
   return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
 };
 
@@ -6291,5 +6294,15 @@ create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer,
     DB.DBA.BACKUP_COMPLETED ();
   update DB.DBA.SYS_SCHEDULED_EVENT set SE_SQL = sprintf ('DB.DBA.BACKUP_MAKE_CL (\'%s\', %d, 0)', prefix, max_pages)
    where SE_NAME = DB.DBA.BACKUP_SCHED_NAME ();
+}
+;
+
+create procedure Y_RDF_VIEW_DROP_STMT (in q any)
+{
+  if (__proc_exists ('DB.DBA.RDF_VIEW_DROP_STMT') is not null)
+    return RDF_VIEW_DROP_STMT (q);
+  else
+    return '';
+
 }
 ;

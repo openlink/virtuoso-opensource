@@ -85,7 +85,8 @@
                 HP_HOST,
                 HP_LPATH,
 		HP_LISTEN_HOST,
-		WD_MODEL
+		WD_MODEL,
+		HP_SECURITY
                from
                 DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
                where
@@ -98,6 +99,7 @@
             <v:column name="HP_LPATH" label="Instance" />
             <v:column name="HP_LISTEN_HOST" label="ListenHost" />
             <v:column name="WD_MODEL" label="model" />
+            <v:column name="HP_SECURITY" label="security" />
           </v:data-source>
             <table class="listing">
               <v:template name="header11" type="simple">
@@ -247,12 +249,13 @@
                     <td class="listing_col">
 			<v:url format="%s" value="" url="">
 			    <v:after-data-bind>
-				declare host, lhost, lpath any;
+				declare host, lhost, lpath, sec any;
 				host := (control.vc_parent as vspx_row_template).te_rowset[0];
 				lhost := (control.vc_parent as vspx_row_template).te_rowset[2];
 				lpath := (control.vc_parent as vspx_row_template).te_rowset[1];
+				sec := (control.vc_parent as vspx_row_template).te_rowset[4];
 
-				control.ufl_value := y_make_url_from_vd (host, lhost, lpath);
+				control.ufl_value := y_make_url_from_vd (host, lhost, lpath, sec);
 				control.vu_url := control.ufl_value;
 			    </v:after-data-bind>
 			</v:url>
