@@ -4848,7 +4848,8 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
 create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
 {
-  declare xd, xt, url, tmp, api_key, item_id, hdr, karr, use_sandbox, user_id any;
+  declare xd, xd_utf8, xt, url, tmp, api_key, item_id, hdr, karr, use_sandbox, user_id, node any;
+  declare product_id varchar;
   declare exit handler for sqlstate '*'
     {
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -4874,15 +4875,35 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
 
   item_id := tmp[1];
 
-  url := sprintf ('http://open.api.ebay.com/shopping?callname=GetSingleItem&responseencoding=XML&appid=%s&siteid=0&version=515&ItemID=%s&IncludeSelector=Description,ItemSpecifics', api_key, item_id);
+  url := sprintf ('http://open.api.ebay.com/shopping?callname=GetSingleItem&responseencoding=XML&appid=%s&siteid=0&version=515&ItemID=%s&IncludeSelector=Description,Details,ItemSpecifics', api_key, item_id);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ebay2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
+  xd_utf8 := serialize_to_UTF8_xml (xt);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd_utf8, new_origin_uri, coalesce (dest, graph_iri));
+
+  -- Get any reviews
+  node := xpath_eval('//Item/ProductID[@type="Reference"]', xd);
+  product_id := cast (node as varchar);
+  if (not length(product_id))
+    goto skipReviews;
+
+  url := sprintf ('http://open.api.ebay.com/shopping?callname=FindReviewsAndGuides&responseencoding=XML&appid=%s&siteid=0&version=515&ProductID.type=Reference&ProductID.value=%s', api_key, product_id);
+  tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    goto skipReviews;
+
+  xd := xtree_doc (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ebay2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
   xd := serialize_to_UTF8_xml (xt);
+
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+skipReviews:
   return 1;
 }
 ;
