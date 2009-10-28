@@ -4353,7 +4353,7 @@ xslt_init (void)
   xslt_define ("for-each"		, XSLT_EL_FOR_EACH		, xslt_for_each			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS | XSLT_ELGRP_SORT	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "select"		, XSLT_ATTR_FOREACH_SELECT		),
 	xslt_arg_eol);
-#ifndef NDEBUG /* temporarily, while the feature is an experimental draft */
+#if 1
   xslt_define ("for-each-row"		, XSLT_EL_FOR_EACH_ROW		, xslt_for_each_row		, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS	,
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sparql"		, XSLT_ATTR_FOREACHROW_SPARQL		),
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sql"		, XSLT_ATTR_FOREACHROW_SQL		),
