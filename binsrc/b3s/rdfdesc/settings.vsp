@@ -72,9 +72,10 @@
       <div id="settings">
         <h1>Settings</h1>
         <h2>Inference</h2>
-        <table>
+        <table> <!-- yeah I know but life's just too short. -->
           <tr>
-            <td></td><td><input class="ckb" id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
+            <td></td>
+            <td><input class="ckb" id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
           </tr>
           <tr>
             <td><label for="inf_sel">IFP rule:</label></td>
