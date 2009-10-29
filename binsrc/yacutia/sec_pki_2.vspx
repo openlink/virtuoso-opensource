@@ -152,6 +152,10 @@
 			 <?vsp 
 			   if (NO_CTRL) 
 			     {
+                               if (http_listen_host (LHOST, 2))
+			         http ('<span>Started</span>'); 
+                               else
+			         http ('<span>Stopped</span>'); 
 			 ?>
 			 <v:url render-only="1" url="--sprintf ('sec_pki_2.vspx?vhost=%U&lhost=%U', HOST, LHOST)" value="Edit" />
 			 <v:url render-only="1" url="--sprintf ('sec_pki_2_conf.vspx?vhost=%U&lhost=%U', HOST, LHOST)" value="Delete" />
@@ -190,6 +194,7 @@
 			arr := tcpip_local_interfaces ();
 			foreach (any elm in arr) do
 			  http (sprintf ('sr_cl.addOption("%s");', elm));
+                        http (sprintf ('sr_cl.input.value = "%s";', get_keyword ('lhost_if', self.vc_event.ve_params, ''))); 
 		      ?>
 		     }
 		  </script>
@@ -320,6 +325,13 @@
            lhost_if := get_keyword ('lhost_if', e.ve_params, '');
 
 	   y_check_host (self.vhost_nam.ufl_value, lhost_if, self.lhost_port.ufl_value);
+
+	   if (server_https_port () is not null and server_https_port () = self.lhost_port.ufl_value)
+	     {
+	       self.vc_is_valid := 0;
+	       self.vc_error_message := 'The default HTTPS listener configuration is not allowed. To configure default HTTPS you must edit the INI file and re-start the server.';
+	       return;
+	     }
 
 	   vhost := self.vhost_nam.ufl_value;
 	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
