@@ -898,6 +898,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule1') or
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule2') or
       exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule3') or
+      exists (select 1 from URL_REWRITE_RULE where URR_RULE = pref || '_rule4') or
       exists (select 1 from URL_REWRITE_RULE_LIST where URRL_LIST = pref || '_rule_list1') or
       exists (select 1 from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/'||qual)
      ) )
@@ -939,6 +940,22 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
   http ('\n', ses);
   http (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    ''<pref>_rule6'',
+    1,
+    ''/<qual>/objects/([^#]*)'',
+    vector(''path''),
+    1,
+    ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/objects/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
+    vector(''path'', ''*accept*''),
+    null,
+    ''(text/rdf.n3)|(application/rdf.xml)'',
+    2,
+    null
+    );', ses);
+
+  http ('\n', ses);
+  http (
+  'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_rule1'',
     1,
     ''([^#]*)'',
@@ -969,7 +986,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     );', ses);
 
   http ('\n', ses);
-  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4''));', ses);
+  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4'', ''<pref>_rule6''));', ses);
 
   http ('\n', ses);
   http ('DB.DBA.VHOST_REMOVE (lpath=>''/<qual>'');', ses);
