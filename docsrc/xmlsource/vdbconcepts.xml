@@ -120,6 +120,24 @@ attach table T1_VIEW primary key (ROW_NO) from &apos;somedsn&apos;;
 				<para>Views cannot be attached unless the PRIMARY KEY options is used.</para>
 			</note>
 		</sect4>
+	<sect4 id="linkrmttableautoexamples">
+		<title>Examples for Linking Remote Tables into OpenLink Virtuoso</title>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="vdbenginemclink">Oracle</link></listitem>
+  <listitem><link linkend="vdbengineprlnk">Progress</link></listitem>
+  <listitem><link linkend="vdbengineinglink">Ingres</link></listitem>
+  <listitem><link linkend="vdbengineinflink">IBM Informix</link></listitem>
+  <listitem><link linkend="vdbenginedb2link">IBM DB2</link></listitem>
+  <listitem><link linkend="vdbenginesyblink">Sybase</link></listitem>
+  <listitem><link linkend="vdbenginemsqllink">MySQL</link></listitem>
+  <listitem><link linkend="vdbenginepsqllink">PostgreSQL</link></listitem>
+  <listitem><link linkend="vdbengineodtjdlink">JDBC</link></listitem>
+  <listitem><link linkend="vdbengineodbcodlink">ODBC to ODBC</link></listitem>
+  <listitem><link linkend="vdbenginefirebdlink">Firebird</link></listitem>
+  <listitem><link linkend="vdbenginemsqlslink">Microsoft SQL Server</link></listitem>
+</itemizedlist>
+
+	</sect4>
 		</sect3>
 	<!-- ======================================== -->
 	<sect3 id="linkrmtprocauto">

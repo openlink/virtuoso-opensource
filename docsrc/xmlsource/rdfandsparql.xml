@@ -11,6 +11,15 @@ From version 5.0.7, Virtuoso can be used  as the RDF store/query processor of th
 This chapter discusses Virtuoso's RDF triple storage and query capabilities. 
 This discusses storing RDF data as well as mapping existing relational data into RDF for SPARQL access. Numerous  SPARQL language extensions and standard compliance are covered.
 </para>
+
+<para>In this chapter SPARQL and SPASQL are used as siblings.</para>
+
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtodbcsparql">Virtuoso ODBC RDF extensions for SPASQL</link></listitem>
+    </itemizedlist>
+  </tip>
+
 </abstract>
 
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
@@ -725,11 +734,19 @@ lose the database connection trying to fetch a result set row that
 contains a dictionary object. This disconnection does not disrupt the server,
 so the client may readily reconnect to the server, but the disconnected
 transaction will have been rolled back.</para>
+
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtodbcsparql">Virtuoso ODBC RDF extensions for SPASQL</link></listitem>
+    </itemizedlist>
+  </tip>
+
 </sect4>
 
 <sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
 <para>All the SPARQL protocol standard MIME types are supported by a SPARQL web service client.
-Moreover, SPARQL web service endpont supports additional MIME types and in some cases additional query types for standard MIME types.</para>
+Moreover, SPARQL web service endpont supports additional MIME types and in some cases additional
+query types for standard MIME types.</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Supported MIME Types list</title>
     <tgroup align="char" charoff="50" char="." cols="3">
@@ -803,20 +820,77 @@ Moreover, SPARQL web service endpont supports additional MIME types and in some 
 <para>The current implementation does not support returning the results of SELECT as RDF/XML or 'sparql-results-2'.</para>
 <para>If the HTTP header returned by the remote server does not contain a 'Content-Type' line, the client may guess MIME type from the text of the returned body.</para>
 <para>Error messages returned from the service are returned as XML documents, using the MIME type application/xml. The documents consist of a single element containing an error message.</para>
-<para>For 'text/html' MIME type, the result is a HTML document containing query summary and tabular results.
-The format is human-readable but not intended for using by applications because it makes strings undistinguishable from IRIs and loses other details such as exact datatypes of returned values.</para>
-<para>Javascript serialization of results generates an HTML table with the CSS class sparql.
+</sect4>
+<sect4 id="rdfsupportedmimesofprotocoladdselect"><title>Additional Response Formats -- SELECT</title>
+<para>Use the format parameter to select one of the following alternate output formats:</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional Response formats list -- SELECT</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Mimetype</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>HTML</entry>
+        <entry>The result is a HTML document containing query summary and tabular results. The format
+is human-readable but not intended for using by applications because it makes strings undistinguishable
+from IRIs and loses other details such as exact datatypes of returned values.</entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>json</entry>
+        <entry>Two separate MIME types exist for JSON: JSON serialization of results is
+'application/sparql-results+json' and confirms to the draft specification "Serializing SPARQL
+Query Results in JSON". JSON serialization of triples is 'application/rdf+json' and interoperable
+with Talis. Sometimes a client needs a JSON but it does not know the type of query it sends to
+Virtuoso web service endpoint. In this case the client can specify either one MIME-type
+'application/json' or both 'application/sparql-results+json' and 'application/rdf+json' in the
+"Accept" header line and Virtuoso will chose the appropriate one automatically. Similar trick
+works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to
+find out the most appropriate return type for the given query.
+        </entry>
+        <entry>application/sparql-results+json</entry>
+      </row>
+      <row>
+        <entry>json</entry>
+        <entry></entry>
+        <entry>application/rdf+json</entry>
+      </row>
+      <row>
+        <entry>js</entry>
+        <entry>Javascript serialization of results generates an HTML table with the CSS class sparql.
 The table contains a column indicating row number and additional columns for each query variable.
 Each query solution contributes one row of the table.
-Unbound variables are indicated with a non-breaking space in the appropriate table cells.</para>
-<para>Two separate MIME types exist for for JSON.
-JSON serialization of results is 'application/sparql-results+json' and conforms to the draft specification "Serializing SPARQL Query Results in JSON".
-JSON serialization of triples is 'application/rdf+json' and interoperable with Talis.
-Sometimes a client needs a JSON but it does not know the type of query it sends to Virtuoso web service endpoint.
-In this case the client can specify either one MIME-type 'application/json' or both
-'application/sparql-results+json' and 'application/rdf+json' in the "Accept" header line and Virtuoso will chose the appropriate one automatically.
-Similar trick works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to find out the most appropriate return type for the given query.
-</para>
+Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
+        <entry>application/javascript</entry>
+      </row>
+      <row>
+        <entry>table</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>XML</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>TURTLE</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesofprotocoladdcons"><title>Additional Response Formats -- CONSTRUCT &amp; DESCRIBE</title>
 <para><emphasis>Example output of DESCRIBE in rdf+json serialization format</emphasis></para>
 <orderedlist>
   <listitem>Go to the sparql endpoint at http://host:port/sparql, for ex. at http://dbpedia.org/sparql</listitem>
@@ -913,10 +987,12 @@ LIMIT 10
 </listitem>
 </orderedlist>
 <para>
-For interoperability with clients that were developed before current versions of SPARQL protocol and format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
-'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for TURTLE output,
-'application/x-rdf+json' and 'application/rdf+json' are for "Serializing SPARQL Query Results in JSON".
-When a client specifies obsolete MIME type but not its standard variant, an obsolete variant is returned for interoperability.
+For interoperability with clients that were developed before current versions of SPARQL protocol and
+format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
+'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for
+TURTLE output, 'application/x-rdf+json' and 'application/rdf+json' are for "Serializing SPARQL Query
+Results in JSON". When a client specifies obsolete MIME type but not its standard variant, an obsolete
+variant is returned for interoperability.
 </para>
 </sect4>
 <sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>
@@ -981,6 +1057,13 @@ which can be assigned specifically to allow Sponger services to update the Quad 
 SPARQL users via the SPARQL endpoint.</para>
 <para>Restricting a user's access to specific graphs can be done using Virtuoso row-level security
 functionality, via one of the Virtuoso Data Access APIs: ODBC, JDBC, ADO.Net or PL code.</para>
+
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtodbcsparql">Virtuoso ODBC RDF extensions for SPASQL</link></listitem>
+    </itemizedlist>
+  </tip>
+
 <para>For example, users of OpenLink Data Space (ODS) applications are restricted in the RDF graphs accessible to them as follows:</para>
 <programlisting><![CDATA[
 DB.DBA.TABLE_DROP_POLICY ('DB.DBA.RDF_QUAD', 'S');
@@ -2364,11 +2447,11 @@ etc ...
       <graphic fileref="ui/Excel2.png"/>
     </figure>
 </sect3>
-<sect3 id="sparqljson"><title>SPARQL Endpoint with JSON+RDF Output</title>
-<para>The SPARQL endpoint also offers a JSON+RDF output option.</para>
+<sect3 id="sparqljson"><title>SPARQL Endpoint with RDF+JSON Output</title>
+<para>The SPARQL endpoint also offers a RDF+JSON output option.</para>
 <para>From http://cname:host/sparql select "JSON" for "Display Results As:"  and click the "Run Query" button.</para>
 <figure id="sparqljson1" float="1">
-      <title>SPARQL Endpoint with JSON+RDF output</title>
+      <title>SPARQL Endpoint with RDF+JSON output</title>
       <graphic fileref="ui/JSON1.png"/>
     </figure>
 <para>As result URL containing as parameter the format <emphasis>application/sparql-results+json</emphasis> will be generated and the content should look like:</para>
@@ -3214,21 +3297,29 @@ verbatim, that is as specified in the &quot;DefaultHost&quot; parameter in the [
 also available by embedding SPARQL text inside SQL, but the SPARQL extension syntax has the benefit
 of also working over the SPARQL protocol and of looking more SPARQL-like.
 </para>
-<para>The supported aggregates are <emphasis>count</emphasis>, <emphasis>min</emphasis>, <emphasis>max</emphasis>,
-<emphasis>avg</emphasis> and <emphasis>sum</emphasis>. These can take an optional <emphasis>distinct</emphasis>
-keyword. These are permitted only in the selection part of a select query. If a selection list consists
-of a mix of variables and aggregates, the non-aggregate selected items are considered to be grouping
-columns and a "group by" over them is implicitly added at the end of the generated SQL query. There is
-no explicit syntax for "group by" or "having" in Virtuoso SPARQL.
+<para>The supported aggregates are <emphasis>COUNT</emphasis>, <emphasis>MIN</emphasis>,
+<emphasis>MAX</emphasis>, <emphasis>AVG</emphasis> and <emphasis>SUM</emphasis>. These can take an
+optional <emphasis>DISTINCT</emphasis> keyword. These are permitted only in the selection part of a
+select query. If a selection list consists of a mix of variables and aggregates, the non-aggregate
+selected items are considered to be grouping columns and a <emphasis>GROUP BY</emphasis> over them is implicitly added
+at the end of the generated SQL query. Virtuoso also supports explicit syntax for
+<emphasis>GROUP BY</emphasis>, <emphasis>ORDER BY</emphasis>, <emphasis>LIMIT</emphasis> and <emphasis>OFFSET</emphasis>.
+There is no explicit syntax for <emphasis>HAVING</emphasis> in Virtuoso SPARQL.
 </para>
 <para>If a selection consists of aggregates exclusively, the result set has one row with the values
 of the aggregates. If there are aggregates and variables in the selection, the result set has as many
 rows as there are distinct combinations of the variables; the aggregates are then calculated over each
-such distinct combination, as if there were a SQL "group by" over all non-aggregates.
+such distinct combination, as if there were a SQL GROUP BY over all non-aggregates.
+The implicit grouping pays attention to all subexpressions in the return list; say, if a result column expression is <code>(?x * max (?y))</code> then
+<code>?y</code> is aggregated and <code>?x</code> is not so it is grouped by ?x.
+This also means that if a result column expression is <code>(bif:year (?shipdate))</code> then a group is made for each distinct <code>?shipdate</code>,
+i.e. up to 366 groups for each distinct year.
+If you need one group per year, write explicit <code>GROUP BY (bif:year (?shipdate))</code>.
+
 </para>
 <para>With the count aggregate the argument may be either <emphasis>*</emphasis>, meaning counting all rows, or a variable
-name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>group by</emphasis>,
-there can be an optional <emphasis>distinct</emphasis> keyword before the variable that is the argument of an aggregate.
+name, meaning counting all the rows where this variable is bound. If there is no implicit <emphasis>GROUP BY</emphasis>,
+there can be an optional <emphasis>DISTINCT</emphasis> keyword before the variable that is the argument of an aggregate.
 </para>
 <para>There is a special syntax for counting distinct combinations of selected variables. This is:</para>
 <programlisting><![CDATA[
@@ -4465,10 +4556,257 @@ _______________________________________________________________________________
 
 ]]></programlisting>
 </sect2>
-<sect2 id="rdfsparqlimplementatiotrans"><title>SPARQL with Transitivity Option</title>
-<p>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension.</p>
-<p>Find detailed description and examples in the <link linkend="rdfsparqlruletransitivy">Transitivity in SPARQL</link> section.</p>
+<sect2 id="rdfsparqlimplementatiotrans"><title>Transitivity in SPARQL</title>
+  <para>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension. Read the
+<link linkend="transitivityinsQL">SQL section</link> for a definition of the options.</para>
+  <para>The SPARQL syntax is slightly different from the SQL, although the option names
+and meanings are the same.</para>
+  <para>In SPARQL, the transitive options occur after a subquery enclosed in braces:</para>
+  <para>The below produces all the IRI's that are the same as &lt;alice&gt;.</para>
+  <programlisting><![CDATA[
+SELECT ?syn
+where
+  {
+    {
+      SELECT ?x ?syn
+      where
+        {
+          { ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x }
+        }
+    }
+    option ( transitive, t_in (?x), t_out (?syn), t_distinct, t_min (0) )
+    filter (?x = <Alice>) .
+  }
+  ]]></programlisting>
+  <para>In this case, we provide a binding for ?x in the filter outside of the
+  transitive subquery. The subquery therefore is made to run from in to
+  out. The same effect would be accomplished if we bound ?syn and
+  SELECT ?x, the designations of in and out are arbitrary and for
+  transitive steps that can be evaluated equally well in both directions
+  this makes no difference.
+  </para>
+  <para>The transitive subquery in the above is </para>
+  <programlisting><![CDATA[
+{SELECT ?syn
+ WHERE
+  {
+    { SELECT ?x ?syn
+      WHERE
+       {{ ?x owl:sameAs ?syn } UNION { ?syn owl:sameAs ?x}}
+    } OPTION (TRANSITIVE, t_in (?x), t_out (?syn), t_distinct, t_min (0) )
+  }
+} .
+  ]]></programlisting>
+  <para>Leaving out the option would just look for one step of owl:sameAs.
+  Making it transitive will apply the subquery to all bindings it
+  produces until all are visited at least once (the t_distinct modifier).
+  </para>
+  <para>If the transitive step consists of a single triple pattern, there is a shorthand:</para>
+  <programlisting><![CDATA[
+  <alice> foaf:knows ?friend option (transitive t_min (1))
+  ]]></programlisting>
+  <para>will bind ?friend to all directly and indirectly found foaf:known
+  individuals. If t_min had been 0, Malice&gt; would have also been in the
+  generated bindings.</para>
+  <para>The syntax is</para>
+  <programlisting><![CDATA[
+  option (transitive transitivity_option[,...])
+
+  transitivity_option ::=  t_in (<variable_list>)
+  | t_out (<variable_list>)
+  | t_distinct
+  | t_shortest_only
+  | t_no_cycles
+  | t_cycles_only
+  | t_min (INTNUM)
+  | t_max (INTNUM)
+  | t_end_flag (<variable>)
+  | t_step (<variiable_or_step>)
+  | t_direction INTNUM
+
+  variable_list ::= <variable> [,...]
+
+  variable_or_step ::= <variable> | path_id' | 'step_no'
+  ]]></programlisting>
+  <para>Unlike SQL, variable names are used instead of column numbers.
+  Otherwise all the options have the same meaning.</para>
+  <para>Some examples of the use of transitivity are:</para>
+  <sect3 id="rdfsparqlimplementatiotransexamples"><title>Collection of Transitivity Option Demo Queries for SPARQL</title>
+<sect4 id="rdfsparqlimplementatiotransexamples1"><title>Example for finding out what graphs contain owl:sameAs for "New York"</title>
+  <para>To find out what graphs contain owl:sameAs for Dan York, we do</para>
+  <programlisting><![CDATA[
+  SELECT ?g ?x count (*) as ?count
+   WHERE {
+           {SELECT ?x ?alias ?g
+            WHERE {
+                    { GRAPH ?g {?x owl:sameAs ?alias }
+                  }
+            UNION
+           {GRAPH ?g {?alias owl:sameAs ?x}}}}
+   OPTION (TRANSITIVE, t_in (?x), t_out (?alias), t_distinct, t_min (1)) .
+   FILTER (?x = <http://dbpedia.org/resource/New_York> ) .
+         }
+  ]]></programlisting>
+  <para>Here we select all paths that start with the initial URI and pass
+  through one or more sameAs statements. Each step produces a result of
+  the transitive subquery. The graph where the sameAs triple was found
+  is returned and used as the grouping column. In this way we see how
+  many times each graph is used. Note that graphs are counted many
+  times since the graphs containing immediate sameAs statements are
+  counted for paths of length 1, then again as steps on paths that reach
+  to their aliases and so on.</para>
+</sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples2"><title>Example for query that takes all the people known by kidehen, to a depth between 1 and 4 applications of the subquery</title>
+  <para>This query takes all the people known by kidehen, to a depth between 1
+  and 4 applications of the subquery. It then sorts them by the
+  distance and the descending count of connections of each found connection. This is
+  equivalent to the default connections list shown by LinkedIn.</para>
+  <programlisting><![CDATA[
+  SELECT ?o ?dist ((SELECT COUNT (*) WHERE {?o foaf:knows ?xx}))
+  WHERE
+    {
+      {
+        SELECT ?s ?o
+        WHERE
+          {
+            ?s foaf:knows ?o
+          }
+      } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
+      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
+    }
+  ORDER BY ?dist DESC 3
+  LIMIT 50
+  ]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples4"><title>Example for finding how two people know each other and what graphs are involved in the connection</title>
+  <para>To find how two people know each other and what graphs are involved in the connection, we do:</para>
+  <programlisting><![CDATA[
+  SELECT ?link ?g ?step ?path
+  WHERE
+    {
+      {
+        SELECT ?s ?o ?g
+        WHERE
+          {
+            graph ?g {?s foaf:knows ?o }
+          }
+      } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only,
+      t_step (?s) as ?link, t_step ('path_id') as ?path, t_step ('step_no') as ?step, t_direction 3) .
+      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
+      && ?o = <http://www.advogato.org/person/mparaz/foaf.rdf#me>)
+    }
+    LIMIT 20
+  ]]></programlisting>
+  <para>This query binds both the t_in and t_out variables. The ?g is left as
+  a free variable. Also, specifying ?s and the system defined constants
+  step_no and path_id as with t_step, we get for each transitive step a
+  row of results with the intermediate binding of ?s, the count of steps
+  from the initial ?s and a distinct identifier for the individual path,
+  since there can be many distinct paths that link the ?s and ?o
+  specified in the filter.</para>
+  <para>See the SQL transitive option section for details on the meaning of step_no and path_id.</para>
+</sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples5"><title>Example for TBox Subsumption</title>
+<para>Subsumption Demo Using Transitivity Clause</para>
+<para>Yago Class Hierarchy (TBox) Subsumption</para>
+<para>AlphaReceptors</para>
+<programlisting><![CDATA[
+SELECT ?y
+FROM <http://dbpedia.org/resource/classes/yago#>
+WHERE
+  {
+    {
+      SELECT *
+      WHERE
+        {
+          ?x rdfs:subClassOf ?y .
+        }
+    }
+    OPTION (TRANSITIVE, t_distinct, t_in (?x), t_out (?y) ) .
+    FILTER (?x = <http://dbpedia.org/class/yago/AlphaReceptor105609111>)
+  }
+]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples6"><title>Example for Receptors</title>
+<programlisting><![CDATA[
+SELECT ?x
+FROM <http://dbpedia.org/resource/classes/yago#>
+WHERE
+  {
+    {
+      SELECT *
+      WHERE
+        {
+          ?x rdfs:subClassOf ?y .
+        }
+    } OPTION (transitive, t_distinct, t_in (?x), t_out (?y) ) .
+  FILTER (?y = <http://dbpedia.org/class/yago/Receptor105608868>)
+}
+]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples7"><title>Example with an inference rule to cater data being skos:broader based, which is no long transitive</title>
+<p>The following example demostrates the steps how to retrieve the skos ontology, add triples
+for skos:broaderTransitiveinto the grpah, define inference rule, and at the and
+execute sparql query with inference rule and transitivity option. The queries were executed against
+the LOD instance (http://lod.openlinksw.com):</p>
+<orderedlist>
+  <listitem>Make the Context graph, assuming you don't want to load entire SKOS vocabulary into our Quad Store:
+<programlisting><![CDATA[
+SQL>SPARQL
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+INSERT INTO GRAPH <urn:rules.skos> { skos:broader rdfs:subPropertyOf skos:broaderTransitive .
+                                     skos:narrower rdfs:subPropertyOf skos:narrowerTransitive };
+]]></programlisting>
+</listitem>
+  <listitem>OR Load entire SKOS ontology into Quad Store via iSQL interface (commandline or HTML based Conductor):
+<programlisting><![CDATA[
+SQL>DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/2009/08/skos-reference/skos-owl1-dl.rdf'), 'no', 'urn:rules.skos');
+Done.
+]]></programlisting>
+  </listitem>
+  <listitem>Make Context Rule:
+<programlisting><![CDATA[
+SQL>rdfs_rule_set ('skos-trans', 'urn:rules.skos');
+Done.
+]]></programlisting>
+  </listitem>
+  <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
+  <listitem>Use inference rule pragma to set context rule for SPARQL query, i.e:
+<programlisting><![CDATA[
+DEFINE input:inference "skos-trans"
+PREFIX p: <http://dbpedia.org/property/>
+PREFIX dbpedia: <http://dbpedia.org/resource/>
+PREFIX category: <http://dbpedia.org/resource/Category:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX geo: <http://www.georss.org/georss/>
+
+SELECT DISTINCT ?m ?n ?p ?d
+WHERE
+  {
+    ?m rdfs:label ?n.
+    ?m skos:subject ?c.
+    ?c skos:broaderTransitive category:Churches_in_Paris OPTION (TRANSITIVE) .
+    ?m p:abstract ?d.
+    ?m geo:point ?p
+    FILTER ( lang(?n) = "fr" )
+    FILTER ( lang(?d) = "fr" )
+  };
+]]></programlisting>
+</listitem>
+  <listitem>As result should be returned for ex. 22 rows.
+Note that for comparison, if the option (transitive) is ommitted, then only 2 rows will be returned in our example query:
+     <figure id="rdftr" float="1">
+       <title>Transitive option</title>
+       <graphic fileref="ui/trs1.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+</sect4>
+</sect3>
 </sect2>
+
 </sect1>
 
 <sect1 id="rdfgraphsecurity"><title>RDF Graphs Security</title>
@@ -30703,255 +31041,9 @@ http://dbpedia.org/resource/BMW_R75
   loaded this is permanent as long as the set of subjects with the name
   John does not change.</para>
   </sect2>
-  <sect2 id="rdfsparqlruletransitivy"><title>Transitivity in SPARQL</title>
-  <para>Virtuoso SPARQL allows access to Virtuoso's SQL transitivity extension. Read the
-<link linkend="transitivityinsQL">SQL section</link> for a definition of the options.</para>
-  <para>The SPARQL syntax is slightly different from the SQL, although the option names
-and meanings are the same.</para>
-  <para>In SPARQL, the transitive options occur after a subquery enclosed in braces:</para>
-  <para>The below produces all the IRI's that are the same as &lt;alice&gt;.</para>
-  <programlisting><![CDATA[
-SELECT ?syn
-where
-  {
-    {
-      SELECT ?x ?syn
-      where
-        {
-          { ?x owl:sameAs ?syn } union { ?syn owl:sameAs ?x }
-        }
-    }
-    option ( transitive, t_in (?x), t_out (?syn), t_distinct, t_min (0) )
-    filter (?x = <Alice>) .
-  }
-  ]]></programlisting>
-  <para>In this case, we provide a binding for ?x in the filter outside of the
-  transitive subquery. The subquery therefore is made to run from in to
-  out. The same effect would be accomplished if we bound ?syn and
-  SELECT ?x, the designations of in and out are arbitrary and for
-  transitive steps that can be evaluated equally well in both directions
-  this makes no difference.
-  </para>
-  <para>The transitive subquery in the above is </para>
-  <programlisting><![CDATA[
-{SELECT ?syn
- WHERE
-  {
-    { SELECT ?x ?syn
-      WHERE
-       {{ ?x owl:sameAs ?syn } UNION { ?syn owl:sameAs ?x}}
-    } OPTION (TRANSITIVE, t_in (?x), t_out (?syn), t_distinct, t_min (0) )
-  }
-} .
-  ]]></programlisting>
-  <para>Leaving out the option would just look for one step of owl:sameAs.
-  Making it transitive will apply the subquery to all bindings it
-  produces until all are visited at least once (the t_distinct modifier).
-  </para>
-  <para>If the transitive step consists of a single triple pattern, there is a shorthand:</para>
-  <programlisting><![CDATA[
-  <alice> foaf:knows ?friend option (transitive t_min (1))
-  ]]></programlisting>
-  <para>will bind ?friend to all directly and indirectly found foaf:known
-  individuals. If t_min had been 0, Malice&gt; would have also been in the
-  generated bindings.</para>
-  <para>The syntax is</para>
-  <programlisting><![CDATA[
-  option (transitive transitivity_option[,...])
-
-  transitivity_option ::=  t_in (<variable_list>)
-  | t_out (<variable_list>)
-  | t_distinct
-  | t_shortest_only
-  | t_no_cycles
-  | t_cycles_only
-  | t_min (INTNUM)
-  | t_max (INTNUM)
-  | t_end_flag (<variable>)
-  | t_step (<variiable_or_step>)
-  | t_direction INTNUM
-
-  variable_list ::= <variable> [,...]
-
-  variable_or_step ::= <variable> | path_id' | 'step_no'
-  ]]></programlisting>
-  <para>Unlike SQL, variable names are used instead of column numbers.
-  Otherwise all the options have the same meaning.</para>
-  <para>Some examples of the use of transitivity are:</para>
-  <sect3 id="rdfsparqlruletransitivyexamples"><title>Collection of Transitivity Option Demo Queries for SPARQL</title>
-<sect4 id="rdfsparqlruletransitivyexamples1"><title>Example for finding out what graphs contain owl:sameAs for "New York"</title>
-  <para>To find out what graphs contain owl:sameAs for Dan York, we do</para>
-  <programlisting><![CDATA[
-  SELECT ?g ?x count (*) as ?count
-   WHERE {
-           {SELECT ?x ?alias ?g
-            WHERE {
-                    { GRAPH ?g {?x owl:sameAs ?alias }
-                  }
-            UNION
-           {GRAPH ?g {?alias owl:sameAs ?x}}}}
-   OPTION (TRANSITIVE, t_in (?x), t_out (?alias), t_distinct, t_min (1)) .
-   FILTER (?x = <http://dbpedia.org/resource/New_York> ) .
-         }
-  ]]></programlisting>
-  <para>Here we select all paths that start with the initial URI and pass
-  through one or more sameAs statements. Each step produces a result of
-  the transitive subquery. The graph where the sameAs triple was found
-  is returned and used as the grouping column. In this way we see how
-  many times each graph is used. Note that graphs are counted many
-  times since the graphs containing immediate sameAs statements are
-  counted for paths of length 1, then again as steps on paths that reach
-  to their aliases and so on.</para>
-</sect4>
-<sect4 id="rdfsparqlruletransitivyexamples2"><title>Example for query that takes all the people known by kidehen, to a depth between 1 and 4 applications of the subquery</title>
-  <para>This query takes all the people known by kidehen, to a depth between 1
-  and 4 applications of the subquery. It then sorts them by the
-  distance and the descending count of connections of each found connection. This is
-  equivalent to the default connections list shown by LinkedIn.</para>
-  <programlisting><![CDATA[
-  SELECT ?o ?dist ((SELECT COUNT (*) WHERE {?o foaf:knows ?xx}))
-  WHERE
-  {
-    {
-        SELECT ?s ?o
-        WHERE
-        {
-          ?s foaf:knows ?o
-        }
-      } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
-      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
-    }
-  ORDER BY ?dist DESC 3
-  LIMIT 50
-  ]]></programlisting>
-</sect4>
-<sect4 id="rdfsparqlruletransitivyexamples4"><title>Example for finding how two people know each other and what graphs are involved in the connection</title>
-  <para>To find how two people know each other and what graphs are involved in the connection, we do:</para>
-  <programlisting><![CDATA[
-  SELECT ?link ?g ?step ?path
-  WHERE
-    {
-      {
-        SELECT ?s ?o ?g
-        WHERE
-          {
-            graph ?g {?s foaf:knows ?o }
-          }
-      } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only,
-         t_step (?s) as ?link, t_step ('path_id') as ?path, t_step ('step_no') as ?step, t_direction 3) .
-      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
-  	&& ?o = <http://www.advogato.org/person/mparaz/foaf.rdf#me>)
-    }
-    LIMIT 20
-  ]]></programlisting>
-  <para>This query binds both the t_in and t_out variables. The ?g is left as
-  a free variable. Also, specifying ?s and the system defined constants
-  step_no and path_id as with t_step, we get for each transitive step a
-  row of results with the intermediate binding of ?s, the count of steps
-  from the initial ?s and a distinct identifier for the individual path,
-  since there can be many distinct paths that link the ?s and ?o
-  specified in the filter.</para>
-  <para>See the SQL transitive option section for details on the meaning of step_no and path_id.</para>
-</sect4>
-<sect4 id="rdfsparqlruletransitivyexamples5"><title>Example for TBox Subsumption</title>
-<para>Subsumption Demo Using Transitivity Clause</para>
-<para>Yago Class Hierarchy (TBox) Subsumption</para>
-<para>AlphaReceptors</para>
-<programlisting><![CDATA[
-SELECT ?y
-FROM <http://dbpedia.org/resource/classes/yago#>
-WHERE
-  {
-    {
-      SELECT *
-      WHERE
-        {
-          ?x rdfs:subClassOf ?y .
-        }
-    }
-    OPTION (TRANSITIVE, t_distinct, t_in (?x), t_out (?y) ) .
-    FILTER (?x = <http://dbpedia.org/class/yago/AlphaReceptor105609111>)
-  }
-]]></programlisting>
-</sect4>
-<sect4 id="rdfsparqlruletransitivyexamples6"><title>Example for Receptors</title>
-<programlisting><![CDATA[
-SELECT ?x
-FROM <http://dbpedia.org/resource/classes/yago#>
-WHERE
-  {
-    {
-      SELECT *
-      WHERE
-        {
-          ?x rdfs:subClassOf ?y .
-        }
-    } OPTION (transitive, t_distinct, t_in (?x), t_out (?y) ) .
-  FILTER (?y = <http://dbpedia.org/class/yago/Receptor105608868>)
-}
-]]></programlisting>
-</sect4>
-<sect4 id="rdfsparqlruletransitivyexamples7"><title>Example with an inference rule to cater for instance data being skos:broader based, which is no long transitive</title>
-<p>The following example demostrates the steps how to retrieve the skos ontology, add triples
-for skos:broaderTransitiveinto the grpah, define inference rule, and at the and
-execute sparql query with inference rule and transitivity option. The queries were executed against
-the LOD instance (http://lod.openlinksw.com):</p>
-<orderedlist>
-  <listitem>Make the Context graph, assuming you don't want to load entire SKOS vocabulary into our Quad Store:
-<programlisting><![CDATA[
-SQL>SPARQL
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-INSERT INTO GRAPH <urn:rules.skos> {  skos:broader rdfs:subPropertyOf skos:broaderTransitive .
-                                      skos:narrower rdfs:subPropertyOf skos:narrowerTransitive};
-]]></programlisting>
-</listitem>
-  <listitem>OR Load entire SKOS ontology into Quad Store via iSQL interface (commandline or HTML based Conductor):
-<programlisting><![CDATA[
-SQL>DB.DBA.RDF_LOAD_RDFXML (http_get ('http://www.w3.org/2009/08/skos-reference/skos-owl1-dl.rdf'), 'no', 'urn:rules.skos');
-Done.
-]]></programlisting>
-  </listitem>
-  <listitem>Make Context Rule:
-<programlisting><![CDATA[
-SQL>rdfs_rule_set ('skos-trans', 'urn:rules.skos');
-Done.
-]]></programlisting>
-  </listitem>
-  <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
-  <listitem>Use inference rule pragma to set context rule for SPARQL query, i.e:
-<programlisting><![CDATA[
-DEFINE input:inference "skos-trans"
-PREFIX p: <http://dbpedia.org/property/>
-PREFIX dbpedia: <http://dbpedia.org/resource/>
-PREFIX category: <http://dbpedia.org/resource/Category:>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX geo: <http://www.georss.org/georss/>
-
-SELECT DISTINCT ?m ?n ?p ?d
-WHERE
-  {
-  ?m rdfs:label ?n.
-  ?m skos:subject ?c.
-    ?c skos:broaderTransitive category:Churches_in_Paris OPTION (TRANSITIVE) .
-  ?m p:abstract ?d.
-  ?m geo:point ?p
- FILTER ( lang(?n) = "fr" )
- FILTER ( lang(?d) = "fr" )
-    };
-]]></programlisting>
-</listitem>
-  <listitem>As result should be returned for ex. 22 rows.
-Note that for comparison, if the option (transitive) is ommitted, then only 2 rows will be returned in our example query:
-     <figure id="rdftr" float="1">
-       <title>Transitive option</title>
-       <graphic fileref="ui/trs1.png"/>
-     </figure>
-</listitem>
-</orderedlist>
-</sect4>
-</sect3>
+  <sect2>Inference Rules and SPARQL with Transitivity Option
+See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an inference rule to cater data being skos:broader based, which is no
+long transitive.
   </sect2>
 </sect1>
 

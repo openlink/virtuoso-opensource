@@ -4599,7 +4599,7 @@ means from input to output, 2 from output to input, 3 from both ends. Supposing 
 
 </itemizedlist>
  <tip><title>See Also:</title>
-    <link linkend="rdfsparqlruletransitivyexamples">Collection of Transitivity Option Demo Queries for SPARQL.</link>
+    <link linkend="rdfsparqlimplementatiotransexamples">Collection of Transitivity Option Demo Queries for SPARQL.</link>
   </tip>
 </sect1>
 
