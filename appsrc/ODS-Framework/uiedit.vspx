@@ -53,8 +53,11 @@
       http (sprintf ('<input type="checkbox" name="%s" id="%s" value="1" %s />', checkField, checkField, S));
     ]]>
   </v:method>
+
   <vm:page>
     <vm:header>
+      <script type="text/javascript" src="typeahead.js">;</script>
+      <link rel="stylesheet" href="typeahead.css" type="text/css" />
       <vm:title>Edit your personal data</vm:title>
     </vm:header>
     <vm:pagewrapper vm_onunload="checkPageLeave (document.forms['page_form'])">

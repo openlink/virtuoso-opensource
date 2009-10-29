@@ -401,6 +401,22 @@
     ]]>
   </v:before-data-bind>
 
+  <script type="text/javascript">
+    <![CDATA[
+      var edited = <?V case when length (self.fullname) then 'true' else 'false' end ?>;
+      function fillFullName (f, fn, ln, flag)
+      {
+        if (edited)
+        {
+          if (flag)
+            edited = false;
+          return;
+        }
+        if (f.value.length == 0 || (!edited && !flag))
+          f.value = fn.value + ' ' + ln.value;
+      }
+     ]]>
+  </script>
   <v:form name="usr_personal_1" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
       <table class="ctl_grp">

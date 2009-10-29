@@ -3054,26 +3054,28 @@ wa_exec_no_error_log(
     WAUI_MSN VARCHAR(50),          -- 14
     WAUI_HADDRESS1 VARCHAR(50),    -- 15
     WAUI_HADDRESS2 VARCHAR(50),    -- 15
-    WAUI_HCODE VARCHAR(50),        -- 15
-    WAUI_HCITY VARCHAR(50),        -- 16
-    WAUI_HSTATE VARCHAR(50),       -- 16
+    WAUI_HCODE VARCHAR(50),             -- 57
+    WAUI_HCITY VARCHAR(50),             -- 58
+    WAUI_HSTATE VARCHAR(50),            -- 59
     WAUI_HCOUNTRY VARCHAR(50),     -- 16
     WAUI_HTZONE VARCHAR(50),       -- 17
     WAUI_HPHONE VARCHAR(50),       -- 18
+    WAUI_HPHONE_EXT VARCHAR(5),         -- 18
     WAUI_HMOBILE VARCHAR(50),      -- 18
     WAUI_BINDUSTRY VARCHAR(50),    -- 19
     WAUI_BORG VARCHAR(50),         -- 20
     WAUI_BJOB VARCHAR(50),         -- 21
     WAUI_BADDRESS1 VARCHAR(50),    -- 22
     WAUI_BADDRESS2 VARCHAR(50),    -- 22
-    WAUI_BCODE VARCHAR(50),        -- 22
-    WAUI_BCITY VARCHAR(50),        -- 23
-    WAUI_BSTATE VARCHAR(50),       -- 23
+    WAUI_BCODE VARCHAR(50),             -- 60
+    WAUI_BCITY VARCHAR(50),             -- 61
+    WAUI_BSTATE VARCHAR(50),            -- 62
     WAUI_BCOUNTRY VARCHAR(50),     -- 23
     WAUI_BTZONE VARCHAR(50),       -- 24
     WAUI_BLAT REAL,                -- 47
     WAUI_BLNG REAL,                -- 47
     WAUI_BPHONE VARCHAR(50),       -- 25
+    WAUI_BPHONE_EXT VARCHAR(5),         -- 25
     WAUI_BMOBILE VARCHAR(50),      -- 25
     WAUI_BREGNO VARCHAR(50),       -- 26
     WAUI_BCAREER VARCHAR(50),      -- 27
@@ -3125,7 +3127,7 @@ wa_exec_no_error_log(
 )
 ;
 
-wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(60)');
+wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(70)');
 
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_TEMPLATE', 'VARCHAR(20)');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_PHOTO_URL', 'LONG VARCHAR');
@@ -3164,6 +3166,9 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BMESSAGING', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_LOGIN', 'integer');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT_FINGERPRINT', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'long varbinary');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BPHONE_EXT', 'varchar(5)');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
@@ -3816,6 +3821,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_HTZONE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_HPHONE')
     UPDATE WA_USER_INFO SET WAUI_HPHONE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_HPHONE_EXT')
+    UPDATE WA_USER_INFO SET WAUI_HPHONE_EXT = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_HMOBILE')
     UPDATE WA_USER_INFO SET WAUI_HMOBILE = _data WHERE WAUI_U_ID = _uid;
 
@@ -3839,6 +3846,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_BLNG = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_BPHONE')
     UPDATE WA_USER_INFO SET WAUI_BPHONE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_BPHONE_EXT')
+    UPDATE WA_USER_INFO SET WAUI_BPHONE_EXT = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_BMOBILE')
     UPDATE WA_USER_INFO SET WAUI_BMOBILE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_BREGNO')
@@ -3920,46 +3929,37 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
   _visb := trim(_visb, ',');
   _visb:= split_and_decode (_visb,0,'\0\0,');
 
-  if (length (_visb) < 55)
+  if (length (_visb) < 70)
     {
       declare part, inx any;
-      part := make_array (50-length (_visb), 'any');
+    part := make_array (70-length (_visb), 'any');
       for (inx := 0; inx < length (part); inx := inx + 1)
         part [inx] := '3';
       _visb := vector_concat (_visb, part);
     }
 
   if (_mode = 1)
-    {
       return _visb;
-    }
 
   if (length(_arr) < 2)
     return;
 
-  i := 0;
-  while (i < length(_visb))
+  for (i := 0; i < length(_visb); i := i + 1)
     {
       declare val any;
       val := get_keyword (sprintf ('%d', i), _arr);
       if (val is not null)
 	_visb[i] := val;
-      i := i + 1;
-    };
+    }
 
   --dbg_obj_print(_visb);
-
   declare _new varchar;
-  j := 0;
+
   _new := '';
-  while (j < length(_visb))
-  {
+  for (j := 0; j < length(_visb); j := j + 1)
     _new := concat (_new, _visb[j]);
-    j := j + 1;
-  };
 
   UPDATE WA_USER_INFO SET WAUI_VISIBLE = _new WHERE WAUI_U_ID = _uid;
-  --dbg_obj_print(_visb);
   return;
 
  nf:

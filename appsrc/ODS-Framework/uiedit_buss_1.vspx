@@ -60,6 +60,7 @@
       WA_USER_EDIT (self.u_name, 'WAUI_BLNG', blng);
       WA_USER_EDIT (self.u_name, 'WAUI_LATLNG_HBDEF', self.set_blatlng_def.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BPHONE', self.b_phone.ufl_value);
+      WA_USER_EDIT (self.u_name, 'WAUI_BPHONE_EXT', self.b_phone_ext.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_BMOBILE', self.b_mobile.ufl_value);
 
       -- change user_text data
@@ -75,12 +76,16 @@
   <v:variable persist="0" name="bcountry" type="varchar" default="''"/>
   <v:variable persist="0" name="btzone" type="varchar" default="''"/>
   <v:variable persist="0" name="bphone" type="varchar" default="''"/>
+  <v:variable persist="0" name="bphone_ext" type="varchar" default="''"/>
   <v:variable persist="0" name="bmobile" type="varchar" default="''"/>
   <v:variable persist="0" name="blat" type="real" default="0.00"/>
   <v:variable persist="0" name="blng" type="real" default="0.00"/>
   <v:variable persist="0" name="blatlng_def" type="int" default="1"/>
 
   <v:variable name="sav22" type="varchar" default="'1'" />
+  <v:variable name="sav60" type="varchar" default="'1'" />
+  <v:variable name="sav61" type="varchar" default="'1'" />
+  <v:variable name="sav62" type="varchar" default="'1'" />
   <v:variable name="sav23" type="varchar" default="'1'" />
   <v:variable name="sav24" type="varchar" default="'1'" />
   <v:variable name="sav25" type="varchar" default="'1'" />
@@ -98,6 +103,7 @@
              WAUI_BCOUNTRY,
              WAUI_BTZONE,
              WAUI_BPHONE,
+             WAUI_BPHONE_EXT,
              WAUI_BMOBILE,
              WAUI_BLAT,
              WAUI_BLNG,
@@ -110,6 +116,7 @@
              self.bcountry,
              self.btzone,
              self.bphone,
+             self.bphone_ext,
              self.bmobile,
              self.blat,
              self.blng,
@@ -123,6 +130,9 @@
       if (tmp is not null and length (tmp) >= 47)
       {
         self.sav22 := tmp[22];
+        self.sav60 := tmp[60];
+        self.sav61 := tmp[61];
+        self.sav62 := tmp[62];
         self.sav23 := tmp[23];
         self.sav24 := tmp[24];
         self.sav25 := tmp[25];
@@ -142,7 +152,12 @@
         <tr>
           <th><label for="b_country">Country</label></th>
           <td class="listing_col" nowrap="1">
-            <v:data-list name="b_country" xhtml_id="b_country" value="--self.bcountry" sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'b_country\', \'b_state\');" />
+            <v:data-list name="b_country"
+                         xhtml_id="b_country"
+                         value="--self.bcountry"
+                         sql="select 'Not Specified' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME"
+                         xhtml_onchange="javascript: updateState(\'b_country\', \'b_state\');"
+                         xhtml_style="width:220px" />
             <vm:u-prop-select name="sel_23" value="self.sav23" />
           </td>
         </tr>
@@ -167,6 +182,7 @@
                 </script>
               ]]>
             </span>
+            <vm:u-prop-select name="sel_62" value="self.sav62" />
           </td>
         </tr>
         <tr>
@@ -176,6 +192,7 @@
                     value="--self.bcity"
                     xhtml_onchange="javascript: updateGeodata(\'b\');"
                     xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_61" value="self.sav61" />
           </td>
         </tr>
         <tr>
@@ -185,7 +202,7 @@
                     value="--self.bcode"
                     xhtml_onchange="javascript: updateGeodata(\'b\');"
                     xhtml_style="width:216px"/>
-            <vm:u-prop-select name="sel_22" value="self.sav22" />
+            <vm:u-prop-select name="sel_60" value="self.sav60" />
           </td>
         </tr>
         <tr>
@@ -195,6 +212,7 @@
                     value="--self.baddress1"
                     xhtml_onchange="javascript: updateGeodata(\'b\');"
                     xhtml_style="width:216px"/>
+            <vm:u-prop-select name="sel_22" value="self.sav22" />
           </td>
         </tr>
         <tr>
@@ -269,6 +287,10 @@
             <v:text name="b_phone"
                     value="--self.bphone"
                     xhtml_style="width:216px"/>
+            <b>Ext.</b>
+            <v:text name="b_phone_ext"
+                    value="--self.bphone_ext"
+                    xhtml_size="5"/>
             <vm:u-prop-select name="sel_25" value="self.sav25" />
           </td>
         </tr>

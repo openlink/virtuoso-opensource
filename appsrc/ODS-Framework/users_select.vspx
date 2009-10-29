@@ -224,12 +224,13 @@ input.button {
 
               user_sql := '';
               group_sql := '';
-              if (self.v_filter <> 'u') {
+              if (self.v_filter <> 'u')
+              {
                   group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a where (a.U_IS_ROLE=1) and (upper(a.U_NAME) like upper(\'%s\') and (U_ID not in (5,6)))', self.v_mask);
-
               }
-              if (self.v_filter <> 'g') {
-                user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
+              if (self.v_filter <> 'g')
+              {
+                user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (U_ACCOUNT_DISABLED=0) and (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
               }
               if (user_sql = '') {
                 control.ds_sql := group_sql;

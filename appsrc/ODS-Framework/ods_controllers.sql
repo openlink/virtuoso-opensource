@@ -642,6 +642,79 @@ _again:
 }
 ;
 
+create procedure ODS.ODS_API."lookup.list" (
+  in "key" varchar)  __soap_http 'text/plain'
+{
+  if ("key" = 'onlineAccounts')
+  {
+     http (
+                '12seconds'
+      || '\n'|| 'Amazon.com'
+      || '\n'|| 'Ameba'
+      || '\n'|| 'Backtype'
+      || '\n'|| 'Blog'
+      || '\n'|| 'brightkite.com'
+      || '\n'|| 'Custom RSS/Atom'
+      || '\n'|| 'Dailymotion'
+      || '\n'|| 'Del.icio.us'
+      || '\n'|| 'Digg'
+      || '\n'|| 'Diigo'
+      || '\n'|| 'Disqus'
+      || '\n'|| 'Facebook'
+      || '\n'|| 'Flickr'
+      || '\n'|| 'Fotolog'
+      || '\n'|| 'FriendFeed'
+      || '\n'|| 'Furl'
+      || '\n'|| 'Gmail/Google Talk'
+      || '\n'|| 'Goodreads'
+      || '\n'|| 'Google Reader'
+      || '\n'|| 'Google Shared Stuff'
+      || '\n'|| 'identi.ca'
+      || '\n'|| 'iLike'
+      || '\n'|| 'Intense Debate'
+      || '\n'|| 'Jaiku'
+      || '\n'|| 'Joost'
+      || '\n'|| 'Last.fm'
+      || '\n'|| 'LibraryThing'
+      || '\n'|| 'LinkedIn'
+      || '\n'|| 'LiveJournal'
+      || '\n'|| 'Ma.gnolia'
+      || '\n'|| 'meneame'
+      || '\n'|| 'Mister Wong'
+      || '\n'|| 'Mixx'
+      || '\n'|| 'MySpace'
+      || '\n'|| 'Netflix'
+      || '\n'|| 'Netvibes'
+      || '\n'|| 'Pandora'
+      || '\n'|| 'Photobucket'
+      || '\n'|| 'Picasa Web Albums'
+      || '\n'|| 'Plurk'
+      || '\n'|| 'Polyvore'
+      || '\n'|| 'Pownce'
+      || '\n'|| 'Reddit'
+      || '\n'|| 'Seesmic'
+      || '\n'|| 'Skyrock'
+      || '\n'|| 'SlideShare'
+      || '\n'|| 'Smotri.com'
+      || '\n'|| 'SmugMug'
+      || '\n'|| 'StumbleUpon'
+      || '\n'|| 'tipjoy'
+      || '\n'|| 'Tumblr'
+      || '\n'|| 'Twine'
+      || '\n'|| 'Twitter'
+      || '\n'|| 'Upcoming'
+      || '\n'|| 'Vimeo'
+      || '\n'|| 'Wakoopa'
+      || '\n'|| 'Yahoo'
+      || '\n'|| 'Yelp'
+      || '\n'|| 'YouTube'
+      || '\n'|| 'Zooomr'
+    );
+  }
+  return '';
+}
+;
+
 -- Server Info
 create procedure ODS.ODS_API."server.getInfo" (
   in info varchar) __soap_http 'application/json'
@@ -653,7 +726,22 @@ create procedure ODS.ODS_API."server.getInfo" (
   if (info = 'sslPort')
   {
     if (server_https_port () is not null)
-      retValue := vector ('sslPort', server_https_port ());
+      retValue := vector ('sslPort', server_https_port (), 'sslHost', '');
+    else
+    {
+    	for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+    	  where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
+	      and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
+      {
+    	   declare tmp any;
+    	   tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
+    	   if (length (tmp) = 2)
+    	     tmp := tmp[1];
+    	   else
+    	     tmp := HP_LISTEN_HOST;
+    	   retValue := vector ('sslPort', tmp, 'sslHost', HP_HOST);
+   	  }
+    }
   }
   return params2json (retValue);
 }
@@ -1897,7 +1985,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   _identity := trim (foafIRI);
   _loc_idn := trim (foafIRI);
   V := rfc1808_parse_uri (_identity);
-  if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
+  if (atoi (sys_stat ('st_dbms_ver')) < 6 and is_https_ctx () and
+      cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
     {
       V [0] := 'local';
       V [1] := '';
@@ -1944,11 +2033,14 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                   SIOC..cert_iri (''),
                   SIOC..rsa_iri (''),
                   foafGraph,
-                  _loc_idn);
+		  _loc_idn
+                  );
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
+      {
       goto _exit;
+  }
   }
   if (sslLoginCheck)
   {
@@ -1958,7 +2050,9 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       certLogin := coalesce (WAUI_CERT_LOGIN, 0);
     }
     if (isnull (certLogin))
+      {
       goto _exit;
+  }
   }
   S := sprintf ('sparql define input:storage ""
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -2134,7 +2228,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     appendProperty (V, 'sameAs', "sameAs");
 
 _exit:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  --exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
  return V;
   }
 ;
@@ -2162,12 +2256,14 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
   declare foafIRI any;
+  declare V any;
 
   foafIRI := get_certificate_info (7, null, null, null, '2.5.29.17');
   if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
   {
     foafIRI := subseq (foafIRI, 4);
-    return ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
+    V := ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
+    return V;
   }
   return case when outputMode then obj2json (null) else null end;
 }
@@ -2593,6 +2689,8 @@ grant execute on ODS.ODS_API.error_handler to ODS_API;
 grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
 grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
 grant execute on ODS.ODS_API."ontology.objects" to ODS_API;
+
+grant execute on ODS.ODS_API."lookup.list" to ODS_API;
 
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
 

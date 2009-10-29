@@ -757,6 +757,7 @@ create procedure wa_priv_info (in txt varchar, in flags varchar, in fld int)
 create procedure sioc_user_info (
     in graph_iri varchar,
     in in_iri varchar,
+    in old_is_org integer,
     in flags varchar,
     in waui_first_name varchar,
     in waui_last_name varchar,
@@ -780,6 +781,9 @@ create procedure sioc_user_info (
     in resume varchar := null,
     in interests any := null,
     in interestTopics any := null,
+    in haddress1 varchar := null,
+    in haddress2 varchar := null,
+    in hcode varchar := null,
     in hcity varchar := null,
     in hstate varchar := null,
     in hcountry varchar := null,
@@ -796,9 +800,10 @@ create procedure sioc_user_info (
 
   if (iri is null)
     return;
-  is_person := 1;
 
-  iri := person_iri (in_iri, '');
+  if (not isnull (old_is_org))
+  {
+    iri := person_iri (in_iri, '', old_is_org);
   org_iri := iri || '#org';
   addr_iri := iri || '#addr';
   ev_iri := iri || '#event';
@@ -806,11 +811,7 @@ create procedure sioc_user_info (
   crt_exp := iri || '#cert_exp';
   crt_mod := iri || '#cert_mod';
   giri := iri || '#based_near';
-  iri := person_iri (in_iri);
-  if (iri like '%/organization/%')
-    is_person := 0;
-
-  ods_sioc_result (iri);
+    iri := person_iri (in_iri, tp=>old_is_org);
 
   delete_quad_sp (graph_iri, iri, foaf_iri ('firstName'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('family_name'));
@@ -839,6 +840,20 @@ create procedure sioc_user_info (
   delete_quad_s_or_o (graph_iri, crt_iri, crt_iri);
   delete_quad_s_or_o (graph_iri, crt_exp, crt_exp);
   delete_quad_s_or_o (graph_iri, crt_mod, crt_mod);
+  }
+
+  ods_sioc_result (iri);
+
+  iri := person_iri (in_iri, '');
+  org_iri := iri || '#org';
+  addr_iri := iri || '#addr';
+  ev_iri := iri || '#event';
+  crt_iri := iri || '#cert';
+  crt_exp := iri || '#cert_exp';
+  crt_mod := iri || '#cert_mod';
+  giri := iri || '#based_near';
+  iri := person_iri (in_iri);
+  is_person := case when (iri like '%/organization/%') then 0 else 1 end;
 
   if (is_person and length (waui_first_name) and wa_user_pub_info (flags, 1))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
@@ -868,10 +883,12 @@ create procedure sioc_user_info (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
     }
   if (length (phone) and wa_user_pub_info (flags, 18) and wa_user_pub_info (flags, 25))
+    {
+      phone := replace (replace (replace (phone, '-', ''), ',', ''), ' ', '');
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
+    }
   if (lat is not null and lng is not null and wa_user_pub_info (flags, (case when hb_latlng = 0 then 39 else 47 end)))
     {
-
       DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
@@ -918,14 +935,28 @@ create procedure sioc_user_info (
   	  }
     }
 
-  if (wa_pub_info (hcountry, flags, 15))
+  if (wa_pub_info (hcountry,  flags, 16) or
+      wa_pub_info (hstate,    flags, 59) or
+      wa_pub_info (hcity,     flags, 58) or
+      wa_pub_info (hcode,     flags, 57) or
+      wa_pub_info (haddress1, flags, 15) or
+      wa_pub_info (haddress2, flags, 15)
+     )
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
-      if (length (hcity))
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
-      if (length (hstate))
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
+      if (wa_pub_info (hcountry, flags, 16))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
+      if (wa_pub_info (hstate, flags, 59))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+      if (wa_pub_info (hcity, flags, 58))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
+      if (wa_pub_info (hcode, flags, 57))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
+      if (wa_pub_info (haddress1, flags, 15))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
+      if (wa_pub_info (haddress2, flags, 15))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
     }
 
   if (is_person and wa_pub_info (resume, flags, 34))
@@ -1013,10 +1044,38 @@ create procedure sioc_user_info (
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
-  sioc_user_private_info (graph_iri, in_iri, flags, waui_first_name, waui_last_name,
-      title, full_name, mail, gender, icq, msn, aim, yahoo, birthday, org, phone, lat, lng,
-      webpage, photo, org_page, resume, interests, interestTopics, hcity,
-      hstate, hcountry, ext_urls, hb_latlng);
+  sioc_user_private_info (graph_iri,
+                          in_iri,
+                          flags,
+                          waui_first_name,
+                          waui_last_name,
+                          title,
+                          full_name,
+                          mail,
+                          gender,
+                          icq,
+                          msn,
+                          aim,
+                          yahoo,
+                          birthday,
+                          org,
+                          phone,
+                          lat,
+                          lng,
+                          webpage,
+                          photo,
+                          org_page,
+                          resume,
+                          interests,
+                          interestTopics,
+                          haddress1,
+                          haddress2,
+                          hcode,
+                          hcity,
+                          hstate,
+                          hcountry,
+                          ext_urls,
+                          hb_latlng);
 };
 
 create procedure sioc_user_private_info (
@@ -1044,6 +1103,9 @@ create procedure sioc_user_private_info (
     in resume varchar := null,
     in interests any := null,
     in interestTopics any := null,
+    in haddress1 varchar := null,
+    in haddress2 varchar := null,
+    in hcode varchar := null,
     in hcity varchar := null,
     in hstate varchar := null,
     in hcountry varchar := null,
@@ -1106,7 +1168,10 @@ create procedure sioc_user_private_info (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
     }
   if (length (phone) and wa_user_priv_info (flags, 18) and wa_user_priv_info (flags, 25))
+    {
+      phone := replace (replace (replace (phone, '-', ''), ',', ''), ' ', '');
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
+    }
   if (lat is not null and lng is not null and wa_user_priv_info (flags, (case when hb_latlng = 0 then 39 else 47 end)))
     {
 
@@ -1155,14 +1220,28 @@ create procedure sioc_user_private_info (
   	  }
     }
 
-  if (wa_priv_info (hcountry, flags, 15))
+  if (wa_priv_info (hcountry,  flags, 16) or
+      wa_priv_info (hstate,    flags, 59) or
+      wa_priv_info (hcity,     flags, 58) or
+      wa_priv_info (hcode,     flags, 57) or
+      wa_priv_info (haddress1, flags, 15) or
+      wa_priv_info (haddress2, flags, 15)
+     )
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
-      if (length (hcity))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
-      if (length (hstate))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
+      if (wa_priv_info (hcountry, flags, 16))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
+      if (wa_priv_info (hstate, flags, 59))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+      if (wa_priv_info (hcity, flags, 58))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
+      if (wa_priv_info (hcode, flags, 57))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
+      if (wa_priv_info (haddress1, flags, 15))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
+      if (wa_priv_info (haddress2, flags, 15))
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
     }
 
   if (is_person and wa_priv_info (resume, flags, 34))
@@ -2085,6 +2164,9 @@ create procedure fill_ods_sioc (in doall int := 0)
             		   WAUI_RESUME,
             		   WAUI_INTERESTS,
             		   WAUI_INTEREST_TOPICS,
+                   WAUI_HADDRESS1,
+                   WAUI_HADDRESS2,
+                   WAUI_HCODE,
             		   WAUI_HCITY,
             		   WAUI_HSTATE,
             		   WAUI_HCOUNTRY,
@@ -2116,6 +2198,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 
 		  sioc_user_info (graph_iri,
 		                  iri,
+		                  null,
 		                  WAUI_VISIBLE,
 		                  WAUI_FIRST_NAME,
 		                  WAUI_LAST_NAME,
@@ -2138,6 +2221,9 @@ create procedure fill_ods_sioc (in doall int := 0)
 			WAUI_RESUME,
 			WAUI_INTERESTS,
                 			WAUI_INTEREST_TOPICS,
+                      WAUI_HADDRESS1,
+                      WAUI_HADDRESS2,
+                      WAUI_HCODE,
 			WAUI_HCITY,
 			WAUI_HSTATE,
 			WAUI_HCOUNTRY,
@@ -2690,8 +2776,7 @@ create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referenci
   u_site_iri := user_space_iri (uname);
   if (N.WAUI_SITE_NAME is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
-  sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME, N.WAUI_TITLE, _u_full_name, _u_e_mail);
-  return;
+  sioc_user_info (graph_iri, iri, null, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME, N.WAUI_TITLE, _u_full_name, _u_e_mail);
 };
 
 create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referencing old as O, new as N
@@ -2733,19 +2818,26 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
       update_quad_s_o (graph_iri, oiri, niri);
       if (N.WAUI_IS_ORG)
 	{
-          update DB.DBA.RDF_QUAD set O = iri_to_id (foaf_iri ('Organization')) where
-	    G = iri_to_id (graph_iri) and S = iri_to_id (niri) and P = iri_to_id (rdf_iri ('type'))
+      update DB.DBA.RDF_QUAD
+         set O = iri_to_id (foaf_iri ('Organization'))
+       where G = iri_to_id (graph_iri)
+         and S = iri_to_id (niri)
+         and P = iri_to_id (rdf_iri ('type'))
 	    and O = iri_to_id (foaf_iri ('Person'));
 	}
       else
 	{
-          update DB.DBA.RDF_QUAD set O = iri_to_id (foaf_iri ('Person')) where
-	    G = iri_to_id (graph_iri) and S = iri_to_id (niri) and P = iri_to_id (rdf_iri ('type'))
+      update DB.DBA.RDF_QUAD
+         set O = iri_to_id (foaf_iri ('Person'))
+       where G = iri_to_id (graph_iri)
+         and S = iri_to_id (niri)
+         and P = iri_to_id (rdf_iri ('type'))
 	    and O = iri_to_id (foaf_iri ('Organization'));
 	}
     }
   sioc_user_info (graph_iri,
                   iri,
+                  O.WAUI_IS_ORG,
                   N.WAUI_VISIBLE,
                   N.WAUI_FIRST_NAME,
                   N.WAUI_LAST_NAME,
@@ -2768,6 +2860,9 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_RESUME,
 			N.WAUI_INTERESTS,
             			N.WAUI_INTEREST_TOPICS,
+                  N.WAUI_HADDRESS1,
+                  N.WAUI_HADDRESS2,
+                  N.WAUI_HCODE,
 			N.WAUI_HCITY,
 			N.WAUI_HSTATE,
 			N.WAUI_HCOUNTRY,
@@ -4056,6 +4151,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?adr vcard:Country ?country .
             ?adr vcard:Locality ?city .
 	    ?adr vcard:Region ?state .
+	    ?adr vcard:Pobox ?pobox .
+	    ?adr vcard:Street ?street .
+	    ?adr vcard:Extadd ?extadd .
 	    ?person bio:olb ?bio .
 	    ?person bio:event ?event .
 	    ?event rdf:type bio:Birth .
@@ -4082,9 +4180,13 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      foaf:openid ?oid .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
-	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
+  	      optional { ?person vcard:ADR ?adr .
+  	                 optional { ?adr vcard:Country ?country } .
 	        	optional { ?adr vcard:Locality ?city } .
 			optional { ?adr vcard:Region ?state } .
+              			 optional { ?adr vcard:Pobox ?pobox } .
+              			 optional { ?adr vcard:Street ?street } .
+              			 optional { ?adr vcard:Extadd ?extadd } .
 	      	       } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
@@ -4180,7 +4282,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
         union  
         {
             ?container foaf:maker ?person;
-              a sioct:FavoriteThings;
+              a sioct:FavoriteThings .
             OPTIONAL {?container sioc:container_of ?grSubject.
                       ?grSubject ?grProperty ?grObject.
                      }.
@@ -4664,6 +4766,9 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    ?adr vcard:Country ?country .
             ?adr vcard:Locality ?city .
 	    ?adr vcard:Region ?state .
+  	    ?adr vcard:Pobox ?pobox .
+  	    ?adr vcard:Street ?street .
+  	    ?adr vcard:Extadd ?extadd .
 	    ?person bio:olb ?bio .
 	    ?person bio:event ?event .
 	    ?event rdf:type bio:Birth .
@@ -4706,9 +4811,14 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	      optional { ?person foaf:homepage ?homepage } .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
-	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
+    	      optional {
+    	        ?person vcard:ADR ?adr .
+              optional { ?adr vcard:Country ?country } .
 	        	optional { ?adr vcard:Locality ?city } .
 			optional { ?adr vcard:Region ?state } .
+       			  optional { ?adr vcard:Pobox ?pobox } .
+       			  optional { ?adr vcard:Street ?street } .
+       			  optional { ?adr vcard:Extadd ?extadd } .
 	      	       } .
 	      #optional { ?person foaf:interest ?interest } .
 	      #optional { ?person bio:keywords ?keywords } .
@@ -4716,11 +4826,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	      }
 	    }
 	  }',
-	  u_name,
-	  iri, iri, iri,
-	  graph, u_name);
+  	  u_name, iri, iri, iri, graph, u_name);
 	}
-
        qry := qry || part;
     }
   else if (postid is null)
@@ -4752,15 +4859,15 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 		  ?host sioc:link ?link .
 		  ?host dc:title ?title .
 		  ?host rdf:type sioc:Space .
-	        } where
+                     }
+                     where
             	{
 		  graph <%s>
 		  {
 		    ?host sioc:space_of ?forum . ?forum sioc:id "%s" .
 		    ?host sioc:link ?link . ?host dc:title ?title
 		  }
-		}', graph, wai_name
-	    );
+              		   }', graph, wai_name);
       rset := null;
       maxrows := 0;
       state := '00000';
@@ -4800,7 +4907,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 			?svc svc:service_protocol ?proto .
 			?svc svc:service_of ?forum .
 			?svc rdf:type svc:Service .
-		    } where
+                 		   }
+                 		   where
             	{
 		  graph <%s>
 		  {
@@ -4819,8 +4927,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
   		      ?svc svc:service_protocol ?proto .
 		    }
 		  }
-		}', wai_name, graph, wai_name
-	    );
+                 		   }', wai_name, graph, wai_name);
       rset := null;
       maxrows := 0;
       state := '00000';
@@ -5038,11 +5145,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	   optional { ?post sioc:content ?content } .
 	   optional { ?post foaf:maker ?maker . optional { ?maker rdfs:seeAlso ?maker_see_also } .
 		    optional { ?maker foaf:name ?foaf_name .  } . optional { ?maker foaf:mbox ?foaf_mbox } } .
-	 ' ||
-	 ' } ',
-	 graph, md5(iri));
+	       } ', graph, md5(iri));
     }
-
   maxrows := 0;
   state := '00000';
 --  dbg_printf ('%s', qry);
