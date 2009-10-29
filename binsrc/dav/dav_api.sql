@@ -2324,7 +2324,8 @@ create procedure RDF_SINK_UPLOAD (
        strstr (type, 'application/foaf+xml') is not null
      )
   {
-    if (rdf_sponger = 'on') {
+    if (rdf_sponger = 'on')
+    {
       declare xt any;
 
       xt := xtree_doc (content);
@@ -2351,22 +2352,16 @@ _grddl:;
   if (rdf_sponger = 'on')
   {
     declare aq, ps, xrc any;
+    declare ret_body varchar;
 
-    aq := null;
+    ret_body := cast (content as varchar);
     ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
-    if (length (ps))
-      aq := async_queue (1);
-
+    aq := case when (length (ps)) then async_queue (1) else null end;
     for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
       declare val_match, pcols, npars any;
 
-      if (RM_TYPE = 'MIME')
-      {
-        val_match := type;
-      } else {
-        val_match := null;
-      }
+      val_match := case when (RM_TYPE = 'MIME') then type else rdf_graph2 end;
       if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
       {
         if (__proc_exists (RM_HOOK) is null)
@@ -2378,16 +2373,14 @@ _grddl:;
         };
 
         pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
-        npars := 8;
-        if (isarray (pcols))
-          npars := length (pcols);
+        npars := case when (isarray (pcols)) then length (pcols) else 8 end;
 	      if (npars = 7)
 	      {
-          xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, content, aq, ps, RM_KEY);
+		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY);
         } else {
-          xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, content, aq, ps, RM_KEY, RM_OPTIONS);
+		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY, RM_OPTIONS);
         }
-	      if (xrc > 0)
+	      if (__tag(xrc) = 193 or xrc < 0 or xrc > 0)
 	      {
 	        goto _exit;
 	      }
