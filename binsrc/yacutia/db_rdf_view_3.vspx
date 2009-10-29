@@ -254,6 +254,8 @@
 	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr any;
 	       stat := '00000';
 	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	       if (__proc_exists (fix_identifier_case ('shcompo_clear'), 2) is not null)
+	         shcompo_clear ();
 	       if (self.view_vd)
                  {
 		   gr := sprintf ('http://%s/%s#', defhost, self.base_url);

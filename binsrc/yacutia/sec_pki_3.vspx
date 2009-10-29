@@ -349,7 +349,11 @@
 	</v:button>
 	<v:button action="simple" name="back_to_ods" value="Go to ODS">
 	    <v:on-post><![CDATA[
+		declare sid any;
+		sid := self.sid;
+		self.sid := null;
 		self.vc_redirect ('/ods/');
+		self.sid := sid;
 		]]></v:on-post>
 	</v:button>
     </div>
