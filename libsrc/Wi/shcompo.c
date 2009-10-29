@@ -27,6 +27,7 @@
 #include "http.h"
 #include "sqlbif.h"
 #include "xmltree.h"
+#include "security.h"
 
 static void shcompo_release_int (shcompo_t *shc);
 
@@ -434,6 +435,27 @@ bif_exec_shcompo_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_copy_tree (shc->shcompo_data);
 }
 
+caddr_t
+bif_shcompo_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  shcompo_t **val_ptr;
+  caddr_t **key;
+  shcompo_vtable_t *vt = &shcompo_vtable__qr;
+  id_hash_iterator_t it;
+
+  sec_check_dba ((query_instance_t *) qst, "shcompo_clear");
+  mutex_enter (vt->shcompo_cache_mutex);
+  id_hash_iterator (&it, shcompo_vtable__qr.shcompo_cache);
+  while (hit_next (&it, (char **)&key, (char **)&val_ptr))
+    {
+      id_hash_remove (shcompo_vtable__qr.shcompo_cache, (caddr_t)(&(val_ptr[0]->shcompo_key)));
+      shcompo_release_int (val_ptr[0]);
+    }
+  mutex_leave (vt->shcompo_cache_mutex);
+  return NULL;
+}
+;
+
 /* Part 3. Init/final */
 
 void shcompo_init (void)
@@ -461,6 +483,7 @@ void shcompo_init (void)
     shcompo_vtable__test.shcompo_destroy_data = shcompo_destroy_data__test;
     shcompo_vtable__test.shcompo_cache_size_limit = 10;
     bif_define ("exec_shcompo_test", bif_exec_shcompo_test);
+    bif_define ("shcompo_clear", bif_shcompo_clear);
 }
 
 void
