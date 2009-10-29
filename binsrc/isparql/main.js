@@ -15,6 +15,7 @@ var adv = {};
 var tab = {};
 var tab_qbe = {};
 var tab_query = {};
+var tab_results = {};
 var page_w = 800;
 var page_h = 800;
 
@@ -35,15 +36,19 @@ function init() {
 	// XXX cannot go without these global vars for now - too much refactoring involved
 
 	iSPARQL.Common.initAdv(); // XXX warning defines global adv
-	iSPARQL.Common.initQBE(); // XXX warning defines global qbe
-        iSPARQL.Common.initQE();  // XXX warning defines global qe, uses qbe
+	if (!OAT.Browser.isIE)
+	    iSPARQL.Common.initQBE(); // XXX warning defines global qbe
+
+    	iSPARQL.Common.initQE();  // XXX warning defines global qe, uses global qbe
 
 	iSPARQL.Common.initUI();
 
 	iSPARQL.Common.showUI();
 	iSPARQL.Common.hideSplash();
 
-	if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
+	if (!OAT.Browser.isIE) {
+	    if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
+	}
 
     } catch (e) {
 	iSPARQL.Common.errMsg ('Internal Error: ' + e.toString());
@@ -166,10 +171,7 @@ iSPARQL.QueryExec = function(optObj) {
 	    return;
 	}
 
-	var req = {
-	    query:opts.query,
-	    format:opts.format
-	};
+	var req = { query:opts.query, format:opts.format };
 
 	if (opts.defaultGraph && !opts.query.match(/from *</i)) { req["default-graph-uri"] = opts.defaultGraph; }
 	if (opts.limit) { req["maxrows"] = opts.limit; }
@@ -1451,7 +1453,7 @@ iSPARQL.Common = {
 	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
 
 	/* qbe_unsupp */
-	iSPARQL.dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
+	iSPARQL.dialogs.qbe_unsupp = new OAT.Dialog("SVG Not Available","qbe_unsupported_div",{width:400,modal:1});
 
 	iSPARQL.dialogs.qbe_unsupp.ok = function() {
 	    tab.go(1);
@@ -1541,9 +1543,12 @@ iSPARQL.Common = {
 	var execCB = function(req) {
 	    /* FIXME: nicely call redraw here */
 	    tab.go(2); /* go to results after query execution */
-	    if (qbe.QueryGenerate() == req.opts.query) { return; }
-	    qbe.loadFromString (req.opts.query);
-	    qbe.svgsparql.reposition();
+
+	    if (!OAT.Browser.isIE) {
+	        if (qbe.QueryGenerate() == req.opts.query) { return; }
+	        qbe.loadFromString (req.opts.query);
+	        qbe.svgsparql.reposition();
+	    }
 
 	    $("query").value = req.opts.query;
 	    $("qbe_graph").value = req.opts.defaultGraph;
@@ -1826,7 +1831,7 @@ iSPARQL.Common = {
 	for (var i=0;i<iSPARQL.dataObj.namedGraphs.length;i++) {
 	    add_named_graph(iSPARQL.dataObj.namedGraphs[i]);
 	}
-    },
+    }
 }
 
 function get_file_type(file_name) {

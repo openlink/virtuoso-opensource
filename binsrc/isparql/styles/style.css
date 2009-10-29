@@ -476,3 +476,7 @@ ul#tabgrph {
 #help_dlg ul {
   list-style-type: none; margin-left: 10px;}
 
+#qbe_unsupported_div img.logo {
+  width: 60px;
+  border: 0;
+}

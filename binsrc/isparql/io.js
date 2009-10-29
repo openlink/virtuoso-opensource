@@ -266,10 +266,7 @@ iSPARQL.IO = {
     },
 
     unserializeXml:function(str) {
-	var dataObj = {
-	    defaultGraph:"",
-	    query:""
-	};
+	var dataObj = { defaultGraph:"", query:"" };
 
 	var xml = OAT.Xml.createXmlDoc(str);
 	var q = xml.getElementsByTagName("sparql")[0];
