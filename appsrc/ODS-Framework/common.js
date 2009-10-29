@@ -298,7 +298,7 @@ function createState(stateName, stateValue)
   var fld = new OAT.Combolist([], stateValue, {onchange: f});
   fld.input.name = stateName;
   fld.input.id = stateName;
-  fld.input.style.width = "216px";
+  fld.input.style.width = "200px";
   fld.addOption("");
 
   span.appendChild(fld.div);
@@ -556,7 +556,7 @@ var serviceList = [
   ["intensedebate.jpg", "http://www.intensedebate.com/", "Intense Debate"],
   ["jaiku.jpg", "http://www.jaiku.com/", "Jaiku"],
   ["joost.jpg", "http://www.joost.com/", "Joost"],
-  ["lastfm.jpg", "http://www.last.fm/", "Last.fm"],
+  ["lastfm.jpg", "http://www.last.fm/user/", "Last.fm"],
   ["librarything.jpg", "http://www.librarything.com/", "LibraryThing"],
   ["linkedin.jpg", "http://www.linkedin.com/", "LinkedIn"],
   ["livejournal.jpg", "http://www.livejournal.com/", "LiveJournal"],
@@ -600,6 +600,18 @@ var setServiceUrl = function(fld)
       if (fld.value == serviceList[N][2])
       {
         var urlName = fld.input.name.replace(/fld_1_/, 'fld_2_');
+        $(urlName).value = serviceList[N][1]+$v('c_nick');
+      }
+    }
+	}
+
+var setServiceUrl2 = function(fld)
+  {
+    for (N = 0; N < serviceList.length; N = N + 1)
+    {
+      if (fld.value == serviceList[N][2])
+      {
+        var urlName = fld.name.replace(/fld_1_/, 'fld_2_');
         $(urlName).value = serviceList[N][1]+$v('c_nick');
       }
     }
@@ -651,16 +663,21 @@ function updateComboOption10 (fld, fldValue, ontologyClassName)
 
 function updateField1 (elm, fldName, prefix, No, fldOptions)
 {
-  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
+  var elm = $(elm);
 
+  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
   fld.input.name = fldName;
   fld.input.id = fldName;
+  fld.input.setAttribute("autocomplete", "off");
   fld.input.style.width = "90%";
   for (N = 0; N < serviceList.length; N = N + 1)
     updateComboOption1(fld, serviceList[N][0], serviceList[N][2]);
-
-  var elm = $(elm);
   elm.appendChild(fld.div);
+
+	var ta = new TypeAhead(fld.input.id, 'onlineAccounts', '');
+	fld.input.onchange = setServiceUrl2;
+	fld.input.form.onsubmit = CheckSubmit;
+	taVars[taVars.length] = ta;
 }
 
 function updateField2 (elm, fldName, prefix, No, fldOptions)

@@ -1,0 +1,28 @@
+/* $Id$ */
+.THHideDropDown {
+	display: none;
+}
+.THShowDropDown {
+	display: block;
+	position: absolute;
+	z-index: 101;
+	cursor: pointer;
+  overflow: auto;
+  height: 10em;
+  width: auto;
+}
+.THShowDropDown ul {
+	background-color: #FBFBF9;
+	border: 1px solid #ccc;
+	padding: 3px;
+	margin: 0;
+	overflow: hidden;
+}
+.THShowDropDown ul li {
+	list-style-type: none;
+  white-space:nowrap;
+}
+.THLIHover {
+	background-color: #316AC5;
+	color: #FFFFFF;
+}

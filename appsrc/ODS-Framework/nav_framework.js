@@ -2300,11 +2300,14 @@ ODS.Nav = function (navOptions)
         } catch (e) { o = null; }
         if (o && o.sslPort)
         {
+	  var hostname = document.location.hostname;
+	  if (o.sslHost && o.sslHost.length > 0)
+	    hostname = o.sslHost;
           aSSL = OAT.Dom.create ("a");
 	  if (o.sslPort != '443')
-            aSSL.href = 'https://' + document.location.hostname + ':' + o.sslPort + '/ods/index.html?alog=1';
+            aSSL.href = 'https://' + hostname + ':' + o.sslPort + '/ods/index.html?alog=1';
 	  else
-            aSSL.href = 'https://' + document.location.hostname + '/ods/index.html?alog=1';
+            aSSL.href = 'https://' + hostname + '/ods/index.html?alog=1';
           var aImg = OAT.Dom.create ('img');
           aImg.src = 'images/icons/lock_16.png';
           aImg.alt = 'ODS SSL Link';
