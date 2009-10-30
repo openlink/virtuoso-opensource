@@ -1060,6 +1060,7 @@ ws_read_multipart_mime_post (ws_connection_t *ws, int *is_stream)
       session_buffered_write (ws->ws_strses, "\x0D\x0A", 2);
       parsed_msg = (caddr_t *) mime_stream_get_part (1, ws->ws_session,
 	  ws->ws_req_len, ws->ws_strses, msg_len + 2 - ws->ws_req_len);
+      ws->ws_req_len = 0; /* the content have been read */
       if (parsed_msg)
 	{
 	  attrs = (caddr_t *) parsed_msg[0];
@@ -3341,7 +3342,9 @@ run_in_dav:
 	  if (!ts_probe)
 	    {
 	      caddr_t ts2 = NULL;
-	      char def_page [200] = "";
+	      char def_page [200];
+
+	      def_page[0] = 0;
 	      if (ws->ws_map && ws->ws_map->hm_def_page && dir_probe)
 		{
 		  int plen = ws->ws_path_string ? (int) strlen (ws->ws_path_string) : 0;
@@ -3383,7 +3386,7 @@ run_in_dav:
 		    {
 		      caddr_t l_path = dk_alloc_box (box_length (ws->ws_path_string) +
 			  strlen (ws->ws_map->hm_def_page), DV_STRING);
-		      if (!def_page)
+		      if (0 != def_page[0])
 			{
 			  dk_free_box (ts2);
 			  http_get_def_page (fpath, &ts2, ws->ws_map->hm_def_page, def_page, sizeof (def_page));
@@ -3485,7 +3488,7 @@ vsmx_start:
       if (DO_LOG(LOG_EXEC))
 	{
 	  LOG_GET;
-	  log_info ("EXEC_3 %s %s Exec vsp %.*s", user, from, LOG_PRINT_STR_L, p_name ? p_name :"");
+	  log_info ("EXEC_3 %s %s Exec vsp %.*s", user, from, LOG_PRINT_STR_L, p_name[0] != 0 ? p_name :"");
 	}
 
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
