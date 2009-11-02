@@ -1025,44 +1025,10 @@ end_of_val_print: ;
 }
 ;
 
-create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
 {
-  declare varctr, varcount, resctr, rescount integer;
-  varcount := length (metas[0]);
-  rescount := length (rset);
-  http ('\n{ "head": { "link": [], "vars": [', ses);
-  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
-    {
-      if (varctr > 0)
-        http(', "', ses);
-      else
-        http('"', ses);
-      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
       http('"', ses);
-    }
-  http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
-  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
-    {
-      declare need_comma integer;
-      if (resctr > 0)
-        http(',\n    {', ses);
-      else
-        http('\n    {', ses);
-      need_comma := 0;
-      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
-        {
-          declare val any;
-          val := rset[resctr][varctr];
-          if (val is null)
-            goto end_of_val_print; -- see below
-          if (need_comma)
-            http('\t, "', ses);
-          else
-            {
-              http(' "', ses);
-              need_comma := 1;
-            }
-          http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+  http_escape (colname, 11, ses, 0, 1);
           http('": { ', ses);
           if (isiri_id (val))
             {
@@ -1150,7 +1116,44 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               http_escape (__rdf_strsqlval (val), 11, ses, 1, 1);
             }
           http ('" }', ses);
+}
+;
 
+create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare varctr, varcount, resctr, rescount integer;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  http ('\n{ "head": { "link": [], "vars": [', ses);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      if (varctr > 0)
+        http(', "', ses);
+      else
+        http('"', ses);
+      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+      http('"', ses);
+    }
+  http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      declare need_comma integer;
+      if (resctr > 0)
+        http(',\n    {', ses);
+      else
+        http('\n    {', ses);
+      need_comma := 0;
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val any;
+          val := rset[resctr][varctr];
+          if (val is null)
+            goto end_of_val_print; -- see below
+          if (need_comma)
+            http('\t,', ses);
+          else
+            need_comma := 1;
+          SPARQL_RESULTS_JSON_WRITE_BINDING (ses, metas[0][varctr][0], val);
 end_of_val_print: ;
         }
       http('}', ses);

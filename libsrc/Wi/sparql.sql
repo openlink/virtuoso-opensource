@@ -3740,6 +3740,69 @@ create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML (in colvalues any, in c
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN
 ;
 
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare sol_id varchar;
+  declare col_ctr, col_count, need_comma integer;
+  declare blank_ids any;
+  col_count := length (colnames);
+  if (185 <> __tag(_env))
+    {
+      _env := string_output ();
+      http ('\n{ "head": { "link": [], "vars": [', _env);
+      for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+        {
+          if (col_ctr > 0)
+            http(', "', _env);
+          else
+            http('"', _env);
+          http_escape (colnames[col_ctr], 11, _env, 0, 1);
+          http('"', _env);
+        }
+      http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [\n    {', _env);
+    }
+  else
+    http(',\n    {', _env);
+  need_comma := 0;
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare val any;
+      val := colvalues[col_ctr];
+      if (val is null)
+        goto end_of_val_print; -- see below
+      if (need_comma)
+        http('\t,', _env);
+      else
+        need_comma := 1;
+      DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (_env, colnames[col_ctr], val);
+end_of_val_print: ;
+    }
+  http('}', _env);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    {
+      _env := string_output ();
+      http ('\n{ "head": { "link": [], "vars": [] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', _env);
+    }
+  http (' ] } }', _env);
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
@@ -10305,6 +10368,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
