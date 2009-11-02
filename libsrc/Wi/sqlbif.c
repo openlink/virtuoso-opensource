@@ -8565,7 +8565,7 @@ do_long_string:
 	  case DV_UNAME:
               {
                 caddr_t res = box_dv_short_nchars (data, box_length (data)-1);
-                box_flags (res) |= BF_UTF8;
+                box_flags (res) |= BF_IRI;
                 return res;
               }
 	  case DV_C_STRING:

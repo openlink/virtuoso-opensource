@@ -1142,7 +1142,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           return iri;
         }
       res = box_copy_tree (shortobj);
-      if (DV_STRING == DV_TYPE_OF (res))
+      if ((DV_STRING == DV_TYPE_OF (res)) && !(box_flags (res) & BF_IRI))
         box_flags (res) |= BF_UTF8;
       return res;
     }
@@ -1193,7 +1193,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
                   (boxint)iid );
             }
-          box_flags (res) = BF_UTF8;
+          box_flags (res) = BF_IRI;
           return res;
         }
       case DV_DATETIME:
@@ -1205,7 +1205,12 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       case DV_STRING:
         res = box_copy (val);
-        box_flags(res) = BF_UTF8;
+        if (!(box_flags (res) & BF_IRI))
+          box_flags(res) = BF_UTF8;
+        return res;
+      case DV_UNAME:
+        res = box_dv_short_nchars (val, box_length (val)-1);
+        box_flags(res) = BF_IRI;
         return res;
       case DV_DB_NULL:
         return NEW_DB_NULL;
