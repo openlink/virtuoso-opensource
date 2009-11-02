@@ -263,31 +263,6 @@ void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 #define DKS_WS_CLIENT 7
 #define DKS_WS_CACHED 8
 
-#define CATCH_READ_FAIL_S(ses) \
-	{ \
-	  jmp_buf_splice old_ctx; \
-	  int volatile have_old_ctx = 0; \
-	  if (SESSION_SCH_DATA (ses)->sio_read_fail_on == 1) { \
-	    memcpy (&old_ctx, &SESSION_SCH_DATA (ses)->sio_read_broken_context, sizeof (jmp_buf_splice)); \
-	    have_old_ctx = 1;\
-	  } \
-	  SESSION_SCH_DATA (ses)->sio_read_fail_on = 1; \
-	  if (0 == setjmp_splice (&SESSION_SCH_DATA (ses)->sio_read_broken_context))
-
-#define END_READ_FAIL_S(ses) \
-	  if (!have_old_ctx) \
-  	    SESSION_SCH_DATA(ses)->sio_read_fail_on = 0; \
-	  else \
-	    memcpy (&SESSION_SCH_DATA (ses)->sio_read_broken_context, &old_ctx, sizeof (jmp_buf_splice)); \
-	}
-
-#define THROW_READ_FAIL_S(ses) \
-	  if (have_old_ctx) \
-	   { \
-	     memcpy (&SESSION_SCH_DATA (ses)->sio_read_broken_context, &old_ctx, sizeof (jmp_buf_splice)); \
-	     longjmp_splice (&old_ctx, 1); \
-	   }
-
 #ifdef VIRTUAL_DIR
 #define WS_USER_NAME(ws) (ws && ws->ws_map && \
     			  ws->ws_map->hm_vsp_uid && \

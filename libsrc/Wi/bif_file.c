@@ -3576,7 +3576,7 @@ mime_stream_get_part (int rfc822, dk_session_t * ses, long max_size,
   if (!result)
     return NULL;
   *chars_read = 0;
-  CATCH_READ_FAIL (ses)
+  CATCH_READ_FAIL_S (ses)
     {
       if (!strcasecmp (szType, "message/rfc822"))
 	{
@@ -3706,8 +3706,9 @@ done:
     {
       dk_free_tree ((box_t) result);
       result = NULL;
+      THROW_READ_FAIL_S (ses);
     }
-  END_READ_FAIL (ses);
+  END_READ_FAIL_S (ses);
   return (caddr_t) result;
 }
 
