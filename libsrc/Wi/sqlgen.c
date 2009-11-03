@@ -502,7 +502,8 @@ sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl
 void
 sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
 {
-  int ctype = tb_dfe->_.table.text_pred->_.text.type, inx;
+  df_elt_t * text_pred = tb_dfe->_.table.text_pred;
+  int ctype = text_pred->_.text.type, inx;
   op_table_t *ot = dfe_ot (tb_dfe);
   sql_comp_t *sc = so->so_sc;
   ST **args = tb_dfe->_.table.text_pred->_.text.args;

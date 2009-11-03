@@ -2694,6 +2694,20 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	    else
 	      fprintf (out, "<blob dp=%d> ", LONG_REF_NA (xx + BL_DP));
 	  }
+	case DV_SINGLE_FLOAT:
+	  {
+	    float f;
+	    EXT_TO_FLOAT (&f, xx);
+	    fprintf (out, " %f ", f);
+	    break;
+	  }
+	case DV_DOUBLE_FLOAT:
+	  {
+	    double f;
+	    EXT_TO_DOUBLE (&f, xx);
+	    fprintf (out, " %g ", f);
+	    break;
+	  }
 	}
       if (inx < key->key_n_significant - 1)
 	fprintf (out, ",");

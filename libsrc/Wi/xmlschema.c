@@ -489,9 +489,11 @@ bif_vt_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   text_col = tb_name_to_column (tb, text_col_name);
   if (!id_col || !text_col)
     sqlr_error ("S0002", "No column in vt_index");
-  id_key->key_text_table = inx_tb;
-  id_key->key_text_col = text_col;
-  text_col->col_is_text_index = 1;
+    {
+    id_key->key_text_table = inx_tb;
+    id_key->key_text_col = text_col;
+    text_col->col_is_text_index = 1;
+    }
   /* added: init of language & offband cols members */
   if (BOX_ELEMENTS (args) > 5)
     {
