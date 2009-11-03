@@ -3892,6 +3892,44 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
 }
 ;
 
+
+create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iri any, inout triples any, in log_mode integer := null)
+{
+  declare daq, cols any;
+  declare ctr, old_log_enable integer;
+  if (not isiri_id (graph_iri))
+    graph_iri := iri_to_id (graph_iri);
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+    cols := vector ('G', 'S', 'P', 'O');
+      log_enable (bit_and (coalesce (log_mode, old_log_enable), 1), 1);
+    daq := daq (1);
+      for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+	{
+	  declare r any;
+	r := triples[ctr];
+	  daq_delete (daq, 'DB.DBA.RDF_QUAD', cols, vector (graph_iri, r[0], r[1], r[2] ));
+	}
+      daq_results (daq);
+      if (bit_and (coalesce (log_mode, old_log_enable), 2))
+	commit work;
+    }
+  else
+    {
+      for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
+	{
+	  declare o_short any;
+	o_short := DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]);
+	  delete from DB.DBA.RDF_QUAD
+	    where G = graph_iri and S = triples[ctr][0] and P = triples[ctr][1] and O = o_short;
+	}
+      log_enable (old_log_enable, 1);
+    }
+}
+;
+
 create procedure DB.DBA.RDF_MODIFY_TRIPLES (in graph_iri any, in del_triples any, in ins_triples any, in log_mode integer := null)
 {
   DB.DBA.RDF_DELETE_TRIPLES (graph_iri, del_triples, log_mode);
@@ -4083,7 +4121,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   while (dict_size (triples_dict) > 0)
     {
       triples := dict_destructive_list_rnd_keys (triples_dict, 2000000);
-      DB.DBA.RDF_DELETE_TRIPLES (graph_iri, triples, log_mode);
+      DB.DBA.RDF_DELETE_TRIPLES_AGG (graph_iri, triples, log_mode);
       del_count := del_count + length (triples);
     }
   if (isiri_id (graph_iri))
@@ -10233,6 +10271,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE',
