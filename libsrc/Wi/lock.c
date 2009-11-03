@@ -929,7 +929,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	      rdbg_printf (("Host %d: Kill non-running st=%d lw=%d vd=%d w=%d:%d\n", local_cll.cll_this_host, lt->lt_status, lt->lt_lw_threads, lt->lt_vdb_threads, LT_W_NO (lt)));
 	      /* the rb can cause pending rpcs to return, the trx's thread must not think that it is ok to continue */
 	      lt->lt_status = LT_BLOWN_OFF;
-	      lt_send_rollbacks (lt);
+	      lt_send_rollbacks (lt, 0);
 	      lt_rollback_other (lt);
 	    }
 	  else
@@ -957,7 +957,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
 	      /* the rb can cause pending rpcs to return, the trx's thread must not think that it is ok to continue */
 	      rdbg_printf (("Host %d: Kill non-running cl prepared w=%d:%d\n", local_cll.cll_this_host, LT_W_NO (lt)));
 	      lt->lt_status = LT_BLOWN_OFF;
-	      lt_send_rollbacks (lt);
+	      lt_send_rollbacks (lt, 0);
 	      lt_rollback_other (lt);
 	    }
         }

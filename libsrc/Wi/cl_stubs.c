@@ -145,7 +145,7 @@ cl_ddl (query_instance_t * qi, lock_trx_t * lt, caddr_t name, int type, caddr_t 
 
 
 void
-lt_send_rollbacks (lock_trx_t * lt)
+lt_send_rollbacks (lock_trx_t * lt, int sync)
 {
 }
 
