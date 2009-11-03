@@ -507,6 +507,11 @@ rd.rd_temp_max = sizeof (rd##temp); \
 caddr_t rd_col (row_delta_t * rd, oid_t cid, int * found);
 int key_col_in_layout_seq (dbe_key_t * key, dbe_column_t * col);
 void kc_var_col (dbe_key_t * key, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, db_buf_t * p1, row_size_t * len1, db_buf_t * buf2, row_size_t* len2, unsigned short * offset);
+void pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf);
+int page_reloc_right_leaves (it_cursor_t * itc, buffer_desc_t * buf);
+void pf_change_org (page_fill_t * pf);
+void page_reg_past_end (buffer_desc_t * buf);
+
 void page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op);
 /* op for page_apply */
 #define PA_MODIFY 0
