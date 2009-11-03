@@ -1287,6 +1287,21 @@ struct row_delta_s
 #define RD_UPDATE_LOCAL 6 /* replace of a row that does not affect any compressible */
 
 
+#define MAX_ITCS_ON_PAGE 1000
+
+typedef struct page_apply_frame_s
+{
+  placeholder_t *	paf_registered[MAX_ITCS_ON_PAGE];
+  row_lock_t *	paf_rlocks[PM_MAX_ENTRIES];
+  buffer_desc_t	paf_buf;
+  page_map_t	paf_map;
+  row_delta_t	paf_rd;
+  dtp_t		paf_page[PAGE_SZ];
+  caddr_t	paf_rd_values[TB_MAX_COLS];
+  dtp_t paf_rd_temp[2 * MAX_ROW_BYTES];
+} page_apply_frame_t;
+
+
 struct io_queue_s
   {
     /* io queue.  One should exist for each independently addressable device.

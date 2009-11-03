@@ -920,8 +920,6 @@ buf_order_ck (buffer_desc_t * buf)
 #endif
 
 
-#define MAX_ITCS_ON_PAGE 1000
-
 void
 pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf)
 {
@@ -2135,19 +2133,6 @@ rd_list_bytes (buffer_desc_t * buf, int n, row_delta_t ** rds)
 }
 
 
-typedef struct page_apply_frame_s
-{
-  placeholder_t *	paf_registered[MAX_ITCS_ON_PAGE];
-  row_lock_t *	paf_rlocks[PM_MAX_ENTRIES];
-  buffer_desc_t	paf_buf;
-  page_map_t	paf_map;
-  row_delta_t	paf_rd;
-  dtp_t		paf_page[PAGE_SZ];
-  caddr_t	paf_rd_values[TB_MAX_COLS];
-  dtp_t paf_rd_temp[2 * MAX_ROW_BYTES];
-} page_apply_frame_t;
-
-
 void
 page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, char release_pl, char change, page_apply_frame_t * paf);
 
@@ -2330,7 +2315,9 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
     resource_store (pfh_rc, (void*)pf.pf_hash);
   }
   if (pf.pf_left)
-    page_reloc_right_leaves (pf.pf_itc, pf.pf_current);
+    {
+      page_reloc_right_leaves (pf.pf_itc, pf.pf_current);
+    }
   if (pf.pf_rewrite_overflow)
     return; /* if unsuccessful compress rewrite, return w/o effect */
   /* next for cursors whose row was deld and had no row after it */
