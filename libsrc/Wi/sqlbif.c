@@ -4275,46 +4275,118 @@ bif_strrchr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   }
 }
 
+#define BIF_STRSTR_POS		0
+#define BIF_STRSTR_BOOL_ANY	1
+#define BIF_STRSTR_BOOL_START	2
+#define BIF_STRSTR_BOOL_END	3
 
 caddr_t
-bif_strstr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *func_name)
 {
-  caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, "strstr");
-  caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, "strstr");
+  caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, func_name);
+  caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, func_name);
   char *inx;
   dtp_t dtp1 = DV_TYPE_OF (str1);
   dtp_t dtp2 = DV_TYPE_OF (str2);
+  int len1, len2;
   int sizeof_char =
     (IS_WIDE_STRING_DTP (dtp1) || IS_WIDE_STRING_DTP (dtp2)) ?
     sizeof (wchar_t) :
     sizeof (char);
 
   if ((NULL == str1) || (NULL == str2))
-  {
     return (NEW_DB_NULL);
-  }
 
   if (sizeof_char == sizeof (wchar_t))
-  {
-    if (!IS_WIDE_STRING_DTP (dtp1))
-  sqlr_new_error ("22023", "SR039", "The first argument to strstr is not a wide string");
-    if (!IS_WIDE_STRING_DTP (dtp2))
-  sqlr_new_error ("22023", "SR040", "The second argument to strstr is not a wide string");
-    inx = (char *)virt_wcsstr ((wchar_t *)str1, (wchar_t *)str2);
-  }
+    {
+      if (!IS_WIDE_STRING_DTP (dtp1))
+        sqlr_new_error ("22023", "SR039", "The first argument to %s() is not a wide string", func_name);
+      if (!IS_WIDE_STRING_DTP (dtp2))
+        sqlr_new_error ("22023", "SR040", "The second argument to %s() is not a wide string", func_name);
+      switch (opcode)
+        {
+        case BIF_STRSTR_POS:
+        case BIF_STRSTR_BOOL_ANY:
+          inx = (char *)virt_wcsstr ((wchar_t *)str1, (wchar_t *)str2);
+          break;
+        case BIF_STRSTR_BOOL_START:
+          len1 = box_length (str1);
+          len2 = box_length (str2);
+          if ((len2 > len1) || memcmp (str1, str2, len2 - sizeof (wchar_t)))
+            inx = 0;
+          else
+            inx = str1;
+          break;
+        case BIF_STRSTR_BOOL_END:
+          len1 = box_length (str1);
+          len2 = box_length (str2);
+          if ((len2 > len1) || memcmp (str1 + len1 - len2, str2, len2 - sizeof (wchar_t)))
+            inx = 0;
+          else
+            inx = str1 + (len1 - len2);
+          break;
+        }
+    }
   else
-  inx = strstr (str1, str2);
-  if (!inx)
-  {
-    /* 0 or 1 ??? Not so good idea. Where this is free'ed??? */
-    return (NEW_DB_NULL);
-  }
+    {
+      switch (opcode)
+        {
+        case BIF_STRSTR_POS:
+        case BIF_STRSTR_BOOL_ANY:
+          inx = strstr (str1, str2);
+          break;
+        case BIF_STRSTR_BOOL_START:
+          len1 = box_length (str1);
+          len2 = box_length (str2);
+          if ((len2 > len1) || memcmp (str1, str2, len2 - 1))
+            inx = 0;
+          else
+            inx = str1;
+          break;
+        case BIF_STRSTR_BOOL_END:
+          len1 = box_length (str1);
+          len2 = box_length (str2);
+          if ((len2 > len1) || memcmp (str1 + (len1 - len2), str2, len2 - 1))
+            inx = 0;
+          else
+            inx = str1 + (len1 - len2);
+          break;
+        }
+    }
+  if (BIF_STRSTR_POS == opcode)
+    {
+      if (!inx)
+        return (NEW_DB_NULL);
+      else
+        return (box_num ((inx - str1) / sizeof_char));
+    }
   else
-  {
-    return (box_num ((inx - str1) / sizeof_char));
-  }
+    return box_bool (inx);
 }
 
+caddr_t
+bif_strstr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_strstr_imp (qst, args, BIF_STRSTR_POS, "strstr");
+}
+
+caddr_t
+bif_strcontains (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_strstr_imp (qst, args, BIF_STRSTR_BOOL_ANY, "strcontains");
+}
+
+caddr_t
+bif_starts_with (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_strstr_imp (qst, args, BIF_STRSTR_BOOL_START, "starts_with");
+}
+
+caddr_t
+bif_ends_with (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_strstr_imp (qst, args, BIF_STRSTR_BOOL_END, "ends_with");
+}
 
 /* Like previous, but use our own function nc_strstr instead, defined in
    the module string.c, which does its job ignoring the case
@@ -13949,6 +14021,9 @@ sql_bif_init (void)
   bif_define_typed ("strchr", bif_strchr, &bt_integer);
   bif_define_typed ("strrchr", bif_strrchr, &bt_integer);
   bif_define_typed ("strstr", bif_strstr, &bt_integer);
+  bif_define_typed ("strcontains", bif_strcontains, &bt_integer);
+  bif_define_typed ("starts_with", bif_starts_with, &bt_integer);
+  bif_define_typed ("ends_with", bif_ends_with, &bt_integer);
   bif_define_typed ("strindex", bif_strstr, &bt_integer);
   bif_define_typed ("strcasestr", bif_nc_strstr, &bt_integer);  /* Name was nc_strstr */
   bif_define_typed ("locate", bif_locate, &bt_integer);   /* Standard SQL function. */
