@@ -449,7 +449,9 @@ bif_shcompo_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   while (hit_next (&it, (char **)&key, (char **)&val_ptr))
     {
       id_hash_remove (shcompo_vtable__qr.shcompo_cache, (caddr_t)(&(val_ptr[0]->shcompo_key)));
-      shcompo_release_int (val_ptr[0]);
+      val_ptr[0]->shcompo_ref_count--;
+      if (0 == val_ptr[0]->shcompo_ref_count)
+	shcompo_release_int (val_ptr[0]);
     }
   mutex_leave (vt->shcompo_cache_mutex);
   return NULL;
