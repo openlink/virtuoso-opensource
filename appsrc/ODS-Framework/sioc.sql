@@ -842,7 +842,7 @@ create procedure sioc_user_info (
   delete_quad_s_or_o (graph_iri, crt_mod, crt_mod);
   }
 
-  ods_sioc_result (iri);
+  ods_sioc_result (in_iri);
 
   iri := person_iri (in_iri, '');
   org_iri := iri || '#org';
@@ -2041,6 +2041,10 @@ create procedure ods_sioc_result (in iri_res any)
 {
   declare rc int;
   rc := connection_get ('iri_result');
+  if (__tag (iri_res) = __tag of IRI_ID)
+    iri_res := id_to_iri (iri_res);
+  if (not isstring (iri_res))
+    return; --signal ('22023', 'Not an iri');
   if (rc = 1)
     result (iri_res);
   else if (rc = 2)
