@@ -101,6 +101,8 @@ create procedure rdfdesc_get_lang_acc (in lines any)
 
 create procedure rdfdesc_str_lang_check (in lang any, in acc any)
 {
+  if (lang like '%-%')
+    lang := subseq (lang, 0, strchr (lang, '-'));
   if (not length (lang))
     return 1;
   else if (position (lang, acc) > 0)
