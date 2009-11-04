@@ -30,6 +30,7 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.svg\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.od[ts]\$';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\.ics\$';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '.+\\.ics\x24';
 
 -- insertion of cartridges
 
@@ -218,7 +219,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA', null, 'Yahoo Traffic Data');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('.+\\.ics\x24', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
+	values ('(.+\\.ics\x24)|(.+\\.ics\?.*)', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http[s]*://.*.facebook.com/.*',
@@ -461,6 +462,14 @@ delete from DB.DBA.SYS_GRDDL_MAPPING where GM_NAME = 'RDFa'
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('AB Meta', 'http://abmeta.org/#spec', registry_get ('_rdf_mappers_path_') || 'xslt/main/abmeta2rdfxml.xsl')
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT, GM_FLAG)
+    values ('Microsoft XML Spreadsheet 2003', 'urn:schemas-microsoft-com:office:spreadsheet', registry_get ('_rdf_mappers_path_') || 'xslt/main/ms_spreadsheet2rdf.xsl', 1)
+;
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT, GM_FLAG)
+    values ('Word 2003 XML Document', 'http://schemas.microsoft.com/office/word/2003/wordml', registry_get ('_rdf_mappers_path_') || 'xslt/main/ms_document2rdf.xsl', 1)
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)

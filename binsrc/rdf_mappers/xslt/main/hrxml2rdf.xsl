@@ -50,9 +50,9 @@
   <xsl:param name="baseUri"/>
   <xsl:param name="login" />
 
-  <xsl:variable name="resourceURL">
-    <xsl:value-of select="$baseUri"/>
-  </xsl:variable>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
   <xsl:template match="/">
       <rdf:RDF>
@@ -61,7 +61,14 @@
   </xsl:template>
 
   <xsl:template match="Resume">
-    <cv:CV rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+		<owl:sameAs rdf:resource="{$docIRI}"/>
+	</rdf:Description>
+    <cv:CV rdf:about="{$resourceURL}">
       <xsl:apply-templates select="StructuredXMLResume"/>
     </cv:CV>
   </xsl:template>
