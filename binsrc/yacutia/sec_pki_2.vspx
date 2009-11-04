@@ -230,10 +230,17 @@
 			  declare subj, host varchar;
 			  declare arr any;
 
-			  if (length (self.vhost))
+			  if (length (self.vhost_nam.ufl_value) = 0)
 			    {
-			      k := 'https_key_' || replace (self.vhost1, '.', '_');
-			      host := self.vhost1;
+			      self.vc_is_valid := 0;
+			      self.vc_error_message := 'You should provide a valid host name';
+			      return;
+			     }
+
+			  if (length (self.vhost_nam.ufl_value))
+			    {
+			      k := 'https_key_' || replace (self.vhost_nam.ufl_value, '.', '_');
+			      host := self.vhost_nam.ufl_value;
 			    }
 			  else
 			    {
@@ -303,7 +310,7 @@
            if (not self.vc_is_valid)
              return;
 
-           declare vhost_o, lhost_o, vhost, lhost, st, msg, lhost_if, ssl_opts any;
+           declare vhost_o, lhost_o, vhost, lhost, st, msg, lhost_if, ssl_opts, tmp, arr any;
            vhost_o := self.vhosto;
 	   lhost_o := self.lhosto;
 
@@ -332,6 +339,29 @@
 	       self.vc_error_message := 'The default HTTPS listener configuration is not allowed. To configure default HTTPS you must edit the INI file and re-start the server.';
 	       return;
 	     }
+	   if (not xenc_key_exists (self.key_list.ufl_value))
+	     {
+	       self.vc_is_valid := 0;
+	       self.vc_error_message := 'Key is required to setup HTTPS listener';
+	       return;
+	     }
+	     tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize (self.key_list.ufl_value)), 1);
+	     if (tmp is not null) 
+	       {
+	         arr := split_and_decode (tmp, 0, '\0\0/=');
+		 if (get_keyword ('CN', arr, '') <> self.vhost_nam.ufl_value)
+		   {
+		     self.vc_is_valid := 0;
+		     self.vc_error_message := 'The certificate common name do not match host name, please generate new or select appropriate key.';
+		     return;
+		   }
+	       }
+	     else
+	       {
+		  self.vc_is_valid := 0;
+		  self.vc_error_message := 'Can not get certificate from key, please generate new or use key with certificate assigned.';
+		  return;
+	       }    
 
 	   vhost := self.vhost_nam.ufl_value;
 	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
@@ -341,12 +371,6 @@
 	     {
                declare opts varchar;
 	       opts := vector ();
-	       if (not xenc_key_exists (self.key_list.ufl_value))
-	         {
-	           self.vc_is_valid := 0;
-		   self.vc_error_message := 'Key is required to setup HTTPS listener';
-		   return;
-		 }
 	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
 	       VHOST_DEFINE (vhost=>vhost, lhost=>lhost, lpath=>'/', ppath=>'/', sec=>'SSL', auth_opts=>opts);
 	       goto same_host;
