@@ -534,7 +534,6 @@ void row_insert_cast_temp (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 		 caddr_t * err_ret, db_buf_t old_blob);
 void  itc_print_params (it_cursor_t * itc);
 caddr_t itc_mp_box_column (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t *buf, oid_t col, dbe_col_loc_t * cl);
-caddr_t box_n_chars (char * str, int len);
 caddr_t page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl);
 caddr_t page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl);
 caddr_t page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_t * rd);

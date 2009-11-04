@@ -53,9 +53,6 @@ void cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret);
 #define CLO_DDL_TRIG 5
 #define CLO_DDL_ATOMIC 6
 #define CLO_DDL_ATOMIC_OVER 7
-void lt_send_rollbacks (lock_trx_t * lt, int sync);
-extern long dbf_cpt_rb;
-#define DKS_TO_CLUSTER 1
 
 typedef struct cl_op_s
 {
