@@ -135,7 +135,7 @@
       declare nodeID, nodeType any;
       declare itemID, itemType, itemLabel, itemPath, itemImage, itemSelected, itemDraggable any;
 
-      returnData := vector ();
+      vectorbld_init (returnData);
       if ((nodePath = '') and (_domain_id < 0))
       {
         node := 'r#0';
@@ -172,8 +172,9 @@
         }
         itemSelected := 1;
         itemDraggable := 0;
-        returnData := vector_concat (returnData, vector (vector (itemID, itemType, itemLabel, itemPath, itemImage, itemSelected, itemDraggable)));
+        vectorbld_acc (returnData, vector (itemID, itemType, itemLabel, itemPath, itemImage, itemSelected, itemDraggable));
       }
+      vectorbld_final (returnData);
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');

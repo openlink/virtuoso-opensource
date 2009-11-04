@@ -972,7 +972,8 @@
                     {
                       self.settings := BMK.WA.set_keyword ('deliciousUser', self.settings, self.v_sourceParam_2);
                       self.settings := BMK.WA.set_keyword ('deliciousPwd', self.settings, self.v_sourceParam_3);
-                      insert replacing BMK.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize (self.settings));
+                      insert replacing BMK.WA.SETTINGS(S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
+                        values(self.domain_id, serialize (self.settings), self.account_id);
                     }
 
                     declare exit handler for sqlstate '*'
