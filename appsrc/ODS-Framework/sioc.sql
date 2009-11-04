@@ -798,7 +798,7 @@ create procedure sioc_user_info (
   declare ev_iri, hf any;
   declare is_person int;
 
-  if (iri is null)
+  if (in_iri is null)
     return;
 
   if (not isnull (old_is_org))
@@ -1544,7 +1544,7 @@ create procedure sioc_forum (
     	in graph_iri varchar,
 	in site_iri varchar,
         in iri varchar,
-     	in wai_name varchar,
+  in _wai_name varchar,
     	in wai_type_name varchar,
 	in wai_description varchar,
 	in wai_id int := null,
@@ -1558,7 +1558,7 @@ create procedure sioc_forum (
   if (uname is null)
     uname := (select U_NAME
                 from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER
-               where U_ID = WAM_USER and WAM_INST = wai_name and WAM_MEMBER_TYPE = 1);
+               where U_ID = WAM_USER and WAM_INST = _wai_name and WAM_MEMBER_TYPE = 1);
 
   pers_iri := null;
   if (uname is not null)
@@ -1584,14 +1584,14 @@ create procedure sioc_forum (
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
   ods_is_defined_by (graph_iri, iri);
 
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
+  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), _wai_name);
   if (wai_id is null)
-    wai_id := (select i.WAI_ID from DB.DBA.WA_INSTANCE i where i.WAI_NAME = wai_name);
+    wai_id := (select i.WAI_ID from DB.DBA.WA_INSTANCE i where i.WAI_NAME = _wai_name);
   if (wai_id is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), wai_id);
   -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
   if (wai_description is null)
-    wai_description := wai_name;
+    wai_description := _wai_name;
 
     {
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
@@ -1607,7 +1607,7 @@ create procedure sioc_forum (
       declare giri any;
       giri :=  group_iri (iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), foaf_iri ('Group'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, foaf_iri ('name'), wai_name);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, foaf_iri ('name'), _wai_name);
     }
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
@@ -1618,12 +1618,12 @@ create procedure sioc_forum (
   if (clazz = ods_sioc_forum_type ('WEBLOG2'))
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), wai_name);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), _wai_name);
     }
   if (wai_type_name = 'AddressBook')
     {
-      iri := forum_iri ('SocialNetwork', wai_name);
-      sioc_forum (graph_iri, site_iri, iri, wai_name, 'SocialNetwork', wai_description);
+      iri := forum_iri ('SocialNetwork', _wai_name);
+      sioc_forum (graph_iri, site_iri, iri, _wai_name, 'SocialNetwork', wai_description);
     }
 
   if (pers_iri is not null)
