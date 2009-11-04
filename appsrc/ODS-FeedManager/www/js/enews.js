@@ -1153,7 +1153,7 @@ function urlParams(mask)
   {
     var obj = form.elements[i];
     if ((obj.name.indexOf (mask) != -1) && (((obj.type == "checkbox") && (obj.checked)) || (obj.type != "checkbox")))
-      S += '&' + form.elements[i].name + '=' + encodeURIComponent(form.elements[i].value);
+      S += '&' + obj.name + '=' + encodeURIComponent(obj.value);
   }
   return S;
 }

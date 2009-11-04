@@ -41,7 +41,6 @@
           declare tmp, params any;
 
           params := self.vc_page.vc_event.ve_params;
-          dbg_obj_print ('', params);
           tmp := lcase (get_keyword ('tag',  params, ''));
           if (tmp <> '')
       {

@@ -34,7 +34,8 @@
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
   progressID := cast(get_keyword('id', params, msec_time()) as varchar);
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     registry_remove ('feed_' || progressID || '_index');
     registry_remove ('feed_' || progressID || '_action');
     return;
@@ -70,7 +71,8 @@
   }
 
   -- state
-  if (get_keyword ('mode', params, '') = 'state') {
+  if (get_keyword ('mode', params, '') = 'state')
+  {
     if (not (isinteger(progressIndex) and (progressIndex = 0)))
     {
     http_rewrite ();
@@ -91,28 +93,28 @@
     http_flush ();
 
     declare I, J, N integer;
-    declare dataLength, folder_id integer;
-    declare feed_id, folder_name varchar;
-    declare data, rss, title, R, V any;
+    declare dataLength, folder_id, mfolder_id integer;
+    declare feed_id, folder_name, mfolder_name varchar;
+    declare data, rss, title, retrieve, V any;
 
-    R := cast(get_keyword('$_retrieve', params, '1') as integer);
+    retrieve := cast (get_keyword('$_retrieve', params, '1') as integer);
+    mfolder_id := cast (get_keyword('$_mfolder_id', params) as integer);
+    mfolder_name := trim (get_keyword('$_mfolder_name', params));
 
     -- test folder names & count subscriptions
     j := length(params);
-    V := vector();
-    dataLength := 0;
+    vectorbld_init(V);
     for (i := 0; i < j; i := i + 2)
     {
       if (params[i] like 'cb_item%')
-      {
-        dataLength := dataLength + 1;
-        V := vector_concat(V, vector(params[i+1]));
-      }
+        vectorbld_acc(V, params[i+1]);
     }
+    vectorbld_final(V);
+    dataLength := length(V);
 
     -- dbg_obj_print('start: ', dataLength, now());
     -- exec subscriptions
-    data := vector('rss', null, 'title', null, 'home', null, 'format', null, 'lang', null, 'type', 'long');
+    prof_enable(1);
     for (i := 0; i < dataLength; i := i + 1)
     {
       if  (cast(registry_get ('feed_' || progressID || '_action') as varchar) = 'stop')
@@ -122,25 +124,25 @@
       registry_set('feed_' || progressID || '_index', cast (i as varchar));
 
       N := V[i];
-
-      rss := get_keyword ('$_rss_' || N, params, '');
+      data := deserialize (decode_base64 (get_keyword ('$_data_'||N, params)));
+      rss := get_keyword ('rss', data, '');
       if (rss <> '')
       {
-        title   := get_keyword ('$_title_'  || N, params);
-
-        aset(data, 1, rss);
-        aset(data, 3, title);
-        aset(data, 5, get_keyword ('$_home_'   || N, params));
-        aset(data, 7, get_keyword ('$_format_' || N, params));
-        aset(data, 9, get_keyword ('$_lang_'   || N, params));
+        for (j := 0; j < length (data); j := j + 1)
+          data[j] := ENEWS.WA.wide2utf(data[j]);
+        title := get_keyword ('title', data);
 
           feed_id := ENEWS.WA.channel_create(data);
-
-        folder_name := trim (get_keyword ('$_folder_name_' || N, params, ''));
-        folder_id := cast (trim (get_keyword ('$_folder_id_'|| N, params, '')) as integer);
+        if (is_empty_or_null (mfolder_name) and is_empty_or_null (mfolder_id))
+        {
+          folder_name := trim (get_keyword ('$_fname_' || N, params, get_keyword ('folder', data, '')));
+          folder_id := cast (trim (get_keyword ('$_fid_'|| N, params, '')) as integer);
+        } else {
+          folder_name := mfolder_name;
+          folder_id := mfolder_id;
+        }
         ENEWS.WA.channel_domain (-1, domain_id, feed_id, ENEWS.WA.wide2utf(title), null, folder_name, folder_id);
-        if ((ENEWS.WA.channel_feeds(feed_id) <> 0) or (not R))
-          goto _next;
+        if ((ENEWS.WA.channel_feeds(feed_id) = 0) or retrieve)
           {
           declare continue handler for sqlstate '*'
           {
@@ -154,6 +156,7 @@
     registry_set('feed_' || progressID || '_index', cast (dataLength as varchar));
   _stop:;
 
+    prof_enable(0);
     -- update tags
     ENEWS.WA.tags_refresh(domain_id, account_id, 0);
 

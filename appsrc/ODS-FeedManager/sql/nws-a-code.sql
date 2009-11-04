@@ -602,6 +602,7 @@ create procedure ENEWS.WA.domain_delete (
   DELETE FROM ENEWS.WA.WEBLOG      WHERE EW_DOMAIN_ID = domain_id;
   DELETE FROM ENEWS.WA.SETTINGS    WHERE ES_DOMAIN_ID = domain_id;
   DELETE FROM ENEWS.WA.ANNOTATIONS WHERE A_DOMAIN_ID = domain_id;
+  DELETE FROM ENEWS.WA.TAGS        WHERE ETS_DOMAIN_ID = domain_id;
 
   for (select WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' and WAI_ID = domain_id) do
     ENEWS.WA.account_delete (domain_id, WAM_USER);
@@ -1141,8 +1142,14 @@ again:
   commit work;
   oldUri := newUri;
   content := http_get (newUri, resHdr, 'GET', reqHdr);
-  if (resHdr[0] not like 'HTTP/1._ 200 %') {
-    if (resHdr[0] like 'HTTP/1._ 30_ %') {
+  --content := http_client_ext (url=>newUri,
+  --                            http_method=>'GET',
+  --                            http_headers=>reqHdr,
+  --                            headers=>resHdr);
+  if (resHdr[0] not like 'HTTP/1._ 200%')
+  {
+    if (resHdr[0] like 'HTTP/1._ 30_%')
+    {
 	    newUri := http_request_header (resHdr, 'Location');
       newUri := WS.WS.EXPAND_URL (oldUri, newUri);
       if (newUri <> oldUri)
@@ -1160,21 +1167,24 @@ again:
   tag := new_tag;
 
   xt := xml_tree_doc (xml_tree (content));
-  if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null) {
+  if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null)
+  {
     -- RSS formats
     items := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt, 0);
     L := length (items);
     for (N := 0; N < L; N := N + 1)
       ENEWS.WA.process_rss_item(xml_cut(items[N]), id);
-
-  } else if (xpath_eval ('/feed/entry', xt) is not null) {
+  }
+  else if (xpath_eval ('/feed/entry', xt) is not null)
+  {
     -- Atom format
     items := xpath_eval ('/feed/entry', xt, 0);
     L := length (items);
     for (N := 0; N < L; N := N + 1)
       ENEWS.WA.process_atom_item(xml_cut(items[N]), id);
-
-  } else {
+  }
+  else
+  {
     -- SIOC channel
     declare is_xml integer;
     declare sql, st, msg, meta, rows any;
@@ -1199,7 +1209,8 @@ again:
              ', uri);
       st := '00000';
       exec (sql, st, msg, vector (), 0, meta, rows);
-      if ('00000' = st) {
+      if ('00000' = st)
+      {
         L := length (rows);
         foreach (any row in rows) do
           ENEWS.WA.process_sioc_item(uri, row[1], id);
@@ -1274,7 +1285,8 @@ create procedure ENEWS.WA.process_atom_item(
     contents any;
 
   title := serialize_to_UTF8_xml (xpath_eval ('string(/entry/title)', xt, 1));
-  if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', xt) is not null) {
+  if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', xt) is not null)
+  {
     contents := xpath_eval ('/entry/content/*', xt, 0);
     if (length(contents) = 1) {
       description := ENEWS.WA.xml2string(contents[0]);
@@ -1293,9 +1305,11 @@ create procedure ENEWS.WA.process_atom_item(
   link := cast (xpath_eval ('/entry/link[@rel="alternate"]/@href', xt, 1) as varchar);
   guid := cast (xpath_eval ('/entry/id', xt, 1) as varchar);
   pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/created', xt, 1) as varchar), null);
-  if (isnull(pubDate)) {
+  if (isnull (pubDate))
+  {
     pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/modified', xt, 1) as varchar), null);
-    if (isnull(pubDate)) {
+    if (isnull (pubDate))
+    {
     pubdate := ENEWS.WA.dt_convert(cast(xpath_eval ('/entry/updated', xt, 1) as varchar), null);
   if (isnull(pubDate))
     pubdate := now();
@@ -1462,7 +1476,8 @@ _start:
   }
 
   -- domain tags
-  for (select EFD_DOMAIN_ID, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do {
+  for (select EFD_DOMAIN_ID, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do
+  {
     if (ENEWS.WA.conversation_enable(EFD_DOMAIN_ID))
       ENEWS.WA.nntp_root (EFD_DOMAIN_ID, item_id);
     ENEWS.WA.tags_domain_item2 (EFD_DOMAIN_ID, item_id, ENEWS.WA.tags_join(EFD_TAGS, item_tags));
@@ -1528,7 +1543,11 @@ create procedure ENEWS.WA.channel_retrieve (
     N := N + 1;
     oldUri := newUri;
       commit work;
-    content := http_get (newUri, resHdr, 'GET', reqHdr);
+    -- content := http_get (newUri, resHdr, 'GET', reqHdr);
+    content := http_client_ext (url=>newUri,
+                                http_method=>'GET',
+                                http_headers=>reqHdr,
+                                headers=>resHdr);
     contentType := http_request_header (resHdr, 'Content-Type');
     if (resHdr[0] like 'HTTP/1._ 30_%')
     {
@@ -1567,7 +1586,7 @@ create procedure ENEWS.WA.channel_add(
     for (N := 1; N < L; N := N + 1)
       if (get_keyword('rss', channels[N]) = xpath_eval ('@href', link))
         goto _next;
-    channels := vector_concat (channels, vector (vector ('title', xpath_eval ('@title', link), 'rss',  WS.WS.EXPAND_URL (uri, xpath_eval ('@href', link)), 'format', format)));
+    vectorbld_acc (channels, vector ('title', xpath_eval ('@title', link), 'rss',  WS.WS.EXPAND_URL (uri, xpath_eval ('@href', link)), 'format', format));
   _next:;
   }
 }
@@ -1616,32 +1635,36 @@ create procedure ENEWS.WA.channels_get (
   declare title, home, email, rss, format, lang any;
   declare links, channels any;
 
-  channels := vector ();
   declare exit handler for sqlstate '*' { goto _end; };
 
-  if (xpath_eval ('/html', xt, 1) is not null)  {
+  vectorbld_init (channels);
+  if (xpath_eval ('/html', xt, 1) is not null)
+  {
     -- HTML, do auto discovery of the feeds
     declare aRss, aAtom, aOpml any;
     title := cast(xpath_eval('//title[1]/text()', xt, 1) as varchar);
     aRss := xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]/@href', xt, 0);
     aAtom := xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]/@href', xt, 0);
     aOpml := xpath_eval('//head/link[ @rel="subscriptions" and @type="text/x-opml" ]/@href', xt, 0);
-    if (length(aRss) = 1 and length(aAtom) = 0 and length(aOpml) = 0) {
+    if (length (aRss) = 1 and length (aAtom) = 0 and length (aOpml) = 0)
+    {
       rss := cast (aRss[0] as varchar);
       rss := WS.WS.EXPAND_URL (uri, rss);
       format := 'http://my.netscape.com/rdf/simple/0.9/';
-      channels := vector_concat (channels, vector ('channel'));
-      channels := vector_concat (channels, vector (vector ('title', title, 'home', uri, 'rss', rss, 'format', format)));
-
-    } else if (length(aRss) = 0 and length(aAtom) = 1 and length(aOpml) = 0) {
+      vectorbld_acc (channels, 'channel');
+      vectorbld_acc (channels, vector ('title', title, 'home', uri, 'rss', rss, 'format', format));
+    }
+    else if (length (aRss) = 0 and length (aAtom) = 1 and length (aOpml) = 0)
+    {
       rss := cast (aAtom[0] as varchar);
       rss := WS.WS.EXPAND_URL (uri, rss);
       format := 'http://purl.org/atom/ns#';
-      channels := vector_concat (channels, vector ('channel'));
-      channels := vector_concat (channels, vector (vector ('title', title, 'home', uri, 'rss', rss, 'format', format)));
-
-    } else if (length(aRss) <> 0 or length(aAtom) <> 0 or length(aOpml) <> 0) {
-      channels := vector_concat (channels, vector ('links'));
+      vectorbld_acc (channels, 'channel');
+      vectorbld_acc (channels, vector ('title', title, 'home', uri, 'rss', rss, 'format', format));
+    }
+    else if (length (aRss) <> 0 or length (aAtom) <> 0 or length (aOpml) <> 0)
+    {
+      vectorbld_acc (channels, 'links');
       links := xpath_eval('//head/link[ @rel="alternate" and @type="application/rss+xml" ]', xt, 0);
       ENEWS.WA.channel_add(channels, uri, links, 'RSS');
       links := xpath_eval('//head/link[ @rel="alternate" and @type="application/atom+xml" ]', xt, 0);
@@ -1649,35 +1672,41 @@ create procedure ENEWS.WA.channels_get (
       links := xpath_eval('//head/link[ @rel="subscriptions" and @type="text/x-opml" ]', xt, 0);
       ENEWS.WA.channel_add(channels, uri, links, 'OPML');
     }
-
-  } else if ((xpath_eval ('/rss|/RDF/channel', xt, 1) is not null) or
+  }
+  else if ((xpath_eval ('/rss|/RDF/channel', xt, 1) is not null) or
              (xpath_eval ('/Channel', xt, 1) is not null) or
-             (xpath_eval ('/feed', xt, 1) is not null)) {
+           (xpath_eval ('/feed', xt, 1) is not null))
+  {
     -- RSS or Atom feed
     declare channel any;
+
     channel := ENEWS.WA.channel_get (uri, xt);
-    if (length(channel)) {
-      channels := vector_concat (channels, vector ('channel'));
-      channels := vector_concat (channels, vector (channel));
+    if (length (channel))
+    {
+      vectorbld_acc (channels, 'channel');
+      vectorbld_acc (channels, channel);
     }
-
-  } else if (xpath_eval ('[ xmlns:ocs="http://alchemy.openjava.org/ocs/directory#" xmlns:ocs1="http://InternetAlchemy.org/ocs/directory#" ] /RDF//ocs:format|/RDF//ocs1:format', xt, 1) is not null) {
+  }
+  else if (xpath_eval ('[ xmlns:ocs="http://alchemy.openjava.org/ocs/directory#" xmlns:ocs1="http://InternetAlchemy.org/ocs/directory#" ] /RDF//ocs:format|/RDF//ocs1:format', xt, 1) is not null)
+  {
     -- OCS directory
-    channels := vector_concat (channels, vector ('OCS'));
+    vectorbld_acc (channels, 'OCS');
     ENEWS.WA.channels_ocs (channels, xt);
-
-  } else if (xpath_eval ('/opml', xt, 1) is not null) {
+  }
+  else if (xpath_eval ('/opml', xt, 1) is not null)
+  {
     -- OPML file
     declare outlines any;
 
-    channels := vector_concat (channels, vector ('OPML'));
+    vectorbld_acc (channels, 'OPML');
     title := cast(xpath_eval ('/opml/head/title/text()', xt, 1) as varchar);
     outlines := xpath_eval ('/opml/body/outline', xt, 0);
     L := length (outlines);
     for (N := 0; N < L; N := N + 1)
       ENEWS.WA.channels_opml (channels, xml_cut(outlines[N]), title);
-
-  } else {
+  }
+  else
+  {
     -- SIOC channel
     declare is_xml integer;
     declare sql, st, msg, meta, rows any;
@@ -1705,15 +1734,16 @@ create procedure ENEWS.WA.channels_get (
            ', uri);
     st := '00000';
     exec (sql, st, msg, vector (), 0, meta, rows);
-    if ('00000' = st)
-      if (length (rows)) {
-        channels := vector_concat (channels, vector ('channel'));
+    if (('00000' = st) and length (rows))
+    {
+      vectorbld_acc (channels, 'channel');
         foreach (any row in rows) do
-          channels := vector_concat (channels, vector (vector ('title', row[0], 'home', uri, 'rss', uri, 'format', 'SIOC')));
+        vectorbld_acc (channels, vector ('title', row[0], 'home', uri, 'rss', uri, 'format', 'SIOC'));
       }
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (uri);
   }
 _end:
+  vectorbld_final (channels);
   return channels;
 }
 ;
@@ -1735,13 +1765,15 @@ create procedure ENEWS.WA.channels_ocs (
         ' xmlns:dc="http://purl.org/metadata/dublin_core#" ] ';
   links := xpath_eval (ns || '/rdf:RDF/rdf:description[1]/rdf:description', xt, 0);
   l := length(links);
-  for (i := 0; i < l; i := i + 1) {
+  for (i := 0; i < l; i := i + 1)
+  {
     declare formats any;
     title := xpath_eval (ns || '/rdf:description/dc:title/text()', xml_cut (links[i]), 1);
     home := xpath_eval (ns || '/rdf:description/@about', xml_cut (links[i]), 1);
     formats := xpath_eval (ns || '/rdf:description/rdf:description[ocs:format or ocs1:format]', xml_cut (links[i]), 0);
     k := length(formats);
-    for (j := 0; j < k; j := j + 1) {
+    for (j := 0; j < k; j := j + 1)
+    {
       xt := xml_cut(formats[j]);
       rss := cast(xpath_eval ('/description/@about', xt, 1) as varchar);
       format := cast(xpath_eval ('/description/format/text()', xt, 1) as varchar);
@@ -1751,7 +1783,7 @@ create procedure ENEWS.WA.channels_ocs (
       upd_freq := atoi (cast (upd_freq as varchar));
 
       if (not is_empty_or_null(rss))
-        channels := vector_concat (channels, vector (vector ('title', title, 'home', home, 'rss', rss, 'format', format, 'lang', lang, 'updatePeriod', upd_per, 'updateFrequency', upd_freq)));
+        vectorbld_acc (channels, vector ('title', title, 'home', home, 'rss', rss, 'format', format, 'lang', lang, 'updatePeriod', upd_per, 'updateFrequency', upd_freq));
     }
   }
 }
@@ -1775,11 +1807,12 @@ create procedure ENEWS.WA.channels_opml (
     return;
 
   rss := cast(xpath_eval ('/outline/@xmlurl | /outline/@xmlUrl | /outline/@link', xt, 1) as varchar);
-  if (not is_empty_or_null(rss)) {
+  if (not is_empty_or_null(rss))
+  {
     home := cast(xpath_eval ('/outline/@htmlUrl | /outline/@htmlurl', xt, 1) as varchar);
     lang := cast(xpath_eval ('/outline/@language', xt, 1) as varchar);
-    format := 'http://my.netscape.com/rdf/simple/0.9/';
-    channels := vector_concat (channels, vector (vector ('title', title, 'home', home, 'rss', rss, 'format', format, 'lang', lang, 'folder', folder)));
+    format := cast(xpath_eval ('/outline/@version', xt, 1) as varchar);
+    vectorbld_acc (channels, vector ('title', title, 'home', home, 'rss', rss, 'lang', lang, 'folder', folder));
   }
   folder := folder || '/' || title;
   outlines := xpath_eval ('/outline/outline', xt, 0);
@@ -1801,7 +1834,8 @@ create procedure ENEWS.WA.channel_get (
   data := null;
   declare exit handler for sqlstate '*' { goto _end; };
 
-  if (xpath_eval ('/rss|/RDF/channel', xt, 1) is not null) {
+  if (xpath_eval ('/rss|/RDF/channel', xt, 1) is not null)
+  {
     -- RSS feed
     css := ENEWS.WA.channel_css(xt);
     xt := xml_cut (xpath_eval ('/rss/channel[1]|/RDF/channel[1]', xt, 1));
@@ -1814,8 +1848,9 @@ create procedure ENEWS.WA.channel_get (
     tmp := cast (xpath_eval ('/channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
       channel := vector_concat (channel, vector ('imageUrl', tmp));
-
-  } else if (xpath_eval ('/Channel', xt, 1) is not null) {
+  }
+  else if (xpath_eval ('/Channel', xt, 1) is not null)
+  {
     -- RSS feed v1.1
     css := ENEWS.WA.channel_css(xt);
     xt := xml_cut (xpath_eval ('/Channel[1]', xt, 1));
@@ -1828,8 +1863,9 @@ create procedure ENEWS.WA.channel_get (
     tmp := cast (xpath_eval ('/Channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
       channel := vector_concat (channel, vector ('imageUrl', tmp));
-
-  } else if (xpath_eval ('/feed', xt, 1) is not null) {
+  }
+  else if (xpath_eval ('/feed', xt, 1) is not null)
+  {
     -- Atom feed
     css := ENEWS.WA.channel_css(xt);
     xt := xml_cut (xpath_eval ('/feed[1]', xt, 1));
@@ -1867,7 +1903,8 @@ create procedure ENEWS.WA.channel_css(
   declare parts any;
 
   css := cast(xpath_eval ('//processing-instruction(\'xml-stylesheet\')', xt, 1) as varchar);
-  if (not isnull(css)) {
+  if (not isnull (css))
+  {
     parts := regexp_parse('href="([^"]+)"', css, 0);
     if (not isnull(parts))
       css := subseq (css, parts[2], parts[3]);
@@ -1946,7 +1983,8 @@ create procedure ENEWS.WA.channel_create(
             EF_LANG,
             EF_UPDATE_PERIOD,
             EF_UPDATE_FREQ,
-            EF_IMAGE_URI)
+            EF_IMAGE_URI
+           )
     values (
             uri,
             get_keyword('title', channel, ''),
@@ -2259,13 +2297,16 @@ create procedure ENEWS.WA.folder_delete(
   in domain_id integer,
   in folder_id integer)
 {
-  declare parent_id integer;
+  for (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_PARENT_ID = folder_id) do
+    ENEWS.WA.folder_delete (domain_id, EFO_ID);
 
+  declare parent_id integer;
   parent_id := (select EFO_PARENT_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_ID = folder_id);
+
   update ENEWS.WA.FEED_DOMAIN
      set EFD_FOLDER_ID = parent_id
    where EFD_DOMAIN_ID = domain_id
-     and ENEWS.WA.folder_path (EFD_DOMAIN_ID, EFD_FOLDER_ID) like ENEWS.WA.folder_path (domain_id, folder_id) || '%';
+     and EFD_FOLDER_ID = folder_id;
 
   delete from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_ID = folder_id;
 }
@@ -3747,8 +3788,10 @@ create procedure ENEWS.WA.tags_item_content(
   content := (select EFI_DESCRIPTION from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
   content := xml_tree_doc(content);
   links := xpath_eval ('//a[@rel="tag"]', content, 0);
-  if (length(links)) {
-    foreach (any link in links) do {
+  if (length (links))
+  {
+    foreach (any link in links) do
+    {
       tag := ENEWS.WA.tag_prepare (cast(link as varchar));
       if (ENEWS.WA.validate_tag (tag))
         tags := ENEWS.WA.tags_join (tags, tag);
@@ -3760,9 +3803,11 @@ create procedure ENEWS.WA.tags_item_content(
     tags := replace(tags, ' ', ',');
     tags := replace(tags, ',,',',');
     tags := trim(tags, ',');
-    if (is_empty_or_null(tags)) {
+    if (is_empty_or_null(tags))
+    {
       links := xpath_eval ('//category', content, 0);
-      foreach (any link in links) do {
+      foreach (any link in links) do
+      {
         tag := ENEWS.WA.tag_prepare (cast (xpath_eval ('./@term', link, 1) as varchar));
         if (ENEWS.WA.validate_tag (tag))
           tags := ENEWS.WA.tags_join (tags, tag);
@@ -3804,9 +3849,10 @@ create procedure ENEWS.WA.tags_item (
   declare tags any;
 
   tags := ENEWS.WA.tags_item_content(item_id);
-
-  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null)) {
-    if (is_empty_or_null(tags)) {
+  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null))
+  {
+    if (length (tags))
+    {
       delete from ENEWS.WA.FEED_ITEM_DATA
        where EFID_ITEM_ID = item_id;
     } else {
@@ -3816,7 +3862,8 @@ create procedure ENEWS.WA.tags_item (
        where EFID_ITEM_ID = item_id;
     }
   } else {
-    if (not is_empty_or_null(tags)) {
+    if (not length (tags))
+    {
       insert into ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID, EFID_TAGS, EFID_LAST_UPDATE)
         values(item_id, tags, now());
     }
@@ -3838,7 +3885,7 @@ create procedure ENEWS.WA.tags_domain_item2 (
   owner_id := ENEWS.WA.domain_owner_id(domain_id);
   ownerTags := ENEWS.WA.tags_join(domainTags, ENEWS.WA.tags_item_rules(item_id, owner_id));
   ENEWS.WA.tags_domain_item (domain_id, item_id, ownerTags);
-  if (not is_empty_or_null(ownerTags))
+  if (length (ownerTags))
     ENEWS.WA.tags_account_item(owner_id, item_id, ownerTags);
 }
 ;
@@ -3850,8 +3897,10 @@ create procedure ENEWS.WA.tags_domain_item (
   inout item_id integer,
   inout tags varchar)
 {
-  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID = domain_id)) {
-    if (is_empty_or_null(tags)) {
+  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_DOMAIN_ID = domain_id))
+  {
+    if (not length (tags))
+    {
       delete from ENEWS.WA.FEED_ITEM_DATA
        where EFID_ITEM_ID = item_id
          and EFID_DOMAIN_ID = domain_id;
@@ -3862,13 +3911,13 @@ create procedure ENEWS.WA.tags_domain_item (
        where EFID_ITEM_ID = item_id
          and EFID_DOMAIN_ID = domain_id;
     }
-  } else {
-    if (not is_empty_or_null(tags)) {
+  }
+  else if (length (tags))
+  {
       insert into ENEWS.WA.FEED_ITEM_DATA(EFID_ITEM_ID, EFID_DOMAIN_ID, EFID_TAGS, EFID_LAST_UPDATE)
         values(item_id, domain_id, tags, now());
     }
   }
-}
 ;
 
 ---------------------------------------------------------------------------------
@@ -3878,7 +3927,8 @@ create procedure ENEWS.WA.tags_account_item(
   inout item_id integer,
   inout tags varchar)
 {
-  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_ACCOUNT_ID = account_id)) {
+  if (exists(select 1 from ENEWS.WA.FEED_ITEM_DATA where EFID_ITEM_ID = item_id and EFID_ACCOUNT_ID = account_id))
+  {
     update ENEWS.WA.FEED_ITEM_DATA
        set EFID_TAGS = tags,
            EFID_LAST_UPDATE = now()
@@ -3923,7 +3973,8 @@ create procedure ENEWS.WA.feed_enclosure(
   content := (select EFI_DATA from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
   content := xml_tree_doc(content);
   enclosureUrl := cast (xpath_eval ('//enclosure/@url', content, 1) as varchar);
-  if (not is_empty_or_null(enclosureUrl)) {
+  if (length (enclosureUrl))
+  {
     enclosureLength := cast (xpath_eval ('//enclosure/@length', content, 1) as varchar);
     enclosureType := cast (xpath_eval ('//enclosure/@type', content, 1) as varchar);
     enclosureResult := vector(enclosureUrl, enclosureLength, enclosureType);
@@ -5765,6 +5816,9 @@ create procedure ENEWS.WA.dt_convert(
   in pString varchar,
   in pDefault any := null)
 {
+  if (isnull (pString))
+    goto _end;
+
   declare exit handler for sqlstate '*' { goto _next; };
   return stringdate(pString);
 _next:

@@ -27,13 +27,18 @@
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
 
-      if (self.c_order = columnName and self.c_direction = 'desc') {
+      if (self.c_order = columnName and self.c_direction = 'desc')
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.c_order = columnName and self.c_direction = 'asc') {
+      }
+      else if (self.c_order = columnName and self.c_direction = 'asc')
+      {
         directionStr := 'Descending';
         imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
+      }
+      else
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;&nbsp;';
       }
@@ -46,7 +51,8 @@
       if (columnName = '')
         return;
       self.ds.vc_reset();
-      if (self.c_order = columnName) {
+      if (self.c_order = columnName)
+      {
         self.c_direction := either(equ(self.c_direction, 'asc'), 'desc', 'asc');
       } else {
         self.c_direction := 'asc';

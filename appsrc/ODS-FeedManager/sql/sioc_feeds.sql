@@ -506,6 +506,8 @@ create procedure feeds_tags_insert (
     return;
   };
 
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1))
+    return;
   home := '/enews2/' || cast(domain_id as varchar);
   graph_iri := get_graph ();
   select EFI_FEED_ID into feed_id from ENEWS.WA.FEED_ITEM where EFI_ID = item_id;
