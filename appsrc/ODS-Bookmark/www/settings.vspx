@@ -410,7 +410,8 @@
                       self.settings := BMK.WA.set_keyword ('conv', self.settings, f_conv);
                       self.settings := BMK.WA.set_keyword ('conv_init', self.settings, f_conv_init);
 
-                      insert replacing BMK.WA.SETTINGS(S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID) values(self.domain_id, serialize (self.settings), self.account_id);
+                      insert replacing BMK.WA.SETTINGS(S_DOMAIN_ID, S_DATA, S_ACCOUNT_ID)
+                        values(self.domain_id, serialize (self.settings), self.account_id);
               commit work;
 
               BMK.WA.domain_gems_create(self.domain_id, self.account_id);
