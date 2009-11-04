@@ -790,7 +790,7 @@ print_raw_float (float f, dk_session_t * session)
 }
 
 
-static void
+void
 print_raw_double (double d, dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
