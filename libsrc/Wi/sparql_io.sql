@@ -1027,95 +1027,95 @@ end_of_val_print: ;
 
 create procedure SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
 {
-      http('"', ses);
+  http(' "', ses);
   http_escape (colname, 11, ses, 0, 1);
-          http('": { ', ses);
-          if (isiri_id (val))
-            {
-              if (val > min_bnode_iri_id ())
-                http (sprintf ('"type": "bnode", "value": "%s', id_to_iri (val)), ses);
-              else
-                {
-                  http ('"type": "uri", "value": "', ses);
-                  http_escape (id_to_iri (val), 11, ses, 1, 1);
-                }
-            }
-          else if (__tag of rdf_box = __tag (val))
-            {
-              declare res varchar;
-              declare dat, typ any;
-              dat := __rdf_sqlval_of_obj (val, 1);
-              typ := rdf_box_type (val);
-              if (not isstring (dat))
-                {
-                  http ('"type": "typed-literal", "datatype": "', ses);
-                  if (257 <> typ)
-                    res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
-                  else
-                    res := cast (__xsd_type (dat) as varchar);
-                  http_escape (res, 11, ses, 1, 1);
-                  http ('", "value": "', ses);
-                  dat := __rdf_strsqlval (dat);
-                }
-              else if (257 <> typ)
-                {
-                  http ('"type": "typed-literal", "datatype": "', ses);
-                  res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
-                  http_escape (res, 11, ses, 1, 1);
-                  http ('", "value": "', ses);
-                }
-              else if (257 <> rdf_box_lang (val))
-                {
-                  http ('"type": "literal", "xml:lang": "', ses);
-                  res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
-                  http_escape (res, 11, ses, 1, 1);
-                  http ('", "value": "', ses);
-                }
-              else
-                http ('"type": "literal", "value": "', ses);
-              http_escape (dat, 11, ses, 1, 1);
-            }
-          else if (__tag of varchar = __tag (val))
-            {
-              if (1 = __box_flags (val))
-                {
-                  if (val like 'nodeID://%')
-                    http (sprintf ('"type": "bnode", "value": "%s', val), ses);
-                  else
-                    {
-                      http ('"type": "uri", "value": "', ses);
-                      http_escape (val, 11, ses, 1, 1);
-                    }
-                }
-              else
-                {
-                  http ('"type": "literal", "value": "', ses);
-                  http_escape (val, 11, ses, 1, 1);
-                }
-            }
-          else if (__tag of varbinary = __tag (val))
-            {
-              http ('"type": "literal", "value": "', ses);
-              http_escape (val, 11, ses, 0, 0);
-            }
-          else if (185 = __tag (val))
-            {
-              http ('"type": "literal", "value": "', ses);
-              http_escape (cast (val as varchar), 11, ses, 1, 1);
-            }
-          else if (230 = __tag (val))
-            {
-              http ('"type": "literal", "value": "', ses);
-              http_escape (serialize_to_UTF8_xml (val), 11, ses, 1, 1);
-            }
+  http('": { ', ses);
+  if (isiri_id (val))
+    {
+      if (val > min_bnode_iri_id ())
+        http (sprintf ('"type": "bnode", "value": "%s', id_to_iri (val)), ses);
+      else
+        {
+          http ('"type": "uri", "value": "', ses);
+          http_escape (id_to_iri (val), 11, ses, 1, 1);
+        }
+    }
+  else if (__tag of rdf_box = __tag (val))
+    {
+      declare res varchar;
+      declare dat, typ any;
+      dat := __rdf_sqlval_of_obj (val, 1);
+      typ := rdf_box_type (val);
+      if (not isstring (dat))
+        {
+          http ('"type": "typed-literal", "datatype": "', ses);
+          if (257 <> typ)
+            res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
+          else
+            res := cast (__xsd_type (dat) as varchar);
+          http_escape (res, 11, ses, 1, 1);
+          http ('", "value": "', ses);
+          dat := __rdf_strsqlval (dat);
+        }
+      else if (257 <> typ)
+        {
+          http ('"type": "typed-literal", "datatype": "', ses);
+          res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
+          http_escape (res, 11, ses, 1, 1);
+          http ('", "value": "', ses);
+        }
+      else if (257 <> rdf_box_lang (val))
+        {
+          http ('"type": "literal", "xml:lang": "', ses);
+          res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
+          http_escape (res, 11, ses, 1, 1);
+          http ('", "value": "', ses);
+        }
+      else
+        http ('"type": "literal", "value": "', ses);
+      http_escape (dat, 11, ses, 1, 1);
+    }
+  else if (__tag of varchar = __tag (val))
+    {
+      if (1 = __box_flags (val))
+        {
+          if (val like 'nodeID://%')
+            http (sprintf ('"type": "bnode", "value": "%s', val), ses);
           else
             {
-              http ('"type": "typed-literal", "datatype": "', ses);
-              http_escape (cast (__xsd_type (val) as varchar), 11, ses, 1, 1);
-              http ('", "value": "', ses);
-              http_escape (__rdf_strsqlval (val), 11, ses, 1, 1);
+              http ('"type": "uri", "value": "', ses);
+              http_escape (val, 11, ses, 1, 1);
             }
-          http ('" }', ses);
+        }
+      else
+        {
+          http ('"type": "literal", "value": "', ses);
+          http_escape (val, 11, ses, 1, 1);
+        }
+    }
+  else if (__tag of varbinary = __tag (val))
+    {
+      http ('"type": "literal", "value": "', ses);
+      http_escape (val, 11, ses, 0, 0);
+    }
+  else if (185 = __tag (val))
+    {
+      http ('"type": "literal", "value": "', ses);
+      http_escape (cast (val as varchar), 11, ses, 1, 1);
+    }
+  else if (230 = __tag (val))
+    {
+      http ('"type": "literal", "value": "', ses);
+      http_escape (serialize_to_UTF8_xml (val), 11, ses, 1, 1);
+    }
+  else
+    {
+      http ('"type": "typed-literal", "datatype": "', ses);
+      http_escape (cast (__xsd_type (val) as varchar), 11, ses, 1, 1);
+      http ('", "value": "', ses);
+      http_escape (__rdf_strsqlval (val), 11, ses, 1, 1);
+    }
+  http ('" }', ses);
 }
 ;
 
