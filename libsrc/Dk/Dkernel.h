@@ -437,6 +437,31 @@ typedef struct scheduler_io_data_s
   SESSION_SCH_DATA(ses) = __siod_save; \
 }
 
+#define CATCH_READ_FAIL_S(ses) \
+	{ \
+	  jmp_buf_splice old_ctx; \
+	  int volatile have_old_ctx = 0; \
+	  if (SESSION_SCH_DATA (ses)->sio_read_fail_on == 1) { \
+	    memcpy (&old_ctx, &SESSION_SCH_DATA (ses)->sio_read_broken_context, sizeof (jmp_buf_splice)); \
+	    have_old_ctx = 1;\
+	  } \
+	  SESSION_SCH_DATA (ses)->sio_read_fail_on = 1; \
+	  if (0 == setjmp_splice (&SESSION_SCH_DATA (ses)->sio_read_broken_context))
+
+#define END_READ_FAIL_S(ses) \
+	  if (!have_old_ctx) \
+  	    SESSION_SCH_DATA(ses)->sio_read_fail_on = 0; \
+	  else \
+	    memcpy (&SESSION_SCH_DATA (ses)->sio_read_broken_context, &old_ctx, sizeof (jmp_buf_splice)); \
+	}
+
+#define THROW_READ_FAIL_S(ses) \
+	  if (have_old_ctx) \
+	   { \
+	     memcpy (&SESSION_SCH_DATA (ses)->sio_read_broken_context, &old_ctx, sizeof (jmp_buf_splice)); \
+	     longjmp_splice (&old_ctx, 1); \
+	   }
+
 #define CATCH_WRITE_FAIL(ses) \
   SESSION_SCH_DATA (ses)->sio_write_fail_on = 1; \
   if (0 == setjmp_splice (&SESSION_SCH_DATA (ses)->sio_write_broken_context))
