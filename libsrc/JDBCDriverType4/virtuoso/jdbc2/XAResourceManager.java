@@ -80,7 +80,7 @@ class XAResourceManager {
     }
 
     XATransaction createTransaction(Xid xid, int status) throws XAException {
-        XATransaction transaction;
+        XATransaction transaction = null;
      if (VirtuosoFuture.rpc_log != null)
        {
 	 synchronized (VirtuosoFuture.rpc_log)
@@ -91,10 +91,12 @@ class XAResourceManager {
        }
         VirtuosoXid vxid = new VirtuosoXid(xid);
         synchronized (transactions) {
-            if (transactions.containsKey(vxid))
+            if (transactions.containsKey(vxid) && status != XATransaction.PREPARED) {
                 throw new XAException (XAException.XAER_DUPID);
-            transaction = new XATransaction(vxid, status);
-            transactions.put(vxid, transaction);
+            } else {
+              transaction = new XATransaction(vxid, status);
+              transactions.put(vxid, transaction);
+            }
         }
         return transaction;
     }
