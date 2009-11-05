@@ -429,6 +429,21 @@ fct_dtp (in x any)
 }
 ;
 
+
+--
+-- Handle any DTs which need special serialization in FILTER, etc.
+--
+
+create procedure
+fct_sparql_ser (in x any)
+{
+  if (__TAG (x) = __TAG (getdate()))
+    return date_iso8601(__ro2sq (x));
+
+  return '';
+}
+;
+	
 create procedure
 fct_lang (in x any)
 {
@@ -521,7 +536,8 @@ fct_xml_wrap (in tree any, in txt any)
 				xmlelement ("column",
 						xmlattributes (fct_lang ("c1") as "xml:lang",
 							       fct_dtp ("c1") as "datatype",
-							       fct_short_form(__ro2sq("c1")) as "shortform"),
+							       fct_short_form(__ro2sq("c1")) as "shortform",
+                                                               fct_sparql_ser ("c1") as "sparql_ser"),
 							       __ro2sq ("c1")),
 				xmlelement ("column", fct_label ("c1", 0, ''facets'' )))))
 	     from (sparql define output:valmode "LONG"', ntxt);
@@ -753,6 +769,8 @@ fct_cond (in tree any, in this_s int, in txt any)
 
   op := coalesce (cast (xpath_eval ('./@op', tree) as varchar), '=');
 
+ -- Op is Op :)
+
   if (0 = op)
     op := '=';
 
@@ -780,7 +798,8 @@ fct_text_1 (in tree any,
 }
 ;
 
-create procedure fct_curie_iri (in curie varchar)
+create procedure 
+fct_curie_iri (in curie varchar)
 {
   declare pos int;
   declare pref, ns, loc varchar;
@@ -1008,7 +1027,10 @@ fct_exec (in tree any,
   query := qr;
 
   qr2 := fct_xml_wrap (tree, qr);
+
   start_time := msec_time ();
+
+  connection_set ('sparql_query', qr2);
 
   exec (qr2, sqls, msg, vector (), 0, md, res);
   n_rows := row_count ();

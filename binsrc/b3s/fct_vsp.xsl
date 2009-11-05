@@ -31,7 +31,7 @@
 
 <xsl:template match = "facets">
 <div id="res">
-  <div class="btn_bar btn_bar_top">
+  <div class="btn_bar btn_bar_top"><xsl:comment><xsl:value-of select="$type"/></xsl:comment>
     <xsl:call-template name="render-pager"/>
   <xsl:if test="/facets/complete != 'yes'">
     <span class="partial_res_expln">
@@ -291,7 +291,14 @@ function init(){
 		  <!--xsl:message terminate="no"><xsl:value-of select="$query/query/class/@iri"/><xsl:value-of select="column[1]"/></xsl:message-->  
 	      <xsl:variable name="current_iri" select="column[1]"/> 
 	      <xsl:if test="not $query/query/class[@iri = $current_iri]" > 
-		  <xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:value-of select="urlify (column[1])"/>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
+		<xsl:attribute name="href">/fct/facet.vsp?cmd=<xsl:value-of select="$command"/>&amp;iri=<xsl:choose>
+                    <xsl:when test="column[1]/@sparql_ser != ''">
+                      <xsl:value-of select="urlify(column[1]/@sparql_ser)"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="urlify (column[1])"/>
+                    </xsl:otherwise>
+                    </xsl:choose>&amp;lang=<xsl:value-of select="column[1]/@xml:lang"/>&amp;datatype=<xsl:value-of select="urlify (column[1]/@datatype)"/>&amp;sid=<xsl:value-of select="$sid"/></xsl:attribute>
 	      </xsl:if>
 		<xsl:attribute name="title">
 		  <xsl:value-of select="column[1]"/>

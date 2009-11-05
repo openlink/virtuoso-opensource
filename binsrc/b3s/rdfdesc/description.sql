@@ -83,6 +83,7 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
          ht := WS.WS.PARSE_URI (refr);
          pars := ht[4];
          pars := split_and_decode (pars);
+         if (pars is not null) 
          sid := get_keyword ('sid', pars);
        }
    }
@@ -338,7 +339,8 @@ b3s_rel_print (in val any, in rel any, in flag int := 0)
 ;
 
 
-create procedure b3s_uri_curie (in uri varchar)
+create procedure 
+b3s_uri_curie (in uri varchar)
 {
   declare delim integer;
   declare uriSearch, nsPrefix varchar;
@@ -394,16 +396,16 @@ b3s_http_url (in url varchar, in sid varchar := null)
 {
   declare host, pref, more, i varchar;
 
-  more := '';
+--  more := '';
 
-  if (sid is not null)
-    more := sprintf ('&sid=%s', sid);
-  else
-    more := '';
+--  if (sid is not null)
+--    more := sprintf ('&sid=%s', sid);
+--  else
+--    more := '';
 
-  i := b3s_render_inf_params();
+  i := b3s_render_ses_params();
   
-  return sprintf ('/describe/?url=%U%s%s', url, more, i);
+  return sprintf ('/describe/?url=%U%s', url, i);
 };
 
 create procedure 

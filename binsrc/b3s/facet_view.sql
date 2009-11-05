@@ -675,8 +675,6 @@ fct_set_class (in tree any,
 
   pos := fct_view_pos (tree);
 
---  dbg_printf ('setting class %s at pos: %d', iri, pos);
-
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
                 vector ('pos'   , pos,
@@ -794,8 +792,6 @@ function get_and_encode_query (q_elm)
 
   ctr := 0;
 
---  dbg_printf ('isparql qry transform xsl: %s', demo_xsl_uri);
-
   for select res_content, res_name, res_full_path 
         from WS.WS.SYS_DAV_RES 
         where RES_FULL_PATH like demo_dav_path || '%.isparql' do
@@ -884,7 +880,6 @@ create procedure
 fct_load (in from_stored int)
 {
   declare sid int;
---  dbg_printf ('fct_load: from_stored: %d', from_stored);
   
   sid := sequence_next ('fct_seq');
   declare tree any;
@@ -1106,10 +1101,8 @@ fct_set_inf (in tree any, in sid int)
      return;
     }
 
-  if (isstring (sas) and isstring (inf) and
-  isstring (tlogy))
+  if (isstring (sas) and isstring (inf) and isstring (tlogy))
     {
---      dbg_printf ('tlogy: %s', tlogy);
 
       if (inf <> '' and not exists (select 1 from sys_rdf_schema where rs_name = inf))
 	{
@@ -1203,8 +1196,6 @@ fct_select_value (in tree any,
 {
   declare pos int;
 
---  dbg_printf ('in fct_select_value()');
-
   if (op is null or op = '' or op = 0)
     op := '=';
 
@@ -1214,14 +1205,12 @@ fct_select_value (in tree any,
                 tree,
 		vector ('pos', pos, 'op', 'value', 'iri', val, 'lang', lang, 'datatype', dtp, 'cmp', op));
 
--- dbg_obj_print (tree);
-
   if (op = '=')
+    {
     tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                   tree,
 		  vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
-
---  dbg_obj_print (tree);
+    }
 
   update fct_state set fct_state = tree where fct_sid = sid;
 

@@ -11,13 +11,58 @@
 </script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 <script type="text/javascript" src="facet.js"></script>
+
+<?vsp 
+  declare sid, _S, ses_parms varchar;
+
+  b3s_handle_ses (path, lines, params);
+
+  sid := connection_get ('sid');
+--  dbg_obj_print (path);
+--  dbg_obj_print (lines);
+  
+?>
+
 </head>
 <body>
 <div id="PG">
 <div id="HD">
-  <a href="/fct/facet.vsp" class="logo">
-    <img id="opl_logo" src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
+  <div id="hd_l">
+    <h1>
+      <div id="logo">
+        <a href="/fct/facet.vsp">
+          <img src="/fct/images/openlink_site_logo.png" 
+               alt="OpenLink Software"/>
   </a>
+      </div>
+    </h1>
+    <div id="homelink"></div>
+  </div> <!-- hd_l -->
+  <div id="hd_r">
+    <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso" 
+       title="OpenLink Virtuoso">
+      <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
+    </a>
+  </div> <!-- hd_r -->	
+  <ul id="main_menu">
+    <?vsp if (sid is not null) { ?>
+      <!--li class="sel"><a href="<?= b3s_render_fct_link() ?>" class="sel">Facets</a></li-->
+    <?vsp } ?>
+    <!--li id="mnu_settings"><a href="settings.vsp?g=<?U _S ?><?V ses_parms ?>">Settings</a>
+      <div id="settings_popup" style="display: none">
+        <ul>
+          <li>
+            <input id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> 
+            <label for="sas_ckb">owl:sameAs</label>
+          </li>
+          <li>
+            <label for="inf_sel">IFP rule:</label>
+            <select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select><br/>
+          </li>
+        </ul>
+      </div> <!-- settings-popup -->
+    </li-->
+  </ul>
 </div><!-- #HD -->
 <div id="MD">
 <?vsp 
@@ -77,6 +122,13 @@ if ('load' = cmd)
       }
   }
 
+declare q varchar;
+declare sq varchar;
+sq := connection_get ('sparql_query');
+
+q := http_param ('q');
+-- dbg_obj_print (q);
+
 declare exit handler for sqlstate '*'
 {
   http('<div class="error_msg dlg">\n');
@@ -86,8 +138,11 @@ declare exit handler for sqlstate '*'
   http('  <h3>Diagnostics</h3>\n');
   http(sprintf ('<pre>SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
   http(sprintf ('<pre>SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  if (connection_get ('sparql_query') is not null)
+    http(sprintf ('<pre>SPARQL  : %s</pre><br/>\n', connection_get ('sparql_query')));
   http('  </div>\n');
-  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  http('</div>\n');
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');  
+  http('  </div>\n');
 
   commit work;
   declare _state any;
@@ -106,7 +161,9 @@ declare exit handler for sqlstate '*'
 };
 fct_vsp ();
 footer:;
+
 ?>
+<div class="dbg" style="display: none"><pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></div>
 </div><!-- #MD -->
 <div id="FT">
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
