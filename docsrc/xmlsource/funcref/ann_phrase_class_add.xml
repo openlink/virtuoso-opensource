@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_ann_phrase_class_add">
+  <refmeta>
+    <refentrytitle>DB.DBA.ANN_PHRASE_CLASS_ADD</refentrytitle>
+    <refmiscinfo>phrz</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.ANN_PHRASE_CLASS_ADD</refname>
+    <refpurpose>Returns APC_ID of a phrase class.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ann_phrase_class_add">
+      <funcprototype id="fproto_ann_phrase_class_add">
+        <funcdef><function>DB.DBA.ANN_PHRASE_CLASS_ADD</function></funcdef>
+	<paramdef>in <parameter>_name</parameter> varchar</paramdef>
+	<paramdef>in <parameter>_owner_uid</parameter> integer</paramdef>
+	<paramdef>in <parameter>_reader_gid</parameter> integer</paramdef>
+        <paramdef>in <parameter>_callback</parameter> varchar</paramdef>
+        <paramdef>in <parameter>_app_env</parameter> any</paramdef>
+        <paramdef>in <parameter>mode</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ann_phrase_class_add">
+    <title>Description</title>
+    <para>The returned value is APC_ID of a class if positive or an error code if negative.
+To update phrase class, no special DB.DBA.ANN_PHRASE_CLASS_UPDATE() exists, use DB.DBA.ANN_PHRASE_CLASS_ADD()
+with parameter "mode" equal to 'replacing'.</para>
+  </refsect1>
+  <refsect1 id="params_ann_phrase_class_add">
+    <title>Parameters</title>
+    <refsect2><title>_name</title>
+      <para>a name of new phrase class</para>
+    </refsect2>
+    <refsect2><title>_owner_uid</title>
+      <para>owner UID, will be stored as APC_OWNER_UID, can be NULL for public</para>
+    </refsect2>
+    <refsect2><title>_reader_gid</title>
+      <para>reader GID, will be stored as APC_READER_GID, can be NULL for public</para>
+    </refsect2>
+    <refsect2><title>_callback</title>
+      <para>value for APC_CALLBACK field</para>
+    </refsect2>
+    <refsect2><title>_app_env</title>
+      <para>value for APC_APP_ENV field</para>
+    </refsect2>
+    <refsect2><title>mode</title>
+      <para>Instructs what to do on attempt of writing over existing class: 'into' will signal,
+'soft' return APC_ID of (unchanged) existing class, 'replacing' will continue with update.</para>
+    </refsect2>
+    <refsect2><title>auth_uname</title>
+      <para></para>
+    </refsect2>
+    <refsect2><title>auth_pwd</title>
+      <para></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_ann_phrase_class_add">
+    <title>Examples</title>
+    <example id="ex_ann_phrase_class_add">
+<programlisting><![CDATA[
+SQL>select ANN_PHRASE_CLASS_ADD ('My check', null, null, null, 'My check visa', '', 'dba', 'dba');
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 0 msec.
+
+SQL>select ANN_PHRASE_CLASS_ADD ('Paid ads', null, null, null, 'Paid ads env', 'replacing', 'dba', 'dba');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+2
+
+1 Rows. -- 261 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_ann_phrase_class_add">
+    <title>See Also</title>
+    <para><link linkend="fn_ann_phrase_class_del"><function>DB.DBA.ANN_PHRASE_CLASS_DEL</function></link></para>
+    <para><link linkend="fn_ap_build_match_list"><function>AP_BUILD_MATCH_LIST</function></link></para>
+  </refsect1>
+</refentry>

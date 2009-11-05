@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_ann_phrase_class_del">
+  <refmeta>
+    <refentrytitle>DB.DBA.ANN_PHRASE_CLASS_DEL</refentrytitle>
+    <refmiscinfo>phrz</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.ANN_PHRASE_CLASS_DEL</refname>
+    <refpurpose>Deletes phrase set.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ann_phrase_class_del">
+     <funcprototype id="fproto_ann_phrase_class_del">
+        <funcdef><function>DB.DBA.ANN_PHRASE_CLASS_DEL</function></funcdef>
+	<paramdef>in <parameter>_name</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ann_phrase_class_del">
+    <title>Description</title>
+    <para>The returned value is APS_ID of a deleted phrase set if positive or an error code if negative. A phrase
+set can not be deleted while used by some advertiser (as described <link linkend="sqlreffastphrasematchsadv">here</link>).</para>
+  </refsect1>
+  <refsect1 id="params_ann_phrase_class_del">
+    <title>Parameters</title>
+    <refsect2><title>_name</title>
+      <para>a name of phrase set to delete</para>
+    </refsect2>
+    <refsect2><title>auth_uname</title>
+      <para></para>
+    </refsect2>
+    <refsect2><title>auth_pwd</title>
+      <para></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_ann_phrase_class_del">
+    <title>Examples</title>
+    <example id="ex_ann_phrase_class_del">
+<programlisting><![CDATA[
+SQL>select ANN_PHRASE_CLASS_ADD ('simple test', null, null, null, '123', '', 'dba', 'dba');
+callret
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 0 msec.
+
+SQL>select ANN_PHRASE_CLASS_DEL ('simple test', 'dba', 'dba');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 70 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_ann_phrase_class_del">
+    <title>See Also</title>
+    <para><link linkend="fn_ann_phrase_class_add"><function>DB.DBA.ANN_PHRASE_CLASS_ADD</function></link></para>
+    <para><link linkend="fn_ap_build_match_list"><function>AP_BUILD_MATCH_LIST</function></link></para>
+  </refsect1>
+</refentry>

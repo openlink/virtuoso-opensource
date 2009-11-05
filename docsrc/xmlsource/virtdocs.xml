@@ -56,6 +56,12 @@
 <!ENTITY bif_string_or_wide_or_null_arg		SYSTEM "funcref/bif_string_or_wide_or_null_arg.xml">
 <!ENTITY bif_strses_arg				SYSTEM "funcref/bif_strses_arg.xml">
  -->
+<!ENTITY ann_phrase_class_add			SYSTEM	"funcref/ann_phrase_class_add.xml">
+<!ENTITY ann_phrase_class_del			SYSTEM	"funcref/ann_phrase_class_del.xml">
+<!ENTITY ap_build_match_list			SYSTEM	"funcref/ap_build_match_list.xml">
+<!ENTITY ap_add_phrases			        SYSTEM	"funcref/ap_add_phrases.xml">
+
+
 <!ENTITY bit_and				SYSTEM "funcref/bit_and.xml">
 <!ENTITY bit_or					SYSTEM "funcref/bit_or.xml">
 <!ENTITY bit_not				SYSTEM "funcref/bit_not.xml">

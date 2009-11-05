@@ -4464,6 +4464,49 @@ routine which searches for all triples where the input IRIs are used as subjects
 Similarly, <emphasis>DB.DBA.SPARQL_DESC_DICT_CBD</emphasis> and <emphasis>DB.DBA.SPARQL_DESC_DICT_CBD_PHYSICAL</emphasis>
 are for <emphasis>sql:describe-mode "CBD"</emphasis>. CBD stands for Concise Bounded Description, Nokia-style.
   </para>
+  <para><emphasis>Example:</emphasis></para>
+<programlisting><![CDATA[
+SQL>SPARQL
+DEFINE sql:describe-mode "CBD"
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+DESCRIBE ?friend
+WHERE
+  {
+    ?s foaf:knows ?friend  .
+    ?friend foaf:nick ?nick.
+    filter (?s=<http://www.advogato.org/person/rmorgan/foaf.rdf#me>)
+}
+;
+
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:	<http://www.advogato.org/person/chrisd/foaf.rdf#> .
+@prefix foaf:	<http://xmlns.com/foaf/0.1/> .
+ns1:me	rdf:type	foaf:Person .
+@prefix rdfs:	<http://www.w3.org/2000/01/rdf-schema#> .
+ns1:me	rdfs:seeAlso	<http://www.advogato.org/person/chrisd/foaf.rdf> ;
+	foaf:name	"Chris DiBona" ;
+	foaf:nick	"chrisd" ;
+	foaf:homepage	<http://www.dibona.com> ;
+	foaf:mbox_sha1sum	"e8231d19ac0d11ccbdc565485054461e5d71f0d3" .
+@prefix ns4:	<http://www.advogato.org/person/schoen/foaf.rdf#> .
+ns1:me	foaf:knows	ns4:me .
+@prefix ns5:	<http://www.advogato.org/person/jpick/foaf.rdf#> .
+ns1:me	foaf:knows	ns5:me .
+@prefix ns6:	<http://www.advogato.org/person/benson/foaf.rdf#> .
+ns1:me	foaf:knows	ns6:me .
+@prefix ns7:	<http://www.advogato.org/person/conrad/foaf.rdf#> .
+ns1:me	foaf:knows	ns7:me .
+@prefix ns8:	<http://www.advogato.org/person/starshine/foaf.rdf#> .
+ns1:me	foaf:knows	ns8:me .
+@prefix ns9:	<http://www.advogato.org/person/chip/foaf.rdf#> .
+ns1:me	foaf:knows	ns9:me .
+@prefix ns10:	<http://www.advogato.org/person/crackmonkey/foaf.rdf#> .
+.....
+
+
+
+
+]]></programlisting>
   <para>In each pair, both procedures have the same semantics but the second one is used if and
 only if the SPARQL compiler can prove that all subjects to process are
 from physical storage <emphasis>(DB.DBA.RDF_QUAD)</emphasis>. Thus the second procedure 
@@ -4495,8 +4538,7 @@ SPARQL query, NULL if missing.</listitem>
      <listitem><emphasis>options</emphasis> - reserved for future use and can be ignored.</listitem>
    </itemizedlist>
   <para>One should grant execute permission on both procedures to SPARQL_SELECT before referring to them in SPARQL.</para>
-  <para>Example:
-  </para>
+  <para><emphasis>Example:</emphasis></para>
 <programlisting><![CDATA[
 SQL>set blobs on;
 SQL>SPARQL

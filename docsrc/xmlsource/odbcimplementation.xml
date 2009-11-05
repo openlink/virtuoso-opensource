@@ -980,6 +980,13 @@ Driver Manager on Windows, the following construction should to be used:</para>
 # define VIRTUOSO_DT_TYPE_DATE              2
 # define VIRTUOSO_DT_TYPE_TIME              3
 
+/*
+ *  Virtuoso - ODBC SQL_DESC_COL_BOX_FLAGS
+ */
+#define VIRTUOSO_BF_IRI                     0x1
+#define VIRTUOSO_BF_UTF8                    0x2
+#define VIRTUOSO_BF_DEFAULT_ENC             0x4
+
 #endif
 ]]></programlisting>
 
@@ -1107,16 +1114,25 @@ which caches these lookups to speed up describe operations.</para>
     rc = SQLGetDescField (hdesc, colNum, SQL_DESC_COL_BOX_FLAGS, &flags, SQL_IS_INTEGER, NULL);
 ]]></programlisting>
 
-<para>If this call returns <computeroutput>SQL_SUCCESS</computeroutput> or
-<computeroutput>SQL_SUCCESS_WITH_INFO</computeroutput>, the flags variable will contain:</para>
+<para>If this call returns <computeroutput>SQL_SUCCESS</computeroutput>
+or <computeroutput>SQL_SUCCESS_WITH_INFO</computeroutput>, the following
+bitmasks can be used to determine the representation of the field:</para>
 
 <programlisting><![CDATA[
+    #define VIRTUOSO_BF_IRI                     0x1
+    #define VIRTUOSO_BF_UTF8                    0x2
+    #define VIRTUOSO_BF_DEFAULT_ENC             0x4
+
+    for example:
+
     flags       description
 
-    0           field contains normal string
-    1           field contains IRI string
-    2           field contains UTF-8 string
+    0        field contains a Latin1 encoded literal string
+    1        field contains an IRI (always UTF-8 encoded)
+    2        field contains an UTF-8 encoded literal string
+    3        field contains an UTF-8 encoded IRI (should not happen)
 ]]></programlisting>
+
 </formalpara>
 
 <formalpara>
@@ -1341,6 +1357,13 @@ gcc -o odbc_iri -I/usr/local/iODBC odbc_iri.c -L/usr/local/iODBC/lib -liodbc -ld
     # define VIRTUOSO_DT_TYPE_DATE              2
     # define VIRTUOSO_DT_TYPE_TIME              3
 
+    /*
+     *  Virtuoso - ODBC SQL_DESC_COL_BOX_FLAGS
+     */
+    #define VIRTUOSO_BF_IRI			0x1
+    #define VIRTUOSO_BF_UTF8                    0x2
+    #define VIRTUOSO_BF_DEFAULT_ENC             0x4
+
     #endif
 
     SQLHANDLE henv = SQL_NULL_HANDLE;
@@ -1551,7 +1574,7 @@ gcc -o odbc_iri -I/usr/local/iODBC odbc_iri.c -L/usr/local/iODBC/lib -liodbc -ld
                     }
                   else
                     {
-                      if (flag == 1)
+                      if (flag & VIRTUOSO_BF_IRI)
                         printf ("<%s>", fetchBuffer); /* IRI */
                       else if (dvtype == VIRTUOSO_DV_STRING || dvtype == VIRTUOSO_DV_RDF)
                         printf ("\"%s\"", fetchBuffer); /* literal string */

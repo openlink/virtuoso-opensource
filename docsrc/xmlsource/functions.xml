@@ -60,6 +60,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="mail">Mail</keyword>
     <keyword id="number">Number</keyword>
 <!--    <keyword id="object">Object</keyword>-->
+    <keyword id="phrz">Phrases</keyword>
     <keyword id="repl">Replication</keyword>
     <keyword id="rmt">Remote SQL Data Source</keyword>
     <keyword id="rdf">RDF data</keyword>
@@ -164,6 +165,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
 &rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;&rdfs_rule_set;
 
+&ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;
 
 <!--
 - Uncommented for Virtuoso 6 Release-->

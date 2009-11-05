@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_ap_build_match_list">
+  <refmeta>
+    <refentrytitle>AP_BUILD_MATCH_LIST</refentrytitle>
+    <refmiscinfo>phrz</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>AP_BUILD_MATCH_LIST</refname>
+    <refpurpose>Returns report of all occurrences of phrases from the specified sets in the text.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ap_build_match_list">
+      <funcprototype id="fproto_ap_build_match_list">
+        <funcdef><function>AP_BUILD_MATCH_LIST</function></funcdef>
+	<paramdef>in <parameter>phrase_set_ids</parameter> vector of integers</paramdef>
+	<paramdef>in <parameter>source_UTF8_text</parameter> varchar not null</paramdef>
+	<paramdef>in <parameter>lang_name</parameter> varchar not null</paramdef>
+        <paramdef>in <parameter>source_text_is_html</parameter> integer</paramdef>
+        <paramdef>in <parameter>report_flags</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ap_build_match_list">
+    <title>Description</title>
+   <para>Forms a report that lists all occurrences of phrases from the specified sets in the text.</para>
+   <para>The report describes "phrase hits", i.e. occurrences of annotation phrases in the
+text, using "arrows" that point to specific fragments in the text, such as words of found phrases or HTML
+tags.</para>
+   <para>The structure of the report is complicated, due to contradiction in requirements.
+It is compact to provide reasonable performance and scalability, so common data should not be repeated,
+saving memory. It is complete enough to prevent application from reading omitted data from system tables,
+saving time.</para>
+   <para>All objects of one type are listed as items of some vector and the whole report consists of several
+such vectors. An item in one vector may refer to item in other vector by its index, without storing a
+local copy.</para>
+   <para>Detailed description of the report structure can be found
+<link linkend="sqlreffastphrasematchapi">here</link></para>.
+  </refsect1>
+  <refsect1 id="params_ap_build_match_list">
+    <title>Parameters</title>
+    <refsect2><title>phrase_set_ids</title>
+      <para>vector of numeric identifiers of phrase sets at work, they may belong to various phrase classes,
+but if language of some phrase set differs from value of lang_name argument then the phrase set is
+silently ignored.</para>
+    </refsect2>
+    <refsect2><title>source_UTF8_text</title>
+      <para>a plain text or an HTML</para>
+    </refsect2>
+    <refsect2><title>lang_name</title>
+      <para>language name</para>
+    </refsect2>
+    <refsect2><title>source_text_is_html</title>
+      <para>0 for plain text, 1 for standard-compliant HTML or 2 for "dirty" HTML</para>
+    </refsect2>
+    <refsect2><title>report_flags</title>
+      <para></para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_ap_build_match_list">
+    <title>Examples</title>
+    <example id="ex_ap_build_match_list"><title></title>
+      <para>Usage example can be found <link linkend="sqlreffastphraseexample">here</link>.</para>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_ap_build_match_list">
+    <title>See Also</title>
+    <para><link linkend="fn_ann_phrase_class_add"><function>DB.DBA.ANN_PHRASE_CLASS_ADD</function></link></para>
+    <para><link linkend="fn_ann_phrase_class_del"><function>DB.DBA.ANN_PHRASE_CLASS_DEL</function></link></para>
+  </refsect1>
+</refentry>
