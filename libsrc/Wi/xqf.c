@@ -530,18 +530,22 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
 				"gDay",
   };
   caddr_t err_msg = NULL;
+  caddr_t err;
   assert (do_what >= 0 && do_what < COUNTOF__XQ_DT_MODE);
   n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  iso8601_or_odbc_string_to_dt (str, *n, flags[do_what], types[do_what], &err_msg);
-  if (NULL != err_msg)
+  iso8601_or_odbc_string_to_dt (str, n[0], flags[do_what], types[do_what], &err_msg);
+  if (NULL == err_msg)
+    return;
+  if (0 == do_what)
     {
-      caddr_t err;
-      dk_free_box (n[0]);
-      n[0] = NULL;
-      err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
-      dk_free_box (err_msg);
-      sqlr_resignal (err);
+      if (http_date_to_dt (str, n[0]))
+        return;
     }
+  dk_free_box (n[0]);
+  n[0] = NULL;
+  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
+  dk_free_box (err_msg);
+  sqlr_resignal (err);
 }
 
 static void

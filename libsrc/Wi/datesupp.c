@@ -1085,13 +1085,14 @@ iso8601_or_odbc_string_to_dt (const char *str, char *dt, int dtflags, int dt_typ
 int
 http_date_to_dt (const char *http_date, char *dt)
 {
-  char month[4] /*, weekday[10] */;
+  char month[4] /*, weekday[10] */, tzstring[4];
   unsigned day, year, hour, minute, second;
-  int idx, fmt, month_number;
+  int idx, fmt, month_number, tz_hr, tz_min;
   GMTIMESTAMP_STRUCT ts_tmp, *ts = &ts_tmp;
   const char *http_end_of_weekday = http_date;
 
   day = year = hour = minute = second = 0;
+  tz_min = 0;
   month[0] /* = weekday[0] = weekday[9] */ = 0;
   memset (ts, 0, sizeof (TIMESTAMP_STRUCT));
 
@@ -1099,15 +1100,39 @@ http_date_to_dt (const char *http_date, char *dt)
     http_end_of_weekday++;
   /*weekday[idx] = '\0';*/
 
-  /* rfc 1123 */
-  if (6 == sscanf (http_end_of_weekday, ", %2u %3s %4u %2u:%2u:%u GMT",
-	&day, &(month[0]), &year, &hour, &minute, &second) &&
+  /* ill RFC 1123*/
+  if (8 == sscanf (http_end_of_weekday, ", %2u %3s %4u %2u:%2u:%u %3d:%2u",
+	 &day, month, &year, &hour, &minute, &second, &tz_hr, &tz_min) &&
     (3 == (http_end_of_weekday - http_date)) )
+    {
+      fmt = -1123;
+      if (tz_hr > 0)
+        tz_min = 60 * tz_hr + tz_min;
+      else if (tz_hr < 0)
+        tz_min = 60 * tz_hr - tz_min;
+    }
+  /* RFC 1123 */
+  else if (7 == sscanf (http_end_of_weekday, ", %2u %3s %4u %2u:%2u:%u %5d",
+	 &day, month, &year, &hour, &minute, &second, &tz_min) &&
+    (3 == (http_end_of_weekday - http_date)) )
+    {
+      fmt = -1123;
+      if (tz_min > 100)
+        tz_min = 60 * (tz_min/100) + tz_min%100;
+      else if (tz_min < -100)
+        tz_min = -(60 * ((-tz_min)/100) + (-tz_min)%100);
+    }
+  /* RFC 1123 */
+  else if (7 == sscanf (http_end_of_weekday, ", %2u %3s %4u %2u:%2u:%u %3s",
+	&day, month, &year, &hour, &minute, &second, tzstring) &&
+    (3 == (http_end_of_weekday - http_date)) &&
+    !strcmp (tzstring, "GMT") )
     fmt = 1123;
   /* rfc 850 */
-  else if (6 == sscanf (http_end_of_weekday, ", %2u-%3s-%2u %2u:%2u:%u GMT",
-	&day, &(month[0]), &year, &hour, &minute, &second) &&
-    (6 <= (http_end_of_weekday - http_date)) )
+  else if (7 == sscanf (http_end_of_weekday, ", %2u-%3s-%2u %2u:%2u:%u %3s",
+	&day, month, &year, &hour, &minute, &second, tzstring) &&
+    (6 <= (http_end_of_weekday - http_date)) &&
+    !strcmp (tzstring, "GMT") )
     {
       if (year > 0 && year < 100)
 	year = year + 1900;
@@ -1165,7 +1190,14 @@ This is indicated in the first two formats by the inclusion of "GMT" as the thre
 and MUST be assumed when reading the asctime format. */
   if (1123 == fmt || 850 == fmt) /* these formats are explicitly for GMT */
 #endif
-  GMTimestamp_struct_to_dt (ts, dt);
+  if (0 == tz_min)
+    GMTimestamp_struct_to_dt (ts, dt);
+  else
+    {
+      ts_add (ts, -tz_min, "minute");
+      GMTimestamp_struct_to_dt (ts, dt);
+      DT_SET_TZ (dt, tz_min);
+    }
   return 1;
 }
 
