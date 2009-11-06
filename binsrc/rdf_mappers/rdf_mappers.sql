@@ -2596,7 +2596,9 @@ end_sp:
 
 create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-    declare xd, xt, url, tmp, api_key, address, citystatezip, hdr, exif any;
+    declare xd, xt, url, url2, tmp, api_key, full_address, address, citystatezip, zpid, hdr any;
+    declare api_ret varchar;
+	declare iAve, iDr, iSt, cAddrFlds, iFld, sSearch any;
 	declare exit handler for sqlstate '*'
 	{
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -2605,32 +2607,95 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 	api_key := _key;
 	if (not isstring (api_key))
 		return 0;
+
 	if (new_origin_uri like 'http://www.zillow.com/homedetails/%/%')
-	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.zillow.com/homedetails/%s/%s', 0);
-		address := replace(tmp[0], '-', '+');
-		if (address is null)
-			return 0;
-		tmp := sprintf_inverse (address, '%s+%s+%s+%s+%s+%s', 0);
-		address := sprintf('%s+%s+%s', tmp[0], tmp[1], tmp[2]);
-		citystatezip := sprintf('%s+%s+%s', tmp[3], tmp[4], tmp[5]);
-		url := sprintf('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=%s&address=%s&citystatezip=%s', api_key, address, citystatezip);
-	}
 	else if (new_origin_uri like 'http://www.zillow.com/trk/ClkTrk.htm?link=\%2Fhomedetails\%2F%\%2F%')
-	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.zillow.com/trk/ClkTrk.htm?link=%%2Fhomedetails%%2F%s%%2F%s', 0);
-		address := replace(tmp[0], '-', '+');
-		if (address is null)
+    else
 			return 0;
-		tmp := sprintf_inverse (address, '%s+%s+%s+%s+%s+%s', 0);
+
+	zpid := subseq (tmp[1], 0, strstr(tmp[1], '_zpid'));
+	full_address := replace(tmp[0], '-', '+');
+	if (full_address is null)
+		return 0;
+
+	-- Not all addresses consist of 6 fields.
+	-- A typical address might take the form:
+	--   http://www.zillow.com/homedetails/500-Starview-Dr-Danville-CA-94526/18431449_zpid/
+	-- Atypical examples are:
+	--   http://www.zillow.com/homedetails/8354-11th-Ave-NW-UNIT-3-Seattle-WA-98117/2135796276_zpid/ 
+	--   http://www.zillow.com/homedetails/6900-SE-33rd-St-Mercer-Island-WA-98040/49130677_zpid/
+	cAddrFlds := 0;
+	iFld := 0;
+	sSearch := full_address;
+	iFld := strchr (sSearch, '+');
+	while (iFld is not null)
+	{
+		cAddrFlds := cAddrFlds + 1;
+		sSearch := subseq (sSearch, iFld + 1);
+		iFld := strchr (sSearch, '+');
+	}
+
+	if (cAddrFlds = 6)
+	{
+		tmp := sprintf_inverse (full_address, '%s+%s+%s+%s+%s+%s', 0);
 		address := sprintf('%s+%s+%s', tmp[0], tmp[1], tmp[2]);
 		citystatezip := sprintf('%s+%s+%s', tmp[3], tmp[4], tmp[5]);
-		url := sprintf('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=%s&address=%s&citystatezip=%s', api_key, address, citystatezip);
 	}
     else
+	{
+		-- Look for common delimiters separating the address & citystatezip components.
+		iAve := strstr(full_address, 'Ave+');
+		iDr := strstr(full_address, 'Dr+');
+		iSt := strstr(full_address, 'St+');
+		if (iAve is null and iDr is null and iSt is null)
         return 0;
-    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+		if (iAve is not null)
+		{
+			address := subseq (full_address, 0, iAve + 3);
+			citystatezip := subseq (full_address, iAve + 4);
+		}
+		else if (iDr is not null)
+		{
+			address := subseq (full_address, 0, iDr + 2);
+			citystatezip := subseq (full_address, iDr + 3);
+		}
+		else if (iSt is not null)
+		{
+			address := subseq (full_address, 0, iSt + 2);
+			citystatezip := subseq (full_address, iSt + 3);
+		}
+	}
+	url := sprintf('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=%s&address=%s&citystatezip=%s', api_key, address, citystatezip);
+	url2 := sprintf('http://www.zillow.com/webservice/GetUpdatedPropertyDetails.htm?zws-id=%s&zpid=%s', api_key, zpid);
+
+    tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+  	if (hdr[0] not like 'HTTP/1._ 200 %')
+    	signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
     xd := xtree_doc (tmp);
+	api_ret := cast(xpath_eval('//message/code', xd) as varchar);
+	if (api_ret is null or api_ret <> '0')
+		-- Possible cause could be we're handling an atypical address and didn't decode it correctly
+	  	return 0;
+
+    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
+    xd := serialize_to_UTF8_xml (xd);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+	-- GetUpdatedPropertyDetails often returns error code 501:
+	--     "The updated data for the property you are requesting is not available due to legal restrictions"
+	-- It looks like properties being sold by agents return this code, while properties being sold directly
+	-- by the owner make the information available.
+
+    tmp := http_client_ext (url2, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+  	if (hdr[0] not like 'HTTP/1._ 200 %')
+    	signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    xd := xtree_doc (tmp);
+	api_ret := cast(xpath_eval('//message/code', xd) as varchar);
+	if (api_ret is null or api_ret <> '0')
+	  return 1;
+
     xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
     xd := serialize_to_UTF8_xml (xd);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
