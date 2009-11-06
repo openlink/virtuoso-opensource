@@ -2422,6 +2422,8 @@ spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
     "SPARQL_DESC_AGG_INIT",
     "SPARQL_DESC_AGG_FIN",
     "SPARQL_DESC_DICT",
+    "SPARQL_DESC_DICT_CBD",
+    "SPARQL_DESC_DICT_CBD_PHYSICAL",
     "SPARQL_DESC_DICT_SPO",
     "SPARQL_DESC_DICT_SPO_PHYSICAL",
     "SPARQL_MODIFY_BY_DICT_CONTENTS",
@@ -2445,9 +2447,12 @@ spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
     "TTLP_MT",
     "TTLP_MT_LOCAL_FILE" };
   const char *unsafe_bif_names[] = {
+    "CONNECTION_SET",
     "FILE_TO_STRING",
     "FILE_TO_STRING_OUTPUT",
     "EXEC",
+    "REGISTRY_SET",
+    "REGISTRY_SET_ALL",
     "STRING_TO_FILE",
     "SYSTEM" };
   tail = strstr (fname, "::");
