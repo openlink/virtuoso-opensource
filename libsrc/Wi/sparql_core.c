@@ -2615,7 +2615,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       ssg.ssg_tree = sparp->sparp_expr;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
       ssg_make_sql_query_text (&ssg);
-      action_sql = strses_string (ssg.ssg_out);
+      action_sql = t_strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
       action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
       sparp->sparp_expr = NULL;
@@ -3168,14 +3168,13 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
-  res = strses_string (ssg.ssg_out);
+  res = t_strses_string (ssg.ssg_out);
 #ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() done: %s", res);
 #endif
   strses_free (ssg.ssg_out);
   ssg.ssg_out = NULL;
-  sparqre->sparqre_compiled_text = t_box_copy (res);
-  dk_free_box (res);
+  sparqre->sparqre_compiled_text = res;
 }
 
 
