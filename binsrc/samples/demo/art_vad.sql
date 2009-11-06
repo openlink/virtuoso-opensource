@@ -79,7 +79,10 @@ create procedure fill_art_pict ()
   for select PhotoDAVResourceName as name, WorkArtID as ID from WorkOfArt do
     {
       --DB.DBA.DAV_RES_UPLOAD ('/DAV/sample_data/images/art/'||name, file_to_string ('art/'||name), '', '110100100NN', http_dav_uid(), http_dav_uid() + 1, 'dav', pwd);
-      update WorkOfArt set PhotoDAVResourceURI = '/DAV/sample_data/images/art/' || name where WorkArtID = id;
+      if (isstring (registry_get ('URIQADefaultHost')))
+	update WorkOfArt set PhotoDAVResourceURI = 'http://' || registry_get ('URIQADefaultHost') ||  '/DAV/sample_data/images/art/' || name where WorkArtID = id;
+      else
+        update WorkOfArt set PhotoDAVResourceURI = '/DAV/sample_data/images/art/' || name where WorkArtID = id;
     }
 };
 
