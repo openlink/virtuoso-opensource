@@ -3833,7 +3833,7 @@ xp_text_parse (char * str2, encoding_handler_t *enc, lang_handler_t *lang, caddr
     enc = &eh__WIDE_121;
   else if (DV_STRINGP(str2))
     {
-      if (box_flags(str2) & BF_UTF8)
+      if (box_flags(str2) & (BF_IRI | BF_UTF8))
         enc = &eh__UTF8;
     }
   else
