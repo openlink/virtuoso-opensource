@@ -30,6 +30,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY realdf "http://gr8c.org/realdf/ns#">
+<!ENTITY oplzllw "http://www.openlinksw.com/schemas/zillow#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -41,12 +42,12 @@
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-    xmlns:ebay="urn:ebay:apis:eBLBaseComponents"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
-    xmlns:SearchResults="http://www.zillow.com/static/xsd/SearchResults.xsd"
-    xmlns:realdf="&realdf;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:SearchResults="http://www.zillow.com/static/xsd/SearchResults.xsd"
+    xmlns:UpdatedPropertyDetails="http://www.zillow.com/static/xsd/UpdatedPropertyDetails.xsd"
+    xmlns:realdf="&realdf;"
+    xmlns:oplzllw="&oplzllw;"
     xmlns:zillow="http://www.zillow.com/">
 
     <xsl:output method="xml" indent="yes" />
@@ -58,29 +59,29 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://www.zillow.com/</xsl:variable>
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
     
+	<!-- Process GetDeepSearchResults response -->
+
     <xsl:template match="/SearchResults:searchresults">
 		<rdf:RDF>
-		
 	    <rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
+				<dcterms:subject rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-				<foaf:topic rdf:resource="{$resourceURL}"/>
-				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
+
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
-			<gr:Offering rdf:about="{$resourceURL}">
-			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
+			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="concat(request/address, ' ', request/citystatezip)"/></rdfs:label>
-			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+			    <gr:includes rdf:resource="{$resourceURL}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 				<xsl:apply-templates select="response/results/result" mode="offering"/>
 			</gr:Offering>
@@ -90,15 +91,15 @@
 		      <rdfs:label>Zillow Co., Inc.</rdfs:label>
 		      <gr:legalName>Zillow Co., Inc.</gr:legalName>
 		      <gr:offers rdf:resource="{$resourceURL}"/>
-			  <foaf:homepage rdf:resource="http://www.zollow.com" />
+			  	<foaf:homepage rdf:resource="http://www.zillow.com" />
 			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.zillow.com')}"/>
             </gr:BusinessEntity>
             
-            <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+            <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-			    <rdf:type rdf:resource="&oplbb;Product" />
+			    <rdf:type rdf:resource="&oplzllw;Product" />
 				<rdf:type rdf:resource="&realdf;Residential"/>
-				<realdf:world>Earth</realdf:world>
+	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
 				<xsl:apply-templates select="response/results/result" />
 			</rdf:Description>
@@ -106,7 +107,21 @@
 		</rdf:RDF>
     </xsl:template>
     
-    <xsl:template match="links">
+    <xsl:template match="result">
+		<oplzllw:zpid><xsl:value-of select="zpid"/></oplzllw:zpid>
+		<realdf:baths>
+	    	<xsl:value-of select="floor(bathrooms)"/><!-- floor used to force e.g 1.0 to 1 -->
+		</realdf:baths>
+		<realdf:beds><xsl:value-of select="floor(bedrooms)"/></realdf:beds>
+		<realdf:squareFeet><xsl:value-of select="finishedSqFt"/></realdf:squareFeet>
+		<realdf:lotSize><xsl:value-of select="lotSizeSqFt"/></realdf:lotSize>
+		<realdf:yearBuilt><xsl:value-of select="yearBuilt"/></realdf:yearBuilt>
+		<realdf:taxes><xsl:value-of select="taxAssessment"/></realdf:taxes>
+		<oplzllw:taxAssessmentYear><xsl:value-of select="taxAssessmentYear"/></oplzllw:taxAssessmentYear>
+		<xsl:apply-templates />
+	</xsl:template>
+
+    <xsl:template match="result/links">
 		<rdfs:seeAlso rdf:resource="{homedetails}"/>
 		<rdfs:seeAlso rdf:resource="{graphsanddata}"/>
 		<rdfs:seeAlso rdf:resource="{mapthishome}"/>
@@ -114,64 +129,69 @@
 		<rdfs:seeAlso rdf:resource="{comparables}"/>
     </xsl:template>
 
-    <xsl:template match="address">
-		<realdf:street>
-			<xsl:value-of select="street"/>
-		</realdf:street>
-		<realdf:postalCode>
-			<xsl:value-of select="zipcode"/>
-		</realdf:postalCode>
-		<realdf:country rdf:resource="http://dbpedia.org/resource/United_States"/>
-		<realdf:city rdf:resource="{vi:dbpIRI ('', city)}"/>
-		<realdf:state rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
-		<realdf:longitude>
-			<xsl:value-of select="longitude"/>
-		</realdf:longitude>
-		<realdf:latitude>
-			<xsl:value-of select="latitude"/>
-		</realdf:latitude>
-    </xsl:template>
+    <xsl:template match="result/address">
+		<realdf:street><xsl:value-of select="street"/></realdf:street>
+		<realdf:postalCode><xsl:value-of select="zipcode"/></realdf:postalCode>
 
-    <xsl:template match="yearBuilt">
-		<realdf:yearBuilt>
-			<xsl:value-of select="."/>
-		</realdf:yearBuilt>
-    </xsl:template>
-    
-    <xsl:template match="taxAssessment">
-		<realdf:taxes>
-			<xsl:value-of select="."/>
-		</realdf:taxes>
-    </xsl:template>
-    
-    <xsl:template match="lotSizeSqFt">
-		<realdf:squareFeet>
-			<xsl:value-of select="."/>
-		</realdf:squareFeet>
-    </xsl:template>
-    
-    <xsl:template match="bathrooms">
-		<realdf:baths>
-			<xsl:value-of select="."/>
-		</realdf:baths>
-    </xsl:template>
-    
-    <xsl:template match="bedrooms">
-		<realdf:beds>
-			<xsl:value-of select="."/>
-		</realdf:beds>
+		<realdf:city><xsl:value-of select="city"/></realdf:city>
+		<realdf:state><xsl:value-of select="translate (state, $lc, $uc)"/></realdf:state>
+		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
+		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
+		<realdf:longitude><xsl:value-of select="longitude"/></realdf:longitude>
+		<realdf:latitude><xsl:value-of select="latitude"/></realdf:latitude>
     </xsl:template>
     
     <xsl:template match="localRealEstate" />
 
+    <xsl:template match="useCode">
+		<oplzllw:homeType><xsl:value-of select="."/></oplzllw:homeType>
+    </xsl:template>
+    
     <xsl:template match="lastSoldPrice" mode="offering">
+		<xsl:variable name="amount" select="." />
+		<gr:hasPriceSpecification>
+			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'LastSoldPrice')}">
+				<rdfs:label>Last Sold Price</rdfs:label>
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
+				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
+				<oplzllw:lastSoldDate><xsl:value-of select="../lastSoldDate"/></oplzllw:lastSoldDate>
+			</gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template>
+    
+	<!-- Process GetUpdatedPropertyDetails response -->
+
+	<!-- 
+	The GetUpdatedPropertyDetails response includes the property's sale price, whereas the GetDeepSearchResults 
+	response only includes the lastSoldPrice. lastSoldPrice is used to create a UnitPriceSpecification labelled
+	'Last Sold Price' for the Offering. The price returned by GetUpdatedPropertyDetails is used to create a second
+	UnitPriceSpecification labelled 'Current Price'. However this information is not always available.
+	GetUpdatedPropertyDetails often returns error code 501 - "The updated data for the property you are requesting
+	is not available due to legal restrictions". It looks like properties being sold by agents return this code, 
+	while properties being sold directly by the owner make the information available.
+	-->
+
+    <xsl:template match="/UpdatedPropertyDetails:updatedPropertyDetails">
+		<rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+				<xsl:apply-templates select="response" />
+			</rdf:Description>
+
+			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+				<xsl:apply-templates select="response" mode="offering"/>
+			</gr:Offering>
+		</rdf:RDF>
+    </xsl:template>
+
+    <xsl:template match="price" mode="offering">
 		<xsl:variable name="amount" select="." />
 		<realdf:price>
 			<xsl:value-of select="$amount"/>
 		</realdf:price>
 		<gr:hasPriceSpecification>
-			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'LastSoldPrice')}">
-			<rdfs:label>Last Sold Price</rdfs:label>
+			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'CurrentPrice')}">
+				<rdfs:label>Current Price</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
 			<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
@@ -179,6 +199,67 @@
 		</gr:hasPriceSpecification>
     </xsl:template>
         
+    <xsl:template match="yearUpdated">
+		<oplzllw:yearUpdated><xsl:value-of select="."/></oplzllw:yearUpdated>
+	</xsl:template>
+    <xsl:template match="numFloors">
+		<oplzllw:numFloors><xsl:value-of select="."/></oplzllw:numFloors>
+	</xsl:template>
+    <xsl:template match="numRooms">
+		<oplzllw:numRooms><xsl:value-of select="."/></oplzllw:numRooms>
+	</xsl:template>
+    <xsl:template match="homeDescription">
+		<oplzllw:homeDescription><xsl:value-of select="."/></oplzllw:homeDescription>
+	</xsl:template>
+    <xsl:template match="whatOwnerLoves">
+		<oplzllw:whatOwnerLoves><xsl:value-of select="."/></oplzllw:whatOwnerLoves>
+	</xsl:template>
+    <xsl:template match="roof">
+<oplzllw:roof><xsl:value-of select="."/></oplzllw:roof>
+	</xsl:template>
+    <xsl:template match="exteriorMaterial">
+<oplzllw:exteriorMaterial><xsl:value-of select="."/></oplzllw:exteriorMaterial>
+	</xsl:template>
+    <xsl:template match="parkingType">
+		<oplzllw:parkingType><xsl:value-of select="."/></oplzllw:parkingType>
+	</xsl:template>
+    <xsl:template match="heatingSystem">
+		<oplzllw:heatingSystem><xsl:value-of select="."/></oplzllw:heatingSystem>
+	</xsl:template>
+    <xsl:template match="heatingSources">
+		<oplzllw:heatingSources><xsl:value-of select="."/></oplzllw:heatingSources>
+	</xsl:template>
+    <xsl:template match="appliances">
+		<oplzllw:appliances><xsl:value-of select="."/></oplzllw:appliances>
+	</xsl:template>
+    <xsl:template match="floorCovering">
+		<oplzllw:floorCovering><xsl:value-of select="."/></oplzllw:floorCovering>
+	</xsl:template>
+    <xsl:template match="rooms">
+		<oplzllw:rooms><xsl:value-of select="."/></oplzllw:rooms>
+	</xsl:template>
+    <xsl:template match="image/url">
+		<!-- 
+		Remove any query string from image URL or it won't render in description.vsp
+	 	e.g. from http://images3.zillow.com/is/image/i0/i1/i2283/IS131nd4m22pf37.jpg?op_sharpen=1&amp;qlt=90&amp;size=400,400
+		-->
+		<xsl:choose>
+			<xsl:when test="contains(., '?')">
+				<realdf:image rdf:resource="{substring-before(., '?')}"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<realdf:image rdf:resource="{.}"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:template>
+
+	<!-- TO DO: Should this info form part of the Offering rather than ProductOrServicePlaceholder? -->
+    <xsl:template match="posting">
+		<oplzllw:listingStatus><xsl:value-of select="status"/></oplzllw:listingStatus>
+		<oplzllw:listingType><xsl:value-of select="type"/></oplzllw:listingType>
+		<oplzllw:listingLastUpdated><xsl:value-of select="lastUpdatedDate"/></oplzllw:listingLastUpdated>
+	</xsl:template>
+
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
 
