@@ -2044,12 +2044,12 @@ host_found:
   foreach (varchar dg in dflt_graphs) do
     {
       full_query := concat ('define input:default-graph-uri <', dg, '> ', full_query);
-      http_header (sprintf ('X-SPARQL-default-graph: %U\r\n', dg));
+      http_header (http_header_get () || sprintf ('X-SPARQL-default-graph: %U\r\n', dg));
     }
   foreach (varchar ng in named_graphs) do
     {
       full_query := concat ('define input:named-graph-uri <', ng, '> ', full_query);
-      http_header (sprintf ('X-SPARQL-named-graph: %U\r\n', ng));
+      http_header (http_header_get () || sprintf ('X-SPARQL-named-graph: %U\r\n', ng));
     }
   if ((should_sponge = 'soft') or (should_sponge = 'replacing'))
     full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);
