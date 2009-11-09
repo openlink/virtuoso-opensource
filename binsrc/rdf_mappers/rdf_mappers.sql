@@ -268,6 +268,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	'(http://.*amazon.[^/]+/gp/product/.*)|'||
 	'(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
+	'(http://.*amazon.[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
@@ -2598,7 +2599,7 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 {
     declare xd, xt, url, url2, tmp, api_key, full_address, address, citystatezip, zpid, hdr any;
     declare api_ret varchar;
-	declare iAve, iDr, iSt, cAddrFlds, iFld, sSearch any;
+	declare iAve, iDr, iLn, iPl, iRd, iSt, iUnit, iWay, cAddrFlds, iFld, sSearch any;
 	declare exit handler for sqlstate '*'
 	{
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -2648,10 +2649,21 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 		-- Look for common delimiters separating the address & citystatezip components.
 		iAve := strstr(full_address, 'Ave+');
 		iDr := strstr(full_address, 'Dr+');
+		iLn := strstr(full_address, 'Ln+');
+		iPl := strstr(full_address, 'Pl+');
+		iRd := strstr(full_address, 'Rd+');
 		iSt := strstr(full_address, 'St+');
-		if (iAve is null and iDr is null and iSt is null)
-        return 0;
-		if (iAve is not null)
+		iUnit := strcasestr(full_address, 'UNIT+');
+		iWay := strstr(full_address, 'Way+');
+
+		if (iUnit is not null)
+		{
+			iUnit := iUnit + 5;
+			iUnit := iUnit + strchr(subseq(full_address, iUnit), '+');
+			address := subseq (full_address, 0, iUnit);
+			citystatezip := subseq (full_address, iUnit + 1);
+		}
+		else if (iAve is not null)
 		{
 			address := subseq (full_address, 0, iAve + 3);
 			citystatezip := subseq (full_address, iAve + 4);
@@ -2661,12 +2673,38 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 			address := subseq (full_address, 0, iDr + 2);
 			citystatezip := subseq (full_address, iDr + 3);
 		}
+		else if (iLn is not null)
+		{
+			address := subseq (full_address, 0, iLn + 2);
+			citystatezip := subseq (full_address, iLn + 3);
+		}
+		else if (iPl is not null)
+		{
+			address := subseq (full_address, 0, iPl + 2);
+			citystatezip := subseq (full_address, iPl + 3);
+		}
+		else if (iRd is not null)
+		{
+			address := subseq (full_address, 0, iRd + 2);
+			citystatezip := subseq (full_address, iRd + 3);
+		}
 		else if (iSt is not null)
 		{
 			address := subseq (full_address, 0, iSt + 2);
 			citystatezip := subseq (full_address, iSt + 3);
 		}
+		else if (iWay is not null)
+		{
+			address := subseq (full_address, 0, iWay + 3);
+			citystatezip := subseq (full_address, iWay + 4);
 	}
+		else
+			return 0;
+	}
+
+	-- dbg_printf('address: %s', address);
+	-- dbg_printf('citystatezip: %s', citystatezip);
+
 	url := sprintf('http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=%s&address=%s&citystatezip=%s', api_key, address, citystatezip);
 	url2 := sprintf('http://www.zillow.com/webservice/GetUpdatedPropertyDetails.htm?zws-id=%s&zpid=%s', api_key, zpid);
 
@@ -4180,7 +4218,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT (in graph_iri varchar, in new_o
 
 create procedure DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-	declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
+	declare xd, xd2, host_part, xt, url, tmp, api_key, hdr, ids, exif any;
 	declare pos int;
 	declare spread_id varchar;
 	declare mail, pwd, auth, auth_header varchar;
@@ -4226,9 +4264,21 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET (in graph_iri varchar, in ne
 	if (hdr[0] not like  'HTTP/1._ 200 %')
 		return 0;
 	xd := xtree_doc (tmp);
-	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_spreadsheet2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_spreadsheet2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'doc'));
+	xd2 := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
+
+	ids := xpath_eval ('/feed/entry/link[@rel="http://schemas.google.com/spreadsheets/2006#cellsfeed"]/@href', xd, 0);
+	foreach (any y in ids) do
+	{
+		declare x, new_origin_uri2, url2 varchar;
+		url := cast(y as varchar);
+		tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, 'GET', auth_header, proxy=>get_keyword_ucase ('get:proxy', opts));
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_spreadsheet2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'cells'));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	}
 	return 1;
 }
 ;
@@ -4694,6 +4744,14 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s%%3%s', 0);
       asin := tmp[3];
+    }
+    else if (new_origin_uri like 'http://%amazon.%/dp/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/dp/%s', 0);
+      asin := tmp[2];
+      pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
     }
   else if (new_origin_uri like 'http://%amazon.%/%/dp/%/%')
     {

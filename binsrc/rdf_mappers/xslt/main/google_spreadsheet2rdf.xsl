@@ -57,6 +57,7 @@
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
     
 	<xsl:param name="baseUri" />
+	<xsl:param name="what" />
     
     <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
@@ -70,6 +71,7 @@
     </xsl:template>
     
     <xsl:template match="a:feed">
+		<xsl:if test="$what = 'doc'">
 		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
@@ -80,7 +82,7 @@
 		</rdf:Description>
 		
 		<rdf:Description rdf:about="{$resourceURL}">
-			<rdf:type rdf:resource="&bibo;Book"/>
+				<rdf:type rdf:resource="&bibo;Document"/>
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="a:updated"/>
 			</dcterms:modified>
@@ -98,7 +100,9 @@
 		
 		<xsl:for-each select="a:entry">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', a:title)}">
-				<rdf:type rdf:resource="&bibo;BookSection"/>
+					<rdf:type rdf:resource="&bibo;DocumentPart"/>
+					<rdf:type rdf:resource="&bibo;Document"/>
+					<sioc:has_container rdf:resource="{$resourceURL}"/>
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="a:updated"/>
 				</dcterms:modified>
@@ -119,7 +123,53 @@
 				</gs:colCount>
 			</rdf:Description>
 		</xsl:for-each>
+		</xsl:if>
+		<xsl:if test="$what = 'cells'">
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', a:title)}">
+				<rdf:type rdf:resource="&bibo;DocumentPart"/>
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<dcterms:modified rdf:datatype="&xsd;dateTime">
+					<xsl:value-of select="a:updated"/>
+				</dcterms:modified>
+				<dc:title>
+					<xsl:value-of select="a:title"/>
+				</dc:title>
+				<xsl:for-each select="a:link">
+					<rdfs:seeAlso rdf:resource="{@href}"/>
+				</xsl:for-each>
+				<gs:rowCount>
+					<xsl:value-of select="gs:rowCount"/>
+				</gs:rowCount>
+				<gs:colCount>
+					<xsl:value-of select="gs:colCount"/>
+				</gs:colCount>
+				<xsl:for-each select="a:entry">
+					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../a:title, '_', a:title))}"/>
+				</xsl:for-each>
+			</rdf:Description>
+			
+			<xsl:for-each select="a:entry">
+				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat(../a:title, '_', a:title))}">
+					<rdf:type rdf:resource="&sioc;Item"/>
+					<rdfs:label><xsl:value-of select="a:title"/></rdfs:label>
+					<dc:title><xsl:value-of select="a:title"/></dc:title>
+					<sioc:has_container rdf:resource="{vi:proxyIRI($baseUri, '', ../a:title)}"/>
+					<bibo:content>
+						<xsl:value-of select="a:content"/>
+					</bibo:content>
+					<dcterms:modified rdf:datatype="&xsd;dateTime">
+						<xsl:value-of select="a:updated"/>
+					</dcterms:modified>
+					<xsl:for-each select="a:link">
+						<rdfs:seeAlso rdf:resource="{@href}"/>
+					</xsl:for-each>
+					<owl:sameAs rdf:resource="{id}"/>
+					<dc:creator><xsl:value-of select="../a:author/a:name"/> <xsl:value-of select="../a:author/a:email" /></dc:creator>
+				</rdf:Description>
+			</xsl:for-each>
+	    </xsl:if>
     </xsl:template>
+    
     
 	<xsl:template match="@*|*" />
 
