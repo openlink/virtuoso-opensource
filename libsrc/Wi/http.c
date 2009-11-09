@@ -557,6 +557,7 @@ ws_read_post (dk_session_t * ses, int max,
     {
       dk_set_push (&parts, box_dv_short_string (name));
       WS_PARAM_PUSH (&parts, str);
+      strses_flush (str);
     }
   else
     {
