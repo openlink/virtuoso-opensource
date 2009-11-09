@@ -1067,6 +1067,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
   ha = setp->setp_ha;
   ha->ha_allow_nulls = 0;
   ha->ha_op = HA_FILL;
+  ha->ha_memcache_only = 0;
   sqlg_setp_append (so, &ts_post, setp);
 
 #ifdef NEW_HASH
