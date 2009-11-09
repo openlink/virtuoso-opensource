@@ -247,10 +247,10 @@
        <div id="navbar">
          <ul id="navlist">
           <li>
-            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Has Attributes &amp; Values</a>
+            <a href="#" id="tab_attributes" onclick="toggle_tab('attributes'); return false;" class="current">Properties</a>
           </li>
           <li>
-            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Is Attribute Value Of</a>
+            <a href="#" id="tab_attributeof" onclick="toggle_tab('attributeof'); return false;">Referred To By</a>
           </li>
          </ul>
       </div> <!-- #navbar -->
