@@ -895,10 +895,10 @@ create procedure DB.DBA.HTTP_VARIANT_REMOVE (in rulelist_uri varchar, in uri var
 create procedure DB.DBA.URLREWRITE_CALC_QS (in accept varchar, in s_accept varchar)
 {
   declare arr, tmp any;
-  declare best_q float;
+  declare best_q, q float;
   declare best_match varchar;
   declare i, l int;
-  declare q, itm varchar;
+  declare itm varchar;
 
 --  dbg_obj_print (current_proc_name ());
   if (s_accept is null or s_accept = '*')
@@ -1190,9 +1190,9 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare nice_vhost_pkey any;
   declare top_rulelist_iri varchar;
   declare rule_iri, in_path, qstr varchar;
-  declare target_vhost_pkey, hf, accept any;
+  declare target_vhost_pkey, hf, accept, http_headers any;
   declare result, http_redir, http_tcn_code, tcn_rc, keep_lpath int;
-  declare http_headers, http_tcn_headers varchar;
+  declare http_tcn_headers varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
   --hf := rfc1808_parse_uri (path);
