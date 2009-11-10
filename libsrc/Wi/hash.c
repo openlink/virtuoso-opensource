@@ -1467,8 +1467,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
 
 
 #define MAX_STACK_N_KEYS 200
-
-
+#define HA_MAX_SZ 262139 /* max prime that can fit n*ha into a box */
 
 int
 itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs)
@@ -1496,7 +1495,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   if (!tree)
     {
       tree = it_temp_allocate (wi_inst.wi_temp);
-      tree->it_hi = hi_allocate ((int) MIN (ha->ha_row_count, (long) INT_MAX),
+      tree->it_hi = hi_allocate ((int) MIN (ha->ha_row_count, (long) HA_MAX_SZ),
 				 HA_MEMCACHE (ha), ha);
       tree->it_key = ha->ha_key;
       tree->it_shared = HI_PRIVATE;
@@ -2906,7 +2905,7 @@ hash_fill_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * qst)
     {
       index_tree_t *prev_it;
       it = it_temp_allocate (wi_inst.wi_temp);
-      it->it_hi = hi_allocate ((int) MIN (ha->ha_row_count, (long) INT_MAX), HA_MEMCACHE (ha), ha);
+      it->it_hi = hi_allocate ((int) MIN (ha->ha_row_count, (long) HA_MAX_SZ), HA_MEMCACHE (ha), ha);
       it->it_key = fref->fnr_setp->setp_ha->ha_key;
 #ifdef NEW_HASH
       it->it_hi->hi_isolation = (char) unbox (hsi->hsi_isolation);
