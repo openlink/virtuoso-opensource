@@ -103,7 +103,7 @@ ld_add (in _fname varchar, in _graph varchar)
 
 create procedure ld_ttlp_flags (in fname varchar)
 {
-  if (fname like '%/btc-2009%' or fname like '%.nq%')
+  if (fname like '%/btc-2009%' or fname like '%.nq%' or fname like '%.n4')
     return 255 + 512;
   return 255;
 }
@@ -134,17 +134,13 @@ ld_file (in f varchar, in graph varchar)
       gzip_name := regexp_replace (f, '\.gz\x24', '');
       if (gzip_name like '%.xml' or gzip_name like '%.owl' or gzip_name like '%.rdf')
 	DB.DBA.RDF_LOAD_RDFXML (gz_file_open (f), graph, graph);
-      else if  (gzip_name like '%.n4')
-	TTLP (gz_file_open (f), graph, graph, 512 + 255);
       else
-	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (f));
+	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name));
     }
   else
     {
   if (f like '%.xml' or f like '%.owl' or f like '%.rdf')
     DB.DBA.RDF_LOAD_RDFXML (file_open (f), graph, graph);
-      else if  (f like '%.n4')
-	TTLP (file_open (f), graph, graph, 512 + 255);
   else
 	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f));
     }

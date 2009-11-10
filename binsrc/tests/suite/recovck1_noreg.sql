@@ -42,6 +42,9 @@ select count(*) from iutest;
 --ECHO BOTH $IF $EQU $LAST[3] 500020 "PASSED" "***FAILED";
 --ECHO BOTH ": BLOBS  sum(length (B3))= " $LAST[3] " \n";
 
+echo both "recovck1_noreg check trees\n";
+
+cl_exec ('backup ''/dev/null''');
 
 select count (*) from T2;
 
@@ -246,3 +249,8 @@ ECHO BOTH $IF $EQU $COLCNT 2 "PASSED" "***FAILED";
 ECHO BOTH ": B6978-9 table with data copied has all cols. COLCNT=" $COLCNT "\n";
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 ECHO BOTH ": B6978-10 table with data copied does have data. ROWCNT=" $ROWCNT "\n";
+
+select length (b) from rep_blob;
+echo both $if $equ $last[1] 20000000 "PASSED"  "***FAILED";
+echo both ": replicated ins replacing of large blob\n";
+

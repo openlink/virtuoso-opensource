@@ -342,4 +342,27 @@ tb_check (1);
 echo both $if $equ $state OK "PASSED" "***FAILED";
 echo both ": tblob insert check " $state "\n";
 
+create table rep_blob (id int primary key, b long varchar);
+alter index rep_blob on rep_blob partition cluster replicated;
+
+create procedure large_repl () 
+{ 
+  declare strs any;
+ strs := string_output (); 
+  http (make_string (10000000), strs);
+  http (make_string (10000000), strs); 
+  insert replacing rep_blob values (1, strs);
+}
+
+large_repl ();
+large_repl ();
+select length (b) from rep_blob;
+echo both $if $equ $last[1] 20000000 "PASSED"  "***FAILED";
+echo both ": replicated ins replacing of large blob\n";
+
+cl_exec ('backup ''/dev/null''');
+
+
+
+
 

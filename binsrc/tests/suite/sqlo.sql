@@ -705,12 +705,12 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG1804: box_equal not comparing correctly STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 explain ('select U_ID, U_NAME from DB.DBA.SYS_USERS group by U_ID');
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG2156: box_equal not comparing correctly STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 explain ('select U_ID from DB.DBA.SYS_USERS group by U_ID, U_PASSWORD order by U_NAME');
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG2156: order by superset of group by STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

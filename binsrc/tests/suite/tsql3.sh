@@ -84,6 +84,8 @@ then
     LOG "***ABORTED: freetext test integer primary key -- testtext.sql"
     exit 1
 fi
+if [ "z$CLUSTER" != "zyes" ] # explicit with key option is required for partitioned table
+then
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST2' 'idtype=integer' 'haspk=no' < testtext.sql
 if test $STATUS -ne 0
 then
@@ -95,6 +97,7 @@ if test $STATUS -ne 0
 then
     LOG "***ABORTED: freetext test varchar primary key -- testtext.sql"
     exit 1
+fi
 fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tftt.sql

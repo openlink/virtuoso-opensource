@@ -30,6 +30,8 @@ ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
 --- test schema evolution
 
 
+set echo on;
+
 drop table T2;
 
 create table T2 (A integer, B integer, primary key (A))
@@ -470,3 +472,8 @@ columns B9948;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B9948 test case returns " $ROWCNT " cols STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+echo both "tschema1 check trees\n";
+cl_exec ('backup ''/dev/null''');
+
