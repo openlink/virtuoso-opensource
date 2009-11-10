@@ -2269,14 +2269,14 @@ sqlo_bop_expand_or_exp (sqlo_t *so, ST *tree)
 
 
 static void
-sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST **group, op_table_t *dt_ot)
+sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST *** group, op_table_t *dt_ot)
 {
   int inx;
   if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
   else if (ST_P (tree, FUN_REF))
     return;
-  DO_BOX (ST *, spec, inx, group)
+  DO_BOX (ST *, spec, inx, (*group))
     {
       if (box_equal ((box_t) tree, (box_t) spec->_.o_spec.col))
 	return;
@@ -2295,10 +2295,23 @@ sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST **group, op_table_t *dt_ot)
       DO_SET (op_table_t *, ot, &dt_ot->ot_from_ots)
 	{
 	  if (!strcmp (tree->_.col_ref.prefix, ot->ot_new_prefix))
-	    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ150",
-		"Column '%.100s' is invalid in the select list because it is not contained"
-		" in either an aggregate function or the GROUP BY clause.",
-		tree->_.col_ref.name);
+	    {
+	      ST ** new_group;
+#if 0
+	      sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ150",
+		  "Column '%.100s' is invalid in the select list because it is not contained"
+		  " in either an aggregate function or the GROUP BY clause.",
+		  tree->_.col_ref.name);
+#endif
+	      new_group = (ST **) t_alloc_box (((group[0] ? BOX_ELEMENTS (group[0]) : 0) + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	      DO_BOX (ST *, spec, inx, group[0])
+		{
+		  new_group [inx] = spec;
+		}
+	      END_DO_BOX;
+	      new_group [inx] = t_listst (3, ORDER_BY, t_box_copy_tree ((caddr_t) tree), ORDER_ASC);
+	      *group = new_group;
+	    }
 	}
       END_DO_SET ();
     }
@@ -2616,11 +2629,18 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       if (so->so_this_dt->ot_fun_refs || texp->_.table_exp.group_by)
 	{
 	  sqlo_check_group_by_cols (so, (ST *) tree->_.select_stmt.selection,
-	      texp->_.table_exp.group_by, ot);
+	      &(texp->_.table_exp.group_by), ot);
+	  sqlo_replace_as_exps ((ST **) &(texp->_.table_exp.group_by), so->so_scope);
+	  if (texp->_.table_exp.group_by)
+	    {
+	      if (texp->_.table_exp.group_by_full)
+		texp->_.table_exp.group_by_full[0] = texp->_.table_exp.group_by;
+	      else
+		texp->_.table_exp.group_by_full = (ST ***) t_listst (1, texp->_.table_exp.group_by);
+	    }
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
-	      texp->_.table_exp.group_by, ot);
+	      &(texp->_.table_exp.group_by), ot);
 	}
-
       sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by);
     }
   else
@@ -2678,9 +2698,9 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       if (texp->_.table_exp.group_by)
 	{
 	  sqlo_check_group_by_cols (so, (ST *) tree->_.select_stmt.selection,
-	      texp->_.table_exp.group_by, ot);
+	      &(texp->_.table_exp.group_by), ot);
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
-	      texp->_.table_exp.group_by, ot);
+	      &(texp->_.table_exp.group_by), ot);
 	}
     }
 
