@@ -29,7 +29,6 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
-<!ENTITY realdf "http://gr8c.org/realdf/ns#">
 <!ENTITY oplzllw "http://www.openlinksw.com/schemas/zillow#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -46,7 +45,6 @@
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:SearchResults="http://www.zillow.com/static/xsd/SearchResults.xsd"
     xmlns:UpdatedPropertyDetails="http://www.zillow.com/static/xsd/UpdatedPropertyDetails.xsd"
-    xmlns:realdf="&realdf;"
     xmlns:oplzllw="&oplzllw;"
     xmlns:zillow="http://www.zillow.com/">
 
@@ -98,7 +96,6 @@
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
-				<rdf:type rdf:resource="&realdf;Residential"/>
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
 				<xsl:apply-templates select="response/results/result" />
@@ -109,14 +106,14 @@
     
     <xsl:template match="result">
 		<oplzllw:zpid><xsl:value-of select="zpid"/></oplzllw:zpid>
-		<realdf:baths>
+		<oplzllw:bathrooms>
 	    	<xsl:value-of select="floor(bathrooms)"/><!-- floor used to force e.g 1.0 to 1 -->
-		</realdf:baths>
-		<realdf:beds><xsl:value-of select="floor(bedrooms)"/></realdf:beds>
-		<realdf:squareFeet><xsl:value-of select="finishedSqFt"/></realdf:squareFeet>
-		<realdf:lotSize><xsl:value-of select="lotSizeSqFt"/></realdf:lotSize>
-		<realdf:yearBuilt><xsl:value-of select="yearBuilt"/></realdf:yearBuilt>
-		<realdf:taxes><xsl:value-of select="taxAssessment"/></realdf:taxes>
+		</oplzllw:bathrooms>
+		<oplzllw:bedrooms><xsl:value-of select="floor(bedrooms)"/></oplzllw:bedrooms>
+		<oplzllw:squareFeet><xsl:value-of select="finishedSqFt"/></oplzllw:squareFeet>
+		<oplzllw:lotSize><xsl:value-of select="lotSizeSqFt"/></oplzllw:lotSize>
+		<oplzllw:yearBuilt><xsl:value-of select="yearBuilt"/></oplzllw:yearBuilt>
+		<oplzllw:taxes><xsl:value-of select="taxAssessment"/></oplzllw:taxes>
 		<oplzllw:taxAssessmentYear><xsl:value-of select="taxAssessmentYear"/></oplzllw:taxAssessmentYear>
 		<xsl:apply-templates />
 	</xsl:template>
@@ -130,15 +127,15 @@
     </xsl:template>
 
     <xsl:template match="result/address">
-		<realdf:street><xsl:value-of select="street"/></realdf:street>
-		<realdf:postalCode><xsl:value-of select="zipcode"/></realdf:postalCode>
+		<oplzllw:street><xsl:value-of select="street"/></oplzllw:street>
+		<oplzllw:postalCode><xsl:value-of select="zipcode"/></oplzllw:postalCode>
 
-		<realdf:city><xsl:value-of select="city"/></realdf:city>
-		<realdf:state><xsl:value-of select="translate (state, $lc, $uc)"/></realdf:state>
+		<oplzllw:city><xsl:value-of select="city"/></oplzllw:city>
+		<oplzllw:state><xsl:value-of select="translate (state, $lc, $uc)"/></oplzllw:state>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
-		<realdf:longitude><xsl:value-of select="longitude"/></realdf:longitude>
-		<realdf:latitude><xsl:value-of select="latitude"/></realdf:latitude>
+		<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
+		<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
     </xsl:template>
     
     <xsl:template match="localRealEstate" />
@@ -186,9 +183,9 @@
 
     <xsl:template match="price" mode="offering">
 		<xsl:variable name="amount" select="." />
-		<realdf:price>
+		<oplzllw:price>
 			<xsl:value-of select="$amount"/>
-		</realdf:price>
+		</oplzllw:price>
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'CurrentPrice')}">
 				<rdfs:label>Current Price</rdfs:label>
@@ -245,10 +242,10 @@
 		-->
 		<xsl:choose>
 			<xsl:when test="contains(., '?')">
-				<realdf:image rdf:resource="{substring-before(., '?')}"/>
+				<oplzllw:image rdf:resource="{substring-before(., '?')}"/>
 			</xsl:when>
 			<xsl:otherwise>
-				<realdf:image rdf:resource="{.}"/>
+				<oplzllw:image rdf:resource="{.}"/>
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>

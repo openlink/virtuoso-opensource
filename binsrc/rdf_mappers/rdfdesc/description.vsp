@@ -5,7 +5,7 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars any;
-   declare iri_type, iri_uri, links, langs varchar;
+   declare iri_type, iri_uri, links, langs, dspace varchar;
    declare do_sponge, local_lookup, proxy_iri_fn int;
 
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
@@ -38,6 +38,7 @@
      _S := 'http:' || subseq (_S, 5);
 
    arr := rfc1808_parse_uri (_G);
+   dspace := arr[1];
    if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
      arr[2] := '';
    -- enable to stop sponge for #fragment 
@@ -231,7 +232,7 @@
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
-	    An Entity of Type: <a href="<?V iri_uri ?>"><?V iri_type ?></a>, in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
+	    An Entity of Type: <a href="<?V iri_uri ?>"><?V iri_type ?></a>, in Data Space: <a href="http://<?V dspace ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -257,7 +258,7 @@
 
       <div id="attributes">
 <!-- proptable -->
-      <table class="description"><tr><th class="property">Attribute</th><th class="value">Value</th></tr>
+      <table class="description"><tr><th class="property">Attributes</th><th class="value">Values</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { <%S> ?p ?o } }) sp order by 1', _G, _S),
@@ -290,7 +291,7 @@
 
       <div id="attributeof" style="display: none;">
       <!-- inverseproptable -->
-      <table class="description"><tr><th class="property">Attribute</th><th class="value">Entity</th></tr>
+      <table class="description"><tr><th class="property">Attributes</th><th class="value">Entities</th></tr>
 
 <?vsp
       exec (sprintf ('select "p" as PRED from (sparql select distinct ?p where { graph <%S> { ?o ?p <%S> } }) sp order by 1', _G, _S),
