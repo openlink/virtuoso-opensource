@@ -142,10 +142,7 @@
               <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
             </td>
           </tr>
-          <?vsp
-          if (0)
-          {
-          ?>
+          <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
           <tr>
             <th>
               <v:label for="f_update_period" value="Update period"/>
@@ -164,13 +161,13 @@
               <v:label for="f_update_frequency" value="Update frequency"/>
             </th>
             <td>
-              <v:text name="f_update_frequency" null-value="--''" value="--self.v_update_frequency" xhtml_class="textbox" xhtml_size="5"/>
+                <v:text name="f_update_frequency"
+                        null-value="--''"
+                        value="--self.v_update_frequency"
+                        xhtml_class="textbox"
+                        xhtml_size="5"/>
             </td>
           </tr>
-          <?vsp
-          }
-          ?>
-          <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
             <tr>
               <th>
                 <v:label for="f_store_days" value="Store days for items"/>
@@ -257,6 +254,8 @@
              		self.vc_is_valid := 0;
           		  return;
               }
+              if (ENEWS.WA.check_admin(self.account_id))
+              {
               if ((not ENEWS.WA.validate('integer', self.f_update_frequency.ufl_value, 0)) or (atoi(self.f_update_frequency.ufl_value) < 1) or (atoi(self.f_update_frequency.ufl_value) > 8))
               {
                 self.vc_error_message := 'Please, enter correct update frequency value in range [1, 8]!';
@@ -269,8 +268,6 @@
              		self.vc_is_valid := 0;
           		  return;
               }
-              if (ENEWS.WA.check_admin(self.account_id))
-              {
                 if ((not ENEWS.WA.validate('integer', self.f_store_days.ufl_value, 0)) or (atoi(self.f_store_days.ufl_value) < 1))
                 {
                   self.vc_error_message := 'Please, enter correct store days value!';
@@ -289,17 +286,14 @@
                 }
               }
 
-
               -- feed
-              update ENEWS.WA.FEED
-                 set EF_UPDATE_PERIOD = self.f_update_period.ufl_value,
-                     EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value)
-               where EF_ID = self.v_feed_id;
               if (ENEWS.WA.check_admin(self.account_id))
               {
                 update ENEWS.WA.FEED
                    set EF_TITLE = self.f_title.ufl_value,
                        EF_HOME_URI = home,
+                       EF_UPDATE_PERIOD = self.f_update_period.ufl_value,
+                       EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value),
                        EF_STORE_DAYS = atoi(self.f_store_days.ufl_value)
                  where EF_ID = self.v_feed_id;
               }

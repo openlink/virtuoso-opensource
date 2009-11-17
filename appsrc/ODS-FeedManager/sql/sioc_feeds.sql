@@ -275,13 +275,13 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
   {
       iri := feed_iri (EF_ID);
       m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
       if (length (EF_TITLE))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), EF_TITLE);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), EF_TITLE);
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
 	commit work;
@@ -335,8 +335,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
         {
       foaf_maker (graph_iri, EFIC_U_URL, EFIC_U_NAME, EFIC_U_MAIL);
         ods_sioc_post (graph_iri, c_iri, f_iri, null, EFIC_TITLE, EFIC_LAST_UPDATE, EFIC_LAST_UPDATE, feed_item_url (EFIC_DOMAIN_ID, cast(EFIC_ITEM_ID as integer)), EFIC_COMMENT, null, null, EFIC_U_URL);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), c_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('reply_of'), iri);
+          DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), c_iri);
+          DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc_iri ('reply_of'), iri);
     }
     }
       -- annotations
@@ -387,10 +387,10 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
   graph_iri := get_graph ();
   iri := feed_iri (N.EFD_FEED_ID);
   m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
 }
 ;
 
@@ -599,8 +599,8 @@ create procedure feeds_comment_insert (
   if (not isnull (iri)) {
   foaf_maker (graph_iri, u_url, u_name, u_mail);
     ods_sioc_post (graph_iri, iri, feed_iri, null, title, last_update, last_update, feed_item_url (domain_id, item_id), comment, null, null, u_url);
-  DB.DBA.RDF_QUAD_URI (graph_iri, item_iri, sioc_iri ('has_reply'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), item_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, item_iri, sioc_iri ('has_reply'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), item_iri);
 }
 }
 ;
@@ -695,15 +695,15 @@ create procedure feeds_annotation_insert (
     master_iri := feed_item_iri (feed_id, master_id);
     annotattion_iri := feed_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
 
-	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), annotattion_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), annotattion_iri);
 
-	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
 
 	  feeds_claims_insert (graph_iri, annotattion_iri, claims);
   }
@@ -755,8 +755,8 @@ create procedure feeds_claims_insert (
     if (0 = length (cPedicate))
       cPedicate := rdfs_iri ('seeAlso');
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, cPedicate, cURI);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, cPedicate, cURI);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
   }
 }
 ;
