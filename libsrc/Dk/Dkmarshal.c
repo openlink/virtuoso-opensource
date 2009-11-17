@@ -524,7 +524,7 @@ imm_read_float (dk_session_t * session, dtp_t dtp)
 }
 
 
-static short
+short
 read_short (dk_session_t * ses)
 {
   short s = ((short) (dtp_t) session_buffered_read_char (ses)) << 8;
@@ -759,7 +759,7 @@ scan_session_boxing (dk_session_t * session)
 }
 
 
-static void
+void
 print_raw_float (float f, dk_session_t * session)
 {
 #ifdef _IEEE_FLOATS
