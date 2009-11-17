@@ -321,12 +321,13 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
   lists[1] = req_top->_.req_top.retvals;
   lists[2] = req_top->_.req_top.groupings;
   lists[3] = req_top->_.req_top.order;
-  for (list_ctr = 0; list_ctr < 4; list_ctr++)
+  for (list_ctr = 0; list_ctr <= 4; list_ctr++)
     {
-      SPART **list = lists [list_ctr];
-      int ctr;
-      DO_BOX_FAST (SPART *, expn, ctr, list)
+      SPART **list = ((4 == list_ctr) ? &(req_top->_.req_top.having) : lists [list_ctr]);
+      int ctr, list_len = ((4 == list_ctr) ? 1 : BOX_ELEMENTS_0 (list));
+      for (ctr = 0; ctr < list_len; ctr++)
         {
+          SPART *expn = list[ctr];
           if (SPAR_GP == SPART_TYPE (expn))
             retcode = ((NULL != expn_subq_cbk) ? expn_subq_cbk (sparp, expn, sts_this, common_env) : 0);
           else retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
@@ -336,7 +337,6 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
           if (retcode & SPAR_GPT_COMPLETED)
             return retcode;
         }
-      END_DO_BOX_FAST;
     }
   return 0;
 }
@@ -2406,6 +2406,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
         tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.expanded_orig_retvals, orig_pattern);
         /* !!! TBD something with retselid :) */
         tgt->_.req_top.groupings = sparp_treelist_full_clone_int (sparp, orig->_.req_top.groupings, orig_pattern);
+        tgt->_.req_top.having = sparp_tree_full_clone_int (sparp, orig->_.req_top.having, orig_pattern);
         tgt->_.req_top.order = sparp_treelist_full_clone_int (sparp, orig->_.req_top.order, orig_pattern);
         return tgt;
       }
@@ -2556,6 +2557,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       tgt->_.req_top.sources = sparp_treelist_full_copy (sparp, orig->_.req_top.sources, parent_gp);
       tgt->_.req_top.pattern = sparp_tree_full_copy (sparp, orig->_.req_top.pattern, parent_gp);
       tgt->_.req_top.groupings = sparp_treelist_full_copy (sparp, orig->_.req_top.groupings, parent_gp);
+      tgt->_.req_top.having = sparp_tree_full_copy (sparp, orig->_.req_top.having, parent_gp);
       tgt->_.req_top.order = sparp_treelist_full_copy (sparp, orig->_.req_top.order, parent_gp);
       tgt->_.req_top.limit = t_box_copy (orig->_.req_top.limit);
       tgt->_.req_top.offset = t_box_copy (orig->_.req_top.offset);
@@ -3829,7 +3831,7 @@ spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses)
   SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr));
   if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
     {
-      sprintf (buf, "; parent #%d", eq->e_external_src_idx);
+      sprintf (buf, "; parent #%d", (int)(eq->e_external_src_idx));
       SES_PRINT (ses, buf);
     }
   SES_PRINT (ses, ")");
@@ -3991,7 +3993,9 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.req_top.retselid, ses, indent+2, "RETVALS SELECT ID", 0);
 	      spart_dump (tree->_.req_top.sources, ses, indent+2, "SOURCES", -2);
 	      spart_dump (tree->_.req_top.pattern, ses, indent+2, "PATTERN", -1);
-	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -1);
+	      spart_dump (tree->_.req_top.groupings, ses, indent+2, "GROUPINGS", -2);
+	      spart_dump (tree->_.req_top.having, ses, indent+2, "HAVING", -1);
+	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -2);
 	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", 0);
 	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", 0);
 	      break;

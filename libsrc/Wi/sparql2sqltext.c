@@ -7162,7 +7162,11 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
     return 0;
   if (DISTINCT_L == subtype)
     return 1;
-  if ((0 != BOX_ELEMENTS_0 (tree->_.req_top.order)) || (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings)))
+  if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+    return 1;
+  if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
+    return 1;
+  if (NULL != tree->_.req_top.having)
     return 1;
   return 0;
 }
@@ -7420,6 +7424,18 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, grouping, needed, NULL_ASNAME);
         }
       END_DO_BOX_FAST;
+      ssg->ssg_indent--;
+    }
+  if (NULL != tree->_.req_top.having)
+    {
+      ssg_newline (0);
+      ssg_puts ("HAVING");
+      ssg->ssg_indent++;
+#if 1
+      ssg_print_filter_expn (ssg, tree->_.req_top.having);
+#else
+      ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, tree->_.req_top.having, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+#endif
       ssg->ssg_indent--;
     }
   if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))

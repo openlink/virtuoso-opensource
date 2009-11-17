@@ -4501,14 +4501,18 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
 }
 ;
 
-create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS ()
+create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1, in lim integer := 2000000000)
 {
   declare specials any;
   declare last_iri_id, cur_iri_id IRI_ID;
   declare cr cursor for select G from DB.DBA.RDF_QUAD where G > last_iri_id and not (dict_get (specials, G, 0));
   declare GRAPH_IRI varchar;
+  declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
+  if (return_iris)
   result_names (GRAPH_IRI);
+  else
+    result_names (GRAPH_IID);
   specials := dict_new (50);
   set isolation = 'repeatable';
   for (sparql define input:storage ""
@@ -4518,28 +4522,42 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS ()
     {
       dict_put (specials, iri_to_id ("graph_rvr_fixed"), 1);
     }
+  if (dict_size (specials) >= lim)
+    goto done_all;
   for (select REC_GRAPH_IID from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH) do
     {
       dict_put (specials, REC_GRAPH_IID, 2);
     }
+  len := dict_size (specials);
+  if (len >= lim)
+    goto done_all;
   last_iri_id := #i0;
   whenever not found goto done_rdf_quad;
   open cr (prefetch 1);
 
 next_fetch_cr:
   fetch cr into cur_iri_id;
+  if (return_iris)
   result (id_to_iri (cur_iri_id));
+  else
+    result (cur_iri_id);
+  lim := lim - 1;
+  if (len >= lim)
+    goto done_rdf_quad;
   last_iri_id := cur_iri_id;
   goto next_fetch_cr;
 
 done_rdf_quad:
   close cr;
 
+done_all:
   specials := dict_list_keys (specials, 1);
   len := length (specials);
   for (ctr := 0; ctr < len; ctr := ctr + 1)
+    if (return_iris)
     result (id_to_iri (specials[ctr]));
-
+    else
+      result (specials[ctr]);
 }
 ;
 

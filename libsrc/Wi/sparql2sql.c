@@ -201,6 +201,18 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
         NULL, NULL,
         sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
         NULL );
+      if (NULL != query->_.req_top.having)
+        {
+          sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+          memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+          stss[0].sts_env = NULL;
+          stss[1].sts_curr_array = NULL;
+          stss[1].sts_ofs_of_curr_in_array = 0;
+          sparp_gp_trav_int (sparp, query->_.req_top.having, stss+1, &lnar,
+          NULL, NULL,
+          sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
+          NULL );
+        }
       sparp_gp_localtrav_treelist (sparp, query->_.req_top.order,
         NULL, &lnar,
         NULL, NULL,
@@ -2192,6 +2204,15 @@ sparp_equiv_audit_retvals (sparp_t *sparp, SPART *top)
         NULL );
     }
   END_DO_BOX_FAST;
+  if (NULL != top->_.req_top.having)
+    {
+      memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+      stss[0].sts_ofs_of_curr_in_array = -1;
+      sparp_gp_trav_int (sparp, top->_.req_top.having, stss+1, top->_.req_top.pattern,
+        NULL, NULL,
+        sparp_gp_trav_equiv_audit_retvals, NULL, NULL,
+        NULL );
+    }
   DO_BOX_FAST (SPART *, oby, ctr, top->_.req_top.order)
     {
       memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
@@ -3329,6 +3350,14 @@ sparp_set_retval_and_order_selid (sparp_t *sparp)
   DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
     {
       sparp_gp_trav_int (sparp, grouping, stss + 1, top_gp_selid,
+        NULL, NULL,
+        sparp_set_retval_selid_cbk, NULL, NULL,
+        NULL );
+    }
+  END_DO_BOX_FAST;
+  if (NULL != sparp->sparp_expr->_.req_top.having)
+    {
+      sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.having, stss + 1, top_gp_selid,
         NULL, NULL,
         sparp_set_retval_selid_cbk, NULL, NULL,
         NULL );
@@ -4951,7 +4980,10 @@ sparp_reduce_trivial_optional (sparp_t *sparp, SPART *opt)
 void
 sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
 {
-  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
+  ptrlong top_type = SPART_TYPE (sparp->sparp_expr);
+  if (SPAR_QM_SQL_FUNCALL == top_type)
+    return;
+  if (SPAR_CODEGEN == top_type)
     return;
   sparp_rewrite_retvals (sparp, safely_copy_retvals);
   if ((sparp->sparp_env->spare_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
@@ -5760,3 +5792,94 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
     }
 }
 
+void
+ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
+{
+  int argctr = 0;
+/* The order of declarations is important: side effect on init */
+  caddr_t valmode_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #2 */
+  caddr_t formatmode_name	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #3 */
+  caddr_t retname		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #4 */
+  caddr_t retselid		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #5 */
+  boxint lim			= unbox ((caddr_t)(spart->_.codegen.args [argctr++]));	/* #6 */
+  boxint ofs			= unbox ((caddr_t)(spart->_.codegen.args [argctr++]));	/* #7 */
+  int has_limofs = 0;
+  char limofs_strg[40] = "";
+  char limplusofs_strg[40] = "";
+  SPART	*tree = ssg->ssg_tree;
+  ptrlong subtype = tree->_.req_top.subtype;
+  const char *formatter, *agg_formatter, *agg_meta;
+  ssg_valmode_t retvalmode;
+  ssg_find_formatter_by_name_and_subtype (formatmode_name, SELECT_L, &formatter, &agg_formatter, &agg_meta);
+  if (COUNT_DISTINCT_L == subtype)
+    retvalmode = SSG_VALMODE_SQLVAL;
+  else
+    retvalmode = ssg_find_valmode_by_name (valmode_name);
+  if (((NULL != formatter) || (NULL != agg_formatter)) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
+    spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
+  if ((SPARP_MAXLIMIT != lim) || (0 != ofs))
+    {
+      has_limofs = 1;
+      if (0 != ofs)
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP " BOXINT_FMT ", " BOXINT_FMT, ofs, lim);
+      else
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP " BOXINT_FMT, lim);
+    }
+  if (NULL == retvalmode)
+    retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
+  if (NULL != formatter)
+    {
+      ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
+      ssg_puts ("vector (");
+      ssg_prin_id (ssg, retselid); ssg_putchar ('.'); ssg_prin_id (ssg, retname);
+      ssg_puts ("), vector (");
+      ssg_print_box_as_sql_atom (ssg, retname, SQL_ATOM_NARROW_ONLY /*???*/);
+      ssg_puts (")) AS \"callret-0\" LONG VARCHAR\nFROM (");
+      ssg->ssg_indent += 1;
+      ssg_newline (0);
+    }
+  else if (NULL != agg_formatter)
+    {
+      ssg_puts ("SELECT "); ssg_puts (agg_formatter); ssg_puts (" (");
+      if (NULL != agg_meta)
+        {
+          ssg_puts (agg_meta); ssg_puts (" (");
+        }
+      ssg_puts ("vector (");
+      ssg_prin_id (ssg, retselid); ssg_putchar ('.'); ssg_prin_id (ssg, retname);
+      if (NULL != agg_meta)
+        {
+          ssg_puts ("), '");
+          ssg_puts (strchr (tree->_.req_top.formatmode_name, ' ')+1);
+          ssg_putchar ('\'');
+        }
+      ssg_puts ("), vector (");
+      ssg_print_box_as_sql_atom (ssg, retname, SQL_ATOM_NARROW_ONLY /*???*/);
+      ssg_puts (")) AS \"aggret-0\" INTEGER FROM (");
+      ssg->ssg_indent += 1;
+      ssg_newline (0);
+    }
+  ssg_puts ("SELECT");
+  if (has_limofs)
+    ssg_puts (limofs_strg);
+  ssg_putchar (' ');
+  ssg_prin_id_with_suffix (ssg, retselid, "~pview");
+  ssg_puts (".g_enum AS ");
+  ssg_prin_id (ssg, retname);
+  ssg_puts (" FROM DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS(return_iris, lim) ");
+  ssg_puts ((SSG_VALMODE_LONG == retvalmode) ? "(g_enum IRI_ID) " : "(g_enum varchar) ");
+  ssg_prin_id_with_suffix (ssg, retselid, "~pview");
+  ssg_puts (" WHERE ");
+  ssg_prin_id_with_suffix (ssg, retselid, "~pview");
+  ssg_puts ((SSG_VALMODE_LONG == retvalmode) ? ".return_iris=0 " : ".return_iris=1 ");
+  ssg_puts (" AND ");
+  ssg_prin_id_with_suffix (ssg, retselid, "~pview");
+  snprintf (limplusofs_strg, sizeof (limplusofs_strg), ".lim=" BOXINT_FMT, ((SPARP_MAXLIMIT-ofs) >= lim) ? lim+ofs : SPARP_MAXLIMIT);
+  ssg_puts (limplusofs_strg);
+  if ((NULL != formatter) || (NULL != agg_formatter))
+    {
+      ssg_puts (") AS ");
+      ssg_prin_id (ssg, retselid);
+      ssg->ssg_indent--;
+    }
+}

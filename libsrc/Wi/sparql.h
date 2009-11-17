@@ -66,6 +66,7 @@ extern "C" {
 #define SPAR_CODEGEN		(ptrlong)1016
 #define SPAR_LIST		(ptrlong)1017
 #define SPAR_GRAPH		(ptrlong)1018
+#define SPAR_WHERE_MODIFS	(ptrlong)1019
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -376,6 +377,8 @@ typedef struct qm_format_s *ssg_valmode_t;
 typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
 /*! Callback to generate the top of an SPARQL query with 'graph-grab' feature */
 void ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
+/*! Callback to generate the query that quickly enumerates all known graphs */
+void ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
 
 /*! A possible use of quad map as data source for a given triple */
 typedef struct qm_atable_use_s
@@ -465,6 +468,7 @@ typedef struct spar_tree_s
         SPART **sources;
         SPART *pattern;
         SPART **groupings;
+        SPART *having;
         SPART **order;
         caddr_t limit;
         caddr_t offset;
@@ -530,6 +534,15 @@ typedef struct spar_tree_s
         /* #define SPAR_LIST		(ptrlong)1017 */
         SPART **items;	/*!< Some trees, say, items of T_IN_L list of variables */
       } list;
+    struct {
+        /* #define SPAR_WHERE_MODIFS	(ptrlong)1019 */
+        SPART *where_gp;	/*!< Group pattern of WHERE clause, or NULL */
+        SPART **groupings;	/*!< Array of groupings */
+        SPART *having;		/*!< Expression of HAVING clause, or NULL */
+        SPART **obys;		/*!< Array of ORDER BY criteria */
+        caddr_t lim;		/*!< Boxed LIMIT value */
+        caddr_t ofs;		/*!< Boxed OFFSET value */
+      } wm;
   } _;
 } sparp_tree_t;
 
@@ -655,8 +668,11 @@ extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *to
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
+extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
+extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
+  caddr_t retselid, SPART *wm );
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART **order, caddr_t limit, caddr_t offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
@@ -674,7 +690,7 @@ extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART
 extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions);
-extern SPART **spar_make_fake_action_solution (sparp_t *sparp);
+extern SPART *spar_make_fake_action_solution (sparp_t *sparp);
 
 extern void spar_fill_lexem_bufs (sparp_t *sparp);
 extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar_lexbmk_t *end, int skip_last_n);
