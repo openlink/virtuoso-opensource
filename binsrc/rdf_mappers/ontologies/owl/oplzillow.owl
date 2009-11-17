@@ -3,12 +3,11 @@
 
   An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
   to handle product descriptions from the Zillow Web Service.
-  
-  Where a suitable realdf (http://gr8c.org/realdf/ns#) term is available, it is used in 
-  preference. This ontology is intended to fill the gaps in realdf.
 --> 
 
 <rdf:RDF xmlns="http://www.openlinksw.com/schemas/zillow#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:gr="http://purl.org/goodrelations/v1#"
     xmlns:log="http://www.w3.org/2000/10/swap/log#"
     xmlns:oplzllw="http://www.openlinksw.com/schemas/zillow#"
@@ -18,8 +17,9 @@
     xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
 
     <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/zillow">
-        <creator xmlns="http://purl.org/dc/elements/1.1/"
-            rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:title xml:lang="en">The OpenLink Zillow Ontology (oplzillow)</dc:title>
+        <rdfs:comment>An ontology for describing properties advertised by Zillow (http://www.zillow.com)</rdfs:comment>
         <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
     </owl:Ontology>
 
@@ -30,12 +30,75 @@
         <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
     </owl:Class>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#altitude">
+        <rdfs:comment> WGS84 altitude (decimal meters)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>altitude</rdfs:label>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+        <owl:equivalentProperty rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#alt"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#appliances">
         <rdfs:comment>Appliances</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
         <rdfs:label>appliances</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#audio">
+        <rdfs:comment>Audio file</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>audio</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#bathrooms">
+        <rdfs:comment>Number of bathrooms</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>bathrooms</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#bedrooms">
+        <rdfs:comment>Number of bedrooms</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>bedrooms</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#city">
+        <rdfs:comment>Name of city</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>city</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#country">
+        <rdfs:comment>Name of ountry</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>country</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#document">
+        <rdfs:comment>Document file such as PDF, text, Word or Writer.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>document</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
@@ -54,6 +117,15 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
         <rdfs:label>floor covering</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#garages">
+        <rdfs:comment>Number of garages</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>garages</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
@@ -93,6 +165,15 @@
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#image">
+        <rdfs:comment>Image of the property</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>image</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#lastSoldDate">
         <rdfs:comment>Date the property was last sold</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
@@ -100,6 +181,15 @@
         <rdfs:label>last sold date</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#latitude">
+        <rdfs:comment>WGS84 latitude (decimal degrees)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>latitude</rdfs:label>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+        <owl:equivalentProperty rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#lat"/>
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#listingLastUpdated">
@@ -126,6 +216,33 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
         <rdfs:label>listing type</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#longitude">
+        <rdfs:comment>WGS84 longitude (decimal degrees)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>longitude</rdfs:label>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+        <owl:equivalentProperty rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#long"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#lotSize">
+        <rdfs:comment>Property price in US dollars</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>lot size (sq. feet)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#mortgage">
+        <rdfs:comment>Monthly mortgage payment (US dollars)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>monthly mortgage payment (USD)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
@@ -156,6 +273,42 @@
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#pool">
+        <rdfs:comment>Property has a pool?</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>pool</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#postalCode">
+        <rdfs:comment>Zip or postal code</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>postal code</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#price">
+        <rdfs:comment>Property price in US dollars</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>price (USD)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#rent">
+        <rdfs:comment>Monthly rent payment (US dollars)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>monthly rent payment (USD)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#roof">
         <rdfs:comment>Roof material</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
@@ -174,6 +327,33 @@
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#squareFeet">
+        <rdfs:comment>Property size in square feet</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>property size (sq. feet)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#state">
+        <rdfs:comment>Name of state</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>state</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#street">
+        <rdfs:comment>Name of street</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>street</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#taxAssessmentYear">
         <rdfs:comment>tax assessment year</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
@@ -183,12 +363,39 @@
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#taxes">
+        <rdfs:comment>Annual property taxes (US dollars)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>taxes</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#video">
+        <rdfs:comment>Video file</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>video</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#whatOwnerLoves">
         <rdfs:comment>What the owner likes about the property</rdfs:comment>
         <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
         <rdfs:label>what owner loves</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/zillow#yearBuilt">
+        <rdfs:comment>Year the property was built</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/zillow#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/zillow"/>
+        <rdfs:label>year built</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#gYear"/>
         <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
     </owl:DatatypeProperty>
 
