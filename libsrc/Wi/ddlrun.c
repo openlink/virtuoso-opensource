@@ -5885,7 +5885,7 @@ const char *proc_add_col_recursive =
 ""
 "  n_k_id := new_key_id (sys_stat ('__internal_first_id'));"
 "  n_parts := obsolete_key (prime_name, prime, n_k_id, null);"
-"  if (n_parts >= 200) { txn_error (6); signal ('42000', 'Column count too large', 'SR275'); } "
+"  if (n_parts >= 300) { txn_error (6); signal ('42000', 'Column count too large', 'SR275'); } "
 "  insert into DB.DBA.SYS_KEY_PARTS (KP_KEY_ID, KP_NTH, KP_COL) values (n_k_id, n_parts + 1, col_id);"
 "  declare sub cursor for select distinct KEY_TABLE from DB.DBA.SYS_KEY_SUBKEY, DB.DBA.SYS_KEYS where SUPER = prime "
 "    and KEY_ID = SUB and KEY_MIGRATE_TO is null;"

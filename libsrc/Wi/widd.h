@@ -32,7 +32,7 @@
 
 #define MAX_NAME_LEN		100
 #define MAX_QUAL_NAME_LEN	310
-#define TB_MAX_COLS		201
+#define TB_MAX_COLS		301
 #define VDB_TB_MAX_COLS		2001
 
 /*
