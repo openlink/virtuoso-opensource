@@ -106,8 +106,8 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
 	 foaf_maker (graph_iri, BM_HOME_PAGE, BM_NAME, BM_E_MAIL);
 	 ods_sioc_post (graph_iri, cm_iri, blog_iri, null, BM_TITLE, BM_TS, BM_TS, BI_HOME ||'?id='||B_POST_ID, BM_COMMENT,
 	     null, null, BM_HOME_PAGE);
-	 DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), cm_iri);
-	 DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, sioc_iri ('reply_of'), iri);
+	 DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), cm_iri);
+	 DB.DBA.ODS_QUAD_URI (graph_iri, cm_iri, sioc_iri ('reply_of'), iri);
        }
       for select BT_TAGS from BLOG..BLOG_TAG where BT_BLOG_ID =  B_BLOG_ID and BT_POST_ID = B_POST_ID do
 	{
@@ -327,8 +327,8 @@ create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referenc
   ods_sioc_post (graph_iri, iri, blog_iri, null, N.BM_TITLE, N.BM_TS, N.BM_TS, home ||'?id='||N.BM_POST_ID, N.BM_COMMENT,
       null, null, N.BM_HOME_PAGE);
   post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
-  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);
   return;
 };
 
@@ -373,8 +373,8 @@ create trigger BLOG_COMMENTS_SIOC_U after update on BLOG..BLOG_COMMENTS referenc
   ods_sioc_post (graph_iri, iri, blog_iri, null, N.BM_TITLE, N.BM_TS, N.BM_TS, null, N.BM_COMMENT,
       null, null, N.BM_HOME_PAGE);
   post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
-  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);
   return;
 };
 

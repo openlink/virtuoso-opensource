@@ -44,8 +44,8 @@ create procedure fill_ods_community_sioc (in graph_iri varchar, in site_iri varc
     {
       firi := xd_iri (CM_COMMUNITY_ID);
       iri := forum_iri (WAI_TYPE_NAME, CM_MEMBER_APP);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
-      DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
+      DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
     }
   commit work;
 };
@@ -64,8 +64,8 @@ create trigger COMMUNITY_MEMBER_APP_SIOC_I after insert on ODS.COMMUNITY.COMMUNI
     do
       {
 	iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
-	DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('part_of'), firi);
+	DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('has_part'), iri);
       }
   return;
 };

@@ -49,19 +49,19 @@ create procedure ods_init_private_graph (in uname varchar)
       {
 	container := forum_iri (WAI_TYPE_NAME, WAI_NAME);
 	svc := service_iri (site_iri, AP_HOST_ID);
-	DB.DBA.RDF_QUAD_URI (graph_iri, container, sioc_iri ('has_service'), svc);
-	DB.DBA.RDF_QUAD_URI (graph_iri, svc, sioc_iri ('service_of'), container);
+	DB.DBA.ODS_QUAD_URI (graph_iri, container, sioc_iri ('has_service'), svc);
+	DB.DBA.ODS_QUAD_URI (graph_iri, svc, sioc_iri ('service_of'), container);
       }
   for select WAM_APP_TYPE, WI_TO_MAIL, WI_INSTANCE, WI_SID, WI_STATUS from DB.DBA.WA_INVITATIONS, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
     where WAM_INST = WI_INSTANCE and WAM_USER = U_ID and U_NAME = uname do
       {
 	container := forum_iri (WAM_APP_TYPE, WI_INSTANCE);
 	iri := inv_iri (uname, WI_SID);
-	DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, foaf_iri ('made'), iri);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), user_iri);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('Invitation'));
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), 'Invitation for '||WI_INSTANCE);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, dc_iri ('identifier'), WI_SID);
+	DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, foaf_iri ('made'), iri);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), user_iri);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('Invitation'));
+	DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), 'Invitation for '||WI_INSTANCE);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, dc_iri ('identifier'), WI_SID);
       }
   for select WAM_APP_TYPE, WAI_NAME, APL_HOST_ID, APL_WAI_ID, APL_P_TITLE, APL_P_URL, APL_STAT, APL_SENT, APL_ERROR, APL_SEQ from
     ODS.DBA.APP_PING_LOG, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE where
@@ -70,14 +70,14 @@ create procedure ods_init_private_graph (in uname varchar)
 	svc := service_iri (site_iri, APL_HOST_ID);
 	iri := log_iri (site_iri, APL_HOST_ID, APL_SEQ);
 	container := forum_iri (WAM_APP_TYPE, WAI_NAME);
-	DB.DBA.RDF_QUAD_URI (graph_iri, svc, sioc_iri ('container_of'), iri);
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), svc);
+	DB.DBA.ODS_QUAD_URI (graph_iri, svc, sioc_iri ('container_of'), iri);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), svc);
 
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('LogEntry'));
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('date'), APL_SENT);
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), APL_ERROR);
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, ext_iri ('status'), APL_STAT);
-	DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), APL_SEQ);
+	DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('LogEntry'));
+	DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('date'), APL_SENT);
+	DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), APL_ERROR);
+	DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, ext_iri ('status'), APL_STAT);
+	DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), APL_SEQ);
       }
 }
 ;

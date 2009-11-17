@@ -192,7 +192,7 @@ create procedure wiki_sioc_post (inout _topic WV.WIKI.TOPICINFO)
 	null,
 	null,
 	person_iri(uname));
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('topic'), c_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('topic'), c_iri);
 }
 ;
 
@@ -206,7 +206,7 @@ create procedure wiki_sioc_post_links_to (inout _topic WV.WIKI.TOPICINFO, inout 
   tgt_uri := sioc..wiki_post_iri (_tgt.ti_cluster_name, _tgt.ti_cluster_id, _tgt.ti_local_name);
   tgt_uri := DB.DBA.RDF_MAKE_IID_OF_QNAME (tgt_uri);
   if (tgt_uri is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
 }
 ;
 
@@ -219,7 +219,7 @@ create procedure wiki_sioc_post_links_to_2 (inout _topic WV.WIKI.TOPICINFO, in t
   iri := sioc..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
   tgt_uri := DB.DBA.RDF_MAKE_IID_OF_QNAME (tgt_uri);
   if (tgt_uri is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
 }
 ;
 
@@ -231,7 +231,7 @@ create procedure wiki_sioc_attachment (inout _topic WV.WIKI.TOPICINFO, in attach
   declare iri varchar;
   iri := sioc..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
   if (attachmentname is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('attachment'), WV.WIKI.SIOC_BASE (_topic.ti_cluster_name) || _topic.ti_local_name || '/' || attachmentname);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('attachment'), WV.WIKI.SIOC_BASE (_topic.ti_cluster_name) || _topic.ti_local_name || '/' || attachmentname);
 }
 ;
 
@@ -292,10 +292,10 @@ create trigger WV_COMMENT_SIOC_I after insert on WV..COMMENT referencing new as 
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = N.C_AUTHOR))
      foaf_maker (graph_iri, person_iri(user_i), N.C_AUTHOR, N.C_EMAIL);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
 }
 ;
 
@@ -318,16 +318,16 @@ create procedure fill_comments ()
     delete_quad_sp (graph_iri, iri, sioc_iri ('reply_of'));
     delete_quad_sp (graph_iri, c_iri, sioc_iri ('has_reply'));
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
   
     declare user_i varchar;
     user_i := user_iri_by_uname(C_AUTHOR);
     if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = C_AUTHOR))
        foaf_maker (graph_iri, user_i, C_AUTHOR, C_EMAIL);
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
   }
 
   for select TOPICID, U_NAME from WV.WIKI.TOPIC, DB.DBA.SYS_USERS where U_ID = T_OWNER_ID do 
@@ -338,13 +338,13 @@ create procedure fill_comments ()
       iri := wiki_post_iri_2 (TOPICID);
       cr_iri := user_iri_by_uname(U_NAME);
       delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_creator'), cr_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), cr_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), cr_iri);
 
       delete_quad_s_p_o (graph_iri, cr_iri, sioc_iri ('creator_of'), iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, cr_iri, sioc_iri ('creator_of'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, cr_iri, sioc_iri ('creator_of'), iri);
 
       delete_quad_s_p_o (graph_iri, iri, foaf_iri ('maker'), person_iri (cr_iri));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri (cr_iri));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri (cr_iri));
     }
   -- upgrade is broken, need to find who delete all comments properties. So far this workaround works fine
   registry_set ('__wikiv_comments_init', 'done');

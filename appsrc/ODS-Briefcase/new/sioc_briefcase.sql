@@ -315,11 +315,11 @@ create procedure briefcase_sioc_insert_ex (
         r_iri := role_iri (instance_id, r_owner, 'contact');
         foreach (any pers_iri in persons) do
         {
-   		    DB.DBA.RDF_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
-   		    DB.DBA.RDF_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), pers_iri[0]);
-          DB.DBA.RDF_QUAD_URI (g_iri, pers_iri[0], rdfs_iri ('seeAlso'), also_iri);
-          DB.DBA.RDF_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), pers_iri[0]);
-          DB.DBA.RDF_QUAD_URI (g_iri, pers_iri[0], foaf_iri ('knows'), creator_iri);
+   		    DB.DBA.ODS_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
+   		    DB.DBA.ODS_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), pers_iri[0]);
+          DB.DBA.ODS_QUAD_URI (g_iri, pers_iri[0], rdfs_iri ('seeAlso'), also_iri);
+          DB.DBA.ODS_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), pers_iri[0]);
+          DB.DBA.ODS_QUAD_URI (g_iri, pers_iri[0], foaf_iri ('knows'), creator_iri);
           if (not isnull (ldapServer))
           {
             personName := briefcase_sparql (sprintf (' SPARQL ' ||
@@ -345,7 +345,7 @@ create procedure briefcase_sioc_insert_ex (
             		    {
             		      foafName :=  LDAP..foaf_propName (snName);
             		      if (not isnull (foafName))
-                        DB.DBA.RDF_QUAD_URI_L (g_iri, pers_iri[0], foaf_iri (foafName), ldapValue);
+                        DB.DBA.ODS_QUAD_URI_L (g_iri, pers_iri[0], foaf_iri (foafName), ldapValue);
             		    }
                   }
                   goto _end;
@@ -437,13 +437,13 @@ create procedure briefcase_sioc_insert_ex (
                 if (Meta[L] = foaf_iri ('name'))
                 {
                 p_iri := briefcase_person_iri (c_iri, T);
-                DB.DBA.RDF_QUAD_URI (g_iri, p_iri, rdf_iri ('type'), foaf_iri ('Person'));
+                  DB.DBA.ODS_QUAD_URI (g_iri, p_iri, rdf_iri ('type'), foaf_iri ('Person'));
 
-         		    DB.DBA.RDF_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
-         		    DB.DBA.RDF_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), p_iri);
-                DB.DBA.RDF_QUAD_URI (g_iri, p_iri, rdfs_iri ('seeAlso'), also_iri);
-                DB.DBA.RDF_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), p_iri);
-                DB.DBA.RDF_QUAD_URI (g_iri, p_iri, foaf_iri ('knows'), creator_iri);
+           		    DB.DBA.ODS_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
+           		    DB.DBA.ODS_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), p_iri);
+                  DB.DBA.ODS_QUAD_URI (g_iri, p_iri, rdfs_iri ('seeAlso'), also_iri);
+                  DB.DBA.ODS_QUAD_URI (g_iri, creator_iri, foaf_iri ('knows'), p_iri);
+                  DB.DBA.ODS_QUAD_URI (g_iri, p_iri, foaf_iri ('knows'), creator_iri);
                   if (not isnull (ldapServer))
                   {
                   ldapData := LDAP..ldap_search (r_owner, ldapServer, sprintf ('(cn=%s)', T));
@@ -461,7 +461,7 @@ create procedure briefcase_sioc_insert_ex (
                   		    {
                 		      foafName :=  LDAP..foaf_propName (snName);
                 		      if (not isnull (foafName))
-                            DB.DBA.RDF_QUAD_URI_L (g_iri, p_iri, foaf_iri (foafName), ldapValue);
+                              DB.DBA.ODS_QUAD_URI_L (g_iri, p_iri, foaf_iri (foafName), ldapValue);
                 		    }
                       }
                       goto _end2;
@@ -477,11 +477,11 @@ create procedure briefcase_sioc_insert_ex (
                     if (K <= 1)
                     {
                     a_iri := p_iri || '#addr' || case when (K = 0) then '' else '1' end;
-                    DB.DBA.RDF_QUAD_URI (g_iri, p_iri, vcard_iri ('ADR'), a_iri);
-                    DB.DBA.RDF_QUAD_URI_L (g_iri, a_iri, Meta[L], T);
+                      DB.DBA.ODS_QUAD_URI (g_iri, p_iri, vcard_iri ('ADR'), a_iri);
+                      DB.DBA.ODS_QUAD_URI_L (g_iri, a_iri, Meta[L], T);
                   }
                 } else {
-                  DB.DBA.RDF_QUAD_URI_L (g_iri, p_iri, Meta[L], T);
+                    DB.DBA.ODS_QUAD_URI_L (g_iri, p_iri, Meta[L], T);
                 }
               }
             }
@@ -518,16 +518,16 @@ create procedure briefcase_sioc_insert_ex (
 
             ods_sioc_post (g_iri, e_iri, c_iri, creator_iri, eSummary, eCreated, eCreated, eLink, eDescription);
 
-            DB.DBA.RDF_QUAD_URI   (g_iri, e_iri, rdf_iri ('type'), vcal_iri ('vevent'));
-            DB.DBA.RDF_QUAD_URI   (g_iri, e_iri, rdfs_iri ('seeAlso'), also_iri);
+            DB.DBA.ODS_QUAD_URI   (g_iri, e_iri, rdf_iri ('type'), vcal_iri ('vevent'));
+            DB.DBA.ODS_QUAD_URI   (g_iri, e_iri, rdfs_iri ('seeAlso'), also_iri);
             if (not isnull (eUID))
-              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('uid'), eUID);
+              DB.DBA.ODS_QUAD_URI_L (g_iri, e_iri, vcal_iri ('uid'), eUID);
             if (not isnull (eLink))
-              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('url'), eLink);
+              DB.DBA.ODS_QUAD_URI_L (g_iri, e_iri, vcal_iri ('url'), eLink);
             if (not isnull (eSummary))
-              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('summary'), eSummary);
+              DB.DBA.ODS_QUAD_URI_L (g_iri, e_iri, vcal_iri ('summary'), eSummary);
             if (not isnull (eDescription))
-              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('description'), eDescription);
+              DB.DBA.ODS_QUAD_URI_L (g_iri, e_iri, vcal_iri ('description'), eDescription);
 
             meta := vector ('LOCATION', 'location',
                             'ORGANIZER', 'organizer',
@@ -541,7 +541,7 @@ create procedure briefcase_sioc_insert_ex (
             {
               eProperty := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/%s/val', N, meta[K]), xmlItem, 1) as varchar);
               if (not isnull (eProperty))
-                DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri (meta [K+1]), eProperty);
+                DB.DBA.ODS_QUAD_URI_L (g_iri, e_iri, vcal_iri (meta [K+1]), eProperty);
             }
           }
         }
@@ -593,7 +593,7 @@ create procedure briefcase_sioc_delete (
                                      ' SELECT ?x ' ||
                                      '   FROM <%s> ' ||
                                      '  WHERE {?x rdf:type foaf:Person. ?x rdfs:seeAlso <%s>.} ', graph_iri, also_iri));
-    _g := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+    _g := DB.DBA.RDF_MAKE_IID_OF_QNAME (fix_graph (graph_iri));
     foreach (any p_iri in persons) do
     {
       _p := DB.DBA.RDF_MAKE_IID_OF_QNAME (p_iri[0]);
