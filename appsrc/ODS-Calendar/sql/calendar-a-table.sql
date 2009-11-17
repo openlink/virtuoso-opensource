@@ -916,6 +916,7 @@ CAL.WA.exec_no_error ('
     AT_ID integer identity,
     AT_UID varchar,
     AT_EVENT_ID integer not null,
+    AT_ROLE varchar,
     AT_NAME varchar,
     AT_MAIL varchar,
     AT_DATE_REQUEST datetime,
@@ -931,6 +932,10 @@ CAL.WA.exec_no_error ('
 
 CAL.WA.exec_no_error(
   'alter table CAL.WA.ATTENDEES add AT_NAME varchar', 'C', 'CAL.WA.ATTENDEES', 'AT_NAME'
+);
+
+CAL.WA.exec_no_error(
+  'alter table CAL.WA.ATTENDEES add AT_ROLE varchar', 'C', 'CAL.WA.ATTENDEES', 'AT_ROLE'
 );
 
 CAL.WA.exec_no_error ('
