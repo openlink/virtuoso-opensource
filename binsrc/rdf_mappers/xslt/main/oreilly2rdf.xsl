@@ -23,7 +23,6 @@
 -->
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
-<!ENTITY book "http://purl.org/NET/book/vocab#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
@@ -45,7 +44,6 @@
   xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
   xmlns:gr="&gr;"
-  xmlns:book="&book;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:owl="&owl;"
@@ -63,9 +61,30 @@
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
   <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<!-- Xalan
+	<xsl:variable name="resourceURL" select="$baseUri"/>
+	<xsl:variable  name="docIRI" select="$baseUri"/>
+	<xsl:variable  name="docproxyIRI" select="$baseUri"/>
+	-->
 
   <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+
+  <xsl:variable name="title">
+	<xsl:value-of select="//meta[@name='book.title']/@content" />
+  </xsl:variable>
+  <xsl:variable name="subtitle">
+	<xsl:value-of select="//meta[@name='subtitle']/@content" />
+  </xsl:variable>
+  <xsl:variable name="isbn">
+	<xsl:value-of select="//meta[@name='isbn']/@content" />
+  </xsl:variable>
+  <xsl:variable name="extent">
+	<xsl:value-of select="//*[@property='dc:extent']" />
+  </xsl:variable>
+  <xsl:variable name="category">
+	<xsl:value-of select="translate(//meta[translate(@name, $uc, $lc)='category']/@content, $uc, $lc)" />
+  </xsl:variable>
 
   <xsl:template match="/">
       <rdf:RDF>
@@ -78,55 +97,81 @@
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<!-- Xalan
+		<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Vendor')}"/>
+		<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Offering')}"/>
+		-->
 		<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-		<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+		<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}"/>
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 	  </rdf:Description>
 
-	<gr:Offering rdf:about="{$resourceURL}">
+	<!-- Xalan 
+	<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offering')}">
+	-->
+	<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
 		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-		<rdfs:label><xsl:value-of select="meta[translate (@name, $uc, $lc)='book.title']/@content"/></rdfs:label>
-		<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
+		<gr:includes rdf:resource="{$resourceURL}"/>
 		<gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
-		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+		<!-- As was: Doesn't work - omits gr:hasPriceSpecification node
 		<xsl:apply-templates mode="offering" />
+		-->
+		<xsl:apply-templates select="//span[@typeof='gr:UnitPriceSpecification']" mode="offering" />
 	</gr:Offering>
 
+	<!-- Xalan
+    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
+	-->
     <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
 		<rdfs:comment>The legal agent making the offering</rdfs:comment>
-		    <rdfs:label>Oreilly Co., Inc.</rdfs:label>
-		    <gr:legalName>Oreilly Co., Inc.</gr:legalName>
-		    <gr:offers rdf:resource="{$resourceURL}"/>
-		<foaf:homepage rdf:resource="http://www.oreilly.com" />
-		<owl:sameAs rdf:resource="http://www.oreilly.com" />
+		    <rdfs:label>O'Reilly Media, Inc.</rdfs:label>
+		    <gr:legalName>O'Reilly Media, Inc.</gr:legalName>
+			<!-- Xalan
+		    <gr:offers rdf:resource="{concat ($baseUri, '#', 'Offering')}"/>
+			-->
+		    <gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}"/>
+		<foaf:homepage rdf:resource="http://oreilly.com" />
+		<owl:sameAs rdf:resource="http://oreilly.com" />
+		<!-- Xalan
+		<rdfs:seeAlso rdf:resource="http://www.oreilly.com"/>
+		-->
 		<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.oreilly.com')}"/>
     </gr:BusinessEntity>
 
-	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-		<rdf:type rdf:resource="&oplbb;Product" />
+		<xsl:choose>
+			<xsl:when test="$category='video'">
+				<rdf:type rdf:resource="&bibo;AudioVisualDocument"/>
+				<dcterms:extent><xsl:value-of select="normalize-space($extent)" /></dcterms:extent>
+			</xsl:when>
+			<xsl:when test="$category='books'">
 		<rdf:type rdf:resource="&bibo;Book"/>
-		<rdf:type rdf:resource="&book;Book"/>
-        <gr:hasMakeAndModel>
-	        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
-	            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
-	            <rdf:type rdf:resource="&oplbb;Product"/>
-				<xsl:apply-templates select="meta" mode="manufacturer" /> 
-	        </rdf:Description>
-	    </gr:hasMakeAndModel>
-	    <oplbb:onlineAvailability rdf:datatype="&xsd;boolean">true</oplbb:onlineAvailability>
+				<bibo:numPages><xsl:value-of select="normalize-space($extent)" /></bibo:numPages>
+			</xsl:when>
+		</xsl:choose>
+    	<bibo:shortTitle><xsl:value-of select="$title"/></bibo:shortTitle>
+    	<dc:title><xsl:value-of select="concat($title, ' - ', $subtitle)"/></dc:title>
+		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
 		<xsl:apply-templates select="meta"/>
+  		<xsl:apply-templates select="//div[@id='short-description']/div" />
+  		<xsl:apply-templates select="//div[@id='fulldesc']/div" />
+  		<xsl:apply-templates select="//div[@class='product-metadata']//*[@typeof='foaf:Person']" />
       </rdf:Description>
   </xsl:template>
 
   <xsl:template match="//span[@typeof='gr:UnitPriceSpecification']" mode="offering">
 	<gr:hasPriceSpecification>
-	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
+			<!-- Xalan
+	    	<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
+			-->
+	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('UnitPriceSpecification_', position()))}">
 	    <rdfs:label>sale price</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
@@ -135,29 +180,13 @@
 	</gr:hasPriceSpecification>
     </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='subtitle']">
-      <po:subtitle>
-		<xsl:value-of select="@content"/>
-      </po:subtitle>
-	  <gr:legalName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
-		<xsl:value-of select="@content"/>
-	  </gr:legalName>      
-  </xsl:template>
-
+  <!-- Not valid for videos, which also seem to have object.type of 'book'
   <xsl:template match="meta[translate (@name, $uc, $lc)='object.type']">
 	<xsl:if test="@content='book'">
 		<rdf:type rdf:resource="&bibo;Book"/>
 	</xsl:if>
   </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.title']">
-      <dc:title>
-	  <xsl:value-of select="@content"/>
-      </dc:title>
-      <gr:legalName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
-		<xsl:value-of select="@content"/>
-	  </gr:legalName>
-  </xsl:template>
+  -->
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.author']">
 	<bibo:authorList>
@@ -169,18 +198,9 @@
       <bibo:isbn13>
 	  <xsl:value-of select="@content"/>
       </bibo:isbn13>
-      <!--book:isbn>
+      	<dcterms:identifier>
 	  <xsl:value-of select="@content"/>
-      </book:isbn-->
-  </xsl:template>
-
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.year']">
-      <dc:date>
-	  <xsl:value-of select="@content"/>
-      </dc:date>
-      <gr:validFrom rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
-		<xsl:value-of select="@content"/>
-	  </gr:validFrom>
+      	</dcterms:identifier>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
@@ -203,44 +223,37 @@
       <bibo:isbn10>
 	  <xsl:value-of select="@content"/>
       </bibo:isbn10>
-      <xsl:variable name="title">
-		<xsl:value-of select="//meta[@name='book.title']/@content" />
-      </xsl:variable>
-      <xsl:variable name="isbn">
-		<xsl:value-of select="//meta[@name='isbn']/@content" />
-      </xsl:variable>
-      <xsl:variable name="resourceURL">
+      	<xsl:variable name="amazonBookURL">
 		<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn)"/>
       </xsl:variable>
-	  <owl:sameAs rdf:resource="{$resourceURL}" />
+	  	<owl:sameAs rdf:resource="{$amazonBookURL}" />
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='ean']">
-      <!--bibo:eanucc13>
-	  <xsl:value-of select="@content"/>
-      </bibo:eanucc13-->
       <gr:hasEAN_UCC-13>
 		<xsl:value-of select="@content"/>
       </gr:hasEAN_UCC-13>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic']">
-      <oplbb:image rdf:resource="{@content}"/>
+      <foaf:img rdf:resource="{@content}"/>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_medium']">
-      <oplbb:image rdf:resource="{@content}"/>
+      <foaf:img rdf:resource="{@content}"/>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='graphic_large']">
-      <oplbb:image rdf:resource="{@content}"/>
+      <foaf:img rdf:resource="{@content}"/>
   </xsl:template>
 
+	<!-- Used concatentation of metas book.title & subtitle instead 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book_title']">
       <dc:title>
 	  <xsl:value-of select="@content"/>
       </dc:title>
   </xsl:template>
+	-->
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
       <dc:creator>
@@ -253,21 +266,22 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
-	<oplbb:description rdf:datatype="&xsd;string">
+		<bibo:abstract rdf:datatype="&xsd;string">
 	  <xsl:value-of select="@content"/>
-	</oplbb:description>
+		</bibo:abstract>
     </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <gr:description>
+    	<dcterms:subject>
 	  <xsl:value-of select="@content"/>
-      </gr:description>
+      	</dcterms:subject>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='date']">
-      <dc:date>
+	<xsl:template match="meta[@name='search_date']">
+		<!-- search_date is in ISO 8601 format as required by Dublin Core spec -->
+    	<dcterms:issued>
 	  <xsl:value-of select="@content"/>
-      </dc:date>
+      	</dcterms:issued>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='publisher']">
@@ -282,25 +296,36 @@
       </po:series>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='edition']">
-      <po:series>
+  <xsl:template match="meta[translate (@name, $uc, $lc)='edition_full']">
+      <bibo:edition>
 	  <xsl:value-of select="@content"/>
-      </po:series>
+      </bibo:edition>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='publisher']" mode="manufacturer">
-	<gr:hasManufacturer>
-		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<rdfs:label>Manufacturer</rdfs:label>
-		<gr:legalName><xsl:value-of select="@content"/></gr:legalName>
-		</gr:BusinessEntity>
-	</gr:hasManufacturer>
+  	<xsl:template match="//div[@id='short-description']/div">
+		<bibo:shortDescription><xsl:value-of select="." /></bibo:shortDescription>
 	</xsl:template>
 
+  	<xsl:template match="//div[@id='fulldesc']/div">
+		<dc:description>
+			<xsl:value-of select="." />
+		</dc:description>
+	</xsl:template>
+
+  	<xsl:template match="*[@typeof='foaf:Person']">
+		<dc:contributor>
+			<xsl:variable name="author"><xsl:value-of select="translate(@about, ':', '_')" /></xsl:variable>
+			<!-- Xalan
+			<foaf:Person rdf:about="{concat($baseUri, '#', concat('Author_', position()))}">
+			-->
+			<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', concat('Author_', position()))}">
+				<foaf:name><xsl:value-of select="." /></foaf:name>
+				<foaf:homepage rdf:resource="{@href}"/>
+			</foaf:Person>
+		</dc:contributor>
+	</xsl:template>
 
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
-    <xsl:template match="text()|@*" mode="manufacturer" />
-
 
 </xsl:stylesheet>
