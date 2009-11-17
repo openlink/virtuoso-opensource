@@ -3107,7 +3107,8 @@ wa_exec_no_error_log(
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
     WAUI_OPENID_SERVER varchar,
-    WAUI_FACEBOOK_ID int,
+    WAUI_FACEBOOK_ID integer,
+    WAUI_FACEBOOK_LOGIN_ID varchar,
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
     WAUI_NICK		varchar,
@@ -3205,7 +3206,8 @@ WA_USER_INFO_WAUI_FOAF_UPGRADE ();
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INTEGER');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_LOGIN_ID', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_NICK', 'varchar');
@@ -3895,6 +3897,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_SHOWACTIVE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FACEBOOK_ID')
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_FACEBOOK_LOGIN_ID')
+    UPDATE WA_USER_INFO SET WAUI_FACEBOOK_LOGIN_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT_LOGIN')

@@ -619,7 +619,7 @@ div.error_dialog div.dialog_buttons {
   /* background-image: url(images/ods_signin_container1.png) */
 }
 #login_form {
-  margin: 10px; width: 600px;}
+  margin: 10px; width: 500px;}
 #login_page img.id_logo {
   margin: 50px 20px 50px 50px}
 #login_page h1 {
@@ -633,7 +633,7 @@ div.error_dialog div.dialog_buttons {
   float: left;
   margin-bottom: 10px;
   margin-top: 4px}
-#login_form span {
+#login_form span.space {
   display: block;
   width: 170px;
   float: left;
@@ -660,8 +660,6 @@ div.error_dialog div.dialog_buttons {
   margin-bottom: 10px}
 #login_page br {
   clear: left}
-#login_frm_b_login {
-  margin-left: 100px}
 div.login_error_ctr {
   margin: 0;
   padding: 0;

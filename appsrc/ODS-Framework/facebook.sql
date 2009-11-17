@@ -161,13 +161,11 @@ create method post_request(
          params := vector_concat(params,vector('call_id',cast(msec_time()+1 as varchar)));
       else
          params := vector_concat(params,vector('call_id',cast(msec_time() as varchar)));
-
-
       params := vector_concat(params,vector('session_key',self.session_key)); --'a8c8361138addd75ca7dc340-663197781'
-
     }
 
-    if (get_keyword('v',params,null) is null) {
+  if (get_keyword('v',params,null) is null)
+  {
         params := vector_concat(params,vector('v','1.0'));
     }
 
@@ -178,29 +176,28 @@ create method post_request(
     aResult:=string_output();
     i := 0;
     l := length(params);
-    while(i < l){
+  while(i < l)
+  {
 --     if (i + 1 < l and isarray (params[i + 1])) goto _skip;
-      if (i > 0) http('&',aResult);
+    if (i > 0)
+      http('&',aResult);
       http(params[i],aResult);
-      if (i + 1 < l) {
+    if (i + 1 < l)
+    {
         http('=',aResult);
         http_url(params[i + 1],null,aResult);
-      };
+    }
       _skip:;
       i := i + 2;
-    };
+  }
 
     declare post_string varchar;
     post_string:=string_output_string(aResult);
 
-
      declare ret_header, rq_header any;
-     rq_header := 'Content-type: application/x-www-form-urlencoded \r\n'||
-                  'User-Agent: Facebook API VSP Client 1.1';
-
+  rq_header := 'Content-type: application/x-www-form-urlencoded \r\nUser-Agent: Facebook API VSP Client 1.1';
 
     _result:=http_get ('http://api.facebook.com/restserver.php', ret_header, 'POST', rq_header, post_string); --'127.0.0.1:8888'
-
      return _result;
 }
 ;
@@ -575,8 +572,7 @@ for DB.DBA.FacebookRestClient
 --   */
 create method users_getInfo(
               in uids any,
-              in fields any
-)
+  in fields any)
 for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.users.getInfo', vector('uids' , uids, 'fields' , fields));
@@ -679,8 +675,7 @@ for DB.DBA.FacebookRestClient
 --   */
 create method profile_setFBML(
        in markup varchar,
-       in uid integer := null
-  )
+  in uid integer := null)
 for DB.DBA.FacebookRestClient
 {
     return self.call_method('facebook.profile.setFBML', vector('markup' , markup, 'uid' , uid));
@@ -771,11 +766,12 @@ for DB.DBA.Facebook
     self.api_client := new DB.DBA.FacebookRestClient(api_key, secret, null);
 
     self.validate_fb_params();
-
-    if (get_keyword('friends',self.fb_params,null) is not null) {
+  if (get_keyword('friends',self.fb_params,null) is not null)
+  {
         self.api_client.friends_list := split_and_decode (get_keyword('friends',self.fb_params), 0, '\0\0,');
     }
-    if (get_keyword('added',self.fb_params,null) is not null) {
+  if (get_keyword('added',self.fb_params,null) is not null)
+  {
       self.api_client.added := get_keyword('added',self.fb_params);
     }
 }
@@ -850,33 +846,27 @@ for DB.DBA.Facebook
 
 create method validate_fb_params()
 for DB.DBA.Facebook
-{  self.fb_params:=self.get_valid_fb_params(self._params, 48*3600, 'fb_sig');
-    if (self.fb_params is  null) {
+{
+  self.fb_params := self.get_valid_fb_params(self._params, 48*3600, 'fb_sig');
+  if (self.fb_params is null)
+  {
        self.fb_params := self.get_valid_fb_params(self._params, 48*3600, 'fb_sig');
     }
 
     declare _cookies,_session any;
-
     _cookies := self.get_valid_fb_params(_get_cookie_vec(self._lines), null, self.api_key);
 
-
-    if ( (self.fb_params is  null or length(self.fb_params)=0)
-          and
-          _cookies is not null)
+  if ((self.fb_params is  null or length(self.fb_params)=0) and _cookies is not null)
     {
      self.fb_params:= _cookies;
-
-  --       self := udt_set(self,'fb_params',_cookies);
     }
-
     if(get_keyword('auth_token',self._params,null) is not null)
        _session := self.do_get_session(get_keyword('auth_token',self._params)); --do_get_session sets self._user along the session
     else
        _session:=null;
 
-
-
-    if (self.fb_params is not null) {
+  if (self.fb_params is not null)
+  {
       -- If we got any fb_params passed in at all, then either:
       --  - they included an fb_user / fb_session_key, which we should assume to be correct
       --  - they didn't include an fb_user / fb_session_key, which means the user doesn't have a
@@ -894,18 +884,18 @@ for DB.DBA.Facebook
       _user       := coalesce( self._user,get_keyword('user',self.fb_params,null)); --if do_get_session have already succeeded to set _user no need to look for it in fb_params
       session_key := coalesce(_session,get_keyword('session_key',self.fb_params, ''));
       expires     := get_keyword('expires',self.fb_params, now());
-
       self.set_user(_user, session_key, expires);
-
-    } else if (length(_cookies)>0)
+  }
+  else if (length(_cookies)>0)
     {
       -- use api_key . '_' as a prefix for the cookies in case there are
       -- multiple facebook clients on the same domain.
       self.set_user(get_keyword('user',_cookies ),get_keyword('session_key',_cookies ),now());
-    }else if (length(get_keyword('auth_token',self._params,'')) and  _session is not null) {
+  }
+  else if (length(get_keyword('auth_token',self._params,'')) and _session is not null)
+  {
       self.set_user(self._user,_session, now());
     }
-
     if( self.fb_params is not null)
        return 1;
     else
@@ -927,26 +917,24 @@ for DB.DBA.Facebook
 
     prefix := namespace || '_';
     prefix_len := length(prefix);
-
-
     fb_params := vector();
 
-    declare i,l integer;
-    i := 0;
-    l := length (params);
-    while (i < l)
+  declare i integer;
+  for (i := 0; i < length (params); i := i + 2)
     {
       declare _key, _val varchar;
+
+    if (isstring (params[i]))
+    {
       _key := trim (cast(params[i] as varchar));
+      if (position( prefix,_key) = 1 and prefix_len < length(_key))
+      {
       _val := params[i+1];
       if (_val is not null)
           _val := trim (cast(_val as varchar));
-
-      if (position( prefix,_key) = 1 and prefix_len<length(_key)) {
          fb_params:=vector_concat(fb_params,vector(subseq(_key,prefix_len),_val));
       }
-
-      i := i + 2;
+    }
     }
 
 --    if (timeout is not null and
@@ -955,10 +943,10 @@ for DB.DBA.Facebook
 --      return vector();
 --    }
 
-    if (get_keyword(namespace,params) is null OR self.verify_signature(fb_params, get_keyword(namespace,params))=0) {
+  if (get_keyword(namespace,params) is null OR self.verify_signature(fb_params, get_keyword(namespace,params))=0)
+  {
       return vector();
     }
-
     if(length(fb_params)=0)
        return null;
     else
@@ -994,10 +982,11 @@ create method do_get_session(
 )
 for DB.DBA.Facebook
 {
-
     declare auth_res any;
 
-    declare exit handler for sqlstate '*' { if(self.api_client.debug_mode=1)
+  declare exit handler for sqlstate '*'
+  {
+    if(self.api_client.debug_mode=1)
                                             {
                                                dbg_obj_print('--REST CLIENT ERR--');
                                                dbg_obj_print(__SQL_STATE);
@@ -1006,9 +995,7 @@ for DB.DBA.Facebook
                                             };
                                             return null;
                                           };
-    auth_res:='';
     auth_res:=self.api_client.auth_getSession(auth_token);
-
     if(auth_res is not null)
     {
 --      if( auth_res[1] is not null and auth_res[0] is not null and locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
@@ -1041,14 +1028,18 @@ create method redirect(
 for DB.DBA.Facebook
 {
 --    dbg_obj_print('redirect_url',url);
-
-    if (self.in_fb_canvas()) {
+  if (self.in_fb_canvas())
+  {
       http ('<fb:redirect url="' || url || '"/>');
-    } else if (length(regexp_match('/^https?:\/\/([^\/]*\.)?facebook\.com(:\d+)?/i', url))>0) {
+  }
+  else if (length(regexp_match('/^https?:\/\/([^\/]*\.)?facebook\.com(:\d+)?/i', url))>0)
+  {
       -- make sure facebook.com url's load in the full frame so that we don't
       -- get a frame within a frame.
       http ('<script type=\"text/javascript\">\ntop.location.href = \"'||url||'\";\n</script>');
-    } else {
+  }
+  else
+  {
       http_rewrite();
       http_request_status('HTTP/1.1 302');
       http_header (concat ('Location: ', url, '\r\n'));
@@ -1059,8 +1050,7 @@ for DB.DBA.Facebook
 ;
 
 create method get_add_url(
-       in _next varchar :=null
-)
+  in _next varchar := null)
 for DB.DBA.Facebook
 {
     declare add_url varchar;
@@ -1093,9 +1083,7 @@ for DB.DBA.Facebook
 }
 ;
 
-create method require_login(
-       in relog integer :=0
-)
+create method require_login ( in relog integer :=0)
 for DB.DBA.Facebook
 {
     declare _user any;
@@ -1107,11 +1095,8 @@ for DB.DBA.Facebook
          self._user:=0;
          self.api_client:=udt_set(self.api_client,'session_key','');
       }
-
       self.redirect(self.get_login_url(self.current_url(), self.in_frame(),1));
-
     }
-    _user:=null;
     _user:=self.get_loggedin_user();
     if(_user is not null)
        return _user;
@@ -1124,13 +1109,9 @@ for DB.DBA.Facebook
 create method in_frame()
 for DB.DBA.Facebook
 {
-
-    if(get_keyword('in_canvas',self.fb_params,null) is not null
-       and
+  if (get_keyword('in_canvas',self.fb_params,null) is not null and
        get_keyword('in_iframe',self.fb_params,null) is not null)
-    {
     return 1;
-  }else
     return 0;
 }
 ;
@@ -1155,7 +1136,8 @@ for DB.DBA.Facebook
     {
 --      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?'||_http_query_str;
       return '?'||_http_query_str;
-    }else if(_sid is not null and length(_sid)>0)
+  }
+  else if(_sid is not null and length(_sid)>0)
     {
 --      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?sid='||_sid||'&realm='||coalesce(_realm,'wa');
       return '?sid='||_sid||'&realm='||coalesce(_realm,'wa');
@@ -1177,9 +1159,7 @@ create procedure get_facebook_url(in subdomain varchar := 'www')
 }
 ;
 
-
-create procedure
-_get_cookie_vec (in lines any)
+create procedure _get_cookie_vec (in lines any)
 {
   declare cookie_vec any;
   declare i,l int;
@@ -1188,7 +1168,8 @@ _get_cookie_vec (in lines any)
   if (not isstring (cookie_str))
     return vector ();
   cookie_vec := split_and_decode (cookie_str, 0, '\0\0;=');
-  i := 0; l := length (cookie_vec);
+  i := 0;
+  l := length (cookie_vec);
   while (i < l)
     {
       declare _key, _val varchar;
@@ -1204,7 +1185,7 @@ _get_cookie_vec (in lines any)
 }
 ;
 
-create procedure _get_ods_fb_settings (out fb_settings any, in fb_user_id integer := null)
+create procedure _get_ods_fb_settings (out fb_settings any, in fb_user_id integer := 0)
 {
    declare dba_options,fb_dba_options any;
    declare exit handler for sqlstate '*' {return 0;};

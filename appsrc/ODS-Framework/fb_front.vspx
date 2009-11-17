@@ -90,7 +90,8 @@
           if(length(self.sid)>0)
             self._ods_login_params:='sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
 
-          declare exit handler for not found {
+            declare exit handler for not found
+            {
           _user_name:=null;
           _user_id:=null;
           };
@@ -109,7 +110,7 @@
           declare _fb_user integer;
           declare fb_dba_options any;
 
-          if (_get_ods_fb_settings(fb_dba_options, _user_id)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
+            if (_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
              self._fb_isset:=1;
              self._fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
@@ -234,12 +235,17 @@
                 if(length(networks_str)=0)
                    networks_str:='&nbsp';
 
-
                 if(length(_src)=0)
                    _src:=self.odsbar_ods_gpath ||'images/t_default.jpg';
+
                 _html:='<table style=padding:0px;spacing:0px><tr>'||
                        '<td style="width:160px; text-align:center;text-size:9pt;vertical-align: top;"><img src="'||_src||'">'||
-                       '<h3>'||cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar)||' <img id="rdf_'||cast(self._fb._user as varchar)||'"src="./images/oat/RDF_rdf.png"/></h3><br/></td>'||
+                           '<h3>'||cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar);
+                  if (DB.DBA.WA_USER_APP_ENABLE (_user_id))
+                  _html := _html ||
+                           ' <img id="rdf_'||cast(self._fb._user as varchar)||'"src="./images/oat/RDF_rdf.png"/>';
+                  _html := _html ||
+                           '</h3><br/></td>'||
                        '<td valign="top"><table ><tr>'||
                        '<tr><td style="width:80px;font-weight: bold;padding-right: 5px">Personal Info</td><td></td></tr>'||
                        '<tr><td style="width:80px;padding-right: 5px;color: #808080">Activities:</td><td>'||cast(xpath_eval('string(/users_getInfo_response/user/activities)',_res) as varchar)||'</td>'||
@@ -276,21 +282,24 @@
                  if(_res is not null)
                  {
                  _html:='<div class="doc">';
-
                   _res:=xpath_eval('/users_getInfo_response/user',_res,0);
-                  if(_res is not null and length(_res)>0)
+                    if (length (_res))
                   {
-                    for (I := 0; i < length (_res); I := I + 1)
+                      foreach (any _resData in _res) do
                     {
-                      _src:=xpath_eval('string(pic_small)',_res[i]);
+                        _src := xpath_eval ('string (pic_small)', _resData);
                       if(length(_src)=0)
                         _src:=self.odsbar_ods_gpath ||'images/t_default.jpg';
 
-                      _html:=_html|| '<div style="float:left;width:160px;padding:5px;border-right:1px dotted #888888;text-align:center">'||
+                        _html := _html ||
+                                 '<div style="float:left;width:160px;padding:5px;border-right:1px dotted #888888;text-align:center">' ||
                                       '<img src="'||_src||'" >'||
                                       '<br/>'||
-                                      '<a href="http://www.facebook.com/profile.php?id='||xpath_eval('string(uid)',_res[i])||'" target="_blank">'||xpath_eval('string(name)',_res[i])||'</a> '||
-                                      '<img id="rdf_'||xpath_eval('string(uid)',_res[i])||'"src="./images/oat/RDF_rdf.png"/></div>';
+                                 '<a href="http://www.facebook.com/profile.php?id=' || xpath_eval ('string(uid)',_resData) || '" target="_blank">' || serialize_to_UTF8_xml (xpath_eval('string(name)',_resData)) || '</a> ';
+                        if (DB.DBA.WA_USER_APP_ENABLE (_user_id))
+                        _html := _html ||
+                                 '<img id="rdf_'||xpath_eval('string(uid)',_resData)||'"src="./images/oat/RDF_rdf.png"/>';
+                        _html := _html || '</div>';
                     }
                   }
                   _html:=_html||'</div>';
@@ -391,14 +400,11 @@
                 _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
                               ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
             }
-
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
-
 
             declare validate_by_fields any;
 
-            _html:='';
-            _html:=sprintf('var validateObj={};');
+              _html := 'var validateObj={};';
             validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = _user_id), vector());
             declare i integer;
             if(validate_by_fields is not null and length(validate_by_fields)>0)
@@ -942,19 +948,12 @@ function fbInit()
 fbfStr='<?vsp http(get_keyword('fbf_jsarrstr',self._dhtml,'')); ?>';
 
  var fbfArr=fbfStr.split(',');
-
-
  for(var i=0;i<fbfArr.length;i++)
- {
    derefFBP(fbfArr[i]);
- }
 ]]>
-
 }
-
 </script>
 <div id="fbDock"></div>
-
 </v:template>
 
 <v:template type='simple' enabled='--(case when self._fb_isset and self._sync=1 then 1 else 0 end)'>
@@ -1275,32 +1274,22 @@ function fbInit()
   _close.value="Ok";
   _close.c_ods_cid=0;
   _close.id='manualMappingOK';
-  OAT.Dom.attach(_close,"click",function(e){OAT.Dom.hide($('manualMappingDiv'));
-
+  OAT.Dom.attach(_close,"click",function(e){
+    OAT.Dom.hide($('manualMappingDiv'));
                                            if(OAT.Browser.isIE)
                                               var _elm=e.srcElement;
                                            else
                                               var _elm=this;
                                            ajaxUpdate(_elm.odsab_instid,parseInt(_elm.c_ods_cid),_elm.fb_id,_elm.dock_obj,getCustomMapping('manualMappingDivContent'));
-
                                          });
 
-
   OAT.Dom.append([manualMappingWin.content ,_table,_close]);
-
-
-
  $('fbDock').appendChild(manualMappingWin.div);
-
  OAT.Dom.hide(manualMappingWin.div);
 
-
  for (var i=0;i<_syncContactsArr.length;i++)
- {
    createImportObjDock(_syncContactsArr[i]);
  }
-
-}
 
 function createImportObjDock(_syncData)
 {
@@ -1319,8 +1308,8 @@ function createImportObjDock(_syncData)
    OAT.Dom.append([_parent_div,_radio]);
    _radio.value=_syncData.ods_contacts[ii].ods_cid;
 
-
-   OAT.Dom.attach(_radio,"click",function(e){if(OAT.Browser.isIE)
+    OAT.Dom.attach(_radio,"click",function(e){
+      if (OAT.Browser.isIE)
                                                 var _objval=e.srcElement.value;
                                              else
                                                 var _objval=this.value;
@@ -1597,7 +1586,8 @@ function createImportObjDock(_syncData)
   <tr><td width="1%"><input type="checkbox" value="P_B_WEB"/></td>
     <td>      Business - Web address    </td>
   </tr>
-</tbody></table>
+  </tbody>
+</table>
 
       </vm:body>
     </vm:pagewrapper>

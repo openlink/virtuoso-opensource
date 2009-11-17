@@ -2269,6 +2269,55 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
 }
 ;
 
+create procedure ODS.ODS_API."user.getFacebookData" (
+  in fb DB.DBA.Facebook := null,
+  in fields varchar := 'uid,name',
+  in outputMode integer := 1) __soap_http 'application/json'
+{
+  declare N integer;
+  declare fbOptions, fbPaths, fbMaps, resValue, V, retValue any;
+  declare tmpValue, tmpPath any;
+
+  retValue := null;
+  if (isnull (fb) and DB.DBA._get_ods_fb_settings (fbOptions))
+  {
+    fb := new DB.DBA.Facebook(fbOptions[0], fbOptions[1], http_param (), http_request_header ());
+  }
+  if (not isnull (fb))
+  {
+    fbPaths := vector ();
+    fbMaps := vector (
+                      'first_name', 'firstName',
+                      'last_name', 'family_name',
+                      'sex', 'gender'
+                     );
+    retValue := jsonObject ();
+    retValue := vector_concat (retValue, vector ('api_key', fb.api_key));
+    retValue := vector_concat (retValue, vector ('secret', fb.secret));
+    if (length (fb._user))
+    {
+      resValue := fb.api_client.users_getInfo(fb._user, fields);
+      if (not isnull (resValue))
+      {
+        V := split_and_decode (fields, 0, '\0\0,');
+        if (not ODS.ODS_API.vector_contains(V, 'uid'))
+          V := vector_concat (V, vector ('uid'));
+        for (N := 0; N < length(V); N := N + 1)
+        {
+          tmpPath := '/users_getInfo_response/user/' || get_keyword (V[N], fbPaths, V[N]);
+          tmpValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string(%s)', tmpPath), resValue));
+          if (length (tmpValue))
+          {
+            retValue := vector_concat (retValue, vector (get_keyword (V[N], fbMaps, V[N]), tmpValue));
+          }
+        }
+      }
+    }
+  }
+  return case when outputMode then obj2json (retValue) else retValue end;
+}
+;
+
 -- Application instance activity
 create procedure ODS.ODS_API."instance.create" (
 	in "type" varchar,
@@ -2734,6 +2783,8 @@ grant execute on ODS.ODS_API."user.wish.property.new" to ODS_API;
 grant execute on ODS.ODS_API."user.wish.property.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
+grant execute on ODS.ODS_API."user.getFacebookData" to ODS_API;
+
 
 grant execute on ODS.ODS_API."instance.create" to ODS_API;
 grant execute on ODS.ODS_API."instance.update" to ODS_API;

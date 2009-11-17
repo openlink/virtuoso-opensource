@@ -551,7 +551,8 @@ ODS.session = function (customEndpoint)
 		    alert (errMsg);
 	    return;
 	}
-    if ($('loginDiv').loginTab.selectedIndex == 0)
+    var selectedTab = $('loginDiv').loginTab.tabs[$('loginDiv').loginTab.selectedIndex];
+    if (selectedTab.key.id == 'loginT1')
 	    {
       if (($('loginUserName').value.length == 0) || ($('loginUserPass').value.length == 0))
 		    {
@@ -581,29 +582,7 @@ ODS.session = function (customEndpoint)
       };
       OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
     }
-    else if ($('loginDiv').loginTab.selectedIndex == 2)
-    {
-      var data = 'sid=' + self.sid + '&realm=wa&X509=1';
-      var callback = function (xmlString)
-      {
-        var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
-		    if (!self.isErr (xmlDoc))
-			{
-			    self.userName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userName', {})[0]);
-			    self.userId = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userId', {})[0]);
-			    self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
-			    $('loginErrDiv').innerHTML = '';
-
-			    OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
-			}
-		    else
-			{
-			    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
-			}
-		};
-		OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
-	    }
-	else
+    else if (selectedTab.key.id == 'loginT2')
 	    {
 		if ($('loginOpenIdUrl').value.length == 0)
 		    {
@@ -659,9 +638,56 @@ ODS.session = function (customEndpoint)
 			    OAT.MSG.send (self, OAT.MSG.SES_INVALID,{retryLogIn:true});
 			}
 		};
-
 		OAT.AJAX.POST (self.endpoint+"openIdServer", data, callback, options);
+    }
+    else if (selectedTab.key.id == 'loginT3')
+    {
+      if (!nav.facebookData || !nav.facebookData.uid)
+      {
+        showLoginErr ();
+        return;
+      }
+      var data = 'sid=' + self.sid + '&realm=wa&facebookUID='+nav.facebookData.uid;
+      var callback = function (xmlString)
+      {
+        var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
+        if (!self.isErr (xmlDoc))
+        {
+          self.userName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userName', {})[0]);
+          self.userId = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userId', {})[0]);
+          self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
+          $('loginErrDiv').innerHTML = '';
 
+          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+        }
+        else
+        {
+          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+        }
+      };
+      OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
+    }
+    else if (selectedTab.key.id == 'loginT4')
+    {
+      var data = 'sid=' + self.sid + '&realm=wa&X509=1';
+      var callback = function (xmlString)
+      {
+        var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
+        if (!self.isErr (xmlDoc))
+        {
+          self.userName = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userName', {})[0]);
+          self.userId = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/userId', {})[0]);
+          self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
+          $('loginErrDiv').innerHTML = '';
+
+          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+        }
+        else
+        {
+          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+        }
+      };
+      OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
 	    }
     };
 
@@ -1307,6 +1333,50 @@ ODS.Nav = function (navOptions)
     self.installedPackages (renderAppNav);
 
     };
+
+  this.loadFacebookData = function (cb)
+  {
+    var x = function (data) {
+      var o = null;
+      try {
+        o = OAT.JSON.parse(data);
+      } catch (e) { o = null; }
+      self.facebookData = o;
+      if (cb) {cb();}
+    }
+    OAT.AJAX.GET ('/ods/api/user.getFacebookData', false, x);
+  }
+
+  this.showFacebookData = function (skip)
+  {
+    var label = $('loginFBData');
+    if (!label)
+      return;
+    label.innerHTML = '';
+    if (self.facebookData && self.facebookData.name)
+    {
+      label.innerHTML = 'Connect as <b><i>' + self.facebookData.name + '</i></b></b>';
+    }
+    else if (!skip)
+    {
+      self.loadFacebookData(function(){self.showFacebookData(true);});
+    }
+  }
+
+  this.hideFacebookData = function ()
+  {
+    var label = $('loginFBData');
+    if (!label)
+      return;
+    label.innerHTML = '';
+    if (self.facebookData)
+    {
+      var o = {}
+      o.api_key = self.facebookData.api_key;
+      o.secret = self.facebookData.secret;
+      self.facebookData = o;
+    }
+  }
 
     this.appCreate = function (xmlDoc)
     {
@@ -2332,17 +2402,14 @@ ODS.Nav = function (navOptions)
 		  self.alog = false;
 		  OAT.Dom.hide ($('login_page'));
 		  self.showLoginThrobber ();
-		  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
-		      function ()
-		      {
-		      self.session.validate ();
-		      } );
+        		  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED, function (){self.session.validate ();});
 		}
 	    }
         }
       }
       OAT.AJAX.GET ('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
 		}
+    self.loadFacebookData(function(){if (self.facebookData) FB.init(self.facebookData.api_key, "fb_dummy.vsp", {ifUserConnected: function(){self.showFacebookData();}, ifUserNotConnected: function(){self.hideFacebookData();}});});
     }
 
   this.showUserProfile = function ()
@@ -3043,11 +3110,17 @@ ODS.Nav = function (navOptions)
 		loginTab.add ('loginT1', 'loginP1');
 		loginTab.add ('loginT2', 'loginP2');
 		loginTab.go (0);
-      if ((document.location.protocol == 'https:') && self.sslData)
+      if (self.facebookData)
       {
+        self.showFacebookData(true);
         OAT.Dom.show('loginT3');
         loginTab.add('loginT3', 'loginP3');
-        loginTab.go(2);
+        $('loginBtn').value = 'Facebook Login';
+      }
+      if ((document.location.protocol == 'https:') && self.sslData)
+      {
+        OAT.Dom.show('loginT4');
+        loginTab.add('loginT4', 'loginP4');
         $('loginBtn').value = 'FOAF+SSL Login';
 
         if (self.sslData.iri)
@@ -3056,7 +3129,7 @@ ODS.Nav = function (navOptions)
           label.innerHTML = 'IRI';
           var span = OAT.Dom.create('span');
           span.innerHTML = '<b>' + self.sslData.iri + '</b>';
-          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+          OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
         if (self.sslData.firstName)
         {
@@ -3064,7 +3137,7 @@ ODS.Nav = function (navOptions)
           label.innerHTML = 'First Name';
           var span = OAT.Dom.create('span');
           span.innerHTML = '<b>' + self.sslData.firstName + '</b>';
-          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+          OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
         if (self.sslData.family_name)
         {
@@ -3072,7 +3145,7 @@ ODS.Nav = function (navOptions)
           label.innerHTML = 'Family Name';
           var span = OAT.Dom.create('span');
           span.innerHTML = '<b>' + self.sslData.family_name + '</b>';
-          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+          OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
         if (self.sslData.mbox)
         {
@@ -3080,7 +3153,7 @@ ODS.Nav = function (navOptions)
           label.innerHTML = 'E-Mail';
           var span = OAT.Dom.create('span');
           span.innerHTML = '<b>' + self.sslData.mbox + '</b>';
-          OAT.Dom.append ([$('loginP3'), label, span, OAT.Dom.create('br')]);
+          OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
       }
 
@@ -3106,6 +3179,14 @@ ODS.Nav = function (navOptions)
     OAT.Event.attach ('loginT3',
                       'click',
                       function () {
+                          $('loginBtn').value = 'Facebook Login';
+                          OAT.Dom.hide ($('loginForgot'));
+                          $('loginErrDiv').innerHTML = '';
+                        }
+                       );
+      OAT.Event.attach ('loginT4',
+                        'click',
+                        function () {
                         $('loginBtn').value = 'FOAF+SSL Login';
                         OAT.Dom.hide ($('loginForgot'));
                         $('loginErrDiv').innerHTML = '';
