@@ -198,8 +198,6 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/doc/h
                         doc:belongs_to_collection doc:Collection(resources.RES_COL, collections.COL_NAME)
                                 where (^{resources.}^.RES_COL = ^{collections.}^.COL_ID)
                                 as virtrdf:File-RES_COL ;
-                        doc:content resources.RES_CONTENT
-                                as virtrdf:File-RES_CONTENT ;
                         sioc:content resources.RES_CONTENT
                                 as virtrdf:siocFile-RES_CONTENT ;
                         sioc:description resources.RES_NAME

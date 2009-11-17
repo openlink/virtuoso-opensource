@@ -1,80 +1,87 @@
-alter table DB.DBA.productfeature rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.ProductFeature
-;
-
-alter table DB.DBA.producttype rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.ProductType
+create procedure DB.DBA.exec_no_error(in expr varchar)
+{
+	declare state, message, meta, result any;
+	exec(expr, state, message, vector(), 0, meta, result);
+}
 ;
 
-alter table DB.DBA.producttypeproduct rename BSBM_tmp
+DB.DBA.exec_no_error('alter table DB.DBA.productfeature rename BSBM_tmp')
 ;
-alter table BSBM_tmp rename DB.DBA.ProductTypeProduct
-;
-
-alter table DB.DBA.productfeatureproduct rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.ProductFeatureProduct
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.ProductFeature')
 ;
 
-alter table DB.DBA.product rename BSBM_tmp
+DB.DBA.exec_no_error('alter table DB.DBA.producttype rename BSBM_tmp')
 ;
-alter table BSBM_tmp rename DB.DBA.Product
-;
-
-alter table DB.DBA.producer rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.Producer
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.ProductType')
 ;
 
-alter table DB.DBA.offer rename BSBM_tmp
+DB.DBA.exec_no_error('alter table DB.DBA.producttypeproduct rename BSBM_tmp')
 ;
-alter table BSBM_tmp rename DB.DBA.Offer
-;
-
-alter table DB.DBA.vendor rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.Vendor
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.ProductTypeProduct')
 ;
 
-alter table DB.DBA.person rename BSBM_tmp
+DB.DBA.exec_no_error('alter table DB.DBA.productfeatureproduct rename BSBM_tmp')
 ;
-alter table BSBM_tmp rename DB.DBA.Person
-;
-
-alter table DB.DBA.review rename BSBM_tmp
-;
-alter table BSBM_tmp rename DB.DBA.Review
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.ProductFeatureProduct')
 ;
 
+DB.DBA.exec_no_error('alter table DB.DBA.product rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Product')
+;
 
-CREATE TABLE DB.DBA.ProductFeature (
+DB.DBA.exec_no_error('alter table DB.DBA.producer rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Producer')
+;
+
+DB.DBA.exec_no_error('alter table DB.DBA.offer rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Offer')
+;
+
+DB.DBA.exec_no_error('alter table DB.DBA.vendor rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Vendor')
+;
+
+DB.DBA.exec_no_error('alter table DB.DBA.person rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Person')
+;
+
+DB.DBA.exec_no_error('alter table DB.DBA.review rename BSBM_tmp')
+;
+DB.DBA.exec_no_error('alter table BSBM_tmp rename DB.DBA.Review')
+;
+
+
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.ProductFeature (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.ProductFeature to public
 ;
 
-CREATE TABLE DB.DBA.ProductType (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.ProductType (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
   parent integer,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.ProductType to public
 ;
 
-CREATE TABLE DB.DBA.Producer (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Producer (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar(1500) not null,
@@ -82,17 +89,17 @@ CREATE TABLE DB.DBA.Producer (
   country char(2) not null,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Producer to public
 ;
-create index producer_homepage on DB.DBA.Producer (homepage)
+DB.DBA.exec_no_error('create index producer_homepage on DB.DBA.Producer (homepage)')
 ;
-create index producer_country on DB.DBA.Producer (country)
+DB.DBA.exec_no_error('create index producer_country on DB.DBA.Producer (country)')
 ;
 
-CREATE TABLE DB.DBA.Product (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Product (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar not null,
@@ -111,53 +118,53 @@ CREATE TABLE DB.DBA.Product (
   propertyTex6 varchar(250),
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Product to public
 ;
 
-create index product_lbl on DB.DBA.Product (label)
+DB.DBA.exec_no_error('create index product_lbl on DB.DBA.Product (label)')
 ;
-create unique index product_producer_nr on DB.DBA.Product (producer, nr)
+DB.DBA.exec_no_error('create unique index product_producer_nr on DB.DBA.Product (producer, nr)')
 ;
-create index product_pn1 on DB.DBA.Product (propertyNum1)
+DB.DBA.exec_no_error('create index product_pn1 on DB.DBA.Product (propertyNum1)')
 ;
-create index product_pn2 on DB.DBA.Product (propertyNum2)
+DB.DBA.exec_no_error('create index product_pn2 on DB.DBA.Product (propertyNum2)')
 ;
-create index product_pn3 on DB.DBA.Product (propertyNum3)
-;
-
-create text index on DB.DBA.Product (label) with key nr
+DB.DBA.exec_no_error('create index product_pn3 on DB.DBA.Product (propertyNum3)')
 ;
 
-CREATE TABLE DB.DBA.ProductTypeProduct (
+DB.DBA.exec_no_error('create text index on DB.DBA.Product (label) with key nr')
+;
+
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.ProductTypeProduct (
   product integer not null,
   productType integer not null,
   PRIMARY KEY (product, productType)
-)
+)')
 ;
 
 grant select on DB.DBA.ProductTypeProduct to public
 ;
 
-create index ptype_inv on DB.DBA.ProductTypeProduct (productType, product)
+DB.DBA.exec_no_error('create index ptype_inv on DB.DBA.ProductTypeProduct (productType, product)')
 ;
 
-CREATE TABLE DB.DBA.ProductFeatureProduct (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.ProductFeatureProduct (
   product integer not null,
   productFeature integer not null,
   PRIMARY KEY (product, productFeature)
-)
+)')
 ;
 
 grant select on DB.DBA.ProductFeatureProduct to public
 ;
 
-create index pfeature_inv on DB.DBA.ProductFeatureProduct (productFeature, product)
+DB.DBA.exec_no_error('create index pfeature_inv on DB.DBA.ProductFeatureProduct (productFeature, product)')
 ;
 
-CREATE TABLE DB.DBA.Vendor (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Vendor (
   nr integer primary key,
   label varchar(100) not null,
   comment varchar not null,
@@ -165,18 +172,18 @@ CREATE TABLE DB.DBA.Vendor (
   country char(2) not null,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Vendor to public
 ;
 
-create index vendor_country on DB.DBA.Vendor (country)
+DB.DBA.exec_no_error('create index vendor_country on DB.DBA.Vendor (country)')
 ;
-create index vendor_homepage on DB.DBA.Vendor (homepage)
+DB.DBA.exec_no_error('create index vendor_homepage on DB.DBA.Vendor (homepage)')
 ;
 
-CREATE TABLE DB.DBA.Offer (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Offer (
   nr integer primary key,
   product integer not null,
   producer integer,
@@ -188,37 +195,37 @@ CREATE TABLE DB.DBA.Offer (
   offerWebpage varchar(100) not null,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Offer to public
 ;
 
-create index offer_product on DB.DBA.Offer (product, deliveryDays)
+DB.DBA.exec_no_error('create index offer_product on DB.DBA.Offer (product, deliveryDays)')
 ;
-create unique index offer_producer_product on DB.DBA.Offer (producer, product, nr)
+DB.DBA.exec_no_error('create unique index offer_producer_product on DB.DBA.Offer (producer, product, nr)')
 ;
-create index offer_validto on DB.DBA.Offer (validTo)
+DB.DBA.exec_no_error('create index offer_validto on DB.DBA.Offer (validTo)')
 ;
-create index offer_vendor_product on DB.DBA.Offer (vendor, product)
+DB.DBA.exec_no_error('create index offer_vendor_product on DB.DBA.Offer (vendor, product)')
 ;
-create index offer_webpage on DB.DBA.Offer (offerWebpage)
+DB.DBA.exec_no_error('create index offer_webpage on DB.DBA.Offer (offerWebpage)')
 ;
 
-CREATE TABLE DB.DBA.Person (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Person (
   nr integer primary key,
   name varchar(30) not null,
   mbox_sha1sum char(40) not null,
   country char(2) not null,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Person to public
 ;
 
-CREATE TABLE DB.DBA.Review (
+DB.DBA.exec_no_error('CREATE TABLE DB.DBA.Review (
   nr integer primary key,
   product integer not null,
   producer integer,
@@ -233,26 +240,26 @@ CREATE TABLE DB.DBA.Review (
   rating4 integer,
   publisher integer not null,
   publishDate date not null
-)
+)')
 ;
 
 grant select on DB.DBA.Review to public
 ;
 
-create unique index review_product on DB.DBA.Review (product, producer, nr)
+DB.DBA.exec_no_error('create unique index review_product on DB.DBA.Review (product, producer, nr)')
 ;
 
-create index review_person_1 on DB.DBA.Review (person, product, title)
-create index review_person on DB.DBA.Review (person)
+DB.DBA.exec_no_error('create index review_person_1 on DB.DBA.Review (person, product, title)
+create index review_person on DB.DBA.Review (person)')
 ;
 
-create unique index review_product_person_producer on DB.DBA.Review (product, person, producer, nr)
+DB.DBA.exec_no_error('create unique index review_product_person_producer on DB.DBA.Review (product, person, producer, nr)')
 ;
 
-create unique index review_producer_product on DB.DBA.Review (producer, product, nr)
+DB.DBA.exec_no_error('create unique index review_producer_product on DB.DBA.Review (producer, product, nr)')
 ;
 
-create bitmap index review_textlang on DB.DBA.Review (textlang)
+DB.DBA.exec_no_error('create bitmap index review_textlang on DB.DBA.Review (textlang)')
 ;
 
 DB.DBA.XML_SET_NS_DECL ('foaf', 'http://xmlns.com/foaf/0.1/', 2)
