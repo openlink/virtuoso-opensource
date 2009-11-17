@@ -43,7 +43,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG 1749 returned " $ROWCNT " rows\n";
 
 SELECT "Demo"."demo"."Customers"."CustomerID" FROM "Demo"."demo"."Customers" INNER  JOIN (("Demo"."demo"."Order_Details" INNER  JOIN "Demo"."demo"."Products" ON "Demo"."demo"."Order_Details"."ProductID" = "Demo"."demo"."Products"."ProductID") INNER  JOIN "Demo"."demo"."Orders" ON "Demo"."demo"."Order_Details"."OrderID" = "Demo"."demo"."Orders"."OrderID") ON "Demo"."demo"."Customers"."CustomerID" = "Demo"."demo"."Orders"."CustomerID" WHERE (("Demo"."demo"."Products"."CategoryID" = 8) AND ("Demo"."demo"."Customers"."Region"='WA') AND ("Demo"."demo"."Orders"."OrderDate" Between stringdate('1/1/1996') And stringdate('12/1/1996'))) GROUP BY "Demo"."demo"."Customers"."CustomerID" ORDER BY "Demo"."demo"."Order_Details"."UnitPrice"*"Demo"."demo"."Order_Details"."Quantity";
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG 1757 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

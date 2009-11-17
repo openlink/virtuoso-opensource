@@ -713,7 +713,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B6322-2 : returned " $ROWCNT " rows\n";
 
 explain ('select KEY_ID, count (KEY_ID) from DB.DBA.SYS_KEYS');
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": wrong mix of frefs + cols no group by STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
