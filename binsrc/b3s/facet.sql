@@ -1043,6 +1043,8 @@ fct_exec (in tree any,
   else
     results[0] := res[0][0];
 
+-- dbg_obj_print (results);
+
   inx := 1;
 
   foreach (varchar tp in more) do

@@ -67,6 +67,62 @@ create procedure b3s_page_get_type (in val any)
 }
 ;
 
+--
+-- make a vector of languages and their quality 
+--
+create procedure b3s_get_lang_acc (in lines any)
+{
+  declare accept, itm varchar;
+  declare i, l, q int;
+  declare ret, arr any;
+
+  accept := 'en';
+  if (lines is not null)
+    {
+      accept := http_request_header_full (lines, 'Accept-Language', 'en');
+    }
+  arr := split_and_decode (accept, 0, '\0\0,;');
+  q := 0;
+  l := length (arr);
+  ret := make_array (l, 'any');
+  for (i := 0; i < l; i := i + 2)
+    {
+      declare tmp any;
+      itm := trim(arr[i]);
+      if (itm like '%-%')
+	itm := subseq (itm, 0, strchr (itm, '-'));
+      q := arr[i+1];
+      if (q is null)
+	q := 1.0;
+      else
+	{
+	  tmp := split_and_decode (q, 0, '\0\0=');
+	  if (length (tmp) = 2)
+	    q := atof (tmp[1]);
+	  else
+	    q := 1.0;
+	}
+      ret[i] := itm;
+      ret[i+1] := q;
+    }
+  return ret;
+}
+;
+
+create procedure b3s_str_lang_check (in lang any, in acc any)
+{
+  if (lang like '%-%')
+    lang := subseq (lang, 0, strchr (lang, '-'));
+  if (not length (lang))
+    return 1;
+  else if (position (lang, acc) > 0)
+    return 1;
+  else if (position ('*', acc) > 0)
+    return 1;
+  return 0;
+}
+;
+
 create procedure 
 b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 {
@@ -433,9 +489,9 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 ;
 
 create procedure 
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1, in acc any := null)
 {
-   declare lang, rdfs_type, rdfa any;
+   declare lang, rdfs_type, rdfa, visible any;
 
    if (_object is null) 
      return;
@@ -458,7 +514,8 @@ b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in 
      }
 
    rdfa := b3s_rel_print (prop, rel, 1);
-   http ('<li><span class="literal">');
+   visible := b3s_str_lang_check (lang, acc);
+   http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 again:
    if (__tag (_object) = 246)
      {
@@ -537,6 +594,7 @@ again:
      }
 
    http ('</span></li>');
+   return visible;
 }
 ;
 

@@ -6,6 +6,11 @@
 <head>
 <title>Entity Search, Find, and Explore</title>
 <link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+
+<?vsp
+  fct_gen_opensearch_link();
+?>
+
 <script type="text/javascript" >
     var featureList=["map", "combolist", "ajax2", "tab", "json"];
 </script>
@@ -122,12 +127,9 @@ if ('load' = cmd)
       }
   }
 
-declare q varchar;
 declare sq varchar;
-sq := connection_get ('sparql_query');
 
-q := http_param ('q');
--- dbg_obj_print (q);
+sq := connection_get ('sparql_query');
 
 declare exit handler for sqlstate '*'
 {
@@ -166,6 +168,7 @@ footer:;
 <div class="dbg" style="display: none"><pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></div>
 </div><!-- #MD -->
 <div id="FT">
+  Faceted Search &amp; Find service<br/>
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
   <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a><br/>
   <span class="copyright">Copyright &copy; 2009 OpenLink Software</span>

@@ -57,15 +57,15 @@ fct_view_info (in tree any, in ctx int, in txt any)
   http ('<h3 id="view_info">', txt);
   if ('list' = mode)
     {
-      http (sprintf ('showing list of %s%d', connection_get ('s_term'), pos), txt);
+      http (sprintf ('List of %s%d', connection_get ('s_term'), pos), txt);
     }
   if ('list-count' = mode)
     {
-      http (sprintf ('showing list of distinct %s%d with counts', connection_get ('s_term'), pos), txt);
+      http (sprintf ('List of distinct %s%d with counts', connection_get ('s_term'), pos), txt);
     }
   if ('properties' = mode)
     {
-      http (sprintf ('showing properties of %s%d', connection_get ('s_term'), pos), txt);
+      http (sprintf ('Properties of %s%d', connection_get ('s_term'), pos), txt);
     }
   if ('properties-in' = mode)
     {
@@ -197,23 +197,19 @@ fct_query_info (in tree any,
       declare prop varchar;
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
 
-      http (sprintf (' %s has %s whose value contains <span class="value">"%s"</span>. ',
+      if (prop is not null)
+        http (sprintf (' %s has <span class="iri"><a href="/fct/facet.vsp?sid=%d&cmd=drop_text_prop">%s</a></span> containing text <span class="value">"%s"</span>. ', 
                      fct_var_tag (this_s, ctx),
-		     case
-		       when prop is not null
-		       then 'property <span class="iri">' || fct_short_form (prop) || '</span>'
-		       else 'any property'
-                     end,
-		     cast (tree as varchar)),
-	    txt);
+                       connection_get ('sid'),
+                       fct_short_form (prop),
+                       cast (tree as varchar)), txt);
+      else
+        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any property</a> containing text <span class="value">"%s"</span>. ', 
+                      fct_var_tag (this_s, ctx), 
+                      connection_get('sid'), 
+                      cno,
+                      cast (tree as varchar)), txt);
 
---      if (prop is not null)
---        {
---	  http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
---		     connection_get ('sid'),
---		     cno)
---               ,txt);
---        }
     }
   else if ('property' = n)
     {
@@ -556,6 +552,23 @@ fct_drop_cond (in tree any, in sid int, in cno int)
 
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
+
+  fct_web (tree);
+}
+;
+
+create procedure
+fct_drop_text_prop (in tree any, in sid int)
+{
+
+  declare txt varchar;
+  txt := xpath_eval ('//text', tree);
+  
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', 'none'));
+
+  update fct_state set fct_state = tree where fct_sid = sid;
+  commit work;
+
   fct_web (tree);
 }
 ;
@@ -891,8 +904,6 @@ fct_load (in from_stored int)
     from fct_stored_qry
     where fsq_id = from_stored;
 
---  dbg_obj_print (sid);
-
   insert into fct_state (fct_sid, fct_state)
     values (sid, tree);
 
@@ -955,6 +966,10 @@ fct_new ()
   http ('">Demo Queries</a>
         &nbsp;|&nbsp;
         <a href="facet_doc.html">About</a>
+        <!--span id="opensearch_container" style="display:none">&nbsp;|&nbsp;
+        <a href="" 
+           id="opensearch_link" 
+           title="Install OpenSearch Plugin">Search from browser</a></span-->
       </div>
     </div> <!-- #TAB_ROW -->
     <div id="TAB_CTR">
@@ -971,7 +986,7 @@ fct_new ()
           <input id=  "new_search_txt" 
                  size="60" 
                  type="text" 
-                 name="search_for"/>
+                 name="q"/>
           <input type=submit  value="Search"><br/>
         </div>
       </form>
@@ -1021,7 +1036,7 @@ fct_new ()
     </div> <!-- #TAB_PAGE_URI -->
   </div> <!-- #main_srch -->
   <div class="main_expln"><br/>
-    Faceted Search &amp; Find Service<br/>
+    Hint: <i>You can <a id="opensearch_link" href="#">add this engine</a> in search bar of an OpenSearch - capable browser</i><br/>
   </div>
  ');
 }
@@ -1181,7 +1196,7 @@ fct_bold_tags (in s varchar)
     };
 
   ret := xtree_doc (sprintf ('<span class="srch_xerpt">%s</span>', s));
-  -- dbg_obj_print (ret);
+
   return ret;
 }
 ;
@@ -1219,6 +1234,24 @@ fct_select_value (in tree any,
 }
 ;
 
+create procedure 
+fct_gen_opensearch_link ()
+{
+  declare uriqa_str varchar;
+  uriqa_str := cfg_item_value( virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+  if (uriqa_str is null)
+    {
+      if (server_http_port () <> '80')
+        uriqa_str := 'localhost:'||server_http_port ();
+      else
+        uriqa_str := 'localhost';
+    }
+
+  http (sprintf ('<link rel="search" type="application/opensearchdescription+xml" href="opensearchdescription.vsp" title="Search &amp; Find (%s)" />', uriqa_str));
+}
+;
+
 -- /* main */
 create procedure
 fct_vsp ()
@@ -1227,18 +1260,23 @@ fct_vsp ()
   declare tree any;
   declare sid, start_time int;
   declare _to int;
+  declare s_for varchar;
 
   cmd := http_param ('cmd');
+  s_for := http_param ('q');
 
-  if (0 = cmd)
+  if (s_for = 0 or trim (s_for) = '') s_for := null;
+
+  if (0 = cmd and s_for is null)
     {
       fct_new ();
       return;
     }
 
   sid := http_param ('sid');
---  dbg_obj_print (sid);
+
   if (0 <> sid) { sid := atoi (sid); }
+
   _to := http_param ('timeout');
 
   if (_to = 0) _to := atoi (registry_get ('fct_timeout_min'));
@@ -1249,21 +1287,27 @@ fct_vsp ()
   whenever not found goto no_ses;
 
   select fct_state into tree from fct_state where fct_sid = sid;
-  connection_set ('sid', sid);
   goto exec;
 
   no_ses:
-  if (sid <> 0 and isstring (http_param ('search_for')) and length (http_param ('search_for')))
-    {
+  if (s_for is not null) {
+    sid := sequence_next ('fct_seq');
       tree := xtree_doc ('<query inference="" same-as="" view3="" s-term="" c-term=""/>');
-      insert into fct_state (fct_sid, fct_state) values (sid, tree);
-      connection_set ('sid', sid);
+
+
+    insert into fct_state (fct_sid, fct_state)
+      values (sid, tree);
+
+    cmd := 'text';
     }
   else
     goto do_new_ses;
 
 exec:;  
   declare s_term varchar;
+
+  connection_set ('sid', sid);
+
   s_term := cast (xpath_eval ('/query/@s-term', tree) as varchar);
   if ('' = s_term) s_term := 'e';
   connection_set ('s_term', s_term);
@@ -1281,13 +1325,13 @@ exec:;
 
   if ('text' = cmd)
     {
-      if (length (http_param ('search_for')) = 0)
+      if (s_for is null)
 	{
 	  http (sprintf ('<div class="ses_info">No search criteria</div>'));
 	  fct_new ();
 	  return;
 	}
-      fct_set_text (tree, sid, http_param ('search_for'));
+      fct_set_text (tree, sid, s_for);
     }
   else if ('set_focus' = cmd)
     fct_set_focus (tree, sid, atoi (http_param ('n')));
@@ -1312,6 +1356,8 @@ exec:;
     fct_drop (tree, sid, atoi (http_param ('n')));
   else if ('drop_cond' = cmd)
     fct_drop_cond (tree, sid, atoi (http_param ('cno')));
+  else if ('drop_text_prop' = cmd) 
+    fct_drop_text_prop (tree, sid);
   else if ('set_class' = cmd)
     fct_set_class (tree, sid, http_param ('iri'), http_param ('exclude'));
   else if ('open' = cmd)

@@ -124,7 +124,7 @@ var uri_ac;
 
 function init()
 {
-    
+    if ($('main_srch')) {
     uri_ac = new OAT.Autocomplete('new_uri_txt',
 			          'new_uri_val',
                                   'new_uri_btn', 
@@ -149,6 +149,16 @@ function init()
     OAT.MSG.attach ('*', OAT.MSG.AJAX_START, function () { ac_show_thr () });
 
     OAT.Dom.show ('main_srch');  
+	
+        if ((typeof window.external =="object") && 
+            ((typeof window.external.AddSearchProvider == "unknown") || 
+             (typeof window.external.AddSearchProvider == "function"))) 
+          {
+              OAT.Event.attach ('opensearch_link', 
+                                'click', 
+                                function () { window.external.AddSearchProvider(location.protocol+'//'+location.host+'/fct/opensearchdescription.vsp'); });
+          }
+    }
 }
 
 // opts = { loader: function  - function gets called when user hits tab or stops entering text
