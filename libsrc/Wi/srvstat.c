@@ -3050,12 +3050,13 @@ srv_collect_inx_page_stats (it_cursor_t * it, buffer_desc_t * buf, dk_hash_t *ht
 static caddr_t
 srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 {
-  buffer_desc_t *buf;
+  buffer_desc_t *buf, *free_set;
   volatile dp_addr_t page_no;
   it_cursor_t *it;
   dk_hash_t *ht = hash_table_allocate (101);
   caddr_t err = NULL;
   dk_set_t set = NULL;
+  wi_database_t db;
 
   dbe_storage_t * storage = wi_inst.wi_master;
   it = itc_create (NULL, bootstrap_cli->cli_trx);
@@ -3066,8 +3067,18 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
   ITC_FAIL (it)
     {
       buf = buffer_allocate (DPF_INDEX);
-
       buf->bd_is_write = 1;
+
+      buf->bd_page = buf->bd_physical_page = 0;
+      buf->bd_storage = storage;
+      if (WI_ERROR == buf_disk_read (buf))
+	{
+	  err = srv_make_new_error ("42000", "SR466", "Read of config page failed");
+	  goto cfg_err;
+	}
+      memcpy (&db, buf->bd_buffer, sizeof (wi_database_t));
+      free_set = dbs_read_page_set (storage, db.db_free_set, DPF_FREE_SET);
+
       QR_RESET_CTX
 	{
 	  for (page_no = 2; page_no < storage->dbs_n_pages; page_no++)
@@ -3076,7 +3087,7 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 	      int inx, bit;
 	      uint32 *array, alloc;
 	      IN_DBS (storage);
-	      dbs_locate_free_bit (storage, page_no, &array, &page, &inx, &bit);
+	      dbs_locate_page_bit (storage, &free_set, page_no, &array, &page, &inx, &bit, V_EXT_OFFSET_FREE_SET);
 	      alloc = (array[inx] & (1 << bit));
 	      LEAVE_DBS (storage);
 	      if (0 != alloc &&
@@ -3104,6 +3115,7 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 	  err = thr_get_error_code (THREAD_CURRENT_THREAD);
 	}
       END_QR_RESET;
+      cfg_err:;
     }
   ITC_FAILED
     {
