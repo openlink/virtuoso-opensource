@@ -315,8 +315,8 @@ create procedure polls_comment_insert (
 		  master_iri := poll_post_iri (domain_id, master_id);
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
-      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
   }
 }

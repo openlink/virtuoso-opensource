@@ -35,7 +35,7 @@
   <v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=8">
 	  <table class="listing" rules="groups">
 	      <tr class="listing_header_row">
-		  <th>IRI</th>
+        <th>URI</th>
 		  <th>Relation</th>
 		  <th>Action</th>
 	      </tr>
@@ -103,10 +103,12 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
               function p_init ()
               {
 		      var text = new OAT.Dom.text ("Relation");
+                var br = new OAT.Dom.create ("br");
 		      var sr_cl = new OAT.Combolist([], "<?V self.rel_iri ?>");
 		      sr_cl.input.name = 'pred';
 		      sr_cl.input.id = 'pred';
 		      $("if_opt").appendChild(text);
+                $("if_opt").appendChild(br);
 		      $("if_opt").appendChild(sr_cl.div);
                 sr_cl.addOption("rdfs:seeAlso");
 		      sr_cl.addOption("foaf:made");

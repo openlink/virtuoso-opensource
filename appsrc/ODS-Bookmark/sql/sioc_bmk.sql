@@ -494,8 +494,8 @@ create procedure bmk_comment_insert (
 
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
-      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
 ;
 
@@ -668,12 +668,12 @@ create procedure bmk_annotation_insert (
       return;
 		}
 		annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
-		DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-		DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
 
 	  bmk_claims_insert (graph_iri, annotattion_iri, claims);
 	}
@@ -731,8 +731,8 @@ create procedure bmk_claims_insert (
     if (0 = length (cPedicate))
       cPedicate := rdfs_iri ('seeAlso');
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cURI);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cURI);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
   }
 }
 ;

@@ -267,7 +267,8 @@ create procedure sessionValidate (
                                   in realm varchar :='wa', 
 				  in userName varchar := '', 
 	in authStr varchar := '',
-	in X509 integer := 0) __SOAP_HTTP 'text/xml'
+	in X509 integer := 0,
+	in facebookUID integer := 0) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -277,7 +278,15 @@ create procedure sessionValidate (
   errCode := 0;
   errMsg  := '';
 
-  if (X509 = 1)
+  if (facebookUID <> 0)
+  {
+    userName := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+    if (isnull (userName))
+      goto _authbad;
+
+    goto _createSession;
+  }
+  else if (X509 = 1)
   {
     declare data any;
 

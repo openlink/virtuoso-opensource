@@ -60,14 +60,14 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
           if (do_post = 1)
             {
         iri := mail_post_iri (USER_ID, MSG_ID);
-              DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-              DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), SUBJECT);
-              DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), DB.DBA.date_iso8601 (SND_DATE));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), SUBJECT);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), DB.DBA.date_iso8601 (SND_DATE));
               do_post := 0;
             }
 	    c_iri := mail_iri (WAM_INST);
-          DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
-          DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
 	  }
     }
 }
@@ -103,8 +103,8 @@ create procedure message_insert (
           do_post := 0;
         }
       c_iri := mail_iri (WAM_INST);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), c_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
     }
   return;
 }

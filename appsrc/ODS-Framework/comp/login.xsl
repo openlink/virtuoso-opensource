@@ -25,7 +25,8 @@
 <!-- login control; two states in main page and on the other pages -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/ods/">
+                xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+                xmlns:fb="http://www.facebook.com/2008/fbml">
 
 <xsl:template match="vm:login">
   <v:variable name="login_blocked" type="varchar" default="null" persist="0"/>
@@ -62,38 +63,61 @@
               </xsl:when>
               <xsl:otherwise>
 <?vsp
-
   declare copy varchar;
   copy := (select top 1 WS_WEB_DESCRIPTION from WA_SETTINGS);
-
   if (copy is not null and copy <> '')
-    {
-      http ('<h2>');
-      http (copy);
-      http ('</h2>');
-    }
+                  http ('<h2>' || copy || '</h2>');
 ?>
               </xsl:otherwise>
             </xsl:choose>
             <div id="login_form">
               <label for="login_frm_username">Member ID</label>
-              <v:text xhtml_id="login_frm_username" name="username" value="" xhtml_style="width: 170px" /><br/>
+              <v:text xhtml_id="login_frm_username" name="username" value="" xhtml_style="width: 200px" /><br/>
               <label for="password">Password</label>
-              <v:text xhtml_id="login_frm_password" name="password" value="" type="password" xhtml_style="width: 170px" /><br/>
+              <v:text xhtml_id="login_frm_password" name="password" value="" type="password" xhtml_style="width: 200px" /><br/>
 	      <xsl:if test="not (@mode = 'oid')">
 		  <b>or</b><br/>
-		  <label for="open_id_url">OpenID URL</label>
-		  <img src="images/login-bg.gif" alt="openID"/>
+                <label for="open_id_url">OpenID URL<img alt="OpenID" src="images/login-bg.gif" style="vertical-align: bottom; margin-left: 5px;"/></label>
                 <v:text name="open_id_url" xhtml_id="open_id_url" xhtml_style="width: 200px"/><br />
 	      </xsl:if>
+              <xsl:if test="not (@mode = 'facebook')">
+                <?vsp
+                  declare _fb_options any;
+                  declare _fb DB.DBA.Facebook;
+
+                  if (_get_ods_fb_settings (_fb_options))
+                  {
+                    _fb := new Facebook(_fb_options[0], _fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
+                ?>
+                  <b>or</b><br/>
+                  <label>Facebook</label>
+                <?vsp
+                  http(         '<div style="float: left;">');
+                  if (length (_fb._user))
+                  {
+                  declare _res any;
+                  _res := _fb.api_client.users_getInfo(_fb._user, 'name');
+                  http(sprintf ('Connected as <b><i>%s</i><b><br />', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res))));
+                  }
+
+                  http(         '<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>');
+                  http(         '<fb:login-button autologoutlink="true" onlogin1="window.location=\'/ods/login.vspx\'"></fb:login-button>');
+                  http(sprintf ('<script type="text/javascript">FB.init("%s", "fb_dummy.vsp", {"reloadIfSessionStateChanged": true});</script>', _fb_options[0]));
+                  http(         '</div>');
+                ?>
+                  <br />
+                <?vsp
+                  }
+                ?>
+              </xsl:if>
               <v:check-box name="cb_remember_me" xhtml_id="login_frm_cb_remember_me" value="1" xhtml_checked="1"/>
               <label for="login_frm_cb_remember_me">Remember me</label><br/>
+              <span class="space">&amp;nbsp;</span>
               <v:button action="simple" name="login" value="Login" xhtml_id="login_frm_b_login">
                 <v:on-post>
 <![CDATA[
               declare _blocked_until any;
-                      _blocked_until := (select
-                                           WAB_DISABLE_UNTIL
+                    _blocked_until := (select WAB_DISABLE_UNTIL
                                            from WA_BLOCKED_IP
                                            where WAB_IP = http_client_ip ());
               if (_blocked_until is not null and _blocked_until > now ())
@@ -121,16 +145,11 @@
 ]]>
                 </v:before-render>
               </v:button>
-              <span>&amp;nbsp;</span>
               <v:button action="simple" name="login_form_X509" value="X.509 Login" enabled="--is_https_ctx ()" xhtml_id="login_form_X509" />
                 <vm:register/>
-              <xsl:choose>
-                <xsl:when test="@inst">
+              <xsl:if test="@inst">
                   If you are a new member, please enter the following to create an account:
-                </xsl:when>
-                <xsl:otherwise>
-                </xsl:otherwise>
-              </xsl:choose>
+              </xsl:if>
               <br/>
               <v:url xhtml_class="pwd_recovery_url" url="" name="url_to_forget" value="Forgot your password?">
                 <v:before-render>
@@ -186,8 +205,7 @@
               <![CDATA[
     if (self._return_to is not null)
       {
-	 OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
-         self._sreg_required, self._sreg_optional, self._policy_url);
+                  OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0, self._sreg_required, self._sreg_optional, self._policy_url);
 	 oid_code := 1;
       }
               ]]>
@@ -303,19 +321,22 @@
   else if (length (self.sid) and self.login_ip is null)
     self.login_ip := http_client_ip ();
 
-      declare tmpl, redirect, open_id_url any;
+      declare tmpl, redirect, open_id_url, uname any;
+      declare _fb_options any;
+      declare _fb DB.DBA.Facebook;
+
   ]]>
     <xsl:if test="@redirect">
     <![CDATA[
       redirect := 1;
     ]]>
     </xsl:if>
-<xsl:if test="not (@mode = 'oid') and not (@redirect)">
+    <xsl:if test="not (@mode = 'oid') and not (@mode = 'facebook') and not (@redirect)">
 <![CDATA[
 open_id_url := get_keyword ('open_id_url', e.ve_params, null);
 if (not control.vl_authenticated and length(self.oid_sig))
 {
-  declare uname, url, pars, sig varchar;
+        declare url, pars, sig varchar;
 
   url := sprintf ('%s?openid.mode=check_authentication&openid.assoc_handle=%U&openid.sig=%U&openid.signed=%U',
   self.oid_srv, self.oid_assoc_handle, self.oid_sig, self.oid_signed);
@@ -415,11 +436,26 @@ else
      sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
     oi_srv, oi_ident, this_page, trust_root);
  }
-
 self.vc_redirect (check_immediate);
-
 return;
+      }
+      if (not control.vl_authenticated and e.ve_is_post and _get_ods_fb_settings (_fb_options))
+      {
+        whenever not found goto no_auth3;
 
+        _fb := new Facebook(_fb_options[0], _fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
+        if (length (_fb._user))
+        {
+          select U_NAME into uname from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = _fb._user;
+          control.vl_authenticated := 1;
+          connection_set ('vspx_user', uname);
+          self.sid := vspx_sid_generate ();
+          self.realm := 'wa';
+          insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
+        no_auth3:;
+          if (not control.vl_authenticated)
+            self.login_attempts := coalesce(self.login_attempts, 0) + 1;
+        }
 }
 auth_failed1:;
     ]]>
@@ -566,9 +602,7 @@ nfd:;
     redir := sprintf ('&URL=%U', self.url);
 
   http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf ('Location: register.vspx?reguid=%s%s\r\n',
-                              get_keyword('username', self.vc_event.ve_params, ''),
-                        redir));
+        http_header (sprintf ('Location: register.vspx?reguid=%s%s\r\n', get_keyword('username', self.vc_event.ve_params, ''), redir));
 ]]>
     </v:on-post>
   </v:button>

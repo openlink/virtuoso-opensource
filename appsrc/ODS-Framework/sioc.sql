@@ -468,7 +468,7 @@ create procedure ods_sioc_clean_all ()
 {
   declare graph_iri varchar;
   graph_iri := get_graph ();
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (fix_graph (graph_iri));
 };
 
 create procedure ods_sioc_forum_ext_type (in app varchar)
@@ -535,9 +535,9 @@ create procedure ods_graph_init ()
   set isolation='uncommitted';
   site_iri  := get_graph ();
   graph_iri := get_graph ();
-  DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, rdf_iri ('type'), sioc_iri ('Space'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('link'), get_ods_link ());
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, site_iri, dc_iri ('title'),
+  DB.DBA.ODS_QUAD_URI (graph_iri, site_iri, rdf_iri ('type'), sioc_iri ('Space'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, site_iri, sioc_iri ('link'), get_ods_link ());
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, site_iri, dc_iri ('title'),
       coalesce ((select top 1 WS_WEB_TITLE from DB.DBA.WA_SETTINGS), sys_stat ('st_host_name')));
 
   return;
@@ -556,7 +556,7 @@ create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
     df_uri := tmp || '/about.rdf';
   else
     df_uri := tmp || '/sioc.rdf';
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, opl_iri ('isDescribedUsing'), df_uri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, opl_iri ('isDescribedUsing'), df_uri);
 };
 
 create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name varchar, in u_e_mail varchar)
@@ -565,13 +565,13 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
     return null;
 
   ods_sioc_result (iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
   if (length (full_name))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (u_e_mail))
     {
-      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
+      --!! ACL DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 };
 
@@ -648,15 +648,15 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   declare os_iri varchar;
 
   ods_sioc_result (iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), U_NAME);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), U_NAME);
   ods_is_defined_by (graph_iri, iri);
 
   u_site_iri := user_space_iri (u_name);
   link := user_doc_iri (u_name);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, rdf_iri ('type'), sioc_iri ('Space'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, sioc_iri ('link'), link);
+  DB.DBA.ODS_QUAD_URI (graph_iri, u_site_iri, rdf_iri ('type'), sioc_iri ('Space'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, u_site_iri, sioc_iri ('link'), link);
 
   os_iri := sprintf ('http://%s/feeds/people/%U', get_cname(), u_name);
   ods_sioc_service (graph_iri, os_iri, iri, null, null, null, os_iri, 'OpenSocial');
@@ -664,56 +664,56 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   ods_sioc_service (graph_iri, os_iri, iri, null, null, null, os_iri, 'OpenSocial');
 
   if (full_name is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), full_name);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), full_name);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
 
-  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (link, '/sioc.rdf'));
+  --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (link, '/sioc.rdf'));
 
   if (length (u_e_mail))
     {
-      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (u_e_mail));
+      --!! ACL DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||u_e_mail);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (u_e_mail));
     }
 
   -- FOAF
   person_iri := person_iri (iri);
   ods_is_defined_by (graph_iri, person_iri);
-  --DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
+  --DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
   if (person_iri like '%/organization/%')
-    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
   else
-    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
+    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
     {
-      --!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
+      --!! ACL DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 
   --!!! ACL delete_quad_sp (graph_iri, person_iri, foaf_iri ('name'));
   --!!! ACL if (length (full_name))
   --!!! ACL  {
-  --!!! ACL    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
-  --!!! ACL     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
+  --!!! ACL    DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
+  --!!! ACL     DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
   --!!! ACL    }
   --!!! ACL else
   --!!! ACL  {
-  --!!! ACL    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), U_NAME);
+  --!!! ACL    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), U_NAME);
   --!!! ACL   }
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
   -- OpenID (new)
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
   -- ATOM the person here is a subclass of foaf:Person which is already the case
   --delete_quad_sp (graph_iri, person_iri, atom_iri ('personEmail'));
   --if (person_iri not like '%/organization/%')
   --  {
-  --    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), atom_iri ('Person'));
-  --    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personName'), u_name);
+  --    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), atom_iri ('Person'));
+  --    DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personName'), u_name);
   --    if (length (u_e_mail))
-  --	DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personEmail'), u_e_mail);
+  --	DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personEmail'), u_e_mail);
   --  }
 
 };
@@ -856,53 +856,53 @@ create procedure sioc_user_info (
   is_person := case when (iri like '%/organization/%') then 0 else 1 end;
 
   if (is_person and length (waui_first_name) and wa_user_pub_info (flags, 1))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
   if (is_person and length (waui_last_name) and wa_user_pub_info (flags, 2))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
 
   if (length (full_name) and wa_user_pub_info (flags, 3))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (mail) and wa_user_pub_info (flags, 4))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
 
   if (is_person and length (gender) and wa_user_pub_info (flags, 5))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
   if (length (icq) and wa_user_pub_info (flags, 10))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
   if (length (msn) and wa_user_pub_info (flags, 14))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
   if (length (aim) and wa_user_pub_info (flags, 12))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
   if (length (yahoo) and wa_user_pub_info (flags, 13))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
   if (birthday is not null and wa_user_pub_info (flags, 6))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
-      DB.DBA.RDF_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
+      DB.DBA.ODS_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
     }
   if (length (phone) and wa_user_pub_info (flags, 18) and wa_user_pub_info (flags, 25))
     {
       phone := replace (replace (replace (phone, '-', ''), ',', ''), ' ', '');
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
     }
   if (lat is not null and lng is not null and wa_user_pub_info (flags, (case when hb_latlng = 0 then 39 else 47 end)))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('long'), sprintf ('%.06f', coalesce (lng, 0)));
+      DB.DBA.ODS_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, giri, geo_iri ('long'), sprintf ('%.06f', coalesce (lng, 0)));
     }
   if (wa_pub_info (photo, flags, 37))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
 
   if (is_person and length (org) and length (org_page) and wa_user_pub_info (flags, 20))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
-      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, foaf_iri ('homepage'), org_page);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
+      DB.DBA.ODS_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, org_iri, foaf_iri ('homepage'), org_page);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
     }
 
   if (is_person and length (interests))
@@ -911,10 +911,10 @@ create procedure sioc_user_info (
 	{
 	  if (length (interest))
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
 	      if (length (label))
 		{
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		      DB.DBA.ODS_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
 		}
 	    }
 	}
@@ -926,10 +926,10 @@ create procedure sioc_user_info (
   	  {
   	    if (length (interest))
   	    {
-  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('topic_interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('topic_interest'), interest);
   	      if (length (label))
   		    {
-  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		      DB.DBA.ODS_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
   		    }
   	    }
   	  }
@@ -943,29 +943,29 @@ create procedure sioc_user_info (
       wa_pub_info (haddress2, flags, 15)
      )
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
       if (wa_pub_info (hcountry, flags, 16))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
       if (wa_pub_info (hstate, flags, 59))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
       if (wa_pub_info (hcity, flags, 58))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
       if (wa_pub_info (hcode, flags, 57))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
       if (wa_pub_info (haddress1, flags, 15))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
       if (wa_pub_info (haddress2, flags, 15))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
     }
 
   if (is_person and wa_pub_info (resume, flags, 34))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
     }
 
   if (wa_pub_info (webpage, flags, 7))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
 
   if (length (ext_urls) and wa_pub_info (ext_urls, flags, 8))
     {
@@ -978,7 +978,7 @@ create procedure sioc_user_info (
 	{
 	  if (length (trim (u)))
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
+   	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
 	    }
 	}
     }
@@ -1022,7 +1022,7 @@ create procedure sioc_user_info (
     }
   if (protected is not null)
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
     }
       if (length (cert))
 	{
@@ -1032,16 +1032,16 @@ create procedure sioc_user_info (
     --      dbg_obj_print (info);
 	  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), iri);
+    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), iri);
 	      modulus := info[2];
 	      exponent := info[1];
-	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
 
-	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
+    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
+    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
 
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
+    	  DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
+    	  DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
   sioc_user_private_info (graph_iri,
@@ -1140,55 +1140,55 @@ create procedure sioc_user_private_info (
   ods_sioc_result (iri);
 
   if (is_person and length (waui_first_name) and wa_user_priv_info (flags, 1))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
   if (is_person and length (waui_last_name) and wa_user_priv_info (flags, 2))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
 
   if (is_person and length (gender) and wa_user_priv_info (flags, 5))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
   if (length (icq) and wa_user_priv_info (flags, 10))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
   if (length (msn) and wa_user_priv_info (flags, 14))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
   if (length (aim) and wa_user_priv_info (flags, 12))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
   if (length (yahoo) and wa_user_priv_info (flags, 13))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
 
   if (length (full_name) and wa_user_priv_info (flags, 3))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (mail) and wa_user_priv_info (flags, 4))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
 
   if (birthday is not null and wa_user_priv_info (flags, 6))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
-      DB.DBA.RDF_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring(coalesce (birthday, now())), 6, 5));
+      DB.DBA.ODS_QUAD_URI (graph_iri, ev_iri, rdf_iri ('type'), bio_iri ('Birth'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, bio_iri ('event'), ev_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, ev_iri, dc_iri ('date'), substring (datestring(birthday), 1, 10));
     }
   if (length (phone) and wa_user_priv_info (flags, 18) and wa_user_priv_info (flags, 25))
     {
       phone := replace (replace (replace (phone, '-', ''), ',', ''), ' ', '');
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || phone);
     }
   if (lat is not null and lng is not null and wa_user_priv_info (flags, (case when hb_latlng = 0 then 39 else 47 end)))
     {
 
-      DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, geo_iri ('long'), sprintf ('%.06f', coalesce (lng, 0)));
+      DB.DBA.ODS_QUAD_URI (graph_iri, giri, rdf_iri ('type'), geo_iri ('Point'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), giri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, giri, geo_iri ('lat'), sprintf ('%.06f', coalesce (lat, 0)));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, giri, geo_iri ('long'), sprintf ('%.06f', coalesce (lng, 0)));
     }
   if (wa_priv_info (photo, flags, 37))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
 
   if (is_person and length (org) and length (org_page) and wa_user_priv_info (flags, 20))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
-      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, foaf_iri ('homepage'), org_page);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
+      DB.DBA.ODS_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, org_iri, foaf_iri ('homepage'), org_page);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
     }
 
   if (is_person and length (interests))
@@ -1197,10 +1197,10 @@ create procedure sioc_user_private_info (
   	  {
   	    if (length (interest))
   	    {
-  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
   	      if (length (label))
   		    {
-  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		      DB.DBA.ODS_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
   		    }
   	    }
   	  }
@@ -1214,7 +1214,7 @@ create procedure sioc_user_private_info (
   	    {
   	      if (length (label))
   		    {
-  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		      DB.DBA.ODS_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
   		    }
   	    }
   	  }
@@ -1228,29 +1228,29 @@ create procedure sioc_user_private_info (
       wa_priv_info (haddress2, flags, 15)
      )
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, vcard_iri ('ADR'), addr_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, rdf_iri ('type'), vcard_iri ('home'));
       if (wa_priv_info (hcountry, flags, 16))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
       if (wa_priv_info (hstate, flags, 59))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Region'), hstate);
       if (wa_priv_info (hcity, flags, 58))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Locality'), hcity);
       if (wa_priv_info (hcode, flags, 57))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Pobox'), hcode);
       if (wa_priv_info (haddress1, flags, 15))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Street'), haddress1);
       if (wa_priv_info (haddress2, flags, 15))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Extadd'), haddress2);
     }
 
   if (is_person and wa_priv_info (resume, flags, 34))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
     }
 
   if (wa_priv_info (webpage, flags, 7))
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
 
   if (length (ext_urls) and wa_priv_info (ext_urls, flags, 8))
     {
@@ -1262,7 +1262,7 @@ create procedure sioc_user_private_info (
     	{
     	  if (length (trim (u)))
   	    {
-   	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
+ 	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
    	    }
     	}
     }
@@ -1279,12 +1279,12 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
   pers_iri := person_iri (iri);
   delete_quad_s_or_o (graph_iri, prj_iri, prj_iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), prj_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, foaf_iri ('maker'), pers_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, dc_iri ('creator'), pers_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, dc_iri ('identifier'), url);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('title'), nam);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), prj_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, prj_iri, foaf_iri ('maker'), pers_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, prj_iri, dc_iri ('creator'), pers_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, prj_iri, dc_iri ('identifier'), url);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('title'), nam);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
 };
 
 create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in pred varchar)
@@ -1298,8 +1298,8 @@ create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  na
   if (0 = length (pred))
     pred := rdfs_iri ('seeAlso');
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, pred, rel_iri);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, pred, rel_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
 
 create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in pred varchar := null)
@@ -1312,10 +1312,9 @@ create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam
   if (0 = length (pred))
     pred := rdfs_iri ('seeAlso');
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, pred, rel_iri);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, pred, rel_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
-
 
 create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, in bioID integer, in bioEvent varchar, in bioDate varchar, in bioPlace varchar)
 {
@@ -1325,12 +1324,12 @@ create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, 
   bio_iri := person_bio_iri (person_iri (user_iri, ''), cast (bioID as varchar));
   delete_quad_s_or_o (graph_iri, bio_iri, bio_iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, bio_iri, rdf_iri ('type'), bioEvent);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, bio_iri ('event'), bio_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, bio_iri, rdf_iri ('type'), bioEvent);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, bio_iri ('event'), bio_iri);
   if (length (bioDate))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('date'), bioDate);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('date'), bioDate);
   if (length (bioPlace))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, bio_iri, bio_iri ('place'), bioPlace);
 };
 
 create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri varchar, in user_iri varchar, in obj any)
@@ -1343,9 +1342,9 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
   {
     iri := offerlist_item_iri (forum_iri, get_keyword ('id', product));
 	  --dbg_obj_princ (iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
     --dbg_obj_princ (iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
 
     properties := get_keyword ('properties', product);
@@ -1359,12 +1358,12 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
       if (propertyType = 'data')
       {
         --dbg_obj_princ ('data: ', iri, propertyName, propertyValue);
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
       }
       else if (propertyType = 'object')
       {
         --dbg_obj_princ ('obj: ', iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
-        DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
   }
     }
   }
@@ -1478,10 +1477,10 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_t
   iri := favorite_item_iri (forum_iri, f_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (f_class));
-  DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioct_iri ('likes'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (f_class));
+  DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioct_iri ('likes'), iri);
   f_properties := deserialize (f_properties);
   foreach (any property in f_properties) do
   {
@@ -1492,11 +1491,11 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_t
     propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
     if (propertyType = 'data')
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
     }
     else if (propertyType = 'object')
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
     }
   }
 };
@@ -1507,10 +1506,10 @@ create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  na
   pers_iri := person_iri (iri);
   acc_iri := person_ola_iri (iri, nam);
   -- XXX, have to know if this is URL
-  DB.DBA.RDF_QUAD_URI (graph_iri, acc_iri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, acc_iri, foaf_iri ('accountServiceHomepage'), url);
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, acc_iri, foaf_iri ('accountName'), nam);
-  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), acc_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, acc_iri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, acc_iri, foaf_iri ('accountServiceHomepage'), url);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, acc_iri, foaf_iri ('accountName'), nam);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), acc_iri);
 };
 -- Group
 
@@ -1519,8 +1518,8 @@ create procedure sioc_group (in graph_iri varchar, in iri varchar, in u_name var
   if (iri is not null)
     {
       ods_sioc_result (iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Usergroup'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), u_name);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Usergroup'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), u_name);
     }
 };
 
@@ -1528,14 +1527,14 @@ create procedure sioc_group (in graph_iri varchar, in iri varchar, in u_name var
 
 create procedure sioc_knows (in graph_iri varchar, in _from_iri varchar, in _to_iri varchar)
 {
-  --DB.DBA.RDF_QUAD_URI (graph_iri, _from_iri, sioc_iri ('knows'), _to_iri);
-  --DB.DBA.RDF_QUAD_URI (graph_iri, _to_iri, sioc_iri ('knows'), _from_iri);
+  --DB.DBA.ODS_QUAD_URI (graph_iri, _from_iri, sioc_iri ('knows'), _to_iri);
+  --DB.DBA.ODS_QUAD_URI (graph_iri, _to_iri, sioc_iri ('knows'), _from_iri);
 
   _from_iri := person_iri (_from_iri);
   _to_iri := person_iri (_to_iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, _from_iri, foaf_iri ('knows'), _to_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, _to_iri, foaf_iri ('knows'), _from_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, _from_iri, foaf_iri ('knows'), _to_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, _to_iri, foaf_iri ('knows'), _from_iri);
 };
 
 -- Forum
@@ -1575,50 +1574,50 @@ create procedure sioc_forum (
 
   -- we keep this until we verify subclassing work
   -- if (wai_type_name <> 'Community')
-  --   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
+  --   DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
   -- if (clazz <> sioc_iri ('Container') and wai_type_name <> 'Community')
-  --   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
+  --   DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
   -- A given forum is a subclass of the sioc:Forum, based on sioc types module
   -- if (sub <> clazz or wai_type_name = 'Community')
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
   ods_is_defined_by (graph_iri, iri);
 
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), _wai_name);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), _wai_name);
   if (wai_id is null)
     wai_id := (select i.WAI_ID from DB.DBA.WA_INSTANCE i where i.WAI_NAME = _wai_name);
   if (wai_id is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), wai_id);
-  -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), wai_id);
+  -- deprecated DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
   if (wai_description is null)
     wai_description := _wai_name;
 
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), wai_description);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), wai_description);
     }
   if (wai_type_name <> 'Community')
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('space_of'), iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_space'), site_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, site_iri, sioc_iri ('space_of'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_space'), site_iri);
     }
   if (wai_type_name = 'Community')
     {
       declare giri any;
       giri :=  group_iri (iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, giri, rdf_iri ('type'), foaf_iri ('Group'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, giri, foaf_iri ('name'), _wai_name);
+      DB.DBA.ODS_QUAD_URI (graph_iri, giri, rdf_iri ('type'), foaf_iri ('Group'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, giri, foaf_iri ('name'), _wai_name);
     }
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
-  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
---  DB.DBA.RDF_QUAD_URI (graph_iri, concat (iri, '/sioc.rdf'), rdf_iri ('type'), sub);
+  --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+  --DB.DBA.ODS_QUAD_URI (graph_iri, concat (iri, '/sioc.rdf'), rdf_iri ('type'), sub);
 
   -- ATOM
   if (clazz = ods_sioc_forum_type ('WEBLOG2'))
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), _wai_name);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), _wai_name);
     }
   if (wai_type_name = 'AddressBook')
     {
@@ -1628,10 +1627,9 @@ create procedure sioc_forum (
 
   if (pers_iri is not null)
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), pers_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), pers_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), iri);
     }
-
 };
 
 create procedure cc_gen_rdf (in iri varchar, in lic_iri varchar)
@@ -1699,34 +1697,32 @@ create procedure ods_sioc_post (
 
       ods_sioc_result (iri);
 
-      --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
+  --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
 
       --if (maker is null)
-      --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+  --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
       ods_is_defined_by (graph_iri, iri);
 
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), md5 (iri));
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), md5 (iri));
       -- user
       if (cr_iri is not null)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), cr_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, cr_iri, sioc_iri ('creator_of'), iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri (cr_iri));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri (cr_iri), foaf_iri ('made'), iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), cr_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, cr_iri, sioc_iri ('creator_of'), iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri (cr_iri));
+	  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri (cr_iri), foaf_iri ('made'), iri);
 	}
-
       if (cr_iri is null and length (maker) > 0)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), maker);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), maker);
 	}
-
       app := null;
 
       -- forum
       if (forum_iri is not null)
         {
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
 	  arr := sprintf_inverse (forum_iri, graph_iri || '/%s/%s/%s', 1);
 	  if (arr is not null and length (arr) = 3)
 	    {
@@ -1757,60 +1753,59 @@ create procedure ods_sioc_post (
       -- this is a subclassing of the different types of Item, former Post
       if (maker is not null and app <> 'discussion') -- means comment
 	{
-	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('Comment'));
+    --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('Comment'));
 	}
       else if (app = 'weblog')
 	{
-	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BlogPost'));
+    --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BlogPost'));
 	}
       else if (app = 'discussion')
 	{
-	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BoardPost'));
+    --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BoardPost'));
 	}
       else if (app = 'mail')
 	{
-	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('MailMessage'));
+    --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('MailMessage'));
 	}
       --else if (app = 'bookmark') handled below
       --;
       else if (app = 'briefcase')
   {
-	DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Document'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Document'));
   }
       else if (app = 'wiki')
 	{
-	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), wikiont_iri ('Article'));
+    --DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), wikiont_iri ('Article'));
 	}
       else if (not do_exif and not do_ann and not do_atom)
   {
-        DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
   }
       -- literal data
       if (title is not null and length (title))
 	{
-          DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), title);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), title);
         }
       if (ts is not null)
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (ts));
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (ts));
       if (modf is not null)
 	{
-          DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified'), (modf));
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified'), (modf));
 	  if (ts is null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (modf));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (modf));
 	}
-
       if (link is not null)
 	link := make_href (link);
       else
         link := iri;
 
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
       if (links_to is not null)
 	{
 	  foreach (any l in links_to) do
@@ -1820,7 +1815,7 @@ create procedure ods_sioc_post (
 		  declare url varchar;
 		  url := DB.DBA.RDF_MAKE_IID_OF_QNAME (l[1]);
 		  if (url is not null)
-	            DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('links_to'), url);
+          DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('links_to'), url);
 		  else
 		    log_message ('ODS RDF: Bad link from IRI:'||iri);
 		}
@@ -1831,60 +1826,56 @@ create procedure ods_sioc_post (
 	  foreach (any l in attachments) do
 	    {
 	      if (length (l))
-	        DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('attachment'), l);
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('attachment'), l);
 	    }
 	}
-
       -- ATOM
       if (do_atom)
         {
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Entry'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Entry'));
 	  if (forum_iri is not null)
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('source'), forum_iri);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, atom_iri ('entry'), iri);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, atom_iri ('contains'), iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, iri, atom_iri ('source'), forum_iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, atom_iri ('entry'), iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, atom_iri ('contains'), iri);
 	    }
 	  if (title is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), title);
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), title);
 	  if (cr_iri is not null)
-	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('author'), person_iri (cr_iri));
+	    DB.DBA.ODS_QUAD_URI (graph_iri, iri, atom_iri ('author'), person_iri (cr_iri));
 	  if (ts is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('published'), sioc_date (ts));
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, atom_iri ('published'), sioc_date (ts));
 	  if (modf is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('updated'), sioc_date (modf));
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, atom_iri ('updated'), sioc_date (modf));
 	  if (0 and link is not null) -- obsoleted
 	    {
-	      DB.DBA.RDF_QUAD_URI (graph_iri, link, rdf_iri ('type'), atom_iri ('Link'));
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, atom_iri ('link'), link);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('LinkHref'), link);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, link, atom_iri ('linkRel'), 'alternate');
+      DB.DBA.ODS_QUAD_URI (graph_iri, link, rdf_iri ('type'), atom_iri ('Link'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, atom_iri ('link'), link);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, link, atom_iri ('LinkHref'), link);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, link, atom_iri ('linkRel'), 'alternate');
 	    }
         }
-
       if (content is not null and not do_exif)
 	{
 	  declare ses any;
 	  ses := string_output ();
 	  http_value (content, null, ses);
 	  ses := string_output_string (ses);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), ses);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), ses);
 	}
-
       if (do_ann)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'),  bm_iri ('Bookmark'));
-
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'),  bm_iri ('Bookmark'));
           if (modf is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('date'), sioc_date (modf));
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('date'), sioc_date (modf));
           if (content is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), content);
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('description'), content);
 	  if (creator is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('creator'), creator);
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('creator'), creator);
           if (ts is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, ann_iri ('created'), (ts));
+	    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, ann_iri ('created'), (ts));
           if (link is not null)
-	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, bm_iri ('recalls'), link);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, iri, bm_iri ('recalls'), link);
 	}
       else if (do_exif)
 	{
@@ -1897,7 +1888,7 @@ create procedure ods_sioc_post (
 		  declare exit handler for sqlstate '*' { goto noexif; };
 		  arr1 := PHOTO.WA.get_attributes ('', 0, id);
 		}
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'),  exif_iri ('IFD'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'),  exif_iri ('IFD'));
 	      make_exif_fld (graph_iri, iri, arr1, 'make');
 	      make_exif_fld (graph_iri, iri, arr1, 'model');
 	      make_exif_fld (graph_iri, iri, arr1, 'orientation');
@@ -1924,7 +1915,7 @@ create procedure make_exif_fld (in graph_iri any, in iri any, inout arr any, in 
 	  r := udt_get (u, 'value');
 	  if (r is not null and upper (fld) = n)
 	    {
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, exif_iri (fld), r);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, exif_iri (fld), r);
 	    }
 	}
     }
@@ -1947,23 +1938,23 @@ create procedure ods_sioc_service (
   if (iri is null or forum_iri is null)
     return;
   ods_sioc_result (iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), services_iri ('Service'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_of'), forum_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, services_iri ('has_service'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), services_iri ('Service'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, iri, services_iri ('service_of'), forum_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, services_iri ('has_service'), iri);
   if (max_res is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('max_results'), cast (max_res as varchar));
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, services_iri ('max_results'), cast (max_res as varchar));
   if (fmt is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('results_format'), fmt);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, services_iri ('results_format'), fmt);
   if (wsdl is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_definition'), wsdl);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, services_iri ('service_definition'), wsdl);
   if (endpoint is not null)
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, services_iri ('service_endpoint'), endpoint);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, services_iri ('service_endpoint'), endpoint);
   if (proto is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, services_iri ('service_protocol'), proto);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, services_iri ('service_protocol'), proto);
   if (descr is not null or proto is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), coalesce (descr, proto));
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), coalesce (descr, proto));
   if (id is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), id);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('identifier'), id);
   commit work;
 };
 
@@ -1981,9 +1972,9 @@ create procedure ods_sioc_tags (in graph_iri any, in post_iri any, in _tags any)
   if (post_iri is null)
     return;
   if (length (_tags))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), _tags);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), _tags);
   else
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), '~none~');
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), '~none~');
 };
 
 create procedure service_iri (in forum_iri varchar, in id int)
@@ -2099,7 +2090,7 @@ create procedure fill_ods_sioc (in doall int := 0)
       goto l0;
     };
     l0:
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri);
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (fix_graph (graph_iri));
     commit work;
     set isolation='committed';
     ods_graph_init ();
@@ -2198,7 +2189,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    }
 
 		  if (WAUI_SITE_NAME is not null)
-		    DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), WAUI_SITE_NAME);
+		    DB.DBA.ODS_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), WAUI_SITE_NAME);
 
 		  sioc_user_info (graph_iri,
 		                  iri,
@@ -2237,7 +2228,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 			);
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
-		    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
+		    DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
 		  for select WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = U_ID do
 		    {
 		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI);
@@ -2289,16 +2280,16 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  do_social:
 		  riri := role_iri (WAI_ID, WAM_USER);
 		  firi := forum_iri (_wai_type, WAI_NAME);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), iri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), iri);
 
-		  DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
 
 		  if (riri like '%#owner')
 		    {
-		      DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_owner'), iri);
-		      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
+		      DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('has_owner'), iri);
+		      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
 		    }
 
 		  if (_wai_type = 'AddressBook')
@@ -2308,7 +2299,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    }
 		  if (_wai_type = 'Community')
 		    {
-		      DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
+		      DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
 		    }
 		  for select RA_URI, RA_LABEL from DB.DBA.WA_RELATED_APPS where RA_WAI_ID = WAI_ID do
 		    {
@@ -2321,7 +2312,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), US_IRI);
 		  if (length (US_KEY))
 		    sas_iri := sas_iri || sprintf ('&login=%U', U_NAME);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
 		}
 	    }
 	}
@@ -2358,8 +2349,8 @@ create procedure fill_ods_sioc (in doall int := 0)
       g_iri := user_group_iri (GI_SUB);
       if (iri is not null and g_iri is not null)
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
+      	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
+      	  DB.DBA.ODS_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
         }
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
@@ -2432,7 +2423,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 	  --    declare miri varchar;
 	  --    miri := user_iri (WAM_USER);
 	  --    if (miri is not null)
-	  --      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_member'), miri);
+	  --      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_member'), miri);
 	  --  }
 	}
       cnt := cnt + 1;
@@ -2516,21 +2507,21 @@ create procedure fill_ods_dav_sioc (in graph_iri varchar, in site_iri varchar)
 	  WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/home/' || U_NAME || '/%' and RES_OWNER = U_ID do
 	    {
 	      iri := dav_res_iri (RES_FULL_PATH);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), c_iri);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('creator_of'), iri);
+	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_creator'), c_iri);
+	      DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc_iri ('creator_of'), iri);
 
 	      for select WAM_INST from DB.DBA.WA_MEMBER where WAM_USER = U_ID and WAM_APP_TYPE = 'oDrive' do
 		{
 		  f_iri := briefcase_iri (WAM_INST);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), f_iri);
-		  DB.DBA.RDF_QUAD_URI (graph_iri, f_iri, sioc_iri ('container_of'), iri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), f_iri);
+		  DB.DBA.ODS_QUAD_URI (graph_iri, f_iri, sioc_iri ('container_of'), iri);
 		}
 
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), RES_NAME);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (RES_CR_TIME));
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified') , (RES_MOD_TIME));
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), RES_NAME);
+	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (RES_CR_TIME));
+	      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified') , (RES_MOD_TIME));
 	    }
          commit work;
       }
@@ -2548,8 +2539,42 @@ create procedure dav_res_iri (in path varchar)
   return sprintf ('http://%s%s', get_cname(), path);
 };
 
+registry_set ('URIQADynamicLocal', coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0'));
+
+create procedure fix_graph (in g any)
+{
+  if (registry_get ('URIQADynamicLocal') = '1' and isstring (g) and g like get_graph () || '%')
+    {
+      declare pref any;
+      pref := sprintf ('http://%s', get_cname ());
+      g := 'local:' || subseq (g, length (pref));
+    }
+  return g;
+}
+;
+
+create procedure DB.DBA.ODS_QUAD_URI (in g_iri any, in s_iri any, in p_iri any, in o_iri any)
+{
+  g_iri := fix_graph (g_iri);
+  s_iri := fix_graph (s_iri);
+  o_iri := fix_graph (o_iri);
+  DB.DBA.RDF_QUAD_URI (g_iri, s_iri, p_iri, o_iri);
+}
+;
+
+create procedure DB.DBA.ODS_QUAD_URI_L (in g_iri any, in s_iri any, in p_iri any, in obj any)
+{
+  g_iri := fix_graph (g_iri);
+  s_iri := fix_graph (s_iri);
+  DB.DBA.RDF_QUAD_URI_L (g_iri, s_iri, p_iri, obj);
+}
+;
+
 create procedure delete_quad_so (in _g any, in _s any, in _o any)
 {
+  _g := fix_graph (_g);
+  _s := fix_graph (_s);
+  _o := fix_graph (_o);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
@@ -2560,6 +2585,8 @@ create procedure delete_quad_so (in _g any, in _s any, in _o any)
 
 create procedure delete_quad_sp (in _g any, in _s any, in _p any)
 {
+  _g := fix_graph (_g);
+  _s := fix_graph (_s);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _p := DB.DBA.RDF_IID_OF_QNAME (_p);
@@ -2570,6 +2597,8 @@ create procedure delete_quad_sp (in _g any, in _s any, in _p any)
 
 create procedure delete_quad_po (in _g any, in _p any, in _o any)
 {
+  _g := fix_graph (_g);
+  _o := fix_graph (_o);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
   _p := DB.DBA.RDF_IID_OF_QNAME (_p);
@@ -2580,6 +2609,7 @@ create procedure delete_quad_po (in _g any, in _p any, in _o any)
 
 create procedure delete_quad_s_p_o (in _g any, in _s any, in _p any, in _o any)
 {
+  _g := fix_graph (_g);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _p := DB.DBA.RDF_IID_OF_QNAME (_p);
@@ -2592,6 +2622,9 @@ create procedure delete_quad_s_p_o (in _g any, in _s any, in _p any, in _o any)
 create procedure delete_quad_s_or_o (in _g any, in _s any, in _o any)
 {
   declare preds any;
+  _g := fix_graph (_g);
+  _s := fix_graph (_s);
+  _o := fix_graph (_o);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _s := DB.DBA.RDF_IID_OF_QNAME (_s);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
@@ -2614,6 +2647,9 @@ create procedure update_quad_s_o (in _g any, in _o any, in _n any)
 {
   if (_o is null or _n is null or _n = _o)
     return;
+  _g := fix_graph (_g);
+  _n := fix_graph (_n);
+  _o := fix_graph (_o);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
   _n := DB.DBA.RDF_MAKE_IID_OF_QNAME (_n);
@@ -2625,6 +2661,10 @@ create procedure update_quad_g_s_o (in _g any, in _gn any, in _o any, in _n any)
 {
   if (_o is null or _n is null or (_n = _o and _g = _gn))
     return;
+  _gn := fix_graph (_gn);
+  _g := fix_graph (_g);
+  _n := fix_graph (_n);
+  _o := fix_graph (_o);
   _gn := DB.DBA.RDF_IID_OF_QNAME (_gn);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
@@ -2639,6 +2679,7 @@ create procedure update_quad_p (in _g any, in _o any, in _n any)
 {
   if (_o is null or _n is null or _n = _o)
     return;
+  _g := fix_graph (_g);
   _g := DB.DBA.RDF_IID_OF_QNAME (_g);
   _o := DB.DBA.RDF_IID_OF_QNAME (_o);
   _n := DB.DBA.RDF_MAKE_IID_OF_QNAME (_n);
@@ -2709,19 +2750,19 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
 
       --!!! ACL if (length (N.U_FULL_NAME))
       --!!! ACL	  {
-      --!!! ACL     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), N.U_FULL_NAME);
+      --!!! ACL     DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), N.U_FULL_NAME);
       --!!! ACL   }
 
       if (length (N.U_E_MAIL))
 	{
-	  --!!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
+	  --!!! ACL DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('email'), 'mailto:'||N.U_E_MAIL);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
 
 	  iri := person_iri (iri);
-	  --!!! ACL DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (N.U_E_MAIL));
+	  --!!! ACL DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (N.U_E_MAIL));
 	  --!!! ACL if (length (N.U_FULL_NAME))
-	  --!!! ACL  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
+	  --!!! ACL  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
 	}
     }
   return;
@@ -2737,7 +2778,7 @@ create trigger WA_SETTINGS after update on DB.DBA.WA_SETTINGS referencing old as
   graph_iri := get_graph ();
   site_iri := get_graph ();
   delete_quad_sp (graph_iri, site_iri, dc_iri ('title'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, site_iri, dc_iri ('title'), coalesce (N.WS_WEB_TITLE, sys_stat ('st_host_name')));
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, site_iri, dc_iri ('title'), coalesce (N.WS_WEB_TITLE, sys_stat ('st_host_name')));
 };
 
 create trigger SYS_USERS_SIOC_D after delete on DB.DBA.SYS_USERS referencing old as O
@@ -2779,7 +2820,7 @@ create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referenci
   }
   u_site_iri := user_space_iri (uname);
   if (N.WAUI_SITE_NAME is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
   sioc_user_info (graph_iri, iri, null, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME, N.WAUI_TITLE, _u_full_name, _u_e_mail);
 };
 
@@ -2803,7 +2844,7 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
   u_site_iri := user_space_iri (uname);
   delete_quad_sp (graph_iri, u_site_iri, dc_iri ('title'));
   if (N.WAUI_SITE_NAME is not null)
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, u_site_iri, dc_iri ('title'), N.WAUI_SITE_NAME);
   if (N.WAUI_LATLNG_HBDEF)
     {
       lat := N.WAUI_BLAT;
@@ -2880,7 +2921,7 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
       sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), US_IRI);
       if (length (US_KEY))
 	sas_iri := sas_iri || sprintf ('&login=%U', uname);
-	DB.DBA.RDF_QUAD_URI (graph_iri, niri, owl_iri ('sameAs'), sas_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, niri, owl_iri ('sameAs'), sas_iri);
     }
   if (length (O.WAUI_SKYPE))
     {
@@ -3270,21 +3311,21 @@ create procedure instance_sioc_data (
   graph_iri := get_graph_new (null, N_WAM_IS_PUBLIC, forum_iri);
   if (user_iri is not null and role_iri is not null and forum_iri is not null and ((N_WAM_IS_PUBLIC > 0) or (N_WAM_APP_TYPE = 'oDrive')))
   {
-    DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), role_iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, role_iri, sioc_iri ('function_of'), user_iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, role_iri, sioc_iri ('has_scope'), forum_iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('scope_of'), role_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), role_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, role_iri, sioc_iri ('function_of'), user_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, role_iri, sioc_iri ('has_scope'), forum_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('scope_of'), role_iri);
     if (role_iri like '%#owner')
     {
-	    DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('has_owner'), user_iri);
-	    DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('owner_of'), forum_iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('has_owner'), user_iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('owner_of'), forum_iri);
 	}
     if (N_WAM_APP_TYPE = 'Community')
 	{
 	  declare person_iri any;
 
 	    person_iri := person_iri (user_iri);
-	    DB.DBA.RDF_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri);
+	    DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri);
     }
     if (N_WAM_APP_TYPE = 'AddressBook')
     {
@@ -3417,8 +3458,8 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
 	    o_role_iri := o_forum_iri || '#' || _role;
 	    update_quad_g_s_o (o_graph_iri, n_graph_iri, o_role_iri, role_iri);
 	  }
-    DB.DBA.RDF_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
-    DB.DBA.RDF_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
+    DB.DBA.ODS_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
+    DB.DBA.ODS_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
 	}
 
   -- refresh be created forum
@@ -3452,8 +3493,8 @@ create trigger SYS_ROLE_GRANTS_SIOC_I after insert on DB.DBA.SYS_ROLE_GRANTS ref
   g_iri := user_group_iri (N.GI_SUB);
   if (iri is not null and g_iri is not null)
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('member_of'), g_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, g_iri, sioc_iri ('has_member'), iri);
     }
   return;
 };
@@ -3528,7 +3569,7 @@ create trigger WA_USER_SVC_I after insert on DB.DBA.WA_USER_SVC referencing new 
   sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), N.US_IRI);
   if (length (N.US_KEY))
     sas_iri := sas_iri || sprintf ('&login=%U', uname);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
 }
 ;
 
@@ -3559,7 +3600,7 @@ create trigger WA_USER_SVC_U after update on DB.DBA.WA_USER_SVC referencing old 
   sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), N.US_IRI);
   if (length (N.US_KEY))
     sas_iri := sas_iri || sprintf ('&login=%U', uname);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
 }
 ;
 
@@ -3997,10 +4038,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   declare ses, dociri, hf any;
   declare triples any;
   declare ss, sa_dict, lim, offs any;
-  declare pers_iri, http_hdr varchar;
+  declare pers_iri, http_hdr, iri_pref varchar;
 
   set http_charset='utf-8';
-  graph := 'local:/dataspace'; --get_graph ();
+  graph := 'local:/dataspace'; 
+  iri_pref := graph; --get_graph ();
   ses := string_output ();
 
   if (fmt = 'text/rdf+n3')
@@ -4127,7 +4169,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    }
 	  }',
 	  dociri, dociri, dociri, dociri,
-	  graph, graph, u_name);
+	  graph, iri_pref, u_name);
 
   qry := decl || part;
   qrs [0] := qry;
@@ -4204,7 +4246,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      '
 	      }
 	    }
-	  }', graph, graph, u_name);
+	  }', graph, iri_pref, u_name);
 
   qry := decl || part;
   qrs [1] := qry;
@@ -4245,7 +4287,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 	      }
 	    }
-	  }', graph, graph, u_name);
+	  }', graph, iri_pref, u_name);
 
   qry := decl || part;
   qrs [5] := qry;
@@ -4293,7 +4335,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   	      }
 	      }
 	    }
-	  }', graph, graph, u_name);
+	  }', graph, iri_pref, u_name);
 
   qry := decl || part;
   qrs [7] := qry;

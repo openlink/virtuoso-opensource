@@ -327,59 +327,59 @@ create procedure event_insert (
 
     if (kind = 0)
     {
-    DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vevent'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vevent'));
       if (not isnull (uid))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
       if (not isnull (created))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
       if (not isnull (updated))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
       if (not isnull (eventStart))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
       if (not isnull (eventEnd))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
     if (not isnull (subject))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
     if (not isnull (description))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
       if (not isnull (notes))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('notes'), notes);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('notes'), notes);
     if (not isnull (location))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
       if (not isnull (privacy))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
     }
     if (kind = 1)
     {
-      DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
+      DB.DBA.ODS_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
       if (not isnull (uid))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('uid'), uid);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), now ());
       if (not isnull (completed))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('completed'), completed);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('completed'), completed);
       if (not isnull (created))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), created);
       if (not isnull (updated))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), updated);
     if (not isnull (eventStart))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), eventStart);
     if (not isnull (eventEnd))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), eventEnd);
       if (not isnull (subject))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
       if (not isnull (description))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
       if (not isnull (notes))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('notes'), notes);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('notes'), notes);
     if (not isnull (priority))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('priority'), priority);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('priority'), priority);
     if (not isnull (status))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
       if (not isnull (privacy))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
   }
   }
   return;
@@ -530,8 +530,8 @@ create procedure calendar_comment_insert (
 		  master_iri := calendar_event_iri (domain_id, master_id);
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
-      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
   }
 }
@@ -649,12 +649,12 @@ create procedure cal_annotation_insert (
   {
     master_iri := calendar_event_iri (domain_id, cast (master_id as integer));
     annotattion_iri := calendar_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
 
 	  cal_claims_insert (graph_iri, annotattion_iri, claims);
   }
@@ -707,8 +707,8 @@ create procedure cal_claims_insert (
     if (0 = length (cPedicate))
       cPedicate := rdfs_iri ('seeAlso');
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, cPedicate, cURI);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, cPedicate, cURI);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
   }
 }
 ;

@@ -245,41 +245,41 @@ create procedure scot_rdf_update (in graph_iri varchar, in inst_id int, in post_
   user_iri := user_obj_iri (uname);
   person_iri := person_iri (user_iri);
   cloud_iri := inst_iri || '/tagcloud';
-  DB.DBA.RDF_QUAD_URI (graph_iri, cloud_iri, dc_iri ('creator'), person_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, scot_iri ('hasSCOT'), cloud_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, cloud_iri, dc_iri ('creator'), person_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, scot_iri ('hasSCOT'), cloud_iri);
   for select its_tag_cnt, its_tag_freq, its_co_cnt, its_co_freq, its_post_cnt from inst_tag_stats where its_inst_id = inst_id do
     {
-      DB.DBA.RDF_QUAD_URI (graph_iri, cloud_iri, rdf_iri ('type'), scot_iri ('Tagcloud'));
-      --DB.DBA.RDF_QUAD_URI (graph_iri, cloud_iri, scot_iri ('tagspace'), '~unknown~');
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalPosts'), its_post_cnt);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, dc_iri ('title'), title || ' tagcloud');
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalTags'), its_tag_cnt);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalCooccurrences'), its_co_cnt);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalTagFrequency'), its_tag_freq);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalCooccurFrequency'), its_co_freq);
+      DB.DBA.ODS_QUAD_URI (graph_iri, cloud_iri, rdf_iri ('type'), scot_iri ('Tagcloud'));
+      --DB.DBA.ODS_QUAD_URI (graph_iri, cloud_iri, scot_iri ('tagspace'), '~unknown~');
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalPosts'), its_post_cnt);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, dc_iri ('title'), title || ' tagcloud');
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalTags'), its_tag_cnt);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalCooccurrences'), its_co_cnt);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalTagFrequency'), its_tag_freq);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, cloud_iri, scot_iri ('totalCooccurFrequency'), its_co_freq);
     }
   for select ts_tag, ts_afreq from tag_stat where ts_inst_id = inst_id do
     {
       tag_iri := inst_iri || '/tag/' || ts_tag;
-      DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), scot_iri ('Tag'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, scot_iri ('name'), ts_tag);
-      DB.DBA.RDF_QUAD_URI (graph_iri, cloud_iri, scot_iri ('hasTag'), tag_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, scot_iri ('ownAFrequency'), ts_afreq);
+      DB.DBA.ODS_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), scot_iri ('Tag'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, tag_iri, scot_iri ('name'), ts_tag);
+      DB.DBA.ODS_QUAD_URI (graph_iri, cloud_iri, scot_iri ('hasTag'), tag_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, tag_iri, scot_iri ('ownAFrequency'), ts_afreq);
       for select tc_id from tag_coocurrence where tc_inst_id = inst_id and tc_tag = ts_tag do
 	{
 	  co_iri := inst_iri || sprintf ('/Cooccurrence_%d', tc_id);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, scot_iri ('cooccurWith'), co_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, tag_iri, scot_iri ('cooccurWith'), co_iri);
 	}
     }
   for select tcs_id, tcs_afreq from tag_coocurrence_stats where tcs_inst_id = inst_id do
     {
       co_iri := inst_iri || sprintf ('/Cooccurrence_%d', tcs_id);
-      DB.DBA.RDF_QUAD_URI (graph_iri, co_iri, rdf_iri ('type'), scot_iri ('Cooccurrence'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, co_iri, scot_iri ('cooccurAFrequency'), tcs_afreq);
+      DB.DBA.ODS_QUAD_URI (graph_iri, co_iri, rdf_iri ('type'), scot_iri ('Cooccurrence'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, co_iri, scot_iri ('cooccurAFrequency'), tcs_afreq);
       for select distinct tc_tag as tc_tag from tag_coocurrence where tc_id = tcs_id and tc_inst_id = inst_id do
 	{
 	  tag_iri := inst_iri || '/tag/' || tc_tag;
-	  DB.DBA.RDF_QUAD_URI (graph_iri, co_iri, scot_iri ('cooccurTag'), tag_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, co_iri, scot_iri ('cooccurTag'), tag_iri);
 	}
     }
   if (length (post_iri))
@@ -288,18 +288,18 @@ create procedure scot_rdf_update (in graph_iri varchar, in inst_id int, in post_
       foreach (any tag in tags) do
 	{
 	  tag_iri := inst_iri || '/tag/' || tag;
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, skos_iri ('prefLabel'), tag);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, skos_iri ('isSubjectOf'), post_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), tag_iri);
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, tag_iri, skos_iri ('prefLabel'), tag);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, tag_iri, skos_iri ('isSubjectOf'), post_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), tag_iri);
 	  -- MOAT
-	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), moat_iri ('Tag'));
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, moat_iri ('name'), tag);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), moat_iri ('Tag'));
+	  DB.DBA.ODS_QUAD_URI_L (graph_iri, tag_iri, moat_iri ('name'), tag);
 	  for select m_mid, m_uri from moat.DBA.moat_meanings where m_tag = tag and m_iri = iri_to_id (post_iri) do
 	   {
 	     meaning_iri := tag_iri || sprintf ('/meaning/%d', m_mid);
-	     DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, moat_iri ('hasMeaning'), meaning_iri);
-	     DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, rdf_iri ('type'), moat_iri ('Meaning'));
-	     DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, moat_iri ('meaningURI'), m_uri);
+	     DB.DBA.ODS_QUAD_URI (graph_iri, tag_iri, moat_iri ('hasMeaning'), meaning_iri);
+	     DB.DBA.ODS_QUAD_URI (graph_iri, meaning_iri, rdf_iri ('type'), moat_iri ('Meaning'));
+	     DB.DBA.ODS_QUAD_URI (graph_iri, meaning_iri, moat_iri ('meaningURI'), m_uri);
 	   }
 	}
     }

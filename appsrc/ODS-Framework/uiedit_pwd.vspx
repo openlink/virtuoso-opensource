@@ -37,6 +37,8 @@
   <v:variable persist="0" name="certificate_content" type="varchar" default="null"/>
     <v:variable persist="0" name="sioc_limit" type="int" default="10"/>
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
+  <v:variable persist="0" name="fb" type="DB.DBA.Facebook" default="null" />
+  <v:variable persist="0" name="fbLoginID" type="varchar" default="''"/>
     <v:before-data-bind>
       <![CDATA[
       declare pwd, node_id, tmp varchar;
@@ -45,12 +47,14 @@
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
 	     WAUI_OPENID_URL,
+	           WAUI_FACEBOOK_LOGIN_ID,
 	           WAUI_CERT_LOGIN,
 	     WAUI_CERT
         INTO self.secretq,
              self.secreta,
              pwd,
 	     self.oid_urlv,
+	           self.fbLoginID,
 	           self.certificate_login,
 	     self.certificate_content
         FROM WA_USER_INFO,
@@ -65,16 +69,16 @@
 	  self.no_pwd := 1;
         else
 	  self.no_pwd := 0;
+      declare fb_options any;
+      if (_get_ods_fb_settings (fb_options))
+        self.fb := new Facebook(fb_options[0], fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
       ]]>
     </v:before-data-bind>
 
   <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=3">
-    <table  class="ctl_grp">
-              <tr>
-                <td colspan="2" align="left">
-                  <h3>Password Settings</h3>
-                </td>
-              </tr>
+    <fieldset>
+			<legend><b>Password Settings</b></legend>
+			<table>
 	      <?vsp if (not self.no_pwd) { ?>
               <tr>
                 <th><label for="opwd1">Old password</label></th>
@@ -86,13 +90,13 @@
               <tr>
                 <th><label for="npwd1">New password</label></th>
                 <td>
-                  <v:text error-glyph="*" name="npwd1" value="" type="password"/>
+            <v:text error-glyph="*" xhtml_id="npwd1" name="npwd1" value="" type="password"/>
                 </td>
               </tr>
               <tr>
                 <th><label for="npwd2">Repeat password</label></th>
                 <td>
-                  <v:text error-glyph="*" name="npwd2" value="" type="password"/>
+            <v:text error-glyph="*" xhtml_id="npwd2" name="npwd2" value="" type="password"/>
                 </td>
               </tr>
               <tr>
@@ -138,8 +142,7 @@
                         {
 			  if (self.no_pwd)
 			    {
-			      self.opwd1.ufl_value := (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1)
-			    	FROM DB.DBA.SYS_USERS where U_NAME = self.u_name);
+                        self.opwd1.ufl_value := (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS where U_NAME = self.u_name);
 			    }
 			  USER_CHANGE_PASSWORD (self.u_name, self.opwd1.ufl_value, self.npwd1.ufl_value);
 			    self.opwd1.ufl_value := '';
@@ -163,12 +166,11 @@
 		 </span>
                 </td>
               </tr>
-
-              <tr>
-                <td colspan="2" align="left">
-                  <h3>OpenID</h3>
-                </td>
-              </tr>
+      </table>
+    </fieldset>
+    <fieldset>
+			<legend><b>OpenID</b></legend>
+			<table>
               <tr>
                 <th><label for="oid_url1">OpenID URL</label></th>
                 <td nowrap="nowrap">
@@ -201,12 +203,81 @@
 	    </span>
                 </td>
               </tr>
+      </table>
+    </fieldset>
+    <vm:if test="not isnull (self.fb)">
+      <fieldset>
+  			<legend><b>Facebook</b></legend>
+  			<table>
+        <tr>
+          <th><label>Saved Facebook ID</label></th>
+          <td nowrap="nowrap">
+            <?vsp
+              if (isnull (self.fbLoginID))
+              {
+                http ('not yet');
+              } else {
+                declare _res any;
+                _res := self.fb.api_client.users_getInfo(self.fbLoginID, 'name');
 
+                http (serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res)));
+              }
+            ?>
+          </td>
+        </tr>
+        <?vsp
+          if (length (self.fb._user))
+          {
+            declare _res any;
+            _res := self.fb.api_client.users_getInfo(self.fb._user, 'name');
+            http (sprintf ('<tr><th></th><td>Connected as <b><i>%s</i><b></td></tr>', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res))));
+          }
+          http (         '<tr><th></th><td>');
+          http (         '<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>');
+          http (         '<fb:login-button autologoutlink="true" onlogin1="window.location=\'/ods/login.vspx\'"></fb:login-button>');
+          http (sprintf ('<script type="text/javascript">FB.init("%s", "fb_dummy.vsp", {"reloadIfSessionStateChanged": true});</script>', self.fb.api_key));
+          http (         '</td></tr>');
+        ?>
               <tr>
-                <td colspan="2" align="left">
-                  <h3>Password Recovery</h3>
+          <td colspan="2" class="ctrl">
+            <span class="fm_ctl_btn">
+              <v:button name="bt_fb1" value="Update" action="simple" enabled="--case when isnull (self.fb._user) then 0 else 1 end">
+                <v:on-post>
+                  <![CDATA[
+                    if (self.vc_is_valid = 0)
+                      return;
+
+                    if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_FACEBOOK_LOGIN_ID = self.fb._user))
+                    {
+                      self.vc_error_message := 'This Facebook identity is already registered.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', self.fb._user);
+                    self.vc_redirect ('uiedit.vspx?page=3');
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button name="bt_fb2" value="Clear" action="simple" enabled="--case when isnull (self.fbLoginID) then 0 else 1 end">
+                <v:on-post>
+                  <![CDATA[
+                    if (self.vc_is_valid = 0)
+                      return;
+
+                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', null);
+                    self.vc_redirect ('uiedit.vspx?page=3');
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </span>
                 </td>
               </tr>
+        </table>
+      </fieldset>
+    </vm:if>
+    <fieldset>
+			<legend><b>Password Recovery</b></legend>
+			<table>
               <tr>
                 <th><label for="sec_question">Secret question</label></th>
                 <td nowrap="nowrap">
@@ -260,11 +331,11 @@
 	    </span>
                 </td>
               </tr>
-              <tr>
-                <td colspan="2" align="left">
-                  <h3>Applications restrictions</h3>
-                </td>
-              </tr>
+      </table>
+    </fieldset>
+    <fieldset>
+			<legend><b>Applications restrictions</b></legend>
+			<table>
               <tr>
                 <th><label for="sioc_limit1">SIOC query result limit</label></th>
                 <td nowrap="nowrap">
@@ -296,11 +367,11 @@
 	    </span>
                 </td>
               </tr>
-      <tr>
-        <td colspan="2" align="left">
-          <h3>X.509 Certificate</h3>
-        </td>
-      </tr>
+      </table>
+    </fieldset>
+    <fieldset>
+			<legend><b>X.509 Certificate</b></legend>
+			<table>
       <tr>
 	  <td colspan="2" align="left">
 	      <?vsp if (length (self.certificate_content)) { ?>
@@ -382,5 +453,6 @@
         </td>
       </tr>
     </table>
+    </fieldset>
     </v:form>
 </v:page>

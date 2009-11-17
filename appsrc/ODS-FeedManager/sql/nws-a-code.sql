@@ -1137,15 +1137,15 @@ create procedure ENEWS.WA.feed_refresh_int(
      and ((EFI_LAST_UPDATE is not null) and dateadd('day', days, EFI_LAST_UPDATE) < now());
 
   reqHdr := 'User-agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)\r\n';
-  newUri := uri;
+  newUri := ENEWS.WA.url_schema_fix (uri);
 again:
   commit work;
   oldUri := newUri;
-  content := http_get (newUri, resHdr, 'GET', reqHdr);
-  --content := http_client_ext (url=>newUri,
-  --                            http_method=>'GET',
-  --                            http_headers=>reqHdr,
-  --                            headers=>resHdr);
+  --content := http_get (newUri, resHdr, 'GET', reqHdr);
+  content := http_client_ext (url=>newUri,
+                              http_method=>'GET',
+                              http_headers=>reqHdr,
+                              headers=>resHdr);
   if (resHdr[0] not like 'HTTP/1._ 200%')
   {
     if (resHdr[0] like 'HTTP/1._ 30_%')
@@ -1520,6 +1520,7 @@ create procedure ENEWS.WA.channel_retrieve (
   declare hp, contentType any;
 
   contentType := '';
+  uri := ENEWS.WA.url_schema_fix (uri);
   hp := WS.WS.PARSE_URI (uri);
 
   if (lower(hp[0]) <> 'http')
@@ -4505,6 +4506,23 @@ create procedure ENEWS.WA.url_fix (
   if (not is_empty_or_null (realm))
   {
     S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.url_schema_fix (
+  in S varchar)
+{
+  declare schemas any;
+
+  schemas := vector ('feed://', 'webcal://');
+  foreach (any aSchema in schemas) do
+  {
+    if (S like (aSchema || '%'))
+      return 'http://' || subseq (S, length (aSchema));
   }
   return S;
 }

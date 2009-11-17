@@ -453,21 +453,21 @@ create procedure contact_insert (
 		person_iri := person_iri (creator_iri);
 
     -- FOAF Data Space
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
-  		DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
+    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('knows'), iri);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
 		if (not DB.DBA.is_empty_or_null (fullName))
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
 		if (not DB.DBA.is_empty_or_null (ext_iri))
-		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), ext_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), ext_iri);
 		if (not DB.DBA.is_empty_or_null (foaf))
       if (foaf like 'http://%')
       {
-  		  DB.DBA.RDF_QUAD_URI (graph_iri, foaf, rdf_iri ('type'), foaf_iri ('Document'));
-  		  DB.DBA.RDF_QUAD_URI (graph_iri, foaf, foaf_iri ('topic'), iri);
-  		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('page'), foaf);
+        DB.DBA.ODS_QUAD_URI (graph_iri, foaf, rdf_iri ('type'), foaf_iri ('Document'));
+        DB.DBA.ODS_QUAD_URI (graph_iri, foaf, foaf_iri ('topic'), iri);
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('page'), foaf);
       }
-    DB.DBA.RDF_QUAD_URI (graph_iri, socialnetwork_iri, sioc_iri ('container_of'), iri);
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), socialnetwork_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, socialnetwork_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), socialnetwork_iri);
 
     if (not DB.DBA.is_empty_or_null (interests))
     {
@@ -475,10 +475,10 @@ create procedure contact_insert (
   	  {
   	    if (length (interest))
   	    {
-  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('interest'), interest);
   	      if (length (label))
   		    {
-  		      DB.DBA.RDF_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
+  		      DB.DBA.ODS_QUAD_URI_L (graph_iri, interest, rdfs_iri ('label'), label);
   		    }
   	    }
   	  }
@@ -489,84 +489,83 @@ create procedure contact_insert (
   	  {
   	    if (length (relationship))
   	    {
-  	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, relationship, person_iri);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, relationship, person_iri);
   	    }
   	  }
     }
 		if (kind = 1)
 		{
 		  -- Organization
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
-
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
 
   		if (not DB.DBA.is_empty_or_null (bMail))
-  			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
   		if (not DB.DBA.is_empty_or_null (bWeb))
-  			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), bWeb);
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), bWeb);
   		if (not DB.DBA.is_empty_or_null (bPhone))
-  			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || bPhone);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || bPhone);
   		if (not DB.DBA.is_empty_or_null (bLat) and not DB.DBA.is_empty_or_null (bLng))
   		{
   			temp_iri := iri || '#based_near';
-  			DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
-  			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
-  			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (bLat, 0)));
-  			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (bLng, 0)));
+        DB.DBA.ODS_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (bLat, 0)));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (bLng, 0)));
   		}
     }
     else
     {
 		  -- Person
-    DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
 
   		if (not DB.DBA.is_empty_or_null (firstName))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
+         DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
 		  if (not DB.DBA.is_empty_or_null (lastName))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
     if (not DB.DBA.is_empty_or_null (gender))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
     if (not DB.DBA.is_empty_or_null (icq))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
     if (not DB.DBA.is_empty_or_null (msn))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('msnChatID'), msn);
     if (not DB.DBA.is_empty_or_null (aim))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('aimChatID'), aim);
     if (not DB.DBA.is_empty_or_null (yahoo))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('yahooChatID'), yahoo);
   		if (not DB.DBA.is_empty_or_null (birthday))
   		{
       temp_iri := iri || '#event';
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring (coalesce (birthday, now())), 6, 5));
-      DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), bio_iri ('Birth'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, dc_iri ('date'), substring (datestring (birthday), 1, 10));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('birthday'), substring (datestring (coalesce (birthday, now())), 6, 5));
+        DB.DBA.ODS_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), bio_iri ('Birth'));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, bio_iri ('event'), temp_iri);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, dc_iri ('date'), substring (datestring (birthday), 1, 10));
     }
     if (not DB.DBA.is_empty_or_null (mail))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), mail);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), mail);
     if (not DB.DBA.is_empty_or_null (hMail))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), hMail);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), hMail);
     if (not DB.DBA.is_empty_or_null (hWeb))
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), hWeb);
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), hWeb);
     if (not DB.DBA.is_empty_or_null (hPhone))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || hPhone);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || hPhone);
   		if (not DB.DBA.is_empty_or_null (hLat) and not DB.DBA.is_empty_or_null (hLng))
   		{
       temp_iri := iri || '#based_near';
-      DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (hLat, 0)));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (hLng, 0)));
+        DB.DBA.ODS_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (hLat, 0)));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (hLng, 0)));
     }
       if (length (bOrganization) and length (bWeb))
       {
         temp_iri := iri || '#org';
-        DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), bWeb);
-        DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type') , foaf_iri ('Organization'));
-        DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, foaf_iri ('homepage'), bWeb);
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, dc_iri ('title'), bOrganization);
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), bWeb);
+        DB.DBA.ODS_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type') , foaf_iri ('Organization'));
+        DB.DBA.ODS_QUAD_URI (graph_iri, temp_iri, foaf_iri ('homepage'), bWeb);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, dc_iri ('title'), bOrganization);
       }
       if (not DB.DBA.is_empty_or_null (photo))
-        DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
   	}
 
     -- AddressBook
@@ -575,75 +574,75 @@ create procedure contact_insert (
     scot_tags_insert (domain_id, iri2, tags);
 
     -- vCard Data Space
-    DB.DBA.RDF_QUAD_URI   (graph_iri, iri2, rdf_iri ('type'), vcard_iri ('vCard'));
-    DB.DBA.RDF_QUAD_URI   (graph_iri, iri2, vcard_iri ('UID'), iri);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('NICKNAME'), name);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri2, rdf_iri ('type'), vcard_iri ('vCard'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('UID'), iri);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, iri2, vcard_iri ('NICKNAME'), name);
 	  if (not DB.DBA.is_empty_or_null (fullName))
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('FN'), fullName);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri2, vcard_iri ('FN'), fullName);
 		if (not DB.DBA.is_empty_or_null (firstName) or not DB.DBA.is_empty_or_null (lastName) or not DB.DBA.is_empty_or_null (title))
 		{
       temp_iri := iri2 || '#n';
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('N'), temp_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('N'), temp_iri);
       if (not DB.DBA.is_empty_or_null (firstName))
-				DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Given'), firstName);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Given'), firstName);
       if (not DB.DBA.is_empty_or_null (lastName))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Family'), lastName);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Family'), lastName);
       if (not DB.DBA.is_empty_or_null (title))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Prefix'), title);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Prefix'), title);
     }
     if (not DB.DBA.is_empty_or_null (birthday))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('BDAY'), AB.WA.dt_format (birthday, 'Y-M-D'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri2, vcard_iri ('BDAY'), AB.WA.dt_format (birthday, 'Y-M-D'));
 		if (not DB.DBA.is_empty_or_null (mail))
 		{
       temp_iri := iri2 || '#email_pref';
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('pref'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('value'), mail);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('pref'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('value'), mail);
     }
 		if (not DB.DBA.is_empty_or_null (hMail))
 		{
       temp_iri := iri2 || '#email_internet';
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('internet'));
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('value'), hMail);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('EMAIL'), temp_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('internet'));
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('value'), hMail);
     }
     if (not DB.DBA.is_empty_or_null (tags))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('CATEGORIES'), tags);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri2, vcard_iri ('CATEGORIES'), tags);
 		if (not DB.DBA.is_empty_or_null (hCountry) or not DB.DBA.is_empty_or_null (hState) or not DB.DBA.is_empty_or_null (hCity) or not DB.DBA.is_empty_or_null (hCode) or not DB.DBA.is_empty_or_null (hAddress1) or not DB.DBA.is_empty_or_null (hAddress2))
 		{
       temp_iri := iri2 || '#adr_home';
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('home'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('home'));
       if (not DB.DBA.is_empty_or_null (hAddress1))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Street'), hAddress1);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Street'), hAddress1);
       if (not DB.DBA.is_empty_or_null (hAddress2))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Extadd'), hAddress2);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Extadd'), hAddress2);
       if (not DB.DBA.is_empty_or_null (hCode))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Pobox'), hCode);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Pobox'), hCode);
       if (not DB.DBA.is_empty_or_null (hCity))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Locality'), hCity);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Locality'), hCity);
       if (not DB.DBA.is_empty_or_null (hState))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Region'), hState);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Region'), hState);
       if (not DB.DBA.is_empty_or_null (hCountry))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), hCountry);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), hCountry);
     }
 		if (not DB.DBA.is_empty_or_null (bCountry) or not DB.DBA.is_empty_or_null (bState) or not DB.DBA.is_empty_or_null (bCity) or not DB.DBA.is_empty_or_null (bCode) or not DB.DBA.is_empty_or_null (bAddress1) or not DB.DBA.is_empty_or_null (bAddress2))
 		{
       temp_iri := iri2 || '#adr_work';
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('work'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri2, vcard_iri ('ADR'), temp_iri);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, rdf_iri ('type'), vcard_iri ('work'));
       if (not DB.DBA.is_empty_or_null (hAddress1))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Street'), bAddress1);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Street'), bAddress1);
       if (not DB.DBA.is_empty_or_null (hAddress2))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Extadd'), bAddress2);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Extadd'), bAddress2);
       if (not DB.DBA.is_empty_or_null (hCode))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Pobox'), bCode);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Pobox'), bCode);
       if (not DB.DBA.is_empty_or_null (hCity))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Locality'), bCity);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Locality'), bCity);
       if (not DB.DBA.is_empty_or_null (hState))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Region'), bState);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Region'), bState);
       if (not DB.DBA.is_empty_or_null (hCountry))
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), bCountry);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Country'), bCountry);
     }
   }
   SIOC..contact_comments_insert (graph_iri, addressbook_iri, domain_id, contact_id);
@@ -928,8 +927,8 @@ create procedure contact_comment_insert (
 
       foaf_maker (graph_iri, u_url, u_name, u_mail);
       ods_sioc_post (graph_iri, comment_iri, forum_iri, null, title, last_update, last_update, null, comment, null, null, u_url);
-      DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
-      DB.DBA.RDF_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, sioc_iri ('has_reply'), comment_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, comment_iri, sioc_iri ('reply_of'), master_iri);
     }
 ;
 
@@ -1102,12 +1101,12 @@ create procedure contact_annotation_insert (
       return;
 		}
   annotattion_iri := addressbook_annotation_iri (domain_id, master_id, annotation_id);
-		DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
-		DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
-		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
 
 	  addressbook_claims_insert (graph_iri, annotattion_iri, claims);
 	}
@@ -1165,8 +1164,8 @@ create procedure addressbook_claims_insert (
     if (0 = length (cPedicate))
       cPedicate := rdfs_iri ('seeAlso');
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cURI);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cURI);
+    DB.DBA.ODS_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
   }
 }
 ;

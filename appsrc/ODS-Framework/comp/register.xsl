@@ -87,13 +87,15 @@
       <v:variable name="oid_postcode" type="varchar" default="''" param-name="openid.sreg.postcode" />
       <v:variable name="oid_country" type="varchar" default="''" param-name="openid.sreg.country" />
       <v:variable name="oid_tz" type="varchar" default="''" param-name="openid.sreg.timezone" />
-      <v:variable name="use_oid_url" type="int" default="0" param-name="uoid" persist="temp"/>
+    <v:variable name="uoid" type="integer" default="0" param-name="uoid" persist="temp"/>
       <v:variable name="ods_returnurl" type="varchar" default="''" param-name="RETURL"/>
+    <v:variable name="fb" type="DB.DBA.Facebook" default="null" />
     <div>
       <v:label name="regl1" value="--''" />
     </div>
     <v:form name="regf1" method="POST" type="simple">
-  <v:on-init><![CDATA[
+      <v:on-init>
+        <![CDATA[
     self.reg_tip := coalesce ((select top 1 WS_VERIFY_TIP from WA_SETTINGS), 0);
     if (__proc_exists ('IM AnnotateImageBlob', 2) is not null)
         self.im_enabled := 1;
@@ -104,8 +106,7 @@
          {
      if (not self.vc_event.ve_is_post)
        {
-         self.reg_number := rand (999999);
-         self.reg_number := cast (self.reg_number as varchar);
+                self.reg_number := cast (rand (999999) as varchar);
        }
             self.reg_number_img := "IM AnnotateImageBlob" ("IM CreateImageBlob" (60, 25, 'white', 'jpg'), 10, 15, self.reg_number);
      self.reg_number_img := encode_base64 (cast (self.reg_number_img as varchar));
@@ -125,8 +126,7 @@
       else
         res := a * b;
 
-      self.reg_number_txt :=
-      sprintf ('%d %s %d = ', a, case op when 0 then '+' when 1 then '-' else '*' end, b);
+              self.reg_number_txt := sprintf ('%d %s %d = ', a, case op when 0 then '+' when 1 then '-' else '*' end, b);
       self.reg_number := cast (res as varchar);
         }
     }
@@ -152,7 +152,7 @@
          ix := ix + 1;
          goto try_next;
         }
-        if (self.use_oid_url)
+            if (self.uoid)
         {
           self.reguid.ufl_value := self.oid_nickname;
           self.regmail.ufl_value := self.oid_email;
@@ -191,9 +191,13 @@
          }
      }
         self.reg_foafData := case when is_https_ctx () then ODS.ODS_API."user.getFOAFSSLData"(1, 0) else null end;
-        if (not self.use_oid_url and length (self.reg_foafData))
-          self.use_oid_url := 2;
-   ]]></v:on-init>
+          if (not self.uoid and length (self.reg_foafData))
+            self.uoid := 2;
+          declare fb_options any;
+          if (_get_ods_fb_settings (fb_options))
+            self.fb := new Facebook(fb_options[0], fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
+        ]]>
+      </v:on-init>
     <v:template name="registration_na"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
      <div style="padding: 20px 20px 20px 35px;">
       This service is currently not accepting new registrations without invitation.
@@ -201,22 +205,23 @@
     </v:template>
     <v:template name="registration"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
     <div>
-          <div class="<?V case when self.use_oid_url = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
-          <div class="<?V case when self.use_oid_url = 1 then 'login_tabactive' else 'login_tab' end ?>" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
+          <div class="<?V case when self.uoid = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
+          <div class="<?V case when self.uoid = 1 then 'login_tabactive' else 'login_tab' end ?>" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
           <?vsp
             if (length (self.reg_foafData))
-              http (sprintf ('<div class="%s" id="tabSSL" onclick="loginTabToggle(this);">FOAF+SSL</div>', case when self.use_oid_url = 2 then 'login_tabactive' else 'login_tab' end));
+              http (sprintf ('<div class="%s" id="tabSSL" onclick="loginTabToggle(this);">FOAF+SSL</div>', case when self.uoid = 2 then 'login_tabactive' else 'login_tab' end));
+            if (not isnull(self.fb))
+              http (sprintf ('<div class="%s" id="tabFB" onclick="loginTabToggle(this);">Facebook</div>', case when self.uoid = 3 then 'login_tabactive' else 'login_tab' end));
           ?>
     </div>
     <br/>
     <div class="login_tabdeck"><!--container div start-->
-          <div id="login_info" style="height: 115px;<?V case when self.use_oid_url = 0 then '' else 'display:none;' end ?>">
+          <div id="login_info" style="height: 115px;<?V case when self.uoid = 0 then '' else 'display:none;' end ?>">
       <table width="100%">
             <tr>
                 <th width="30%"><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
               <td nowrap="nowrap">
                   <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--self.reg_uid" default_value="--self.oid_nickname" />
-            <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
     </td>
         </tr>
         <tr>
@@ -263,7 +268,7 @@
         <?vsp } ?>
       </table>
   </div>
-          <div id="login_openid" style="height: 115px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+          <div id="login_openid" style="height: 115px;<?V case when self.uoid = 1 then '' else 'display:none;' end ?>">
             <table width="100%">
               <tr>
                 <th width="30%"><label for="reguid">OpenID</label></th>
@@ -273,15 +278,16 @@
                   <script type="text/javascript">
                     <![CDATA[
                       var is_disabled=<?V(case when self.oid_mode = 'id_res' and self.oid_sig is not null then 1 else 0 end)?>+0;
-                      if (is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
+                      if (is_disabled && $('openid_url'))
                       {
-                        document.getElementById('openid_url').disabled=true;
-                        document.getElementById('tabODS').style.display='none';
-                        document.getElementById('tabSSL').style.display='none';
+                        $('openid_url').disabled = true;
+                        $('tabODS').style.display = 'none';
+                        $('tabSSL').style.display = 'none';
+                        $('tabFB').style.display = 'none';
                       }
                     ]]>
                   </script>
-                  <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
+                  <input type="hidden" id="uoid" name="uoid" value="<?Vself.uoid?>"/>
                 </td>
               </tr>
               <v:template name="oid_login_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_nickname is null or length(self.oid_nickname)<1) then 1 else 0 end)">
@@ -306,7 +312,7 @@
               </v:template>
             </table>
           </div>
-          <div id="login_ssl" style="height: 115px;<?V case when self.use_oid_url = 2 then '' else 'display:none;' end ?>">
+          <div id="login_ssl" style="height: 115px;<?V case when self.uoid = 2 then '' else 'display:none;' end ?>">
             <table width="100%">
               <?vsp
                 if (length (self.reg_foafData))
@@ -319,6 +325,26 @@
                     http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'Family name', get_keyword ('family_name', self.reg_foafData)));
                   if (get_keyword ('mbox', self.reg_foafData, '') <> '')
                     http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'E-Mail', get_keyword ('mbox', self.reg_foafData)));
+                }
+              ?>
+            </table>
+          </div>
+          <div id="login_fb" style="height: 115px;<?V case when self.uoid = 3 then '' else 'display:none;' end ?>">
+            <table width="100%">
+              <?vsp
+                if (not isnull(self.fb))
+                {
+                  if (length (self.fb._user))
+                  {
+                    declare _res any;
+                    _res := self.fb.api_client.users_getInfo(self.fb._user, 'name');
+                    http (sprintf ('<tr><th width="30%%"></th><td>Connected as <b><i>%s</i><b></td></tr>', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res))));
+                  }
+                  http (         '<tr><th width="30%"></th><td>');
+                  http (         '<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>');
+                  http (         '<fb:login-button autologoutlink="true" onlogin1="window.location=\'/ods/login.vspx\'"></fb:login-button>');
+                  http (sprintf ('<script type="text/javascript">FB.init("%s", "fb_dummy.vsp", {"reloadIfSessionStateChanged": true});</script>', self.fb.api_key));
+                  http (         '</td></tr>');
                 }
               ?>
             </table>
@@ -346,82 +372,55 @@
         <script type="text/javascript">
           <![CDATA[
             <!--
-            function getFirstName()
+            function loginTabReset()
             {
-              var F = document.forms['page_form'].regfirstname.value;
-              var N = document.forms['page_form'].regname.value;
-              if (!N.length)
-              {
-                document.forms['page_form'].regname.value = F;
-              }
-            }
-            function getLastName()
-            {
-              var F = document.forms['page_form'].regfirstname.value;
-              var L = document.forms['page_form'].reglastname.value;
-              var N = document.forms['page_form'].regname.value;
-              if (!N.length)
-                document.forms['page_form'].regname.value = F + ' ' + L;
-              else if (N.length > 0 )
-              {
-                if (N = F)
-                  document.forms['page_form'].regname.value = N + ' ' + L;
-              }
-            }
-      function showhideLogin (cb)
-      {
-       if (cb.checked)
-       {
-          OAT.Dom.hide ('login_info');
-          OAT.Dom.hide ('signup_span');
-              } else {
-          OAT.Dom.show ('login_info');
-          OAT.Dom.show ('signup_span');
-       }
+              $('tabOpenID').className='login_tab';
+              $('tabODS').className='login_tab';
+              $('tabSSL').className='login_tab';
+              $('tabFB').className='login_tab';
+              OAT.Dom.hide($('login_info'));
+              OAT.Dom.hide($('login_openid'));
+              OAT.Dom.hide($('login_ssl'));
+              OAT.Dom.hide($('login_fb'));
       }
       function loginTabToggle(tabObj)
       {
               if (!tabObj)
                 return;
-        if(tabObj.id=='tabOpenID')
+              loginTabReset();
+              if (tabObj.id == 'tabODS')
+              {
+                $('tabODS').className='login_tabactive';
+                OAT.Dom.show($('login_info'));
+                $('uoid').value = 0;
+              }
+              else if (tabObj.id == 'tabOpenID')
         {
            $('tabOpenID').className='login_tabactive';
-           $('tabODS').className='login_tab';
-                $('tabSSL').className='login_tab';
-           OAT.Dom.hide($('login_info'));
            OAT.Dom.show($('login_openid'));
-                OAT.Dom.hide($('login_ssl'));
            $('uoid').value=1;
-                return;
               }
-              if(tabObj.id == 'tabSSL')
+              else if(tabObj.id == 'tabSSL')
               {
-                $('tabOpenID').className='login_tab';
-                $('tabODS').className='login_tab';
                 $('tabSSL').className='login_tabactive';
-                OAT.Dom.hide($('login_info'));
-                OAT.Dom.hide($('login_openid'));
                 OAT.Dom.show($('login_ssl'));
                 $('uoid').value = 2;
-                return;
               }
-              if(tabObj.id == 'tabODS')
+              else if(tabObj.id == 'tabFB')
               {
-           $('tabOpenID').className='login_tab';
-           $('tabODS').className='login_tabactive';
-                $('tabSSL').className='login_tab';
-           OAT.Dom.hide($('login_openid'));
-           OAT.Dom.show($('login_info'));
-                OAT.Dom.hide($('login_ssl'));
-                $('uoid').value = 0;
+                $('tabFB').className='login_tabactive';
+                OAT.Dom.show($('login_fb'));
+                $('uoid').value = 3;
         }
       }
 
-      var activeTab=<?Vself.use_oid_url?>+0;
+            var activeTab=<?Vself.uoid?>+0;
       if(activeTab==1)
          loginTabToggle($('tabOpenID'));
             else if (activeTab == 2)
               loginTabToggle($('tabSSL'));
+            else if (activeTab == 3)
+              loginTabToggle($('tabFB'));
       else
          loginTabToggle($('tabODS'));
             // -->
@@ -429,10 +428,14 @@
         </script>
       <v:on-post>
    <![CDATA[
-           if ((self.use_oid_url = 0) or (self.use_oid_url = 2) or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url))
+            declare data any;
+
+            data := vector ();
+            if ((self.uoid in (0, 2, 3)) or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.uoid))
 {
              declare u_name1, u_mail1, u_password1, u_password2, dom_reg varchar;
-             declare country, city, lat, lng, xt, xp, uoid any;
+              declare country, city, lat, lng, xt, xp any;
+
              declare exit handler for sqlstate '*'
    {
                self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
@@ -440,20 +443,31 @@
                rollback work;
                return;
              };
-             if (self.use_oid_url = 2)
+
+              if (self.uoid = 2)
        {
-               u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', self.reg_foafData), replace (get_keyword ('name', self.reg_foafData), ' ', '')));
-               u_mail1 := get_keyword ('mbox', self.reg_foafData);
+                data := self.reg_foafData;
+                u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+                u_mail1 := get_keyword ('mbox', data);
                u_password1 := uuid ();
                u_password2 := u_password1;
-             } else {
+              }
+              else if (self.uoid = 3)
+              {
+                data := ODS.ODS_API."user.getFacebookData"(fb=>self.fb, fields=>'uid,name,first_name,last_name,sex,birthday', outputMode=>0);
+                u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+                u_mail1 := null;
+                u_password1 := uuid ();
+                u_password2 := u_password1;
+              }
+              else
+              {
                u_name1 := trim (self.reguid.ufl_value);
                u_mail1 := trim (self.regmail.ufl_value);
                u_password1 := trim (self.regpwd.ufl_value);
                u_password2 := trim (self.regpwd1.ufl_value);
    }
 
-             uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
              dom_reg := (select WD_MODEL from WA_DOMAINS where WD_HOST = http_map_get ('vhost') and WD_LISTEN_HOST = http_map_get ('lhost') and WD_LPATH = http_map_get ('domain'));
              if (((dom_reg is not null) and (dom_reg = 0)) or (not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1)))
    {
@@ -479,6 +493,8 @@
            self.vc_is_valid := 0;
            return;
          }
+              if (self.uoid <> 3)
+              {
              if (u_mail1 is null or length (u_mail1) < 1 or length (u_mail1) > 40)
          {
            self.vc_error_message := 'E-mail address cannot be empty or longer then 40 chars';
@@ -491,6 +507,7 @@
            self.vc_is_valid := 0;
            return;
              }
+              }
              if (exists (select 1 from SYS_USERS where U_E_MAIL = u_mail1) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
          {
                if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
@@ -517,7 +534,7 @@
                self.vc_is_valid := 0;
                return;
              }
-             if (uoid = 1 and not self.vc_is_valid and not self.reguid.ufl_failed)
+              if (self.uoid = 1 and not self.vc_is_valid and not self.reguid.ufl_failed)
              {
                self.vc_is_valid := 1;
                self.regpwd.ufl_failed := 0;
@@ -527,7 +544,7 @@
              declare uid integer;
              declare sid any;
              -- check if this login already exists
-             if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
+              if ((self.uoid = 1) and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
              {
                if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
                  self.vc_redirect (sprintf('index.html#msg=%U', 'This OpenID identity is already registered.'));
@@ -535,6 +552,14 @@
                self.vc_is_valid := 0;
                return;
              }
+              if ((self.uoid = 3) and exists (select 1 from WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = self.fb._user))
+              {
+                if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
+                  self.vc_redirect (sprintf('index.html#msg=%U', 'This Facebook identity is already registered.'));
+                self.vc_error_message := 'This Facebook identity is already registered.';
+                self.vc_is_valid := 0;
+                return;
+              }
 
          -- determine if mail verification is necessary
          declare _mail_verify_on any;
@@ -584,7 +609,7 @@ no_date:
          WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', (select WC_NAME from WA_COUNTRY where WC_ISO_CODE = upper (self.oid_country)));
               if (length (self.oid_tz))
          WA_USER_EDIT (u_name1, 'WAUI_HTZONE', self.oid_tz);
-              if (self.use_oid_url)
+                if (self.uoid = 1)
           {
             update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity, WAUI_OPENID_SERVER = self.oid_srv where WAUI_U_ID = uid;
      }
@@ -593,28 +618,39 @@ no_date:
 
                lat := null;
                lng := null;
-               if (uoid = 2)
+                if (self.uoid = 2)
                {
-                  WA_USER_EDIT (u_name1, 'WAUI_TITLE'        , get_keyword ('title', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME'    , get_keyword ('name', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_LAST_NAME'    , get_keyword ('family_name', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_GENDER'       , get_keyword ('gender', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_ICQ'          , get_keyword ('icqChatID', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_MSN'          , get_keyword ('msnChatID', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_AIM'          , get_keyword ('aimChatID', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_YAHOO'        , get_keyword ('yahooChatID', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('workplaceHomepage', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_WEBPAGE'      , get_keyword ('homepage', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_HPHONE'       , get_keyword ('phone', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', self.reg_foafData));
-                  WA_USER_EDIT (u_name1, 'WAUI_BORG'         , get_keyword ('organizationTitle', self.reg_foafData));
+                  WA_USER_EDIT (u_name1, 'WAUI_TITLE'        , get_keyword ('title', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_GENDER'       , get_keyword ('gender', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_ICQ'          , get_keyword ('icqChatID', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_MSN'          , get_keyword ('msnChatID', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_AIM'          , get_keyword ('aimChatID', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_YAHOO'        , get_keyword ('yahooChatID', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('workplaceHomepage', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_WEBPAGE'      , get_keyword ('homepage', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_HPHONE'       , get_keyword ('phone', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
                   WA_USER_EDIT (u_name1, 'WAUI_CERT'         , client_attr ('client_certificate'));
                   WA_USER_EDIT (u_name1, 'WAUI_CERT_LOGIN'   , 1);
 
-                  lat := get_keyword ('lat', self.reg_foafData);
-                  lng := get_keyword ('lng', self.reg_foafData);
+                  lat := get_keyword ('lat', data);
+                  lng := get_keyword ('lng', data);
+                }
+                if (self.uoid = 3)
+                {
+                  WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+                  -- WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', data));
+                  WA_USER_EDIT (u_name1, 'WAUI_GENDER'       , get_keyword ('gender', data));
+
+                  -- facebook
+                  WA_USER_EDIT (u_name1, 'WAUI_FACEBOOK_LOGIN_ID', self.fb._user);
                }
      declare exit handler for sqlstate '*';
 
@@ -654,10 +690,6 @@ no_date:
      WA_USER_EDIT (u_name1, 'WAUI_LATLNG_HBDEF', 0);
        }
    }
-
-   if(self.fb_id.ufl_value is not null and length(self.fb_id.ufl_value)>0)
-     WA_USER_EDIT (u_name1, 'WAUI_FACEBOOK_ID', cast(self.fb_id.ufl_value as integer));
-
    insert soft sn_person (sne_name, sne_org_id) values (u_name1, uid);
 
          if ((self.wa_nameR) is not null)
@@ -783,23 +815,21 @@ no_date:
 else
 {
 --openid post
-declare hdr, xt, uoid, is_agreed,ods_returnurl any;
+              declare hdr, xt, is_agreed,ods_returnurl any;
 declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
            declare oi2_srv, oi2_delegate varchar;
 
 host := http_request_header (e.ve_lines, 'Host');
-
-uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
 is_agreed := atoi(get_keyword ('is_agreed', e.ve_params, '0'));
 
-if (uoid and not is_agreed)
+              if (self.uoid and not is_agreed)
   {
     self.vc_error_message := 'You have not agreed to the Terms of Service.';
     self.vc_is_valid := 0;
     return;
   }
 
-  	         this_page := case when is_https_ctx () then 'https://' else 'http://' end || host || http_path () || sprintf ('?uoid=%d', uoid);
+  	          this_page := case when is_https_ctx () then 'https://' else 'http://' end || host || http_path () || sprintf ('?uoid=%d', self.uoid);
 if(self.ods_returnurl is not null)
    this_page := this_page || sprintf ('&RETURL=%s', self.ods_returnurl);
 

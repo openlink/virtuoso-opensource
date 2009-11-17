@@ -335,6 +335,23 @@ create procedure CAL.WA.url_fix (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.url_schema_fix (
+  in S varchar)
+{
+  declare schemas any;
+
+  schemas := vector ('feed://', 'webcal://');
+  foreach (any aSchema in schemas) do
+  {
+    if (S like (aSchema || '%'))
+      return 'http://' || subseq (S, length (aSchema));
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.exec (
   in S varchar,
   in P any := null)
@@ -1338,6 +1355,7 @@ create procedure CAL.WA.dav_content (
   declare content, oldUri, newUri, reqHdr, resHdr varchar;
   declare xt any;
 
+  uri := CAL.WA.url_schema_fix (uri);
   newUri := replace (uri, ' ', '%20');
   reqHdr := null;
   if (is_empty_or_null (auth_username))
@@ -3550,6 +3568,7 @@ create procedure CAL.WA.settings_init (
   CAL.WA.set_keyword ('timeZone', settings, tz);
   CAL.WA.set_keyword ('timeZoneName', settings, get_keyword ('timeZoneName', settings, case when tz = 0 then 'Etc/GMT' else CAL.WA.tz_name (tz) end));
   CAL.WA.set_keyword ('showTasks', settings, cast (get_keyword ('showTasks', settings, '0') as integer));
+  CAL.WA.set_keyword ('mailAttendees', settings, cast (get_keyword ('mailAttendees', settings, '1') as integer));
 
   CAL.WA.set_keyword ('conv', settings, cast (get_keyword ('conv', settings, '0') as integer));
   CAL.WA.set_keyword ('conv_init', settings, cast (get_keyword ('conv_init', settings, '0') as integer));
@@ -3730,6 +3749,15 @@ create procedure CAL.WA.settings_showTasks (
   in settings any)
 {
   return cast (get_keyword ('showTasks', settings, '1') as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_mailAttendees (
+  in settings any)
+{
+  return cast (get_keyword ('mailAttendees', settings, '1') as integer);
 }
 ;
 
@@ -4812,8 +4840,8 @@ create procedure CAL.WA.attendees_update (
       attendees_id := (select AT_ID from CAL.WA.ATTENDEES where AT_EVENT_ID = id and AT_MAIL = mail);
       if (isnull (attendees_id))
       {
-        insert into CAL.WA.ATTENDEES (AT_UID, AT_EVENT_ID, AT_NAME, AT_MAIL)
-          values (CAL.WA.uid (), id, V[N][0], V[N][1]);
+        insert into CAL.WA.ATTENDEES (AT_UID, AT_EVENT_ID, AT_ROLE, AT_NAME, AT_MAIL)
+          values (CAL.WA.uid (), id, 'REQ-PARTICIPANT', V[N][0], V[N][1]);
       }
     }
   }
@@ -4824,10 +4852,11 @@ create procedure CAL.WA.attendees_update (
 --
 create procedure CAL.WA.attendees_update2 (
   in id integer,
-  in attendees any)
+  in attendees any,
+  in mailAttendees any := 2)
 {
   declare N, attendees_id integer;
-  declare mail varchar;
+  declare mail, status varchar;
 
   for (N := 0; N < length (attendees); N := N + 1)
   {
@@ -4837,8 +4866,17 @@ create procedure CAL.WA.attendees_update2 (
       attendees_id := (select AT_ID from CAL.WA.ATTENDEES where AT_EVENT_ID = id and AT_MAIL = mail);
       if (isnull (attendees_id))
       {
-        insert into CAL.WA.ATTENDEES (AT_UID, AT_EVENT_ID, AT_NAME, AT_MAIL, AT_STATUS)
-          values (CAL.WA.uid (), id, attendees[N][0], attendees[N][1], attendees[N][2]);
+        status := attendees[N][3];
+        if (mailAttendees = 1)
+        {
+          status := null;
+        }
+        else if ((mailAttendees = 2) and status is null)
+        {
+          status := 'N';
+        }
+        insert into CAL.WA.ATTENDEES (AT_UID, AT_EVENT_ID, AT_ROLE, AT_NAME, AT_MAIL, AT_STATUS)
+          values (CAL.WA.uid (), id, attendees[N][0], attendees[N][1], attendees[N][2], status);
       }
     }
   }
@@ -4879,11 +4917,12 @@ create procedure CAL.WA.attendees_select (
 {
   declare attendees any;
 
-  attendees := vector ();
+  vectorbld_init (attendees);
   for (select * from CAL.WA.ATTENDEES where AT_EVENT_ID = id and ((coalesce (AT_STATUS, 'N') = status) or (status is null)) order by AT_MAIL) do
   {
-    attendees := vector_concat (attendees, vector (vector (AT_NAME, AT_MAIL, AT_STATUS, coalesce (AT_DATE_REQUEST, AT_DATE_RESPOND))));
+    vectorbld_acc (attendees, vector (AT_ROLE, AT_NAME, AT_MAIL, AT_STATUS, coalesce (AT_DATE_REQUEST, AT_DATE_RESPOND)));
   }
+  vectorbld_final (attendees);
   return attendees;
 }
 ;
@@ -4892,7 +4931,7 @@ create procedure CAL.WA.attendees_select (
 --
 create procedure CAL.WA.attendees_mails ()
 {
-  declare save_id, account_id, domain_id integer;
+  declare save_id, account_id, domain_id, mailAttendees integer;
   declare T, H varchar;
   declare dateFormat, timeFormat varchar;
   declare url, account_mail, subject, period, subject_mail, content_text, content_html varchar;
@@ -4940,17 +4979,24 @@ create procedure CAL.WA.attendees_mails ()
        ' Please RSVP: %s\n';
 
   save_id := -1;
-  for (select AT_ID as id, AT_UID as uid, AT_EVENT_ID as event_id, AT_MAIL as mail from CAL.WA.ATTENDEES where AT_DATE_REQUEST is null order by AT_EVENT_ID) do
+  for (select AT_ID as id, AT_UID as uid, AT_EVENT_ID as event_id, AT_MAIL as mail
+         from CAL.WA.ATTENDEES
+        where AT_DATE_REQUEST is null
+          and AT_STATUS is null
+        order by AT_EVENT_ID) do
   {
     if (save_id <> event_id)
     {
       for (select * from CAL.WA.EVENTS where E_ID = event_id) do
       {
+        domain_id := E_DOMAIN_ID;
+        mailAttendees := CAL.WA.settings_mailAttendees (CAL.WA.settings (domain_id));
+        if (not mailAttendees)
+      	  goto _next;
       	if ((E_EVENT_END < now ()) and (E_REPEAT = '' or E_REPEAT is null))
       	  goto _next;
         if (E_REPEAT_UNTIL < now ())
       	  goto _next;
-        domain_id := E_DOMAIN_ID;
         dateFormat := CAL.WA.settings_dateFormat2 (domain_id);
         timeFormat := CAL.WA.settings_timeFormat2 (domain_id);
         subject := E_SUBJECT;
@@ -4969,7 +5015,9 @@ create procedure CAL.WA.attendees_mails ()
 
     declare exit handler for sqlstate '*'
     {
-      update CAL.WA.ATTENDEES set AT_LOG = __SQL_MESSAGE where AT_ID = id;
+      update CAL.WA.ATTENDEES
+         set AT_LOG = __SQL_MESSAGE
+       where AT_ID = id;
       goto _next;
     };
 
@@ -4977,7 +5025,10 @@ create procedure CAL.WA.attendees_mails ()
     content_html := sprintf (H, subject, period, url, url, url);
     content_text := sprintf (T, subject, period, url);
     CAL.WA.send_mail (account_mail, mail, subject_mail, content_text, content_html);
-    update CAL.WA.ATTENDEES set AT_DATE_REQUEST = now () where AT_ID = id;
+    update CAL.WA.ATTENDEES
+       set AT_DATE_REQUEST = now (),
+           AT_STATUS = 'N'
+     where AT_ID = id;
 
   _next:;
   }
@@ -5468,16 +5519,17 @@ create procedure CAL.WA.export_vcal_attendees (
   {
     if (accountMail = V[N][1])
       accountFounded := 1;
-    CAL.WA.export_vcal_attendees_line (V[N][0], V[N][1], V[N][2], sStream);
+    CAL.WA.export_vcal_attendees_line (V[N][0], V[N][1], V[N][2], V[N][3], sStream);
   }
   if (not accountFounded)
-    CAL.WA.export_vcal_attendees_line (CAL.WA.account_fullName (account_id), accountMail, 'A', sStream);
+    CAL.WA.export_vcal_attendees_line ('REQ-PARTICIPANT', CAL.WA.account_fullName (account_id), accountMail, 'A', sStream);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.export_vcal_attendees_line (
+  in attendeeRole varchar,
   in attendeeName varchar,
   in attendeeMail varchar,
   in attendeeStatus varchar,
@@ -5489,7 +5541,7 @@ create procedure CAL.WA.export_vcal_attendees_line (
   X := vector ('A', 'ACCEPTED', 'D', 'DECLINED', 'T', 'TENTATIVE');
   T := get_keyword (attendeeStatus, X, 'NEEDS-ACTION');
   S := case when (is_empty_or_null (attendeeName)) then '' else ';CN=' || attendeeName end;
-  http (sprintf ('ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=%s%s:mailto:%s\r\n', T, S, attendeeMail), sStream);
+  http (sprintf ('ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=%s;PARTSTAT=%s%s:mailto:%s\r\n', attendeeRole, T, S, attendeeMail), sStream);
 }
 ;
 
@@ -5634,7 +5686,7 @@ create procedure CAL.WA.import_vcal (
   in updatedBefore integer := null)
 {
   declare N, nLength integer;
-  declare oEvents, oTasks, oTags, oSync any;
+  declare oEvents, oTasks, oTags, oSync, oMailAttendees any;
   declare tmp, xmlData, xmlItems, itemName, V any;
   declare id,
           uid,
@@ -5668,12 +5720,14 @@ create procedure CAL.WA.import_vcal (
   oTasks := 1;
   oTags := '';
   oSync := 0;
+  oMailAttendees := 2;
   if (not isnull (options))
   {
     oEvents := cast (get_keyword ('events', options, oEvents) as integer);
     oTasks := cast (get_keyword ('tasks', options, oTasks) as integer);
     oTags := get_keyword ('tags', options, '');
     oSync := cast (get_keyword ('sync', options, oSync) as integer);
+    oMailAttendees := cast (get_keyword ('mailAttendees', options, oMailAttendees) as integer);
   }
 
   -- using DAV parser
@@ -5771,7 +5825,7 @@ create procedure CAL.WA.import_vcal (
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
           attendees := CAL.WA.import_vcal_attendees (xmlItem, sprintf ('IMC-VEVENT[%d]/ATTENDEE', N));
           if (length (attendees))
-            CAL.WA.attendees_update2 (id, attendees);
+            CAL.WA.attendees_update2 (id, attendees, oMailAttendees);
           connection_set ('__calendar_import', '0');
           vcalImported := vector_concat (vcalImported, vector (id));
 
@@ -5836,7 +5890,7 @@ create procedure CAL.WA.import_vcal (
             update CAL.WA.EVENTS set E_EXCHANGE_ID = exchange_id where E_ID = id;
           attendees := CAL.WA.import_vcal_attendees (xmlItem, sprintf ('IMC-VTODO[%d]/ATTENDEE', N));
           if (length (attendees))
-            CAL.WA.attendees_update2 (id, attendees);
+            CAL.WA.attendees_update2 (id, attendees, oMailAttendees);
           connection_set ('__calendar_import', '0');
           vcalImported := vector_concat (vcalImported, vector (id));
 
@@ -5866,21 +5920,23 @@ create procedure CAL.WA.import_vcal_attendees (
   in attendeePath varchar)
     {
   declare N, L integer;
-  declare attendeeName, attendeeMail, attendeeStatus varchar;
+  declare attendeeRole, attendeeName, attendeeMail, attendeeStatus varchar;
   declare retValue any;
 
-  retValue := vector ();
+  vectorbld_init (retValue);
   L := xpath_eval(sprintf ('count (%s)', attendeePath), xmlItem);
   for (N := 1; N <= L; N := N + 1)
   {
+    attendeeRole := cast (xquery_eval (sprintf ('//ATTENDEE[%d]/ROLE', N), xmlItem) as varchar);
     attendeeName := cast (xquery_eval (sprintf ('%s[%d]/CN', attendeePath, N), xmlItem) as varchar);
     attendeeMail := cast (xquery_eval (sprintf ('//ATTENDEE[%d]/val', N), xmlItem) as varchar);
     attendeeStatus := cast (xquery_eval (sprintf ('//ATTENDEE[%d]/PARTSTAT', N), xmlItem) as varchar);
     if (not is_empty_or_null (attendeeMail))
       attendeeMail := replace (attendeeMail, 'mailto:', '');
-    attendeeStatus := case when is_empty_or_null (attendeeStatus) then 'N' else left (attendeeStatus, 1) end;
-    retValue := vector_concat (retValue, vector (vector (attendeeName, attendeeMail, attendeeStatus)));
+    attendeeStatus := case when length (attendeeStatus) then left (attendeeStatus, 1) end;
+    vectorbld_acc (retValue, vector (attendeeRole, attendeeName, attendeeMail, attendeeStatus));
     }
+  vectorbld_final (retValue);
   return retValue;
 }
 ;

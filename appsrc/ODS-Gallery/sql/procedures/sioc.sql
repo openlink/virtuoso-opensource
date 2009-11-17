@@ -263,8 +263,8 @@ create procedure SIOC..comment_insert (
     cm_iri    := gallery_comment_iri (post_iri, _comment_id);
 
     SIOC..ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , _create_date, _modify_date, c_link, _text);
-  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
   }
 }
 ;

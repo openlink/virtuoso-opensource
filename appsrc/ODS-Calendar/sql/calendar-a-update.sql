@@ -100,6 +100,22 @@ create procedure CAL.WA.tmp_update ()
 ;
 CAL.WA.tmp_update ();
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_attendee_update2') = '1')
+    return;
+
+  set triggers off;
+  update CAL.WA.ATTENDEES set AT_ROLE = 'REQ-PARTICIPANT';
+  set triggers on;
+
+  registry_set ('cal_attendee_update2', '1');
+}
+;
+CAL.WA.tmp_update ();
+
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.tmp_update ()

@@ -79,7 +79,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                 OAT.Dom.hide (_divs[i]);
           }
       }
-     };
+  }
 
 //]]>
     </script>
@@ -1133,12 +1133,15 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 		<a href="javascript:void(0)">OpenID</a>
 	      </li>
               <li id="loginT3" style="display:none">
+		            <a href="javascript: void(0)">Facebook</a>
+	            </li>
+              <li id="loginT4" style="display:none">
 		            <a href="javascript: void(0)">FOAF+SSL</a>
 	            </li>
             </ul>
             <div class="tab_deck">
               <div id="loginPCtr"></div>
-              <div id="loginP1" class="tab_page">
+              <div id="loginP1" class="tab_page" style="min-height: 70px;">
 		<label for="loginUserName">Member ID</label>
             		<input type="text" name="loginUserName" value="" id="loginUserName"/>
             		<br />
@@ -1146,14 +1149,20 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
             		<input type="password" name="loginUserPass" value="" id="loginUserPass" />
      		        <br />
               </div>
-              <div id="loginP2" class="tab_page" style="display:none">
+              <div id="loginP2" class="tab_page" style="display:none; min-height: 70px;">
 		<label for="loginOpenIdUrl">OpenID URL
             		  <img alt="OpenID" src="images/login-bg.gif" style="vertical-align:bottom;margin-left:5px;"/>
 		</label>
   		          <input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" />
   		          <br />
               </div>
-              <div id="loginP3" class="tab_page" style="display:none">
+              <div id="loginP3" class="tab_page" style="display:none; min-height: 70px; padding-left: 100px;">
+                <span id="loginFBData" style="min-heght: 20px;"></span>
+                <br />
+                <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                <fb:login-button autologoutlink="true"></fb:login-button>
+              </div>
+              <div id="loginP4" class="tab_page" style="display:none; min-height: 70px; ">
               </div>
             </div> <!-- tab_deck -->
             <div id="login_ctrls">
