@@ -180,7 +180,7 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
       int l, hl;
       WP_LENGTH (page + wst->sst_pos, hl, l, page, len);
       copy_len = wst->sst_pos + hl + l;
-      if (copy_len > wst->sst_buffer_size)
+      if (copy_len >= wst->sst_buffer_size)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
@@ -193,7 +193,7 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
   else
     {
       copy_len = len - wst->sst_pos;
-      if (copy_len > wst->sst_buffer_size)
+      if (copy_len >= wst->sst_buffer_size)
 	{
 	  dk_free_box (wst->sst_buffer);
 	  wst->sst_buffer = dk_alloc_box (copy_len + 1, DV_LONG_STRING);
