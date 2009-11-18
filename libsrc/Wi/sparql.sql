@@ -9343,7 +9343,8 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   declare new_ro_ids, vtb any;
   declare gwordump varchar;
   declare n_w, n_ins, n_upd, n_next integer;
-  new_ro_ids := dict_list_keys (ro_id_dict, 2);
+next_batch:
+  new_ro_ids := dict_destructive_list_rnd_keys (ro_id_dict, 500000);
   ro_ids_count := length (new_ro_ids);
   if (0 = ro_ids_count)
     return;
@@ -9361,7 +9362,7 @@ again:
     }
   "DB"."DBA"."VT_BATCH_PROCESS_DB_DBA_RDF_OBJ" (vtb);
   commit work;
-  return;
+  goto next_batch;
 retry_add:
   rollback work;
   goto again;
