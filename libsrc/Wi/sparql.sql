@@ -368,11 +368,11 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   delete from DB.DBA.RDF_GRAPH_GROUP;
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER;
   delete from DB.DBA.RDF_GRAPH_USER;
-  dict_list_keys (__rdf_graph_group_dict(), 2);
-  dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
-  dict_list_keys (__rdf_graph_default_perms_of_user_dict(0), 2);
-  dict_list_keys (__rdf_graph_default_perms_of_user_dict(1), 2);
-  dict_list_keys (__rdf_graph_public_perms_dict(), 2);
+  dict_zap (__rdf_graph_group_dict(), 2);
+  dict_zap (__rdf_graph_group_of_privates_dict(), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(0), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(1), 2);
+  dict_zap (__rdf_graph_public_perms_dict(), 2);
   commit work;
   if (hard)
     {
@@ -9188,7 +9188,8 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   declare new_ro_ids, vtb any;
   declare gwordump varchar;
   declare n_w, n_ins, n_upd, n_next integer;
-  new_ro_ids := dict_list_keys (ro_id_dict, 2);
+next_batch:
+  new_ro_ids := dict_destructive_list_rnd_keys (ro_id_dict, 500000);
   ro_ids_count := length (new_ro_ids);
   if (0 = ro_ids_count)
     return;
@@ -9199,7 +9200,7 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
     {
       commit work;
       cl_g_words (new_ro_ids, gwordump, daq);
-      return;
+      goto next_batch;
     }
   vtb := vt_batch (__min (__max (ro_ids_count, 31), 500000));
   commit work;
@@ -9223,13 +9224,13 @@ again:
 	{
 	  while (daq_next (daq));
 	  commit work;
-	  return;
+	  goto next_batch;
 	}
     }
   else
     "DB"."DBA"."VT_BATCH_PROCESS_DB_DBA_RDF_OBJ" (vtb, null);
   commit work;
-  return;
+  goto next_batch;
 retry_add:
   rollback work;
   goto again;
