@@ -24,25 +24,6 @@
 -->
 <v:page name="home" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="set_recursive" arglist="in path any, in dav_perms any, in dav_owner any, in dav_group any">
-    <![CDATA[
-      declare items any;
-
-      items := ODRIVE.WA.DAV_DIR_LIST (path, 0);
-      foreach (any item in items) do
-      {
-        declare itemPath varchar;
-
-        itemPath := item[0];
-        ODRIVE.WA.DAV_SET(itemPath, 'permissions', dav_perms);
-        ODRIVE.WA.DAV_SET(itemPath, 'ownerID', dav_owner);
-        ODRIVE.WA.DAV_SET(itemPath, 'groupID', dav_group);
-        if (item[1] = 'C')
-          self.set_recursive (itemPath, dav_perms, dav_owner, dav_group);
-      }
-    ]]>
-  </v:method>
-
   <v:method name="dc_prepare" arglist="">
     <![CDATA[
       if (self.noPrepare)
@@ -364,7 +345,7 @@
       declare N, M, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
       declare properties, c_properties any;
-      declare dav_acl, dav_filename, dav_file, rdf_content any;
+      declare dav_aci, dav_acl, dav_filename, dav_file, rdf_content any;
       declare params, itemList any;
 
       params := self.vc_page.vc_event.ve_params;
@@ -638,8 +619,15 @@
               }
             }
 
+            -- ACI (Web Access)
+            if (self.dav_type = 'R')
+            {
+              dav_aci := ODRIVE.WA.aci_n3 (ODRIVE.WA.aci_params (params));
+              ODRIVE.WA.DAV_RES_UPLOAD (dav_fullPath || ',meta.n3', dav_aci, http_mime_type(dav_fullPath || ',meta.n3'), dav_perms, dav_owner, dav_group);
+
             if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
               ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
+          }
           }
 
           -- Folder
@@ -656,7 +644,7 @@
             {
               if (get_keyword ('dav_recursive', params, '') <> '')
               {
-                  self.set_recursive (self.dav_path, dav_perms, dav_owner, dav_group);
+                ODRIVE.WA.DAV_SET_RECURSIVE (self.dav_path, dav_perms, dav_owner, dav_group);
               }
                 if (dav_detType <> 'Versioning')
                 {
@@ -1797,22 +1785,25 @@
 
             <v:template name="tform_20" type="simple" enabled="-- gte(self.command_mode, 10)">
               <div id="2" class="tabContent">
+                <fieldset>
+                  <legend><b>ODS users/groups</b></legend>
+                  <table>
+                    <tr>
+                      <td width="100%">
                 <?vsp
                   declare N integer;
                   declare acl_values, acl, D any;
 
                   acl_values := ODRIVE.WA.acl_vector (self.dav_acl);
                   http (sprintf ('<input type="hidden" name="acl_seqNo" id="acl_seqNo" value="%d" />', length (acl_values)));
-                  if (self.dav_enable)
-                    http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
                 ?>
-                <table id="aceProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                        <table id="aclProperties" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
                     <th align="center" nowrap="nowrap">User/Group</th>
                     <th align="center">Inheritance</th>
-                    <th align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
-                    <th align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
-                    <th>&amp;nbsp;</th>
+                            <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                            <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
+                            <th width="1%">Action</th>
                   </tr>
                   <tbody id="acl_tbody">
               		  <![CDATA[
@@ -1834,6 +1825,64 @@
               		  ]]>
               		</tbody>
                 </table>
+                      </td>
+                      <td valign="top" nowrap="nowrap">
+                        <?vsp
+                          if (self.dav_enable)
+                            http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
+                        ?>
+                      </td>
+                    </tr>
+                  </table>
+                </fieldset>
+                <vm:if test="self.dav_path not like '%,meta.n3'">
+                  <fieldset>
+                    <legend><b>FOAF+SSL users</b></legend>
+                    <table>
+                      <tr>
+                        <td width="100%">
+                          <?vsp
+                            declare N integer;
+                            declare aci_values, aci, D any;
+
+                            aci_values := ODRIVE.WA.aci_load (self.dav_path);
+                            http (sprintf ('<input type="hidden" name="aci_seqNo" id="aci_seqNo" value="%d" />', length (aci_values)));
+                          ?>
+                          <table id="aciProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                            <tr>
+                              <th align="center" nowrap="nowrap">User's WebID</th>
+                              <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <th width="1%" >Action</th>
+                            </tr>
+                            <tbody id="aci_tbody">
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                        		    <?vsp
+                        		      declare aciEnable, aciValues varchar;
+
+                                  aciEnable := case when self.dav_enable then 'true' else 'false' end;
+                                  for (N := 0; N < length (aci_values); N := N + 1)
+                                  {
+                                    aciValues := sprintf ('{user: \'%s\', r_grant: %d, w_grant: %d, x_grant: %d}', aci_values[N][1], aci_values[N][2], aci_values[N][3], aci_values[N][4]);
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciRowCreate(%s, %s);});', aciEnable, aciValues));
+                                  }
+                        		    ?>
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciEmptyCreate();})
+                        		    </script>
+                        		  ]]>
+                        		</tbody>
+                          </table>
+                        </td>
+                        <td valign="top" nowrap="nowrap">
+                          <?vsp
+                            if (self.dav_enable)
+                              http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aciRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
+                          ?>
+                        </td>
+                      </tr>
+                    </table>
+                  </fieldset>
+                </vm:if>
               </div>
             </v:template>
 

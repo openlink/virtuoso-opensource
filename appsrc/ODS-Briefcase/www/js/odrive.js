@@ -1189,7 +1189,7 @@ ODRIVE.aclEmptyCreate = function ()
         var td = OAT.Dom.create('td');
         td.colSpan = "5";
         td.style.textAlign = 'center';
-        td.innerHTML = '<br />No Security Properties<br /><br />';
+        td.innerHTML = 'No Security Properties';
         tr_empty.appendChild(td);
       }
     }
@@ -1354,17 +1354,172 @@ ODRIVE.aclRowCreate = function (aclEnable, rowEnable, values)
     td.style['whiteSpace'] = 'nowrap';
     if (aclEnable && rowEnable)
     {
-      var span = OAT.Dom.create('span');
-      span.id = 'acl_span_5_' + seqNo;
-      span.onclick = function (){ODRIVE.aclRowRemove(''+seqNo)};
-      OAT.Dom.addClass(span, 'button3');
-      OAT.Dom.addClass(span, 'pointer');
       var img = OAT.Dom.image('image/del_16.png');
-      span.appendChild(img);
-      span.appendChild(OAT.Dom.text(' Delete'));
-      td.appendChild(span);
+      img.onclick = function (){ODRIVE.aclRowRemove(''+seqNo)};
+      OAT.Dom.addClass(img, 'pointer');
+      td.appendChild(img);
     }
     $('acl_seqNo').value = seqNo+1;
+  }
+}
+
+ODRIVE.aciUpdate = function (claimNo)
+{
+  if (claimNo == 'xxx')
+  {
+    if ($v('aci_user_xxx') == '')
+    {
+      alert ('The users/groups fields can not be empty|');
+    }
+    else
+    {
+      var tr = $('aci_tr_xxx');
+      if (tr)
+      {
+        var seqNo = parseInt($v('aci_seqNo'));
+
+        var tr_add = OAT.Dom.create('tr');
+        tr_add.id = 'aci_tr_'+seqNo;
+
+        var S = tr.innerHTML;
+        S = S.replaci(/xxx/g, ''+seqNo);
+        S = S.replaci(/add_16/g, 'del_16');
+        S = S.replaci(/Add/g, 'Delete');
+
+        var tr_parent = $('aci_tr').parentNode;
+        tr_parent.insertBefore(tr_add, $('aci_tr'));
+        tr_add.innerHTML = S;
+
+        $('aci_user_'+seqNo).value = $v('aci_user_xxx');
+        $('aci_r_grant_'+seqNo).checked = $('aci_r_grant_xxx').checked;
+        $('aci_w_grant_'+seqNo).checked = $('aci_w_grant_xxx').checked;
+        $('aci_x_grant_'+seqNo).checked = $('aci_x_grant_xxx').checked;
+
+        $('aci_user_xxx').value = '';
+        $('aci_r_grant_xxx').checked = true;
+        $('aci_w_grant_xxx').checked = true;
+        $('aci_x_grant_xxx').checked = false;
+        $('aci_seqNo').value = seqNo + 1;
+      }
+    }
+  }
+  else
+  {
+    OAT.Dom.unlink('aci_tr_'+claimNo);
+  }
+}
+
+ODRIVE.aciEmptyCreate = function ()
+{
+  var tbody = $('aci_tbody');
+  if (tbody)
+  {
+    var rows = tbody.getElementsByTagName("tr");
+    if (rows.length == 0)
+    {
+      var tr_empty = $('aci_empty');
+      if (!tr_empty)
+      {
+        var tr_empty = OAT.Dom.create('tr');
+        tr_empty.id = 'aci_empty';
+        tbody.appendChild(tr_empty);
+
+        var td = OAT.Dom.create('td');
+        td.colSpan = "3";
+        td.style.textAlign = 'center';
+        td.innerHTML = 'No Security Properties';
+        tr_empty.appendChild(td);
+      }
+    }
+  }
+}
+
+ODRIVE.aciEmptyRemove = function ()
+{
+  OAT.Dom.unlink('aci_empty');
+}
+
+ODRIVE.aciRowRemove = function (rowID)
+{
+  OAT.Dom.unlink('aci_tr_'+rowID);
+  ODRIVE.aciEmptyCreate();
+}
+
+ODRIVE.aciRowCreate = function (aciEnable, values)
+{
+  var tbody = $('aci_tbody');
+  if (tbody)
+  {
+    ODRIVE.aciEmptyRemove();
+    var seqNo = parseInt($v('aci_seqNo'));
+    var tr = OAT.Dom.create('tr');
+    tr.id = 'aci_tr_' + seqNo;
+    tbody.appendChild(tr);
+
+    // column 0
+    var td = OAT.Dom.create('td');
+    tr.appendChild(td);
+    td.style['whiteSpace'] = 'nowrap';
+		var field = OAT.Dom.create("input");
+		field.type = 'text';
+    field.id = 'aci_user_' + seqNo;
+    field.name = field.id;
+    field.style.width = '100%';
+    if (values && values.user)
+      field.value = values.user;
+    if (!aciEnable)
+      field.disabled = true;
+    td.appendChild(field);
+
+    // column 1
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    td.style.textAlign = 'center';
+    tr.appendChild(td);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'aci_r_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.r_grant)
+      field.checked = true;
+    if (!aciEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'aci_w_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.w_grant)
+      field.checked = true;
+    if (!aciEnable)
+      field.disabled = true;
+    td.appendChild(field);
+		var field = OAT.Dom.create("input");
+    field.type = 'checkbox';
+    field.id = 'aci_x_grant_'+seqNo;
+    field.name = field.id;
+    field.value = 1;
+    if (values && values.x_grant)
+      field.checked = true;
+    if (!aciEnable)
+      field.disabled = true;
+    td.appendChild(field);
+
+    // column 2
+    var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    tr.appendChild(td);
+    td.style['whiteSpace'] = 'nowrap';
+    if (aciEnable)
+    {
+      var img = OAT.Dom.image('image/del_16.png');
+      OAT.Dom.addClass(img, 'pointer');
+      img.onclick = function (){ODRIVE.aciRowRemove(''+seqNo)};
+      td.appendChild(img);
+    }
+    $('aci_seqNo').value = seqNo+1;
   }
 }
 
