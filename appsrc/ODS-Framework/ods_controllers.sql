@@ -518,7 +518,8 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'sioc', 'http://rdfs.org/sioc/ns#',
                  'sioct','http://rdfs.org/sioc/types#',
                  'mo',   'http://purl.org/ontology/mo/',
-                 'book', 'http://purl.org/NET/book/vocab#'
+                 'book', 'http://purl.org/NET/book/vocab#',
+                 'acl',  'http://www.w3.org/ns/auth/acl#'
                 );
 }
 ;
