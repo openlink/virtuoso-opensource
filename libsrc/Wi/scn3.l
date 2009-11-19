@@ -240,7 +240,13 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
      yyerror ("RDFNI");
    sparp_compile_subselect (sparqre);
    if (NULL != sparqre->sparqre_catched_error)
-     yyerror (ERR_MESSAGE (sparqre->sparqre_catched_error));
+     {
+       char temp[2000];
+       strncpy (temp, ERR_MESSAGE (sparqre->sparqre_catched_error), sizeof (temp));
+       dk_free_tree (sparqre->sparqre_catched_error);
+       sparqre->sparqre_catched_error = NULL;
+       yyerror (temp);
+     }
    outer->sif_buffer = YY_CURRENT_BUFFER;
    outer->_.sif_saved_lineno = scn3_lineno;
    outer->_.sif_saved_plineno = scn3_plineno;

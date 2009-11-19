@@ -1821,7 +1821,10 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
             caddr_t strg = box_utf8_string_as_narrow (box, NULL, 0, default_charset);
 #ifndef NDEBUG
             if (('?' == strg[0]) && ('?' == strg[1]) && ('?' == strg[2]) && ('?' == strg[3]))
-              spar_error (ssg->ssg_sparp, "Suspicious result of printing '%.200s' as narrow SQL atom", box);
+	      {
+		dk_free_box (strg);
+		spar_error (ssg->ssg_sparp, "Suspicious result of printing '%.200s' as narrow SQL atom", box);
+	      }
 #endif
             if (strg)
               sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, strg);
