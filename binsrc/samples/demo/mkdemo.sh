@@ -425,10 +425,6 @@ else
 fi
 
 
-ECHO "Cleanups"
-
-rm -f demo.trx demo.log virtuoso.ini
-chmod 644 demo.db
 
 #
 #  Show final results of run
@@ -439,6 +435,10 @@ if test $STATUS -eq 0
 then
 	exit 1
 fi
+
+ECHO "Cleanups"
+chmod 644 demo.db
+rm -f demo.trx demo.log virtuoso.ini
 
 BANNER "COMPLETED DEMO DATABASE (mkdemo.sh)"
 
