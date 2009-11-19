@@ -1,0 +1,528 @@
+2009-11-19 22:15  source
+
+	* Updated version to 6.0.1-pre1
+
+2009-11-19 20:16  source
+
+	* FIxed memory leaks
+
+2009-11-19 19:24  source
+
+	* Added tests for rdf boxes
+
+2009-11-19 19:24  source
+
+	* Disabled LDAP test
+
+2009-11-19 15:29  source
+
+	* Fixed catch signal on error in ssg_make_sql_query_text and re-signal
+	  in order to free session
+
+2009-11-19 13:51  source
+
+	* Updated ontologies API
+	* Fixed registration issue
+
+2009-11-19 13:40  source
+
+	* Fixed when reading from ws_session, we need to touch the ws_req_len
+	  in order to avoid hang when calling http_body_read next
+
+2009-11-19 10:04  source
+
+	* Fixed version
+
+2009-11-19 10:04  source
+
+	* FIxed bad external
+
+2009-11-19 10:03  source
+
+	* Fixed minor issue
+
+2009-11-18 22:45  source
+
+	* Added Web access
+
+2009-11-18 14:34  source
+
+	* Fixed memory leak in dump strings
+
+2009-11-18 14:34  source
+
+	* Added bif_dict_zip
+	* Fixed bug adding many graph keywords in one operation
+
+2009-11-18 12:44  source
+
+	* Fixed write past end of buffer
+
+2009-11-17 21:43  source
+
+	* Added support for OpenSearch
+	* Added feature to focus full text search on a property more directly
+	* Fixed lang filter
+
+2009-11-17 21:38  source
+
+	* Fixed static
+
+2009-11-17 21:19  source
+
+	* Fixed oreilly cartridge
+
+2009-11-17 21:02  source
+
+	* Merged from HEAD
+
+2009-11-17 21:01  source
+
+	* FIxed testsuite
+
+2009-11-17 20:58  source
+
+	* Fixed as we are reading the disk, there could be buffers still not
+	  written, so we read free set from disk and use it to make stats
+
+2009-11-17 20:58  source
+
+	* Fixed max column count increased
+
+2009-11-10 15:54  source
+
+	* FIxed tsuite
+
+2009-11-10 13:43  source
+
+	* Fixed group by to expand automatically when col is not referenced
+
+2009-11-10 13:43  source
+
+	* Fixed smaller hash sz as box has limit
+
+2009-11-09 22:45  source
+
+	* Fixed minor issues
+
+2009-11-09 22:19  source
+
+	* FIxed bad content after rewrite
+
+2009-11-09 22:19  source
+
+	* Fixed mem only chase must be off when op is HA_FILL
+
+2009-11-09 22:18  source
+
+	* Fixed missing headers in result
+
+2009-11-09 22:18  source
+
+	* Fixed warnings
+
+2009-11-06 17:17  source
+
+	* Fixed use absolute uri whenever possible
+
+2009-11-06 17:10  source
+
+	* Fixed ignore lists
+
+2009-11-06 17:08  source
+
+	* Fixed box flags
+
+2009-11-06 16:09  source
+
+	file oplzillow.owl was added on branch V6_0_0-DEVEL on 2009-11-06 16:49:02 +0000
+
+2009-11-06 16:09  source
+
+	* Fixed Zillow cartridge
+
+2009-11-06 12:09  source
+
+	* Fixed memory leak
+
+2009-11-06 12:09  source
+
+	* Added support for half-legal 'Thu, 24 Jul 2008 17:11:59 +0200' and
+	  'Thu, 24 Jul 2008 17:11:59 +02:00' datetime syntax
+
+2009-11-05 19:59  source
+
+	* Added special case handling for xsd:dateTime literals in fct
+	  when choosing/generating filters
+	* Added dumping of query upon error in facet browser
+	* Added session handling stubs
+	* Fixed problem which caused page not to load when sparql_query
+	  connection var was null
+	* Fixed bugs in URL generation and main facet page
+
+2009-11-05 19:50  source
+
+	* Merged from HEAD
+
+2009-11-05 19:45  source
+
+	* Fixed XA transaction exception
+
+2009-11-05 10:22  source
+
+	* Updated documentation
+
+2009-11-05 08:47  source
+
+	* Reverted previous patch
+
+2009-11-04 22:26  source
+
+	* Fixed broken check
+	* Fixed warnings
+
+2009-11-04 09:56  source
+
+	* Removed duplicate lines
+
+2009-11-04 09:45  source
+
+	* Fixed comparison of the two char codes
+	* Added MS Docs cartridges
+	* Minor fixes
+
+2009-11-04 09:38  source
+
+	* Added common folder for OPML uploads
+	* Improved OPML import
+	* Fixed scot tags data
+	* Fixed delete instance problem with remain tags data
+
+2009-11-04 09:36  source
+
+	* Fixed http://delicious.com/ import
+
+2009-11-04 09:36  source
+
+	* Fixed broken FOAF generation
+
+2009-11-04 01:52  source
+
+	file ms_spreadsheet2rdf.xsl was added on branch V6_0_0-DEVEL on 2009-11-04 09:45:46 +0000
+
+2009-11-04 01:52  source
+
+	* Added MS Docs cartridges
+
+2009-11-04 01:52  source
+
+	file ms_document2rdf.xsl was added on branch V6_0_0-DEVEL on 2009-11-04 09:45:46 +0000
+
+2009-11-04 01:50  source
+
+	* Added more checks for CN, hostname and keys
+
+2009-11-04 01:22  source
+
+	* Fixed function declaration
+
+2009-11-04 01:19  source
+
+	* Fixed problem with uploading large files using HTTP
+
+2009-11-03 22:52  source
+
+	* Fixed version number of engine
+
+2009-11-03 22:52  source
+
+	* Fixed prototypes
+
+2009-11-03 22:51  source
+
+	* Minor cleanups
+
+2009-11-03 22:49  source
+
+	* Fixed move typedef to header file
+
+2009-11-03 22:47  source
+
+	* Fixed prototype
+
+2009-11-03 07:39  source
+
+	* Added optimization daq delete for many dels with all key columns known
+
+2009-11-03 07:38  source
+
+	* Added strcontains(), starts_with() and ends_with()
+
+2009-11-03 07:37  source
+
+	* Fixed check ref count to avoid double free etc
+
+2009-11-02 09:37  source
+
+	* Fixed box flags of IRIs
+
+2009-11-02 09:31  source
+
+	* Fixed problem with uploading large files using HTTP
+	* Fixed compiler warnings
+
+2009-11-02 09:24  source
+
+	* Fixed support for define output:format "JSON"
+
+2009-10-29 21:06  source
+
+	file typeahead.css was added on branch V6_0_0-DEVEL on 2009-10-29 21:08:03 +0000
+
+2009-10-29 21:06  source
+
+	file typeahead.js was added on branch V6_0_0-DEVEL on 2009-10-29 21:08:03 +0000
+
+2009-10-29 21:06  source
+
+	* Fixed UI profile full name
+	* Fixed UI profile address
+	* Fixed suggestions lookup
+	* Fixed SIOC user's profile refresh data
+	* Fixed foaf+ssl login re V6 dynamic local behaviour
+
+2009-10-29 20:21  source
+
+	* Updated documentation
+
+2009-10-29 20:15  source
+
+	* Fixed rd_sink upload
+
+2009-10-29 20:14  source
+
+	* Update version
+
+2009-10-29 20:14  source
+
+	* Added missing if clause rendering in usage
+	* Fixed rendering of URL params in usage.vsp
+	* Fixed do not set sid=(null) or any other value when sid is not available
+	* Fixed facet result page to better accomodate narrowwer screens
+
+2009-10-29 20:10  source
+
+	* Fixed limited support for IE
+	  QBE tab will display dialog explaining missing SVG support and offering
+	  download links for other browsers
+
+2009-10-29 20:08  source
+
+	* Fixed listener UI
+	* Fixed clear cache after execution
+
+2009-10-29 20:03  source
+
+	* Added shared qr cache cleaner
+
+2009-10-29 20:00  source
+
+	* Added rule for bin objects
+
+2009-10-29 19:34  source
+
+	* Added missing images
+
+2009-10-29 19:34  source
+
+	file chrome-logo.png was added on branch V6_0_0-DEVEL on 2009-10-29 20:10:10 +0000
+
+2009-10-29 19:34  source
+
+	file firefox-logo.png was added on branch V6_0_0-DEVEL on 2009-10-29 20:10:10 +0000
+
+2009-10-29 19:34  source
+
+	file opera-logo.png was added on branch V6_0_0-DEVEL on 2009-10-29 20:10:10 +0000
+
+2009-10-29 19:34  source
+
+	file safari-logo.png was added on branch V6_0_0-DEVEL on 2009-10-29 20:10:10 +0000
+
+2009-10-28 21:34  source
+
+	* Rebuild drivers
+
+2009-10-28 21:34  source
+
+	* Fixed null pointer exception instead of sql exception
+
+2009-10-28 21:32  source
+
+	* Merged from HEAD
+
+2009-10-28 21:30  source
+
+	* Fixed eBay support
+	* Added support for content resizing
+	* Fixed crunch base lookups
+	* Fixed navigation
+	* Fixed scheme support for feed
+
+2009-10-28 21:25  source
+
+	* Fixed support for eBay
+
+2009-10-28 21:25  source
+
+	file oplebay.owl was added on branch V6_0_0-DEVEL on 2009-10-28 21:30:15 +0000
+
+2009-10-28 21:20  source
+
+	* Fixed problems with UI of RDF views
+	* Fixed PKI buttons
+	* Fixed https vs http
+
+2009-10-28 21:16  source
+
+	* Fixed separate drop statements for rdf views in separate call
+
+2009-10-28 21:15  source
+
+	* Fixed compilin with mtx debug
+
+2009-10-28 11:56  source
+
+	* Fixed dkt_requests could be null if there are no threads avail
+
+2009-10-28 11:02  source
+
+	* Fixed indentation
+
+2009-10-28 10:58  source
+
+	* Fixed enabled draft code in xslt
+
+2009-10-27 13:36  source
+
+	* Fixed issue with broken IRI
+
+2009-10-27 11:10  source
+
+	* Added support for define output:maxrows
+	* Fixed memory leak
+
+2009-10-26 20:46  source
+
+	* Added xsl:for-each-row loop
+	* Fixed support for XMLLiteral
+	* Fixed support for SPARQL queries with sponge and subqueries in one
+	* Fixed support for sameAs sponge and and subqueries in one
+	* Fixed behaviour of sponge on unusal protocols
+
+2009-10-26 20:44  source
+
+	* Added support for comparison of XML trees
+
+2009-10-26 16:27  source
+
+	* Expanded conversation dialog
+	* Fixed user's selection
+
+2009-10-26 16:27  source
+
+	file conversation.js was added on branch V6_0_0-DEVEL on 2009-10-28 21:32:14 +0000
+
+2009-10-26 16:00  source
+
+	file html.png was added on branch V6_0_0-DEVEL on 2009-10-28 21:30:16 +0000
+
+2009-10-26 16:00  source
+
+	file mail.png was added on branch V6_0_0-DEVEL on 2009-10-28 21:30:16 +0000
+
+2009-10-26 16:00  source
+
+	file oplamazon.owl was added on branch V6_0_0-DEVEL on 2009-10-28 21:30:15 +0000
+
+2009-10-26 16:00  source
+
+	file phone.gif was added on branch V6_0_0-DEVEL on 2009-10-28 21:30:16 +0000
+
+2009-10-26 16:00  source
+
+	* Fixed amazon cartridge
+	* Fixed crunch base lookups
+	* Fixed navigation
+	* Fixed scheme support for feed
+
+2009-10-26 09:29  source
+
+	* Added missing image
+
+2009-10-26 09:29  source
+
+	file virt_power_no_border.png was added on branch V6_0_0-DEVEL on 2009-10-26 09:29:40 +0000
+
+2009-10-26 09:26  source
+
+	* Fixed menus
+	* Fixed inference / sameas settings
+	* Fixed page layout
+
+2009-10-26 09:23  source
+
+	* Fixed problem if opts.endpoint has not been initialized
+	* Fixed use local image
+	* Fixed extra comma at end of variable list for IE
+
+2009-10-26 09:19  source
+
+	* Added RDFa export
+
+2009-10-26 09:19  source
+
+	* Fixed missing cast
+
+2009-10-26 09:18  source
+
+	* Added bif_isvector()
+
+2009-10-26 09:17  source
+
+	* Fixed minimum ServerThreadSize to 60k
+
+2009-10-20 10:44  source
+
+	* FIxed use Node.NULL instead of null
+
+2009-10-20 10:43  source
+
+	* Regenerated driver
+
+2009-10-19 20:20  source
+
+	* Fixed new rules for special chars in names
+
+2009-10-18 22:15  source
+
+	* Fixed if del with given key, do not run trigs, else they could
+	  read another key outside of partition and this single key del
+	  needs to be within partition
+
+2009-10-18 22:13  source
+
+	* Fixed initialize all nodes when running a subq in a proc
+
+2009-10-18 22:12  source
+
+	* Fixed cost for TOP 1 since log(1) is 0
+
+2009-10-18 22:11  source
+
+	* Fixed syntax of IRI parts to match SPARQL1.0 W3C recommendation
+
+2009-10-16 17:45  source
+
+	* Updated version to 6.0.0 for final release
+
