@@ -546,16 +546,12 @@
              -- check if this login already exists
               if ((self.uoid = 1) and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
              {
-               if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
-                 self.vc_redirect (sprintf('index.html#msg=%U', 'This OpenID identity is already registered.'));
                self.vc_error_message := 'This OpenID identity is already registered.';
                self.vc_is_valid := 0;
                return;
              }
               if ((self.uoid = 3) and exists (select 1 from WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = self.fb._user))
               {
-                if (length (self.ods_returnurl) and self.ods_returnurl = 'index.html')
-                  self.vc_redirect (sprintf('index.html#msg=%U', 'This Facebook identity is already registered.'));
                 self.vc_error_message := 'This Facebook identity is already registered.';
                 self.vc_is_valid := 0;
                 return;
