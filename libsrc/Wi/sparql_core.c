@@ -2737,6 +2737,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   SPART *fake_sol;
   SPART *top;
   SPART **action_sqls;
+  caddr_t volatile err = NULL;
   int action_ctr, action_count = BOX_ELEMENTS (actions);
   if ((1 == action_count) && (spar_compose_report_flag (sparp)))
     return actions[0]; /* No need to make grouping around single action. */
@@ -2766,7 +2767,21 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       ssg.ssg_sparp = sparp;
       ssg.ssg_tree = sparp->sparp_expr;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
-      ssg_make_sql_query_text (&ssg);
+
+      QR_RESET_CTX
+	{
+          ssg_make_sql_query_text (&ssg);
+	}
+      QR_RESET_CODE
+	{
+	  du_thread_t * self = THREAD_CURRENT_THREAD;
+	  err = thr_get_error_code (self);
+	  strses_free (ssg.ssg_out);
+	  POP_QR_RESET;
+	  sqlr_resignal (err);
+	}
+      END_QR_RESET;
+
       action_sql = t_strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
       action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
