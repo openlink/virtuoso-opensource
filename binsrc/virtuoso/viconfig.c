@@ -169,7 +169,7 @@ extern unsigned long cfg_autocheckpoint; /* from auxfiles.c */
 extern int default_txn_isolation;
 extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
-extern long iri_cache_size;
+extern int iri_cache_size;
 extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
