@@ -3149,6 +3149,33 @@ create procedure ODRIVE.WA.DAV_SET (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.DAV_SET_RECURSIVE (
+  in path varchar,
+  in dav_perms any,
+  in dav_owner any,
+  in dav_group any)
+{
+  declare items any;
+
+  items := ODRIVE.WA.DAV_DIR_LIST (path, 0);
+  foreach (any item in items) do
+  {
+    declare itemPath varchar;
+
+    itemPath := item[0];
+    ODRIVE.WA.DAV_SET(itemPath, 'permissions', dav_perms);
+    if (dav_owner <> -1)
+      ODRIVE.WA.DAV_SET(itemPath, 'ownerID', dav_owner);
+    if (dav_group <> -1)
+      ODRIVE.WA.DAV_SET(itemPath, 'groupID', dav_group);
+    if (item[1] = 'C')
+      ODRIVE.WA.DAV_SET_RECURSIVE (itemPath, dav_perms, dav_owner, dav_group);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.DAV_API_PWD (
 	in auth_name varchar)
 {
@@ -4157,6 +4184,148 @@ create procedure ODRIVE.WA.acl_send_mail (
     ODRIVE.WA.send_mail (_instance, _from, oACLs[N][0], text, _path);
   _skip2:;
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_load (
+  in path varchar)
+{
+  declare retValue, graph any;
+  declare S, st, msg, data, meta any;
+
+  retValue := vector ();
+
+  graph := SIOC..dav_res_iri (path);
+  S := sprintf (' sparql \n' ||
+                ' define input:storage "" \n' ||
+                ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+                ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+                ' select ?rule ?agent ?mode \n' ||
+                '   from <%s> \n' ||
+                '  where { \n' ||
+                '          { \n' ||
+                '            ?rule rdf:type acl:Authorization ; \n' ||
+                '            acl:accessTo <%s> ; \n' ||
+                '            acl:mode ?mode ; \n' ||
+                '            acl:agent ?agent. \n' ||
+                '          } \n' ||
+                '          union \n' ||
+                '          { \n' ||
+                '            ?rule rdf:type acl:Authorization ; \n' ||
+                '            acl:accessTo <%s> ; \n' ||
+                '            acl:mode ?mode ; \n' ||
+                '            acl:agentClass ?agent. \n' ||
+                '          } \n' ||
+                '        }\n' ||
+                '  order by ?rule\n',
+                graph,
+                graph,
+                graph);
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st = '00000' and length (data))
+  {
+    declare N, aclNo, aclRule, aclMode, V any;
+
+    V := null;
+    aclNo := 0;
+    aclRule := '';
+    for (N := 0; N < length (data); N := N + 1)
+    {
+      if (aclRule <> data[N][0])
+      {
+        if (not isnull (V))
+          retValue := vector_concat (retValue, vector (V));
+        aclNo := aclNo + 1;
+        aclRule := data[N][0];
+        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 0, 0, 0);
+      }
+      aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
+      if (aclMode = 'acl:Read')
+        V[2] := 1;
+      if (aclMode = 'acl:Write')
+        V[3] := 1;
+      if (aclMode = 'acl:Control')
+        V[4] := 1;
+    }
+    if (not isnull (V))
+      retValue := vector_concat (retValue, vector (V));
+  }
+  -- dbg_obj_print ('retValue: ', retValue);
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_params (
+  in params any)
+{
+  declare N, M integer;
+  declare aclNo, retValue, V any;
+
+  M := 1;
+  retValue := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if ((params[N] like 'aci_user_%') and (params[N] <> 'aci_user_xxx'))
+    {
+      aclNo := replace (params[N], 'aci_user_', '');
+      V := vector (M,
+                   trim (params[N+1]),
+                   atoi (get_keyword ('aci_r_grant_' || aclNo, params, '0')),
+                   atoi (get_keyword ('aci_w_grant_' || aclNo, params, '0')),
+                   atoi (get_keyword ('aci_x_grant_' || aclNo, params, '0'))
+                  );
+      retValue := vector_concat (retValue, vector (V));
+      M := M + 1;
+    }
+  }
+  -- dbg_obj_print ('retValue: ', retValue);
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_n3 (
+  in aciArray any)
+{
+  declare N integer;
+  declare retValue any;
+
+  if (length (aciArray) = 0)
+    return null;
+
+  retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
+              ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
+              ' @prefix foaf: <http://xmlns.com/foaf/0.1/> . \n';
+  for (N := 0; N < length (aciArray); N := N + 1)
+  {
+    if (length (aciArray[N][1]))
+    {
+      retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
+      if (aciArray[N][1] = 'foaf:Agent')
+      {
+        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
+      } else {
+        retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
+      }
+      if (aciArray[N][2])
+        retValue := retValue || ';\n   acl:mode acl:Read';
+      if (aciArray[N][3])
+        retValue := retValue || ';\n   acl:mode acl:Write';
+      if (aciArray[N][4])
+        retValue := retValue || ';\n   acl:mode acl:Control';
+      retValue := retValue || '.\n';
+    }
+  }
+  -- dbg_obj_print ('retValue: ', retValue);
+  return retValue;
 }
 ;
 

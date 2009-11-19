@@ -21,6 +21,11 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+  -- declare exit handler for SQLSTATE '*'
+  -- {
+  -- 	dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+  -- };
+
   declare N integer;
   declare auth_uid, auth_pwd, mode, file, uri, saveUri, req_header, res_header, content, contentType varchar;
 
