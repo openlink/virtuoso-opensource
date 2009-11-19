@@ -92,6 +92,7 @@ bh_get_data_from_http_user (blob_handle_t * bh, client_connection_t * cli,
       (DV_TYPE_OF (bh->bh_source_session) == DV_CONNECTION ?
        ((dk_session_t **)bh->bh_source_session)[0] : ((dk_session_t *)bh->bh_source_session)) :
       cli->cli_ws->ws_session;
+  ws_connection_t * ws = cli->cli_ws;
 
   CATCH_READ_FAIL (ses)
     {
@@ -100,11 +101,15 @@ bh_get_data_from_http_user (blob_handle_t * bh, client_connection_t * cli,
       if (!bh->bh_bytes_coming)
 	bh->bh_all_received = BLOB_ALL_RECEIVED;
       readed = to_read;
+      if (ws && ws->ws_session == ses)
+	ws->ws_req_len -= to_read;
     }
   FAILED
     {
       bh->bh_all_received = BLOB_ALL_RECEIVED;
       readed = 0;
+      if (ws && ws->ws_session == ses)
+	ws->ws_req_len = 0;
     }
   END_READ_FAIL (ses);
   if (bh->bh_all_received == BLOB_ALL_RECEIVED && bh->bh_source_session)
