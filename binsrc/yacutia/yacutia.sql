@@ -6252,7 +6252,21 @@ CREATE PROCEDURE OWL_N3 ()
 TTLP (OWL_N3 (), 'http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/owl#');
 
 RDFS_RULE_SET ('http://www.w3.org/2002/07/owl#', 'http://www.w3.org/2002/07/owl#');
-RDF_GRAPH_GROUP_CREATE ('http://www.openlinksw.com/schemas/virtrdf#schemas', 1);
+
+-- we need to do a special procedure as on www we hit the dynamic local iris
+create procedure y_set_gg ()
+{
+  declare gr any;
+  gr := 'http://www.openlinksw.com/schemas/virtrdf#schemas';
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = gr))
+    {
+      RDF_GRAPH_GROUP_CREATE (gr, 1);
+    }
+}
+;
+
+y_set_gg ()
+;
 
 create procedure yac_get_pk (in tb varchar)
 {
