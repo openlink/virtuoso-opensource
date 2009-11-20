@@ -306,5 +306,6 @@
       </tr>
     </table>
    </v:form>
+   </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
