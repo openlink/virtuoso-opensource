@@ -884,7 +884,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           return iri;
         }
       res = box_copy_tree (shortobj);
-      if (DV_STRING == DV_TYPE_OF (res))
+      if ((DV_STRING == DV_TYPE_OF (res)) && !(box_flags (res) & BF_IRI))
         box_flags (res) |= BF_UTF8;
       return res;
     }
@@ -911,6 +911,7 @@ caddr_t
 bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res, val = bif_arg (qst, args, 0, "__rdf_strsqlval");
+  int set_bf_iri = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "__rdf_strsqlval") : 1);
   dtp_t val_dtp = DV_TYPE_OF (val);
   query_instance_t * qi = (query_instance_t *) qst;
   if (DV_RDF == val_dtp)
@@ -935,7 +936,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
                   (boxint)iid );
             }
-          box_flags (res) = BF_UTF8;
+          box_flags (res) = (set_bf_iri ? BF_IRI : BF_UTF8);
           return res;
         }
       case DV_DATETIME:
@@ -947,7 +948,12 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       case DV_STRING:
         res = box_copy (val);
+        if (!((box_flags (res) & BF_IRI) && set_bf_iri))
         box_flags(res) = BF_UTF8;
+        return res;
+      case DV_UNAME:
+        res = box_dv_short_nchars (val, box_length (val)-1);
+        box_flags (res) = (set_bf_iri ? BF_IRI : BF_UTF8);
         return res;
       case DV_DB_NULL:
         return NEW_DB_NULL;
@@ -1474,6 +1480,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/soap+xml;11"		, "SOAP"	,
         "application/rdf+xml"			, "RDFXML"	,
 	"text/rdf+nt"				, "NT"		,
+        "application/xhtml+xml"			, "RDFA;XHTML"	,
         "text/plain"				, "NT"		,
         "application/sparql-results+json"	, "JSON;RES"	,
         "text/html"				, "HTML"	,
@@ -1606,6 +1613,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
       if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
         return;
       dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
+      box_flags (dt_ret->uri) |= BF_IRI;
     }
   else
     {
@@ -1918,6 +1926,8 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         session_buffered_write_char ('"', ses);
         if (DV_RDF != obj_dtp)
           {
+            if (!IS_BOX_POINTER (iri))
+              sqlr_new_error ("22023", "SR624", "Unsupported datatype %d in NT serialization of an object", obj_dtp);
             SES_PRINT (ses, "^^<");
             dks_esc_write (ses, iri, box_length_inline (iri)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
             session_buffered_write_char ('>', ses);
@@ -2671,6 +2681,81 @@ bif_sparql_dict_xml_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   return NULL;
 }
 
+
+caddr_t
+bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t raw_iri = bif_arg (qst, args, 0, "sparql_iri_split_rdfa_qname");
+  caddr_t iri;
+  id_hash_iterator_t *ns_uri_to_pref = bif_dict_iterator_or_null_arg (qst, args, 1, "sparql_iri_split_rdfa_qname", 0);
+  id_hash_t *ht;
+  int flags = bif_long_arg (qst, args, 2, "sparql_iri_split_rdfa_qname");
+  const char *tail;
+  int iri_strlen;
+  caddr_t ns_iri, prefix, *prefix_ptr, res;
+  switch (DV_TYPE_OF (raw_iri))
+    {
+      case DV_IRI_ID:
+        {
+          iri_id_t iid = unbox_iri_int64 (raw_iri);
+          if (iid >= min_bnode_iri_id())
+            {
+              if (flags & 0x2)
+                return list (3, box_dv_short_string ("_"), NULL, BNODE_IID_TO_TTL_LABEL_LOCAL (iid));
+              return NULL;
+            }
+          iri = key_id_to_iri ((query_instance_t *)qst, iid);
+          if (!iri)
+            return NEW_DB_NULL;
+          break;
+        }
+        iri = raw_iri;
+        break;
+      case DV_STRING:
+        if (!(BF_IRI & box_flags (raw_iri)))
+          return NULL;
+        /* no break */
+      case DV_UNAME:
+        if (!memcmp (raw_iri, "nodeID://", 9))
+          return (flags & 0x2) ? list (3, box_dv_short_string ("_"), NULL, box_dv_short_strconcat ("v", raw_iri+9)) : NULL;
+        iri = raw_iri;
+        break;
+      default: return NULL;
+    }
+  ht = ns_uri_to_pref->hit_hash;
+  iri_strlen = strlen (iri);
+  for (tail = iri + iri_strlen; tail > iri; tail--)
+    {
+      char c = tail[-1];
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+        break;
+    }
+  if (tail == iri)
+    {
+      res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
+      goto res_done; /* see below */
+    }
+  ns_iri = box_dv_short_nchars (iri, tail-iri);
+  prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
+  if (NULL != prefix_ptr)
+    prefix = prefix_ptr[0];
+  else if (flags & 0x1)
+    {
+      char buf[10];
+      sprintf (buf, "n%ld", (long)(ht->ht_count));
+      prefix = box_dv_short_string (buf);
+      id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+    }
+  else
+    prefix = NULL;
+    res = (flags & 0x2) ? list (3, box_copy (prefix), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+res_done:
+  if (iri != raw_iri)
+    dk_free_tree (iri);
+  return res;
+}
+;
+
 id_hash_iterator_t *rdf_graph_group_dict_hit;
 id_hash_t *rdf_graph_group_dict_htable;
 
@@ -3113,6 +3198,7 @@ rdf_box_init ()
   bif_set_uses_index (bif_sparql_rset_json_write_row);
   bif_define ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row);
   bif_set_uses_index (bif_sparql_rset_xml_write_row);
+  bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__ro2lo", bif_rdf_long_of_obj);
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
