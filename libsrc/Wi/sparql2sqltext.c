@@ -136,7 +136,7 @@ void rdf_ds_load_all (void)
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri_nosignal (^{tree}^)");
-  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^)");
+  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^, 0)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, __i2idn (^{datatype-of-tree}^), ^{language-of-tree}^)");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_SQLVAL (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_LONG (^{tree}^)");
@@ -3380,7 +3380,7 @@ IN_op_fnt_found:
             if (IS_BOX_POINTER (arg1_native))
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
             else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native))
-              tmpl = " __rdf_strsqlval (^{tree}^)"; /* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
+              tmpl = " __rdf_strsqlval (^{tree}^, 0)"; /* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
             else if (SSG_VALMODE_BOOL == arg1_native)
               tmpl = " case (^{tree}^) when 0 then 'false' else 'true' end";
             else

@@ -1201,7 +1201,7 @@ create function DB.DBA.RDF_QNAME_OF_OBJ (in shortobj any) returns varchar -- DEP
 
 create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 {
-  return __rdf_strsqlval (shortobj);
+  return __rdf_strsqlval (shortobj, 0);
 }
 ;
 
@@ -1424,7 +1424,7 @@ badlang:
 
 create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any) -- DEPRECATED
 {
-  return __rdf_strsqlval (longobj);
+  return __rdf_strsqlval (longobj, 0);
 }
 ;
 
@@ -6543,19 +6543,23 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
   vectorbld_init (all_lists);
   prev_subj := #i0;
   for (
-    select "sub"."lst", cast ("sub"."idx" as integer) as "idx", "sub"."itm", "sub"."t"
+    select "sub"."lst", cast ("sub"."idx" as integer) as "idx", serialize ("sub"."itm") as "itmsz", "sub"."itmstr", "sub"."itmislit", "sub"."t"
     from (sparql define input:storage "" define output:valmode "LONG"
       select ?lst
         (bif:aref (bif:sprintf_inverse (str(?p),
             bif:concat (str (rdf:_), "%d"), 2 ),
           0 ) ) as ?idx
-       ?itm ?t where { graph ?:graphiri_id {
+       ?itm
+       (str(?itm)) as ?itmstr
+       (isliteral(?itm)) as ?itmislit
+       ?t
+     where { graph ?:graphiri_id {
               ?lst ?p ?itm .
               optional { ?itm a ?t } .
               filter (
               str(?p) > str(rdf:_) && str(?p) < str(rdf:_A))
                } } ) as "sub"
-    order by 1, 2, 3 ) do
+    order by 1, 2, 3, 4 ) do
     {
       if (prev_subj <> "lst")
         {
@@ -6567,7 +6571,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
           prev_subj := "lst";
           vectorbld_init (prev_list);
         }
-      vectorbld_acc (prev_list, vector ("idx", "itm", "t"));
+      vectorbld_acc (prev_list, vector ("idx", deserialize("itmsz"), "itmstr", "itmislit", "t"));
     }
   if (prev_subj <> #i0)
     {
@@ -6596,14 +6600,14 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             }
           else if ((last_idx + 3) < curr_idx)
             {
-              result ('42000', sprintf ('Items rdf:_%d to rdf:_%d are not set in list <%s>', last_idx, curr_idx - 1, id_to_iri (subj)));
+              result ('42000', sprintf ('Items rdf:_%d to rdf:_%d are not set in list <%s>', last_idx + 1, curr_idx - 1, id_to_iri (subj)));
               list_needs_rebuild := 1;
             }
           else
             {
               while ((last_idx + 1) < curr_idx)
                 {
-                  result ('42000', sprintf ('Item rdf:_%d is not set in list <%s>', last_idx, id_to_iri (subj)));
+                  result ('42000', sprintf ('Item rdf:_%d is not set in list <%s>', last_idx + 1, id_to_iri (subj)));
                   last_idx := last_idx + 1;
                   list_needs_rebuild := 1;
                 }
@@ -6627,11 +6631,24 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             {
               declare curr_idx integer;
               declare obj any;
+              declare objstr varchar;
+              declare objislit integer;
               curr_idx := items[pos][0];
               obj := items[pos][1];
-              sparql define input:storage ""
-              insert into graph ?:graphiri_id {
-                `iri(?:subj)` `iri (bif:sprintf ("%s%d", str (rdf:_), 1 + ?:pos))` ?:obj };
+              objstr := items[pos][2];
+              objislit := items[pos][3];
+              if (objislit)
+                {
+                  sparql define input:storage ""
+                  insert into graph ?:graphiri_id {
+                    `iri(?:subj)` `iri (bif:sprintf ("%s%d", str (rdf:_), 1 + ?:pos))` ?:obj };
+                }
+              else
+                {
+                  sparql define input:storage ""
+                  insert into graph ?:graphiri_id {
+                    `iri(?:subj)` `iri (bif:sprintf ("%s%d", str (rdf:_), 1 + ?:pos))` `iri(?:objstr)` };
+                }
             }
         }
     }
@@ -10102,7 +10119,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-09-24 0001v6'
+                virtrdf:version '2009-11-20 0001v6'
             } } ) )
     {
       declare txt1, txt2 varchar;
