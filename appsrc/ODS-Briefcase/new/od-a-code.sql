@@ -3453,13 +3453,16 @@ create procedure ODRIVE.WA.DAV_PROP_LIST (
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   props := DB.DBA.DAV_PROP_LIST(path, propmask, auth_name, auth_pwd);
+  if (ODRIVE.WA.DAV_ERROR (props))
+    return vector ();
   if (isnull(skips))
     return props;
 
   declare remains any;
 
   remains := vector();
-  foreach(any prop in props) do {
+  foreach(any prop in props) do
+  {
     foreach(any skip in skips) do
       if (prop[0] like skip)
         goto _skip;
