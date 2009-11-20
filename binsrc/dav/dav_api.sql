@@ -1668,15 +1668,11 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
           if (rc < 0)
             {
               -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after WS.WS.GET_DAV_AUTH (', a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms, ')');
-              if (is_https_ctx () and what = 'R')
+              if (is_https_ctx () and what = 'R' and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
                 {
-                  declare aclPath varchar;
                   declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
                   declare S, V, info, st, msg, data, meta any;
 
-                  aclPath := resPath || ',meta.n3';
-                  if (DAV_HIDE_ERROR (DAV_SEARCH_ID (aclPath, 'R')) is not null)
-                    {
                       foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
                       if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
                         {
@@ -1777,7 +1773,6 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                           exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
                         }
                     }
-                }
               if (rc < 0)
               return rc;
             }
@@ -4129,14 +4124,22 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 --
 create trigger SYS_DAV_RES_WAC_I after insert on WS.WS.SYS_DAV_RES order 100 referencing new as N
 {
-  WS.WS.WAC_INSERT (N.RES_FULL_PATH, N.RES_CONTENT);
+  ;
 }
 ;
 
 create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 referencing new as N, old as O
 {
-  WS.WS.WAC_DELETE (O.RES_FULL_PATH);
-  WS.WS.WAC_INSERT (N.RES_FULL_PATH, N.RES_CONTENT);
+  declare aciContent, oldPath, newPath any;
+
+  if ((O.RES_NAME = N.RES_NAME) and (O.RES_COL = N.RES_COL))
+    return;
+
+  oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
+  newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
+  aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.RES_ID and PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3');
+  WS.WS.WAC_DELETE (oldPath);
+  WS.WS.WAC_INSERT (newPath, aciContent);
 }
 ;
 
@@ -4146,41 +4149,71 @@ create trigger SYS_DAV_RES_WAC_D after delete on WS.WS.SYS_DAV_RES order 100 ref
 }
 ;
 
-create procedure WS.WS.WAC_INSERT (in resPath varchar, in resContent any)
+create trigger SYS_DAV_PROP_WAC_I after insert on WS.WS.SYS_DAV_PROP order 100 referencing new as N
 {
-  if (resPath like '%,meta.n3')
+  if ((N.PROP_TYPE <> 'R') or (N.PROP_NAME <> 'virt:aci_meta_n3'))
+    return;
+
+  declare resPath any;
+  resPath := (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID);
+  WS.WS.WAC_INSERT (resPath, N.PROP_VALUE);
+}
+;
+
+create trigger SYS_DAV_PROP_WAC_U after update on WS.WS.SYS_DAV_PROP order 100 referencing new as N, old as O
+{
+  if ((N.PROP_TYPE <> 'R') or (N.PROP_NAME <> 'virt:aci_meta_n3'))
+    return;
+
+  declare resPath any;
+  resPath := (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID);
+  WS.WS.WAC_DELETE (resPath);
+  WS.WS.WAC_INSERT (resPath, N.PROP_VALUE);
+}
+;
+
+create trigger SYS_DAV_PROP_WAC_D after delete on WS.WS.SYS_DAV_PROP order 100 referencing old as O
+{
+  if ((O.PROP_TYPE <> 'R') or (O.PROP_NAME <> 'virt:aci_meta_n3'))
+    return;
+
+  declare resPath any;
+  resPath := (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = O.PROP_PARENT_ID);
+  WS.WS.WAC_DELETE (resPath);
+}
+;
+
+create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any)
   {
     declare graph varchar;
 
-    resPath := replace (resPath, ',meta.n3', '');
+  if (length (aciContent) = 0)
+    return;
+
     graph := SIOC..dav_res_iri (resPath);
     {
       declare continue handler for SQLSTATE '*'
       {
-        dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+      -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+      return;
       };
-      resContent := cast (blob_to_string (resContent) as varchar);
+    aciContent := cast (blob_to_string (aciContent) as varchar);
       -- dbg_obj_princ ('tag: ', __tag (resContent));
-      DB.DBA.TTLP (resContent, graph, graph);
+    DB.DBA.TTLP (aciContent, graph, graph);
       commit work;
-      -- dbg_obj_princ ('WS.WS.WAC_INSERT', resContent, graph);
-    }
+    -- dbg_obj_princ ('WS.WS.WAC_INSERT', now(), graph);
   }
 }
 ;
 
 create procedure WS.WS.WAC_DELETE (in resPath varchar)
 {
-  if (resPath like '%,meta.n3')
-  {
     declare graph, st, msg varchar;
 
-    resPath := replace (resPath, ',meta.n3', '');
     graph := SIOC..dav_res_iri (resPath);
     exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
     commit work;
-    -- dbg_obj_princ ('WS.WS.WAC_DELETE', graph, st, msg);
-  }
+  -- dbg_obj_princ ('WS.WS.WAC_DELETE', now(), graph, st);
 }
 ;
 
