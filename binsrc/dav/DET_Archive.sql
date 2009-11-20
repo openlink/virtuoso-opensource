@@ -191,7 +191,7 @@ create function "Archive_FIND_CAT_RECORD" (in cattree any, inout path_parts any,
             }
         }
       return null;
-sub_found: ;       
+sub_found: ;
     }
 }
 ;
@@ -300,7 +300,7 @@ create function "Archive_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
             return vector ();
           filter := vector (
             vector ('RDF_VALUE', '=', path_parts[0], 'http://local.virt/DAV-RDF', 'http://www.openlinksw.com/virtdav#dynArchiver') );
-          compilation := vector ('', filter, 'DAV', DAV_FC_PRINT_WHERE (filter, auth_uid));            
+          compilation := vector ('', filter, 'DAV', DAV_FC_PRINT_WHERE (filter, auth_uid));
           parent_path := DAV_SEARCH_PATH (DAV_GET_PARENT (detcol_id, 'C', ''), 'C');
           if (DAV_HIDE_ERROR (parent_path) is null)
             {
@@ -481,7 +481,7 @@ create function "Archive_DAV_RES_CONTENT" (in id any, inout content any, out typ
 --    };
   return call ('DB.DBA.' || id[3][0] || '_ARCHIVE_RES_CONTENT')(id, content, type, content_mode);
 }
-;  
+;
 
 --| This adds an extra access path to the existing resource or collection.
 create function "Archive_DAV_SYMLINK" (in detcol_id any, in path_parts any, in orig_id any, in what char(1), in overwrite integer, in uid integer, in gid integer, in auth_uid integer) returns any
@@ -552,7 +552,7 @@ create function DB.DBA.XBEL_ARCHIVE_DIR_EXTRACT (in ent any) returns any
   for (ctr := 0; ctr < len; ctr := ctr + 1)
     {
       e := folders [ctr];
-      folders [ctr] := DB.DBA.XBEL_ARCHIVE_DIR_EXTRACT (e);       
+      folders [ctr] := DB.DBA.XBEL_ARCHIVE_DIR_EXTRACT (e);
     }
   bookmarks := xpath_eval ('bookmark', ent, 0);
   len := length (bookmarks);

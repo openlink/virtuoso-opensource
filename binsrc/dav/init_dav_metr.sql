@@ -20,7 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-create procedure 
+create procedure
 make_file ()
 {
   declare _string any;
@@ -38,7 +38,7 @@ delete from WS.WS.SYS_DAV_USER where U_NAME like 'user_%';
 delete from WS.WS.SYS_DAV_COL where COL_NAME like 'user_%';
 delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/user_%';
 
-create procedure 
+create procedure
 make_users ()
 {
   declare idx, len integer;
@@ -50,7 +50,7 @@ make_users ()
       _user := concat ('user_', cast (idx as varchar));
       _pass := concat ('pass_', cast (idx as varchar));
       insert soft WS.WS.SYS_DAV_USER (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PWD,
-	   U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED) 
+	   U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED)
 	   values (idx + 2, _user, 'DAV test user', 'test@suite.com', _pass, 1, '110100000', 0);
       insert into WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_OWNER,
 	   COL_GROUP, COL_PERMS, COL_CR_TIME, COL_MOD_TIME)
@@ -61,7 +61,7 @@ make_users ()
 ;
 
 
-create procedure 
+create procedure
 make_uri ()
 {
   declare _text, _name, _user_dir varchar;
@@ -69,20 +69,20 @@ make_uri ()
   declare dl any;
   idx := 1;
   loops := $U{_LOOPS};
-  if ('$U{_SIZE}' = 'random') 	
-    rn := 1; 
+  if ('$U{_SIZE}' = 'random')
+    rn := 1;
   else
     rn := 0;
   if (rn)
     {
-      dl := sys_dirlist ('$U{_HOME}/files', 1);   
-      dlen := length (dl);	  
+      dl := sys_dirlist ('$U{_HOME}/files', 1);
+      dlen := length (dl);
     }
   len := $U{_USERS} + 1;
   while (idx < len)
     {
       _user_dir := concat ('user_', cast (idx as varchar), '/');
-      if (not rn)	     
+      if (not rn)
 	{
           _text := concat ('1 PUT /DAV/', _user_dir, 'test_dav', cast (idx as varchar),'.BIN HTTP/1.1\n');
           _text := concat (_text, '1 GET /DAV/user_', cast (idx as varchar), '/test_dav', cast (idx as varchar),'.BIN HTTP/1.1\n');
@@ -92,13 +92,13 @@ make_uri ()
 	  declare fn varchar;
 	  declare ix integer;
           ix := 0;
-          _text := '';    
+          _text := '';
 	  while (ix < loops)
-	    {    
+	    {
               fn := aref (dl, rnd (dlen));
               _text := concat (_text, '1 PUT /DAV/', _user_dir, fn, ' HTTP/1.1\n');
               _text := concat (_text, '1 GET /DAV/', _user_dir, fn, ' HTTP/1.1\n');
-              ix := ix + 1;		     
+              ix := ix + 1;
 	    }
 	}
       if (not rn)

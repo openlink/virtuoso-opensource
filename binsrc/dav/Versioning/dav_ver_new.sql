@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 DROP TABLE WS.WS.SYS_DAV_BASELINE_RES;
 DROP TABLE WS.WS.SYS_DAV_BASELINE;
 DROP TABLE WS.WS.SYS_DAV_CONFOBJ;
@@ -143,7 +143,7 @@ create function "Versioning_INITIAL_VERSION" () returns integer
 create procedure "Versioning_ADD_NEW_DIFF" (in _res_id int,
 	in version_id int,
 	in version_prev_id int,
-	in _props int, 
+	in _props int,
 	in _curr_content any,
 	in _type char(1))
 {
@@ -166,7 +166,7 @@ create procedure "Versioning_ADD_NEW_DIFF" (in _res_id int,
 	  RD_PROPS, -- all dead properties from WS.WS.SYS_DAV_PROP, including RDF props.
 	  RD_DELTA, -- the content of the diff or a full content of the resource
 	  RD_MODE ) -- a char indicating algorithm.
-	values 
+	values
 	  ( _res_id, _ver_id, _ver_prev_id, _props, _curr_content, 'c' );
     }
 }
@@ -223,7 +223,7 @@ CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES REF
 		  RV_MOD_TIME) -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
 	values (N.RES_ID, _ver_id,
 		NULL, _ver_prev_id, NULL, N.RES_TYPE, dt, dt);
-      "Versioning_ADD_NEW_DIFF" (N.RES_ID, _ver_id, _ver_prev_id, NULL, N.RES_CONTENT, 'c');	
+      "Versioning_ADD_NEW_DIFF" (N.RES_ID, _ver_id, _ver_prev_id, NULL, N.RES_CONTENT, 'c');
     }
 }
 ;
@@ -234,7 +234,7 @@ create function DAV_GET_VERSION_CONTENT (in res_id integer, in ver integer, inou
   declare curr_ver, next_ver_copy, next_ver, prev_ver integer;
   next_ver := -1;
   -- The most popular case is retrieval of some 'key' version, e.g. the latest.
-  --dbg_obj_princ ('DAV_GET_VERSION_CONTENT (', res_id, ',', ver, ', [content], [mode])'); 
+  --dbg_obj_princ ('DAV_GET_VERSION_CONTENT (', res_id, ',', ver, ', [content], [mode])');
   for select RV_RES_TYPE, RD_DELTA, RD_MODE, RD_ARGS from WS.WS.SYS_DAV_RES_DIFF
   	inner join WS.WS.SYS_DAV_RES_VERSION
 	on (RV_RES_ID = RD_RES_ID and RV_ID = RD_TO_ID)
@@ -270,7 +270,7 @@ find_next_ver:
   vectorbld_acc (ver_path, next_ver_copy);
   curr_ver := next_ver;
   goto find_next_ver;
- 
+
 key_found:
   vectorbld_final (ver_path);
   -- get text from version curr_ver;
@@ -280,13 +280,13 @@ key_found:
   curr_ver := "Versioning_NULL_VERSION" ();
   for (ctr := length (ver_path)-1; ctr >= 0; ctr := ctr - 1)
     {
-      declare curr_delta any; 
+      declare curr_delta any;
       declare curr_mode, curr_args varchar;
       prev_ver := ver_path [ctr];
       --dbg_obj_print ('delta: ', prev_ver, curr_ver);
       select RD_DELTA, RD_MODE, RD_ARGS into curr_delta, curr_mode, curr_args from WS.WS.SYS_DAV_RES_DIFF
         where RD_RES_ID = res_id and RD_TO_ID = prev_ver and RD_FROM_ID = curr_ver;
-      -- apply the patch 
+      -- apply the patch
       --dbg_obj_print ('delta: ', curr_delta, curr_mode, curr_args);
       if (curr_mode = 'c')
         content := curr_delta;

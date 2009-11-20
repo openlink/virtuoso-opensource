@@ -99,7 +99,7 @@ create procedure "nntp_PARSE_COMMENTS_NAME" (in fullname varchar, out title varc
   declare pos integer;
   declare real_part, comment_part varchar;
   pos := strrchr(fullname, ' ');
-  comment_part := subseq(fullname, pos + 1);  
+  comment_part := subseq(fullname, pos + 1);
   if (comment_part = 'Comments')
   {
     real_part := subseq(fullname, 0, pos);
@@ -110,7 +110,7 @@ create procedure "nntp_PARSE_COMMENTS_NAME" (in fullname varchar, out title varc
     {
       title := subseq(real_part, 0, pos);
       id := subseq(real_part, pos + 1);
-    }    
+    }
   }
 }
 ;
@@ -316,7 +316,7 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
   server_id := cast(id[4] as varchar);
   folder_id := cast(id[5] as varchar);
   fullpath := '';
-  rightcol := NULL;  
+  rightcol := NULL;
   if (atoi(folder_id) = 0)
   {
     maxrcvdate := (select FTHR_DATE from DB.DBA.NNFE_THR where FTHR_MESS_ID = folder_id);
@@ -331,7 +331,7 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
       fullpath := colname || '/' || fullpath;
       folder_id := coalesce ((select FTHR_REFER from DB.DBA.NNFE_THR where FTHR_MESS_ID = folder_id));
     }
-    folder_id := cast((select FTHR_GROUP from DB.DBA.NNFE_THR where FTHR_MESS_ID = id[5]) as varchar);    
+    folder_id := cast((select FTHR_GROUP from DB.DBA.NNFE_THR where FTHR_MESS_ID = id[5]) as varchar);
   }
   if ((server_id = '0' or server_id is null) and folder_id is not null)
   {
@@ -377,7 +377,7 @@ create function "nntp_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, 
     do
     {
       return vector (fullpath || orig_mname, 'R', 1024, FTHR_DATE,
-        id, 
+        id,
         '100000000NN', 0, id[3], FTHR_DATE, 'text/plain', orig_mname);
     }
   return -1;
@@ -443,12 +443,12 @@ create function "nntp_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in det
       where NG_SERVER = top_id[5]
       order by 1, 2
     do
-    { 
+    {
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, maxrcvdate,
         vector (UNAME'nntp', detcol_id, mgroup_id, owner_uid, mserver_id, f_id, -1),
         '100000000NN', ownergid, owner_uid, maxrcvdate, 'dav/unix-directory', orig_name) ) );
     }
-    grand_res := res;    
+    grand_res := res;
   }
   if ('C' = what and length(path_parts) > 2)
   {
@@ -510,7 +510,7 @@ finalize_res:
   return grand_res;
 }
 ;
-                         
+
 --| When DAV_DIR_FILTER_INT calls DET function, authentication is performed before the call and compilation is initialized.
 create function "nntp_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path any, inout compilation any, in recursive integer, in auth_uid integer) returns any
 {
@@ -561,7 +561,7 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       for select NS_ID
         from DB.DBA.NEWS_SERVERS
         where "nntp_FIXNAME"(concat(NS_SERVER, ':', cast(NS_PORT as varchar))) = path_parts[ctr]
-      do 
+      do
       {
         hitlist := vector_concat (hitlist, vector (NS_ID));
       }
@@ -577,7 +577,7 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       for select NG_GROUP
         from DB.DBA.NEWS_GROUPS
         where "nntp_FIXNAME"(NG_NAME) = path_parts[ctr]
-      do 
+      do
       {
         hitlist := vector_concat (hitlist, vector (NG_GROUP));
       }
@@ -590,7 +590,7 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       hitlist := vector ();
       for select FTHR_MESS_ID from DB.DBA.NNFE_THR
         where "nntp_COMPOSE_COMMENTS_NAME"(FTHR_SUBJ, FTHR_MESS_ID) = path_parts[ctr]
-      do 
+      do
       {
         hitlist := vector_concat (hitlist, vector (FTHR_MESS_ID));
       }
@@ -611,14 +611,14 @@ create function "nntp_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, 
       from DB.DBA.NNFE_THR
       where (FTHR_GROUP = atoi(mfolder_id) or (FTHR_REFER = mfolder_id)) and
       ("nntp_COMPOSE_HTML_NAME" (FTHR_SUBJ, FTHR_MESS_ID) = path_parts[ctr])
-    do 
+    do
     {
       hitlist := vector_concat (hitlist, vector (FTHR_MESS_ID));
     }
     if (length (hitlist) <> 1)
       return -1;
     ctr := ctr + 1;
-  }  
+  }
   return vector (UNAME'nntp', detcol_id, group_id, owner_uid, mserver_id, mfolder_id, hitlist[0]);
 }
 ;
@@ -668,7 +668,7 @@ create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type v
   if (id[6] is not null)
   {
     type := 'text/plain';
-    
+
    declare _date, _from, _subj, _grps, _print_body, d_name varchar;
    declare _body, _head, parsed_message any;
    declare idx integer;
@@ -727,7 +727,7 @@ create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type v
    parsed_message := nntpf_get_mess_attachments (_print_body, 0);
 
    _print_body := parsed_message[0];
-   
+
    "nntpf_display_message_text2" (_print_body, get_keyword_ucase ('Content-Type', _head), str_out);
 
    http ('<br/>', str_out);

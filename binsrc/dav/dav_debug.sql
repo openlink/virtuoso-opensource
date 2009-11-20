@@ -93,8 +93,8 @@ create procedure DAV_DEBUG_CHECK_DIR_LIST (inout dirlist any, in refetch integer
       DAV_DEBUG_CHECK_DIR_ITEM (itm, refetch, 1);
     }
   return;
-  
-oblom:  
+
+oblom:
   dbg_obj_princ ('DAV_DEBUG_CHECK_DIR_LIST (', dirlist, '): ', reason);
   signal ('OBLOM', 'DAV_DEBUG_CHECK_DIR_LIST (): ' || reason);
 }

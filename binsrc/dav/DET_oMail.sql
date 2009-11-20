@@ -758,11 +758,11 @@ create function "oMail_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in 
 	from
   (select top 1 ? as detcolpath from WS.WS.SYS_DAV_COL) as _param,
   OMAIL.WA.MESSAGES as _top
-	join DB.DBA.SYS_USERS as _owners on (USER_ID = ? and USER_ID = U_ID and FOLDER_ID = ?) 
+	join DB.DBA.SYS_USERS as _owners on (USER_ID = ? and USER_ID = U_ID and FOLDER_ID = ?)
   join OMAIL.WA.MSG_PARTS as _parts on (_parts.MSG_ID = _top.MSG_ID and _parts.USER_ID = U_ID)
   ' || condtext;
   --dbg_obj_princ ('\r\nCollection of messages: ', qry_text, '\r\n');
-  
+
   exec (qry_text, execstate, execmessage,
 	  vector (detcol_id, detcol_path, muser_id, mfolder_id),
     100000000, execmeta, execrows );
@@ -873,7 +873,7 @@ create function "oMail_DAV_RES_CONTENT" (in id any, inout content any, out type 
     {
 			content := OMAIL.WA.omail_message_body(id[2], id[3], id[5]);
       cont := string_output();
-			http(content, cont); 
+			http(content, cont);
       --OMAIL.WA.omail_prepare_eml (id[2], id[3], id[5], cont);
       -- dbg_obj_princ ('OMAIL.WA.omail_prepare_eml is finished (3)');
       http (cont);

@@ -90,9 +90,9 @@ create procedure TEST_CATFILTER_MAKE_USER (in cf_uname varchar)
     {
       DAV_COL_CREATE (sprintf ('/DAV/home/%s/private%d/', cf_uname, ctr), '110000000R', cf_uname, 'DETtest_CatFilter', 'dav', 'dav');
       DAV_COL_CREATE (sprintf ('/DAV/home/%s/group%d/', cf_uname, ctr), '110100000R', cf_uname, 'DETtest_CatFilter', 'dav', 'dav');
-    }      
+    }
 }
-;  
+;
 
 create procedure TEST_CATFILTER_SINGLE_FILE (in cf_uname varchar, in uri varchar, in schema_idx integer, in schema_size integer)
 {
@@ -126,7 +126,7 @@ create procedure TEST_CATFILTER_SINGLE_FILE (in cf_uname varchar, in uri varchar
           xte_head ('N3', 'N3S', 'http://local.virt/this',
 	    'N3P', base0 || sprintf('prop%d', 2000 + ctr) ),
 	  sprintf ('The value of property %d, randomizer %d/20', 2000 + ctr, rnd (20)) ) );
-    }	
+    }
   xte_nodebld_final (acc, xte_head (' root'));
   DAV_RES_UPLOAD (uri,
     '<html>This is ' || uri || '</html>',
@@ -157,7 +157,7 @@ create procedure TEST_CATFILTER_INIT (in users_count integer, in files_per_user 
       colname := sprintf ('/%s%d/', case (rnd (1)) when 1 then 'private' else 'group' end, rnd(10));
       for (user_ctr := 0; user_ctr < users_count; user_ctr := user_ctr + 1)
 	{
-	  declare cf_uname varchar;	  
+	  declare cf_uname varchar;
 	  declare schema_idx integer;
           cf_uname := sprintf ('cf%d', 10000 + user_ctr);
 	  schema_idx := rnd (schema_count + 1);

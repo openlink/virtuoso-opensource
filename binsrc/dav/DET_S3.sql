@@ -306,6 +306,7 @@ create function DB.DBA.S3__getBucket (
   declare xt, xtItems, buckets any;
 
   -- ?prefix=prefix;marker=marker;max-keys=max-keys;delimiter=delimiter
+
   bucket := '/' || DB.DBA.S3__getBucketFromUrl (url) || '/';
   bucketPath := DB.DBA.S3__getPathFromUrl (url);
   dateUTC := date_rfc1123 (now());

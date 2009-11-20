@@ -2,7 +2,7 @@
 -- $Id$
 --
 --  SNP replication support
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
