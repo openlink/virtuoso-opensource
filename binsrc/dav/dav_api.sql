@@ -1554,7 +1554,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 	  ogid := http_nogroup_gid ();
 	}
       else
-      select U_GROUP into ogid from WS.WS.SYS_DAV_USER where U_ID = a_uid;
+	select U_GROUP into ogid from WS.WS.SYS_DAV_USER where U_ID = a_uid;
     }
   if (isarray (id))
     {
@@ -1673,108 +1673,108 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                   declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
                   declare S, V, info, st, msg, data, meta any;
 
-                      foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-                      if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+                  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
+                  if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+                    {
+                      foafIRI := subseq (foafIRI, 4);
+                      set_user_id ('dba');
+
+                      localIRI := foafIRI;
+                      V := rfc1808_parse_uri (localIRI);
+                      if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
                         {
-                          foafIRI := subseq (foafIRI, 4);
-                          set_user_id ('dba');
-
-                          localIRI := foafIRI;
-                          V := rfc1808_parse_uri (localIRI);
-                          if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
-                            {
-                              V [0] := 'local';
-                              V [1] := '';
-                              localIRI := db.dba.vspx_uri_compose (V);
-                            }
-                          V := rfc1808_parse_uri (foafIRI);
-                          V[5] := '';
-                          loadIRI := DB.DBA.vspx_uri_compose (V);
-                          foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-                          S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-                          st := '00000';
-                          exec (S, st, msg, vector (), 0);
-                          -- dbg_obj_princ ('0: ', st, msg);
-                          if (st = '00000')
-                            {
-                              info := get_certificate_info (9);
-                              S := sprintf (' sparql define input:storage "" ' ||
-                                            ' prefix cert: <%s> ' ||
-                                            ' prefix rsa: <%s> ' ||
-                                            ' select ?exp_val ' ||
-                                            '        ?mod_val ' ||
-                                            '   from <%s> ' ||
-                                            '  where { ' ||
-                                            '          ?id cert:identity <%s> ; ' ||
-                                            '              rsa:public_exponent ?exp ; ' ||
-                                            '              rsa:modulus ?mod . ' ||
-                                            '          ?exp cert:decimal ?exp_val . ' ||
-                                            '          ?mod cert:hex ?mod_val . ' ||
-                                            '        }',
-                                            SIOC..cert_iri (''),
-                                            SIOC..rsa_iri (''),
-                                            foafGraph,
-                                            localIRI);
-                              exec (S, st, msg, vector (), 0, meta, data);
-                              -- dbg_obj_princ ('1: ', st, msg);
-                              if (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
-                                {
-                                  declare resMode varchar;
-
-                                  graph := SIOC..dav_res_iri (resPath);
-                                  resMode := '';
-                                  if (req[2] = ascii ('1'))
-                                    resMode := 'Control';
-                                  else if (req[1] = ascii ('1'))
-                                    resMode := 'Write';
-                                  else if (req[0] = ascii ('1'))
-                                    resMode := 'Read';
-
-                                  S := sprintf (' sparql \n' ||
-                                                ' define input:storage "" \n' ||
-                                                ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                                ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-                                                ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                                                ' select * \n' ||
-                                                '   from <%s> \n' ||
-                                                '  where { \n' ||
-                                                '          { \n' ||
-                                                '            ?rule rdf:type acl:Authorization ; \n' ||
-                                                '            acl:accessTo <%s> ; \n' ||
-                                                '            acl:mode acl:%s ; \n' ||
-                                                '            acl:agent <%s>. \n' ||
-                                                '          } \n' ||
-                                                '          union \n' ||
-                                                '          { \n' ||
-                                                '            ?rule rdf:type acl:Authorization ; \n' ||
-                                                '            acl:accessTo <%s> ; \n' ||
-                                                '            acl:mode acl:%s ; \n' ||
-                                                '            acl:agentClass foaf:Agent. \n' ||
-                                                '          } \n' ||
-                                                '        }\n',
-                                                graph,
-                                                graph,
-                                                resMode,
-                                                foafIRI,
-                                                graph,
-                                                resMode);
-                                  commit work;
-                                  exec (S, st, msg, vector (), 0, meta, data);
-                                  -- dbg_obj_princ ('2: ', S);
-                                  if (st = '00000' and length (data))
-                                  {
-                                    a_uid := http_nobody_uid ();
-                                    a_gid := http_nogroup_gid ();
-                                    _perms := req || req || '--';
-                                    return a_uid;
-                                  }
-                                }
-                            }
-                          exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+                          V [0] := 'local';
+                          V [1] := '';
+                          localIRI := db.dba.vspx_uri_compose (V);
                         }
+                      V := rfc1808_parse_uri (foafIRI);
+                      V[5] := '';
+                      loadIRI := DB.DBA.vspx_uri_compose (V);
+                      foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+                      S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
+                      st := '00000';
+                      exec (S, st, msg, vector (), 0);
+                      -- dbg_obj_princ ('0: ', st, msg);
+                      if (st = '00000')
+                        {
+                          info := get_certificate_info (9);
+                          S := sprintf (' sparql define input:storage "" ' ||
+                                        ' prefix cert: <%s> ' ||
+                                        ' prefix rsa: <%s> ' ||
+                                        ' select ?exp_val ' ||
+                                        '        ?mod_val ' ||
+                                        '   from <%s> ' ||
+                                        '  where { ' ||
+                                        '          ?id cert:identity <%s> ; ' ||
+                                        '              rsa:public_exponent ?exp ; ' ||
+                                        '              rsa:modulus ?mod . ' ||
+                                        '          ?exp cert:decimal ?exp_val . ' ||
+                                        '          ?mod cert:hex ?mod_val . ' ||
+                                        '        }',
+                                        SIOC..cert_iri (''),
+                                        SIOC..rsa_iri (''),
+                                        foafGraph,
+                                        localIRI);
+                          exec (S, st, msg, vector (), 0, meta, data);
+                          -- dbg_obj_princ ('1: ', st, msg);
+                          if (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+                            {
+                              declare resMode varchar;
+
+                              graph := SIOC..dav_res_iri (resPath);
+                              resMode := '';
+                              if (req[2] = ascii ('1'))
+                                resMode := 'Control';
+                              else if (req[1] = ascii ('1'))
+                                resMode := 'Write';
+                              else if (req[0] = ascii ('1'))
+                                resMode := 'Read';
+
+                              S := sprintf (' sparql \n' ||
+                                            ' define input:storage "" \n' ||
+                                            ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                            ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+                                            ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+                                            ' select * \n' ||
+                                            '   from <%s> \n' ||
+                                            '  where { \n' ||
+                                            '          { \n' ||
+                                            '            ?rule rdf:type acl:Authorization ; \n' ||
+                                            '            acl:accessTo <%s> ; \n' ||
+                                            '            acl:mode acl:%s ; \n' ||
+                                            '            acl:agent <%s>. \n' ||
+                                            '          } \n' ||
+                                            '          union \n' ||
+                                            '          { \n' ||
+                                            '            ?rule rdf:type acl:Authorization ; \n' ||
+                                            '            acl:accessTo <%s> ; \n' ||
+                                            '            acl:mode acl:%s ; \n' ||
+                                            '            acl:agentClass foaf:Agent. \n' ||
+                                            '          } \n' ||
+                                            '        }\n',
+                                            graph,
+                                            graph,
+                                            resMode,
+                                            foafIRI,
+                                            graph,
+                                            resMode);
+                              commit work;
+                              exec (S, st, msg, vector (), 0, meta, data);
+                              -- dbg_obj_princ ('2: ', S);
+                              if (st = '00000' and length (data))
+                              {
+                                a_uid := http_nobody_uid ();
+                                a_gid := http_nogroup_gid ();
+                                _perms := req || req || '--';
+                                return a_uid;
+                              }
+                            }
+                        }
+                      exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
                     }
+                }
               if (rc < 0)
-              return rc;
+                return rc;
             }
           -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP has a_uid=', a_uid, ' after WS.WS.GET_DAV_AUTH');
         }
@@ -2372,9 +2372,9 @@ _grddl:;
 	      if (npars = 7)
 	      {
 		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY);
-        } else {
+	      } else {
 		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY, RM_OPTIONS);
-        }
+	      }
 	      if (__tag(xrc) = 193 or xrc < 0 or xrc > 0)
 	      {
 	        goto _exit;
@@ -4184,23 +4184,23 @@ create trigger SYS_DAV_PROP_WAC_D after delete on WS.WS.SYS_DAV_PROP order 100 r
 ;
 
 create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any)
-  {
-    declare graph varchar;
+{
+  declare graph varchar;
 
   if (length (aciContent) = 0)
     return;
 
-    graph := SIOC..dav_res_iri (resPath);
+  graph := SIOC..dav_res_iri (resPath);
+  {
+    declare continue handler for SQLSTATE '*'
     {
-      declare continue handler for SQLSTATE '*'
-      {
       -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
       return;
-      };
+    };
     aciContent := cast (blob_to_string (aciContent) as varchar);
-      -- dbg_obj_princ ('tag: ', __tag (resContent));
+    -- dbg_obj_princ ('tag: ', __tag (resContent));
     DB.DBA.TTLP (aciContent, graph, graph);
-      commit work;
+    commit work;
     -- dbg_obj_princ ('WS.WS.WAC_INSERT', now(), graph);
   }
 }
@@ -4208,17 +4208,16 @@ create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any)
 
 create procedure WS.WS.WAC_DELETE (in resPath varchar)
 {
-    declare graph, st, msg varchar;
+  declare graph, st, msg varchar;
 
-    graph := SIOC..dav_res_iri (resPath);
-    exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
-    commit work;
+  graph := SIOC..dav_res_iri (resPath);
+  exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
+  commit work;
   -- dbg_obj_princ ('WS.WS.WAC_DELETE', now(), graph, st);
 }
 ;
 
 -- ACL - WebDAV Collection
-
 create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 10 referencing new as NC
 {
   declare
@@ -4315,7 +4314,6 @@ create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 10
 
 -- ACL - WebDAV Resource
 --
-
 create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 10 referencing new as NR
 {
   declare
