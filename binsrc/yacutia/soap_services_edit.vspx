@@ -1170,7 +1170,7 @@
             			  <v:on-post>
             			    <![CDATA[
                       declare inx integer;
-                      declare item varchar;
+                      declare item, q, o, n, fn, tmp varchar;
                       declare _params any;
                       _params := control.vc_page.vc_event.ve_params;
                       while (inx < length(_params))
@@ -1180,7 +1180,12 @@
                           {
                             self.roles_grant_list := vector_concat(self.roles_grant_list,vector(_params[inx + 1]));
                             self.ensure_soapuser();
-                			      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+			    fn := _params[inx + 1];
+			    q := name_part (fn, 0);
+			    o := name_part (fn, 1);
+			    tmp := q || '.' || o || '.';
+			    n := subseq (fn, length (tmp));
+			    exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO %s', q, o, n, self.soapuser));
                           }
                         }
                         inx := inx + 2;
@@ -1194,7 +1199,7 @@
             			  <v:on-post>
             			    <![CDATA[
                       declare inx integer;
-                      declare item varchar;
+                      declare item, q, o, n, fn, tmp varchar;
                       declare _params any;
                       declare indx integer;
                       _params := control.vc_page.vc_event.ve_params;
@@ -1204,8 +1209,14 @@
                           indx := position(_params[inx + 1], self.roles_grant_list);
                           if (indx)
                           {
-                            self.roles_grant_list := vector_concat(subseq(self.roles_grant_list,0,indx - 1),subseq(self.roles_grant_list,indx,length(self.roles_grant_list)));
-                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+			    self.roles_grant_list := vector_concat (subseq (self.roles_grant_list, 0, indx - 1),
+			            subseq (self.roles_grant_list, indx, length (self.roles_grant_list)));
+			    fn := _params[inx + 1];
+			    q := name_part (fn, 0);
+			    o := name_part (fn, 1);
+			    tmp := q || '.' || o || '.';
+			    n := subseq (fn, length (tmp));
+			    exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM %s', q, o, n, self.soapuser));
                           }
                         }
                         inx := inx + 2;
@@ -2034,7 +2045,13 @@
 			    for select G_OBJECT from DB.DBA.SYS_GRANTS
 			    where G_USER = _u_id and G_OP = 32 do
 			    {
-                              exec(sprintf('revoke execute on %s from %s', G_OBJECT, _soapuser));
+			      declare fn, q, o, n, tmp any;
+			      fn := G_OBJECT;
+			      q := name_part (fn, 0);
+			      o := name_part (fn, 1);
+			      tmp := q || '.' || o || '.';
+			      n := subseq (fn, length (tmp));
+			      exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM %s', q, o, n, _soapuser));
                             }
                           }
                           nf_user2:
@@ -2066,8 +2083,14 @@
                             inx := 0;
 			    while( inx < length(self.roles_grant_list) )
 			     {
-			       exec(sprintf('GRANT EXECUTE ON %s TO %s',
-			          self.roles_grant_list[inx], self.soapuser));
+			       declare fn, q, o, n, tmp varchar;
+
+			       fn := self.roles_grant_list[inx];
+			       q := name_part (fn, 0);
+			       o := name_part (fn, 1);
+			       tmp := q || '.' || o || '.';
+			       n := subseq (fn, length (tmp));
+			       exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO %s', q, o, n, self.soapuser));
                                inx := inx + 1;
                              }
                             inx := 0;
