@@ -501,16 +501,15 @@
           if (self.dav_type = 'C')
             dav_fullPath := dav_fullPath || '/';
           dav_fullPath := ODRIVE.WA.odrive_real_path (dav_fullPath, 1, self.dav_type);
-            if (self.dav_type = 'C')
-            {
-            dav_detType := get_keyword ('dav_det', params);
               if (isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath))
               {
               retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
               if (not ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', 'Folder/File with such name already exists!<>');
             }
-
+          if (self.dav_type = 'C')
+          {
+            dav_detType := get_keyword ('dav_det', params);
               if ((dav_detType = 'ResFilter') or (dav_detType = 'CatFilter'))
               {
               declare search_path varchar;
@@ -596,6 +595,8 @@
           -- Update
             if (self.command_mode = 10)
             {
+            if (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath') <> dav_fullPath)
+              ODRIVE.WA.DAV_SET (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'name', dav_name);
             if ((self.dav_type = 'R') and (ODRIVE.WA.DAV_GET(self.dav_item, 'mimeType') <> dav_mime))
               ODRIVE.WA.DAV_SET(self.dav_path, 'mimeType', dav_mime);
 
@@ -623,10 +624,7 @@
             if (self.dav_type = 'R')
             {
               dav_aci := ODRIVE.WA.aci_n3 (ODRIVE.WA.aci_params (params));
-              ODRIVE.WA.DAV_RES_UPLOAD (dav_fullPath || ',meta.n3', dav_aci, http_mime_type(dav_fullPath || ',meta.n3'), dav_perms, dav_owner, dav_group);
-
-            if (ODRIVE.WA.DAV_GET(self.dav_item, 'name') <> dav_name)
-              ODRIVE.WA.DAV_SET(self.dav_path, 'name', dav_name);
+              ODRIVE.WA.DAV_PROP_SET (dav_fullPath, 'virt:aci_meta_n3', dav_aci);
           }
           }
 
@@ -1835,7 +1833,6 @@
                     </tr>
                   </table>
                 </fieldset>
-                <vm:if test="self.dav_path not like '%,meta.n3'">
                   <fieldset>
                     <legend><b>FOAF+SSL users</b></legend>
                     <table>
@@ -1882,7 +1879,6 @@
                       </tr>
                     </table>
                   </fieldset>
-                </vm:if>
               </div>
             </v:template>
 

@@ -267,9 +267,9 @@
 
             -- aci - WebAccess
             item := ODRIVE.WA.DAV_INIT(self.items[I]);
-            if ((ODRIVE.WA.DAV_GET (item, 'type') = 'R') and length (aci_value) and (self.items[I] not like '%,meta.n3'))
+            if ((ODRIVE.WA.DAV_GET (item, 'type') = 'R') and length (aci_value))
             {
-              ODRIVE.WA.DAV_RES_UPLOAD (self.items[I] || ',meta.n3', aci_value, http_mime_type(self.items[I] || ',meta.n3'), ODRIVE.WA.DAV_GET (item, 'permissions'), ODRIVE.WA.DAV_GET (item, 'ownerID'), ODRIVE.WA.DAV_GET (item, 'groupID'));
+              ODRIVE.WA.DAV_PROP_SET (self.items[I], 'virt:aci_meta_n3', aci_value);
             }
           }
         }
