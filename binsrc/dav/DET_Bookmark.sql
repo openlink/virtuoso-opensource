@@ -341,7 +341,7 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
                         return -1;
                 if (rightcol = '')
                         rightcol := colname;
-                fullpath := colname || '/' || fullpath; 
+                fullpath := colname || '/' || fullpath;
         }
         if (sub_id <> 0)
         {
@@ -427,7 +427,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
                         return res;
                 }
                 if (top_id[3] = 1 and top_id[4] = 0) -- level of bookmarks, list of Bookmark instances
-                {       
+                {
                         for select "bookmark_FIXNAME"(C.WAI_NAME) as orig_name
                                          from SYS_USERS A,
                                                   WA_MEMBER B,
@@ -526,7 +526,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
                                 '100000000NN', ownergid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
                         }
                 }
-                grand_res := res;    
+                grand_res := res;
         }
         res := vector();
         if (top_id[3] = 1)
@@ -645,7 +645,7 @@ create procedure "bookmark_DAV_FC_TABLE_METAS" (inout table_metas any)
     'WA_MEMBER'         , vector (      ''      ,
                                         ''      ,
                                                 'WAM_INST'     , 'WAM_INST'   , '[__quiet] /' ),
-                                                
+
     'SYS_USERS'   , vector (      ''      ,
                                         ''      ,
                                                 NULL            , NULL          , NULL          )
@@ -691,7 +691,7 @@ create function "bookmark_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, 
         }
         if (length (path_parts) >= 2)
         {
-                sub := path_parts[0];           
+                sub := path_parts[0];
                 if (sub = 'bookmark')
                 {
                         domain_id := coalesce ((select C.WAI_ID
@@ -750,7 +750,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
         declare ownergid, owner_uid, ctr, len integer;
         declare hitlist any;
         declare access, colpath, tag_id, sub varchar;
-        tag_id := null; 
+        tag_id := null;
         "bookmark_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
         if (0 = length(path_parts))
         {
@@ -864,7 +864,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
                                                 where "bookmark_FIXNAME"(F_NAME) = path_parts[ctr] and
                                                 F_DOMAIN_ID = domain_id and
                                                 ((F_PARENT_ID = folder_id and folder_id > 0) or (F_PARENT_ID = -1 and (folder_id = 0 or folder_id = -1)))
-                                        do 
+                                        do
                                         {
                                                 hitlist := vector_concat (hitlist, vector (F_ID));
                                         }
@@ -886,7 +886,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
                                   do
                                   {
                                         hitlist := vector_concat (hitlist, vector (D_ID));
-                                  }               
+                                  }
                                 }
                                 if (length (hitlist) <> 1)
                                         return -1;
@@ -907,7 +907,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
                         where ((BD_FOLDER_ID = folder_id and folder_id > 0) or ((folder_id = 0 or folder_id = -1) and BD_FOLDER_ID is null))and
                         "bookmark_COMPOSE_XBEL_NAME" (BD_NAME, BD_ID) = path_parts[ctr] and
                         BD_DOMAIN_ID = domain_id
-                do 
+                do
                 {
                         hitlist := vector_concat (hitlist, vector (BD_ID));
                 }
@@ -928,7 +928,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
                                           and month(D.BD_LAST_UPDATE) = folder_id
                                           and year(D.BD_LAST_UPDATE) = domain_id
                                           and "bookmark_COMPOSE_XBEL_NAME" (D.BD_NAME, D.BD_ID) = path_parts[ctr]
-                do 
+                do
                 {
                         hitlist := vector_concat (hitlist, vector (D_ID));
                 }
@@ -947,11 +947,11 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
                                           and C.WAI_TYPE_NAME = 'Bookmark'
                                           and D.BD_DOMAIN_ID = C.WAI_ID
                                           and "bookmark_COMPOSE_XBEL_NAME" (D.BD_NAME, D.BD_ID) = path_parts[ctr]
-                do 
+                do
                 {
                         hitlist := vector_concat (hitlist, vector (D_ID));
                 }
-        }       
+        }
         if (length (hitlist) <> 1)
                 return -1;
         return vector (UNAME'bookmark', detcol_id, owner_uid, sub_id, domain_id, folder_id, hitlist[0], tag_id);

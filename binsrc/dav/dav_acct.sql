@@ -32,13 +32,13 @@ create function DAV_SPACE_QUOTA_PARENT (in res_path varchar, out _u_id integer, 
   while (1)
     {
       open cr;
-      whenever not found goto nf;      
+      whenever not found goto nf;
       fetch cr into _home_path, _u_id, _above_hy, _dav_use, _total_use, _quota;
       close cr;
       if (_home_path = "LEFT" (res_path, length (_home_path)))
         goto done;
-      
-nf:      
+
+nf:
       close cr;
       slash_pos := strchr (tail, '/');
       if (slash_pos is null)
@@ -92,7 +92,7 @@ create function DAV_ADD_SPACE_QUOTA (in _home_path varchar, in _u_id integer, in
   into reloc_path	, reloc_dav_use	, old_app_use	, old_max_app_use	, reloc_quota	, reloc_above_hy
   from WS.WS.SYS_DAV_SPACE_QUOTA where DSQ_U_ID = _u_id;
 
-no_old_home:  
+no_old_home:
   whenever not found goto do_insert;
   select DSQ_U_ID, DSQ_ABOVE_HI_YELLOW, DSQ_DAV_USE, DSQ_MAX_DAV_USE into old_u_id, old_above_hy, old_dav_use, old_max_dav_use from WS.WS.SYS_DAV_SPACE_QUOTA where DSQ_HOME_PATH = _home_path;
   if (old_u_id is not null)
@@ -160,7 +160,7 @@ create function DAV_DEL_SPACE_QUOTA (in _home_path varchar) returns integer
   return 0;
 
 nf:
-  return -1;  
+  return -1;
 }
 ;
 
@@ -177,7 +177,7 @@ create procedure DAV_SPACE_QUOTA_YELLOW_TRACK (in _home_path varchar, in _u_id i
               -- dbg_obj_princ ('Error in DAV_SPACE_QUOTA_LO_YELLOW_DOWN (', _home_path, '): ', __SQL_STATE, __SQL_MESSAGE);
               ;
             };
-          DAV_SPACE_QUOTA_LO_YELLOW_DOWN (_home_path, _u_id, total_use, _quota);        
+          DAV_SPACE_QUOTA_LO_YELLOW_DOWN (_home_path, _u_id, total_use, _quota);
           update WS.WS.SYS_DAV_SPACE_QUOTA set DSQ_ABOVE_HI_YELLOW = null where DSQ_HOME_PATH = _home_path;
         }
     }
@@ -220,7 +220,7 @@ create procedure DAV_SPACE_QUOTA_SIGNAL (in res_path varchar, in home_path varch
     home_path, u_descr, cast (_quota as varchar), cast (_total_use as varchar) );
   -- dbg_obj_princ ('DAV_SPACE_QUOTA_SIGNAL (', res_path, home_path, _u_id, _total_use, _quota, ') signals ', msg);
   signal ('HT507', msg);
-}      
+}
 ;
 
 create procedure DAV_OWNER_DISABLED_SIGNAL (in res_path varchar, in _u_id integer)
@@ -237,7 +237,7 @@ create procedure DAV_OWNER_DISABLED_SIGNAL (in res_path varchar, in _u_id intege
     res_path, u_descr );
   -- dbg_obj_princ ('DAV_OWNER_DISABLED_SIGNAL (', res_path, _u_id ') signals ', msg);
   signal ('HT508', msg);
-}      
+}
 ;
 
 create procedure DAV_HOME_DISABLED_SIGNAL (in res_path varchar, in home_path varchar, in _u_id integer)
@@ -252,7 +252,7 @@ create procedure DAV_HOME_DISABLED_SIGNAL (in res_path varchar, in home_path var
     home_path, u_descr );
   -- dbg_obj_princ ('DAV_HOME_DISABLED_SIGNAL (', res_path, home_path, _u_id) signals ', msg);
   signal ('HT509', msg);
-}      
+}
 ;
 
 create procedure DAV_SPACE_QUOTA_RES_INSERT (in newr_path varchar, in newr_len integer)
@@ -268,7 +268,7 @@ create procedure DAV_SPACE_QUOTA_RES_INSERT (in newr_path varchar, in newr_len i
   set isolation='committed';
   if (parent_u_id is not null and
     exists (
-      select top 1 1 from SYS_USERS 
+      select top 1 1 from SYS_USERS
       where U_ID = parent_u_id and U_ACCOUNT_DISABLED ) )
     DAV_HOME_DISABLED_SIGNAL (newr_path, parent_path, parent_u_id);
   set isolation='serializable';
@@ -284,7 +284,7 @@ create procedure DAV_SPACE_QUOTA_RES_INSERT (in newr_path varchar, in newr_len i
   where DSQ_HOME_PATH = parent_path;
   DAV_SPACE_QUOTA_YELLOW_TRACK (parent_path, parent_u_id, parent_above_hy, parent_total_use, parent_quota);
 
-done:  
+done:
   -- dbg_obj_princ ('DAV_SPACE_QUOTA_RES_INSERT (', newr_path, newr_len, ') done');
   ;
 }
@@ -303,7 +303,7 @@ create procedure DAV_SPACE_QUOTA_RES_DELETE (in oldr_path varchar, in oldr_len i
   set isolation='committed';
   if (parent_u_id is not null and
     exists (
-      select top 1 1 from SYS_USERS 
+      select top 1 1 from SYS_USERS
       where U_ID = parent_u_id and U_ACCOUNT_DISABLED ) )
     DAV_HOME_DISABLED_SIGNAL (oldr_path, parent_path, parent_u_id);
   set isolation='serializable';
@@ -325,7 +325,7 @@ create procedure DAV_SPACE_QUOTA_RES_DELETE (in oldr_path varchar, in oldr_len i
   where DSQ_HOME_PATH = parent_path;
   DAV_SPACE_QUOTA_YELLOW_TRACK (parent_path, parent_u_id, parent_above_hy, parent_total_use, parent_quota);
 
-done:  
+done:
   -- dbg_obj_princ ('DAV_SPACE_QUOTA_RES_DELETE (', oldr_path, oldr_len, ') done');
   ;
 }
@@ -418,7 +418,7 @@ create procedure DAV_SPACE_QUOTA_RES_UPDATE (in oldr_path varchar, in oldr_len i
       where DSQ_HOME_PATH = src_path;
       DAV_SPACE_QUOTA_YELLOW_TRACK (src_path, src_u_id, src_above_hy, src_total_use, src_quota);
     }
-    
+
 done:
   -- dbg_obj_princ ('DAV_SPACE_QUOTA_RES_UPDATE (', oldr_path, oldr_len, newr_path, newr_len, ') done');
   ;

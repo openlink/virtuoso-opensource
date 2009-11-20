@@ -1,45 +1,45 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
---  
+--
+--
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 ;
@@ -94,10 +94,10 @@ create procedure upload_docs (in path varchar, in num int := 10)
 }
 ;
 
-create procedure get_doc (in path varchar) 
+create procedure get_doc (in path varchar)
 {
   declare content,id any;
-  declare type varchar; 
+  declare type varchar;
   id := DAV_SEARCH_ID (path, 'R');
   if ((DAV_HIDE_ERROR(id) is not null) and (DAV_RES_CONTENT_INT (id, content, type, 0, 0, null, null) > 0))
     {
@@ -110,10 +110,10 @@ create procedure get_doc (in path varchar)
 }
 ;
 
-create procedure get_doc_v (in path varchar, in ver int) 
+create procedure get_doc_v (in path varchar, in ver int)
 {
   declare content,id, mode any;
-  declare type varchar; 
+  declare type varchar;
   id := DAV_SEARCH_ID (path, 'R');
   dbg_obj_princ ('id: ', id);
   if ((id>0) and (DAV_GET_VERSION_CONTENT (id, ver, content, type, mode) >= 0))
@@ -145,13 +145,13 @@ create procedure select_from_dir (in base varchar, in file varchar)
   return 'not found';
 }
 ;
-  
-  
 
-create procedure get_doc_v_2 (in det_path varchar, in filename varchar, in ver_or_hist any) 
+
+
+create procedure get_doc_v_2 (in det_path varchar, in filename varchar, in ver_or_hist any)
 {
   declare content,id any;
-  declare mode varchar; 
+  declare mode varchar;
 
   declare full_path varchar;
   full_path := sprintf ('%s/%s/%s', det_path, filename, cast (ver_or_hist as varchar));
@@ -187,7 +187,7 @@ create procedure lock_res (in path varchar)
 	registry_set ('DETVerTest.LockToken', _token);
 	return 1;
     }
-  else 
+  else
 	return _token;
 }
 ;
@@ -211,7 +211,7 @@ create function get_res_prop (in coll varchar, in res varchar, in idx int)
 
 create function copy (in source varchar, in dest varchar)
 {
-  declare _rc int; 
+  declare _rc int;
   _rc := DAV_COPY (source, dest, 1, '110100000RR', 'dav', 'administrators',
      'dav', 'dav');
   return _rc;
@@ -223,53 +223,53 @@ ECHO BOTH "Checking versioning, Pass 0 ...\n";
 
 delete from WS.WS.SYS_DAV_LOCK;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Clear all locks"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Clear all locks"  ": \"" $STATE "\"\t (must be OK)\n";
 DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 DB.DBA.DAV_DELETE ('/DAV/vers/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING='A' where COL_ID = DAV_SEARCH_ID ('/DAV/versioning/', 'C');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Set Versioning control on " ": \"" $STATE "\"\t (must be OK)\n";
-	
+
 select upload_docs ('/DAV/versioning/', 20);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/versioning/ " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/versioning/ " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir/ "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir/ "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir1/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir1/ " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir1/ " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir2/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir2/ " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir2/ " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select upload_docs ('/DAV/versioning/test_dir/', 5);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload docs to /DAV/versioning/test_dir/ "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " upload docs to /DAV/versioning/test_dir/ "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir/a2/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir/a2/ "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -280,43 +280,43 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Check is test_dir/a2 under Versioning DET control " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED:" "***FAILED:";
 ECHO BOTH " Check is test_dir/a2 under Versioning DET control " ": \"" $LAST[1] "\"\t (must be: " NULL ")\n";
-	
+
 select upload_docs ('/DAV/versioning/test_dir/a2/', 10);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to /DAV/versioning/test_dir/a2/ "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to /DAV/versioning/test_dir/a2/ "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/test1.txt', 'R');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Check /DAV/versioning/test_dir/test1.txt " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " Check /DAV/versioning/test_dir/test1.txt " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test1.txt', 'R');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test1.txt "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test1.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test2.txt', 'R');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test2.txt "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test2.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/a2/test1.txt', 'R');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/a2/test1.txt "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/a2/test1.txt "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/testXX.txt', 'R');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/testXX.txt "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT 0 $LAST[1] "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/testXX.txt "  ": \"" $LAST[1] "\"\t (must be less than " 0 ")\n";
-	
+
 select upload_doc ('/DAV/versioning/test2-1.txt', 'hello');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload /DAV/versioning/test2-1.txt "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -620,13 +620,13 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check non-existing version of file1.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED:" "***FAILED:";
 ECHO BOTH  " check non-existing version of file1.txt by DET " ": \"" $LAST[1] "\"\t (must be: " NULL ")\n";
-	
+
 select xpath_eval ('count (//version)', xtree_doc (get_doc_v_2 ('/DAV/versioning/VVC', 'file1.txt', 'history.xml')));
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check number of versions in history " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED:" "***FAILED:";
 ECHO BOTH  " check number of versions in history " ": \"" $LAST[1] "\"\t (must be: " 5 ")\n";
-	
+
 select check_file ('/DAV/versioning/VVC/file1.txt/last');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check of last version reference " ": \"" $STATE "\"\t (must be OK)\n";
@@ -762,7 +762,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check is file1-mv1.txt in Attic " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] 'found' "PASSED:" "***FAILED:";
 ECHO BOTH  " check is file1-mv1.txt in Attic " ": \"" $LAST[1] "\"\t (must be: " 'found' ")\n";
-	
+
 select DAV_RES_RESTORE ('/DAV/versioning/VVC/', 'file1-mv1.txt', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " restoring from Attic "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -869,7 +869,7 @@ select upload_doc ('/DAV/versioning/upload_test.txt', make_long_doc ());
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload long doc 2 " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH  " upload long doc 2 " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";     
+ECHO BOTH  " upload long doc 2 " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select upload_doc ('/DAV/versioning/upload_test.txt', make_long_doc ());
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload long doc 3 " ": \"" $STATE "\"\t (must be OK)\n";
@@ -885,7 +885,7 @@ select upload_doc ('/DAV/versioning/upload_test2.txt', make_long_doc ());
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload long doc 2 " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH  " upload long doc 2 " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";     
+ECHO BOTH  " upload long doc 2 " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select upload_doc ('/DAV/versioning/upload_test2.txt', make_long_doc ());
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " upload long doc 3 " ": \"" $STATE "\"\t (must be OK)\n";
@@ -1352,7 +1352,7 @@ ECHO BOTH " count of versions in ws.ws.sys_dav_res_version table " ": \"" $LAST[
 
 DB.DBA.DAV_DELETE ('/DAV/versioning2/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting second versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting second versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning2/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
@@ -1363,7 +1363,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/versioning2/ " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/versioning2/ " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 select DB.DBA.DAV_VERSION_CONTROL ('/DAV/versioning2/test12.txt', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control on text2.txt "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -1601,7 +1601,7 @@ ECHO BOTH  " get new property from last VR "  ": \"" $STATE "\"\t (must be OK)\n
 ECHO BOTH $IF $EQU $LAST[1] "prop2val" "PASSED:" "***FAILED:";
 ECHO BOTH  " get new property from last VR "  ": \"" $LAST[1] "\"\t (must be: " "prop2val" ")\n";
 
-	
+
 -- uncheckout properties
 select DAV_CHECKOUT ('/DAV/versioning2/test11.txt', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
@@ -1666,7 +1666,7 @@ ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED:" "***FAILED:";
 ECHO BOTH " count of versions in ws.ws.sys_dav_res_version table " ": \"" $LAST[1] "\"\t (must be: " 2 ")\n";
 
 
--- implicit restore of the file not working	
+-- implicit restore of the file not working
 
 select DAV_DELETE ('/DAV/versioning2/VVC/test11.txt/last', 0, 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
@@ -1749,7 +1749,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check is last version of test11.txt in VVC " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] 'found' "PASSED:" "***FAILED:";
 ECHO BOTH  " check is last version of test11.txt in VVC " ": \"" $LAST[1] "\"\t (must be: " 'found' ")\n";
-	
+
 select DB.DBA.DAV_REMOVE_VERSION_CONTROL ('/DAV/versioning2/test11.txt', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " second attempt to turn off versioning  "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -1771,7 +1771,7 @@ ECHO BOTH  " attempt to turn off versioning on wrong resource "  ": \"" $STATE "
 ECHO BOTH $IF $GT 0 $LAST[1] "PASSED:" "***FAILED:";
 ECHO BOTH  " attempt to turn off versioning on wrong resource "  ": \"" $LAST[1] "\"\t (must be less than " 0 ")\n";
 
-  
+
 
 
 -- reset versioning control
@@ -1779,12 +1779,12 @@ ECHO BOTH "Checking versioning, Pass 1R ... set version control\n";
 
 DB.DBA.DAV_DELETE ('/DAV/vers_test/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING='A' where COL_ID = DAV_SEARCH_ID ('/DAV/vers_test/', 'C');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Set Versioning control on " ": \"" $STATE "\"\t (must be OK)\n";
@@ -1792,12 +1792,12 @@ select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/VVC/', '110100000R', 'dav', 'admin
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create VVC test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create VVC test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create VVC test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/Attic/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create Attic test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create Attic test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create Attic test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select DB.DBA.DAV_SET_VERSIONING_CONTROL ('/DAV/vers_test/', NULL, 'A', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -1834,7 +1834,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check DAV:version-history property "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED:" "***FAILED:";
 ECHO BOTH  " check DAV:version-history property "  ": \"" $LAST[1] "\"\t (must be: " NULL ")\n";
-	
+
 select DB.DBA.DAV_SET_VERSIONING_CONTROL ('/DAV/vers_test/', NULL, 'A', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control again "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -1844,12 +1844,12 @@ ECHO BOTH  " set versioning control again "  ": \"" $LAST[1] "\"\t (must be grea
 
 DB.DBA.DAV_DELETE ('/DAV/vers_test/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING='A' where COL_ID = DAV_SEARCH_ID ('/DAV/vers_test/', 'C');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Set Versioning control on " ": \"" $STATE "\"\t (must be OK)\n";
@@ -1857,12 +1857,12 @@ select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/VVC/', '110100000R', 'dav', 'admin
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create VVC test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create VVC test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create VVC test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/vers_test/Attic/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create Attic test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create Attic test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create Attic test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select DB.DBA.DAV_SET_VERSIONING_CONTROL ('/DAV/vers_test/', NULL, 'A', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control "  ": \"" $STATE "\"\t (must be OK)\n";
@@ -1879,8 +1879,8 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control again "  ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " set versioning control again "  ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
-ECHO BOTH "Bug 9958 check\n"; 
+
+ECHO BOTH "Bug 9958 check\n";
 
 select upload_doc ('/DAV/versioning2/1.txt', 'content of test1.txt #1000');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
@@ -1945,7 +1945,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " uncheckout 1.txt " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " uncheckout 1.txt " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
-	
+
 ECHO BOTH "set wrong auto-version value\n";
 select DAV_PROP_SET ('/DAV/versioning2/1.txt', 'DAV:auto-version', 'DAV:checkin-checkout', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
@@ -1975,7 +1975,7 @@ ECHO BOTH " size of /DAV/versioning/VVC/test11.txt/6 " ": \"" $STATE "\"\t (must
 ECHO BOTH $IF $EQU $LAST[1] 27 "PASSED:" "***FAILED:";
 ECHO BOTH " size of /DAV/versioning/VVC/test11.txt/6 " ": \"" $LAST[1] "\"\t (must be: " 27 ")\n";
 
-	
+
 
 ECHO BOTH "deleting VVC folder, check consistency\n";
 select DAV_DELETE ('/DAV/versioning2/VVC/', 0, 'dav', 'dav');
@@ -1988,7 +1988,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " number of files under version control after VVC removed " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " number of files under version control after VVC removed " ": \"" $LAST[1] "\"\t (must be: " 0 ")\n";
-	
+
 select DAV_HIDE_ERROR (get_prop('/DAV/versioning2/1.txt', 'DAV:author'));
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " DAV:author property " ": \"" $STATE "\"\t (must be OK)\n";
@@ -2014,7 +2014,7 @@ ECHO BOTH " DAV:version-history property " ": \"" $LAST[1] "\"\t (must be: " NUL
 ECHO BOTH "wrapping several versions in one\n";
 DB.DBA.DAV_DELETE ('/DAV/versioning3/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting second versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Deleting second versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning3/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
@@ -2100,12 +2100,12 @@ ECHO BOTH  " check the content of last version " ": \"" $LAST[1] "\"\t (must be:
 
 DB.DBA.DAV_DELETE ('/DAV/vers_copy/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Delete versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";	
+ECHO BOTH " Delete versioning collection"  ": \"" $STATE "\"\t (must be OK)\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/vers_copy/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
-ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";	
+ECHO BOTH " Create test collection: " ": \"" $LAST[1] "\"\t (must be greater than " 0 ")\n";
 select upload_docs ('/DAV/vers_copy/', 20);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/vers_copy/ " ": \"" $STATE "\"\t (must be OK)\n";
@@ -2183,7 +2183,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " check last version of file4.txt by DET " ": \"" $STATE "\"\t (must be OK)\n";
 ECHO BOTH $IF $EQU $LAST[1] 'hello world! - 5' "PASSED:" "***FAILED:";
 ECHO BOTH  " check last version of file4.txt by DET " ": \"" $LAST[1] "\"\t (must be: " 'hello world! - 5' ")\n";
-	
+
 select copy ('/DAV/vers_copy/test7.txt', '/DAV/vers_copy/test6.txt');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH  " copy test7.txt to test6.txtt "  ": \"" $STATE "\"\t (must be OK)\n";

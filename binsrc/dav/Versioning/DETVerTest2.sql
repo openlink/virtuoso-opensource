@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2006 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 
@@ -53,10 +53,10 @@ create procedure upload_docs (in path varchar, in num int := 10)
 }
 ;
 
-create procedure get_doc (in path varchar) 
+create procedure get_doc (in path varchar)
 {
   declare content,id any;
-  declare type varchar; 
+  declare type varchar;
   id := DAV_SEARCH_ID (path, 'R');
   --dbg_obj_princ ('id: ', id);
   if (isarray (id) and (DAV_RES_CONTENT_INT (id, content, type, 0, 0, null, null) > 0))
@@ -67,10 +67,10 @@ create procedure get_doc (in path varchar)
 }
 ;
 
-create procedure get_doc_v (in path varchar, in ver int) 
+create procedure get_doc_v (in path varchar, in ver int)
 {
   declare content,id any;
-  declare mode varchar; 
+  declare mode varchar;
   id := DAV_SEARCH_ID (path, 'R');
   --dbg_obj_princ ('id: ', id);
   if (isarray (id) and (DAV_GET_VERSION_CONTENT (aref (id, 2), ver, content, mode) >= 0))
@@ -83,66 +83,66 @@ create procedure get_doc_v (in path varchar, in ver int)
 
 DB.DBA.DAV_DELETE ('/DAV/versioning/', 1, 'dav','dav');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
-ECHO BOTH " Deleting versioning collection"  ":" $STATE "\n";	
+ECHO BOTH " Deleting versioning collection"  ":" $STATE "\n";
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/', '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " Create test collection: " ":" $LAST[1] "\n";
-	
+
 update WS.WS.SYS_DAV_COL set COL_DET='Versioning' where COL_ID = DAV_SEARCH_ID ('/DAV/versioning/', 'C');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED:" "***FAILED:";
 ECHO BOTH " Set Versioning DET " ":" $STATE "\n";
-	
+
 select upload_docs ('/DAV/versioning/', 20);
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to collection /DAV/versioning/ " ":" $LAST[1] "\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir/ "  ":" $LAST[1] "\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir1/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir1/ " ":" $LAST[1] "\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir2/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir2/ " ":" $LAST[1] "\n";
-	
+
 select upload_docs ('/DAV/versioning/test_dir/', 5);
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " upload docs to /DAV/versioning/test_dir/ "  ":" $LAST[1] "\n";
-	
+
 select DB.DBA.DAV_COL_CREATE ('/DAV/versioning/test_dir/a2/',  '110100000R', 'dav', 'administrators', 'dav', 'dav');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Create /DAV/versioning/test_dir/a2/ "  ":" $LAST[1] "\n";
 select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID ('/DAV/versioning/test_dir/a2/', 'C');
 ECHO BOTH $IF $EQU $LAST[1] 'Versioning' "PASSED:" "***FAILED:";
 ECHO BOTH " Check is test_dir/a2 under Versioning DET control " ":" $LAST[1] "\n";
-	
+
 select upload_docs ('/DAV/versioning/test_dir/a2/', 10);
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Upload docs to /DAV/versioning/test_dir/a2/ "  ":" $LAST[1] "\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/test1.txt', 'R');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH " Check /DAV/versioning/test_dir/test1.txt " ":" $LAST[1] "\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test1.txt', 'R');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test1.txt "  ":" $LAST[1] "\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test2.txt', 'R');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test2.txt "  ":" $LAST[1] "\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/a2/test1.txt', 'R');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/a2/test1.txt "  ":" $LAST[1] "\n";
-	
+
 select DAV_SEARCH_ID ('/DAV/versioning/test_dir/testXX.txt', 'R');
 ECHO BOTH $IF $GT 0 $LAST[1] "PASSED:" "***FAILED:";
 ECHO BOTH  " Check /DAV/versioning/test_dir/testXX.txt "  ":" $LAST[1] "\n";
-	
+
 select upload_doc ('/DAV/versioning/test2-1.txt', 'hello');
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED:" "***FAILED:";
 ECHO BOTH  " upload /DAV/versioning/test2-1.txt "  ":" $LAST[1] "\n";
