@@ -4,10 +4,16 @@
 
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
-   declare arr, data, meta, h1, h2, inx, gr, host, pars any;
-   declare iri_type, iri_uri, links, langs, dspace varchar;
+   declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message varchar;
    declare do_sponge, local_lookup, proxy_iri_fn int;
 
+   set http_charset='utf-8';
+   label := ''; 
+   iri_type := 'unknown';
+   _subject := '';
+   error_message := null;
+   odd_position := 0;
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
    langs := rdfdesc_get_lang_acc (lines);
@@ -15,7 +21,16 @@
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '') -- case when /about/html/www.cname/path i.e. when no scheme the default is http
      gr := 'http://' || gr;
-
+   cookievec := DB.DBA.vsp_ua_get_cookie_vec (lines);
+   sid := get_keyword ('__rdf_sponge_sid', cookievec);
+   if (sid is null)
+     {
+        sid := xenc_rand_bytes (6, 1);
+     	http_header (sprintf ('Set-Cookie: __rdf_sponge_sid=%s; expires=%s; path=/about;\r\n', 
+     		sid, date_rfc1123 (dateadd ('hour', 1, now ())))); 
+     }
+   http_header (http_header_get () || 'Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
+   connection_set ('__rdf_sponge_sid', sid);  
    proxy_iri_fn := get_keyword ('p', params, null);
    pars := split_and_decode (arr[4]);
    if (isarray (pars) and get_keyword ('p', pars, '') = proxy_iri_fn)
@@ -96,6 +111,21 @@
 
    if (_S not like 'nodeID://%' and do_sponge)
      {
+       declare exit handler for sqlstate '*'
+       {
+          if (__SQL_STATE = 'HT404')
+	    {
+	      http_status_set (404);
+              error_message := 'Cannot find URL: ' || _G;
+	    }
+	  else
+            {
+	      error_message := __SQL_MESSAGE;
+	    }
+	  rollback work;
+          _S := _G;
+	  goto errors;    
+       };
        --DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
        --DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
        -- temporary work around to stop sponging twice 
@@ -146,11 +176,6 @@
    --       }
    --  }
 
-   odd_position := 0;
-   set http_charset='utf-8';
-   set isolation = 'uncommitted';
-   label := ''; 
-   _subject := '';
    label := rdfdesc_label (_S, _G, lines);
    label := cast (label as varchar);
    true_label := label;
@@ -162,15 +187,16 @@
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
 
+   links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
+   http_header (http_header_get () || links);
+   errors:
   if (not length (label))
     label := _S;
    if (label like 'http%://%')
      label := rdfdesc_uri_curie (label);
-   links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
-   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
-   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n' || links);
-
+   set isolation = 'uncommitted';
 ?>
 
 <!-- header -->
@@ -243,7 +269,9 @@
     <div id="content">
 
       <p><?vsp http (sprintf ('%s', _subject)); ?></p>
-
+      <?vsp if (error_message is not null) { ?>
+      <div id="err"><?V error_message ?></div>
+      <?vsp } else { ?>
      <div id="navarea">
        <div id="navbar">
          <ul id="navlist">
@@ -324,11 +352,13 @@
       </table>
       </div> <!-- #attributeof -->
      </div> <!-- #navarea -->
+      <?vsp } ?>
     </div> <!--  #content -->
     </div> <!--  #content_wrapper -->
 
 <!-- footer -->
     <div id="footer">
+      <?vsp if (error_message is null) { ?>
       <div id="ft_t">
        Explore alternative Linked Data Views via this <a title="OpenLink Data Explorer" href="/ode/?uri=<?vsp http_url (_S); ?>">OpenLink Data Explorer</a> link 
        &nbsp; &nbsp;
@@ -337,6 +367,7 @@
        <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">RDF/JSON</a> |
        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- #ft_t -->
+      <?vsp } ?>
       <div id="ft_b">
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="statics/LoDLogo.gif" style="border-width:0"  /></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="statics/sw-sparql-blue.png" style="border-width:0" /></a> &nbsp;  &nbsp;

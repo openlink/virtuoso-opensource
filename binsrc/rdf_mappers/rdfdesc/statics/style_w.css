@@ -80,6 +80,7 @@ width: 100%; float: left; clear: left;
   float:left;
   margin: 0;
 }
+#err { color: red; font-size: 120%; }
 #sidebar {
   /* Needed for static help sidebar, but not for help slidebar
   width: 33%;
