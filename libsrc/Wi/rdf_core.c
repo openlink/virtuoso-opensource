@@ -77,6 +77,40 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https)
   return res;
 }
 
+int
+uriqa_iri_is_local (query_instance_t *qi, const char *iri)
+{
+  const char *regname = "URIQADefaultHost";
+  caddr_t * place;
+  if (!uriqa_dynamic_local)
+    return 0;
+/*                   01234567 */
+  if (strncmp (iri, "http://", 7))
+    return 0;
+  if (NULL != qi->qi_client->cli_http_ses)
+    {
+      ws_connection_t *ws = qi->qi_client->cli_ws;
+      const char *host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
+      if (NULL != host)
+        {
+          int host_len = strlen (host);
+          if (!strncmp (iri+7, host, host_len) && ('/' == iri[7+host_len]))
+            return 7 + host_len;
+        }
+    }
+  IN_TXN;
+  ASSERT_IN_TXN;
+  place = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+  LEAVE_TXN;
+  if (NULL != place)
+    {
+      int host_len = strlen (place[0]);
+      if (!strncmp (iri+7, place[0], host_len))
+        return 7 + host_len;
+    }
+  return 0;
+}
+
 caddr_t
 uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
 {
@@ -810,7 +844,7 @@ ns_uri_found:
 caddr_t
 ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
-  query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;
+  /*query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;*/
   caddr_t res, err = NULL;
   res = rfc1808_expand_uri (/*qi,*/ ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
@@ -1239,7 +1273,7 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
     {
       while (nic->nic_id_to_name->ht_count > nic->nic_size)
 	{
-	  caddr_t key;
+	  caddr_t key = NULL;
 	  boxint id;
 	  int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
 	  if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&key, (caddr_t)&id))
@@ -1639,6 +1673,27 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
   caddr_t pref_id, iri_id;
   if (DV_IRI_ID == DV_TYPE_OF (name))
     return box_copy (name);
+#ifndef NDEBUG
+/*                                             01234567 */
+  if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
+    {
+      const char *regname = "URIQADefaultHost";
+      caddr_t *host_ptr;
+      IN_TXN;
+      ASSERT_IN_TXN;
+      host_ptr = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      LEAVE_TXN;
+      if ((NULL != host_ptr) && IS_BOX_POINTER (host_ptr[0]))
+        {
+          caddr_t host = host_ptr[0];
+          int host_strlen = strlen (host);
+          if (!strncmp (name + 7, host, host_strlen) && ('/' == name[7+host_strlen]))
+            {
+              printf ("\nOops, %s in key_name_to_iri_id()", name);
+            }
+        }
+    }
+#endif
   if (!iri_split (name, &prefix, &local))
     return NULL;
   pref_id_no = nic_name_id (iri_prefix_cache, prefix);
@@ -1692,6 +1747,27 @@ key_name_to_existing_cached_iri_id (lock_trx_t * lt, caddr_t name)
     return box_copy (name);
   if (!iri_split (name, &prefix, &local))
     return NULL;
+#ifndef NDEBUG
+/*                                             01234567 */
+  if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
+    {
+      const char *regname = "URIQADefaultHost";
+      caddr_t *host_ptr;
+      IN_TXN;
+      ASSERT_IN_TXN;
+      host_ptr = (caddr_t *) id_hash_get (registry, (caddr_t) & regname);
+      LEAVE_TXN;
+      if ((NULL != host_ptr) && IS_BOX_POINTER (host_ptr[0]))
+        {
+          caddr_t host = host_ptr[0];
+          int host_strlen = strlen (host);
+          if (!strncmp (name + 7, host, host_strlen) && ('/' == name[7+host_strlen]))
+            {
+              printf ("\nOops, %s in key_name_to_existing_cached_iri_id()", name);
+            }
+        }
+    }
+#endif
   pref_id_no = nic_name_id (iri_prefix_cache, prefix);
   dk_free_box (prefix);
   if (!pref_id_no)
@@ -1797,27 +1873,21 @@ again:
       return box_iri_int64 (acc, DV_IRI_ID);
     }
 /*                                             01234567 */
-  if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
-    {
-      caddr_t host;
-      host = uriqa_get_host_for_dynamic_local ((query_instance_t *)qst, NULL);
-      if (NULL != host)
+  if (uriqa_dynamic_local)
         {
-          int host_strlen = strlen (host);
-          if (!strncmp (name + 7, host, host_strlen) && ('/' == name[7+host_strlen]))
+      int ofs = uriqa_iri_is_local (qi, name);
+      if (0 != ofs)
             {
               int name_box_len = box_length (name);
 /*  0123456 */
 /* "local:" */
-              caddr_t localized_name = dk_alloc_box (6 + name_box_len - (7+host_strlen), DV_STRING);
+          caddr_t localized_name = dk_alloc_box (6 + name_box_len - ofs, DV_STRING);
               memcpy (localized_name, "local:", 6);
-              memcpy (localized_name + 6, name + 7+host_strlen, name_box_len - (7+host_strlen));
+          memcpy (localized_name + 6, name + ofs, name_box_len - ofs);
               if (box_to_delete == name)
                 dk_free_box (name);
               box_to_delete = name = localized_name;
             }
-	  dk_free_box (host);
-        }
     }
   switch (mode)
     {
