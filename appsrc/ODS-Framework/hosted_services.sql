@@ -1663,6 +1663,41 @@ for xml explicit'
 }
 ;
 
+create procedure WA_HTTPS ()
+{
+  declare default_host, ret varchar;
+  ret := connection_get ('WA_HTTPS');
+  if (ret is not null)
+    return ret;
+  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (default_host is not null)
+    {
+      declare vec, sslp any;
+      sslp := server_https_port ();
+      if (sslp <> '443')
+        sslp := ':'||sslp;
+      else
+        sslp := '';
+      vec := split_and_decode (default_host, 0, '\0\0:');
+      if (length (vec) = 2)
+        {
+	  ret := vec[0] || sslp;
+	}
+      else
+        {
+	  ret := default_host || sslp;
+	}
+    }
+  else
+    {
+      ret := sys_stat ('st_host_name');
+      if (server_https_port () <> '443')
+	ret := ret ||':'|| server_https_port ();
+    }
+  connection_set ('WA_HTTPS', ret);
+  return ret;
+};
+
 create procedure WA_CNAME ()
 {
   declare default_host, ret varchar;
