@@ -2989,6 +2989,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char format[100];
   char *volatile ptr;
   char *volatile start;
+  char *volatile modifier;
   char buf[100];
   char *bufptr;
   caddr_t str = bif_string_arg (qst, args, 0, szMe);
@@ -3116,8 +3117,12 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     arg_len = arg_prec = 0;
 
     /* skip the modifier */
+    modifier = NULL;
     while (ptr && *ptr && strchr ("#0- +'", *ptr))
-      ptr++;
+      {
+	modifier = ptr;
+	ptr++;
+      }
 
     bufptr = buf;
 
@@ -3154,7 +3159,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ptr++;
 
   format_char_found:
-    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsSIVU", *ptr))
+    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsRSIVU", *ptr))
       {
 	sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
       }
@@ -3251,6 +3256,39 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    }
 	}
 	break;
+
+      case 'R':		/* replace spaces with modifier character */
+	{
+	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
+	  caddr_t narrow_arg = NULL;
+
+	  if (DV_WIDESTRINGP (arg))
+	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+	  else if (!arg)
+	    arg = narrow_arg = box_dv_short_string ("(NULL)");
+
+	  if (modifier)
+	    {
+	      size_t pos = strspn (arg, " ");
+	      if (pos)
+		{
+		  memset (tmp, modifier[0], pos);
+		  tmp[pos] = '\0';
+		  session_buffered_write (ses, tmp, strlen (tmp));
+		}
+	      if (pos < (box_length (arg) - 1))
+		session_buffered_write (ses, arg + pos, box_length (arg) - pos - 1);
+	    }
+	  else
+	    {
+	      session_buffered_write (ses, arg, box_length (arg) - 1);
+	    }
+	  if (narrow_arg)
+	    dk_free_box (narrow_arg);
+	  goto get_next;
+	}
+	break;
+
 
       case 'S':
 	{
@@ -3513,7 +3551,7 @@ sprintf_inverse_ex (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, 
   dk_set_t res = NULL;
   char *str_tail = (char *)str;
   char *fmt_tail = (char *)fmt;
-  char *field_start, *field_end, *next_field_start;
+  char *field_start, *field_end, *next_field_start, *fmt_modifier;
   char *val_start, *val_end, *str_scan_tail;
   int field_len, field_prec;
   char field_fmt_buf[100];
@@ -3737,8 +3775,12 @@ retry_unrdf:
     fmt_tail++;
 
     /* skip the modifier */
+    fmt_modifier = NULL;
     while (('\0' != fmt_tail[0]) && (NULL != strchr ("#0- +'", fmt_tail[0])))
+      {
+	fmt_modifier = fmt_tail;
       fmt_tail++;
+      }
 
     field_fmt_tail = field_fmt_buf;
 
@@ -3774,7 +3816,7 @@ retry_unrdf:
     if (('\0' != fmt_tail[0]) && (NULL != strchr ("hlLq", fmt_tail[0])))
       fmt_tail++;
 
-    if (('\0' != fmt_tail[0]) && (NULL != strchr ("dDiouxXeEfgcsSIVU", fmt_tail[0])))
+    if (('\0' != fmt_tail[0]) && (NULL != strchr ("dDiouxXeEfgcsRSIVU", fmt_tail[0])))
       fmt_tail++;
     else
       sqlr_new_error ("22023", "SR523",
@@ -3971,6 +4013,20 @@ retry_unrdf:
 
       case 's':
 	val = box_dv_short_nchars (val_start, val_end - val_start);
+	dk_set_push (&res, val);
+	break;
+
+      case 'R': /* replace modifier character with space */
+	val = box_dv_short_nchars (val_start, val_end - val_start);
+	if (fmt_modifier)
+	  {
+	    size_t pos;
+	    char tmp_buf [2] = {0,0};
+	    tmp_buf[0] = fmt_modifier[0];
+	    pos = strspn (val, tmp_buf);
+	    if (pos > 0)
+	      memset (val, ' ', pos);
+	  }
 	dk_set_push (&res, val);
 	break;
 
