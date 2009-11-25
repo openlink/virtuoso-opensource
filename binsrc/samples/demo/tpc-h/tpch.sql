@@ -410,7 +410,8 @@ tpch_check_status ()
 
     if (exec (stmt, state, msg, vector (), 1, NULL, res) = 0)
      {
-	if (res[0][0] = 1471920)
+    --if (res[0][0] = 1471920)
+    if (res[0][0] > 100)
 	  {
 	     connection_set ('DATA', 'OK');
 	     return;
