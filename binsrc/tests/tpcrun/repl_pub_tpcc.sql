@@ -21,14 +21,13 @@
 --  
 --  
 repl_publish ('tpcc', 'tpcc.log');
-repl_pub_add ('tpcc', 'DB.DBA.WAREHOUSE', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.DISTRICT', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.CUSTOMER', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.HISTORY', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.NEW_ORDER', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.ORDERS', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.ORDER_LINE', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.ITEM', 2, 0, 0);
-repl_pub_add ('tpcc', 'DB.DBA.STOCK', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.warehouse', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.district', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.customer', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.history', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.new_order', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.orders', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.order_line', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.item', 2, 0, 0);
+repl_pub_add ('tpcc', 'DB.DBA.stock', 2, 0, 0);
 checkpoint;
-repl_pub_init_image ('tpcc', 'tpccdb.log', 500000000);
