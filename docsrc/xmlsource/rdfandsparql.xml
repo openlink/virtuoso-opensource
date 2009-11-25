@@ -425,7 +425,7 @@ default value of the MaxSortedTopRows parameter in the [Parameters] section of t
 file defaults to 10000, so in this example its value will need to have been increased beforehand.
 </para>
 <programlisting><![CDATA[
-SELECT ?name
+SQL>SELECT ?name
 ORDER BY ?name
 OFFSET 9000
 LIMIT 1000
@@ -442,6 +442,7 @@ basically a maximum triples threshold of: [Solution Triples] x [LIMIT].
 Example query:
 </para>
 <programlisting><![CDATA[
+SQL>SPARQL
 prefix dct:<http://purl.org/dc/terms/>
 prefix rdfs:<http://www.w3.org/2000/01/rdf-schema#>
 
@@ -502,7 +503,7 @@ the group pattern where the filter condition is placed.
     </para>
     <para>In order to execute the examples below please run these commands:</para>
 <programlisting><![CDATA[
-SPARQL CLEAR GRAPH <http://MyTest.com>;
+SQL>SPARQL CLEAR GRAPH <http://MyTest.com>;
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml1', 'p_all1', xtree_doc ('<Hello>world</Hello>'));
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml2', 'p_all2', xtree_doc ('<Hello2>world</Hello2>'));
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'nonxml1', 'p_all3', 'Hello world');
@@ -702,11 +703,6 @@ SQL>registry_set ('/!sparql_new/', 'no_vsp_recompile');
       <row>
         <entry>maxrows</entry>
         <entry>Limit on the numbers of rows that should be returned (the actual size of the result set may differ)</entry>
-        <entry>No</entry>
-      </row>
-      <row>
-        <entry>bnode_dict</entry>
-        <entry>Dictionary of known blank node names, or NULL for usual loading</entry>
         <entry>No</entry>
       </row>
       <row>
@@ -2195,7 +2191,7 @@ DB.DBA.URLREWRITE_DROP_RULE ('demo_nw_rule4', 1)
 ]]></programlisting>
 <para>As a sanity check we ensure that there are no other similarly named rules:</para>
 <programlisting><![CDATA[
-SELECT signal ('WEIRD', sprintf ('Rewrite rule "%s" found', URR_RULE))
+SQL>SELECT signal ('WEIRD', sprintf ('Rewrite rule "%s" found', URR_RULE))
 FROM DB.DBA.URL_REWRITE_RULE WHERE URR_RULE like 'demo_nw%'
 ;
 
@@ -2207,7 +2203,7 @@ query. (Note: In the regular expression identifying the Accept: MIME types this 
 because some SPARQL web clients published before the relevant W3C recommendations produce slightly incorrect &quot;Accept:&quot; strings.)
 </para>
 <programlisting><![CDATA[
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+SQL>DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule2',
     1,
     '(/[^#]*)',
@@ -2227,7 +2223,7 @@ from the address line of the browser window, paste it into the script and then r
 <emphasis>^{URIQADefaultHost}^</emphasis>, every percent with double percent, the parts of the sample IRI to be substituted with <emphasis>%U</emphasis>; finally adjust the vector of replacement parameters so that its length is equal to the number of <emphasis>%U</emphasis> or other format specifiers in the template.</para></note>
 <para>The next rule redirects to the RDF browser service to display a description of the subject URI and let the user explore related subjects.</para>
 <programlisting><![CDATA[
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+SQL>DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule1',
     1,
     '(/[^#]*)',
@@ -2244,7 +2240,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 <para>This next rule removes any trailing slash from the input path. Note that <emphasis>\x24</emphasis> is the hex character code for the 
 end-of-line pattern <emphasis>$</emphasis>. It is written escaped because the dollar sign indicates the beginning of macro in ISQL.</para>
 <programlisting><![CDATA[
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+SQL>DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule3',
     1,
     '(/[^#]*)/\x24',
@@ -2263,7 +2259,7 @@ below, takes the ontology described in file /DAV/VAD/demo/sql/nw.owl and loads i
 in the local quad store. A rewrite rule is then created to query this graph when the input path identifies entities from this ontology.
 </para>
 <programlisting><![CDATA[
-create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
+SQL>create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
 {
   declare content1, urihost varchar;
   SELECT cast (RES_CONTENT as varchar) INTO content1 from WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = '/DAV/VAD/demo/sql/nw.owl';
@@ -2300,7 +2296,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 above. Requests matching the rewriting rules should then be properly redirected to produce the requested data. Attempts to access the virtual directory 
 root will execute the application's default VSP page, namely <emphasis>sfront.vspx</emphasis>.</para>
 <programlisting><![CDATA[
-DB.DBA.URLREWRITE_CREATE_RULELIST (
+SQL>DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
     1,
     vector (
@@ -2316,7 +2312,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'d
 ]]></programlisting>
 <para>Finally, to register the namespace prefix <emphasis>northwind</emphasis> as persistent we execute:</para>
 <programlisting><![CDATA[
-DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
+SQL>DB.DBA.XML_SET_NS_DECL ('northwind', 'http://demo.openlinksw.com/schemas/northwind#', 2);
 ]]></programlisting>
 </sect3>
 <sect3 id="rdfproxyservice"><title>Sponger Proxy URI Service</title>
@@ -2548,7 +2544,7 @@ Use double quotes in SPARQL queries to avoid this inconvenience.
 </note>
 <para>As an example, let's find out why the query</para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 PREFIX northwind: <http://demo.openlinksw.com/schemas/northwind#>
 SELECT DISTINCT ?emp
 FROM <http://myhost.example.com/Northwind>
@@ -2720,7 +2716,7 @@ or related filters and predicates.
 <para>For example, the query:
 </para>
 <programlisting>
-SELECT *
+SQL>SELECT *
 FROM &lt;people&gt;
 WHERE
   {
@@ -3068,107 +3064,853 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 ]]></programlisting>
      </sect4>
      <sect4 id="rdfsparulexamples"><title>Examples</title>
+<para><emphasis>Example for changing the graph</emphasis></para>
        <para>The graph to be changed may be specified by an option preceding of query, instead
 of being specified in the 'insert into graph' clause.
        </para>
 <programlisting><![CDATA[
-SPARQL DEFINE input:default-graph-uri <http://mygraph.com>
+SQL>SPARQL DEFINE input:default-graph-uri <http://mygraph.com>
 INSERT INTO <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 20 msec.
 ]]></programlisting>
+<para><emphasis>Example for delete graph equivalents</emphasis></para>
        <para>The following two statements are equivalent but the latter may work faster, especially
 if there are many RDF views in the system or if the graph in question contains triples from RDF views. 
 Note that neither of these two statements affects data coming from RDF views.
        </para>
 <programlisting><![CDATA[
-SPARQL DELETE FROM GRAPH <A-Named-Graph> { ?s ?p ?o } FROM <A-Named-Graph> WHERE { ?s ?p ?o };
-SPARQL CLEAR GRAPH <A-Named-Graph>;
+SQL> SPARQL DELETE FROM GRAPH <http://mygraph.com> { ?s ?p ?o } FROM <http://mygraph> WHERE { ?s ?p ?o };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Delete from <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 10 msec.
+
+SQL> SPARQL CLEAR GRAPH <http://mygraph.com>;
+callret-0
+VARCHAR
+__________________________________________________________
+
+Clear <http://mygraph.com> -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
-<para>The following statement deletes all records with db:London as the subject:</para>
+<para><emphasis>Example for deleting all triples for given subject</emphasis></para>
+<para>The following statement deletes all records with &lt;http://myopenlink.net/dataspace/Kingsley#this&gt; as the subject:</para>
 <programlisting><![CDATA[
-SPARQL
-DELETE FROM GRAPH <A-Named-Graph> { ?s ?p ?o }
-FROM <A-Named-Graph>
-WHERE { ?s ?p ?o . filter ( ?s = db:London ) };
+SQL>SPARQL
+DELETE FROM GRAPH <http://mygraph.com> { ?s ?p ?o }
+FROM <http://mygraph.com>
+WHERE { ?s ?p ?o . filter ( ?s = <http://myopenlink.net/dataspace/Kingsley#this>) };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Delete from <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
 <para>Alternatively, the statement can be written in this way:</para>
 <programlisting><![CDATA[
-SPARQL
-DELETE FROM GRAPH <A-Named-Graph> { db:London ?p ?o ?p ?o }
-FROM <A-Named-Graph>
-WHERE { db:London ?p ?o };
+SQL>SPARQL
+DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this> ?p ?o }
+FROM <http://mygraph.com>
+WHERE { <http://myopenlink.net/dataspace/Kingsley#this> ?p ?o };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Delete from <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
+<para><emphasis>Example for INSERT statements equivalent</emphasis></para>
        <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
 compatibility, but the SPARUL specification lists only 'insert into'. For example,
 the statements below are equivalent:
        </para>
 <programlisting><![CDATA[
-SPARQL INSERT INTO GRAPH <A-Named-Graph> {  <http://myopenlink.net/dataspace/Kingsley#this>
+SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Kingsley#this>
                                             <http://rdfs.org/sioc/ns#id>
                                             <Kingsley> };
-SPARQL INSERT INTO GRAPH <A-Named-Graph> {  <http://myopenlink.net/dataspace/Caroline#this>
+callret-0
+VARCHAR
+______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 0 msec.
+SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Caroline#this>
                                             <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                             <http://rdfs.org/sioc/ns#User> };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 0 msec.
 
 -- and
 
-SPARQL INSERT IN GRAPH <A-Named-Graph> {  <http://myopenlink.net/dataspace/Kingsley#this>
+SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Kingsley#this>
                                             <http://rdfs.org/sioc/ns#id>
                                             <Kingsley> };
-SPARQL INSERT IN GRAPH <A-Named-Graph> {  <http://myopenlink.net/dataspace/Caroline#this>
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 10 msec.
+SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Caroline#this>
                                             <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                             <http://rdfs.org/sioc/ns#User> };
+callret-0
+VARCHAR
+________________________________________________________________________
+
+Insert into <http://mygraph.com>, 1 triples -- done
+
+1 Rows. -- 0 msec.
 
 ]]></programlisting>
+<para><emphasis>Example for various expressions usage</emphasis></para>
        <para>It is possible to use various expressions to calculate fields of new triples. This is
  very convenient, even if not a part of the original specification.
        </para>
 <programlisting><![CDATA[
-SPARQL INSERT INTO GRAPH <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
 WHERE { ?s <http://rdfs.org/sioc/ns#id> ?o };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://mygraph.com>, 4 triples -- done
+
+1 Rows. -- 0 msec.
 ]]></programlisting>
+<para><emphasis>Example for operator IN usage</emphasis></para>
+<para>The example shows how to find which predicate/object pairs the following
+subjects have in common and count the occurances:</para>
+<programlisting><![CDATA[
+http://dbpedia.org/resource/Climate_change
+http://dbpedia.org/resource/Disaster_risk_reduction
+http://dbpedia.org/resource/Tanzania
+http://dbpedia.org/resource/Capacity_building
+http://dbpedia.org/resource/Poverty
+http://dbpedia.org/resource/Construction
+http://dbpedia.org/resource/Vulnerability
+http://dbpedia.org/resource/Mount_Kilimanjaro
+http://dbpedia.org/resource/Social_vulnerability
+]]></programlisting>
+<para>The following query returns the desired results:</para>
+<programlisting><![CDATA[
+SPARQL
+SELECT ?s1 ?s2 COUNT (1)
+WHERE
+  {
+    ?s1 ?p ?o .
+    FILTER (?s1 IN (<http://dbpedia.org/resource/Climate_change>,
+    <http://dbpedia.org/resource/Disaster_risk_reduction>,
+    <http://dbpedia.org/resource/Tanzania>,
+    <http://dbpedia.org/resource/Capacity_building>,
+    <http://dbpedia.org/resource/Poverty>,
+    <http://dbpedia.org/resource/Construction>,
+    <http://dbpedia.org/resource/Vulnerability>,
+    <http://dbpedia.org/resource/Mount_Kilimanjaro>,
+    <http://dbpedia.org/resource/Social_vulnerability> ))
+    ?s2 ?p ?o .
+    FILTER (?s2 IN (<http://dbpedia.org/resource/Climate_change>,
+    <http://dbpedia.org/resource/Disaster_risk_reduction>,
+    <http://dbpedia.org/resource/Tanzania>,
+    <http://dbpedia.org/resource/Capacity_building>,
+    <http://dbpedia.org/resource/Poverty>,
+    <http://dbpedia.org/resource/Construction>,
+    <http://dbpedia.org/resource/Vulnerability>,
+    <http://dbpedia.org/resource/Mount_Kilimanjaro>,
+    <http://dbpedia.org/resource/Social_vulnerability> ))
+    FILTER (?s1 != ?s2)
+    FILTER (str(?s1) < str (?s2))
+  }
+LIMIT 20
+]]></programlisting>
+<para>The result of executing the query:</para>
+<programlisting><![CDATA[
+s1  	                                         s2  	                                              callret-2
+http://dbpedia.org/resource/Climate_change 	 http://dbpedia.org/resource/Tanzania 	              2
+http://dbpedia.org/resource/Social_vulnerability http://dbpedia.org/resource/Vulnerability 	      1
+http://dbpedia.org/resource/Mount_Kilimanjaro 	 http://dbpedia.org/resource/Poverty 	              1
+http://dbpedia.org/resource/Mount_Kilimanjaro 	 http://dbpedia.org/resource/Tanzania 	              3
+http://dbpedia.org/resource/Capacity_building 	 http://dbpedia.org/resource/Disaster_risk_reduction  1
+http://dbpedia.org/resource/Poverty 	         http://dbpedia.org/resource/Tanzania 	              1
+]]></programlisting>
+<para>You can also find live demo query results <ulink url="http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&amp;should-sponge=&amp;query=SELECT+%0D%0A%3Fs1+%3Fs2+count+%281%29+where+{%0D%0A%3Fs1+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs1+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0A%3Fs2+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs2+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0Afilter+%28%3Fs1+!%3D+%3Fs2%29%0D%0Afilter+%28str%28%3Fs1%29+%3C+str+%28%3Fs2%29%29%0D%0A}+limit+20&amp;format=html&amp;debug=on&amp;timeout=">here</ulink></para>
+<para><emphasis>Example for Modify used as Update</emphasis></para>
        <para>'Modify graph' may be used as a form of 'update' operation.
        </para>
 <programlisting><![CDATA[
-SPARQL MODIFY GRAPH <A-Named-Graph> DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
-SPARQL DELETE FROM GRAPH <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+SQL>SPARQL MODIFY GRAPH <http://mygraph.com> DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+
+SQL>SPARQL
+DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+
 ]]></programlisting>
+<para><emphasis>Example for generating RDF information resource URI</emphasis></para>
        <para>The RDF information resource URI can be generated via a string expression.</para>
+<itemizedlist mark="bullet">
+  <listitem>Suppose there is a sample file kidehen.n3:
 <programlisting><![CDATA[
-SPARQL load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf")
-   INTO GRAPH <A-Named-Graph>;
+<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
+<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://www.w3.org/2000/01/rdf-schema#label> 	"Kingsley" .
+<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://rdfs.org/sioc/ns#creator_of> <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300> .
 ]]></programlisting>
+</listitem>
+  <listitem>Using Conductor UI go to Web Application Server and create folder, for ex. with name "n3_collection"</listitem>
+  <listitem>Upload the "n3_collection" folder the file kidehen.n3</listitem>
+  <listitem>Click properties for the folder "n3_collection" and set to be public readable in the Permissions section</listitem>
+  <listitem>Check "Apply changes to all subfolders and resources".</listitem>
+  <listitem>Finally Click "Update"</listitem>
+     <figure id="gnr1" float="1">
+       <title>Generating RDF information resource URI</title>
+       <graphic fileref="ui/exmp1.png"/>
+     </figure>
+  <listitem>To clear the graph execute:
+<programlisting><![CDATA[
+SQL>SPARQL CLEAR GRAPH <http://mygraph.com>;
+callret-0
+VARCHAR
+_____________________________________________________________________
+
+Clear <http://mygraph.com> -- done
+
+1 Rows. -- 10 msec.
+]]></programlisting></listitem>
+   <listitem>To load the kidehe.n3 file execute:
+<programlisting><![CDATA[
+SQL>SPARQL
+load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3")
+INTO GRAPH <http://mygraph.com>;
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Load <http://localhost:8890/DAV/n3_collection/kidehen.n3> into graph <http://mygraph.com> -- done
+
+1 Rows. -- 30 msec.
+]]></programlisting>
+  </listitem>
+  <listitem>In order to check the new inserted triples execute:
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT *
+FROM <http://mygraph.com>
+WHERE
+  {
+    ?s ?p ?o
+  }
+;
+s                                                                  p                                                   o
+VARCHAR                                                            VARCHAR                                             VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://rdfs.org/sioc/ns#User
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://rdfs.org/sioc/ns#creator_of                  http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://www.w3.org/2000/01/rdf-schema#label          Kingsley
+
+3 Rows. -- 10 msec.
+]]></programlisting>
+  </listitem>
+</itemizedlist>
+<para><emphasis>Example for operations over a web service endpoint</emphasis></para>
        <para>Several operations can be sent to a web service endpoint as a single statement and
 executed in sequence.
        </para>
 <programlisting><![CDATA[
-SPARQL
-  INSERT IN GRAPH <A-Named-Graph> { <http://myopenlink.net/dataspace/Kingsley#this>
+SQL>SPARQL
+INSERT IN GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this>
                                     <http://rdfs.org/sioc/ns#id>
                                     <Kingsley> }
-  INSERT INTO GRAPH <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this>
+INSERT INTO GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this>
                                       <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                       <http://rdfs.org/sioc/ns#User> }
-  INSERT INTO GRAPH <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+INSERT INTO GRAPH <http://mygraph.com> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
               WHERE { ?s <http://rdfs.org/sioc/ns#id> ?o };
-  MODIFY GRAPH <A-Named-Graph> delete { ?s <p2> ?o } INSERT { ?s <p2new> ?o } WHERE { ?s <p2> ?o }
-  DELETE FROM GRAPH <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
-  load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") INTO GRAPH <A-Named-Graph>
-;
-]]></programlisting>
+callret-0
+VARCHAR
+_______________________________________________________________________________
 
-<para>When handling very large RDF data collections (e.g. 600 million triples ) loaded into Virtuoso server as a single graph,
-the fastest operation to drop the graph is:</para>
+Insert into <http://mygraph.com>, 1 triples -- done
+Insert into <http://mygraph.com>, 1 triples -- done
+Insert into <http://mygraph.com>, 8 triples -- done
+Commit -- done
+
+
+1 Rows. -- 10 msec.
+
+SQL>SPARQL
+MODIFY GRAPH <http://mygraph.com>
+DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o }
+INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o }
+WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+
+SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+
+SQL>SPARQL
+load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3") INTO GRAPH <http://mygraph.com>;
+]]></programlisting>
+<para><emphasis>Example for Dropping graph</emphasis></para>
+<para>When handling very large RDF data collections (e.g. 600 million triples ) loaded into Virtuoso
+server as a single graph, the fastest operation to drop the graph is:</para>
 <programlisting><![CDATA[
-SPARQL CLEAR GRAPH <graph-iri>;
+SQL>SPARQL CLEAR GRAPH <http://mygraph.com>;
+callret-0
+VARCHAR
+______________________________________________________________________________
+
+Clear <http://mygraph.com> -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
 <para>The operation can be speeded up by executing log_enable (0) or even log_enable (2) beforehand,
 and log_enable(1) after it completes.
 </para>
-      </sect4>
-   <sect4 id="rdfsparulexamples"><title>More Detailed Examples</title>
-<para>Adding triples to graph:</para>
+<para><emphasis>Example for testing Graph Equality</emphasis></para>
+<para>The procedure below keeps simple cases of graphs with bnodes:</para>
+<orderedlist>
+  <listitem>First it compares all triples without bnodes</listitem>
+  <listitem>Then it iteratively establishes equivalences between bnodes that
+are directly and unambiguously connected to equivalent vertexes by identical predicates.</listitem>
+</orderedlist>
 <programlisting><![CDATA[
-SPARQL
+-- Fast Approximate RDF Graph Equivalence Test
+-- (C) 2009 OpenLink Software
+-- License: GNU General Public License (only version 2 of the license).
+-- No warranty, even implied warranty
+
+-- This compares the content of triple dictionaries \c dict1 and \c dict2,
+-- returns NULL if no difference found (with bnode equivalence in mind),
+-- returns description of a difference otherwise.
+-- The function is experimental (note suffix _EXP), so no accurate QA is made.
+-- Some version of the function may be inserted later in OpenLink Virtuoso Server under some different name.
+create function DB.DBA.RDF_TRIPLE_DICTS_DIFFER_EXP (
+  in dict1 any, --- Triple dictionary, traditional, (vectors of S, P, O are keys, any non-nulls are values)
+  in dict2 any, --- Second triple dictionary, like to \c dict1
+  in accuracy integer,	--- Accuracy, 0 if no bnodes expected, 1 if "convenient" trees with intermediate bnodes expected, 2 and more are not yet implemented
+  in equiv_map any := null, --- If specified then it contain mapping from IRI_IDs of bnodes of \c dict1 to equivalent IRI_IDs of bnodes of \c dict1.
+-- It can be extended during the run so use dict_duplicate() before call if needed.
+  in equiv_rev any := null --- If specified then it is an inverted dictionary of \c equiv_map (this time \c dict2 bnodes are keys and \c dict1 bnodes are values)
+  )
+{
+  declare dict_size1, dict_size2 integer;
+  declare old_dirt_level, dirt_level integer;
+  declare ctr, tailctr, sp_made_new_equiv integer;
+  declare array1, array2, dict2_sp, dict1_op, dict2_op, array1_op any;
+  dict_size1 := dict_size (dict1);
+  dict_size2 := dict_size (dict2);
+  dict2 := dict_duplicate (dict2);
+  if (dict_size1 <> dict_size2)
+    return 'Sizes differ';
+  if (equiv_map is null)
+    {
+      equiv_map := dict_new (dict_size1);
+      equiv_rev := dict_new (dict_size1);
+    }
+  old_dirt_level := dict_size1 - dict_size (equiv_map);
+  array1 := dict_list_keys (dict1, 0);
+next_loop:
+-- Step 1: removing triples with all three items matched
+  ctr := dict_size1-1;
+  while (ctr >= 0)
+    {
+      declare s_in_1, o_in_1, s_in_2, o_in_2, triple_in_2 any;
+      s_in_1 := array1[ctr][0];
+      o_in_1 := array1[ctr][2];
+      if (is_bnode_iri_id (s_in_1))
+        {
+          s_in_2 := dict_get (equiv_map, s_in_1, null);
+          if (s_in_2 is null)
+            goto next_full_eq_check;
+        }
+      else
+        s_in_2 := s_in_1;
+      if (is_bnode_iri_id (o_in_1))
+        {
+          o_in_2 := dict_get (equiv_map, o_in_1, null);
+          if (o_in_2 is null)
+            goto next_full_eq_check;
+        }
+      else
+        o_in_2 := o_in_1;
+      triple_in_2 := vector (s_in_2, array1[ctr][1], o_in_2);
+      if (dict_get (dict2, triple_in_2, null) is null)
+        return vector (array1[ctr], ' is in first, ', triple_in_2, ' is missing in second');
+      dict_remove (dict2, triple_in_2);
+      if (ctr < dict_size1-1)
+        array1[ctr] := array1[dict_size1-1];
+      dict_size1 := dict_size1-1;
+next_full_eq_check:
+      ctr := ctr-1;
+    }
+-- Step 1 end, garbage truncated:
+  if ((0 = dict_size1) or (0 = accuracy))
+    return null;
+  if (dict_size1 < length (array1))
+    array1 := subseq (array1, 0, dict_size1);
+  if (dict_size (dict2) <> dict_size1)
+    signal ('OBLOM', 'Internal error: sizes of graphs suddenly differ');
+-- Step 2: establishing equivs between not-yet-coupled bnodes that are values of functional predicates of coupled subjects
+  sp_made_new_equiv := 0;
+  dict2_sp := dict_new (dict_size1);
+  array2 := dict_list_keys (dict2, 0);
+  for (ctr := dict_size1-1; ctr >= 0; ctr := ctr-1)
+    {
+      declare sp2, o2, prev_uniq_o2 any;
+      sp2 := vector (array2[ctr][0], array2[ctr][1]);
+      prev_uniq_o2 := dict_get (dict2_sp, sp2, null);
+      if (prev_uniq_o2 is null)
+        {
+          o2 := array2[ctr][2];
+          if (is_bnode_iri_id (o2))
+            dict_put (dict2_sp, sp2, o2);
+          else
+            dict_put (dict2_sp, sp2, #i0);
+        }
+      else if (prev_uniq_o2 <> #i0)
+        dict_put (dict2_sp, sp2, #i0);
+    }
+  rowvector_subj_sort (array1, 0, 1);
+  rowvector_subj_sort (array1, 1, 1);
+  rowvector_subj_sort (array2, 1, 1);
+  ctr := 0;
+  while (ctr < dict_size1)
+    {
+      declare s_in_1, o_in_1, s_in_2, o_in_2, o_in_dict2_sp, o_in_dict2_sp_in_1 any;
+      tailctr := ctr+1;
+      if (array1[ctr][1] <> array2[ctr][1])
+        {
+          if (array1[ctr][1] > array2[ctr][1])
+            return vector ('Cardinality of predicate ', array2[ctr][1], ' is greater in second than in first');
+          else
+            return vector ('Cardinality of predicate ', array1[ctr][1], ' is greater in first than in second');
+        }
+      while ((tailctr < dict_size1) and
+        (array1[tailctr][0] = array1[ctr][0]) and
+        (array1[tailctr][1] = array1[ctr][1]) )
+        tailctr := tailctr+1;
+      if ((tailctr - ctr) > 1)
+        goto next_sp_check;
+      o_in_1 := array1[ctr][2];
+      if (not is_bnode_iri_id (o_in_1))
+        goto next_sp_check;
+      o_in_2 := dict_get (equiv_map, o_in_1, null);
+      if (o_in_2 is not null)
+        goto next_sp_check;
+      s_in_1 := array1[ctr][0];
+      if (is_bnode_iri_id (s_in_1))
+        {
+          s_in_2 := dict_get (equiv_map, s_in_1, null);
+          if (s_in_2 is null)
+            goto next_sp_check;
+        }
+      else
+        s_in_2 := s_in_1;
+      o_in_dict2_sp := dict_get (dict2_sp, vector (s_in_2, array1[ctr][1]), null);
+      if (o_in_dict2_sp is null)
+        return vector (vector (s_in_1, array1[ctr][1], o_in_1), ' is unique SP in first, ', vector (s_in_2, array1[ctr][1]), ' is missing SP in second');
+      if (o_in_dict2_sp = #i0)
+        return vector (vector (s_in_1, array1[ctr][1], o_in_1), ' is unique SP in first, ', vector (s_in_2, array1[ctr][1]), ' is not unique SP-to-bnode in second');
+      o_in_dict2_sp_in_1 := dict_get (equiv_rev, o_in_dict2_sp, null);
+      if (o_in_dict2_sp_in_1 is not null)
+        {
+          if (o_in_dict2_sp_in_1 = o_in_1)
+            goto next_sp_check;
+          return vector (vector (s_in_1, array1[ctr][1], o_in_1), ' is unique SP in first, ', vector (s_in_2, array1[ctr][1], o_in_dict2_sp), ' is unique SP in second but ', o_in_dict2_sp, ' rev-equiv to ', o_in_dict2_sp_in_1);
+        }
+      dict_put (equiv_map, o_in_1, o_in_dict2_sp);
+      dict_put (equiv_rev, o_in_dict2_sp, o_in_1);
+      sp_made_new_equiv := sp_made_new_equiv + 1;
+next_sp_check:
+      ctr := tailctr;
+    }
+  dict_list_keys (dict2_sp, 2);
+-- Step 2 end
+  if (sp_made_new_equiv * 10 > dict_size1)
+    goto next_loop; -- If dictionary is noticeably extended then it's worth to remove more triples before continue.
+-- Step 3: establishing equivs between not-yet-coupled bnodes that are subjects of inverse functional properties with coupled objects.
+  dict1_op := dict_new (dict_size1);
+  for (ctr := dict_size1-1; ctr >= 0; ctr := ctr-1)
+    {
+      declare op1, s1, prev_uniq_s1 any;
+      op1 := vector (array1[ctr][2], array1[ctr][1]);
+      prev_uniq_s1 := dict_get (dict1_op, op1, null);
+      if (prev_uniq_s1 is null)
+        {
+          s1 := array1[ctr][0];
+          if (is_bnode_iri_id (s1))
+            dict_put (dict1_op, op1, s1);
+          else
+            dict_put (dict1_op, op1, #i0);
+        }
+      else if (prev_uniq_s1 <> #i0)
+        dict_put (dict1_op, op1, #i0);
+    }
+  array1_op := dict_to_vector (dict1_op, 2);
+  dict2_op := dict_new (dict_size1);
+  for (ctr := dict_size1-1; ctr >= 0; ctr := ctr-1)
+    {
+      declare op2, s2, prev_uniq_s2 any;
+      op2 := vector (array2[ctr][2], array2[ctr][1]);
+      prev_uniq_s2 := dict_get (dict2_op, op2, null);
+      if (prev_uniq_s2 is null)
+        {
+          s2 := array2[ctr][0];
+          if (is_bnode_iri_id (s2))
+            dict_put (dict2_op, op2, s2);
+          else
+            dict_put (dict2_op, op2, #i0);
+        }
+      else if (prev_uniq_s2 <> #i0)
+        dict_put (dict2_op, op2, #i0);
+    }
+  ctr := length (array1_op) - 2;
+  while (ctr >= 0)
+    {
+      declare o_in_1, s_in_1, o_in_2, s_in_2, s_in_dict2_op, s_in_dict2_op_in_1 any;
+      s_in_1 := array1_op[ctr+1];
+      if (not is_bnode_iri_id (s_in_1))
+        goto next_op_check;
+      s_in_2 := dict_get (equiv_map, s_in_1, null);
+      if (s_in_2 is not null)
+        goto next_op_check;
+      o_in_1 := array1_op[ctr][0];
+      if (is_bnode_iri_id (o_in_1))
+        {
+          o_in_2 := dict_get (equiv_map, o_in_1, null);
+          if (o_in_2 is null)
+            goto next_op_check;
+        }
+      else
+        o_in_2 := o_in_1;
+      s_in_dict2_op := dict_get (dict2_op, vector (o_in_2, array1_op[ctr][1]), null);
+      if (s_in_dict2_op is null)
+        return vector (vector (s_in_1, array1_op[ctr][1], o_in_1), ' is unique OP in first, ', vector (o_in_2, array1_op[ctr][1]), ' is missing OP in second');
+      if (s_in_dict2_op = #i0)
+        return vector (vector (s_in_1, array1_op[ctr][1], o_in_1), ' is unique OP in first, ', vector (o_in_2, array1_op[ctr][1]), ' is not unique OP-to-bnode in second');
+      s_in_dict2_op_in_1 := dict_get (equiv_rev, s_in_dict2_op, null);
+      if (s_in_dict2_op_in_1 is not null)
+        {
+          if (s_in_dict2_op_in_1 = s_in_1)
+            goto next_op_check;
+          return vector (vector (s_in_1, array1_op[ctr][1], o_in_1), ' is unique OP in first, ', vector (s_in_dict2_op, array1[ctr][1], o_in_2), ' is unique OP in second but ', s_in_dict2_op, ' rev-equiv to ', s_in_dict2_op_in_1);
+        }
+      dict_put (equiv_map, s_in_1, s_in_dict2_op);
+      dict_put (equiv_rev, s_in_dict2_op, s_in_1);
+next_op_check:
+      ctr := ctr - 2;
+    }
+  dict_list_keys (dict2_op, 2);
+-- Step 3 end
+  dirt_level := dict_size1 - dict_size (equiv_map);
+  if (dirt_level >= old_dirt_level)
+    return vector (vector (array1[0][0], array1[0][1], array1[0][2]), ' has no matches in second with the requested accuracy');
+  old_dirt_level := dirt_level;
+  goto next_loop;
+}
+;
+
+create function DB.DBA.RDF_GRAPHS_DIFFER_EXP (in g1_uri varchar, in g2_uri varchar, in accuracy integer)
+{
+  return DB.DBA.RDF_TRIPLE_DICTS_DIFFER_EXP (
+    (sparql define output:valmode "LONG" construct { ?s ?p ?o } where { graph `iri(?:g1_uri)` { ?s ?p ?o }}),
+    (sparql define output:valmode "LONG" construct { ?s ?p ?o } where { graph `iri(?:g2_uri)` { ?s ?p ?o }}),
+    accuracy );
+}
+;
+
+-- The rest of file contains some minimal tests.
+
+set verbose off;
+set banner off;
+set types off;
+
+create function DB.DBA.DICT_EXTEND_WITH_KEYS (in dict any, in keys any)
+{
+  if (dict is null)
+    dict := dict_new (length (keys));
+  foreach (any k in keys) do
+    dict_put (dict, k, 1);
+  return dict;
+}
+;
+
+create function DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP (in title varchar, in should_differ integer, in v1 any, in v2 any, in accuracy integer)
+{
+  declare d1, d2, eqm, eqr, differ_status any;
+  d1 := DB.DBA.DICT_EXTEND_WITH_KEYS (null, v1);
+  d2 := DB.DBA.DICT_EXTEND_WITH_KEYS (null, v2);
+  eqm := dict_new (10);
+  eqr := dict_new (10);
+  dbg_obj_princ ('===== ' || title);
+  differ_status := DB.DBA.RDF_TRIPLE_DICTS_DIFFER_EXP (d1, d2, accuracy, eqm, eqr);
+  dbg_obj_princ ('Result: ', differ_status);
+  if (0 < dict_size (eqm))
+  dbg_obj_princ ('Equivalence map: ', dict_to_vector (eqm, 0));
+  dbg_obj_princ ('Equivalence rev: ', dict_to_vector (eqr, 0));
+  return sprintf ('%s: %s',
+    case when (case when should_differ then equ (0, isnull (differ_status)) else isnull (differ_status) end) then 'PASSED' else '***FAILED' end,
+    title );
+}
+;
+
+create function DB.DBA.TEST_RDF_GRAPHS_DIFFER_EXP (in title varchar, in should_differ integer, in g1_uri varchar, in g2_uri varchar, in accuracy integer)
+{
+  declare differ_status any;
+  differ_status := DB.DBA.RDF_GRAPHS_DIFFER_EXP (g1_uri, g2_uri, accuracy);
+  dbg_obj_princ ('Result: ', differ_status);
+  return sprintf ('%s: %s',
+    case when (case when should_differ then equ (0, isnull (differ_status)) else isnull (differ_status) end) then 'PASSED' else '***FAILED' end,
+    title );
+}
+;
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Identical graphs', 0,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i200, 1) ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i200, 1) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Sizes differ', 1,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i200, 1) ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i200, 1),
+    vector (#i101, #i201, #i301) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Cardinality of a pred differ', 1,
+  vector (
+    vector (#i100, #i200, #ib300),
+    vector (#i101, #i200, #ib302),
+    vector (#i103, #i201, #ib304),
+    vector (#ib109, #i200, #ib109) ),
+  vector (
+    vector (#i100, #i200, #ib301),
+    vector (#i101, #i200, #ib303),
+    vector (#i103, #i201, #ib305),
+    vector (#ib109, #i201, #ib109) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Bnodes in O with unique SP (equiv)', 0,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i101, #i201, #ib301),
+    vector (#i102, #i202, #ib303),
+    vector (#ib303, #i204, #i306),
+    vector (#ib303, #i205, #ib305),
+    vector (#i100, #i200, 1) ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i101, #i201, #ib302),
+    vector (#i102, #i202, #ib304),
+    vector (#ib304, #i204, #i306),
+    vector (#ib304, #i205, #ib306),
+    vector (#i100, #i200, 1) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Bnodes in O with unique SP (diff 1)', 1,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i102, #i202, #ib303),
+    vector (#ib303, #i204, #i306),
+    vector (#ib303, #i205, #ib305),
+    vector (#i100, #i200, 1) ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i102, #i202, #ib304),
+    vector (#ib304, #i204, #i306),
+    vector (#ib304, #i205, #i306),
+    vector (#i100, #i200, 1) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'Bnodes in O with unique SP (diff 2)', 1,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i102, #i202, #ib303),
+    vector (#ib303, #i204, #i306),
+    vector (#ib303, #i205, #ib305),
+    vector (#i100, #i200, 1) ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i102, #i202, #ib304),
+    vector (#ib304, #i204, #i306),
+    vector (#ib304, #i205, #ib304),
+    vector (#i100, #i200, 1) ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'foaf-like-mix (equiv)', 0,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i100, #i201, #ib303),
+    vector (#i100, #i201, #ib305),
+    vector (#i100, #i201, #ib307),
+    vector (#ib301, #i202, 'Anna'),
+    vector (#ib303, #i202, 'Anna'),
+    vector (#ib305, #i202, 'Brigit'),
+    vector (#ib307, #i202, 'Clara'),
+    vector (#ib301, #i203, 'ann@ex.com'),
+    vector (#ib303, #i203, 'ann@am.com'),
+    vector (#ib305, #i203, 'root@ple.com'),
+    vector (#ib307, #i203, 'root@ple.com') ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i100, #i201, #ib304),
+    vector (#i100, #i201, #ib306),
+    vector (#i100, #i201, #ib308),
+    vector (#ib302, #i202, 'Anna'),
+    vector (#ib304, #i202, 'Anna'),
+    vector (#ib306, #i202, 'Brigit'),
+    vector (#ib308, #i202, 'Clara'),
+    vector (#ib302, #i203, 'ann@ex.com'),
+    vector (#ib304, #i203, 'ann@am.com'),
+    vector (#ib306, #i203, 'root@ple.com'),
+    vector (#ib308, #i203, 'root@ple.com') ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'foaf-like-mix (swapped names)', 1,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i100, #i201, #ib303),
+    vector (#i100, #i201, #ib305),
+    vector (#i100, #i201, #ib307),
+    vector (#ib301, #i202, 'Anna'),
+    vector (#ib303, #i202, 'Anna'),
+    vector (#ib305, #i202, 'Brigit'),
+    vector (#ib307, #i202, 'Clara'),
+    vector (#ib301, #i203, 'ann@ex.com'),
+    vector (#ib303, #i203, 'ann@am.com'),
+    vector (#ib305, #i203, 'root@ple.com'),
+    vector (#ib307, #i203, 'root@ple.com') ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i100, #i201, #ib304),
+    vector (#i100, #i201, #ib306),
+    vector (#i100, #i201, #ib308),
+    vector (#ib302, #i202, 'Anna'),
+    vector (#ib304, #i202, 'Brigit'),
+    vector (#ib306, #i202, 'Anna'),
+    vector (#ib308, #i202, 'Clara'),
+    vector (#ib302, #i203, 'ann@ex.com'),
+    vector (#ib304, #i203, 'ann@am.com'),
+    vector (#ib306, #i203, 'root@ple.com'),
+    vector (#ib308, #i203, 'root@ple.com') ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'foaf-like-mix (swapped names)', 1,
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib301),
+    vector (#i100, #i201, #ib303),
+    vector (#i100, #i201, #ib305),
+    vector (#i100, #i201, #ib307),
+    vector (#ib301, #i202, 'Anna'),
+    vector (#ib303, #i202, 'Anna'),
+    vector (#ib305, #i202, 'Brigit'),
+    vector (#ib307, #i202, 'Clara'),
+    vector (#ib301, #i203, 'ann@ex.com'),
+    vector (#ib303, #i203, 'ann@am.com'),
+    vector (#ib305, #i203, 'root@ple.com'),
+    vector (#ib307, #i203, 'root@ple.com') ),
+  vector (
+    vector (#i100, #i200, #i300),
+    vector (#i100, #i201, #ib302),
+    vector (#i100, #i201, #ib304),
+    vector (#i100, #i201, #ib306),
+    vector (#i100, #i201, #ib308),
+    vector (#ib302, #i202, 'Anna'),
+    vector (#ib304, #i202, 'Brigit'),
+    vector (#ib306, #i202, 'Anna'),
+    vector (#ib308, #i202, 'Clara'),
+    vector (#ib302, #i203, 'ann@ex.com'),
+    vector (#ib304, #i203, 'ann@am.com'),
+    vector (#ib306, #i203, 'root@ple.com'),
+    vector (#ib308, #i203, 'root@ple.com') ),
+  100
+);
+
+select DB.DBA.TEST_RDF_TRIPLE_DICTS_DIFFER_EXP ( 'bnodes only (equiv that can not be proven)', 1,
+  vector (
+    vector (#ib101, #i200, #ib103),
+    vector (#ib103, #i201, #ib101) ),
+  vector (
+    vector (#ib102, #i200, #ib104),
+    vector (#ib104, #i201, #ib102) ),
+  100
+);
+
+sparql clear graph <http://GraphCmp/One>;
+
+TTLP ('@prefix foaf: <http://i-dont-remember-it> .
+_:me
+	a foaf:Person ;
+	foaf:knows	[ foaf:nick "oerling" ; foaf:title "Mr." ; foaf:sha1 "abra" ] ;
+	foaf:knows	[ foaf:nick "kidehen" ; foaf:title "Mr." ; foaf:sha1 "bra" ] ;
+	foaf:knows	[ foaf:nick "aldo" ; foaf:title "Mr." ; foaf:sha1 "cada" ] .',
+'', 'http://GraphCmp/One' );
+
+sparql clear graph <http://GraphCmp/Two>;
+TTLP ('@prefix foaf: <http://i-dont-remember-it> .
+_:iv
+	foaf:knows	[ foaf:title "Mr." ; foaf:sha1 "cada" ; foaf:nick "aldo" ] ;
+	foaf:knows	[ foaf:sha1 "bra" ; foaf:title "Mr." ; foaf:nick "kidehen" ] ;
+	foaf:knows	[ foaf:nick "oerling" ; foaf:sha1 "abra" ; foaf:title "Mr." ] ;
+	a foaf:Person .',
+'', 'http://GraphCmp/Two' );
+
+select DB.DBA.TEST_RDF_GRAPHS_DIFFER_EXP ( 'nonexisting graphs (equiv, of course)', 0,
+  'http://GraphCmp/NoSuch', 'http://GraphCmp/NoSuch',
+  100 );
+
+select DB.DBA.TEST_RDF_GRAPHS_DIFFER_EXP ( 'throughout test on foafs (equiv)', 0,
+  'http://GraphCmp/One', 'http://GraphCmp/Two',
+  100 );
+
+]]></programlisting>
+
+<para><emphasis>Example for Adding triples to graph</emphasis></para>
+<programlisting><![CDATA[
+SQL>SPARQL
 INSERT INTO GRAPH <http://BookStore.com>
 { <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/title>  "SPARQL and RDF" .
   <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-01-01T00:00:00>.
@@ -3176,14 +3918,19 @@ INSERT INTO GRAPH <http://BookStore.com>
   <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <2001-01-01T00:00:00>.
   <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/title> "Fundamentals of Compiler Design" .
   <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>. };
+callret-0
+VARCHAR
+_________________________________________________________________
+
+Insert into <http://BookStore.com>, 6 triples -- done
+
+1 Rows. -- 0 msec.
 ]]></programlisting>
-<para>Adding triples to graph:</para>
-<programlisting><![CDATA[
-]]></programlisting>
+<para><emphasis>Example for Updating triples from graph</emphasis></para>
 <para>A SPARQL/Update request that contains a triple to be deleted and a triple to be added (used here to correct a book title).
 </para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 MODIFY GRAPH <http://BookStore.com>
 DELETE
  { <http://www.w3.org/People/Connolly/#me>  <http://purl.org/dc/elements/1.1/title>  "Fundamentals of Compiler Design" }
@@ -3197,10 +3944,11 @@ Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
 
 1 Rows. -- 20 msec.
 ]]></programlisting>
+<para><emphasis>Example for Deleting triples from graph</emphasis></para>
 <para>The example below has a request to delete all records of old books (dated before year 2000)
 </para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 DELETE FROM GRAPH <http://BookStore.com> { ?book ?p ?v }
@@ -3217,10 +3965,11 @@ Delete from <http://BookStore.com>, 6 triples -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
+<para><emphasis>Example for Copying triples from one graph to another.</emphasis></para>
 <para>The next snippet copies records from one named graph to another based on a pattern:
 </para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
@@ -3239,10 +3988,11 @@ Insert into <http://NewBookStore.com>, 6 triples -- done
 
 1 Rows. -- 30 msec.
 ]]></programlisting>
+<para><emphasis>Example for Moving triples from one graph to another.</emphasis></para>
 <para>This example moves records from one named graph to another named graph based on a pattern:
 </para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -3261,7 +4011,7 @@ Insert into <http://NewBookStore.com>, 6 triples -- done
 
 1 Rows. -- 10 msec.
 
-sparql
+SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 DELETE FROM GRAPH <http://BookStore.com>
@@ -3380,7 +4130,7 @@ WHERE {
     ?l a tpcd:lineitem .
     FILTER (?l+>tpcd:shipdate <= bif:dateadd ("day", -90, '1998-12-01'^^xsd:date)) }
 ORDER BY ?l+>tpcd:returnflag ?l+>tpcd:linestatus
-;
+
 ]]></programlisting>
 <programlisting><![CDATA[
 SPARQL
@@ -3412,7 +4162,7 @@ ORDER BY
   ?supp+>tpcd:has_nation+>tpcd:name
   ?supp+>tpcd:name
   ?part+>tpcd:partkey
-;
+
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
@@ -3429,7 +4179,7 @@ SELECT COUNT (*)
 SPARQL define input:inference "http://mygraph.com"
 SELECT ?p COUNT (?o)
   FROM <http://mygraph.com>
- WHERE {?s ?p ?o};
+ WHERE {?s ?p ?o}
 
 -- Returns the count of O's for each distinct P.
 ]]></programlisting>
@@ -3438,7 +4188,7 @@ SELECT ?p COUNT (?o)
 SPARQL define input:inference "http://mygraph.com"
 SELECT COUNT (?p) COUNT (?o) COUNT (DISTINCT ?o)
  FROM <http://mygraph.com>
-WHERE {?s ?p ?o};
+WHERE {?s ?p ?o}
 
 -- returns the count of triples, including inferred triples and the count of distinct O values.
 ]]></programlisting>
@@ -3447,7 +4197,7 @@ WHERE {?s ?p ?o};
 SPARQL define input:inference "http://mygraph.com"
 SELECT count distinct ?s ?p ?o
   FROM <http://mygraph.com>
- WHERE {?s ?p ?o};
+ WHERE {?s ?p ?o}
 
 -- Returns the number of distinct bindings of ?s ?p ?o.
 ]]></programlisting>
@@ -3460,7 +4210,7 @@ WHERE {
     ?l a tpch:lineitem ;
       tpch:lineextendedprice ?extendedprice ;
       tpch:linestatus ?status .
-  };
+  }
 
 -- Get counts and total prices of ordered items, grouped by item status.
 ]]></programlisting>
@@ -3475,7 +4225,7 @@ SELECT DISTINCT
    ?person rdf:type foaf:Person .
    ?person foaf:name ?name .
    ?person foaf:mbox_sha1sum ?mail
- };
+ }
 ]]></programlisting>
    <para>Unfortunately, the facility to apply DISTINCT to a part of the result set row (i.e. to ?name) does not currently exist. 
    (Although the above form is permitted, it's interpreted as being identical to 'SELECT DISTINCT ?name, ?person, ?mail WHERE ...') 
@@ -3489,7 +4239,7 @@ WHERE
     ?person rdf:type foaf:Person .
     ?person foaf:name ?name .
     ?person foaf:mbox_sha1sum ?mail
- };
+  }
 ]]></programlisting>
    <para>As a workaround to this limitation, the MIN aggregate can be used, provided duplicates are few and there's no requirement 
    that ?person should correspond to ?mail
@@ -3503,7 +4253,7 @@ WHERE
     ?person rdf:type foaf:Person .
     ?person foaf:name ?name .
     ?person foaf:mbox_sha1sum ?mail
-  };
+  }
 ]]></programlisting>
    <para>Otherwise, a complicated query is needed:</para>
 <programlisting><![CDATA[
@@ -3527,7 +4277,7 @@ SELECT
            ?person2 rdf:type foaf:Person .
            ?person2 foaf:name ?name .
            ?person2 foaf:mbox_sha1sum ?mail2 } }
- };
+ }
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
@@ -3544,7 +4294,7 @@ WHERE {?s ?p ?o}
 SPARQL
 SELECT COUNT (?s) COUNT (?p) COUNT (?o)
  FROM <http://mygraph.com>
-WHERE {?s ?p ?o};
+WHERE {?s ?p ?o}
 ]]></programlisting>
 <para>will also return all the inferred triples.
 </para>
@@ -3600,7 +4350,7 @@ WHERE
     tpch:linediscount ?discount .
   }
 ORDER BY DESC (?extendedprice * ?discount)
-LIMIT 1000;]]></programlisting>
+LIMIT 1000]]></programlisting>
 
 <para>
 After ensuring that this query works correctly, we can use it to answer more complex questions.
@@ -3629,7 +4379,7 @@ WHERE
     ?line2 tpch:lineextendedprice ?extendedprice2 ;
       tpch:linediscount ?discount2 .
   }
-ORDER BY (SUM(?extendedprice2 * (1 - ?discount2)) / MAX (?bigdiscount));]]></programlisting>
+ORDER BY (SUM(?extendedprice2 * (1 - ?discount2)) / MAX (?bigdiscount))]]></programlisting>
 
 <para>
 The inner select finds the 1000 biggest (in absolute value) discounts and their order lines. For each line we find orders of it, and the customer. For each customer found, we find all the orders he made and all the lines of each of the orders (variable ?line2).</para>
@@ -3667,7 +4417,7 @@ SELECT distinct (bif:subseq (?s, bif:strchr (?s, '#')))
        ?s ?p ?newvariable .
        FILTER (! bif:isnull (bif:strchr (?s, '#') ) )
        FILTER (?newvariable = (2+2)) .
-     } };
+     } }
 ]]></programlisting>
 <para><emphasis>Example: With CONSTRUCT</emphasis></para>
 <programlisting><![CDATA[
@@ -4336,20 +5086,21 @@ create function DB.DBA.RDF_LANGMATCHES (
 </sect2>
 <sect2 id="rdfdefaultgraph"><title>Default and Named Graphs</title>
 <para>Sometimes the default graph IRI is not known when the SPARQL query is composed. It can be added at the very last moment by providing the IRI in a 'define' clause as follows:</para>
-<programlisting>
-define input:default-graph-uri &lt;http://example.com&gt;
-</programlisting>
+<programlisting><![CDATA[
+define input:default-graph-uri &lt;http://example.com&gt
+]]></programlisting>
 <para>Such a definition overrides the default graph URI set in query by the 'FROM ...' clause (if any).</para>
 <para>The query may contain more than one <emphasis>define input:default-graph-uri</emphasis>.
 The set of values of <emphasis>input:default-graph-uri</emphasis> has the highest possible priority and cannot be redefined in the rest of the text of the query by FROM clauses.</para>
 <para>FROM NAMED clauses can be used multiple times in one query:</para>
 <programlisting><![CDATA[
+SPARQL
 SELECT ?id
     FROM NAMED <http://example.com/user1.ttl>
     OPTION (get:soft "soft", get:method "GET")
     FROM NAMED <http://example.com/user2.ttl>
     OPTION (get:soft "soft", get:method "GET")
-    WHERE { GRAPH ?g { ?id a ?o } };
+  WHERE { GRAPH ?g { ?id a ?o } }
 ]]></programlisting>
 <para>Similarly, <emphasis>define input:named-graph-uri &lt;http://example.com&gt;</emphasis> is a replacement for a FROM NAMED clause</para>
 <para>
@@ -4606,6 +5357,7 @@ and meanings are the same.</para>
   <para>In SPARQL, the transitive options occur after a subquery enclosed in braces:</para>
   <para>The below produces all the IRI's that are the same as &lt;alice&gt;.</para>
   <programlisting><![CDATA[
+SPARQL
 SELECT ?syn
 where
   {
@@ -4704,6 +5456,7 @@ where
   distance and the descending count of connections of each found connection. This is
   equivalent to the default connections list shown by LinkedIn.</para>
   <programlisting><![CDATA[
+  SPARQL
   SELECT ?o ?dist ((SELECT COUNT (*) WHERE {?o foaf:knows ?xx}))
   WHERE
     {
@@ -4723,6 +5476,7 @@ where
 <sect4 id="rdfsparqlimplementatiotransexamples4"><title>Example for finding how two people know each other and what graphs are involved in the connection</title>
   <para>To find how two people know each other and what graphs are involved in the connection, we do:</para>
   <programlisting><![CDATA[
+  SPARQL
   SELECT ?link ?g ?step ?path
   WHERE
     {
@@ -4786,7 +5540,7 @@ WHERE
 }
 ]]></programlisting>
 </sect4>
-<sect4 id="rdfsparqlimplementatiotransexamples7"><title>Example with an inference rule to cater data being skos:broader based, which is no long transitive</title>
+<sect4 id="rdfsparqlimplementatiotransexamples7"><title>Inference Rule example using transitive properties from SKOS vocabulary</title>
 <p>The following example demostrates the steps how to retrieve the skos ontology, add triples
 for skos:broaderTransitiveinto the grpah, define inference rule, and at the and
 execute sparql query with inference rule and transitivity option. The queries were executed against
@@ -4816,6 +5570,7 @@ Done.
   <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
   <listitem>Use inference rule pragma to set context rule for SPARQL query, i.e:
 <programlisting><![CDATA[
+SPARQL
 DEFINE input:inference "skos-trans"
 PREFIX p: <http://dbpedia.org/property/>
 PREFIX dbpedia: <http://dbpedia.org/resource/>
@@ -4834,7 +5589,7 @@ WHERE
     ?m geo:point ?p
     FILTER ( lang(?n) = "fr" )
     FILTER ( lang(?d) = "fr" )
-  };
+  }
 ]]></programlisting>
 </listitem>
   <listitem>As result should be returned for ex. 22 rows.
@@ -5637,6 +6392,7 @@ SPARQL insert in graph <http://mygraph.com>
         <para>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</para>
         <para>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:</para>
 <programlisting><![CDATA[
+SPARQL
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sioc: <http://rdfs.org/sioc/ns#>
@@ -5653,7 +6409,7 @@ ORDER BY ?x
 ]]></programlisting>
         <para>Now from ISQL execute the following command:</para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
 ]]></programlisting>
         <para>As result should be shown:</para>
@@ -5674,7 +6430,7 @@ Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.co
 <itemizedlist>
 <listitem>Insert into graph http://BookStore.com 3 triples:
 <programlisting><![CDATA[
-SPARQL insert in graph <http://BookStore.com>
+SQL>SPARQL insert in graph <http://BookStore.com>
 { <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
   <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
   <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00> };
@@ -5682,12 +6438,13 @@ SPARQL insert in graph <http://BookStore.com>
 </listitem>
 <listitem>As result will be shown the message:
 <programlisting><![CDATA[
-Insert into <http://BookStore.com>, 3 triples -- done
+SQL>Insert into <http://BookStore.com>
+3 triples -- done
 ]]></programlisting>
 </listitem>
 <listitem>Next we will select all triples from the graph http://BookStore.com:
 <programlisting><![CDATA[
-SPARQL SELECT * FROM <http://BookStore.com> WHERE {?s ?p ?o};
+SQL>SPARQL SELECT * FROM <http://BookStore.com> WHERE {?s ?p ?o};
 ]]></programlisting>
 </listitem>
 <listitem>As result will be shown:
@@ -5706,7 +6463,7 @@ http://www.dajobe.org/foaf.rdf#i               http://purl.org/dc/elements/1.1/d
 </listitem>
 <listitem>Now let's insert into graph another http://NewBookStore.com graph's values:
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
@@ -5888,7 +6645,7 @@ will have this value: http://host:port/DAV/home/username/rdf_sink/</listitem>
       </itemizedlist>
       <para>Execute from ISQL or from the SPARQL endpoint the following query:</para>
 <programlisting><![CDATA[
-SELECT * FROM <>
+SELECT * FROM <http://localhost:8890/DAV/home/test2/mytest/>
 WHERE {?s ?p ?o}
 ]]></programlisting>
       <para>As result should be shown:</para>
@@ -6042,7 +6799,7 @@ insert soft SYS_SCHEDULED_EVENT (SE_SQL, SE_START, SE_INTERVAL, SE_NAME)
       <para><emphasis>Example:</emphasis></para>
       <para>Execute the following query: </para>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 SELECT ?id
 FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
  OPTION (get:soft "soft", get:method "GET")
@@ -7066,9 +7823,9 @@ with the same URI. To do so, select the 'RDF' > 'List of Graphs' menu commands i
 the 'Delete' command for the appropriate graph. Alternatively, you can use one of the following SQL
 commands:</para>
 <programlisting><![CDATA[
-SPARQL CLEAR GRAPH ;
-or
-DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+SPARQL CLEAR GRAPH
+-- or
+DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri)
 ]]></programlisting>
         <para><emphasis>Proxy Service Data Expiration</emphasis></para>
         <para>When the Proxy Service is invoked by a user agent, the Sponger records the expiry date
@@ -9357,7 +10114,7 @@ where
   }
 group by ?g
 order by desc 2
-limit 20;
+limit 20
 ]]></programlisting>
      <figure id="VirtFacetUsage4" float="1">
        <title>Usage Statistics</title>
@@ -9374,7 +10131,7 @@ where
   }
 group by ?g
 order by desc 2
-limit 20;
+limit 20
 ]]></programlisting>
      <figure id="VirtFacetUsage5" float="1">
        <title>Usage Statistics</title>
@@ -9396,7 +10153,7 @@ where
     option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) &amp;&amp; ?s = <URI> )
   }
 order by desc 2
-limit 20;
+limit 20
 ]]></programlisting>
      <figure id="VirtFacetUsage6" float="1">
        <title>Usage Statistics</title>
@@ -9412,7 +10169,7 @@ where
     ?syn ?p ?o .
 }
 order by desc 4
-limit 20;
+limit 20
 ]]></programlisting>
      <figure id="VirtFacetUsage7" float="1">
        <title>Usage Statistics</title>
@@ -9421,6 +10178,121 @@ limit 20;
    </listitem>
 </orderedlist>
    </listitem>
+</orderedlist>
+</sect4>
+<sect4 id="virtuosospongerfacetexample"><title>Examples</title>
+<para><emphasis>Example for Use Faceted Navigation to Explore Virtuoso hosted Linked Data</emphasis></para>
+<para>The following example demonstrates a simple scenario of tracking Kingsley Idehen's conversations $
+across the Web, using the Virtuoso Faceted Browser hosted on URIBurner.</para>
+<orderedlist>
+   <listitem>Go to http://uriburner.com/fct/
+     <figure id="fct1" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct1.png"/>
+     </figure>
+   </listitem>
+   <listitem>Enter a free text search pattern (for example, "Kingsley Idehen"), and click Search
+     <figure id="fct2" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct2.png"/>
+     </figure>
+   </listitem>
+   <listitem>Your initial query results page will display a list of literal value snippets from property
+values associated with the query text pattern
+     <figure id="fct3" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct3.png"/>
+     </figure>
+   </listitem>
+   <listitem>Using the Navigation section on the right, click on "Types", which alters the contents
+of the query results area by presenting CURIE based hyperlinks for each of the Entity Types associated
+with Property values that contains the query text pattern
+     <figure id="fct4" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct4.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click on the "foaf:Person" link to narrow the result set down to Entities of this Type,
+un-hatch the checkbox beside this link for Negation (filtering out) based on this Entity Type
+     <figure id="fct5" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct5.png"/>
+     </figure>
+   </listitem>
+   <listitem>You can filter further, by switching (pivoting) to the a Property based view, by returning
+to the Navigation section and then clicking on "Properties" or "Referencing Properties" links; in either
+case, you have further filtering of based on the combination of Properties and Entities where Entities
+in the result-set contain values matching the query text pattern
+     <figure id="fct6" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct6.png"/>
+     </figure>
+   </listitem>
+   <listitem>From the list of Property Types, click on the "foaf:interest" link to filter further,
+based on the values of this property
+     <figure id="fct7" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct7.png"/>
+     </figure>
+   </listitem>
+   <listitem>From the list of "foaf:interest" Values, click on "dbpedia:Linked_Data", which filters
+the result-set further to display reveal Entity Identifier Links (Generic HTTP URIs) and Labels for
+each "foaf:Person" associated with the property "foaf:interest", in the URIBurner data space. At
+the time of writing guide, there is only one Entity of Type: foaf:person, and the Generic HTTP URI
+for this Entity is: http:///www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this.
+     <figure id="fct8" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct8.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click on one of the HTTP URIs in the filtered results-set to obtain a detailed structured
+description of a given Entity. Each listed Property is a Link; thus, each Property is a link to other
+structured Entity descriptions
+     <figure id="fct9" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct9.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click on "Usage Statistics" link to get a summary view of this Linked Data Space,
+"Reference" and "Source" graphs are akin to saying "Table X" and "Table Y" where each table
+is the container of Records re. RDBMS or Worksheet re. Spreadsheet.:
+     <figure id="fct10" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct10.png"/>
+     </figure>
+     <figure id="fct11" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct11.png"/>
+     </figure>
+   </listitem>
+   <listitem>"Direct" and "In-Direct" co-references show other references (Identifiers) that relate
+associated with Kingsley Idehen (like saying: here are his other names or his know by this name in
+this other place)
+     <figure id="fct12" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct12.png"/>
+     </figure>
+     <figure id="fct13" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct13.png"/>
+     </figure>
+   </listitem>
+   <listitem>Click on "Settings" check "owl:sameAs" and it sets a context mode for the session
+(meaning: a set of rules to take place)
+     <figure id="fct14" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct14.png"/>
+     </figure>
+   </listitem>
+   <listitem>Go back to the "Direct Co-reference" tab
+     <figure id="fct15" float="1">
+       <title>Faceted Navigation Example</title>
+       <graphic fileref="ui/fct15.png"/>
+     </figure>
+   </listitem>
+   <listitem>As result each link will unveil a union (combination) of all the the data associated
+with all Kingsley Idehen's other Identifiers (other Names in other places), i.e., they all show the
+same data.</listitem>
 </orderedlist>
 </sect4>
 </sect3>
@@ -9518,14 +10390,16 @@ property or property-of elements. This specifies what which subject is presented
 <itemizedlist mark="bullet">
   <listitem>"properties"
 <programlisting><![CDATA[
+SPARQL
 SELECT ?p count (*) { ?this_s ?p ?any_o ...}
 GROUP BY ?p
 ORDER BY DESC 2
 LIMIT l OFFSET 0
 ]]></programlisting>
   </listitem>
-  <listitem>"properties-in
+  <listitem>"properties-in"
 <programlisting><![CDATA[
+SPARQL
 SELECT ?p count (*) { ?any_s ?p ?this_s ... }
 GROUP BY ?p
 ORDER BY DESC 2
@@ -9534,6 +10408,7 @@ LIMIT L OFFSET 0
   </listitem>
   <listitem>"classes"
 <programlisting><![CDATA[
+SPARQL
 SELECT ?c count (*)
 WHERE { ?xx a ?c ... }
 GROUP BY ?c
@@ -9543,12 +10418,14 @@ LIMIT l OFFSET 0
   </listitem>
   <listitem>"text"
 <programlisting><![CDATA[
+SPARQL
 SELECT DISTINCT ?s (bif:search_excerpt (sql:search_terms (""pattern"), ?o)) ...
 LIMIT l OFFSET 0
 ]]></programlisting>
   </listitem>
   <listitem>"list"
 <programlisting><![CDATA[
+SPARQL
 SELECT DISTINCT ?s long::sql:fct_label (?s) ...
 LIMIT l OFFSET 0
 ]]></programlisting>
@@ -9556,6 +10433,7 @@ LIMIT l OFFSET 0
   <listitem></listitem>
   <listitem>"list-count"
 <programlisting><![CDATA[
+SPARQL
 SELECT ?s COUNT (*) ....
 GROUP BY ?s
 ORDER BY DESC 2
@@ -9563,6 +10441,7 @@ ORDER BY DESC 2
   </listitem>
   <listitem>"alphabet"
 <programlisting><![CDATA[
+SPARQL
 SELECT (sql:subseq (?s, 0, 1)) count (*) ...
 GROUP BY (sql:subseq (?s, 0, 1))
 ORDER BY 1
@@ -9570,12 +10449,14 @@ ORDER BY 1
   </listitem>
   <listitem>"geo"
 <programlisting><![CDATA[
+SPARQL
 SELECT DISTINCT ?lat ?long ?s
 WHERE ?s geo:lat ?lat . ?s geo:long ?long . ... }
 ]]></programlisting>
   </listitem>
   <listitem>"years"
 <programlisting><![CDATA[
+SPARQL
 SELECT sql::year (?s) count (*) ...
 GROUP BY (bif:year (?s))
 ORDER BY 1
@@ -9584,6 +10465,7 @@ OFFSET 0 LIMIT l
   </listitem>
   <listitem>"months"
 <programlisting><![CDATA[
+SPARQL
 SELECT sql::round_month (?s) count (*) ...
 GROUP BY (sql:round_month (?s))
 ORDER BY 1 OFFSET 0 LIMIT l
@@ -9591,6 +10473,7 @@ ORDER BY 1 OFFSET 0 LIMIT l
   </listitem>
   <listitem>"weeks"
 <programlisting><![CDATA[
+SPARQL
 SELECT sql::round_week (?s) COUNT (*) ...
 GROUP BY (sql:round_week (?s))
 ORDER BY 1 OFFSET 0 LIMIT l
@@ -9598,7 +10481,7 @@ ORDER BY 1 OFFSET 0 LIMIT l
   </listitem>
   <listitem>"describe"
 <programlisting><![CDATA[
-describe ?s ... OFFSET 0 LIMIT l
+SPARQL describe ?s ... OFFSET 0 LIMIT l
 ]]></programlisting>
   </listitem>
 </itemizedlist>
@@ -28471,7 +29354,7 @@ By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &q
   <listitem><emphasis>get:refresh</emphasis> is the maximum allowed age of the cached resource, no matter what is specified by the server where the resource resides.
 The value is an positive integer (number of seconds). Virtuoso reads HTTP headers and uses &quot;Date&quot;, &quot;ETag&quot;, &quot;Expires&quot;, &quot;Last-Modified&quot;, &quot;Cache-Control&quot; and &quot;Pragma: no-cache&quot; fields to calculate when the resource should be reloaded, this value can become smaller due to <emphasis>get:refresh</emphasis> but can not be incremented.</listitem>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 define get:refresh "3600"
 SELECT ?id
 FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
@@ -28498,7 +29381,7 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
 ]]></programlisting>
   <listitem><emphasis>get:proxy</emphasis> address of the proxy server, as &quot;host:port&quot; string, if direct download is impossible; the default is to not use proxy.</listitem>
 <programlisting><![CDATA[
-SPARQL
+SQL>SPARQL
 define get:proxy "www.openlinksw.com:80"
 define get:method "GET"
 define get:soft "soft"
@@ -29834,6 +30717,7 @@ know the cardinalities of the search conditions:
 <para>To see the count of subclasses of Yago performer, we can do:
 </para>
 <programlisting><![CDATA[
+SPARQL
 PREFIX  cy:  <http://dbpedia.org/class/yago/>
 SELECT COUNT (*)
 FROM <http://dbpedia.org/yago.owl>
@@ -29847,6 +30731,7 @@ WHERE
 mentions there are:
 </para>
 <programlisting><![CDATA[
+SPARQL
 SELECT COUNT (*)
 WHERE
   {
@@ -29858,6 +30743,7 @@ WHERE
 <para>There are 10267 subjects with Shakespeare mentioned in some literal.
 </para>
 <programlisting><![CDATA[
+SPARQL
 DEFINE input:inference "yago"
 PREFIX cy: <http://dbpedia.org/class/yago/>
 SELECT COUNT (*)
@@ -29891,6 +30777,7 @@ enumerating the subclasses of performer.
 <para>However, the query
 </para>
 <programlisting><![CDATA[
+SPARQL
 DEFINE input:inference "yago"
 PREFIX cy: <http://dbpedia.org/class/yago/>
 SELECT DISTINCT ?s1 AS ?c1,
@@ -29931,6 +30818,7 @@ which share an IFP value with the subject being processed. For example, the quer
 friends of Kjetil Kjernsmo returns empty:
 </para>
 <programlisting><![CDATA[
+SPARQL
 SELECT COUNT (?f2)
 WHERE
   {
@@ -29944,6 +30832,7 @@ WHERE
 <para>But with the option
 </para>
 <programlisting><![CDATA[
+SPARQL
 DEFINE input:inference "b3sifp"
 SELECT COUNT (?f2)
 WHERE
@@ -29969,6 +30858,7 @@ The subquery joins each subject to its synonyms given by sharing IFPs. This subq
 property that it has the initial binding automatically in its result set. It could be expressed as:
 </para>
 <programlisting><![CDATA[
+SPARQL
 SELECT ?f
 WHERE
   {
@@ -30022,6 +30912,7 @@ entity rank refers to a quantity describing the relevance of a URI in an RDF gra
 <para>This is a sample query using entity rank:
 </para>
 <programlisting><![CDATA[
+SPARQL
 PREFIX  yago:  <http://dbpedia.org/class/yago/>
 PREFIX  prop:  <http://dbpedia.org/property/>
 SELECT DISTINCT ?s2 AS ?c1
@@ -30068,6 +30959,7 @@ it is written in at present.
 <para>The main query in rank calculation is:
 </para>
 <programlisting><![CDATA[
+SPARQL
 SELECT O            ,
        P            ,
        iri_rank (S)
@@ -30122,6 +31014,7 @@ allows the timeout handling to come fetch any accumulated aggregates.
 This is typical of the workload generated by the faceted browsing web service:
 </para>
 <programlisting><![CDATA[
+SPARQL
 DEFINE  input:inference  "yago"
 SELECT ?c
        COUNT (*)
@@ -30257,6 +31150,7 @@ the resulting XML query descriptions.
 <para>This last XML fragment corresponds to the below text of SPARQL query:
 </para>
 <programlisting><![CDATA[
+SPARQL
 SELECT ?location AS ?c1
        ?lat1     AS ?c2
        ?lng1     AS ?c3
@@ -30512,6 +31406,7 @@ in the option clause. See the examples section below for examples.
 <para>In SQL, if RDF_QUAD occurs in a select from clause, inference can be added with the table option <emphasis>WITH</emphasis>, as follows:
 </para>
 <programlisting>
+SPARQL
 SELECT *
 FROM rdf_quad table OPTION (with 'sample')
 WHERE g = iri_to_id ('xx', 0);
@@ -30519,6 +31414,7 @@ WHERE g = iri_to_id ('xx', 0);
 <para>This is about the same as:
 </para>
 <programlisting>
+SPARQL
 define input:inference "sample"
 SELECT *
 FROM &lt;xx&gt;

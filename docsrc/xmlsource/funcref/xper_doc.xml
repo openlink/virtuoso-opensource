@@ -117,7 +117,7 @@ tree := xper_doc (file_to_string ('doc.html'), 1,
 tree := xper_doc (file_to_string ('doc.xml'));
 ...
 -- String cannot be longer than 10 megabytes. String session can.
-tree := xper_doc (file_to_string_session ('huge_doc.xml'));
+tree := xper_doc (file_to_string_output ('huge_doc.xml'));
 ...
 -- A special way to read local files.
 -- Strings started from characters 'file://'

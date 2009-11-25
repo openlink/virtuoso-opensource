@@ -77,8 +77,7 @@ Connection options:
   -X pkcs12_file      - Specifies that encryption & X509 certificates will
                         be used
   -T server_cert      - Specifies that CA certificate file to be used
-  -b size             - Specifies that large command buffer to be used
-                        (in KBytes)
+  -b size             - Specifies the size of the command buffer to be used (in KBytes)
   -K                  - Shuts down the virtuoso on connecting to it
 
 Parameter passing options:

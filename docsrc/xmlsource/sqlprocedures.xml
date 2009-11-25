@@ -423,6 +423,47 @@ CREATE PROCEDURE CFIBO (IN X INTEGER)
 }
 </screen>
 </sect2>
+		<sect2 id="grantprocstmt">
+			<title>Grand Execute Statement</title>
+<programlisting><![CDATA[
+GRANT EXECUTE ON proceudre_name TO grantee_commalist;
+]]></programlisting>
+<para>The grantee should have SQL rights in order execution of procedure to be granted to this user.
+The rights can be set from Conductor->System Admin->User Accounts->Account->Edit->User Type:</para>
+     <figure id="usrt" float="1">
+       <title>User Type</title>
+       <graphic fileref="ui/usrt.png"/>
+     </figure>
+<para><emphasis>Example</emphasis></para>
+<programlisting><![CDATA[
+SQL>create procedure DB.DBA.SimplePrint (in txt varchar)
+{
+ return sprintf('Output is %s', txt);
+}
+;
+
+Done. -- 0 msec.
+
+SQL>grant execute on DB.DBA.SimplePrint to "demo";
+
+Done. -- 0 msec.
+
+SQL>use demo;
+
+Done. -- 0 msec.
+
+SQL>select DB.DBA.SimplePrint('Virtuoso');
+
+callret
+VARCHAR
+_______________________________________________________________________________
+
+Output is Virtuoso
+
+1 Rows. -- 0 msec.
+
+]]></programlisting>
+</sect2>
 	<sect2 id="spasviewsandtablespl">
 		<title>Stored Procedures as Views &amp; Derived Tables</title>
 		<para>
