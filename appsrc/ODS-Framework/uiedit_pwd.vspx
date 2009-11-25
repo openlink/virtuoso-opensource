@@ -226,7 +226,7 @@
           </td>
         </tr>
         <?vsp
-          if (length (self.fb._user))
+          if (self.fb is not null and  length (self.fb._user))
           {
             declare _res any;
             _res := self.fb.api_client.users_getInfo(self.fb._user, 'name');
@@ -241,7 +241,7 @@
               <tr>
           <td colspan="2" class="ctrl">
             <span class="fm_ctl_btn">
-              <v:button name="bt_fb1" value="Update" action="simple" enabled="--case when isnull (self.fb._user) then 0 else 1 end">
+              <v:button name="bt_fb1" value="Update" action="simple" enabled="--case when isnull (self.fb) then 0 else 1 end">
                 <v:on-post>
                   <![CDATA[
                     if (self.vc_is_valid = 0)

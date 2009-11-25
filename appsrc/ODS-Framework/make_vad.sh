@@ -370,8 +370,8 @@ sticker_init() {
   echo "	  result ('ERROR', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
   echo "	  signal ('FATAL', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
   echo " 	}" >> $STICKER
-  echo "      if (not isstring (dyn) or dyn <> '1') { " >> $STICKER
-  echo "	  result ('00000', 'The ODS Framework needs DynamicLocal = 1 to be specified in URIQA INI section.'); " >> $STICKER
+  echo "      if (isstring (dyn) and dyn <> '0') { " >> $STICKER
+  echo "	  result ('00000', 'The ODS Framework needs DynamicLocal = 0 to be specified in URIQA INI section.'); " >> $STICKER
   echo " 	}" >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER

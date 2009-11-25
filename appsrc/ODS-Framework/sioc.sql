@@ -2543,7 +2543,9 @@ registry_set ('URIQADynamicLocal', coalesce (cfg_item_value (virtuoso_ini_path (
 
 create procedure fix_graph (in g any)
 {
-  if (registry_get ('URIQADynamicLocal') = '1' and isstring (g) and g like get_graph () || '%')
+  if (
+      --registry_get ('URIQADynamicLocal') = '1' and 
+      isstring (g) and g like get_graph () || '%')
     {
       declare pref any;
       pref := sprintf ('http://%s', get_cname ());
