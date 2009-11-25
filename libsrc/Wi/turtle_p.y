@@ -492,12 +492,11 @@ blank_block_seq
 		    ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_unused_seq_bnodes));
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), box_copy_tree (ttlp_arg->ttlp_subj_uri)); /* copy of first node */
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), NULL); /* last incomplete node */
-		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_first;
-		  $<box>$ = ttlp_arg->ttlp_subj_uri; }
+		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_first; }
 		items _RPAR {
 		  caddr_t first_node;
 		  dk_set_push (&(ttlp_arg->ttlp_unused_seq_bnodes), ttlp_arg->ttlp_subj_uri);
-		  if ($<box>1 == ttlp_arg->ttlp_subj_uri) /* empty list */
+		  if (NULL == ttlp_arg->ttlp_saved_uris->data) /* empty list */
 		    {
 		      dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); /* pop last incomplete node, it's NULL in this case */
 		      dk_free_tree (dk_set_pop (&(ttlp_arg->ttlp_saved_uris))); /* pop copy of first node and delete */
@@ -519,12 +518,14 @@ items
 	: /*empty*/	{}
 	| items object {
 		  caddr_t last_node = ttlp_arg->ttlp_subj_uri;
-		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), last_node);
 		  if (NULL != ttlp_arg->ttlp_subj_uri)
-		    ttlp_triple_and_inf (ttlp_arg, last_node);
-		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		    {
+		      ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
+		      ttlp_triple_and_inf (ttlp_arg, last_node);
+		      dk_free_tree (ttlp_arg->ttlp_subj_uri);
+		      ttlp_arg->ttlp_subj_uri = NULL; }
 		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
 		    ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  else
