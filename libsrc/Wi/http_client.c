@@ -190,7 +190,8 @@ http_cli_ctx_init (void)
       item = 0; \
     }
 
-#define http_cli_target(ctx) (NULL != (ctx)->hcctx_proxy.hcp_proxy ? (ctx)->hcctx_proxy.hcp_proxy : (ctx)->hcctx_host)
+#define http_cli_target(ctx) (NULL != (ctx)->hcctx_proxy.hcp_proxy ? \
+    (ctx)->hcctx_proxy.hcp_proxy : (ctx)->hcctx_host)
 
 int
 http_cli_ctx_free (http_cli_ctx * ctx)
@@ -2209,10 +2210,12 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
     {
       http_cli_ssl_cert (ctx, cert);
       http_cli_ssl_cert_pass (ctx, pk_pass);
+      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
+      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
 #endif
   if (!time_out_is_null) /* timeout */
