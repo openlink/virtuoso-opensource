@@ -1699,8 +1699,8 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                         {
                           info := get_certificate_info (9);
                           S := sprintf (' sparql define input:storage "" ' ||
-                                        ' prefix cert: <%s> ' ||
-                                        ' prefix rsa: <%s> ' ||
+                                        ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+                                        ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
                                         ' select ?exp_val ' ||
                                         '        ?mod_val ' ||
                                         '   from <%s> ' ||
@@ -1711,17 +1711,17 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                                         '          ?exp cert:decimal ?exp_val . ' ||
                                         '          ?mod cert:hex ?mod_val . ' ||
                                         '        }',
-                                        SIOC..cert_iri (''),
-                                        SIOC..rsa_iri (''),
                                         foafGraph,
                                         localIRI);
                           exec (S, st, msg, vector (), 0, meta, data);
                           -- dbg_obj_princ ('1: ', st, msg);
-                          if (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+                          if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and 
+			      st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
                             {
                               declare resMode varchar;
 
-                              graph := SIOC..dav_res_iri (resPath);
+                              graph := SIOC.DBA.dav_res_iri (resPath);
+                              --dbg_obj_print ('graph', graph);
                               resMode := '';
                               if (req[2] = ascii ('1'))
                                 resMode := 'Control';
@@ -4187,10 +4187,10 @@ create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any)
 {
   declare graph varchar;
 
-  if (length (aciContent) = 0)
+  if (length (aciContent) = 0 or __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null)
     return;
 
-  graph := SIOC..dav_res_iri (resPath);
+  graph := SIOC.DBA.dav_res_iri (resPath);
   {
     declare continue handler for SQLSTATE '*'
     {
@@ -4210,7 +4210,10 @@ create procedure WS.WS.WAC_DELETE (in resPath varchar)
 {
   declare graph, st, msg varchar;
 
-  graph := SIOC..dav_res_iri (resPath);
+  if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null)
+    return;
+
+  graph := SIOC.DBA.dav_res_iri (resPath);
   exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
   commit work;
   -- dbg_obj_princ ('WS.WS.WAC_DELETE', now(), graph, st);
