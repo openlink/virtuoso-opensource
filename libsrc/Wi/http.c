@@ -4729,6 +4729,7 @@ bif_http_kill (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ws_connection_t * ws;
   caddr_t ht_client = NULL, ht_path = NULL;
   void * ht_num = NULL;
+  dk_set_t killed = NULL;
 
   sec_check_dba ((query_instance_t *) qst, "http_kill");
 
@@ -4741,28 +4742,28 @@ bif_http_kill (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     ht_num = (void *)(ptrlong)(bif_long_arg (qst, args, 2, "http_kill"));
 
   IN_TXN;
+again:
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if (lt->lt_client && lt->lt_client->cli_ws)
+      if (lt != qi->qi_trx &&  lt->lt_status == LT_PENDING && !dk_set_member (killed, (void*)lt) &&
+	  (lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws)
 	{
 	  ws = lt->lt_client->cli_ws;
 	  CHECK_DK_MEM_RESERVE (lt);
-	  if (ws->ws_client_ip && ws->ws_path_string && ht_client && ht_path &&
-	      (!ht_num || (ht_num == ws)))
+	  if (ws->ws_client_ip && ws->ws_path_string && ht_client && ht_path && (!ht_num || (ht_num == ws)))
 	    {
-	      if (lt != qi->qi_trx &&
-		  lt->lt_status == LT_PENDING
-		  && (lt->lt_threads > 0 || lt_has_locks (lt))
-		  && !strcmp (ht_path, ws->ws_path_string)
-		  && !strcmp (ht_client, ws->ws_client_ip))
+	      if (!strcmp (ht_path, ws->ws_path_string) && !strcmp (ht_client, ws->ws_client_ip))
 		{
 		  lt->lt_error = LTE_TIMEOUT;
+		  dk_set_push (&killed, (void*) lt);
 		  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
+		  goto again;
 		}
 	    }
 	}
     }
   END_DO_SET ();
+  dk_set_free (killed);
   LEAVE_TXN;
   return NULL;
 }
