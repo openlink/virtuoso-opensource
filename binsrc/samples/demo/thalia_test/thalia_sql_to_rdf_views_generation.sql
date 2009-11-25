@@ -1,4 +1,7 @@
 use DB;
+SPARQL
+drop quad map virtrdf:ThaliaDemo
+;
 
 create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
 {
@@ -10,38 +13,41 @@ create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
   msg := '';
   rowset := null;
   exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  --result ('STATE=' || stat || ': ' || msg);
-  --if (rowset is not null)
-  --  {
-  --    foreach (any r in rowset) do
-  --      result (r[0] || ': ' || r[1]);
-  --  }
 }
 ;
 
-use thalia;
+create procedure DB.DBA.exec_no_error(in expr varchar)
+{
+	declare state, message, meta, result any;
+	exec(expr, state, message, vector(), 0, meta, result);
+}
+;
 
 DB.DBA.exec_no_error('drop View thalia.Demo.asu_v');
-create View thalia.Demo.asu_v as select left(Title,3) code,* from thalia.Demo.asu;
+DB.DBA.exec_no_error('create View thalia.Demo.asu_v as select left(Title,3) code,* from thalia.Demo.asu');
 DB.DBA.exec_no_error('drop View thalia.Demo.gatech_v');
-create View thalia.Demo.gatech_v as select *, Room||' '||Building Place from thalia.Demo.gatech;
-
-use DB;
-
-DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"');
-GRANT SELECT ON thalia.Demo.asu TO "SPARQL";
-GRANT SELECT ON thalia.Demo.asu_v TO "SPARQL";
-GRANT SELECT ON thalia.Demo.brown TO "SPARQL";
-GRANT SELECT ON thalia.Demo.cmu TO "SPARQL";
-GRANT SELECT ON thalia.Demo.gatech TO "SPARQL";
-GRANT SELECT ON thalia.Demo.gatech_v TO "SPARQL";
-GRANT SELECT ON thalia.Demo.toronto TO "SPARQL";
-GRANT SELECT ON thalia.Demo.ucsd TO "SPARQL";
-GRANT SELECT ON thalia.Demo.umd TO "SPARQL";
-
-
+DB.DBA.exec_no_error('create View thalia.Demo.gatech_v as select *, Room||\' \'||Building Place from thalia.Demo.gatech');
 DB.DBA.SPARQL_THALIA_RUN('drop quad map graph iri("http://^{URIQADefaultHost}^/Thalia") .
 ')
+;
+
+GRANT SELECT ON thalia.Demo.asu TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.asu_v TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.brown TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.cmu TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.gatech TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.gatech_v TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.toronto TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.ucsd TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.umd TO "SPARQL"
 ;
 
 DB.DBA.SPARQL_THALIA_RUN('drop quad map graph iri("http://^{URIQADefaultHost}^/thalia") .
@@ -102,9 +108,6 @@ create iri class th:UmdEventTime "http://^{URIQADefaultHost}^/thalia/umd/eventti
 create iri class th:UmdDatetime "http://^{URIQADefaultHost}^/thalia/umd/datetime/%U#this" (in Code varchar) .
 ')
 ;
-
-
-DB.DBA.RDF_AUDIT_METADATA (1, '*');
 
 DB.DBA.SPARQL_THALIA_RUN('prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
@@ -395,44 +398,30 @@ from thalia.demo.umd as umds
 ')
 ;
 
-DB.DBA.RDF_AUDIT_METADATA (1, '*');
-
-
-create procedure tut_th_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
-
-create procedure tut_th_html_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*#', path);
-  return subseq (r, 0, length (r)-1);
-};
+delete from db.dba.url_rewrite_rule_list where urrl_list like 'tut_th_%';
+delete from db.dba.url_rewrite_rule where urr_rule like 'tut_th_%';
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_th_rule2',
     1,
-    '(/[^#]*)\x24',
+    '([^#]*)',
     vector('path'),
     1,
-    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/Thalia%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
+    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/thalia%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
     vector('path', 'path', '*accept*'),
     null,
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
-    303
+    null
     );
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_th_rule1',
     1,
-    '(/[^#]*)\x24',
+    '([^#]*)',
     vector('path'),
     1,
-    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20FROM%%20%%3Chttp%%3A//^{URIQADefaultHost}^/Thalia%%3E%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql',
+    '/about/html/http/^{URIQADefaultHost}^%s%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -440,17 +429,83 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_th_rule3',
+    1,
+    '(/[^#]*)/\x24',
+    vector('path'),
+    1,
+    '%U',
+    vector('path'),
+    null,
+    null,
+    0,
+    null
+    );
+
+create procedure DB.DBA.REMOVE_THALIA_RDF_DET()
+{
+  declare colid int;
+  colid := DAV_SEARCH_ID('/DAV/home/demo/thalia', 'C');
+  if (colid < 0)
+    return;
+  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
+}
+;
+
+DB.DBA.REMOVE_THALIA_RDF_DET();
+
+drop procedure DB.DBA.REMOVE_THALIA_RDF_DET;
+
+create procedure DB.DBA.THALIA_MAKE_RDF_DET()
+{
+    declare uriqa_str varchar;
+    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    uriqa_str := 'http://' || uriqa_str || '/thalia';
+    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/thalia/RDFData/', uriqa_str, NULL);
+    VHOST_REMOVE (lpath=>'/thalia/data/rdf');
+    DB.DBA.VHOST_DEFINE (lpath=>'/thalia/data/rdf', ppath=>'/DAV/home/demo/thalia/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+}
+;
+
+DB.DBA.THALIA_MAKE_RDF_DET();
+
+drop procedure DB.DBA.THALIA_MAKE_RDF_DET;
+
+-- procedure to convert path to DET resource name
+create procedure DB.DBA.THALIA_DET_REF (in par varchar, in fmt varchar, in val varchar)
+{
+  declare res, iri any;
+  declare uriqa_str varchar;
+  uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  uriqa_str := 'http://' || uriqa_str || '/thalia';
+  iri := uriqa_str || replace(val, '/', '_');
+  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
+  return sprintf (fmt, res);
+}
+;
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('tut_th_rdf', 1,
+    '/thalia/(.*)', vector('path'), 1, 
+    '/thalia/data/rdf/%U', vector('path'),
+    'DB.DBA.THALIA_DET_REF',
+    'application/rdf.xml',
+    2,  
+    303);
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'tut_th_rule_list1',
     1,
     vector (
                 'tut_th_rule1',
-                'tut_th_rule2'
+                'tut_th_rule2',
+                'tut_th_rule3',
+                'tut_th_rdf'
           ));
 
-
 DB.DBA.VHOST_REMOVE (lpath=>'/thalia');
-DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/Thalia/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
+DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/home/demo/thalia/', vsp_user=>'dba', is_dav=>1,
+           is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
 
 DB.DBA.XML_SET_NS_DECL ('th', 'http://purl.org/ontology/thalia/1.0/', 2);
 
