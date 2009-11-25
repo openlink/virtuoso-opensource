@@ -3521,3 +3521,20 @@ select count(*) from Order_Details;
 --ECHO BOTH ": " $LAST[1] " Order Details loaded\n";
 
 --ECHO BOTH "Loading Demo Database Complete\n";
+
+create procedure DB.DBA.rd_v_1_localize_demo()
+{
+  declare file_text, uriqa varchar;
+  uriqa := registry_get('URIQADefaultHost');
+  file_text := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES 
+    where RES_FULL_PATH='/DAV/VAD/demo/sql/rd_v_1.sql');
+  file_text := replace(file_text, 'URIQA2_MACRO', uriqa);
+  update WS.WS.SYS_DAV_RES set RES_CONTENT=file_text where RES_FULL_PATH='/DAV/VAD/demo/sql/rd_v_1.sql';
+}
+;
+
+DB.DBA.rd_v_1_localize_demo()
+;
+
+drop procedure DB.DBA.rd_v_1_localize_demo
+;
