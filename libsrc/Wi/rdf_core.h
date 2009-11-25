@@ -239,6 +239,8 @@ extern id_hash_t *rdf_obj_ft_rules_by_iris;
 extern int uriqa_dynamic_local;
 extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
 extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
+/*!< checks whether the given \c iri starts with the http://default-host , returns zero if not or number of leading chars to cut the local part. */
+extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
 
 #define RDF_GRAPH_PERM_READ 0x01
 #define RDF_GRAPH_PERM_WRITE 0x02

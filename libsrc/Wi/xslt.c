@@ -50,6 +50,7 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#include "rdf_core.h"
 #include "xslt_impl.h"
 #include "bif_xper.h" /* for write_escaped_attvalue */
 #include "shcompo.h"
@@ -4174,7 +4175,8 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
             key_val = unbox_iri_id (key);
           else if (('S' == algo) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
             {
-              caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0);
+              /* caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0); */
+              caddr_t iid = iri_to_id (qst, key, IRI_TO_ID_IF_KNOWN, err_ret);
               if (NULL != iid)
                 {
                   key_val = unbox_iri_id (iid);
