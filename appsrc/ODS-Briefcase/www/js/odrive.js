@@ -1253,7 +1253,7 @@ ODRIVE.aclRowCreate = function (aclEnable, rowEnable, values)
     OAT.Dom.option('Subfolders and files', '2', field);
     if (!rowEnable)
       OAT.Dom.option('Inherited', '3', field);
-    if (values && values.inheritance)
+    if (values && (values.inheritance != null))
       field.value = values.inheritance;
     else
       field.value = 1;
