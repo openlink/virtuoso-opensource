@@ -1721,7 +1721,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                               declare resMode varchar;
 
                               graph := SIOC.DBA.dav_res_iri (resPath);
-                              dbg_obj_print ('graph', graph);
+                              --dbg_obj_print ('graph', graph);
                               resMode := '';
                               if (req[2] = ascii ('1'))
                                 resMode := 'Control';
