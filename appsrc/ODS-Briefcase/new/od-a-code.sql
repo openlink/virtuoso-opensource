@@ -2561,29 +2561,35 @@ create procedure ODRIVE.WA.det_action_enable(
 --
 create procedure ODRIVE.WA.DAV_GET_INFO(
   in path varchar,
-  in info varchar)
+  in info varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare tmp any;
 
-  if (info = 'vc') {
-    if (ODRIVE.WA.DAV_GET_VERSION_CONTROL(path))
+  if (info = 'vc')
+  {
+    if (ODRIVE.WA.DAV_GET_VERSION_CONTROL(path, auth_name, auth_pwd))
       return 'ON';
     return 'OFF';
   }
-  if (info = 'avcState') {
-    tmp := ODRIVE.WA.DAV_GET_AUTOVERSION(path);
+  if (info = 'avcState')
+  {
+    tmp := ODRIVE.WA.DAV_GET_AUTOVERSION(path, auth_name, auth_pwd);
     if (tmp <> '')
       return replace(ODRIVE.WA.auto_version_full(tmp), 'DAV:', '');
     return 'OFF';
   }
-  if (info = 'vcState') {
-    if (not is_empty_or_null(ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-in', '')))
+  if (info = 'vcState')
+  {
+    if (not is_empty_or_null(ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-in', '', auth_name, auth_pwd)))
       return 'Check-In';
-    if (not is_empty_or_null(ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-out', '')))
+    if (not is_empty_or_null(ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-out', '', auth_name, auth_pwd)))
       return 'Check-Out';
     return 'Standard';
   }
-  if (info = 'lockState') {
+  if (info = 'lockState')
+  {
     if (ODRIVE.WA.DAV_IS_LOCKED(path))
       return 'ON';
     return 'OFF';
@@ -2716,15 +2722,17 @@ create procedure ODRIVE.WA.DAV_GET_AUTOVERSION (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_GET_VERSION_CONTROL (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare retValue any;
 
   if (ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID (path, 'R')))
     return 0;
-  if (ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-in', '') <> '')
+  if (ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-in', '', auth_name, auth_pwd) <> '')
     return 1;
-  if (ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-out', '') <> '')
+  if (ODRIVE.WA.DAV_PROP_GET (path, 'DAV:checked-out', '', auth_name, auth_pwd) <> '')
     return 1;
   return 0;
 }
@@ -2756,7 +2764,7 @@ create procedure ODRIVE.WA.path_name (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH (
+create procedure ODRIVE.WA.DAV_GET_VERSION_PATH (
   in path varchar)
 {
   declare parent, name varchar;
@@ -2764,7 +2772,16 @@ create procedure ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH (
   name := ODRIVE.WA.path_name(path);
   parent := ODRIVE.WA.path_parent(path);
 
-  return concat('/', parent, '/VVC/', name, '/history.xml');
+  return concat('/', parent, '/VVC/', name, '/');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH (
+  in path varchar)
+{
+  return ODRIVE.WA.DAV_GET_VERSION_PATH (path) || 'history.xml';
 }
 ;
 
@@ -2812,7 +2829,9 @@ create procedure ODRIVE.WA.DAV_GET_VERSION_ROOT (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_GET_VERSION_SET (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare N integer;
   declare c0 varchar;
@@ -2823,7 +2842,7 @@ create procedure ODRIVE.WA.DAV_GET_VERSION_SET (
 
   declare exit handler for SQLSTATE '*' {return;};
 
-  versionSet := ODRIVE.WA.DAV_PROP_GET (ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH(path), 'DAV:version-set');
+  versionSet := ODRIVE.WA.DAV_PROP_GET (ODRIVE.WA.DAV_GET_VERSION_HISTORY_PATH(path), 'DAV:version-set', auth_name, auth_pwd);
   hrefs := xpath_eval ('/href', xtree_doc(versionSet), 0);
   for (N := 0; N < length(hrefs); N := N + 1)
     result(cast(hrefs[N] as varchar), either(equ(N+1,length(hrefs)),0,1));
@@ -2881,11 +2900,13 @@ create procedure ODRIVE.WA.DAV_PERROR (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_INIT (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare resource any;
 
-  resource := ODRIVE.WA.DAV_DIR_LIST(path, -1);
+  resource := ODRIVE.WA.DAV_DIR_LIST (path, -1, auth_name, auth_pwd);
   if (ODRIVE.WA.DAV_ERROR(resource))
     return resource;
   if (length(resource) = 0)
@@ -3627,7 +3648,8 @@ create procedure ODRIVE.WA.DAV_UNLOCK (
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   id := DB.DBA.DAV_SEARCH_ID(path, type);
   locks := DB.DBA.DAV_LIST_LOCKS_INT (id, type);
-  foreach (any lock in locks) do {
+  foreach (any lock in locks) do
+  {
     retValue := DB.DBA.DAV_UNLOCK (path, lock[2], auth_name, auth_pwd);
     if (ODRIVE.WA.DAV_ERROR (retValue))
       return retValue;
@@ -4336,7 +4358,7 @@ create procedure ODRIVE.WA.aci_n3 (
 --
 create procedure ODRIVE.WA.path_normalize (
   in path varchar,
-  in path_type varchar := 'C')
+  in path_type varchar := 'P')
 {
   declare N integer;
 
@@ -4355,6 +4377,10 @@ create procedure ODRIVE.WA.path_normalize (
     if (chr (path[1]) = '~')
     {
       path := replace (path, '/~', '/DAV/home/');
+    }
+    if (path not like '/DAV/%')
+    {
+      path := '/DAV' || path;
     }
   }
   return path;
