@@ -47,6 +47,11 @@ main (int argc, char **argv, char **environ)
   int key;
   int niceval = 0;
   int i;
+#ifdef MALLOC_DEBUG
+  dk_mutex_t *x = mutex_allocate();
+  char *y = dk_alloc_box(1,1);
+  dk_hash_t * z = hash_table_allocate(10);
+#endif
 
   while ((key = getopt (argc, argv, "+o:n:s")) != EOF)
     {

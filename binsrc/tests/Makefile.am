@@ -165,7 +165,7 @@ inifile_SOURCES = inifile.c inifile.vers.c
 inifile_CFLAGS  = $(AM_CFLAGS)
 inifile_CFLAGS += -DOPSYS=\"@OPSYS@\" -DHOST=\"@host@\"  
 inifile_CFLAGS += -DCVSID=\"1.0\" -DFALSE=0 '-Dinitialize_locale='
-inifile_LDADD = $(top_builddir)/libsrc/util/libutil.la
+inifile_LDADD = $(client_libs)
 
 inifile.vers.c: 
 	$(MAKEVER) -o inifile.vers.c -p "Ini file configuration utility" -v 1.4

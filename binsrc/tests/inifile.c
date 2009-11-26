@@ -26,6 +26,7 @@
  *
 */
 
+#define IN_LIBUTIL
 #include <libutil.h>
 
 extern char version[];
@@ -82,6 +83,11 @@ main (int argc, char **argv)
 {
   PCONFIG config;
   char *keyvalue = NULL;
+#ifdef MALLOC_DEBUG
+  dk_mutex_t *x = mutex_allocate();
+  char *y = dk_alloc_box(1,1);
+  dk_hash_t * z = hash_table_allocate(10);
+#endif
 
   initialize_locale ("openlink");
   initialize_program (&argc, &argv);
