@@ -3118,7 +3118,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
     /* skip the modifier */
     modifier = NULL;
-    while (ptr && *ptr && strchr ("#0- +'", *ptr))
+    while (ptr && *ptr && strchr ("#0- +'_", *ptr))
       {
 	modifier = ptr;
 	ptr++;
@@ -3159,7 +3159,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ptr++;
 
   format_char_found:
-    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsRSIVU", *ptr))
+    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsRSIVU", *ptr) || ('R' != *ptr && modifier && '_' == modifier[0]))
       {
 	sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
       }
@@ -3776,7 +3776,7 @@ retry_unrdf:
 
     /* skip the modifier */
     fmt_modifier = NULL;
-    while (('\0' != fmt_tail[0]) && (NULL != strchr ("#0- +'", fmt_tail[0])))
+    while (('\0' != fmt_tail[0]) && (NULL != strchr ("#0- +'_", fmt_tail[0])))
       {
 	fmt_modifier = fmt_tail;
       fmt_tail++;
@@ -3816,7 +3816,8 @@ retry_unrdf:
     if (('\0' != fmt_tail[0]) && (NULL != strchr ("hlLq", fmt_tail[0])))
       fmt_tail++;
 
-    if (('\0' != fmt_tail[0]) && (NULL != strchr ("dDiouxXeEfgcsRSIVU", fmt_tail[0])))
+    if (('\0' != fmt_tail[0]) && (NULL != strchr ("dDiouxXeEfgcsRSIVU", fmt_tail[0]))
+	&& (!fmt_modifier || 'R' == fmt_tail[0] || '_' != fmt_modifier[0]))
       fmt_tail++;
     else
       sqlr_new_error ("22023", "SR523",
