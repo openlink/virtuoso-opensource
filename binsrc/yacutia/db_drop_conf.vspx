@@ -59,11 +59,7 @@
 	        for (i := 1; i < l; i := i + 1)
 		   {
 		     stat := '00000';
-		     q := name_part (self.db_object_to_drop[i], 0);
-		     o := name_part (self.db_object_to_drop[i], 1);
-		     n := name_part (self.db_object_to_drop[i], 2);
-
-		     exec (sprintf ('drop %s "%I"."%I"."%I"', t, q, o, n), stat, msg);
+		     exec (sprintf ('drop %s %s', t, Y_SQL_ESC_NAME (self.db_object_to_drop[i])), stat, msg);
 		     if (stat <> '00000')
 		       {
 		         errs := vector_concat (errs, vector (vector (self.db_object_to_drop[i], stat, msg)));
