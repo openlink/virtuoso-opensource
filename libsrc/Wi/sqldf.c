@@ -5112,11 +5112,6 @@ sqlo_next_joined (df_elt_t * dt_dfe)
   op_table_t * ot = dt_dfe->_.sub.ot;
   df_elt_t * last = NULL, * placed;
   dk_set_t from;
-#ifdef BIF_XML
-  int is_for_xml = IS_FOR_XML (sqlp_union_tree_right (ot->ot_dt));
-#else
-  int is_for_xml = 0;
-#endif
   for (placed = dt_dfe->_.sub.first; placed; placed = placed->dfe_next)
     {
       if (DFE_TABLE == placed->dfe_type || DFE_DT == placed->dfe_type)
@@ -5129,14 +5124,10 @@ sqlo_next_joined (df_elt_t * dt_dfe)
 	{
 	  df_elt_t * next_from = (df_elt_t *) from->next->data;
 	  int next_outer = dfe_is_join (next_from);
-	  if (!next_from->dfe_is_placed && next_outer)
+	  remote_table_t * rt = DFE_TABLE == next_from->dfe_type ? find_remote_table (next_from->_.table.ot->ot_table->tb_name, 0) : NULL ;
+	  if (!next_from->dfe_is_placed && next_outer && rt)
 	    return next_from;
 	}
-      if ((is_for_xml || ot->ot_fixed_order) &&
-	  (DFE_TABLE == ((df_elt_t *)from->data)->dfe_type ||
-	   DFE_DT == ((df_elt_t *)from->data)->dfe_type) &&
-	  !((df_elt_t *)from->data)->dfe_is_placed)
-	return (df_elt_t *) from->data;
     }
   return NULL;
 }
@@ -5612,7 +5603,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 {
   /* take an ungenerated table and put it and its stuff into the pipeline */
   df_elt_t * must_be_next;
-  dk_set_t sort_set, new_leaves = NULL;
+  dk_set_t sort_set = NULL, new_leaves = NULL;
   float this_score;
   int any_tried = 0;
   must_be_next = sqlo_next_joined (ot->ot_work_dfe);
@@ -5634,7 +5625,10 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
 	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     }
-  sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
+  if (must_be_next)
+    sort_set = t_cons ((void*)t_cons ((void*) must_be_next, NULL), NULL);
+  else
+    sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
   if (SQLO_BACKTRACK == sort_set)
     return;
   DO_SET (dk_set_t, dfes, &sort_set)
