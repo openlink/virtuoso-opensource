@@ -33,8 +33,8 @@
   <vm:pagetitle>Privileges On Database Objects</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
-      <v:variable persist="1" name="db_object_to_grant" type="any" default="null"/>
-      <v:variable persist="1" name="db_object_errs" type="any" default="null"/>
+      <v:variable persist="session" name="db_object_to_grant" type="any" default="null"/>
+      <v:variable persist="session" name="db_object_errs" type="any" default="null"/>
       <v:variable persist="0" name="type" type="integer" default="1"/>
     </vm:variables>
     <vm:menu>
@@ -43,7 +43,7 @@
     <vm:header caption="Privileges On Database Objects"/>
     <vm:pagebody>
       <v:after-data-bind><v:script><![CDATA[
-        if (self.db_object_to_grant[0] in ('table','view'))
+        if (self.db_object_to_grant is not null and self.db_object_to_grant[0] in ('table','view'))
           self.type := 1;
         else
           self.type := 0;
@@ -162,7 +162,7 @@
           if( length(priv_revoke) > 0 )
           {
   		      stat := '00000';
-            _sql := 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || self.db_object_to_grant[i] || ' FROM "' || name || '"';
+            _sql := 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || Y_SQL_ESC_NAME (self.db_object_to_grant[i]) || ' FROM "' || name || '"';
             exec( _sql,stat, msg);
   		      if (stat <> '00000')
   		        errs := vector_concat (errs, vector (vector (_sql, stat, msg)));
@@ -170,7 +170,7 @@
 
           if( length(priv_grant) > 0 ) {
   		      stat := '00000';
-  		      _sql := 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || self.db_object_to_grant[i] || ' TO "' || name || '"';
+  		      _sql := 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || Y_SQL_ESC_NAME (self.db_object_to_grant[i]) || ' TO "' || name || '"';
             exec( _sql, stat, msg);
   		      if (stat <> '00000')
   		        errs := vector_concat (errs, vector (vector (_sql, stat, msg)));

@@ -6319,3 +6319,15 @@ create procedure Y_RDF_VIEW_DROP_STMT (in q any)
 
 }
 ;
+
+create procedure Y_SQL_ESC_NAME (in fn varchar)
+{
+  declare q, o, n, tmp any;
+  fn := complete_table_name (fn, 0);
+  q := name_part (fn, 0);
+  o := name_part (fn, 1);
+  tmp := q || '.' || o || '.';
+  n := subseq (fn, length (tmp));
+  return sprintf ('"%I"."%I"."%I"', q, o, n);
+}
+;

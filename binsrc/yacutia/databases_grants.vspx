@@ -205,11 +205,11 @@
 
 
           if( length(priv_revoke) > 0 ) {
-            exec( 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || self.name || ' FROM "' || U_NAME || '"',
+            exec( 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || Y_SQL_ESC_NAME (self.name) || ' FROM "' || U_NAME || '"',
                    null, null, vector(), 0, mtd, dta);
           }
           if( length(priv_grant) > 0 ) {
-            exec( 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || self.name || ' TO "' || U_NAME || '"',
+            exec( 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || Y_SQL_ESC_NAME (self.name) || ' TO "' || U_NAME || '"',
                    null, null, vector(), 0, mtd, dta);
           }
         }

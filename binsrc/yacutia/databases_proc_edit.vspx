@@ -85,10 +85,28 @@
               <v:button action="simple" name="crproc_save" value="Save" >
                 <v:on-post><v:script><![CDATA[
                   declare stat, msg varchar;
+		  declare grants, tree any;
                   stat := '00000';
                   commit work;
                   if( length(self.crproc_textfield.ufl_value)=0)
                     return;
+		  {
+		     declare exit handler for sqlstate '*' {
+		       self.vc_is_valid := 0;
+		       self.crproc_textfield.vc_error_message := __SQL_MESSAGE;
+		       return;
+		     };
+		     tree := sql_parse (self.crproc_textfield.ufl_value);
+		     if (tree[0] <> 615 and tree[0] <> 630)
+		       signal ('22023', 'Not a function or procedure definition.');
+		     if (tree[0] = 615 and self.mode = 'create' and __proc_exists (tree[2]) is not null)
+		       signal ('22023', 'You are truing to overwrite procedure with same name.');
+                  } 
+
+		  grants := vector ();  
+		  if (self.mode = 'edit')  
+		    grants := (select vector_agg (U_NAME) from SYS_GRANTS join SYS_USERS on (G_USER = U_ID) 
+		     	where G_OP = 32 and G_OBJECT = self.name);  
                   __set_user_id (connection_get ('vspx_user'), 1);
 		  if (lower (self.type) = 'module')
 		    {
@@ -103,12 +121,18 @@
                   exec (self.crproc_textfield.ufl_value, stat, msg);
 		  set_qualifier ('DB');
                   __set_user_id (user);
-		  if (stat = '00000') {
-                    http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+		  if (stat = '00000') 
+		    {
+	              commit work;  		
+		      foreach (any g in grants) do
+		        {
+			  exec (sprintf ('GRANT EXECUTE ON %s TO "%s"', Y_SQL_ESC_NAME (self.name), g), stat, msg);
+			}
+		      self.vc_redirect ('databases.vspx');
 		    return;
                   }
-                  else {
+		  else 
+		    {
 		    self.vc_is_valid := 0;
 		    self.crproc_textfield.vc_error_message := msg;
                   }
