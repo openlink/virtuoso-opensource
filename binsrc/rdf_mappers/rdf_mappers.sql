@@ -4650,7 +4650,8 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
       return 0;
     };
-  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%')
+  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%' or
+      new_origin_uri like 'http://www.bestbuy.com/%/%?%')
     {
       declare arr any;
       arr := WS.WS.PARSE_URI (new_origin_uri);
