@@ -8605,6 +8605,7 @@ bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   to_read = ws->ws_req_len;
   to_read_len = sizeof (buff);
   ses = strses_allocate ();
+  strses_enable_paging (ses, http_ses_size);
 
   while (to_read > 0)
     {
