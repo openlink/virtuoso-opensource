@@ -614,7 +614,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   if (old_expiration is not null)
     {
-      if ((old_expiration >= now() and explicit_refresh is null) or
+      if ((old_expiration >= now() and (old_exp_is_true or old_last_etag is null) and explicit_refresh is null) or
 	 (explicit_refresh is not null and dateadd ('second', explicit_refresh, old_last_load) >= now()))
         {
           -- dbg_obj_princ ('not expired, return');
