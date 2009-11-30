@@ -455,6 +455,7 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+     <node name="Console" url="rdf_console.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
    '<node name="Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
    '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
