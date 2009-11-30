@@ -27,7 +27,7 @@
      {
         sid := xenc_rand_bytes (6, 1);
      	http_header (sprintf ('Set-Cookie: __rdf_sponge_sid=%s; expires=%s; path=/about;\r\n', 
-     		sid, date_rfc1123 (dateadd ('hour', 1, now ())))); 
+     		sid, date_rfc1123 (dateadd ('hour', 24, now ())))); 
      }
    http_header (http_header_get () || 'Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    connection_set ('__rdf_sponge_sid', sid);  
@@ -375,6 +375,12 @@
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="statics/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
+    <div>
+	<?vsp
+	   if (registry_get ('__rdf_sponge_debug') = '1')
+	     http ('Trace ID: ' || sid);
+	?>
+    </div>
 
  <!--script type="text/javascript">
      var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
