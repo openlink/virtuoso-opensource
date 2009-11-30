@@ -2171,7 +2171,7 @@ next_pred:;
       ot->ot_preds = dk_set_conc (imp_preds, ot->ot_preds);
       ot->ot_work_dfe = dfe_container (so, DFE_DT, tb_dfe);
       ot->ot_work_dfe->_.sub.in_arity  = dfe_arity_with_supers (tb_dfe->dfe_prev);
-      copy = sqlo_layout (so, ot, SQLO_LAY_EXISTS, tb_dfe->dfe_super);
+      copy = sqlo_layout (so, ot, SQLO_LAY_VALUES /*SQLO_LAY_EXISTS*/, tb_dfe->dfe_super);
       copy->_.sub.dt_imp_preds = ot->ot_imported_preds;
       copy->dfe_super = tb_dfe;
       ot->ot_work_dfe = copy;
