@@ -840,7 +840,14 @@ public class ConnectionWrapper implements java.sql.Connection {
         pconn.sendErrorEvent(ex);
 
       int vendor = ex.getErrorCode();
-      if (vendor != VirtuosoException.OK && vendor != VirtuosoException.MISCERROR && pconn != null)
+      if (vendor == VirtuosoException.DISCONNECTED
+          || vendor == VirtuosoException.IOERROR
+          || vendor == VirtuosoException.BADLOGIN
+          || vendor == VirtuosoException.BADTAG
+          || vendor == VirtuosoException.CLOSED
+          || vendor == VirtuosoException.EOF
+          || vendor == VirtuosoException.NOLICENCE
+          || vendor == VirtuosoException.UNKNOWN)
         pconn.sendErrorEvent(ex);
   }
 
