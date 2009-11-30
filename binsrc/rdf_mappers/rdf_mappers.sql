@@ -303,6 +303,14 @@ create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 DB.DBA.RM_MAPPERS_UPGRADE ()
 ;
 
+create procedure RM_UPGRADE_TBL (in tbl varchar, in col varchar, in coltype varchar)
+{
+  if (exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = upper(tbl) and upper("COLUMN") = upper(col)))
+    return;
+  exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
+}
+;
+
 DB.DBA.EXEC_STMT(
 'create table DB.DBA.RDF_META_CARTRIDGES (
   	MC_ID integer identity,
@@ -319,6 +327,8 @@ DB.DBA.EXEC_STMT(
 alter index RDF_META_CARTRIDGES on DB.DBA.RDF_META_CARTRIDGES partition cluster replicated', 0)
 ;
 
+RM_UPGRADE_TBL ('DB.DBA.RDF_META_CARTRIDGES', 'MC_API_TYPE', 'integer default 0');
+
 DB.DBA.EXEC_STMT(
 'create table DB.DBA.RDF_CARTRIDGES_LOOKUPS (
 	CL_URI IRI_ID_8,
@@ -326,6 +336,71 @@ DB.DBA.EXEC_STMT(
 	CL_TS timestamp,
 	primary key (CL_URI))', 0
 )
+;
+
+DB.DBA.EXEC_STMT(
+'create table DB.DBA.RDF_META_CARTRIDGES_LOG (
+	ML_SESSION varchar,		-- session id
+	ML_ID integer identity,		-- an unique number
+	ML_TS timestamp,		-- ts
+	ML_PROC varchar,
+	ML_KEYWORDS long varchar,	-- text predicates
+	ML_REQUEST long varchar,	-- web service url and parameters
+	ML_RESPONSE_HEAD long varchar,	-- response headers
+	ML_RESPONSE long varchar,	-- response body
+	ML_RESULT long varchar,		-- transformation to rdf
+	primary key (ML_SESSION, ML_ID)
+)
+alter index RDF_META_CARTRIDGES_LOG on DB.DBA.RDF_META_CARTRIDGES_LOG partition cluster replicated', 0)
+;
+
+create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
+{
+  declare sid any;
+  sid := connection_get ('__rdf_sponge_sid');
+  if (registry_get ('__rdf_sponge_debug') <> '1')
+    return;
+  if (sid is null)
+    return;
+  insert into DB.DBA.RDF_META_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, rtrim (proc, '2'));
+  connection_set ('__rdf_sponge_idn', identity_value ());
+}
+;
+
+create procedure RM_LOG_RESPONSE (in resp varchar, in hdr any)
+{
+  declare sid, idn, hdr_str any;
+  sid := connection_get ('__rdf_sponge_sid');
+  idn := connection_get ('__rdf_sponge_idn');
+  if (sid is null or idn is null)
+    return;
+  hdr_str := '';
+  foreach (varchar l in hdr) do
+    hdr_str := hdr_str || l;
+  update DB.DBA.RDF_META_CARTRIDGES_LOG set ML_RESPONSE = resp, ML_RESPONSE_HEAD = hdr_str where ML_SESSION = sid and ML_ID = idn;
+}
+;
+
+create procedure RM_LOG_RESULT (in res any)
+{
+  declare sid, idn any;
+  sid := connection_get ('__rdf_sponge_sid');
+  idn := connection_get ('__rdf_sponge_idn');
+  if (sid is null or idn is null)
+    return;
+  update DB.DBA.RDF_META_CARTRIDGES_LOG set ML_RESULT = res where ML_SESSION = sid and ML_ID = idn;
+}
+;
+
+
+create procedure RM_LOG_CLEAR ()
+{
+  declare sid any;
+  sid := connection_get ('__rdf_sponge_sid');
+  if (sid is null)
+    return;
+  delete from DB.DBA.RDF_META_CARTRIDGES_LOG where ML_SESSION = sid;
+}
 ;
 
 create procedure DB.DBA.MIGRATE_CALAIS ()
@@ -439,14 +514,6 @@ EXEC_STMT(
 )
 alter index SYS_GRDDL_MAPPING on DB.DBA.SYS_GRDDL_MAPPING partition cluster replicated
 create index SYS_GRDDL_MAPPING_PROFILE on DB.DBA.SYS_GRDDL_MAPPING (GM_PROFILE) partition cluster replicated', 0)
-;
-
-create procedure RM_UPGRADE_TBL (in tbl varchar, in col varchar, in coltype varchar)
-{
-  if (exists( select top 1 1 from DB.DBA.SYS_COLS where upper("TABLE") = upper(tbl) and upper("COLUMN") = upper(col)))
-    return;
-  exec (sprintf ('alter table %s add column %s %s', tbl, col, coltype));
-}
 ;
 
 RM_UPGRADE_TBL ('DB.DBA.SYS_GRDDL_MAPPING', 'GM_FLAG', 'integer default 0');
@@ -6913,6 +6980,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
   declare rc int;
 
   dummy := null;
+  RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
   for select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
