@@ -616,7 +616,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   if (old_expiration is not null)
     {
-      if ((old_expiration >= now() and explicit_refresh is null) or
+      if ((old_expiration >= now() and (old_exp_is_true or old_last_etag is null) and explicit_refresh is null) or
 	 (explicit_refresh is not null and dateadd ('second', explicit_refresh, old_last_load) >= now()))
         {
           -- dbg_obj_princ ('not expired, return');
@@ -676,6 +676,8 @@ perform_actual_load:
       --!!! XXX: if authentication is needed then better to use http_client() instead of http_get
       if (old_last_etag is not null and explicit_refresh is null)
         req_hdr := 'If-None-Match: ' || old_last_etag;
+      else if (old_last_load is not null and explicit_refresh is null)
+        req_hdr := 'If-Modified-Since: ' || DB.DBA.date_rfc1123 (old_last_load);
       -- content negotiation
       -- Here we tell to the remote party we want rdf in some form, if it supports content negotiation
       -- then it may return rdf instead of html
