@@ -674,6 +674,8 @@ perform_actual_load:
       --!!! XXX: if authentication is needed then better to use http_client() instead of http_get
       if (old_last_etag is not null and explicit_refresh is null)
         req_hdr := 'If-None-Match: ' || old_last_etag;
+      else if (old_last_load is not null and explicit_refresh is null)
+        req_hdr := 'If-Modified-Since: ' || DB.DBA.date_rfc1123 (old_last_load);
       -- content negotiation
       -- Here we tell to the remote party we want rdf in some form, if it supports content negotiation
       -- then it may return rdf instead of html

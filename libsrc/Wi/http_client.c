@@ -1059,6 +1059,13 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
       ctx->hcctx_close = 1;
       return (HC_RET_OK);
     }
+  if (NULL != ctx->hcctx_proxy.hcp_proxy && !strnicmp ("Proxy-Connection:", hdr, 17)
+      && nc_strstr ((unsigned char *) hdr, (unsigned char *) "close"))
+    {
+      ctx->hcctx_keep_alive = 0;
+      ctx->hcctx_close = 1;
+      return (HC_RET_OK);
+    }
   if (!strnicmp ("Connection:", hdr, 11) && nc_strstr ((unsigned char *) hdr, (unsigned char *) "keep-alive"))
     {
       ctx->hcctx_keep_alive = 1;
@@ -1194,7 +1201,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && !ctx->hcctx_close)
     return (HC_RET_OK);
 
-  if (ctx->hcctx_method == HC_METHOD_HEAD)
+  if (ctx->hcctx_method == HC_METHOD_HEAD || ctx->hcctx_respcode == 304)
     return (HC_RET_OK);
 
   CATCH_READ_FAIL (ctx->hcctx_http_out)
