@@ -289,13 +289,6 @@
             </tr>
             <tr>
               <td colspan="2" align="center">
-                <v:button action="simple" name="backbtn" value="Back">
-                  <v:on-post>
-                      <![CDATA[
-		      self.vc_redirect (sprintf ('sec_pki_1.vspx'));
-                      ]]>
-                  </v:on-post>
-                </v:button>
                 <v:button action="simple" name="cancelbtn" value="Cancel">
                   <v:on-post>
                       <![CDATA[
@@ -430,6 +423,13 @@
             </tr>
 	</table>
 	<br/>
+                <v:button action="simple" name="backbtn" value="Back">
+                  <v:on-post>
+                      <![CDATA[
+		      self.vc_redirect (sprintf ('sec_pki_1.vspx'));
+                      ]]>
+                  </v:on-post>
+                </v:button>
 	<?vsp 
 	  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '*ini*'and HP_HOST not like '*sslini*')) {
 	?>
