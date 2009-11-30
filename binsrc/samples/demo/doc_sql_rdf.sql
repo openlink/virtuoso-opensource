@@ -91,34 +91,11 @@ grant execute on DB.DBA.PROP_IRI_INVERSE to "SPARQL";
 
 SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-drop quad map graph iri("http://^{URIQADefaultHost}^/Doc") .
+drop silent quad map virtrdf:Doc .
 ;
 
 SPARQL
 prefix doc: <http://demo.openlinksw.com/schemas/doc#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
-drop quad map virtrdf:Doc .
-;
-
-SPARQL
-prefix doc: <http://demo.openlinksw.com/schemas/doc#>
-prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class doc:File "http://^{URIQADefaultHost}^/Doc/File/%d/%U#this" (in file_id integer not null, in file_name varchar not null) .
 create iri class doc:Collection "http://^{URIQADefaultHost}^/Doc/Collection/%d/%U#this" (in col_id integer not null, in col_name varchar not null) .
 create iri class doc:Property "http://^{URIQADefaultHost}^/Doc/Property/%U/%d#this" (in prop_name varchar not null, in prop_id integer not null) .

@@ -18,10 +18,10 @@ GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 
 
-SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
-;
+--SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
+--;
 
-SPARQL drop quad map virtrdf:NorthwindDemo .
+SPARQL drop silent quad map virtrdf:NorthwindDemo .
 ;
 
 SPARQL
