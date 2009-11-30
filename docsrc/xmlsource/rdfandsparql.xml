@@ -44,6 +44,51 @@ IRI_ID's since the SPARQL implementation returns IRI's in their text
 form, not as internal id's. These will however be seen if reading the
 internal tables directly.</para>
 <note><para>Nobody, even DBA, should write directly to internal RDF tables, because some data from that tables are cached in a special way and cache is not automatically updated when content of tables has changed.</para></note>
+<para><emphasis>Example</emphasis></para>
+<para>The following example demonstrates IRI type usage as Virtuoso PL function parameter:</para>
+<programlisting><![CDATA[
+SQL>create procedure vs_property_label (in _uri varchar)
+  {
+    declare res varchar;
+    result_names (res);
+    for (sparql define input:storage "" select distinct ?graph_rvr_fixed where { graph `iri(?:_uri)` { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed}})
+    do {
+      result ("graph_rvr_fixed");
+    }
+  }
+;
+Done. -- 0 msec.
+
+SQL>select vs_property_label('http://www.openlinksw.com/schemas/virtrdf#');
+res
+VARCHAR
+_______________________________________________________________________________
+
+http://demo.openlinksw.com/Northwind
+http://demo.openlinksw.com/tpch
+http://demo.openlinksw.com/tpcd
+http://demo.openlinksw.com/bsbm
+http://demo.openlinksw.com/tutorial/Northwind
+http://demo.openlinksw.com/thalia
+http://demo.openlinksw.com/tutorial_view
+http://demo.openlinksw.com/ecrm
+http://demo.openlinksw.com/sys
+http://demo.openlinksw.com/Doc
+http://demo.openlinksw.com/informix/stores_demo
+http://demo.openlinksw.com/oraclehr
+http://demo.openlinksw.com/db2sample
+http://demo.openlinksw.com/ingrestut
+http://demo.openlinksw.com/sybasepubs2
+http://demo.openlinksw.com/MSPetShop#
+http://demo.openlinksw.com/oracle#
+http://demo.openlinksw.com/progress/isports
+http://demo.openlinksw.com/wpl_v
+http://demo.openlinksw.com/mw_v
+http://demo.openlinksw.com/drupal_v
+0
+
+22 Rows. -- 241 msec.
+]]></programlisting>
 </sect2>
 <sect2 id="rdfboxtype"><title>RDF_BOX Type</title>
 <para>While strings, numbers, dates and XML entities are &quot;native&quot; SQL datatypes,

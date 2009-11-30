@@ -77,6 +77,15 @@
 	-&gt; &lt;a href="day+%26+night"&gt;
 </screen>
 <para>
+    R - use to replace leading spaces: the modifiers are one of + - # 0 and space.
+</para>
+<screen>
+    sprintf ('%-R', ' 123')
+    -123
+    sprintf ('%-R', '  123')
+    --123
+</screen>
+<para>
     V - as 's' but escapes the string value as an HTTP Value (same as http_value). Useful for making
       dynamic VSP content
 </para>
