@@ -2221,8 +2221,13 @@ spar_make_variable (sparp_t *sparp, caddr_t name)
     {
       t_set_push_new_string (&(sparp->sparp_env->spare_global_var_names), name);
     }
-  if (sparp->sparp_in_precode_expn && !is_global)
-    spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list");
+  if (sparp->sparp_in_precode_expn)
+    {
+      if (2 & sparp->sparp_in_precode_expn)
+        spar_error (sparp, "Variable '%.100s' is not allowed in a constant clause", name);
+      else if (!is_global)
+        spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list", name);
+    }
   if (NULL != env->spare_selids)
     selid = env->spare_selids->data;
   else if (is_global) /* say, 'insert in graph ?:someglobalvariable {...} where {...} */

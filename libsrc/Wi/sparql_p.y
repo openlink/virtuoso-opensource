@@ -235,6 +235,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token START_OF_SPARQL_TEXT	/*:: FAKE("the beginning of SPARQL text"), SPAR, NULL ::*/
 %token END_OF_SPARQL_TEXT	/*:: FAKE("the end of SPARQL text"), SPAR, NULL ::*/
 %token SPARUL_RUN_SUBTYPE	/*:: FAKE("subtype for request top of SPARUL statement"), SPAR, NULL ::*/
+%token SPARUL_INSERT_DATA	/*:: FAKE("subtype for request top of INSERT DATA statement"), SPAR, NULL ::*/
+%token SPARUL_DELETE_DATA	/*:: FAKE("subtype for request top of DELETE DATA statement"), SPAR, NULL ::*/
 
 %token __SPAR_NONPUNCT_START	/* Delimiting value for syntax highlighting */
 
@@ -1127,15 +1129,18 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 	;
 
 spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
-	: _BACKQUOTE spar_expn _BACKQUOTE {
+	: _BACKQUOTE {
+		if (2 & sparp_arg->sparp_in_precode_expn)
+		  spar_error (sparp_arg, "Backquoted expressions are not allowed in constant clauses"); }
+	    spar_expn _BACKQUOTE {
 		  dk_set_t gp_st = sparp_env()->spare_context_gp_subtypes;
                   if ((NULL == gp_st) || (CONSTRUCT_L == (ptrlong)(gp_st->data)))
-                    $$ = $2; /* redundant backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
+                    $$ = $3; /* redundant backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
                   else
 		    {
 		      SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);
 		      SPART *eq;
-		      SPAR_BIN_OP (eq, BOP_EQ, t_full_box_copy_tree ((caddr_t)bn), $2);
+		      SPAR_BIN_OP (eq, BOP_EQ, t_full_box_copy_tree ((caddr_t)bn), $3);
                       spar_gp_add_filter (sparp_arg, eq);
 		      $$ = bn;
                     }
@@ -1408,10 +1413,12 @@ spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
 			/*... PrecodeExpn ConstructTemplate	*/
 	: INSERT_L DATA_L spar_in_graph_precode_opt {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
-		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
+		sparp_arg->sparp_in_precode_expn = 2; }
             spar_ctor_template {
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL,
+		sparp_arg->sparp_in_precode_expn = 0;
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_INSERT_DATA, NULL,
                   spar_selid_pop (sparp_arg), fake );
                 spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $5); }
 	;
@@ -1433,10 +1440,12 @@ spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
 			/*... PrecodeExpn ConstructTemplate	*/
 	: DELETE_L DATA_L spar_from_graph_precode_opt {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
-		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
+		sparp_arg->sparp_in_precode_expn = 2; }
             spar_ctor_template {
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL,
+		sparp_arg->sparp_in_precode_expn = 0;
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_DELETE_DATA, NULL,
                   spar_selid_pop (sparp_arg), fake );
                 spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $5); }
 	;

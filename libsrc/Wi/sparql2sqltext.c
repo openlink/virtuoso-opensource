@@ -7332,6 +7332,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case CREATE_L:
     case DROP_L:
     case SPARUL_RUN_SUBTYPE:
+    case SPARUL_INSERT_DATA:
+    case SPARUL_DELETE_DATA:
       if ((SPARUL_RUN_SUBTYPE == subtype) && !unbox (spar_compose_report_flag (ssg->ssg_sparp)))
         {
           ssg_puts ("set_row_count (");

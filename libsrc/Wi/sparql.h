@@ -263,7 +263,7 @@ typedef struct sparp_s {
   int sparp_total_lexems_parsed;
   spar_lexem_t *sparp_curr_lexem;
   spar_lexbmk_t sparp_curr_lexem_bmk;
-  int sparp_in_precode_expn;		/*!< The parser reads precode-safe expression so it can not contain non-global variables */
+  int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions or HAVING but not HAVING SELECT ... */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */

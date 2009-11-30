@@ -1106,6 +1106,19 @@ sc_free (sql_comp_t * sc)
 	}
       id_hash_free (sc->sc_sample_cache);
     }
+  if (NULL != sc->sc_big_ssl_consts)
+    {
+#ifndef NDEBUG
+      int ctr;
+      DO_BOX_FAST (caddr_t, itm, ctr, sc->sc_big_ssl_consts)
+        {
+          if (NULL != itm)
+            dbg_printf (("\nUnused big ssl const # %d", ctr));
+        }
+      END_DO_BOX_FAST;
+#endif
+      dk_free_tree (sc->sc_big_ssl_consts);
+    }
 }
 
 query_t *

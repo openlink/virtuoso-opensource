@@ -608,6 +608,32 @@ ssl_new_constant (comp_context_t * cc, caddr_t val)
   }
 }
 
+state_slot_t *
+ssl_new_big_constant (comp_context_t * cc, caddr_t val)
+{
+#ifdef USE_SYS_CONSTANT
+  state_slot_t ** pre = (state_slot_t **) id_hash_get (constant_ssl, (caddr_t) &val);
+  if (pre)
+    return *pre;
+#endif
+  {
+    NEW_VARZ (state_const_slot_t, sl);
+    sl->ssl_next_const = cc->cc_query->qr_const_ssls;
+#ifdef USE_SYS_CONSTANT
+    cc->cc_query->qr_const_ssls = sl;
+#else
+    dk_set_push (&cc->cc_query->qr_state_map, (void *) sl);
+#endif
+    sl->ssl_type = SSL_CONSTANT;
+    sl->ssl_const_val = box_copy_tree (val);
+    sl->ssl_dtp = DV_TYPE_OF (val);
+    if (sl->ssl_dtp == DV_LONG_STRING)
+      sl->ssl_prec = box_length (val) - 1;
+    else
+      sl->ssl_prec = ddl_dv_default_prec (sl->ssl_dtp);
+    return ((state_slot_t *) sl);
+  }
+}
 
 state_slot_t *
 ssl_new_parameter (comp_context_t * cc, const char *name)

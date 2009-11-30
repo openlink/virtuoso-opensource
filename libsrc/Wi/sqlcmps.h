@@ -210,6 +210,7 @@ typedef struct sql_comp_s
     char	sc_is_union;
     update_node_t * 	sc_update_keyset;
     id_hash_t *	sc_sample_cache;
+    caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
   } sql_comp_t;
 
 #define SC_G_ID(sc) \
