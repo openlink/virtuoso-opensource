@@ -11386,7 +11386,11 @@ ws_soap_http (ws_connection_t * ws)
 	}
     }
   if (qr->qr_to_recompile)
-    qr = qr_recompile (qr, NULL);
+    {
+      qr = qr_recompile (qr, &err);
+      if (NULL != err)
+	goto end;
+    }
 
   is_http = (qr->qr_proc_place & SOAP_MSG_HTTP);
 
