@@ -1872,7 +1872,6 @@ again:
         dk_free_box (box_to_delete);
       return box_iri_int64 (acc, DV_IRI_ID);
     }
-/*                                             01234567 */
   if (uriqa_dynamic_local)
         {
       int ofs = uriqa_iri_is_local (qi, name);
