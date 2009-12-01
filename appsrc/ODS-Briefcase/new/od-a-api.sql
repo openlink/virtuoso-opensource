@@ -24,29 +24,6 @@ use ODS;
 
 -------------------------------------------------------------------------------
 --
-create procedure ODS.ODS_API.set_keyword (
-  in    name   varchar,
-  inout params any,
-  in    value  any)
-{
-  declare N integer;
-
-  for (N := 0; N < length(params); N := N + 2)
-  {
-    if (params[N] = name)
-    {
-      params[N+1] := value;
-      goto _end;
-    }
-  }
-  params := vector_concat (params, vector(name, value));
-_end:
-  return params;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODS.ODS_API.briefcase_setting_set (
   inout settings any,
   inout options any,
@@ -55,7 +32,7 @@ create procedure ODS.ODS_API.briefcase_setting_set (
 	declare aValue any;
 
   aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
-  ODS.ODS_API.set_keyword (settingName, settings, aValue);
+  ODRIVE.WA.set_keyword (settingName, settings, aValue);
 }
 ;
 
@@ -148,7 +125,8 @@ create procedure ODS.ODS_API.inheritance2string (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."briefcase.info" (
-  in path varchar) __soap_http 'text/xml'
+  in path varchar,
+  in "type" varchar) __soap_http 'text/xml'
 {
   declare uname, upassword varchar;
   declare rc integer;
@@ -160,7 +138,7 @@ create procedure ODS.ODS_API."briefcase.info" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  path := ODRIVE.WA.path_normalize (path, 'P');
+  path := ODRIVE.WA.path_normalize (path, "type");
 
   inst_id := ODS.ODS_API.briefcase_instance (path);
   if (not ods_check_auth (uname, inst_id))
@@ -196,6 +174,24 @@ create procedure ODS.ODS_API."briefcase.info" (
   http (         '</item>');
 
   return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."briefcase.resource.info" (
+  in path varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."briefcase.info" (path, 'R');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."briefcase.collection.info" (
+  in path varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."briefcase.info" (path, 'C');
 }
 ;
 
@@ -369,9 +365,9 @@ create procedure ODS.ODS_API."briefcase.resource.vc.lock" (
 
   if (state = 'on')
   {
-    retValue := ODRIVE.WA.DAV_LOCK (path, uname, upassword);
+    retValue := ODRIVE.WA.DAV_LOCK (path, 'R', uname, upassword);
   } else {
-    retValue := ODRIVE.WA.DAV_UNLOCK (path, uname, upassword);
+    retValue := ODRIVE.WA.DAV_UNLOCK (path, 'R', uname, upassword);
   }
   if (ODRIVE.WA.DAV_ERROR(retValue))
     return ods_serialize_int_res (retValue);
@@ -557,7 +553,7 @@ create procedure ODS.ODS_API."briefcase.resource.store" (
 {
   declare uname varchar;
   declare rc integer;
-  declare uid, gid int;
+  declare uid, gid integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -613,7 +609,7 @@ create procedure ODS.ODS_API."briefcase.collection.create" (
 {
   declare uname varchar;
   declare rc integer;
-  declare uid, gid int;
+  declare uid, gid integer;
   declare inst_id integer;
 
   declare exit handler for sqlstate '*'
@@ -666,13 +662,13 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
 create procedure ODS.ODS_API."briefcase.copy" (
   in from_path varchar,
   in to_path varchar,
-  in overwrite integer := 0,
+  in overwrite integer := 1,
   in permissions varchar := '110100000RR') __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare uname, upassword varchar;
   declare rc integer;
-  declare uid, gid int;
-  declare inst_id, inst_id2 int;
+  declare uid, gid integer;
+  declare inst_id, inst_id2 integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -691,7 +687,8 @@ create procedure ODS.ODS_API."briefcase.copy" (
 
   whenever not found goto ret;
   select U_ID, U_GROUP into uid, gid from DB.DBA.SYS_USERS where U_NAME = uname;
-  rc := DB.DBA.DAV_COPY_INT (from_path, to_path, overwrite, permissions, uid, gid, uname, null, 0);
+  upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
+  rc := DB.DBA.DAV_COPY (from_path, to_path, overwrite, permissions, uid, gid, uname, upassword);
 ret:
   return ods_serialize_int_res (rc);
 }
@@ -701,11 +698,12 @@ ret:
 --
 create procedure ODS.ODS_API."briefcase.move" (
   in from_path varchar,
-  in to_path varchar) __soap_http 'text/xml'
+  in to_path varchar,
+  in overwrite integer := 1) __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare uname, upassword varchar;
   declare rc integer;
-  declare inst_id, inst_id2 int;
+  declare inst_id, inst_id2 integer;
 
   declare exit handler for sqlstate '*'
   {
@@ -722,7 +720,8 @@ create procedure ODS.ODS_API."briefcase.move" (
   if (not ods_check_auth (uname, inst_id))
     return ods_auth_failed ();
 
-  rc := DB.DBA.DAV_MOVE_INT (from_path, to_path, 0, uname, null, 0);
+  upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
+  rc := DB.DBA.DAV_MOVE (from_path, to_path, overwrite, uname, upassword);
   return ods_serialize_int_res (rc);
 }
 ;
@@ -841,7 +840,7 @@ create procedure ODS.ODS_API."briefcase.property.remove" (
     return ods_auth_failed ();
 
   upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
-  rc := DB.DBA.DAV_PROP_REMOVE_INT (path, "name", uname, upassword);
+  rc := DB.DBA.DAV_PROP_REMOVE (path, "name", uname, upassword);
   if (ODRIVE.WA.dav_error (rc))
     return ods_serialize_int_res (rc);
   return ods_serialize_int_res (1);
@@ -1057,7 +1056,7 @@ create procedure ODS.ODS_API."briefcase.share.list" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."briefcase.options.set" (
-	in inst_id int,
+	in inst_id integer,
 	in options any) __soap_http 'text/xml'
 {
 	declare exit handler for sqlstate '*'
@@ -1136,7 +1135,10 @@ create procedure ODS.ODS_API."briefcase.options.get" (
 
 grant select on WS.WS.SYS_DAV_RES to ODS_API;
 
-grant execute on ODS.ODS_API."briefcase.info" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.resource.info" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.resource.get" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.resource.store" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.resource.delete" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.set" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.get" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.checkin" to ODS_API;
@@ -1144,9 +1146,7 @@ grant execute on ODS.ODS_API."briefcase.resource.vc.checkout" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.lock" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.info" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.vc.versions" to ODS_API;
-grant execute on ODS.ODS_API."briefcase.resource.get" to ODS_API;
-grant execute on ODS.ODS_API."briefcase.resource.store" to ODS_API;
-grant execute on ODS.ODS_API."briefcase.resource.delete" to ODS_API;
+grant execute on ODS.ODS_API."briefcase.collection.info" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.collection.create" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.collection.delete" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.copy" to ODS_API;
