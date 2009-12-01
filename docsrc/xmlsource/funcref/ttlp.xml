@@ -47,6 +47,8 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
  64 - Relax TURTLE syntax to include popular violations.
 128 - Try to recover from lexical errors as much as it is possible.
 256 - Allows TriG syntax, thus loading data in more than one graph.
+512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed
+<ulink url="http://sw.deri.org/2008/07/n-quads/">here</ulink>.
 ]]></programlisting>
     </refsect2>
   </refsect1>
@@ -62,8 +64,11 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
   <refsect1 id="examples_ttlp">
     <title>Examples</title>
     <example id="ex_ttlp"><title></title>
-      <para>For loading a file of any greater length, it is most practical to use the file_to_string_output function.</para>
-      <para>It is important the file to be accessible for the Virtuoso server. You need to have set properly the DirsAllowed parameter value in section [Parameters] of the Virtuoso database INI file. For example on Windows it could be: </para>
+      <para>For loading a file of any greater length, it is most practical to use the file_to_string_output
+function.</para>
+      <para>It is important the file to be accessible for the Virtuoso server. You need to have set properly
+the DirsAllowed parameter value in section [Parameters] of the Virtuoso database INI file. For example on
+Windows it could be:</para>
 <screen><![CDATA[
 virtuoso.ini file:
 [Parameters]
@@ -71,10 +76,57 @@ virtuoso.ini file:
 DirsAllowed =  .\tmp
 ...
 ]]></screen>
-      <para>So in the example the file you want to import from, should be in the tmp folder or in its subfolder. Note that this example folder is a subfolder of the Virtuoso Server working directory.</para>
+      <para>So in the example the file you want to import from, should be in the tmp folder or in its
+subfolder. Note that this example folder is a subfolder of the Virtuoso Server working directory.</para>
+<para><emphasis>Sample Example 1</emphasis></para>
 <screen><![CDATA[
 SQL> ttlp (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
 ]]></screen>
+    <para>Forth item in record of NQuad format is optional. If present then it is used as a graph.
+If missed then the default graph is used. The purpose is to make SPARQL dataset serialization possible in
+a "natural" way: the content of default graph is written without any graph name specified whereas the
+content of named graphs is written with fouth field in place. Similarly, TriG uses default graph for
+triples outside graph blocks. In all these cases, base IRI is used to resolve all relative IRIs of
+the document, no matter what is the destination graph. Here is a simple example:</para>
+<para><emphasis>Sample Example 2</emphasis></para>
+    <para>Suppose we have the simple nquad.nq file:</para>
+<programlisting><![CDATA[
+<http://www.w3.org/2002/01/tr-automation/tr.rdf> <http://purl.org/dc/elements/1.1/title> "W3C Standards and Technical Reports" <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/PersonalProfileDocument> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card> <http://creativecommons.org/ns#license> <http://creativecommons.org/licenses/by-nc/3.0/> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card> <http://purl.org/dc/elements/1.1/title> "Tim Berners-Lee's FOAF file" <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card> <http://xmlns.com/foaf/0.1/maker> <http://www.w3.org/People/Berners-Lee/card#i> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card> <http://xmlns.com/foaf/0.1/primaryTopic> <http://www.w3.org/People/Berners-Lee/card#i> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card#cm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card#cm> <http://www.w3.org/2000/01/rdf-schema#seeAlso> <http://www.koalie.net/foaf.rdf> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card#cm> <http://xmlns.com/foaf/0.1/mbox> <mailto:coralie@w3.org> <http://www.w3.org/People/Berners-Lee/card> .
+<http://www.w3.org/People/Berners-Lee/card#cm> <http://xmlns.com/foaf/0.1/name> "Coralie Mercier" <http://www.w3.org/People/Berners-Lee/card> .
+]]></programlisting>
+    <para>Load the file:</para>
+<programlisting><![CDATA[
+SQL>DB.DBA.TTLP (file_to_string_output ('./nquad.nq'), '', 'http://localhost:8890/DAV/test', 512);
+Done. -- 48 msec.
+]]></programlisting>
+    <para>Select all triples from the graph with URI the fourth provenance URI from the NQuad file i.e.: &lt;http://www.w3.org/People/Berners-Lee/card&gt;:</para>
+<programlisting><![CDATA[
+ SQL> sparql select * from <http://www.w3.org/People/Berners-Lee/card> where {?s ?p ?o};
+ s                                               p                                                  o
+ VARCHAR                                         VARCHAR                                            VARCHAR
+ ________________________________________________
+
+ http://www.w3.org/2002/01/tr-automation/tr.rdf  http://purl.org/dc/elements/1.1/title              W3C Standards and Technical Reports
+ http://www.w3.org/People/Berners-Lee/card       http://www.w3.org/1999/02/22-rdf-syntax-ns#type    http://xmlns.com/foaf/0.1/PersonalProfileDocument
+ http://www.w3.org/People/Berners-Lee/card       http://xmlns.com/foaf/0.1/primaryTopic             http://www.w3.org/People/Berners-Lee/card#i
+ http://www.w3.org/People/Berners-Lee/card       http://purl.org/dc/elements/1.1/title              Tim Berners-Lee's FOAF file
+ http://www.w3.org/People/Berners-Lee/card       http://xmlns.com/foaf/0.1/maker                    http://www.w3.org/People/Berners-Lee/card#i
+ http://www.w3.org/People/Berners-Lee/card       http://creativecommons.org/ns#license              http://creativecommons.org/licenses/by-nc/3.0/
+ http://www.w3.org/People/Berners-Lee/card#cm    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    http://xmlns.com/foaf/0.1/Person
+ http://www.w3.org/People/Berners-Lee/card#cm    http://xmlns.com/foaf/0.1/mbox                     mailto:coralie@w3.org
+ http://www.w3.org/People/Berners-Lee/card#cm    http://xmlns.com/foaf/0.1/name                     Coralie Mercier
+ http://www.w3.org/People/Berners-Lee/card#cm    http://www.w3.org/2000/01/rdf-schema#seeAlso       http://www.koalie.net/foaf.rdf
+
+ 10 Rows. -- 7 msec.
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso_ttlp">

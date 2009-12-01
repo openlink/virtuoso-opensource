@@ -749,6 +749,16 @@ TraceOn = soap, errors
         <para>This will enable logging of additional information regarding
         SOAP calls and SQL run-time errors into the virtuoso.log file.</para>
         </example>
+        <example id="ex_threadcleanupinterval"><title>Using the ThreadCleanupInterval and ResourcesCleanupInterval ini file option</title>
+        <programlisting>
+[Parameters]
+....
+ThreadCleanupInterval    = 1
+ResourcesCleanupInterval = 1
+...
+</programlisting>
+        <para>Set both to 1 in order to reduce memory leaking.</para>
+        </example>
 				</formalpara>
 				</listitem>
         <!--

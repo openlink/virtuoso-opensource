@@ -45,10 +45,12 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
   4 - Allows variables, but triples with variables are ignored.
   8 - Allows literal subjects, but triples with them are ignored.
  16 - Allows '/', '#', '%' and '+' in local part of QName ("Qname with path")
- 32 - Allows invalid symbols between '<' and '>', i.e. in relative IRIs.
+ 32 - Allows invalid symbols between '&lt;' and '&gt;', i.e. in relative IRIs.
  64 - Relax TURTLE syntax to include popular violations.
 128 - Try to recover from lexical errors as much as it is possible.
 256 - Allows Trig syntax, thus loading data in more than one graph.
+512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed
+<ulink url="http://sw.deri.org/2008/07/n-quads/">here</ulink>.
 ]]></programlisting>
     </refsect2>
     <refsect2><title>log_mode</title>
@@ -64,7 +66,7 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
   <refsect1 id="examples_ttlp_mt_local_file">
     <title>Examples</title>
     <example id="ex_ttlp_mt_local_file"><title></title>
-<para>Sample Example 1</para>
+<para><emphasis>Sample Example 1</emphasis></para>
 <screen><![CDATA[
 SQL>DB.DBA.TTLP_MT_LOCAL_FILE ('tmp/users.ttl', '', 'http://mytest.com');
 
@@ -92,7 +94,7 @@ http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format           
 10 Rows. -- 30 msec.
 
 ]]></screen>
-<para>Sample Example 2</para>
+<para><emphasis>Sample Example 2</emphasis></para>
 <screen><![CDATA[
 SQL>create procedure SPARQL_DAWG_LOAD_REMOTE_DATFILE (in full_uri varchar, in in_resultset integer := 0)
 {

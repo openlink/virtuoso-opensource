@@ -11,6 +11,15 @@ From version 5.0.7, Virtuoso can be used  as the RDF store/query processor of th
 This chapter discusses Virtuoso's RDF triple storage and query capabilities. 
 This discusses storing RDF data as well as mapping existing relational data into RDF for SPARQL access. Numerous  SPARQL language extensions and standard compliance are covered.
 </para>
+
+<para>In this chapter SPARQL and SPASQL are used as siblings.</para>
+
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtodbcsparql">Virtuoso ODBC RDF extensions for SPASQL</link></listitem>
+    </itemizedlist>
+  </tip>
+
 </abstract>
 
 <sect1 id="rdfdatarepresentation"><title>Data Representation</title>
@@ -35,6 +44,51 @@ IRI_ID's since the SPARQL implementation returns IRI's in their text
 form, not as internal id's. These will however be seen if reading the
 internal tables directly.</para>
 <note><para>Nobody, even DBA, should write directly to internal RDF tables, because some data from that tables are cached in a special way and cache is not automatically updated when content of tables has changed.</para></note>
+<para><emphasis>Example</emphasis></para>
+<para>The following example demonstrates IRI type usage as Virtuoso PL function parameter:</para>
+<programlisting><![CDATA[
+SQL>create procedure vs_property_label (in _uri varchar)
+  {
+    declare res varchar;
+    result_names (res);
+    for (sparql define input:storage "" select distinct ?graph_rvr_fixed where { graph `iri(?:_uri)` { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed}})
+    do {
+      result ("graph_rvr_fixed");
+    }
+  }
+;
+Done. -- 0 msec.
+
+SQL>select vs_property_label('http://www.openlinksw.com/schemas/virtrdf#');
+res
+VARCHAR
+_______________________________________________________________________________
+
+http://demo.openlinksw.com/Northwind
+http://demo.openlinksw.com/tpch
+http://demo.openlinksw.com/tpcd
+http://demo.openlinksw.com/bsbm
+http://demo.openlinksw.com/tutorial/Northwind
+http://demo.openlinksw.com/thalia
+http://demo.openlinksw.com/tutorial_view
+http://demo.openlinksw.com/ecrm
+http://demo.openlinksw.com/sys
+http://demo.openlinksw.com/Doc
+http://demo.openlinksw.com/informix/stores_demo
+http://demo.openlinksw.com/oraclehr
+http://demo.openlinksw.com/db2sample
+http://demo.openlinksw.com/ingrestut
+http://demo.openlinksw.com/sybasepubs2
+http://demo.openlinksw.com/MSPetShop#
+http://demo.openlinksw.com/oracle#
+http://demo.openlinksw.com/progress/isports
+http://demo.openlinksw.com/wpl_v
+http://demo.openlinksw.com/mw_v
+http://demo.openlinksw.com/drupal_v
+0
+
+22 Rows. -- 241 msec.
+]]></programlisting>
 </sect2>
 <sect2 id="rdfboxtype"><title>RDF_BOX Type</title>
 <para>While strings, numbers, dates and XML entities are &quot;native&quot; SQL datatypes,
@@ -144,7 +198,8 @@ comparison with, say, SQL literal constants.</para>
 <para>Due to these considerations, Virtuoso introduces a SQL statement option called QUIETCAST. When given in the OPTION clause of a SELECT, it switches to silent fail mode for automatic type casting.</para>
 <para>The syntax is as follows:</para>
 <programlisting>
-select ... from .... option (QUIETCAST)
+SELECT ...
+FROM .... OPTION (QUIETCAST)
 </programlisting>
 <para>This option is automatically added by the SPARQL to SQL translator. The scope is the enclosing procedure body.</para>
 </sect2>
@@ -415,7 +470,7 @@ default value of the MaxSortedTopRows parameter in the [Parameters] section of t
 file defaults to 10000, so in this example its value will need to have been increased beforehand.
 </para>
 <programlisting><![CDATA[
-select ?name
+SQL>SELECT ?name
 ORDER BY ?name
 OFFSET 9000
 LIMIT 1000
@@ -432,6 +487,7 @@ basically a maximum triples threshold of: [Solution Triples] x [LIMIT].
 Example query:
 </para>
 <programlisting><![CDATA[
+SQL>SPARQL
 prefix dct:<http://purl.org/dc/terms/>
 prefix rdfs:<http://www.w3.org/2000/01/rdf-schema#>
 
@@ -492,7 +548,7 @@ the group pattern where the filter condition is placed.
     </para>
     <para>In order to execute the examples below please run these commands:</para>
 <programlisting><![CDATA[
-sparql clear graph <http://MyTest.com>;
+SQL>SPARQL CLEAR GRAPH <http://MyTest.com>;
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml1', 'p_all1', xtree_doc ('<Hello>world</Hello>'));
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'sxml2', 'p_all2', xtree_doc ('<Hello2>world</Hello2>'));
 DB.DBA.RDF_QUAD_URI_L ('http://MyTest.com', 'nonxml1', 'p_all3', 'Hello world');
@@ -501,10 +557,10 @@ DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://MyTest.com', null, 'My test RDF Data');
 ]]></programlisting>
     <para><emphasis>bif:contains</emphasis></para>
 <programlisting><![CDATA[
-SQL>sparql
-select *
-from <http://MyTest.com>
-where { ?s ?p ?o . ?o bif:contains "world" };
+SQL>SPARQL
+SELECT *
+FROM <http://MyTest.com>
+WHERE { ?s ?p ?o . ?o bif:contains "world" };
 
 s             p         o
 VARCHAR       VARCHAR   VARCHAR
@@ -518,10 +574,10 @@ sxml2         p_all2    <Hello2>world</Hello2>
 ]]></programlisting>
 <para><emphasis>bif:xcontains</emphasis></para>
 <programlisting><![CDATA[
-SQL>sparql
-select *
-from <http://MyTest.com>
-where { ?s ?p ?o . ?o bif:xcontains "//Hello[text-contains (., 'world')]" };
+SQL>SPARQL
+SELECT *
+FROM <http://MyTest.com>
+WHERE { ?s ?p ?o . ?o bif:xcontains "//Hello[text-contains (., 'world')]" };
 s                  p          o
 VARCHAR            VARCHAR    VARCHAR
 _______________________________________________________________________________
@@ -532,10 +588,10 @@ sxml1              p_all      <Hello>world</Hello>
 ]]></programlisting>
 <para><emphasis>bif:xpath_contains</emphasis></para>
 <programlisting><![CDATA[
-SQL>sparql
-select *
-from <http://MyTest.com>
-where { ?s ?p ?o . ?o bif:xpath_contains "//*" };
+SQL>SPARQL
+SELECT *
+FROM <http://MyTest.com>
+WHERE { ?s ?p ?o . ?o bif:xpath_contains "//*" };
 
 s             p         o
 VARCHAR       VARCHAR   VARCHAR
@@ -548,10 +604,10 @@ sxml2         p_all2    <Hello2>world</Hello2>
 ]]></programlisting>
 <para><emphasis>bif:xquery_contains</emphasis></para>
 <programlisting><![CDATA[
-SQL>sparql
-select *
-from <http://MyTest.com>
-where { ?s ?p ?o . ?o bif:xquery_contains "//Hello2 , world" };
+SQL>SPARQL
+SELECT *
+FROM <http://MyTest.com>
+WHERE { ?s ?p ?o . ?o bif:xquery_contains "//Hello2 , world" };
 
 s             p         o
 VARCHAR       VARCHAR   VARCHAR
@@ -666,11 +722,19 @@ lose the database connection trying to fetch a result set row that
 contains a dictionary object. This disconnection does not disrupt the server,
 so the client may readily reconnect to the server, but the disconnected
 transaction will have been rolled back.</para>
+
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="virtodbcsparql">Virtuoso ODBC RDF extensions for SPASQL</link></listitem>
+    </itemizedlist>
+  </tip>
+
 </sect4>
 
 <sect4 id="rdfsupportedmimesofprotocol"><title>Response Format</title>
 <para>All the SPARQL protocol standard MIME types are supported by a SPARQL web service client.
-Moreover, SPARQL web service endpont supports additional MIME types and in some cases additional query types for standard MIME types.</para>
+Moreover, SPARQL web service endpont supports additional MIME types and in some cases additional
+query types for standard MIME types.</para>
 <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
     <title>Supported MIME Types list</title>
     <tgroup align="char" charoff="50" char="." cols="3">
@@ -744,20 +808,77 @@ Moreover, SPARQL web service endpont supports additional MIME types and in some 
 <para>The current implementation does not support returning the results of SELECT as RDF/XML or 'sparql-results-2'.</para>
 <para>If the HTTP header returned by the remote server does not contain a 'Content-Type' line, the client may guess MIME type from the text of the returned body.</para>
 <para>Error messages returned from the service are returned as XML documents, using the MIME type application/xml. The documents consist of a single element containing an error message.</para>
-<para>For 'text/html' MIME type, the result is a HTML document containing query summary and tabular results.
-The format is human-readable but not intended for using by applications because it makes strings undistinguishable from IRIs and loses other details such as exact datatypes of returned values.</para>
-<para>Javascript serialization of results generates an HTML table with the CSS class sparql.
+</sect4>
+<sect4 id="rdfsupportedmimesofprotocoladdselect"><title>Additional Response Formats -- SELECT</title>
+<para>Use the format parameter to select one of the following alternate output formats:</para>
+
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+    <title>Additional Response formats list -- SELECT</title>
+    <tgroup align="char" charoff="50" char="." cols="3">
+    <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Format Value</entry>
+        <entry>Description</entry>
+        <entry>Mimetype</entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry>HTML</entry>
+        <entry>The result is a HTML document containing query summary and tabular results. The format
+is human-readable but not intended for using by applications because it makes strings undistinguishable
+from IRIs and loses other details such as exact datatypes of returned values.</entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>json</entry>
+        <entry>Two separate MIME types exist for JSON: JSON serialization of results is
+'application/sparql-results+json' and confirms to the draft specification "Serializing SPARQL
+Query Results in JSON". JSON serialization of triples is 'application/rdf+json' and interoperable
+with Talis. Sometimes a client needs a JSON but it does not know the type of query it sends to
+Virtuoso web service endpoint. In this case the client can specify either one MIME-type
+'application/json' or both 'application/sparql-results+json' and 'application/rdf+json' in the
+"Accept" header line and Virtuoso will chose the appropriate one automatically. Similar trick
+works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to
+find out the most appropriate return type for the given query.
+        </entry>
+        <entry>application/sparql-results+json</entry>
+      </row>
+      <row>
+        <entry>json</entry>
+        <entry></entry>
+        <entry>application/rdf+json</entry>
+      </row>
+      <row>
+        <entry>js</entry>
+        <entry>Javascript serialization of results generates an HTML table with the CSS class sparql.
 The table contains a column indicating row number and additional columns for each query variable.
 Each query solution contributes one row of the table.
-Unbound variables are indicated with a non-breaking space in the appropriate table cells.</para>
-<para>Two separate MIME types exist for for JSON.
-JSON serialization of results is 'application/sparql-results+json' and conforms to the draft specification "Serializing SPARQL Query Results in JSON".
-JSON serialization of triples is 'application/rdf+json' and interoperable with Talis.
-Sometimes a client needs a JSON but it does not know the type of query it sends to Virtuoso web service endpoint.
-In this case the client can specify either one MIME-type 'application/json' or both
-'application/sparql-results+json' and 'application/rdf+json' in the "Accept" header line and Virtuoso will chose the appropriate one automatically.
-Similar trick works for other sorts of result types: Virtuoso inspects the whole "Accept" header line to find out the most appropriate return type for the given query.
-</para>
+Unbound variables are indicated with a non-breaking space in the appropriate table cells.</entry>
+        <entry>application/javascript</entry>
+      </row>
+      <row>
+        <entry>table</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>XML</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+      <row>
+        <entry>TURTLE</entry>
+        <entry></entry>
+        <entry>text/html</entry>
+      </row>
+    </tbody>
+  </tgroup>
+</table>
+</sect4>
+
+<sect4 id="rdfsupportedmimesofprotocoladdcons"><title>Additional Response Formats -- CONSTRUCT &amp; DESCRIBE</title>
 <para><emphasis>Example output of DESCRIBE in rdf+json serialization format</emphasis></para>
 <orderedlist>
   <listitem>Go to the sparql endpoint at http://host:port/sparql, for ex. at http://dbpedia.org/sparql</listitem>
@@ -827,7 +948,7 @@ CONSTRUCT
 {
  ?s a ?Concept .
 }
-where
+WHERE
 {
  ?s a ?Concept .
 }
@@ -854,10 +975,12 @@ LIMIT 10
 </listitem>
 </orderedlist>
 <para>
-For interoperability with clients that were developed before current versions of SPARQL protocol and format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
-'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for TURTLE output,
-'application/x-rdf+json' and 'application/rdf+json' are for "Serializing SPARQL Query Results in JSON".
-When a client specifies obsolete MIME type but not its standard variant, an obsolete variant is returned for interoperability.
+For interoperability with clients that were developed before current versions of SPARQL protocol and
+format specs are issued, Virtuoso supports some obsolete variants of standard MIME types.
+'text/rdf+n3', 'text/rdf+ttl', 'application/turtle' and 'application/x-turtle' are understood for
+TURTLE output, 'application/x-rdf+json' and 'application/rdf+json' are for "Serializing SPARQL Query
+Results in JSON". When a client specifies obsolete MIME type but not its standard variant, an obsolete
+variant is returned for interoperability.
 </para>
 </sect4>
 <sect4 id="rdfsupportedmimesaddofprotocol"><title>Virtuoso/PL APIs</title>

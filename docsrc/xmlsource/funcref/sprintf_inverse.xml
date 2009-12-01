@@ -64,7 +64,7 @@ returns vector of the pattern values.
   </refsect1>
  <refsect1 id="examples_sprintf_inverse">
    <title>Examples</title>
-    <example id="ex_sprintf_inverse"><title></title>
+    <example id="ex_sprintf_inverse"><title>Example 1</title>
       <screen><![CDATA[
 SQL> select sprintf_inverse ('qwe123asd456zxcABRACADABRA', 'qwe%dasd%dzxc%s', 2);
 callret
@@ -72,6 +72,19 @@ VARCHAR
 _______________________________________________________________________________
 
 vector(123,456,0x00adfae8)
+
+1 Rows. -- 0 msec.
+SQL>
+]]></screen>
+    </example>
+    <example id="ex_sprintf_inverse"><title>Example 2</title>
+      <screen><![CDATA[
+SQL> select sprintf_inverse ('---123', '%-R', 2);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+vector(0x00b070e8)
 
 1 Rows. -- 0 msec.
 SQL>

@@ -72,11 +72,16 @@ Connection options:
   -P password         - Specifies the login password
   -H server_addr      - Specifies the Server address (IP)
   -S server port      - Specifies the TCP port to connect to
-  -E                  - Specifies that encryption will be used
+  -E                  - Specifies that encryption will be used.
+                        If no PK is specified, then anonymous connection is established.
   -C                  - Specifies that password will be sent in cleartext
   -X pkcs12_file      - Specifies that encryption & X509 certificates will
-                        be used
-  -T server_cert      - Specifies that CA certificate file to be used
+                        be used i.e the client PK <pksc12 file>
+  -T server_cert      - Specifies the CA certificate(s) file to be used i.e. the list
+                        of trusted issuers: a PEM (base64) file of all the X509 certificates
+                        of the Certification Authorities (CA) which the client will use for
+                        verifying the server's certificate. This is used on client side to
+                        verify the server certificate.
   -b size             - Specifies the size of the command buffer to be used (in KBytes)
   -K                  - Shuts down the virtuoso on connecting to it
 

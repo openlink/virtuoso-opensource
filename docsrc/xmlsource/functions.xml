@@ -60,6 +60,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="mail">Mail</keyword>
     <keyword id="number">Number</keyword>
 <!--    <keyword id="object">Object</keyword>-->
+    <keyword id="phrz">Phrases</keyword>
     <keyword id="repl">Replication</keyword>
     <keyword id="rmt">Remote SQL Data Source</keyword>
     <keyword id="rdf">RDF data</keyword>
@@ -162,7 +163,16 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;&ttlp_mt_local_file;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
-&rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;
+&rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;&rdfs_rule_set;
+
+&ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;
+
+<!--
+- Uncommented for Virtuoso 6 Release-->
+&iri_split;&xml_get_ns_prefix;&xml_get_ns_uri;
+
+
+
 
 &sparql_eval;&sparql_eval_to_array;&sparql_rexec;&sparql_rexec_to_array;
 &sparql_rexec_with_meta;&rdf_regex;&rdf_langmatches;
