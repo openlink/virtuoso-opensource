@@ -2163,7 +2163,7 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (obj_is_iri)
     {
-      if (!iri_cast_nt_absname (qi, pred, &tii.o.loc, &tii.o.is_bnode))
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.loc, &tii.o.is_bnode))
         goto fail; /* see below */
     }
   else
