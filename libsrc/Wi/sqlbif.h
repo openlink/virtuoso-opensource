@@ -266,5 +266,13 @@ long raw_length (caddr_t arg);
 int bif_is_no_cluster (bif_t bif); /* cannot be execd except where invoked */
 void bif_set_no_cluster (char * n);
 
+typedef struct
+{
+  void * buff;
+  dk_session_t *out;
+} strses_chunked_out_t;
+
+void strses_write_out_gz (dk_session_t *ses, dk_session_t *out, strses_chunked_out_t * outd);
+int gz_stream_free (void *s);
 
 #endif /* _SQLBIF_H */
