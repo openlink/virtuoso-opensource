@@ -72,8 +72,12 @@ create procedure user_iri_by_uname (in uname varchar)
 create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri varchar;
-  for select c.CLUSTERID as _id, CLUSTERNAME, LOCALNAME, TITLETEXT, U_NAME, U_E_MAIL, T_OWNER_ID, T_CREATE_TIME, T_PUBLISHED, RES_CONTENT, RES_MOD_TIME, RES_ID, U_ID, WAI_ID
-    from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE, WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
+  for select c.CLUSTERID as CLUSTERID, CLUSTERNAME, TOPICID, LOCALNAME, TITLETEXT, U_NAME, U_E_MAIL, T_OWNER_ID, T_CREATE_TIME, T_PUBLISHED, RES_CONTENT, RES_MOD_TIME, RES_ID, U_ID, WAI_ID
+        from WV.WIKI.TOPIC t,
+             WV.WIKI.CLUSTERS c,
+             DB.DBA.WA_INSTANCE,
+             WS.WS.SYS_DAV_RES,
+             DB.DBA.SYS_USERS
     where c.CLUSTERID = t.CLUSTERID
       and c.CLUSTERNAME = WAI_NAME
       and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
@@ -81,7 +85,7 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
       and U_ID = T_OWNER_ID
    do
     {
-      iri := wiki_post_iri (CLUSTERNAME, _id, LOCALNAME);
+    iri := wiki_post_iri (CLUSTERNAME, CLUSTERID, LOCALNAME);
       c_iri := wiki_cluster_iri (CLUSTERNAME);
       if (iri is not null)
 	{
@@ -99,10 +103,14 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
 			 RES_CONTENT, null, null,
 			 person_iri (cr_iri)
 			 );
-      for select DT_TAGS from WS.WS.SYS_DAV_TAG where DT_RES_ID = RES_ID and DT_U_ID = http_nobody_uid () do
+      for (select DT_TAGS from WS.WS.SYS_DAV_TAG where DT_RES_ID = RES_ID and DT_U_ID = http_nobody_uid ()) do
 	{
 	  scot_tags_insert (WAI_ID, iri, DT_TAGS);
 	}
+      for (select C_HOME, C_AUTHOR, C_EMAIL, C_TOPIC_ID, C_ID from WV.WIKI.COMMENT where C_TOPIC_ID = TOPICID) do
+      {
+        wiki_sioc_comment_insert (C_TOPIC_ID, C_ID, C_AUTHOR, C_EMAIL);
+      }
         }
     }
   {
@@ -112,7 +120,8 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
     _wid := 0;
     deadl := 3;
     cnt := 0;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001'
+    {
       if (deadl <= 0)
         resignal;
       rollback work;
@@ -139,7 +148,8 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
       iri := sprintf ('http://%s/dataspace/%s/wiki/%s/atom-pub/', get_cname(), U_NAME, WAI_NAME);
       ods_sioc_service (graph_iri, iri, w_iri, null, null, null, iri, 'Atom');
       cnt := cnt + 1;
-      if (mod (cnt, 500) = 0) {
+      if (mod (cnt, 500) = 0)
+      {
         commit work;
         _wid := WAI_ID;
       }
@@ -251,46 +261,40 @@ create procedure wiki_sioc_attachment_delete (inout _topic WV.WIKI.TOPICINFO, in
 create procedure wiki_sioc_post_delete (inout _topic WV.WIKI.TOPICINFO)
 {
   declare graph_iri, iri varchar;
+
   graph_iri := get_graph ();
   iri := wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
   delete_quad_s_or_o (graph_iri, iri, iri);
 }
 ;
 
-create trigger WV_COMMENT_SIOC_D before delete on WV..COMMENT referencing old as O
-{
-  declare iri varchar;
-  declare graph_iri varchar;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  graph_iri := get_graph ();
-  iri := wiki_comment_iri (O.C_TOPIC_ID, O.C_ID);
-  delete_quad_s_or_o (graph_iri, iri, iri);
-}
-;
-
-create trigger WV_COMMENT_SIOC_I after insert on WV..COMMENT referencing new as N
+create procedure wiki_sioc_comment_insert (
+  in topic_id integer,
+  in comment_id integer,
+  in author varchar,
+  in email varchar)
 {
   declare iri, c_iri, cluster_iri varchar;
   declare graph_iri varchar;
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  if (not exists (select top 1 1 from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE
-     where WAI_NAME = c.CLUSTERNAME and c.CLUSTERID = t.CLUSTERID and t.TOPICID = N.C_TOPIC_ID and WAI_IS_PUBLIC = 1))
+  if (not exists (select top 1 1
+                    from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE
+                   where WAI_NAME = c.CLUSTERNAME and c.CLUSTERID = t.CLUSTERID and t.TOPICID = topic_id and WAI_IS_PUBLIC = 1))
    return;
+
   graph_iri := get_graph ();
-  iri := wiki_comment_iri (N.C_TOPIC_ID, N.C_ID);
-  c_iri := wiki_post_iri_2 (N.C_TOPIC_ID);
-  cluster_iri := wiki_cluster_iri ( (select c.CLUSTERNAME from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c where t.CLUSTERID = c.CLUSTERID and t.TOPICID = N.C_TOPIC_ID) );
+  iri := wiki_comment_iri (topic_id, comment_id);
+  c_iri := wiki_post_iri_2 (topic_id);
+  cluster_iri := wiki_cluster_iri ((select c.CLUSTERNAME from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c where t.CLUSTERID = c.CLUSTERID and t.TOPICID = topic_id));
 
   declare user_i varchar;
-  user_i := user_iri_by_uname(N.C_AUTHOR);
-  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = N.C_AUTHOR))
-     foaf_maker (graph_iri, person_iri(user_i), N.C_AUTHOR, N.C_EMAIL);
+  user_i := user_iri_by_uname (author);
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = author))
+    foaf_maker (graph_iri, person_iri(user_i), author, email);
 
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
@@ -299,35 +303,45 @@ create trigger WV_COMMENT_SIOC_I after insert on WV..COMMENT referencing new as 
 }
 ;
 
-create procedure fill_comments ()
+create procedure wiki_sioc_comment_delete (
+  in topic_id integer,
+  in comment_id integer)
 {
-  if ((not isinteger(registry_get ('__wikiv_comments_init')))
-	and (registry_get ('__wikiv_comments_init') = '2'))
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
      return;
-  for select C_HOME, C_AUTHOR, C_EMAIL, C_TOPIC_ID as _TOPIC_ID, C_ID as _ID, c.CLUSTERNAME as _cluster from WV.WIKI.COMMENT, WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE
-     where WAI_NAME = c.CLUSTERNAME and c.CLUSTERID = t.CLUSTERID and t.TOPICID = C_TOPIC_ID and WAI_IS_PUBLIC = 1 do
-  {
-    declare iri, c_iri,cluster_iri varchar;
-    declare graph_iri varchar;
+  };
+  declare graph_iri, iri varchar;
     
     graph_iri := get_graph ();
-    iri := wiki_comment_iri (_TOPIC_ID, _ID);
-    c_iri := wiki_post_iri_2 (_TOPIC_ID);
-    cluster_iri := wiki_cluster_iri (_cluster);
-    delete_quad_s_p_o (graph_iri, cluster_iri, sioc_iri ('container_of'), iri);
-    delete_quad_sp (graph_iri, iri, sioc_iri ('reply_of'));
-    delete_quad_sp (graph_iri, c_iri, sioc_iri ('has_reply'));
+  iri := wiki_comment_iri (topic_id, comment_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+}
+;
 
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('reply_of'), c_iri);
-    DB.DBA.ODS_QUAD_URI (graph_iri, c_iri, sioc..sioc_iri ('has_reply'), iri);
-    DB.DBA.ODS_QUAD_URI (graph_iri, cluster_iri, sioc..sioc_iri ('container_of'), iri);
+create trigger WV_COMMENT_SIOC_D before delete on WV..COMMENT referencing old as O
+{
+  wiki_sioc_comment_delete (O.C_TOPIC_ID, O.C_ID);
+}
+;
   
-    declare user_i varchar;
-    user_i := user_iri_by_uname(C_AUTHOR);
-    if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = C_AUTHOR))
-       foaf_maker (graph_iri, user_i, C_AUTHOR, C_EMAIL);
+create trigger WV_COMMENT_SIOC_I after insert on WV..COMMENT referencing new as N
+{
+  wiki_sioc_comment_insert (N.C_TOPIC_ID, N.C_ID, N.C_AUTHOR, N.C_EMAIL);
+}
+;
 
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('maker'), person_iri(user_i));
+create procedure fill_comments ()
+{
+  if ((not isinteger(registry_get ('__wikiv_comments_init'))) and (registry_get ('__wikiv_comments_init') = '2'))
+    return;
+
+  for select C_HOME, C_AUTHOR, C_EMAIL, C_TOPIC_ID as _TOPIC_ID, C_ID as _ID, c.CLUSTERNAME as _cluster
+        from WV.WIKI.COMMENT, WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE
+       where WAI_NAME = c.CLUSTERNAME and c.CLUSTERID = t.CLUSTERID and t.TOPICID = C_TOPIC_ID and WAI_IS_PUBLIC = 1 do
+    {
+      wiki_sioc_comment_delete (_TOPIC_ID, _ID);
+      wiki_sioc_comment_insert (_TOPIC_ID, _ID, C_AUTHOR, C_EMAIL);
   }
 
   for select TOPICID, U_NAME from WV.WIKI.TOPIC, DB.DBA.SYS_USERS where U_ID = T_OWNER_ID do 
@@ -353,8 +367,7 @@ create procedure fill_comments ()
 
 create procedure attachment_upgrade ()
 {
-  if ((not isinteger(registry_get ('__wikiv_sioc_attachment_init')))
-      and (registry_get ('__wikiv_sioc_attachment_init') = '1'))
+  if ((not isinteger(registry_get ('__wikiv_sioc_attachment_init'))) and (registry_get ('__wikiv_sioc_attachment_init') = '1'))
      return;
   for select TOPICID, RES_COL, LOCALNAME from WV.WIKI.TOPIC, WS.WS.SYS_DAV_RES where RES_ID = RESID do 
     {

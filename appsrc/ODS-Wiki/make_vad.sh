@@ -316,6 +316,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_on.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_on_vsp.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_on_macro.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_on_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/semantics.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/proc_tmp.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);" >> $STICKER
