@@ -798,7 +798,7 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1)
       else
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
-      text_key_cost = dbe_key_unit_cost (text_key->key_text_table->tb_primary_key);
+	text_key_cost = dbe_key_unit_cost (text_key->key_text_table->tb_primary_key);
       if (dfe->_.table.is_unique
 	  || dfe->_.table.ot->ot_table->tb_primary_key != dfe->_.table.key)
 	{

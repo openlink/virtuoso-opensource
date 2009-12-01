@@ -6112,16 +6112,18 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           if (NULL == qm->qmObjectMap)
             {
               tree->_.triple.ft_type = -1;
-              goto ft_is_scrap; /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");*/
+              goto no_extra_ft_tables; /* see below */ /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");*/
             }
           qmft = qm->qmObjectMap->qmvFText;
           if (NULL == qmft)
             {
               tree->_.triple.ft_type = -1;
-              goto ft_is_scrap; /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");*/
+              goto no_extra_ft_tables; /* see below */ /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");*/
             }
+          if (NULL == qmft->qmvftTableName) /* This happens when special predicate uses columns of table(s) that are mapped to the object, like bif:spatial_contains on DB.DBA.RDF_QUAD.O */
+            goto no_extra_ft_tables; /* see below */
           ft_atable->qmvaAlias = qmft->qmvftAlias;
-	  ft_atable->qmvaTableName = qmft->qmvftTableName;
+          ft_atable->qmvaTableName = qmft->qmvftTableName;
           if (NULL != qmft->qmvftAuxTableName)
             {
               qm_atable_t *aux_atable = (qm_atable_t *)t_alloc_box (sizeof (qm_atable_t), DV_ARRAY_OF_POINTER);
@@ -6136,7 +6138,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
             qmft->qmvftConds,
             &ata_aliases, &ata_tables, &queued_row_filters );
         }
-ft_is_scrap: ;
+no_extra_ft_tables: ;
     }
   if (NULL == colcodes)
     { /* This is a special case of quad map with four constants and no one quad map value. */
@@ -6216,7 +6218,7 @@ from_printed:
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
           SPART *ft_pred = NULL, **args, *ft_arg1, *g;
           qm_ftext_t *qmft = qm->qmObjectMap->qmvFText;
-          caddr_t ft_alias = t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
+          caddr_t ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           int ctr, argctr, argcount, contains_in_rdf_quad;
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
@@ -6259,11 +6261,17 @@ from_printed:
             {
               switch ((ptrlong)(args[argctr]))
                 {
-                case OFFBAND_L: ssg_puts (", OFFBAND, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
-                case SCORE_L: ssg_puts (", SCORE, "); ssg_prin_id (ssg, args[argctr+1]->_.var.vname); break;
-                case SCORE_LIMIT_L: ssg_puts (", SCORE_LIMIT, "); ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL); break;
+                case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
+                case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
+                case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
                 default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
                 }
+contains_prin_id:
+              ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
+              continue;
+contains_print_scalar:
+              ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
+              continue;
             }
           ssg_puts (")");
         }
@@ -7162,7 +7170,11 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
     return 0;
   if (DISTINCT_L == subtype)
     return 1;
-  if ((0 != BOX_ELEMENTS_0 (tree->_.req_top.order)) || (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings)))
+  if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+    return 1;
+  if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
+    return 1;
+  if (NULL != tree->_.req_top.having)
     return 1;
   return 0;
 }
@@ -7325,6 +7337,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case CREATE_L:
     case DROP_L:
     case SPARUL_RUN_SUBTYPE:
+    case SPARUL_INSERT_DATA:
+    case SPARUL_DELETE_DATA:
       if ((SPARUL_RUN_SUBTYPE == subtype) && !unbox (spar_compose_report_flag (ssg->ssg_sparp)))
         {
           ssg_puts ("set_row_count (");
@@ -7420,6 +7434,18 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, grouping, needed, NULL_ASNAME);
         }
       END_DO_BOX_FAST;
+      ssg->ssg_indent--;
+    }
+  if (NULL != tree->_.req_top.having)
+    {
+      ssg_newline (0);
+      ssg_puts ("HAVING");
+      ssg->ssg_indent++;
+#if 1
+      ssg_print_filter_expn (ssg, tree->_.req_top.having);
+#else
+      ssg_print_retval_simple_expn (ssg, tree->_.req_top.pattern, tree->_.req_top.having, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+#endif
       ssg->ssg_indent--;
     }
   if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && (NULL == formatter))

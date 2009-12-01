@@ -75,6 +75,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case SPAR_CODEGEN:		return sizeof (sample._.codegen);
     case SPAR_LIST:		return sizeof (sample._.list);
     case SPAR_GRAPH:		return sizeof (sample._.graph);
+    case SPAR_WHERE_MODIFS:	return sizeof (sample._.wm);
     case ORDER_L:		return sizeof (sample._.oby);
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
@@ -1721,8 +1722,149 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
   END_DO_BOX_FAST;
 }
 
-SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART **order, caddr_t limit, caddr_t offset)
+SPART *
+spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
+{
+  if ((NULL != having) && (NULL == groupings))
+    spar_error (sparp, "HAVING clause should be preceeded by a GROUP BY clause");
+  return spartlist (sparp, 7, SPAR_WHERE_MODIFS, pattern, groupings, having, order, limit, offset);
+}
+
+int
+sparp_gp_trav_rename_for_having (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  caddr_t *selid_to_patch_ptr = NULL;
+  switch (curr->type)
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      selid_to_patch_ptr = &(curr->_.var.selid); break;
+    case SPAR_GP:
+      if ((WHERE_L != curr->_.gp.subtype) && (SELECT_L != curr->_.gp.subtype))
+        return SPAR_GPT_NODOWN;
+      selid_to_patch_ptr = &(curr->_.gp.selid); break;
+    case SPAR_TRIPLE:
+      selid_to_patch_ptr = &(curr->_.triple.selid); break;
+    default: return 0;
+    }
+  if (strcmp (selid_to_patch_ptr[0], common_env))
+    return SPAR_GPT_NODOWN;
+  selid_to_patch_ptr[0] = t_box_sprintf (100, "%.90s~wm", selid_to_patch_ptr[0]);
+  return 0;
+}
+
+SPART *
+spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
+  caddr_t retselid, SPART *wm)
+{
+  SPART *pattern = wm->_.wm.where_gp;
+  SPART **groupings = wm->_.wm.groupings;
+  SPART *having = wm->_.wm.having;
+  SPART **order = wm->_.wm.obys;
+  caddr_t limit = wm->_.wm.lim;
+  caddr_t offset = wm->_.wm.ofs;
+#ifndef NDEBUG
+  if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
+    spar_internal_error (sparp, "Ill wm");
+#endif
+#if 0
+  if (NULL != having)
+    {
+      caddr_t old_pattern_selid = pattern->_.gp.selid;
+      int ctr;
+      SPART *sub_top, *sub_wrapper_gp, *new_pattern;
+      sparp_gp_trav (sparp, pattern, old_pattern_selid,
+        sparp_gp_trav_rename_for_having, NULL,
+        sparp_gp_trav_rename_for_having, NULL,
+        sparp_gp_trav_rename_for_having, NULL );
+      DO_BOX_FAST (SPART *, grp, ctr, groupings)
+        {
+          sparp_gp_trav (sparp, grp, old_pattern_selid,
+            sparp_gp_trav_rename_for_having, NULL,
+            sparp_gp_trav_rename_for_having, NULL,
+            sparp_gp_trav_rename_for_having, NULL );
+        }
+      END_DO_BOX_FAST;
+      sub_top = spar_make_top (sparp, subtype, (SPART **)((ptrlong)_STAR),
+        t_box_sprintf (100, "%.90s~wmret", old_pattern_selid),
+        pattern, groupings, (SPART **)t_list (0), t_box_num (SPARP_MAXLIMIT), t_box_num (0) );
+      if (SPAR_REQ_TOP == sub_top->type)
+        sparp_expand_top_retvals (sparp, sub_top, 1 /* safely_copy_all_vars */);
+      sub_top->_.req_top.retvalmode_name = t_box_dv_short_string ("AUTO");
+      sub_wrapper_gp = spartlist (sparp, 10, SPAR_GP, SELECT_L,
+        t_list (0), t_list (0), sub_top, t_box_sprintf (100, "%.90s~wmwrap", old_pattern_selid),
+        NULL, (ptrlong)0, (ptrlong)0, NULL );
+      new_pattern = spartlist (sparp, 10, SPAR_GP, WHERE_L,
+        t_list (1, sub_wrapper_gp), t_list (1, having), NULL, old_pattern_selid,
+        NULL, (ptrlong)0, (ptrlong)0, NULL );
+      pattern = new_pattern;
+      having = NULL;
+    }
+#endif
+  do { /* Special case for selection of all distinct graphs */
+    SPART *grp, *triple, *retvar, *gvar;
+    caddr_t retname, gname;
+    int ctr1, ctr2;
+    if (DISTINCT_L != subtype) break;
+    if (NULL != sparp->sparp_env->spare_named_graphs) break;
+    if (!IS_BOX_POINTER (retvals)) break;
+    if (1 != BOX_ELEMENTS (retvals)) break;
+    if (0 != BOX_ELEMENTS_0 (groupings)) break;
+    if (0 != BOX_ELEMENTS_0 (order)) break;
+    if (0 != BOX_ELEMENTS_0 (pattern->_.gp.filters)) break;
+    if (1 != BOX_ELEMENTS (pattern->_.gp.members)) break;
+    if (0 != BOX_ELEMENTS_0 (pattern->_.gp.options)) break;
+    grp = pattern->_.gp.members[0];
+    if (0 != grp->_.gp.subtype) break;
+    if (0 != BOX_ELEMENTS_0 (grp->_.gp.filters)) break;
+    if (1 != BOX_ELEMENTS (grp->_.gp.members)) break;
+    if (0 != BOX_ELEMENTS_0 (grp->_.gp.options)) break;
+    triple = grp->_.gp.members[0];
+    if (SPAR_TRIPLE != triple->type) break;
+    if (0 != BOX_ELEMENTS_0 (triple->_.triple.options)) break;
+    gvar = triple->_.triple.tr_graph;
+    for (ctr1 = 0; ctr1 < SPART_TRIPLE_FIELDS_COUNT; ctr1++)
+      {
+        SPART *fld = triple->_.triple.tr_fields[ctr1];
+        if (SPAR_VARIABLE != SPART_TYPE (fld)) break;
+        if (SPART_VARNAME_IS_GLOB (fld->_.var.vname)) break;
+        for (ctr2 = 0; ctr2 < ctr1; ctr2++)
+          if (!strcmp (triple->_.triple.tr_fields[ctr2]->_.var.vname, fld->_.var.vname))
+            break;
+        if (ctr2 < ctr1) break;
+      }
+    if (ctr1 < SPART_TRIPLE_FIELDS_COUNT) break;
+    if (SPAR_VARIABLE != SPART_TYPE (triple->_.triple.tr_predicate)) break;
+    if (SPAR_VARIABLE != SPART_TYPE (triple->_.triple.tr_subject)) break;
+    if (SPAR_VARIABLE != SPART_TYPE (triple->_.triple.tr_object)) break;
+    if (SPAR_ALIAS == SPART_TYPE (retvals[0]))
+      {
+        retvar = retvals[0]->_.alias.arg;
+        retname = retvals[0]->_.alias.aname;
+      }
+    else
+      {
+        retvar = retvals[0];
+        retname = retvar->_.var.vname;
+      }
+    if (SPAR_VARIABLE != SPART_TYPE (retvar)) break;
+    gname = gvar->_.var.vname;
+    if (strcmp (gname, retvar->_.var.vname)) break;
+    return spartlist (sparp, 8, SPAR_CODEGEN,
+      t_box_num ((ptrlong)(ssg_select_known_graphs_codegen)),
+      sparp->sparp_env->spare_output_valmode_name,	/* #2 */
+      sparp->sparp_env->spare_output_format_name,	/* #3 */
+      retname,					/* #4 */
+      retselid,					/* #5 */
+      limit,					/* #6 */
+      offset );					/* #7 */
+    } while (0);
+/* The default is, of course, a plain query */
+  return spar_make_top (sparp, subtype, retvals, retselid, pattern, groupings, having, order, limit, offset);
+}
+
+SPART *
+spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
 {
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
@@ -1760,12 +1902,12 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       if (unbox (limit) > hard_lim)
         limit = t_box_num_nonull (hard_lim);
     }
-  return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
+  return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     final_output_format_name,
     t_box_copy (env->spare_storage_name),
     retvals, NULL /* orig_retvals */, NULL /* expanded_orig_retvals */, retselid,
-    sources, pattern, groupings, order,
+    sources, pattern, groupings, having, order,
     limit, offset, env );
 }
 
@@ -1842,7 +1984,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
     spar_selid_pop (sparp), where_gp,
-    (SPART **)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
+    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
   spar_env_pop (sparp);
   t_check_tree (options);
@@ -1923,20 +2065,21 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         uname_virtrdf_ns_uri_isSpecialPredicate );
       if (0 != BOX_ELEMENTS (spec_pred_names))
         {
+          caddr_t pname = spec_pred_names[0];
           if (NULL != options)
             {
               int ctr;
               sparp_validate_options_of_tree (sparp, NULL /*no tree*/, options);
               for (ctr = BOX_ELEMENTS (options) - 2; ctr >= 0; ctr -= 2)
                 {
+                  ptrlong option_id = (ptrlong)(options[ctr]);
                   SPART *option_value = options[ctr+1];
-                  if (SPAR_VARIABLE != SPART_TYPE (option_value))
-                    continue;
-                  option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                  if (SPAR_VARIABLE == SPART_TYPE (option_value))
+                    option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
                 }
             }
           spar_gp_add_filter (sparp,
-            spar_make_funcall (sparp, 0, spec_pred_names[0],
+            spar_make_funcall (sparp, 0, pname,
               (SPART **)t_list_concat ((caddr_t)t_list (2, subject, object), (caddr_t)options) ) );
 	  dk_free_tree (spec_pred_names);
           return;
@@ -2073,8 +2216,13 @@ spar_make_variable (sparp_t *sparp, caddr_t name)
     {
       t_set_push_new_string (&(sparp->sparp_env->spare_global_var_names), name);
     }
-  if (sparp->sparp_in_precode_expn && !is_global)
-    spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list");
+  if (sparp->sparp_in_precode_expn)
+    {
+      if (2 & sparp->sparp_in_precode_expn)
+        spar_error (sparp, "Variable '%.100s' is not allowed in a constant clause", name);
+      else if (!is_global)
+        spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list", name);
+    }
   if (NULL != env->spare_selids)
     selid = env->spare_selids->data;
   else if (is_global) /* say, 'insert in graph ?:someglobalvariable {...} where {...} */
@@ -2531,7 +2679,7 @@ aggr_checked:
 SPART *
 spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART *graph_precode, SPART *aux_op)
 {
-  SPART **fake_sol;
+  SPART *fake_sol;
   SPART *call, *top;
   caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
   spar_selid_push (sparp);
@@ -2551,10 +2699,9 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
       (SPART **)t_list (4, graph_precode, spar_exec_uid_and_gs_cbk (sparp), aux_op, spar_compose_report_flag (sparp)) );
-  top = spar_make_top (sparp, subtype,
+  top = spar_make_top_or_special_case_from_wm (sparp, subtype,
     (SPART **)t_list (1, call),
-    spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
+    spar_selid_pop (sparp), fake_sol );
   return top;
 }
 
@@ -2587,7 +2734,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
 {
   caddr_t saved_format_name = sparp->sparp_env->spare_output_format_name;
   caddr_t saved_valmode_name = sparp->sparp_env->spare_output_valmode_name;
-  SPART **fake_sol;
+  SPART *fake_sol;
   SPART *top;
   SPART **action_sqls;
   caddr_t volatile err = NULL;
@@ -2645,22 +2792,21 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   sparp->sparp_env->spare_output_valmode_name = saved_valmode_name;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
-  top = spar_make_top (sparp, SPARUL_RUN_SUBTYPE,
+  top = spar_make_top_or_special_case_from_wm (sparp, SPARUL_RUN_SUBTYPE,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)),
-    spar_selid_pop (sparp),
-    fake_sol[0], (SPART **)(fake_sol[1]), (SPART **)(fake_sol[2]), (caddr_t)(fake_sol[3]), (caddr_t)(fake_sol[4]) );
+    spar_selid_pop (sparp), fake_sol );
   return top;
 }
 
 
-SPART **
+SPART *
 spar_make_fake_action_solution (sparp_t *sparp)
 {
   SPART * fake_gp;
   spar_gp_init (sparp, WHERE_L);
   fake_gp = spar_gp_finalize (sparp, NULL);
-  return (SPART **)t_list (5,
-    fake_gp, NULL, NULL, t_box_num(1), t_box_num(0));
+  return spartlist (sparp, 7, SPAR_WHERE_MODIFS,
+    fake_gp, NULL, NULL, NULL, t_box_num(1), t_box_num(0) );
 }
 
 id_hashed_key_t

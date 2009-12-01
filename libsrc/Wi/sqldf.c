@@ -3133,9 +3133,11 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 	{ /* single arg col(s) : nothing */
 	  ;
 	}
-      else if (0 == stricmp ((char *) arg, "START_ID") ||
+      else if (
+	  0 == stricmp ((char *) arg, "START_ID") ||
 	  0 == stricmp ((char *) arg, "END_ID") ||
-	  0 == stricmp ((char *) arg, "SCORE_LIMIT"))
+	  0 == stricmp ((char *) arg, "SCORE_LIMIT")
+        )
 	{ /* input parameters : place */
 	  inx ++;
 	  sqlo_place_exp (so, tb_dfe, sqlo_df (so, pred->_.text.args[inx]));

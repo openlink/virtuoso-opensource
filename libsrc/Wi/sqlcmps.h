@@ -233,6 +233,7 @@ typedef struct sql_comp_s
     char		sc_fref_nesting; /* if nested gby/oby, true if colocating the gby */
     char		sc_qf_n_temp_trees; /* how many gb/oby temps in qf.  If many, make shorter batches to save mem */
     rdf_inf_slots_t *	sc_rdf_inf_slots;
+    caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
   } sql_comp_t;
 
 

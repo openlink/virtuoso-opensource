@@ -719,6 +719,12 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_puts ("GROUP BY ");
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.groupings, ' ');
               }
+            if (NULL != tree->_.req_top.having)
+              {
+                ssg_newline (0);
+                ssg_puts ("HAVING ");
+                ssg_sdprint_tree (ssg, tree->_.req_top.having);
+              }
             if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
               {
                 ssg_newline (0);

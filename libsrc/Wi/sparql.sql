@@ -4461,21 +4461,29 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not (isiri_id (i) or (isstring (i) and (1 = __box_flags (i)))))
+              if (isiri_id (i))
+                {
+                  if ((1 = fld_ctr) and is_bnode_iri_id (i))
+                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
+                }
+              else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
+                {
+                  if ((1 = fld_ctr) and (i like 'bnode://%'))
+                    signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
+                  i := iri_to_id (i);
+                }
+              else if (2 > fld_ctr)
                 signal ('RDF01',
-                  sprintf ('Bad variable value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
+                  sprintf ('Bad variable value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
+                    __tag (i), __box_flags (i),
                     __rdf_strsqlval (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and (
-                  (isiri_id (i) and (i >= min_bnode_iri_id ())) or
-                  (isstring (i) and (i like 'bnode://%')) ) )
-                signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := i;
             }
           else if (2 = op)
             {
-	      if (isinteger (blank_ids))
-	        blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
+              if (isinteger (blank_ids))
+                blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
               while (arg >= length (blank_ids))
                 blank_ids := vector_concat (blank_ids, vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'))));
               if (1 = fld_ctr)
@@ -4486,14 +4494,24 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
             {
               if (arg is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not (isiri_id (arg) or (isstring (arg) and (1 = __box_flags (arg)))))
-                signal ('RDF01', sprintf ('Bad const value in CONSTRUCT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                  __rdf_strsqlval (arg),
-                  case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and (
-                  (isiri_id (arg) and (arg >= min_bnode_iri_id ())) or
-                  (isstring (arg) and (arg like 'bnode://%')) ) )
-                signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+
+              if (isiri_id (arg))
+                {
+                  if ((1 = fld_ctr) and is_bnode_iri_id (arg))
+                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+                }
+              else if ((isstring (arg) and (1 = __box_flags (arg))) or (217 = __tag(arg)))
+                {
+                  if ((1 = fld_ctr) and (arg like 'bnode://%'))
+                    signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+                  arg := iri_to_id (arg);
+                }
+              else if (2 > fld_ctr)
+                signal ('RDF01',
+                  sprintf ('Bad const value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
+                    __tag (arg), __box_flags (arg),
+                    __rdf_strsqlval (arg),
+                    case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_CONSTRUCT()');
@@ -10286,6 +10304,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',

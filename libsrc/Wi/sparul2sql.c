@@ -248,7 +248,7 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
 #define CTOR_OPCODE_CONST_OR_EXPN 3
 
 void
-spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve,
+spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funname, sql_comp_t *sc_for_big_ssl_const, SPART *arg0, SPART *arglast, SPART ***retvals, ctor_var_enumerator_t *cve,
   const char *formatter, const char *agg_formatter, const char *agg_mdata, int use_limits )
 {
   int triple_ctr, fld_ctr, var_ctr;
@@ -262,6 +262,74 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
   dk_set_t bnodes_acc = NULL;	/*!< Accumulator of bnodes with distinct names used in triple patterns of constructors */
   int bnode_count = 0;		/*!< Length of bnodes_acc */
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
+  if (NULL != sc_for_big_ssl_const)
+    {
+      dk_set_t list_of_triples = NULL;
+      caddr_t **ssl_consts_ptr = &(sc_for_big_ssl_const->sc_big_ssl_consts);
+      int ssl_count = BOX_ELEMENTS_0 (ssl_consts_ptr[0]);
+      for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
+        {
+          SPART *triple = ctor_gp->_.gp.members[triple_ctr];
+          caddr_t *args = (caddr_t *)list (6,
+            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL );
+          for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+            {
+              SPART *fld = triple->_.triple.tr_fields[fld_ctr];
+              ptrlong fld_type = SPART_TYPE(fld);
+              caddr_t val;
+              switch (fld_type)
+                {
+                case SPAR_BLANK_NODE_LABEL:
+                  if (cve->cve_bnodes_are_prohibited)
+                    spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                  var_ctr = bnode_count;
+                  for (bnode_iter = bnodes_acc; NULL != bnode_iter; bnode_iter = bnode_iter->next)
+                    {
+                      SPART *old_bnode = (SPART *)(bnode_iter->data);
+                      var_ctr--;
+                      if (!strcmp (fld->_.var.vname, old_bnode->_.var.vname))
+                        goto bnode_found_or_added_for_big_ssl; /* see below */
+                    }
+                  t_set_push (&bnodes_acc, fld);
+                  var_ctr = bnode_count++;
+bnode_found_or_added_for_big_ssl:
+                  args [(fld_ctr-1)*2] = (caddr_t)((ptrlong)CTOR_OPCODE_BNODE);
+                  args [(fld_ctr-1)*2 + 1] = box_num (var_ctr);
+                  break;
+                case SPAR_LIT:
+                  if ((NULL != fld->_.lit.datatype) || (NULL != fld->_.lit.language))
+                    val = list (3, box_copy (fld->_.lit.val), box_copy (fld->_.lit.datatype), box_copy (fld->_.lit.language));
+                  else
+                    val = box_copy (fld->_.qname.val);
+                  args[(fld_ctr-1)*2 + 1] = val;
+                  break;
+                case SPAR_QNAME:
+                  val = box_copy (fld->_.qname.val);
+                  args[(fld_ctr-1)*2 + 1] = val;
+                  if (DV_STRING == DV_TYPE_OF (val))
+                    box_flags (val) = BF_IRI;
+                  break;
+                default: spar_internal_error (sparp, "Non-const in big ssl const mode constructor pattern");
+                }
+            }
+          dk_set_push (&list_of_triples, args);
+        }
+      if (NULL == ssl_consts_ptr[0])
+        ssl_consts_ptr[0] = (caddr_t *)list (1, NULL);
+      else
+        {
+          caddr_t *new_consts = (caddr_t *)dk_alloc_box ((ssl_count + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+          memcpy (new_consts, ssl_consts_ptr[0], ssl_count * sizeof (caddr_t));
+          dk_free_box (ssl_consts_ptr[0]);
+          ssl_consts_ptr[0] = new_consts;
+        }
+      ssl_consts_ptr[0][ssl_count] = (caddr_t)list_to_array (list_of_triples);
+      arg1 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list (0));
+      arg3 = spar_make_funcall (sparp, 0, "bif:__ssl_const", (SPART *)t_list (1, t_box_num_nonull (ssl_count)));
+      goto args_ready; /* see below */
+    }
   for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
     {
       SPART *triple = ctor_gp->_.gp.members[triple_ctr];
@@ -291,7 +359,7 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
                   SPART *old_bnode = (SPART *)(bnode_iter->data);
                   var_ctr--;
                   if (!strcmp (fld->_.var.vname, old_bnode->_.var.vname))
-                    goto bnode_found_or_added;
+                    goto bnode_found_or_added; /* see below */
                 }
               t_set_push (&bnodes_acc, fld);
               var_ctr = bnode_count++;
@@ -324,14 +392,16 @@ bnode_found_or_added:
           t_set_push (&var_tvectors, tvector_call);
         }
     }
+  arg1 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (var_tvectors));
+  arg3 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (const_tvectors));
+
+args_ready:
   var_vector_expn = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"),
     (SPART **)t_revlist_to_array (cve->cve_dist_vars_acc) );
   if (cve->cve_limofs_var)
     var_vector_arg = cve->cve_limofs_var;
   else
     var_vector_arg = var_vector_expn;
-  arg1 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (var_tvectors));
-  arg3 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list_to_array (const_tvectors));
   if (NULL != arglast)
     ctor_call = spar_make_funcall (sparp, 1, funname,
       (SPART **)t_list (5, arg0, arg1, var_vector_arg, arg3, arglast) );
@@ -369,7 +439,7 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
   if ((NULL == sparp->sparp_env->spare_storage_name) ||
     ('\0' != sparp->sparp_env->spare_storage_name) )
     use_limits = 1;
-  spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
+  spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata, use_limits );
 
 }
@@ -390,10 +460,14 @@ void
 spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp)
 {
   int need_limofs_trick = CTOR_NEEDS_LIMOFS_TRICK(top);
+  int top_subtype = top->_.req_top.subtype;
+  int top_subtype_is_insert = ((INSERT_L == top_subtype) || (SPARUL_INSERT_DATA == top_subtype));
+  int big_ssl_const_mode = ((SPARUL_INSERT_DATA == top_subtype) || (SPARUL_DELETE_DATA == top_subtype));
   const char *top_fname;
   caddr_t log_mode;
   SPART **rv;
   ctor_var_enumerator_t cve;
+  sql_comp_t *sc_for_big_ssl_const = NULL;
   graph_to_patch = spar_simplify_graph_to_patch (sparp, graph_to_patch);
   memset (&cve, 0, sizeof (ctor_var_enumerator_t));
   log_mode = sparp->sparp_env->spare_sparul_log_mode;
@@ -405,17 +479,33 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_limofs_var = spar_make_variable (sparp, limofs_name);
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
-  spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
+  if (big_ssl_const_mode)
+    {
+      sc_for_big_ssl_const = sparp->sparp_sparqre->sparqre_super_sc;
+      if (NULL == sc_for_big_ssl_const)
+        {
+          big_ssl_const_mode = 0;
+#ifdef NDEBUG
+          spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text");
+#endif
+        }
+      else
+        {
+          while (NULL != sc_for_big_ssl_const->sc_super)
+            sc_for_big_ssl_const->sc_super = sc_for_big_ssl_const->sc_super;
+        }
+    }
+  if ((INSERT_L != top->_.req_top.subtype) && (SPARUL_INSERT_DATA != top->_.req_top.subtype))
+    cve.cve_bnodes_are_prohibited = 1;
+  spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", sc_for_big_ssl_const, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
-  if (INSERT_L != top->_.req_top.subtype)
-    cve.cve_bnodes_are_prohibited = 1;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     {
       top_fname = t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name);
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (11, graph_to_patch,
-          t_box_dv_short_string ((INSERT_L == top->_.req_top.subtype) ? "INSERT" : "DELETE"),
+          t_box_dv_short_string (top_subtype_is_insert ? "INSERT" : "DELETE"),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
           ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
           ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
@@ -426,10 +516,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     }
   else
     {
-      if (INSERT_L == top->_.req_top.subtype)
-        top_fname = "sql:SPARQL_INSERT_DICT_CONTENT";
-      else
-        top_fname = "sql:SPARQL_DELETE_DICT_CONTENT";
+      top_fname = top_subtype_is_insert ? "sql:SPARQL_INSERT_DICT_CONTENT" : "sql:SPARQL_DELETE_DICT_CONTENT";
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (5, graph_to_patch, rv[0],
           spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
@@ -469,11 +556,11 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   cve.cve_bnodes_are_prohibited = 1;
-  spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
+  spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   cve.cve_limofs_var_alias = NULL;
   cve.cve_bnodes_are_prohibited = 0;
-  spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL, NULL,
+  spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &ins, &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
 
@@ -505,7 +592,12 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
     case CTOR_OPCODE_BNODE:
       {
         if (NULL == bnode_emulation)
+#ifdef DEBUG
+          bnode_emulation = box_copy_tree (spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
+            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS ) );
+#else
           bnode_emulation = box_copy_tree (spartlist (sparp, 1, SPAR_BLANK_NODE_LABEL));
+#endif
         return bnode_emulation;
       }
     case CTOR_OPCODE_CONST_OR_EXPN: return oparg;

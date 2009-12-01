@@ -217,6 +217,24 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
   int n_params = act_params ? BOX_ELEMENTS (act_params) : 0;
   caddr_t fun_udt_name = NULL, type_name = BOX_ELEMENTS (tree) > 4 ? tree->_.call.type_name : NULL;
   size_t func_len = ((DV_SYMBOL == DV_TYPE_OF (func)) ? (box_length (func) - 1) : 0);
+/*                     0         1  */
+/*                     012345678901 */
+  if (!stricmp (func, "__ssl_const"))
+    {
+      sql_comp_t * topmost_sc = sc;
+      ptrlong idx = unbox ((ccaddr_t)(tree->_.call.params[0]));
+      caddr_t val;
+      state_slot_t *val_ssl;
+      while (NULL != topmost_sc->sc_super)
+        topmost_sc = topmost_sc->sc_super;
+      if ((idx >= BOX_ELEMENTS_0 (topmost_sc->sc_big_ssl_consts)) || (NULL == ret))
+        sqlc_new_error (sc->sc_cc, "42000", "SQ???", "Internal SQL compiler error: bad usage of __ssl_const()");
+      val = topmost_sc->sc_big_ssl_consts[idx];
+      topmost_sc->sc_big_ssl_consts[idx] = NULL;
+      val_ssl = ssl_new_big_constant (sc->sc_cc, val);
+      cv_artm (code, box_identity, ret, val_ssl, NULL);
+      return;
+    }
   if ((sqlc_trans_funcs (sc, tree, ret)))
     return;
   if ((func_len > 10) && !stricmp (func + (func_len - 10), " (w/cache)") && (n_params > 0))
