@@ -362,7 +362,7 @@ var QueryExec = function(optObj) {
 		var nloc = document.location.toString();
 		var pidx = nloc.indexOf('?');
 		nloc = (pidx ? nloc.substring(0, pidx) : nloc)
-		a.href = nloc + "execute.html?" + request;
+		a.href = nloc + "?" + request;
 		// opts.endpoint + "?" + request;
 		a.target = "_blank";
 
