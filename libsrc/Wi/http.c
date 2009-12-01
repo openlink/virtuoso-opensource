@@ -191,7 +191,6 @@ int ssl_port = 0;
 void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
 #endif
-void strses_write_out_gz (dk_session_t *ses, dk_session_t *out);
 
 #ifdef _IMSG
 int pop3_port = 0;
@@ -1654,6 +1653,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 #ifdef BIF_XML
   caddr_t media_type = NULL, xsl_encoding = NULL;
   wcharset_t * volatile charset = ws->ws_charset;
+  strses_chunked_out_t gzctx;
 
   if (ws->ws_xslt_url)
     {
@@ -1770,6 +1770,8 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	   http_server_id_string,
 	   ws->ws_try_pipeline ? "Keep-Alive" : "close");
 
+  memset (&gzctx, 0, sizeof (strses_chunked_out_t));
+
   CATCH_WRITE_FAIL (ws->ws_session)
     {
       SES_PRINT (ws->ws_session, tmp); /* server signature */
@@ -1859,7 +1861,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    }
 	  else if (cnt_enc == WS_CE_GZIP)
 	    {
-	      strses_write_out_gz (ws->ws_strses, ws->ws_session);
+	      strses_write_out_gz (ws->ws_strses, ws->ws_session, &gzctx);
 	    }
 	  else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))
 	    {
@@ -1870,6 +1872,8 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
     }
   FAILED
     {
+      if (NULL != gzctx.buff)
+	gz_stream_free (gzctx.buff);
       ws_write_failed (ws);
     }
   END_WRITE_FAIL (ws->ws_session);

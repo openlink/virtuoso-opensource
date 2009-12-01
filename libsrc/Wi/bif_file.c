@@ -4365,6 +4365,11 @@ gz_s_free (gz_stream *s)
   return err;
 }
 
+int
+gz_stream_free (void * s)
+{
+  return gz_s_free ((gz_stream *)s);
+}
 
 int
 do_flush_ses (gzFile file, int flush, dk_session_t *ses_out)
@@ -4440,6 +4445,14 @@ gzclose_ses (gzFile file, dk_session_t * ses_out)
   return gz_s_free ((gz_stream *) file);
 }
 
+static void
+gz_write_head (dk_session_t * ses_out)
+{
+  char temp[16];
+  snprintf (temp, sizeof (temp), "a\r\n%c%c%c%c%c%c%c%c%c%c\r\n",
+      0x1f, 0x8b, 0x08, 0, 0, 0, 0, 0, 0, 3);
+  session_buffered_write (ses_out, temp, 15);
+}
 
 static gzFile
 gz_init_ses (dk_session_t * ses_out)
@@ -4448,7 +4461,6 @@ gz_init_ses (dk_session_t * ses_out)
   int level = Z_DEFAULT_COMPRESSION;
   int strategy = Z_DEFAULT_STRATEGY;
   gz_stream *s;
-  char temp[64];
 
   s = (gz_stream *) dk_alloc (sizeof (gz_stream));
 
@@ -4473,10 +4485,6 @@ gz_init_ses (dk_session_t * ses_out)
       return gz_s_free (s), (gzFile) Z_NULL;
     }
   s->stream.avail_out = Z_BUFSIZE;
-
-  snprintf (temp, sizeof (temp), "a\r\n%c%c%c%c%c%c%c%c%c%c\r\n", 0x1f, 0x8b, 0x08, 0, 0, 0,
-      0, 0, 0, 3);
-  session_buffered_write (ses_out, temp, 15);
 
   s->startpos = 10L;
 
@@ -4518,12 +4526,6 @@ gzwrite_ses (gzFile file, dk_session_t * ses_out, const voidp buf,
 }
 
 
-typedef struct strses_chunked_out_s
-{
-  gzFile buff;
-  dk_session_t *out;
-} strses_chunked_out_t;
-
 
 static void
 strses_chunked_out_buf (buffer_elt_t * buf, caddr_t arg)
@@ -4535,18 +4537,15 @@ strses_chunked_out_buf (buffer_elt_t * buf, caddr_t arg)
 
 
 void
-strses_write_out_gz (dk_session_t * ses, dk_session_t * out)
+strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_t * outd)
 {
-  strses_chunked_out_t outd;
-  /*buffer_elt_t *elt = ses->dks_buffer_chain;*/
-
-  outd.buff = gz_init_ses (out);
-  outd.out = out;
-  strses_map (ses, strses_chunked_out_buf, (caddr_t)&outd);
-  strses_file_map (ses, strses_chunked_out_buf, (caddr_t)&outd);
-  gzwrite_ses (outd.buff, outd.out, ses->dks_out_buffer,
-      (unsigned) ses->dks_out_fill);
-  gzclose_ses (outd.buff, outd.out);
+  outd->buff = gz_init_ses (out);
+  outd->out = out;
+  gz_write_head (out);
+  strses_map (ses, strses_chunked_out_buf, (caddr_t)outd);
+  strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
+  gzwrite_ses (outd->buff, outd->out, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
+  gzclose_ses (outd->buff, outd->out);
 }
 
 /*##**********************************************
