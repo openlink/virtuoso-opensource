@@ -269,6 +269,26 @@ var QueryExec = function(optObj) {
 			OAT.Dom.append([self.dom.result,h,ul]);
 		}
 
+		var item = self.cache[self.cacheIndex];
+		var opts = item.opts;
+		var request = item.request;
+
+		var execURIa = OAT.Dom.create ("a");
+		execURIa.innerHTML = "Execute Permalink";
+		var nloca = document.location.toString();
+		var pidxa = nloca.indexOf('?');
+		nloca = (pidxa ? nloca.substring(0, pidxa) : nloca)
+
+		if (nloca.indexOf("execute.html") != -1)
+			execURIa.href = nloca + "?" + request;
+		else
+			execURIa.href = nloca + "execute.html?" + request;
+
+//		opts.endpoint + "?" + request;
+		execURIa.target = "_blank";
+
+		OAT.Dom.append([self.dom.result,execURIa]);
+
 		var root = self.store.data.all[0];
 		var ns_var = "http://www.w3.org/2005/sparql-results#resultVariable";
 		var ns_var2 = "http://www.w3.org/2005/sparql-results#variable";
@@ -358,12 +378,11 @@ var QueryExec = function(optObj) {
 		OAT.Dom.clear(self.dom.query);
 
 		var a = OAT.Dom.create("a");
-		a.innerHTML = "Query URI";
+		a.innerHTML = "Query Permalink";
 		var nloc = document.location.toString();
 		var pidx = nloc.indexOf('?');
 		nloc = (pidx ? nloc.substring(0, pidx) : nloc)
 		a.href = nloc + "?" + request;
-		// opts.endpoint + "?" + request;
 		a.target = "_blank";
 
 		var q = OAT.Dom.create("pre");
