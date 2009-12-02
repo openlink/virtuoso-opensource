@@ -2150,6 +2150,30 @@ create procedure create_table_sql( in tablename varchar, in constr int := 1) ret
 }
 ;
 
+create procedure sql_dump_vdb_tables (in table_list any)
+{
+  declare ses any;
+  declare tmp any;
+  ses := string_output ();
+  http ('-- Data Sources \n', ses); 
+  for select distinct DS_DSN, DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) as pwd
+    from DB.DBA.SYS_DATA_SOURCE join DB.DBA.SYS_REMOTE_TABLE on (DS_DSN = RT_DSN) where RT_NAME in (table_list) do
+      {
+	http (sprintf ('vd_remote_data_source (\'%S\', \'\', \'%S\', \'%S\'); \n', DS_DSN, DS_UID, pwd), ses);
+      }
+  http ('\n\n-- Tables \n', ses); 
+  for select RT_DSN, RT_NAME, RT_REMOTE_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_NAME in (table_list) do
+    {
+      tmp := create_table_sql (RT_NAME);
+      http (tmp, ses); 
+      http ('\n', ses); 
+      http (sprintf ('vd_remote_table (\'%S\', \'%S\', \'%S\'); \n', RT_DSN, RT_NAME, RT_REMOTE_NAME), ses);
+      http (sprintf ('__ddl_changed (\'%S\'); \n\n', RT_NAME), ses);
+    }
+  return ses;
+}
+;
+
 yacutia_exec_no_error('drop view db.dba.sql_statistics')
 ;
 

@@ -324,6 +324,7 @@ conductor/msg_news_server_info.vspx
 conductor/page.xsl
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
+conductor/rdf_console.vspx
 conductor/rdf_filters_pp.vspx
 conductor/rdf_filters.vspx
 conductor/rdf_schemas.vspx
@@ -395,6 +396,7 @@ conductor/vdb_dsn_edit.vspx
 conductor/vdb_dsns.vspx
 conductor/vdb_error_inc.vspx
 conductor/vdb_errs.vspx
+conductor/vdb_export.vspx
 conductor/vdb_linked_obj.vspx
 conductor/vdb_link.vspx
 conductor/vdb_main.vspx

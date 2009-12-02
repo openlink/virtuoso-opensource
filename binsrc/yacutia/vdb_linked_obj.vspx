@@ -358,6 +358,10 @@ else if (tb_cnt and e.ve_button.vc_name like 'refr_btn_')
         commit work;
       }
   }
+else if ((tb_cnt  or v_cnt or p_cnt) and e.ve_button.vc_name like 'res_export_apply_')
+  {
+    self.vc_redirect (sprintf ('vdb_export.vspx?tblist=%U', encode_base64 (serialize (all_tbs))));
+  }
 
 return;
 
@@ -389,6 +393,19 @@ return;
       		      xhtml_alt="Unlink selected"
       		      xhtml_title="Unlink selected"
       		      text="&#160;Unlink selected"
+              >
+                <v:before-render>
+                 if (length (self.linked_objects))
+                   control.vc_enabled := 1;
+                 else
+                   control.vc_enabled := 0;
+                </v:before-render>
+              </v:button>
+              <v:button action="simple" style="image" name="res_export_apply1"
+      		      value="images/icons/script_16.png"
+      		      xhtml_alt="Export selected"
+      		      xhtml_title="Export selected"
+      		      text="&#160;Export selected"
               >
                 <v:before-render>
                  if (length (self.linked_objects))
@@ -554,6 +571,19 @@ if (objects > 0)
 		  control.vc_enabled := 1;
 		else
 		  control.vc_enabled := 0;
+                </v:before-render>
+              </v:button>
+              <v:button action="simple" style="image" name="res_export_apply2"
+      		      value="images/icons/script_16.png"
+      		      xhtml_alt="Export selected"
+      		      xhtml_title="Export selected"
+      		      text="&#160;Export selected"
+              >
+                <v:before-render>
+                 if (length (self.linked_objects))
+                   control.vc_enabled := 1;
+                 else
+                   control.vc_enabled := 0;
                 </v:before-render>
               </v:button>
             </div>
