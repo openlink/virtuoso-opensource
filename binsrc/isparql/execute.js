@@ -279,12 +279,13 @@ var QueryExec = function(optObj) {
 		var pidxa = nloca.indexOf('?');
 		nloca = (pidxa ? nloca.substring(0, pidxa) : nloca)
 
-		if (nloca.indexOf("execute.html") != -1)
+		var xec = nloca.indexOf('execute.html');
+
+		if (xec != -1) 
 			execURIa.href = nloca + "?" + request;
 		else
 			execURIa.href = nloca + "execute.html?" + request;
 
-//		opts.endpoint + "?" + request;
 		execURIa.target = "_blank";
 
 		OAT.Dom.append([self.dom.result,execURIa]);
@@ -381,7 +382,8 @@ var QueryExec = function(optObj) {
 		a.innerHTML = "Query Permalink";
 		var nloc = document.location.toString();
 		var pidx = nloc.indexOf('?');
-		nloc = (pidx ? nloc.substring(0, pidx) : nloc)
+		var xec = nloc.indexOf('execute.html');
+		nloc = (pidx ? nloc.substring(0, xec ? xec : pidx) : nloc);
 		a.href = nloc + "?" + request;
 		a.target = "_blank";
 
