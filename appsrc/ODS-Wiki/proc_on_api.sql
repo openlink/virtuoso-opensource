@@ -93,6 +93,21 @@ create procedure ODS.ODS_API.topicRevisionsPath (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODS.ODS_API.wiki_ods_check_auth (
+  out uname varchar,
+  out inst_id integer,
+  in "cluster" varchar,
+  in mode char := 'owner')
+{
+  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
+  if (isnull (inst_id))
+    signal ('37000', 'The instance is not found');
+  return ods_check_auth2 (uname, inst_id, mode);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."wiki.topic.internal" (
 	in inst_id integer,
 	in name varchar)
@@ -135,13 +150,12 @@ create procedure ODS.ODS_API."wiki.topic.new" (
 	declare uname varchar;
   declare newTopic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   newTopic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (newTopic.ti_id)
-    signal ('22023', 'The topic already exists');
+    signal ('37000', 'The topic already exists');
   connection_set('WikiUser', uname);
   WV.WIKI.UPLOADPAGE (newTopic.ti_col_id, newTopic.ti_local_name || '.txt', content, uname, 0, uname);
 
@@ -165,13 +179,12 @@ create procedure ODS.ODS_API."wiki.topic.get" (
 	declare uname varchar;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'reader'))
 		return ods_auth_failed ();
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
   connection_set('WikiUser', uname);
 
   http_header ('Content-Type: text/plain\r\n');
@@ -199,14 +212,13 @@ create procedure ODS.ODS_API."wiki.topic.versions" (
 	declare versions any;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'reader'))
 		return ods_auth_failed ();
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
   connection_set('WikiUser', uname);
 
   http (sprintf ('<topic name="%s" cluster="%s">', topic.ti_raw_name, topic.ti_default_cluster));
@@ -246,14 +258,13 @@ create procedure ODS.ODS_API."wiki.topic.versions.get" (
 	declare content, contentType any;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'reader'))
 		return ods_auth_failed ();
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
   connection_set('WikiUser', uname);
 
   rc := DB.DBA.DAV_RES_CONTENT (ODS.ODS_API.topicRevisionsPath(topic) || version, content, contentType, uname, upassword);
@@ -286,14 +297,13 @@ create procedure ODS.ODS_API."wiki.topic.versions.diff" (
 	declare content, contentType any;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'reader'))
 		return ods_auth_failed ();
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
   connection_set('WikiUser', uname);
 
   rc := DB.DBA.DAV_RES_CONTENT (ODS.ODS_API.topicRevisionsPath(topic) || version || '.diff', content, contentType, uname, upassword);
@@ -325,8 +335,7 @@ create procedure ODS.ODS_API."wiki.topic.edit" (
 	declare clusterName varchar;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
@@ -356,8 +365,7 @@ create procedure ODS.ODS_API."wiki.topic.delete" (
 	declare rc any;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
@@ -389,8 +397,7 @@ create procedure ODS.ODS_API."wiki.topic.sync" (
 	declare uname, upassword varchar;
   declare topic WV.WIKI.TOPICINFO;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
@@ -425,16 +432,11 @@ create procedure ODS.ODS_API."wiki.upstream.new" (
   declare inst_id integer;
   declare upstreamID, clusterID integer;
 	declare uname varchar;
-	declare clusterName varchar;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, clusterID, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
-  clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
-  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = clusterName);
+  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = "cluster");
   upstreamID := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = clusterID and UP_NAME = name);
   if (upstreamID is not null)
     signal ('22023', 'The upstream already exists');
@@ -463,16 +465,11 @@ create procedure ODS.ODS_API."wiki.upstream.edit" (
   declare inst_id integer;
   declare upstreamID, clusterID integer;
 	declare uname varchar;
-	declare clusterName varchar;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, clusterID, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
-  clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
-  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = clusterName);
+  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = "cluster");
   upstreamID := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = clusterID and UP_NAME = name);
   if (upstreamID is null)
     signal ('22023', 'The upstream does not exist');
@@ -504,13 +501,10 @@ create procedure ODS.ODS_API."wiki.upstream.delete" (
 	declare uname varchar;
 	declare clusterName varchar;
 
-	if (not ods_check_auth (uname, clusterID, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
-  clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
-  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = clusterName);
+  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = "cluster");
   upstreamID := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = clusterID and UP_NAME = name);
   if (upstreamID is null)
     signal ('22023', 'The upstream does not exist');
@@ -537,13 +531,10 @@ create procedure ODS.ODS_API."wiki.upstream.sync" (
 	declare uname varchar;
 	declare clusterName varchar;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, clusterID, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
-  clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
+  clusterID := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME = "cluster");
   upstreamID := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = clusterID and UP_NAME = name);
   if (upstreamID is null)
     signal ('22023', 'The upstream does not exist');
@@ -579,13 +570,12 @@ create procedure ODS.ODS_API."wiki.comment.get" (
 	         join WV.WIKI.TOPIC b on b.TopicId = a.C_TOPIC_ID
 	           join WV.WIKI.CLUSTERS c on c.ClusterId = b.ClusterId
 	 where a.C_ID = comment_id;
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "clusterName" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "clusterName", 'reader'))
 		return ods_auth_failed ();
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, topicName);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
 
 	iri := SIOC..wiki_comment_iri (topic.ti_id, comment_id);
 	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
@@ -620,13 +610,12 @@ create procedure ODS.ODS_API."wiki.comment.new" (
   declare topicObj WV.WIKI.TOPICINFO;
 
 	rc := -1;
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   topicObj := ODS.ODS_API."wiki.topic.internal" (inst_id, topic);
   if (not topicObj.ti_id)
-    signal ('22023', 'The topic does not exists');
+    signal ('37000', 'The topic does not exists');
   connection_set('WikiUser', uname);
 
   insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE, C_HOME)
@@ -664,13 +653,12 @@ create procedure ODS.ODS_API."wiki.comment.delete" (
 	         join WV.WIKI.TOPIC b on b.TopicId = a.C_TOPIC_ID
 	           join WV.WIKI.CLUSTERS c on c.ClusterId = b.ClusterId
 	 where a.C_ID = comment_id;
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "clusterName" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'reader'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "clusterName", 'reader'))
 		return ods_auth_failed ();
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, topicName);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exist');
+    signal ('37000', 'The topic does not exist');
 
 	delete from WV.WIKI.COMMENT where C_ID = comment_id;
 	rc := row_count ();
@@ -698,14 +686,10 @@ create procedure ODS.ODS_API."wiki.options.set" (
 	declare uname varchar;
 	declare clusterName varchar;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
-
   if (name = 'indexPage')
   {
     ODS.ODS_API.validate ('wikiWord', "value");
@@ -802,16 +786,11 @@ create procedure ODS.ODS_API."wiki.options.get" (
 	declare clusterName varchar;
 	declare "value" any;
 
-  inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = "cluster" and WAI_TYPE_NAME = 'oWiki');
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ODS.ODS_API.wiki_ods_check_auth (uname, inst_id, "cluster", 'author'))
 		return ods_auth_failed ();
 
   clusterName := (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oWiki');
-  if (isnull (clusterName))
-    return ods_serialize_sql_error ('37000', 'The instance is not found');
-
   "value" := null;
-
   if (name = 'indexPage')
   {
     "value" := WV.WIKI.CLUSTERPARAM (clusterName, 'index-page', 'WelcomeVisitors');
