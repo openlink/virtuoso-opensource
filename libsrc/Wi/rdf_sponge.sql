@@ -1257,11 +1257,17 @@ create procedure DB.DBA.RDF_FORGET_HTTP_RESPONSE (in graph_iri varchar, in new_o
 }
 ;
 
-create function DB.DBA.RDF_SPONGE_UP_DISABLED (in graph_iri varchar, in options any, in uid integer := -1)
+create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare aq varchar;
   declare dest, local_iri varchar;
 
+  if (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'AsyncQueue') = '0')
+    {
+      return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
+    }
+
+  set_user_id ('dba', 1);
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
@@ -1277,7 +1283,7 @@ create function DB.DBA.RDF_SPONGE_UP_DISABLED (in graph_iri varchar, in options 
 }
 ;
 
-create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in uid integer := -1)
+create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri varchar;
   declare perms integer;
