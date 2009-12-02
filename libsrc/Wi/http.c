@@ -2722,7 +2722,7 @@ ws_url_rewrite (ws_connection_t *ws)
   int rc = LTE_OK, retc = 0;
   local_cursor_t * lc = NULL;
 
-  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule)
+  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule || (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending))
     return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
