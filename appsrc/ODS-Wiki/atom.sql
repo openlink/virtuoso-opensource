@@ -320,7 +320,9 @@ create procedure WV.WIKI.gdata (
       http (         '    </collection>\n', sStream);
       http (         '  </workspace>\n', sStream);
       http (         '</service>', sStream);
-    } else {
+    }
+    else
+    {
       http (         '<?xml version="1.0" encoding="UTF-8" ?>\n', sStream);
       http (         '<atom:feed xmlns:atom="http://www.w3.org/2005/Atom">\n', sStream);
       http (sprintf ('<atom:title>%V</atom:title>\n', _cluster), sStream);
