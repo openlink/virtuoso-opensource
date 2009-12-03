@@ -354,6 +354,16 @@ create procedure rdfdesc_http_print_l (in prop_iri any, inout odd_position int, 
 }
 ;
 
+create procedure rdfdesc_is_external (in url varchar, in prop varchar)
+{
+  if (prop = __id2in (rdf_sas_iri ()))
+    return 1;
+  if (prop = 'http://www.w3.org/2000/01/rdf-schema#seeAlso' and url not like 'http://%/about/id/%')
+    return 1; 
+  return 0;
+}
+;
+
 create procedure rdfdesc_http_print_r (in _object any, in prop any, in label any, in rel int := 1, inout acc any)
 {
    declare lang, rdfs_type, rdfa, prop_l, prop_n  any;
@@ -425,7 +435,7 @@ again:
 	 {
 	   usual_iri:
 	 http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
-	   if (prop = __id2in (rdf_sas_iri ()))
+	   if (rdfdesc_is_external (_url, prop))
 	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/html.png" title="Open Actual (X)HTML page" border="0"/></a>', _url));
 	 }
 
