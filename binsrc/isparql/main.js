@@ -774,6 +774,9 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	if (o.sponge) {
 	    self.setGetOpt (self,o.sponge);
 	}
+	if (o.endpoint) {
+	    self.setEndpoint(self, o.endpoint);
+	}
 	// retrieve state from persistent session storage if available
 	self.loadSes();
     }
@@ -1276,7 +1279,7 @@ iSPARQL.Common = {
 		    iSPARQL.defaults.tab = tabInx;
 		qp = true;
 	    }
-
+	if (p['endpoint']) { iSPARQL.defaults.endpoint = p['endpoint']; qp = true;}
 	if (qp) iSPARQL.defaults.qp_override = qp;
 	if (p['__DEBUG']) iSPARQL.Preferences.debug = true;
 	if (p['maxrows']) iSPARQL.defaults.maxrows = parseInt(p['maxrows']);
@@ -1307,7 +1310,7 @@ iSPARQL.Common = {
 	iSPARQL.Common.setDefaultGraph (iSPARQL.dataObj.graph);
 
 	iSPARQL.mdOpts       = new iSPARQL.MetaDataOpts ();
-	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ({sponge:iSPARQL.defaults.sponge});
+	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts (iSPARQL.defaults);
 	iSPARQL.serverConn   = new iSPARQL.ServerConnection (iSPARQL.endpointOpts.endpointPath,
 							     iSPARQL.defaults.auth);
     },
@@ -1539,7 +1542,7 @@ iSPARQL.Common = {
 	qbe.loadFromString(iSPARQL.defaults.query);
     },
     initQE: function() {
-	iSPARQL.Common.statMsg ('Initializing Query Execution faciltity&#8230;');
+	iSPARQL.Common.statMsg ('Initializing Query Execution facility&#8230;');
 	var execCB = function(req) {
 	    /* FIXME: nicely call redraw here */
 	    tab.go(2); /* go to results after query execution */
