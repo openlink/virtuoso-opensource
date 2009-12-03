@@ -933,7 +933,7 @@ ins_is_bad: ;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_MODIFY_CTOR",
     (SPART **)t_list (6,
       spar_make_funcall (sparp, 0,
-        ((NULL == sparp->sparp_gs_app_callback) ? "bif:__rgs_assert" :  "bif:__rgs_assert_cbk"),
+        ((NULL == sparp->sparp_gs_app_callback) ? "SPECIAL::bif:__rgs_assert" :  "SPECIAL::bif:__rgs_assert_cbk"),
         (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
           t_box_dv_short_string ("SPARUL MODIFY") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",

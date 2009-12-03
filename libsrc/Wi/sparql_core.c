@@ -2698,7 +2698,7 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
           spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
-      (SPART **)t_list (4, graph_precode, spar_exec_uid_and_gs_cbk (sparp), aux_op, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (5, graph_precode, aux_op, spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
   top = spar_make_top_or_special_case_from_wm (sparp, subtype,
     (SPART **)t_list (1, call),
     spar_selid_pop (sparp), fake_sol );
