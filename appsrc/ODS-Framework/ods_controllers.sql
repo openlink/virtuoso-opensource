@@ -67,7 +67,19 @@ create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 ;
 
 --! Performs HTTP, OAuth, session based authentication in same order
-create procedure ods_check_auth (out uname varchar, in inst_id integer := null, in mode char := 'owner')
+create procedure ods_check_auth (
+  out uname varchar,
+  in inst_id integer := null,
+  in mode char := 'owner')
+{
+  return ods_check_auth2 (uname, inst_id, mode);
+}
+;
+
+create procedure ods_check_auth2 (
+  out uname varchar,
+  inout inst_id integer := null,
+  in mode char := 'owner')
 {
   declare rc, authType integer;
   declare params, lines any;
@@ -80,7 +92,9 @@ create procedure ods_check_auth (out uname varchar, in inst_id integer := null, 
 
   -- check authentication
   if (OAUTH..check_authentication_safe (params, lines, uname, inst_id))
+    {
     rc := 1;
+    }
   else if (http_request_header (lines, 'Authentication', null, null) is not null) -- not supported
     {
       ;
@@ -103,16 +117,22 @@ create procedure ods_check_auth (out uname varchar, in inst_id integer := null, 
   -- check ACL
   if (inst_id > 0 and rc > 0)
     {
-      declare member_type int;
+      declare member_type integer;
       if (mode = 'owner')
+      {
 	member_type := 1;
+	    }
       else
        {
 	      member_type := (select WMT_ID from DB.DBA.WA_MEMBER_TYPE, DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WMT_NAME = mode and WMT_APP = WAI_TYPE_NAME);
        }
-      if ((authType = 0) or (uname not in ('dba', 'dav')))
-        if (not exists (select 1 from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAI_ID = inst_id and WAM_INST = WAI_NAME and WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE <= member_type))
+      if (
+          ((authType = 0) or (uname not in ('dba', 'dav'))) and
+          (not exists (select 1 from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAI_ID = inst_id and WAM_INST = WAI_NAME and WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE <= member_type))
+         )
+      {
 	rc := 0;
+    }
     }
   else if (inst_id = -1 and rc > 0)
   {
@@ -2818,20 +2838,25 @@ create procedure OAUTH..check_authentication_safe (
   in inparams any := null,
   in lines any := null,
   out uname varchar,
-  in inst_id int := null)
+  inout inst_id int := null)
 {
   if (inparams is null)
     inparams := http_param ();
   if (lines is null)
     lines := http_request_header ();
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     return 0;
   };
-  return check_authentication (inparams, lines, uname, inst_id);
+  return OAUTH..check_authentication (inparams, lines, uname, inst_id);
 }
 ;
 
-create procedure OAUTH..check_authentication (in inparams any, in lines any, out uname varchar, in inst_id int := null)
+create procedure OAUTH..check_authentication (
+  in inparams any,
+  in lines any,
+  out uname varchar,
+  inout inst_id int := null)
 {
   declare oauth_consumer_key varchar;
   declare oauth_token varchar;
@@ -2877,11 +2902,13 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
   oauth_version := get_keyword ('oauth_version', params, '1.0');
   oauth_client_ip := get_keyword ('oauth_client_ip', params, http_client_ip ());
 
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     signal ('22023', 'Can''t verify request, missing oauth_consumer_key or oauth_token');
   };
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     resignal;
   };
   select a_secret, a_id, U_NAME, a_name
@@ -2895,7 +2922,8 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
   if ((inst_id is not null) and (inst_id <> -1) and not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = app_name and WAI_ID = inst_id))
     signal ('42000', 'OAuth Verification Failed');
 
-  declare exit handler for not found {
+  declare exit handler for not found
+  {
     signal ('42000', 'OAuth Verification Failed');
   };
 
@@ -2909,6 +2937,10 @@ create procedure OAUTH..check_authentication (in inparams any, in lines any, out
   if (not OAUTH..check_signature (oauth_signature_method, oauth_signature, meth, url, params, lines, app_sec, req_sec))
   {
     signal ('42000', 'OAuth Verification Failed: Bad Signature');
+  }
+  if (isnull (inst_id))
+  {
+    inst_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = app_name);
   }
   return 1;
 }

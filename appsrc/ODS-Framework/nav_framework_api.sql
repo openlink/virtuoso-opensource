@@ -369,8 +369,8 @@ _output:
 
 grant execute on sessionValidate to GDATA_ODS;
 
-create procedure 
-usersGetInfo (in sid varchar := '',
+create procedure usersGetInfo (
+  in sid varchar := '',
 	      in realm varchar  := 'wa', 
 	      in usersStr varchar, 
 	      in fieldsStr varchar) __SOAP_HTTP 'text/xml'
@@ -523,7 +523,9 @@ usersGetInfo (in sid varchar := '',
 
 grant execute on usersGetInfo to GDATA_ODS;
 
-create procedure installedPackages (in sid varchar:='',in realm varchar :='wa') __SOAP_HTTP 'text/xml'
+create procedure installedPackages (
+  in sid varchar := '',
+  in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -802,13 +804,11 @@ create procedure createApplication (
   declare errCode integer;
   declare errMsg varchar;
   declare resXml any;
+  declare _uname varchar;
 
   resXml  := string_output ();
   errCode := 0;
   errMsg  := '';
-
-  declare _uname varchar;
-
   if (isSessionValid (sid, 'wa', _uname))
   {
         declare watype_name,wainstance_name,full_user_name varchar;
@@ -844,7 +844,7 @@ create procedure createApplication (
     }
 	  else
     {
-		wainstance_name := full_user_name || '\'s ' || application;
+		  wainstance_name := full_user_name || '''s ' || application;
 		}
 
         declare create_res any;
@@ -877,7 +877,63 @@ _exit:;
   return '';
 }
 ;
+
 grant execute on createApplication to GDATA_ODS;
+
+create procedure checkApplication (
+  in sid varchar := '',
+  in realm varchar := 'wa',
+  in application varchar) __SOAP_HTTP 'text/xml'
+{
+  declare _uname varchar;
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  if (isSessionValid (sid, 'wa', _uname))
+  {
+    declare watype_name, wainstance_name varchar;
+    declare application_url varchar;
+    declare watypes_arr any;
+
+    watypes_arr := constructTypePackageArr ('wa_types');
+    watype_name := get_keyword (application, watypes_arr, application);
+    if (watype_name <> 'Discussion')
+    {
+	  wainstance_name := (select TOP 1 c.WAI_NAME
+                          from DB.DBA.SYS_USERS a,
+                               DB.DBA.WA_MEMBER b,
+                               DB.DBA.WA_INSTANCE c
+                         where a.U_ID = username2id (_uname)
+                           and b.WAM_USER = a.U_ID
+                           and b.WAM_MEMBER_TYPE = 1
+                           and b.WAM_INST = c.WAI_NAME
+                           and c.WAI_TYPE_NAME = watype_name);
+ 	  if (isnull (wainstance_name))
+	    return createApplication (sid, realm, application);
+    application_url := (select WAM_HOME_PAGE from DB.DBA.WA_MEMBER where WAM_INST = wainstance_name);
+	  }
+	  else
+	  {
+	    wainstance_name := application;
+      application_url := '/nntpf/nntpf_main.vspx';
+	  }
+    http ('<application>', resXml);
+    http ('<type>' || application || '</type>', resXml);
+    http ('<name>' || wainstance_name || '</name>', resXml);
+    http ('<url>' || application_url || '</url>',resXml);
+    http ('</application>', resXml);
+  }
+  httpResXml (resXml, 'createApplication');
+  return '';
+}
+;
+
+grant execute on checkApplication to GDATA_ODS;
 
 create procedure invitationsGet (in sid varchar:='',in realm varchar :='wa', in extraFields varchar :='') __SOAP_HTTP 'text/xml'
 {
@@ -1027,8 +1083,7 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
              userId:=cast(userId as integer);
 
          _sneid := (select sne_id from DB.DBA.sn_person where sne_org_id=userId);
-      }
-      else
+      } else
          _sneid := _sneid_logged_user;
 
       if(_sneid is null)
@@ -1075,20 +1130,11 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
                 http(userinfo_xml(metas,rset,l),resXml);
                 if(position(conn_inv[i],invited)>0)
                    http('<invited>1</invited>',resXml);
-
                 http('</user>',resXml);
               }
-            }else
-           {
-               ;
---               dbg_obj_print(state, msg);
-
            }
-
-
           }
       }
---  }else return '';
 _err:
 
   if(errCode<>0)
@@ -1117,7 +1163,8 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
   declare logged_user_name varchar;
   if(isSessionValid(sid,'wa',logged_user_name))
   {
-      declare exit handler for sqlstate '*' {dbg_obj_print (__SQL_STATE, ' ', __SQL_MESSAGE);
+    declare exit handler for sqlstate '*' {
+      dbg_obj_print (__SQL_STATE, ' ', __SQL_MESSAGE);
                                              errCode := 10;
                                              errMsg  := 'Can not execute query.';
                                              goto _err;
@@ -1165,14 +1212,6 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
 
         url := DB.DBA.WA_LINK(1, '/ods/index.html#invitations');
         url := '<a href="'||url||'" target="_blank">'||url||'</a>';
---        msg := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...') from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/wa/tmpl/SN_INV_TEMPLATE');
---
---	      msg := replace (msg, '%user%', DB.DBA.WA_USER_FULLNAME(logged_user_name));
---		    msg := replace (msg, '%app%', banner);
---		    msg := replace (msg, '%url%', url);
---		    msg := replace (msg, '%invitation%', '');
---		    msg := replace (msg, '\n\n', '<br>');
-
         msg :='I have sent you an invitation. To join my network please visit : '||url;
 
         insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
@@ -1182,66 +1221,40 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
 	         update DB.DBA.sn_invitation set sni_status=0 where sni_from = _sneid_user and sni_to = connection_email;
 	      else
 	         insert soft DB.DBA.sn_invitation (sni_from, sni_to, sni_status) values (_sneid_user, connection_email, 0);
-
-       }else if(action=2
-                and
-                (not exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1))
-               )
+       }
+       else if (action=2 and (not exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1)))
        {
-
         insert into DB.DBA.sn_related (snr_from,snr_to,snr_serial,snr_source,snr_confirmed) values (_sneid_user,_sneid_connection,0,1,1);
-
         delete from DB.DBA.sn_invitation where sni_from = _sneid_connection and sni_to = logged_user_email;
-
-
         msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has accepted your invitation.';
-
         insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
             values (username2id(logged_user_name),connectionId,now(),msg,0,0);
-
-
-       }else if(action=3
-                and
-                exists(select 1 from DB.DBA.sn_invitation where sni_from = _sneid_connection and sni_to = logged_user_email)
-               )
+       }
+       else if (action=3 and exists(select 1 from DB.DBA.sn_invitation where sni_from = _sneid_connection and sni_to = logged_user_email))
        {
 			        update DB.DBA.sn_invitation set sni_status = -1 where sni_from = _sneid_connection and sni_to = logged_user_email;
-
               msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has rejected your invitation.';
-
               insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
                   values (username2id(logged_user_name),connectionId,now(),msg,0,0);
-
-       }else if(action=0
-                and
-                exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1)
-               )
+       }
+       else if (action=0 and exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user)) and snr_source=1))
        {
-
         delete from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1;
         delete from DB.DBA.sn_invitation where sni_from=_sneid_user and sni_to=connection_email;
-
         msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has disconnected you from his network.';
-
         insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
                values (username2id(logged_user_name),connectionId,now(),msg,0,0);
-
-       }else if(action=4
-                and
-                exists(select 1 from DB.DBA.sn_invitation where sni_from=_sneid_user and sni_to=connection_email)
-               )
+       }
+       else if (action=4 and exists(select 1 from DB.DBA.sn_invitation where sni_from=_sneid_user and sni_to=connection_email))
        {
         delete from DB.DBA.sn_invitation where sni_from=_sneid_user and sni_to=connection_email;
-
-
         msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has withdrawn his invitation.';
-
         insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
                values (username2id(logged_user_name),connectionId,now(),msg,0,0);
-
        }
       }
-  }else return '';
+  } else
+    return '';
 
 _err:
   if(errCode<>0)
@@ -1255,10 +1268,12 @@ _err:
 grant execute on connectionSet to GDATA_ODS;
 
 
-create procedure connectionsSearch (in sid varchar:='',in realm varchar :='wa',
-                                    in connectionId integer, in action integer) __SOAP_HTTP 'text/xml'
+create procedure connectionsSearch (
+  in sid varchar:='',
+  in realm varchar :='wa',
+  in connectionId integer,
+  in action integer) __SOAP_HTTP 'text/xml'
 {
-
   declare errCode integer;
   declare errMsg varchar;
   declare resXml any;
@@ -1305,13 +1320,10 @@ create procedure userCommunities (in sid varchar:='',in realm varchar :='wa') __
           http('<name>'||WAM_INST||'</name>',resXml);
           http('<url>'||WAM_HOME_PAGE||'</url>',resXml);
           http('</community>',resXml);
-
         }
-  }else
-  {
+  } else {
         for(select WAM_INST,WAM_HOME_PAGE from DB.DBA.WA_MEMBER where WAM_APP_TYPE='Community' and WAM_IS_PUBLIC=1) do
         {
-
           http('<community>',resXml);
           http('<name>'||WAM_INST||'</name>',resXml);
           http('<url>'||WAM_HOME_PAGE||'</url>',resXml);
@@ -1393,8 +1405,9 @@ create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa
 ;
 grant execute on userDiscussionGroups to GDATA_ODS;
 
-create procedure 
-feedStatus (in sid varchar:='',in realm varchar :='wa') __SOAP_HTTP 'text/xml'
+create procedure feedStatus (
+  in sid varchar:='',
+  in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1413,20 +1426,22 @@ feedStatus (in sid varchar:='',in realm varchar :='wa') __SOAP_HTTP 'text/xml'
     {
        http(sprintf('<activity id="%d" status="%d" />',WAU_A_ID,WAU_STATUS),resXml);
     }
-  }else return '';
-
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'feedStatus');
   else
      httpResXml(resXml,'feedStatus');
-
+  }
   return '';
 }
 ;
 
 grant execute on feedStatus to GDATA_ODS;
 
-create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in feedId integer, in feedStatus integer) __SOAP_HTTP 'text/xml'
+create procedure feedStatusSet (
+  in sid varchar:='',
+  in realm varchar :='wa',
+  in feedId integer,
+  in feedStatus integer) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1445,13 +1460,12 @@ create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in f
         update DB.DBA.WA_ACTIVITIES_USERSET set WAU_STATUS=feedStatus where WAU_U_ID=logged_user_id and WAU_A_ID=feedId;
     else
         insert into DB.DBA.WA_ACTIVITIES_USERSET(WAU_U_ID,WAU_A_ID,WAU_STATUS) values(logged_user_id,feedId,feedStatus);
-  }else return '';
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'feedStatusSet');
   else
      httpResXml(resXml,'feedStatusSet');
-
+  }
   return '';
 }
 ;
@@ -1471,10 +1485,9 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
   declare _uname varchar;
   if(isSessionValid(sid,'wa',_uname))
   {
-
         declare logged_user_id integer;
-        logged_user_id:=username2id(_uname);
 
+    logged_user_id:=username2id(_uname);
         if(msgType=0)
         {
             declare new_messages integer;
@@ -1486,8 +1499,8 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
             http('<new_message_count>',resXml);
             http(sprintf('%d',new_messages),resXml);
             http('</new_message_count>',resXml);
-
-        }else
+    }
+    else
         {
           declare qry,state, msg, maxrows, metas, rset any;
 
@@ -1507,7 +1520,8 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
                                    WM_RECIPIENT_MSGSTATUS>-1
                              order by WM_TS desc',logged_user_id);
 
-          }else if(msgType=3)
+      }
+      else if (msgType=3)
           {
          	 qry := sprintf('select top 100 WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
                               from DB.DBA.WA_MESSAGES
@@ -1515,7 +1529,8 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
                                    and
                                    WM_SENDER_MSGSTATUS>-1
                              order by WM_TS desc',logged_user_id);
-          }else
+      }
+      else
           {
          	 qry := sprintf('select top 100 WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
                               from DB.DBA.WA_MESSAGES
@@ -1524,18 +1539,13 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
                                    (WM_RECIPIENT_UID=%d and WM_RECIPIENT_MSGSTATUS>-1)
                              order by WM_TS desc',logged_user_id,logged_user_id);
           }
-
---          dbg_obj_print(qry);
           exec (qry, state, msg, vector(), maxrows, metas, rset);
---          dbg_obj_print(state,' ',msg);
-
           if (state = '00000' and length(rset)>0)
           {
             declare i integer;
 
             for(i:=0;i<length(rset);i:=i+1)
             {
---              dbg_obj_print(rset[i]);
               http('<message>',resXml);
               http(sprintf('<sender id="%d">%s</sender>',rset[i][1], DB.DBA.WA_USER_FULLNAME(rset[i][1])),resXml);
               http(sprintf('<recipient id="%d">%s</recipient>',rset[i][2],DB.DBA.WA_USER_FULLNAME(rset[i][2])),resXml);
@@ -1546,8 +1556,8 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
             }
           }
         }
-  }else return '';
-
+  } else
+    return '';
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'userMessages');
@@ -1630,13 +1640,14 @@ create procedure userMessageStatusSet (in sid varchar,in realm varchar :='wa',in
      if(sender_id=logged_user_id)
      {
         update DB.DBA.WA_MESSAGES set WM_SENDER_MSGSTATUS=-1 where WM_ID=msgId;
-     }else if (recipient_id=logged_user_id)
+    }
+    else if (recipient_id=logged_user_id)
      {
         update DB.DBA.WA_MESSAGES set WM_RECIPIENT_MSGSTATUS=-1 where WM_ID=msgId;
      }
      http(sprintf('<message status_updated="1">%d</message>',msgId),resXml);
-
-  }else return '';
+  } else
+    return '';
 
 _err:
   if(errCode<>0)
@@ -1790,9 +1801,11 @@ _err:
 grant execute on serverSettings to GDATA_ODS;
 
 
-create procedure search (in sid varchar:='',in realm varchar :='wa', in searchParams varchar := '') __SOAP_HTTP 'text/xml'
+create procedure search (
+  in sid varchar:='',
+  in realm varchar :='wa',
+  in searchParams varchar := '') __SOAP_HTTP 'text/xml'
 {
-
   declare errCode integer;
   declare errMsg varchar;
   declare resXml any;
@@ -1812,7 +1825,7 @@ create procedure search (in sid varchar:='',in realm varchar :='wa', in searchPa
   }else
   {
     logged_user_id:=http_nobody_uid();
-  };
+  }
 
   declare on_people,on_apps,on_blogs,on_dav,on_news,on_wikis,on_omail,on_bookmark,on_polls,on_addressbook,on_calendar,on_nntp,sort_by_score,max_rows,s_tag_is_qry,on_all integer;
   declare d_before,d_after,query,sort_order varchar;
@@ -1911,18 +1924,10 @@ create procedure search (in sid varchar:='',in realm varchar :='wa', in searchPa
         http('</search_result>',resXml);
 
       }
-    }else
-    {
-        ;
---        dbg_obj_print(sql_state, sql_msg);
-
     }
     set_qualifier ('ODS');
-
-
   }
 
--- dbg_obj_print(query);
 _err:
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'search');
@@ -1934,9 +1939,8 @@ _err:
 ;
 grant execute on search to GDATA_ODS;
 
-
-create procedure 
-searchContacts (in sid varchar := '',
+create procedure searchContacts (
+  in sid varchar := '',
                 in realm varchar :='wa', 
                 in searchParams varchar := '') __SOAP_HTTP 'text/xml'
 {
@@ -1965,7 +1969,7 @@ searchContacts (in sid varchar := '',
   else
   {
       _uid := http_nobody_uid ();
-  };
+    }
 
   declare instance_name,query varchar;
   declare keywords,tags,first_name,last_name nvarchar;
@@ -2161,7 +2165,10 @@ create procedure genErrXml(in errCode integer,in errMsg varchar, in request_meth
 }
 ;
 
-create procedure isSessionValid(in sid varchar,in realm varchar :='wa',inout user_name varchar)
+create procedure isSessionValid (
+  in sid varchar,
+  in realm varchar :='wa',
+  inout user_name varchar)
 {
    set isolation = 'committed';
 
@@ -2193,29 +2200,12 @@ nf:
 }
 ;
 
-create procedure constructTypePackageArr(in firstcol_type varchar :='package')
+create procedure constructTypePackageArr(
+  in firstcol_type varchar :='package')
 {
-    declare packages_arr, wa_types_arr any;
-
-    -- WA_TYPE /PACKAGE NAME
-    packages_arr:=vector('AddressBook', 'AddressBook',
-                         'Bookmark'   , 'Bookmarks',
-                         'Calendar'   , 'Calendar',
-                         'Community'  , 'Community', --Community -- will not show in left app navigation
-                         'Discussion' , 'Discussion',
-                         'Polls'      , 'Polls',
-                         'WEBLOG2'    , 'Weblog',
-                         'eNews2'     , 'Feed Manager',
-                         'oDrive'     , 'Briefcase',
-                         'oGallery'   , 'Gallery',
-                         'oMail'      , 'Mail',
-                         'oWiki'      , 'Wiki',
-                         'IM'         , 'Instant Messenger',
-                         'eCRM'       , 'eCRM'
-                         );
-
     -- PACKAGE NAME / WA_TYPE
-    wa_types_arr:=vector('AddressBook'      , 'AddressBook',
+  if (firstcol_type='wa_types')
+    return vector('AddressBook'      , 'AddressBook',
                          'Bookmarks'        , 'Bookmark'   ,
                          'Calendar'         , 'Calendar'   ,
                          'Community'        , 'Community'  ,
@@ -2231,10 +2221,22 @@ create procedure constructTypePackageArr(in firstcol_type varchar :='package')
                          'eCRM'             , 'eCRM'
                          );
 
-  if(firstcol_type='wa_types')
-     return wa_types_arr;
-
-  return packages_arr;
+  -- WA_TYPE / PACKAGE NAME
+  return vector('AddressBook', 'AddressBook',
+                'Bookmark'   , 'Bookmarks',
+                'Calendar'   , 'Calendar',
+                'Community'  , 'Community', --Community -- will not show in left app navigation
+                'Discussion' , 'Discussion',
+                'Polls'      , 'Polls',
+                'WEBLOG2'    , 'Weblog',
+                'eNews2'     , 'Feed Manager',
+                'oDrive'     , 'Briefcase',
+                'oGallery'   , 'Gallery',
+                'oMail'      , 'Mail',
+                'oWiki'      , 'Wiki',
+                'IM'         , 'Instant Messenger',
+                'eCRM'       , 'eCRM'
+                );
 }
 ;
 
@@ -2274,9 +2276,9 @@ create procedure constructUsersIdStr(in usersname_str varchar)
 
 
 
-create procedure _hex_sha1_digest(in str varchar)
+create procedure _hex_sha1_digest(
+  in str varchar)
 {
-
     declare res_str varchar;
     declare i integer;
     res_str:='';
@@ -2335,9 +2337,9 @@ create procedure invitations_get(in userName varchar)
   {
     for select top 20 sne_org_id 
           from DB.DBA.sn_invitation, DB.DBA.sn_person 
-          where sni_from = sne_id and 
-	        sni_to = sne_mail and 
-                sni_status = 0
+         where sni_from = sne_id
+           and sni_to = sne_mail
+           and sni_status = 0
     do
     {
        res:=vector_concat(res,vector(sne_org_id));
@@ -2467,9 +2469,9 @@ create procedure visibility_posinarr(in dbfield_name varchar)
 }
 ;
 
-create procedure constructFieldsNameStr(in fieldsname_str varchar)
+create procedure constructFieldsNameStr (
+  in fieldsname_str varchar)
 {
-
   declare correctfields_name_str varchar;
   correctfields_name_str := 'userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests,dataspace,foaf_ds,sioc_ds';
 
@@ -2599,12 +2601,13 @@ create procedure USER_FOAF_DS (inout _u_name varchar, in _is_org integer)
 }
 ;
 
-create procedure constructSearchQuery (in searchType varchar,
+create procedure constructSearchQuery (
+  in searchType varchar,
                                        in loggedUserId integer)
 {
-
   declare _max_rows integer;
   _max_rows:=100;
+
   declare qry varchar;
   qry:='';
 
