@@ -4582,7 +4582,8 @@ gz_init_ses (dk_session_t * ses_out)
   s->stream.next_out = s->outbuf = (Byte *) dk_alloc (Z_BUFSIZE);
   if (err != Z_OK || s->outbuf == Z_NULL)
     {
-      return gz_s_free (s), (gzFile) Z_NULL;
+      gz_s_free (s);
+      return (gzFile) Z_NULL;
     }
   s->stream.avail_out = Z_BUFSIZE;
 
@@ -4646,6 +4647,7 @@ strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_
   strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   gzwrite_ses (outd->buff, outd->out, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
   gzclose_ses (outd->buff, outd->out);
+  outd->buff = NULL;
 }
 
 /*##**********************************************
