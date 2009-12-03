@@ -280,11 +280,12 @@ var QueryExec = function(optObj) {
 		nloca = (pidxa ? nloca.substring(0, pidxa) : nloca)
 
 		var xec = nloca.indexOf('execute.html');
+	        var xparm = "?" + request + "&endpoint="  + opts.endpoint;
 
 		if (xec != -1) 
-			execURIa.href = nloca + "?" + request;
+ 		    execURIa.href = nloca + xparm;
 		else
-			execURIa.href = nloca + "execute.html?" + request;
+		    execURIa.href = nloca + "execute.html" + xparm;
 
 		execURIa.target = "_blank";
 
@@ -383,8 +384,9 @@ var QueryExec = function(optObj) {
 		var nloc = document.location.toString();
 		var pidx = nloc.indexOf('?');
 		var xec = nloc.indexOf('execute.html');
+	        var xparm = "?" + request + "&endpoint=" + opts.endpoint;
 		nloc = (pidx ? nloc.substring(0, xec ? xec : pidx) : nloc);
-		a.href = nloc + "?" + request;
+	        a.href = nloc + xparm;
 		a.target = "_blank";
 
 		var q = OAT.Dom.create("pre");
