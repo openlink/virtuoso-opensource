@@ -322,6 +322,7 @@ DB.DBA.EXEC_STMT(
 	MC_OPTIONS any,
 	MC_DESC long varchar,
 	MC_ENABLED int not null default 1,
+	MC_API_TYPE integer default 0,
 	primary key (MC_HOOK)
 )
 alter index RDF_META_CARTRIDGES on DB.DBA.RDF_META_CARTRIDGES partition cluster replicated', 0)
