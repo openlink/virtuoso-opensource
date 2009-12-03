@@ -5506,6 +5506,9 @@ bif_encode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
     len--;
 
+  if ((len * 2 + 1) > MAX_BOX_LENGTH)
+    sqlr_new_error ("22023", "HT081", "The input string is too large");
+
   dest = dk_alloc_box(len * 2 + 1, DV_SHORT_STRING);
   len = encode_base64 ((char *)src, (char *)dest, len);
   *(dest+len) = 0;
