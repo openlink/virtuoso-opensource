@@ -844,10 +844,10 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    a.push(['define get:soft',[(val)? '"'+val+'"' : val]]);
 	else {
 	    a.push(['define get:soft',[false]]);
-	    //	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other
+/*	    //	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other
 	    //	    a.push(['define input:grab-depth',[false]]); Sponger options if sponger is set to be off.
 	    //	    a.push(['define input:grab-all',[false]]);
-	    //	    a.push(['define input:grab-seealso',[false]]);
+	    //	    a.push(['define input:grab-seealso',[false]]); */
 	}
 
 	self.setPragmas(a);
@@ -958,7 +958,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
 
     this._init(optsObj);
 
-} // EndpointOpts
+}; // EndpointOpts
 
 iSPARQL.MetaDataOptsUI = function (optsObj, toggler, indicator, container) {
     var self = this;
@@ -1073,7 +1073,8 @@ iSPARQL.MetaDataOpts = function () {
 
     this._init();
 
-} // MetaDataOpts
+};
+// MetaDataOpts
 
 iSPARQL.AuthUI = function (connection) {
     var self = this;
@@ -1229,7 +1230,7 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 
     this._init();
 
-} // ServerConnection
+}; // ServerConnection
 
 //
 // Some common functions - options/variables are kept as direct children of global iSPARQL and iSPARQL.dataObj
@@ -1303,6 +1304,10 @@ iSPARQL.Common = {
     initData:function () {
 	iSPARQL.Common.statMsg ("Initializing data structures and objects&#8230;");
 
+	// For browsers which don't have HTML 5.0 persistent storage
+
+	if (typeof sessionStorage == 'undefined') window.sessionStorage = {};
+
 	// Set program defaults
 
 	iSPARQL.Common.reset();
@@ -1310,7 +1315,8 @@ iSPARQL.Common = {
 	iSPARQL.Common.setDefaultGraph (iSPARQL.dataObj.graph);
 
 	iSPARQL.mdOpts       = new iSPARQL.MetaDataOpts ();
-	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts (iSPARQL.defaults);
+	iSPARQL.endpointOpts = new iSPARQL.EndpointOpts ({sponge:iSPARQL.defaults.sponge,
+							  endpoint:iSPARQL.defaults.endpoint});
 	iSPARQL.serverConn   = new iSPARQL.ServerConnection (iSPARQL.endpointOpts.endpointPath,
 							     iSPARQL.defaults.auth);
     },

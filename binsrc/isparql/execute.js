@@ -221,6 +221,13 @@ var QueryExec = function(optObj) {
 				arr.push("named-graph-uri="+encodeURIComponent(opts.namedGraphs[i]));
 			}
 		}
+
+	if (opts.endpoint.match(/^http/i)) {
+	    var req = "url=" + encodeURIComponent(opts.endpoint + "?" + arr.join ("&"));
+	    opts.endpoint = "/proxy";
+	    return req;
+	}
+
 		return arr.join("&");
 	}
 
@@ -579,10 +586,6 @@ var QueryExec = function(optObj) {
 		}
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
-
-		if (opts.endpoint.match(/^http/i)) {
-			opts.endpoint = "/proxy?url="+encodeURIComponent(opts.endpoint);
-		}
 
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
