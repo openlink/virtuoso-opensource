@@ -1161,6 +1161,7 @@ end_loop:;
 	  {
 	    if (lower (head[i]) not like 'host:%' and
 	      	lower (head[i]) not like 'keep-alive:%' and
+	      	lower (head[i]) not like 'content-length:%' and
 	      	lower (head[i]) not like 'connection:%')
 	      req_hdr := req_hdr || head[i];
 	  }
