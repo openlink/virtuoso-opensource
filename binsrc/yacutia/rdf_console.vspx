@@ -119,7 +119,16 @@
 		  <col/>
 	      </colgroup>
 	      <tr class="listing_header_row">
-		  <th colspan="2">Session</th>
+		  <th colspan="2">
+	      <v:button name="refresh1" style="image" action="simple"
+		value="images/icons/ref_16.png"
+		xhtml_alt="Refresh page"
+		xhtml_title="Refresh page"
+		url="--http_path () || '?view=' || self.ses">
+	    </v:button>
+	    &#160;
+		      Session
+		  </th>
 		  <th>Seq</th>
 		  <th>Cartridge</th>
 		  <th>Action</th>
@@ -133,9 +142,9 @@
 				  <v:url name="ur1"
 				      value='--concat (&apos;<img src="images/icons/view_16.png" hspace="3" border="0"/>&apos;, mses)'
 				      format="%s"
-				      url="--sprintf ('rdf_console.vspx?view=%U', mses)"
-				      xhtml_title="Edit"
-				      xhtml_alt="Edit"
+				      url="--sprintf ('rdf_console.vspx?view=%U', case when mses = self.ses then '' else mses end)"
+				      xhtml_title="Expand"
+				      xhtml_alt="Expand"
 				      render-only="1"
 				      />
 			      </td>
