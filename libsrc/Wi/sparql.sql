@@ -4518,7 +4518,7 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1,
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
   if (return_iris)
-  result_names (GRAPH_IRI);
+    result_names (GRAPH_IRI);
   else
     result_names (GRAPH_IID);
   specials := dict_new (50);
@@ -4546,7 +4546,7 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1,
 next_fetch_cr:
   fetch cr into cur_iri_id;
   if (return_iris)
-  result (id_to_iri (cur_iri_id));
+    result (id_to_iri (cur_iri_id));
   else
     result (cur_iri_id);
   lim := lim - 1;
@@ -4563,7 +4563,7 @@ done_all:
   len := length (specials);
   for (ctr := 0; ctr < len; ctr := ctr + 1)
     if (return_iris)
-    result (id_to_iri (specials[ctr]));
+      result (id_to_iri (specials[ctr]));
     else
       result (specials[ctr]);
 }
@@ -4664,8 +4664,8 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
             }
           else if (2 = op)
             {
-	      if (isinteger (blank_ids))
-	        blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
+              if (isinteger (blank_ids))
+                blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
               while (arg >= length (blank_ids))
                 blank_ids := vector_concat (blank_ids, vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'))));
               if (1 = fld_ctr)
@@ -4692,8 +4692,8 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                 signal ('RDF01',
                   sprintf ('Bad const value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
                     __tag (arg), __box_flags (arg),
-                  __rdf_strsqlval (arg),
-                  case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
+                    __rdf_strsqlval (arg),
+                    case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_CONSTRUCT()');
@@ -5607,7 +5607,7 @@ describe_physical_subjects:
                     {
                       if (position ("g2", sorted_good_graphs) and dict_get (subj_dict, "st2") is null)
                         dict_put (next_iter_subjs, st2, 1);
-                    }                    
+                    }
                 }
             }
         }
@@ -5638,7 +5638,7 @@ describe_physical_subjects:
                     __rgs_ack_cbk ("g2", uid, 1) and
                     (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
                     dict_put (next_iter_subjs, st2, 1);
-                }                    
+                }
             }
         }
     }
@@ -5738,7 +5738,7 @@ next_iteration:
                     {
                       if (position ("g2", sorted_good_graphs) and dict_get (subj_dict, "st2") is null)
                         dict_put (next_iter_subjs, st2, 1);
-                    }                    
+                    }
                 }
             }
         }
@@ -5769,7 +5769,7 @@ next_iteration:
                     __rgs_ack_cbk ("g2", uid, 1) and
                     (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
                     dict_put (next_iter_subjs, st2, 1);
-                }                    
+                }
             }
         }
     }
@@ -6829,10 +6829,10 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
               objislit := items[pos][3];
               if (objislit)
                 {
-              sparql define input:storage ""
-              insert into graph ?:graphiri_id {
-                `iri(?:subj)` `iri (bif:sprintf ("%s%d", str (rdf:_), 1 + ?:pos))` ?:obj };
-            }
+                  sparql define input:storage ""
+                  insert into graph ?:graphiri_id {
+                    `iri(?:subj)` `iri (bif:sprintf ("%s%d", str (rdf:_), 1 + ?:pos))` ?:obj };
+                }
               else
                 {
                   sparql define input:storage ""
