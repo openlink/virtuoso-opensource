@@ -674,9 +674,16 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  declare lang, dt varchar;
 	  declare is_xml_lit int;
 	  declare sql_val any;
-	  if (__tag (_val) in (185, 230)) -- string output or an XML entity
+	  if (__tag (_val) = 185) -- string output
 	    {
               http (sprintf ('\n   <binding name="%s"><literal>', _name), ses);
+	      http_value (_val, 0, ses);
+              http ('</literal></binding>', ses);
+              goto end_of_binding;
+	    }
+	  if (__tag (_val) = 230) -- XML entity
+	    {
+              http (sprintf ('\n   <binding name="%s"><literal datatype="http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral">', _name), ses);
 	      http_value (_val, 0, ses);
               http ('</literal></binding>', ses);
               goto end_of_binding;
@@ -811,7 +818,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
 	    }
 	  if (val_tag = 230) -- XML entity
 	    {
-              http ('rdf:parseType="Literal">', ses);
+              http (' rdf:parseType="Literal">', ses);
 	      http_value (_val, 0, ses);
               http ('</res:value></res:binding>', ses);
               goto end_of_binding;

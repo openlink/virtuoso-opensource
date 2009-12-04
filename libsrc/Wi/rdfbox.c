@@ -1836,6 +1836,29 @@ http_ttl_or_nt_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *
 }
 
 static void
+http_json_write_xe (dk_session_t *ses, query_instance_t *qi, xml_entity_t *xe)
+{
+  dk_session_t *tmp_ses = strses_allocate();
+  caddr_t tmp_utf8_box;
+  client_connection_t *cli = qi->qi_client;
+  wcharset_t *saved_charset = cli->cli_charset;
+  cli->cli_charset = CHARSET_UTF8;
+  xe->_->xe_serialize (xe, tmp_ses);
+  cli->cli_charset = saved_charset;
+  if (!STRSES_CAN_BE_STRING (tmp_ses))
+    {
+      strses_free (tmp_ses);
+      sqlr_new_error ("22023", "HT057", "The serialization of XML literal as JSON is longer than 10Mb, this is not supported");
+    }
+  tmp_utf8_box = strses_string (tmp_ses);
+  strses_free (tmp_ses);
+  session_buffered_write_char ('"', ses);
+  dks_esc_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+  dk_free_box (tmp_utf8_box);
+  session_buffered_write_char ('"', ses);
+}
+
+static void
 http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ptr)
 {
   caddr_t obj_box_value;
@@ -2311,6 +2334,12 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       session_buffered_write_char ('\"', ses);
       break;
+    case DV_XML_ENTITY:
+      {
+        http_json_write_xe (ses, qi, (xml_entity_t *)(obj_box_value));
+        type_uri = uname_rdf_ns_uri_XMLLiteral;
+        break;
+      }
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
