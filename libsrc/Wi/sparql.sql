@@ -250,7 +250,11 @@ create function DB.DBA.XML_SET_NS_DECL (in prefix varchar, in url varchar, in pe
   res := __xml_set_ns_decl (prefix, url, persist);
   if (bit_and (res, 2))
     {
-      insert soft DB.DBA.SYS_XML_PERSISTENT_NS_DECL (NS_PREFIX, NS_URL) values (prefix, url);
+      declare exit handler for sqlstate '*' { __xml_remove_ns_by_prefix (prefix, persist); resignal; };
+      if (exists (select 1 from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = prefix and NS_URL = url))
+	return;
+      delete from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = prefix;
+      insert into DB.DBA.SYS_XML_PERSISTENT_NS_DECL (NS_PREFIX, NS_URL) values (prefix, url);
       commit work;
     }
   return res;
@@ -264,6 +268,8 @@ create procedure DB.DBA.XML_REMOVE_NS_BY_PREFIX (in prefix varchar, in persist i
   __xml_remove_ns_by_prefix (prefix, persist);
   if (bit_and (persist, 2))
     {
+      whenever sqlstate '*' goto again;
+again:
       delete from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX=prefix;
       commit work;
     }
@@ -277,6 +283,8 @@ create procedure DB.DBA.XML_CLEAR_ALL_NS_DECLS (in persist integer := 1)
   __xml_clear_all_ns_decls (persist);
   if (bit_and (persist, 2))
     {
+      whenever sqlstate '*' goto again;
+again:
       delete from DB.DBA.SYS_XML_PERSISTENT_NS_DECL;
       commit work;
     }
@@ -4436,7 +4444,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
         {
           if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
             {
-              DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+              DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
               if (compose_report)
                 return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
               else
@@ -4452,7 +4460,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
     }
   if (silent)
     {
-      DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+      DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
       commit work;
       if (compose_report)
@@ -4464,7 +4472,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
-  DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+  DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   commit work;
   if (compose_report)
