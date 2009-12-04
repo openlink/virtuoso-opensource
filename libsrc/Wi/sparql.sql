@@ -4303,7 +4303,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid 
         {
           if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
             {
-              DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+              DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
               log_enable (old_log_enable, 1);
               if (compose_report)
                 return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
@@ -4320,7 +4320,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid 
     }
   if (silent)
     {
-      DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+      DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
       /*091202 commit work; */
       log_enable (old_log_enable, 1);
@@ -4333,7 +4333,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid 
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
-  DB.DBA.SPARUL_CLEAR (graph_iri, uid);
+  DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
   log_enable (old_log_enable, 1);
   /*091202 commit work; */
