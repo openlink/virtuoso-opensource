@@ -1477,7 +1477,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_SESSION (
   http ('</http:Connection>\n', ses);
 
   http ('<http:'|| meth ||'Request rdf:ID="req0">\n', ses);
-  http (sprintf ('     <http:requestURI rdf:resource="%V"/>\n', new_origin_uri), ses);
+  http (sprintf ('     <http:requestURI rdf:resource="%V"/>\n', DB.DBA.RM_SPONGE_DOC_IRI (new_origin_uri)), ses);
   http ('  <http:abs_path>'|| url ||'</http:abs_path>\n', ses);
   http ('  <http:version>'|| proto_ver ||'</http:version>\n', ses);
   http ('  <http:header rdf:parseType="Collection">\n', ses);
