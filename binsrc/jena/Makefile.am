@@ -21,7 +21,7 @@
 
 
 if WITH_JDK3
-TARGETS		= virt_jena.jar
+TARGETS		= lib virt_jena.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -O -g:none
 
@@ -59,6 +59,7 @@ install-data-local:
 
 lib:
 	@test -d lib || touch virt_jena.jar
+	-mkdir lib
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
 virt_jena.jar: $(JENA_SRC)
