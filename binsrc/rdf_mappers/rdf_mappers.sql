@@ -678,7 +678,7 @@ create procedure DB.DBA.RM_UMBEL_GET (in strg varchar)
     		       body=>sprintf ('text=%U', strg),
     	               http_headers=>'Accept: text/xml',
 		       proxy=>connection_get ('sparql-get:proxy'),
-		       timeout=>30);
+		       timeout=>10);
   xt := xtree_doc (cont);
   return xt;
 }
