@@ -27,16 +27,14 @@
   <v:after-data-bind>
     <![CDATA[
       declare page_name varchar;
+      declare params any;
+      declare vh, lh, hf, ods_path any;
 
       set_qualifier ('DB');
+      params := self.vc_page.vc_event.ve_params;
       page_name := CAL.WA.page_name ();
       if (page_name = 'error.vspx')
         return;
-
-      if (CAL.WA.check_grants2 (self.access_role, page_name))
-        return;
-
-      declare vh, lh, hf, ods_path any;
 
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');
@@ -48,6 +46,13 @@
       } else {
         ods_path := DB.DBA.WA_LINK (1, '/ods/');
       }
+      if ((page_name = 'home.vspx') and (get_keyword('URL', params, '') <> ''))
+      {
+        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, concat(HTTP_REQUESTED_URL(), '?URI=', get_keyword('URL', params, ''))));
+        return;
+      }
+      if (CAL.WA.check_grants2 (self.access_role, page_name))
+        return;
       if (self.access_role = 'expire')
       {
         http_request_status ('HTTP/1.1 302 Found');
