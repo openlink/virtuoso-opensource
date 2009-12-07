@@ -890,31 +890,6 @@ internal_sql_connect (
     }
 
 
-#ifdef INPROCESS_CLIENT
-  if (inprocess_client)
-    {
-      void *client = get_inprocess_client ();
-
-      if (client == NULL)
-	{
-	  set_error (&con->con_error, "08001", "CL092", "In-process connect failed.");
-
-	  return SQL_ERROR;
-	}
-
-      con->con_inprocess_client = client;
-
-      ses = PrpcInprocessConnect (addr);
-      if (ses == NULL)
-	{
-	  set_error (&con->con_error, "08001", "CL093", "In-process connect failed.");
-	  return SQL_ERROR;
-	}
-    }
-  else
-#endif
-    ses = PrpcConnect1 (addr, SESCLASS_TCPIP, con->con_encrypt, szPasswd, con->con_ca_list);
-
   if (!DKSESSTAT_ISSET (ses, SST_OK))
     {
       PrpcDisconnect (ses);
