@@ -293,10 +293,15 @@ public class VirtuosoXAResource implements XAResource
             throw new XAException(XAException.XAER_INVAL);
 
         XATransaction ctx = manager.getTransaction(xid);
+        int status = ctx.getStatus();
+        if (status == XATransaction.COMMITTED || status == XATransaction.ROLLEDBACK)
+            throw new XAException(XAException.XAER_RMFAIL);
+
         //if (!onePhase && ctx.getStatus() == XAContext.STARTED) {
         //    throw new XAException();
         //}
         transact(ctx, SQL_XA_COMMIT);
+        ctx.setStatus(XATransaction.COMMITTED);
     }
 
 
@@ -313,7 +318,12 @@ public class VirtuosoXAResource implements XAResource
             throw new XAException(XAException.XAER_INVAL);
 
         XATransaction ctx = manager.getTransaction(xid);
+        int status = ctx.getStatus();
+        if (status == XATransaction.COMMITTED || status == XATransaction.ROLLEDBACK)
+            throw new XAException(XAException.XAER_RMFAIL);
+
         transact(ctx, SQL_XA_ROLLBACK);
+        ctx.setStatus(XATransaction.ROLLEDBACK);
     }
 
 
@@ -367,6 +377,7 @@ public class VirtuosoXAResource implements XAResource
        }
         if (xid == null)
             throw new XAException(XAException.XAER_INVAL);
+        manager.removeTransaction(xid);
     }
 
 
