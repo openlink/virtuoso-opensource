@@ -798,7 +798,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
 	    }
 	  if (val_tag = 230) -- XML entity
 	    {
-              http ('rdf:parseType="Literal">', ses);
+              http (' rdf:parseType="Literal">', ses);
 	      http_value (_val, 0, ses);
               http ('</res:value></res:binding>', ses);
               goto end_of_binding;
