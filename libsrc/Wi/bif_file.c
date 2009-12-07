@@ -4494,12 +4494,12 @@ gz_init_ses (dk_session_t * ses_out)
 
 
 static int
-gzwrite_ses (gzFile file, dk_session_t * ses_out, const voidp buf,
-    unsigned len)
+gzwrite_ses (strses_chunked_out_t * outd, const voidp buf, unsigned len)
 {
   int len_buff;
   char temp[20];
-  gz_stream *s = (gz_stream *) file;
+  dk_session_t * ses_out = outd->sc_out;
+  gz_stream *s = (gz_stream *) outd->sc_buff;
 
   s->stream.next_in = (Bytef *) buf;
   s->stream.avail_in = len;
@@ -4532,22 +4532,28 @@ static void
 strses_chunked_out_buf (buffer_elt_t * buf, caddr_t arg)
 {
   strses_chunked_out_t *outd = (strses_chunked_out_t *) arg;
-  session_flush_1 (outd->out);
-  gzwrite_ses (outd->buff, outd->out, buf->data, (unsigned) buf->fill);
+  session_flush_1 (outd->sc_out);
+  gzwrite_ses (outd, buf->data, (unsigned) buf->fill);
 }
 
 
 void
 strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_t * outd)
 {
-  outd->buff = gz_init_ses (out);
-  outd->out = out;
+  OFF_T start;
+
+  outd->sc_buff = gz_init_ses (out);
+  outd->sc_out = out;
+  session_flush_1 (out);
+  start = out->dks_bytes_sent;
   gz_write_head (out);
   strses_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
-  gzwrite_ses (outd->buff, outd->out, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
-  gzclose_ses (outd->buff, outd->out);
-  outd->buff = NULL;
+  gzwrite_ses (outd, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
+  gzclose_ses (outd->sc_buff, outd->sc_out);
+  session_flush_1 (out);
+  outd->sc_bytes_sent = out->dks_bytes_sent - start;
+  outd->sc_buff = NULL;
 }
 
 /*##**********************************************

@@ -1872,12 +1872,12 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
     }
   FAILED
     {
-      if (NULL != gzctx.buff)
-	gz_stream_free (gzctx.buff);
+      if (NULL != gzctx.sc_buff)
+	gz_stream_free (gzctx.sc_buff);
       ws_write_failed (ws);
     }
   END_WRITE_FAIL (ws->ws_session);
-  log_info_http (ws, code, len);
+  log_info_http (ws, code, (gzctx.sc_bytes_sent ? gzctx.sc_bytes_sent : len));
   strses_flush (ws->ws_strses);
   dk_free_box (accept_gz);
 }
@@ -5407,7 +5407,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
   else
     http_session_used (ses, host, peer_max_timeout);
 
-  log_info_http (ws, http_req_stat, plen);
+  log_info_http (ws, http_req_stat, (plen > 0 ? plen : 0));
   HTTP_SET_STATUS_LINE (ws, REPLY_SENT, 1);
 }
 
