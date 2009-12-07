@@ -27,8 +27,10 @@
   <v:after-data-bind>
     <![CDATA[
       declare page_name varchar;
+      declare params any;
 
       set_qualifier ('DB');
+      params := self.vc_page.vc_event.ve_params;
       page_name := ENEWS.WA.page_name ();
       if (page_name = 'error.vspx')
         return;
@@ -42,16 +44,18 @@
       hf := http_request_header (lines, 'Host');
 
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+      {
         ods_path := 'http://' || hf || '/ods/';
-      else
+      } else {
         ods_path := DB.DBA.WA_LINK (1, '/ods/');
-
-      if ((page_name = 'channels_create.vspx') and (get_keyword('URL', self.vc_page.vc_event.ve_params, '') <> '')) {
-        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, concat(HTTP_REQUESTED_URL(), '?URL=', get_keyword('URL', self.vc_page.vc_event.ve_params, ''))));
+      }
+      if ((page_name = 'channels_create.vspx') and (get_keyword('URL', params, '') <> ''))
+      {
+        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, concat(HTTP_REQUESTED_URL(), '?URL=', get_keyword('URL', params, ''))));
         return;
       }
-
-      if (self.account_role = 'expire') {
+      if (self.account_role = 'expire')
+      {
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;
