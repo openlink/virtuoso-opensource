@@ -21,7 +21,7 @@
 
 
 if WITH_JDK3
-TARGETS		= virt_sesame.jar
+TARGETS		= lib virt_sesame.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -O -g:none
 JAVAC		= $(JDK)/javac
@@ -40,7 +40,7 @@ SESAME_SRC= \
 
 SESAME_CLASSPATH=lib/xercesImpl.jar:lib/log4j-1.2.12.jar:lib/commons-logging-1.1.jar:lib/concurrent.jar:lib/icu4j_3_4.jar:lib/junit.jar:lib/json.jar:lib/openrdf-model.jar:lib/iri.jar:lib/sesame.jar:lib/rio.jar:lib/openrdf-util.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
-all-am: lib virt_sesame.jar
+all-am:	$(TARGETS)
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/sesame"
@@ -48,6 +48,7 @@ install-data-local:
 
 lib:
 	@test -d lib || touch virt_sesame.jar
+	-mkdir lib
 	@echo "Please refer to README file for missing .jar files"
 
 virt_sesame.jar: $(SESAME_SRC)

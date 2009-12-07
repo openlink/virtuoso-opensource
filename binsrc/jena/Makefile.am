@@ -21,7 +21,7 @@
 
 
 if WITH_JDK3
-TARGETS		= virt_jena.jar
+TARGETS		= lib virt_jena.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -O -g:none
 
@@ -51,8 +51,8 @@ TESTSUITE_SRC= \
 
 JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:lib/xml-apis.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
+all-am: $(TARGETS)
 
-all-am:	lib virt_jena.jar
 
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/jena"
@@ -60,6 +60,7 @@ install-data-local:
 
 lib:
 	@test -d lib || touch virt_jena.jar
+	-mkdir lib
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
 virt_jena.jar: $(JENA_SRC)
