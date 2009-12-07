@@ -27,13 +27,68 @@
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
+      <v:variable name="vSubAction" type="varchar" default="''" />
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="s_url" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
-        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
-        <div class="new-form-header">
-          Settings
+      <?vsp
+        if (0)
+        {
+      ?>
+          <v:button name="command" action="simple" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare params, action any;
+
+                params := e.ve_params;
+
+                action := get_keyword ('action', params);
+                if (action = 'settings')
+                {
+                  self.vSubAction := get_keyword ('mode', params, '');
+                }
+                else if (action = 'back')
+                {
+                  self.vc_redirect('home.vspx');
+                }
+                self.vc_data_bind(e);
+               ]]>
+             </v:on-post>
+          </v:button>
+      <?vsp
+        }
+      ?>
+      <table id="MTB2">
+        <tr>
+          <td id="LC2">
+            <div class="lc lc_close">
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
+              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
+              <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+              <span onclick="javascript: vspxPost('command', 'action', 'back');" title="Back" class="gems2">Back</span>
         </div>
+          </td>
+          <td id="RC2">
+            <div class="new-form-header" style="margin-top: 6px;">
+              <?vsp
+                declare S, T varchar;
+
+                S := 'Preferences: ';
+                T := '';
+                if (self.vSubAction = '')
+                {
+                  T := 'Settings';
+                }
+                else if (self.vSubAction = 'bookmarklet')
+                {
+                  T := 'Bookmarklet';
+                }
+                http (S || T);
+              ?>
+            </div>
+            <vm:if test="self.vSubAction = ''">
+              <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <div id="c1">
           <div class="tabs">
           <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
@@ -236,14 +291,16 @@
               insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS)
                 values(self.account_id, serialize(self.settings));
 
-              self.vc_redirect('home.vspx');
+                      self.vc_data_bind(e);
         	    ]]>
         	  </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" value="Clear" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('home.vspx');
+                      delete from ODRIVE.WA.SETTINGS where USER_ID = self.account_id;
+                      self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ODRIVE.WA.settings (self.account_id));
+                      self.vc_data_bind(e);
         	    ]]>
         	  </v:on-post>
           </v:button>
@@ -253,6 +310,59 @@
             initTab(2, 1);
           ]]>
         </script>
+            </vm:if>
+
+            <vm:if test="self.vSubAction = 'bookmarklet'">
+              <v:after-data-bind>
+                <![CDATA[
+                  self.s_url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%shome.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Resource with Briefcase</a>', ODRIVE.WA.odrive_url(self.domain_id));
+                ]]>
+              </v:after-data-bind>
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <td>
+                     <br />
+                     You can bookmark URL from anywhere with the BM Bookmark button.
+                     <h3>Internet Explorer Users</h3>
+                     <ol>
+                       <li>To install the button, right click on this url <?vsp http(self.s_url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
+                       <li>To subscribe to the site you're currently viewing in your browser, just click the <b>Resource with Briefcase</b> button from within your Favorites menu.</li>
+                     </ol>
+                     <h3>Firefox Users</h3>
+                     <ol>
+                       <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
+                       <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
+                       <li>A <b>Resource with Briefcase</b> button should now appear in your 'Bookmarks Toolbar'.</li>
+                       <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                    <h3>Mozilla/Netscape Users</h3>
+                    <ol>
+                      <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
+                      <li>Drag this url <?vsp http(self.s_url); ?> to the 'Personal Toolbar' toolbar.</li>
+                      <li>A <b>Resource with Briefcase</b> button should now appear in your 'Personal Toolbar'.</li>
+                      <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                    <h3>Safari Users</h3>
+                    <ol>
+                      <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
+                      <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmark Bar' toolbar.</li>
+                      <li>A <b>Resource with Briefcase</b> button should now appear in your 'Bookmark Bar'. </li>
+                      <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                    <h3>Chrome Users</h3>
+                    <ol>
+                      <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click the wrench icon in the upper right and then check 'Always show bookmarks bar'.</li>
+                      <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmark Bar' toolbar.</li>
+                      <li>A <b>Resource with Briefcase</b> button should now appear in your 'Bookmark Bar'. </li>
+                      <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                    </ol>
+                  </td>
+                </tr>
+              </table>
+            </vm:if>
+          </td>
+        </tr>
+      </table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

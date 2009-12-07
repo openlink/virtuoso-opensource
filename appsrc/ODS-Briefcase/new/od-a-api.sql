@@ -1056,7 +1056,7 @@ create procedure ODS.ODS_API."briefcase.share.list" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."briefcase.options.set" (
-	in inst_id integer,
+	in inst_id integer := null,
 	in options any) __soap_http 'text/xml'
 {
 	declare exit handler for sqlstate '*'
@@ -1071,7 +1071,7 @@ create procedure ODS.ODS_API."briefcase.options.set" (
 	declare optionsParams, settings any;
   declare st, msg any;
 
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ods_check_auth2 (uname, inst_id, 'owner'))
 		return ods_auth_failed ();
 
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))
@@ -1099,7 +1099,7 @@ create procedure ODS.ODS_API."briefcase.options.set" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."briefcase.options.get" (
-	in inst_id integer) __soap_http 'text/xml'
+	in inst_id integer := null) __soap_http 'text/xml'
 {
 	declare exit handler for sqlstate '*'
 	{
@@ -1111,7 +1111,7 @@ create procedure ODS.ODS_API."briefcase.options.get" (
 	declare uname varchar;
 	declare settings any;
 
-	if (not ods_check_auth (uname, inst_id, 'author'))
+	if (not ods_check_auth2 (uname, inst_id, 'owner'))
 		return ods_auth_failed ();
 
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = inst_id and WAI_TYPE_NAME = 'oDrive'))

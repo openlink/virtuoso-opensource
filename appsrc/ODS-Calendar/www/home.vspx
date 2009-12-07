@@ -101,6 +101,19 @@
         self.cAction := tmp;
       }
 
+      tmp := get_keyword ('URI', params, '');
+      if (tmp <> '')
+      {
+        self.vc_page.vc_event.ve_params := CAL.WA.set_keyword ('f_uri', params, tmp);
+        self.cScope := 'events';
+        self.cAction := 'import';
+        self.icSource := 2;
+        self.v_tags := '';
+        self.icUser := '';
+        self.icPassword := '';
+        self.icSync := 1;
+        self.icAttendees := 2;
+      }
       tmp := get_keyword ('action', params, '');
       if (tmp <> '')
         self.cAction := tmp;
@@ -1100,6 +1113,8 @@
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="0" />
 
       <v:variable name="tv_status" type="varchar" default="'All'" />
+
+      <v:variable name="s_url" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
       <table id="MTB">
@@ -1118,6 +1133,7 @@
             <vm:if test="self.cAction = 'settings'">
               <div class="lc lc_close">
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2" style="color: black;">Settings</span>
+                <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems gems2" style="color: black;">Bookmarklet</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Upstreams" class="gems gems2" style="color: black;">Upstreams</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems gems2" style="color: black;">Share My Calendar</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems gems2" style="color: black;">Accepted Calendars</span>
@@ -1209,8 +1225,12 @@
                           cMode := get_keyword ('mode', params, '');
                           if (cMode = 'settings')
                           {
-                            self.cAction := 'settings';
+                            self.cAction := cMode;
                             self.cSubAction := '';
+                          }
+                          if (cMode = 'bookmarklet')
+                          {
+                            self.cSubAction := cMode;
                           }
                           else if (cMode = 'upstreamBrowse')
                           {
@@ -3899,7 +3919,7 @@
                       <input type="file" name="f_file" size="60" />
                       </span>
                       <span id="imp_td_1" style="display: <?V case when self.icSource = 1 then '' else 'none' end ?>;">
-                      <v:text name="f_dav" xhtml_id="f_dav" value="--''" xhtml_size="60" /><v:button action="browse" name="browse" value="Browse...">
+                        <v:text name="f_dav" xhtml_id="f_dav" value="--get_keyword ('f_dav', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" /><v:button action="browse" name="browse" value="Browse...">
                    	  <v:after-data-bind>
                    		  <![CDATA[
                                 control.vc_add_attribute ('onclick', 'javascript: davBrowse (\'f_dav\');');
@@ -3908,7 +3928,7 @@
               		  </v:button>
                       </span>
                       <span id="imp_td_2" style="display: <?V case when self.icSource = 2 then '' else 'none' end ?>;">
-                      <v:text name="f_uri" value="--''" xhtml_size="60" />
+                        <v:text name="f_uri" value="--get_keyword ('f_uri', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" />
                       </span>
                     </td>
                 </tr>
@@ -5154,9 +5174,13 @@
 
                   S := 'Preferences: ';
                   T := '';
-                  if (self.cSubAction = '')
+                  if (self.cAction = 'settings' and self.cSubAction = '')
                   {
                     T := 'Settings';
+                  }
+                  if (self.cSubAction = 'bookmarklet')
+                  {
+                    T := 'Bookmarklet';
                   }
                   else if (self.cSubAction = 'upstreamBrowse')
                   {
@@ -5697,6 +5721,55 @@
             </v:on-post>
           </v:button>
         </div>
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction = 'bookmarklet' then 1 else 0 end">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      self.s_url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%shome.vspx?URL=''+location.href+''&amp;TITLE=''+document.title">Import with Calendar</a>', CAL.WA.calendar_url (self.domain_id));
+                    ]]>
+                  </v:after-data-bind>
+                  <table class="form-body" cellspacing="0">
+                    <tr>
+                      <td>
+                         <br />
+                         You can bookmark URL from anywhere with the Calendar Bookmark button.
+                         <h3>Internet Explorer Users</h3>
+                         <ol>
+                           <li>To install the button, right click on this url <?vsp http(self.s_url); ?> and select the 'Add to Favorites' link. You may see a warning dialog -- click 'OK' to continue.</li>
+                           <li>To subscribe to the site you're currently viewing in your browser, just click the <b>Import with Calendar</b> button from within your Favorites menu.</li>
+                         </ol>
+                         <h3>Firefox Users</h3>
+                         <ol>
+                           <li>To install the button on your browser, first make sure that the 'Bookmarks Toolbar' toolbar is visible in your browser. Click 'View'->'Toolbars' and verify that the 'Bookmarks Toolbar' item is checked.</li>
+                           <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmarks Toolbar' toolbar.</li>
+                           <li>A <b>Import with Calendar</b> button should now appear in your 'Bookmarks Toolbar'.</li>
+                           <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                        </ol>
+                        <h3>Mozilla/Netscape Users</h3>
+                        <ol>
+                          <li>To install the button on your browser, first make sure that the 'Personal Toolbar' toolbar is visible in your browser. Click 'View'->'Show/Hide' and verify that the 'Personal Toolbar' item is checked.</li>
+                          <li>Drag this url <?vsp http(self.s_url); ?> to the 'Personal Toolbar' toolbar.</li>
+                          <li>A <b>Import with Calendar</b> button should now appear in your 'Personal Toolbar'.</li>
+                          <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                        </ol>
+                        <h3>Safari Users</h3>
+                        <ol>
+                          <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click 'View'->'Menu' and verify that the 'Bookmark Bar' item is checked.</li>
+                          <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmark Bar' toolbar.</li>
+                          <li>A <b>Import with Calendar</b> button should now appear in your 'Bookmark Bar'. </li>
+                          <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                        </ol>
+                        <h3>Chrome Users</h3>
+                        <ol>
+                          <li>To install the button on your browser, first make sure that the 'Bookmark Bar' toolbar is visible in your browser. Click the wrench icon in the upper right and then check 'Always show bookmarks bar'.</li>
+                          <li>Drag this url <?vsp http(self.s_url); ?> to the 'Bookmark Bar' toolbar.</li>
+                          <li>A <b>Import with Calendar</b> button should now appear in your 'Bookmark Bar'. </li>
+                          <li>To subscribe to the site you're currently viewing in your browser, just click the button.</li>
+                        </ol>
+                      </td>
+                    </tr>
+                  </table>
                 </v:template>
 
                 <v:template type="simple" enabled="--case when self.cSubAction = 'upstreamBrowse' then 1 else 0 end">
