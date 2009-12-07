@@ -268,8 +268,9 @@ void bif_set_no_cluster (char * n);
 
 typedef struct
 {
-  void * buff;
-  dk_session_t *out;
+  void * sc_buff;
+  dk_session_t *sc_out;
+  OFF_T sc_bytes_sent;
 } strses_chunked_out_t;
 
 void strses_write_out_gz (dk_session_t *ses, dk_session_t *out, strses_chunked_out_t * outd);
