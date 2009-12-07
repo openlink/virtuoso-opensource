@@ -1379,12 +1379,21 @@ iSPARQL.Common = {
 	    }
 	    if (newIndex == 0) { // QBE
 			OAT.Dom.show ('qry_type_ctls');
+ 			OAT.Dom.show('queryopts');
+			OAT.Dom.show('queryMetaData');
+			OAT.Dom.show('controls');
 	    }
 	    else if (newIndex == 1) { // Advanced
 			OAT.Dom.hide ('qry_type_ctls');
+ 			OAT.Dom.show('queryopts');
+			OAT.Dom.show('queryMetaData');
+			OAT.Dom.show('controls');
 	    }
 	    else {	// Result tab
 			OAT.Dom.hide('qry_type_ctls');
+ 			OAT.Dom.hide('queryopts');
+			OAT.Dom.hide('queryMetaData');
+			OAT.Dom.hide('controls');
 	    }
 	}
 
