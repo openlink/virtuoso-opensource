@@ -478,7 +478,12 @@ var QueryExec = function(optObj) {
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.defaultGraph = false;
-			o.query = q;
+
+			if (o.endpoint.match(/^http/i)) // don't attempt to sponge on remote endpoints
+			    o.query = bq;
+			else
+			    o.query = q;
+
 			o.backupQuery = bq;
 			self.execute(o);
  		}
@@ -536,23 +541,24 @@ var QueryExec = function(optObj) {
 			result_control:false,
 			activation:"click"
 		};
+
 		OAT.Anchor.assign(domNode,obj);
 
-		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-		img1.title = "Describe Data Source";
-		img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
-		OAT.Dom.attach(img1,"click",dereferenceRef);
+//	var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
+//	img1.title = "Describe Data Source";
+//	img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
+//	OAT.Dom.attach(img1,"click",dereferenceRef);
 
-		var a = OAT.Dom.create("a",{paddingLeft:"3px"});
-		var img2 = OAT.Dom.create("img",{border:"none"});
-		img2.src = OAT.Preferences.imagePath + "RDF_xhtml.gif";
-		a.title = "Open Web Page";
-		a.appendChild(img2);
-		a.target = "_blank";
-		a.href = "/about/html/" + href;
+//	var a = OAT.Dom.create("a",{paddingLeft:"3px"});
+//	var img2 = OAT.Dom.create("img",{border:"none"});
+//	img2.src = OAT.Preferences.imagePath + "RDF_xhtml.gif";
+//	a.title = "Open Web Page";
+//	a.appendChild(img2);
+//	a.target = "_blank";
+//	a.href = "/about/html/" + href;
 
-		domNode.parentNode.appendChild(img1);
-		domNode.parentNode.appendChild(a);
+//	domNode.parentNode.appendChild(img1);
+//	domNode.parentNode.appendChild(a);
 	}
 
 	this.execute = function(optObj) {
