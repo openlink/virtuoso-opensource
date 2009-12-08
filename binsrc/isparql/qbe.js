@@ -751,6 +751,11 @@ iSPARQL.QBE = function (def_obj) {
 	    var callback = function(data) {
 		var JSONData = eval('(' + data + ')');
 
+		if (JSONData.results.bindings.length > 1500) { // XXXX this must go away as soon as local schema update is implemented
+		    alert("Schema too large ("+JSONData.results.bindings.length+"). Not updating the schema tree");
+		    return;
+		}
+
 		var insert = function(obj,type,schemaParts) {
 		    var uri = obj.uri.value;
 		    var parts = self.getPrefixParts(uri);

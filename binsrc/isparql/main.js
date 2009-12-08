@@ -188,6 +188,11 @@ iSPARQL.QueryExec = function(optObj) {
 	    if (opts.callback) { opts.callback(data); }
 	}
 
+	if (opts.endpoint.match(/^http/i)) {
+	    var query = "url=" + encodeURIComponent(opts.endpoint + "?" + arr.join ("&"));
+	    opts.endpoint = "/proxy";
+	}
+
 	var o = {
 	    onerror:opts.errorHandler,
 	    onstart:opts.onstart || function() { OAT.Dom.show("throbber"); },
@@ -1281,6 +1286,7 @@ iSPARQL.Common = {
 		qp = true;
 	    }
 	if (p['endpoint']) { iSPARQL.defaults.endpoint = p['endpoint']; qp = true;}
+	if (p['resultview']) { iSPARQL.defaults.resultView = p['resultview']; qp = true;}
 	if (qp) iSPARQL.defaults.qp_override = qp;
 	if (p['__DEBUG']) iSPARQL.Preferences.debug = true;
 	if (p['maxrows']) iSPARQL.defaults.maxrows = parseInt(p['maxrows']);
@@ -1562,11 +1568,11 @@ iSPARQL.Common = {
 	    /* FIXME: nicely call redraw here */
 	    tab.go(2); /* go to results after query execution */
 
-	    if (!OAT.Browser.isIE) {
-	        if (qbe.QueryGenerate() == req.opts.query) { return; }
-	        qbe.loadFromString (req.opts.query);
-	        qbe.svgsparql.reposition();
-	    }
+//	    if (!OAT.Browser.isIE) {
+//		if (qbe.QueryGenerate() == req.opts.query) { return; }
+//		qbe.loadFromString (req.opts.query);
+//		qbe.svgsparql.reposition();
+//	    }
 
 	    $("query").value = req.opts.query;
 	    $("qbe_graph").value = req.opts.defaultGraph;
