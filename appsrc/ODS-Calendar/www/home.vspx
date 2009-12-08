@@ -480,7 +480,7 @@
       }
       else if (fProperty = 'description')
           {
-        F := '<pre>' || CAL.WA.utf2wide (cast (fValue as varchar)) || '</pre>';
+        F := sprintf ('<pre style="margin: 0">%V</pre>', CAL.WA.utf2wide (cast (fValue as varchar)));
       }
       else if (internal_type (fValue) = 211)
       {
@@ -495,7 +495,11 @@
 
       FS := fShowValue;
       if (isnull (FS))
-        FS := sprintf ('%V', F);
+      {
+        FS := F;
+        if (fProperty <> 'description')
+          FS := sprintf ('%V', FS);
+      }
 
       P := '';
       -- vcalendar class
