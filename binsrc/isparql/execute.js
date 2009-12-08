@@ -82,6 +82,8 @@ var QueryExec = function(optObj) {
 	this.tab = false;
 	this.store = new OAT.RDFStore(false);
 	this.mini = false;
+    this.miniplnk = false;
+    this.mRDFCtr = false;
 
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
@@ -244,8 +246,38 @@ var QueryExec = function(optObj) {
 			self.cacheIndex = self.cache.length-1;
 		}
 		self.draw();
-	}
+    },
+    this.makeMiniRDFPlinkURI = function (caller,msg,o) {
+	var item = self.cache[self.cacheIndex];
+	var opts = item.opts;
+	var request = item.request;
+	var plnk = self.miniplnk;
 
+	var nloca = document.location.toString();
+	var pidxa = nloca.indexOf('?');
+	nloca = (pidxa ? nloca.substring(0, pidxa) : nloca);
+
+	var xec = nloca.indexOf('execute.html');
+	var xparm = "?query=" + encodeURIComponent(opts.query);
+
+	if (opts.endpoint)
+	    xparm = xparm + "&endpoint="  + opts.endpoint;
+
+        xparm = xparm + "&resultview=" + self.mini.options.tabs[o.tabIndex][0];
+
+	if (xec != -1)
+ 	    plnk.href = nloca + "?" + xparm;
+	else
+	    plnk.href = nloca + "execute.html" + xparm;
+
+	plnk.target = "_blank";
+    },
+    this.parseTabIndex = function (rvVal, tabs) {
+	for (var i=0;i < tabs.length;i++) {
+	    if (rvVal == tabs[i][0]) return i;
+	}
+	return 0;
+    },
 	this.drawTable = function() {
 		OAT.Dom.clear(self.dom.result);
 
@@ -290,7 +322,7 @@ var QueryExec = function(optObj) {
 	        var xparm = "?" + request + "&endpoint="  + opts.endpoint;
 
 		if (xec != -1) 
- 		    execURIa.href = nloca + xparm;
+ 	    execURIa.href = nloca + "?" + xparm;
 		else
 		    execURIa.href = nloca + "execute.html" + xparm;
 
@@ -365,8 +397,20 @@ var QueryExec = function(optObj) {
 				}
 			}
 		}
+    },
+    this.makeErrorMsg = function (data) {
+	var msg;
+	var r = data.match(/Error (..[0-9]{3})/);
+	if (r) {
+	    msg="<h3>SPARQL Processor Error ("+ r[1] + ")</h3>\n"
+	    if (r[1] == "HT404")
+		msg += "<p>Resource not found<br/>Check your query and try again</p>";
 	}
-
+	else if (data.match(/Error HTCLI/)) {
+	    msg="<h3>Proxy connection error</h3><p>The proxy could not connect to the endpoint. Please try again later.</p>"
+	}
+	return msg;
+    },
 	this.draw = function() {
 		var item = self.cache[self.cacheIndex];
 		var opts = item.opts;
@@ -391,7 +435,7 @@ var QueryExec = function(optObj) {
 		var nloc = document.location.toString();
 		var pidx = nloc.indexOf('?');
 		var xec = nloc.indexOf('execute.html');
-	        var xparm = "?" + request + "&endpoint=" + opts.endpoint;
+	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 		nloc = (pidx ? nloc.substring(0, xec ? xec : pidx) : nloc);
 	        a.href = nloc + xparm;
 		a.target = "_blank";
@@ -401,17 +445,10 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.append([self.dom.query,a,q]);
 
+
 		if (wasError) {
 			/* trap http codes */
-			var r = data.match(/Error (..[0-9]{3})/);
-			if (r) {
-				self.dom.result.innerHTML = "SPARQL Processor error "+r[1];
-				if (r[1] == "HT404") { self.dom.result.innerHTML += ": Resource not found"; }
-				self.dom.result.innerHTML += ". Check your query and try again.";
-			} else {
-				self.dom.result.innerHTML = OAT.Xml.escape(data);
-			}
-			self.dom.response.innerHTML = OAT.Xml.escape(data);
+	    self.dom.response.innerHTML = self.makeErrorMsg (data);
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
 			txt = OAT.Xml.escape(txt);
@@ -432,11 +469,23 @@ var QueryExec = function(optObj) {
 				if(self.mini) {
 					lastIndex = self.mini.select.selectedIndex;
 				}
-				self.mini = new OAT.RDFMini(self.dom.result,{tabs:tabs,showSearch:false});
+		else {
+		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
+		}
+
+		self.miniplnk = OAT.Dom.create ("a");
+		self.miniplnk.innerHTML = "Permalink";
+		self.mRDFCtr = OAT.Dom.create ("div");
+		self.mRDFCtr.id = "mini_rdf_ctr";
+		OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
+
+		self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,showSearch:false});
 				self.mini.processLink = self.processLink;
 				self.mini.store.addXmlDoc(data);
 				self.mini.select.selectedIndex = lastIndex;
 				self.mini.redraw();
+		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
+		OAT.MSG.attach (self.mini, OAT.MSG.RDFMINI_VIEW_CHANGED, self.makeMiniRDFPlinkURI);
 			} else {
 				/* own table */
 				self.store.clear();
