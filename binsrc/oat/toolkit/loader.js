@@ -910,6 +910,7 @@ OAT.MSG = { /* messages */
 	STORE_DISABLED:27,
 	STORE_CLEARED:28,
 	STORE_REMOVED:29,
+        RDFMINI_VIEW_CHANGED:30,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }
