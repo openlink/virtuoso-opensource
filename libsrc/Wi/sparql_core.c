@@ -2458,7 +2458,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
       (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(val));
     }
   END_DO_SET()
-  for (ctr = BOX_ELEMENTS_0 (options) - 1; 0 <= ctr; ctr -= 2)
+  for (ctr = BOX_ELEMENTS_0 (options) - 2; 0 <= ctr; ctr -= 2)
     {
       caddr_t param = (caddr_t)(options[ctr]);
       const char **chk;
