@@ -129,11 +129,10 @@ create procedure ODS.ODS_API."addressbook.search" (
   {
     for (N := 0; N < length (data); N := N + 1)
     {
-    	iri := SIOC..addressbook_contact_iri (inst_id, data[N][0]);
-    	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-    	exec_sparql (q);
+    	ods_describe_iri (SIOC..addressbook_contact_iri (inst_id, data[N][0]));
     }
   }
+  return '';
 }
 ;
 
@@ -155,9 +154,9 @@ create procedure ODS.ODS_API."addressbook.get" (
   inst_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = contact_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
-  iri := SIOC..addressbook_contact_iri (inst_id, contact_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+
+	ods_describe_iri (SIOC..addressbook_contact_iri (inst_id, contact_id));
+	return '';
 }
 ;
 
@@ -675,7 +674,6 @@ create procedure ODS.ODS_API."addressbook.annotation.get" (
 
   declare inst_id, contact_id integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -684,10 +682,7 @@ create procedure ODS.ODS_API."addressbook.annotation.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..addressbook_annotation_iri (inst_id, contact_id, annotation_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+	ods_describe_iri (SIOC..addressbook_annotation_iri (inst_id, contact_id, annotation_id));
 _exit:
   return '';
 }
@@ -802,7 +797,6 @@ create procedure ODS.ODS_API."addressbook.comment.get" (
 
   declare uname varchar;
   declare inst_id, contact_id integer;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -811,10 +805,7 @@ create procedure ODS.ODS_API."addressbook.comment.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..addressbook_comment_iri (inst_id, cast (contact_id as integer), comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+	ods_describe_iri (SIOC..addressbook_comment_iri (inst_id, cast (contact_id as integer), comment_id));
 _exit:
   return '';
 }
@@ -1310,7 +1301,8 @@ create procedure ODS.ODS_API."addressbook.subscription.delete" (
 -------------------------------------------------------------------------------
 --
 create procedure ODS.ODS_API."addressbook.options.set" (
-  in inst_id int, in options any) __soap_http 'text/xml'
+	in inst_id integer := null,
+	in options any) __soap_http 'text/xml'
 {
   declare exit handler for sqlstate '*'
   {

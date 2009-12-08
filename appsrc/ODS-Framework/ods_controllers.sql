@@ -66,7 +66,7 @@ create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 }
 ;
 
---! Performs HTTP, OAuth, session based authentication in same order
+--! Performs HTTP, OAuth, session based authentication, FOAF+SSL in same order
 create procedure ods_check_auth (
   out uname varchar,
   in inst_id integer := null,
@@ -114,6 +114,11 @@ create procedure ods_check_auth2 (
 	rc := 1;
       authType := 1;
     }
+  else if (check_authentication_ssl (uname))
+    {
+      rc := 1;
+      authType := 1;
+    }
   -- check ACL
   if (inst_id > 0 and rc > 0)
     {
@@ -141,6 +146,22 @@ create procedure ods_check_auth2 (
   }
 nf:
   return rc;
+}
+;
+
+create procedure check_authentication_ssl (
+  out uname varchar := null)
+{
+  if (isnull (server_https_port ()) or not is_https_ctx ())
+    return 0;
+
+  if (not SIOC..foaf_check_ssl (null))
+    return 0;
+
+  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and WAUI_CERT_FINGERPRINT = get_certificate_info (6));
+  if (isnull (uname))
+    return 0;
+  return 1;
 }
 ;
 
@@ -215,6 +236,20 @@ reporterr:
   http (ses);
 }
 ;
+
+create procedure ods_graph ()
+{
+	return SIOC..fix_graph (SIOC..get_graph ());
+}
+;
+
+create procedure ods_describe_iri (
+  in iri varchar)
+{
+	exec_sparql (sprintf ('describe <%s> from <%s>', SIOC..fix_uri (iri), ods_graph ()));
+}
+;
+
 create procedure ods_auth_failed ()
 {
   return ods_serialize_int_res (-12);
@@ -809,16 +844,16 @@ create procedure ODS.ODS_API."user.register" (
 	in "password" varchar,
 	in "email" varchar) __soap_http 'text/xml'
 {
-  declare ret any;
-
-  declare exit handler for sqlstate '*' {
+  declare rc any;
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  ret := DB.DBA.ODS_CREATE_USER (name, "password", "email");
-  if (not isinteger (ret))
-    ret := -1;
-  return ods_serialize_int_res (ret);
+  rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
+  if (not isinteger (rc))
+    rc := -1;
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -857,9 +892,8 @@ create procedure ODS.ODS_API."user.update" (
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   pars := split_and_decode (user_info, 0, '%\0,='); -- XXX: FIXME
-
-
   for (declare i, l int, i := 0, l := length (pars); i < l; i := i + 2)
     {
       declare k, v any;
@@ -880,14 +914,17 @@ create procedure ODS.ODS_API."user.password_change" (
 {
   declare uname, msg varchar;
   declare rc integer;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
-  declare exit handler for sqlstate '*' { msg := __SQL_MESSAGE; goto ret; };
+  declare exit handler for sqlstate '*' {
+    msg := __SQL_MESSAGE;
+    goto ret;
+  };
   rc := -1;
   msg := 'Success';
   set_user_id ('dba');
@@ -904,8 +941,8 @@ create procedure ODS.ODS_API."user.delete" (
 {
   declare uname varchar;
   declare rc integer;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -930,8 +967,8 @@ create procedure ODS.ODS_API."user.enable" (
 {
   declare uname varchar;
   declare rc integer;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -958,8 +995,8 @@ create procedure ODS.ODS_API."user.disable" (
 {
   declare uname varchar;
   declare rc integer;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -982,15 +1019,16 @@ create procedure ODS.ODS_API."user.disable" (
 }
 ;
 
-create procedure ODS.ODS_API."user.get" (in name varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.get" (
+  in name varchar) __soap_http 'text/xml'
 {
   declare q varchar;
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf ('select * from <%s> where { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ',
-  sioc..get_graph(), name);
+  q := sprintf ('select * from <%s> where { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ', ods_graph(), name);
   exec_sparql (q);
   return '';
 }
@@ -1000,12 +1038,12 @@ create procedure ODS.ODS_API."user.search" (
   in pattern varchar) __soap_http 'text/xml'
 {
   declare q varchar;
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf ('select * from <%s> where { ?user a sioc:User ; ?property ?value . ?value bif:contains "%s" } ',
-  sioc..get_graph(), pattern);
+  q := sprintf ('select * from <%s> where { ?user a sioc:User ; ?property ?value . ?value bif:contains "%s" } ', ods_graph(), pattern);
   exec_sparql (q);
   return '';
 }
@@ -1024,7 +1062,8 @@ create procedure ODS.ODS_API."user.invite" (
   declare _u_full_name, _u_e_mail varchar;
   declare msg varchar;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1093,7 +1132,9 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.invitation" (in invitation_id int, in approve smallint) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.invitation" (
+  in invitation_id int,
+  in approve smallint) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -1138,8 +1179,8 @@ create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
   declare rc integer;
   declare sn_me, sn_from int;
   declare e_mail varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1152,12 +1193,13 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.relation_terminate" (in friend varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.relation_terminate" (
+  in friend varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, sn_id, f_sn_id int;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1171,7 +1213,9 @@ create procedure ODS.ODS_API."user.relation_terminate" (in friend varchar) __soa
 }
 ;
 
-create procedure ODS.ODS_API."user.relation_update" (in friend varchar, in relation_details any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.relation_update" (
+  in friend varchar,
+  in relation_details any) __soap_http 'text/xml'
 {
   return;
 }
@@ -1183,7 +1227,7 @@ create procedure ODS.ODS_API."user.relation_update" (in friend varchar, in relat
 create procedure ODS.ODS_API."user.tagging_rules.add" (
   in rulelist_name varchar,
   in rules any,
-  in is_public int := 1) __soap_http 'text/xml'
+  in is_public integer := 1) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -1370,17 +1414,17 @@ ret:
 }
 ;
 
-
 -- Hyperlinking Rules
-create procedure ODS.ODS_API."user.hyperlinking_rules.add" (in rules any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.hyperlinking_rules.add" (
+  in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
   declare msg varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1422,8 +1466,8 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
   declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1450,8 +1494,8 @@ create procedure ODS.ODS_API."user.topicOfInterest.new" (
   declare rc integer;
   declare _u_id, notFound integer;
   declare oldData, newData any;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1488,7 +1532,8 @@ create procedure ODS.ODS_API."user.topicOfInterest.delete" (
   declare _u_id integer;
   declare oldData, newData any;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -1516,8 +1561,8 @@ create procedure ODS.ODS_API."user.thingOfInterest.new" (
   declare rc integer;
   declare _u_id, notFound integer;
   declare oldData, newData any;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
@@ -2249,7 +2294,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     appendProperty (V, 'sameAs', "sameAs");
 
 _exit:;
-  --exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
  return V;
   }
 ;
@@ -2344,8 +2389,8 @@ create procedure ODS.ODS_API."instance.create" (
 	in "type" varchar,
     	in name varchar,
 	in description varchar,
-	in model int,
-	in "public" int) __soap_http 'text/xml'
+	in model integer,
+	in "public" integer) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -2524,10 +2569,7 @@ create procedure ODS.ODS_API."notification.services" () __soap_http 'text/xml'
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf (
-  'select * from <%s> where '||
-  ' { <%s> sioc:has_service ?svc . ?svc dc:identifier ?id ; rdfs:label ?label  } ',
-  sioc..get_graph(), sioc..get_graph());
+  q := sprintf ('select * from <%s> where { <%s> sioc:has_service ?svc . ?svc dc:identifier ?id ; rdfs:label ?label  } ', ods_graph(), ods_graph());
   exec_sparql (q);
   return '';
 }
@@ -2627,8 +2669,7 @@ create procedure ODS.ODS_API."instance.search" (in pattern varchar) __soap_http 
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier ?inst_id ; ?property ?value . ?value bif:contains "%s" } ',
-  sioc..get_graph(), pattern);
+  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier ?inst_id ; ?property ?value . ?value bif:contains "%s" } ', ods_graph(), pattern);
   exec_sparql (q);
   return '';
 }
@@ -2642,7 +2683,7 @@ create procedure ODS.ODS_API."instance.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ', sioc..get_graph(), inst_id);
+  q := sprintf ('select * from <%s> where { ?inst a sioc:Container ; dc:identifier %d ; ?property ?value . } ', ods_graph(), inst_id);
   exec_sparql (q);
   return '';
 }
@@ -2838,7 +2879,7 @@ create procedure OAUTH..check_authentication_safe (
   in inparams any := null,
   in lines any := null,
   out uname varchar,
-  inout inst_id int := null)
+  inout inst_id integer := null)
 {
   if (inparams is null)
     inparams := http_param ();
@@ -2856,7 +2897,7 @@ create procedure OAUTH..check_authentication (
   in inparams any,
   in lines any,
   out uname varchar,
-  inout inst_id int := null)
+  inout inst_id integer := null)
 {
   declare oauth_consumer_key varchar;
   declare oauth_token varchar;
