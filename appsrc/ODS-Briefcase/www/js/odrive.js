@@ -679,20 +679,29 @@ function addChecked (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
+// Hiddens functions
+//
+// ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value)
+{
+  createHidden2(document, frm_name, fld_name, fld_value);
+}
+
+// ---------------------------------------------------------------------------
+function createHidden2(doc, frm_name, fld_name, fld_value)
 {
   var hidden;
 
-  if (document.forms[frm_name])
+  if (doc.forms[frm_name])
   {
-    hidden = document.forms[frm_name].elements[fld_name];
+    hidden = doc.forms[frm_name].elements[fld_name];
     if (hidden == null)
     {
-      hidden = document.createElement("input");
+      hidden = doc.createElement("input");
       hidden.setAttribute("type", "hidden");
       hidden.setAttribute("name", fld_name);
       hidden.setAttribute("id", fld_name);
-      document.forms[frm_name].appendChild(hidden);
+      doc.forms[frm_name].appendChild(hidden);
     }
     hidden.value = fld_value;
   }
