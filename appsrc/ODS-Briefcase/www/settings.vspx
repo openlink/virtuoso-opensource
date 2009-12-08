@@ -43,7 +43,7 @@
 
                 params := e.ve_params;
 
-                action := get_keyword ('action', params);
+                action := get_keyword ('select', params);
                 if (action = 'settings')
                 {
                   self.vSubAction := get_keyword ('mode', params, '');
@@ -63,10 +63,10 @@
         <tr>
           <td id="LC2">
             <div class="lc lc_close">
-              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
-              <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
+              <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
+              <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-              <span onclick="javascript: vspxPost('command', 'action', 'back');" title="Back" class="gems2">Back</span>
+              <span onclick="javascript: vspxPost('command', 'select', 'back');" title="Back" class="gems2">Back</span>
         </div>
           </td>
           <td id="RC2">
