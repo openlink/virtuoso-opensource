@@ -112,12 +112,15 @@ OAT.RDFMini = function(div,optObj) {
 	}
 	
 	this.redraw = function() { /* change vis */
-		var index = 0;
-		if (self.select) { index = self.select.selectedIndex; }
-		OAT.Dom.clear(self.content);
-		self.content.appendChild(self.tabs[index].elm);
-		self.content.appendChild(OAT.Dom.create("div",{clear:"both"}));
-		self.tabs[index].redraw();
+	    var index = 0;
+	    if (self.select) { index = self.select.selectedIndex; }
+	    OAT.Dom.clear(self.content);
+	    self.content.appendChild(self.tabs[index].elm);
+	    self.content.appendChild(OAT.Dom.create("div",{clear:"both"}));
+	    self.tabs[index].redraw();
+	    var et = {};
+	    et.tabIndex = index;
+	    OAT.MSG.send (self,OAT.MSG.RDFMINI_VIEW_CHANGED,et);
 	}
 	
 	this.open = function(url) { /* open url */
