@@ -64,17 +64,14 @@ create procedure ODS.ODS_API."discussion.group.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-
   declare rc integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   if (not ods_check_auth (uname, -1, 'reader'))
     return ods_auth_failed ();
 
-  iri :=  SIOC..forum_iri ('nntpf', (select NG_NAME from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id));
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..forum_iri ('nntpf', (select NG_NAME from DB.DBA.NEWS_GROUPS where NG_GROUP = group_id)));
+  return '';
 }
 ;
 
@@ -249,18 +246,15 @@ create procedure ODS.ODS_API."discussion.message.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
-
   declare rc integer;
   declare uname, group_name varchar;
-  declare q, iri varchar;
 
   if (not ods_check_auth (uname, -1, 'reader'))
     return ods_auth_failed ();
 
   group_name := (select NG_NAME from DB.DBA.NEWS_GROUPS, DB.DBA.NEWS_MESSAGES where NM_ID = message_id and NG_GROUP = NM_GROUP);
-  iri := SIOC..nntp_post_iri (group_name, message_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..nntp_post_iri (group_name, message_id));
+  return '';
 }
 ;
 
@@ -325,9 +319,8 @@ create procedure ODS.ODS_API."discussion.comment.get" (
     return ods_auth_failed ();
 
   group_name := (select NG_NAME from DB.DBA.NEWS_GROUPS, DB.DBA.NEWS_MESSAGES where NM_ID = comment_id and NG_GROUP = NM_GROUP);
-  iri := SIOC..nntp_post_iri (group_name, comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..nntp_post_iri (group_name, comment_id));
+  return '';
 }
 ;
 

@@ -69,16 +69,14 @@ create procedure ODS.ODS_API."feeds.get" (
 
   declare inst_id, f_id integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   inst_id := (select EFD_DOMAIN_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
 
   f_id := (select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = feed_id);
-  iri := SIOC..feed_iri (f_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..feed_iri (f_id));
+  return '';
 }
 ;
 
@@ -242,7 +240,6 @@ create procedure ODS.ODS_API."feeds.annotation.get" (
 
   declare inst_id, item_id integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -251,10 +248,7 @@ create procedure ODS.ODS_API."feeds.annotation.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..feed_annotation_iri (inst_id, item_id, annotation_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..feed_annotation_iri (inst_id, item_id, annotation_id));
 _exit:
   return '';
 }
@@ -371,7 +365,6 @@ create procedure ODS.ODS_API."feeds.comment.get" (
 
   declare uname varchar;
   declare inst_id, item_id integer;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -380,10 +373,7 @@ create procedure ODS.ODS_API."feeds.comment.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..feed_comment_iri (inst_id, cast (item_id as integer), comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..feed_comment_iri (inst_id, cast (item_id as integer), comment_id));
 _exit:
   return '';
 }

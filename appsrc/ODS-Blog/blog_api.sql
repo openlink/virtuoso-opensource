@@ -166,9 +166,7 @@ create procedure ODS.ODS_API."weblog.post.get" (in post_id varchar) __soap_http 
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := sioc..blog_post_iri (blog_id, post_id);
-  q := sprintf ('describe <%s> from <%s>', iri, sioc..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (sioc..blog_post_iri (blog_id, post_id));
 ret:
   return '';
 }
@@ -194,13 +192,13 @@ create procedure ODS.ODS_API."weblog.comment.get" (in post_id varchar, in commen
 
   if (comment_id is null)
     {
-      iri := sioc..blog_post_iri (blog_id, post_id);
-      q := sprintf ('describe ?x from <%s> where { <%s> sioc:has_reply ?x }', sioc..get_graph (), iri);
+      iri := sioc..fix_uri (sioc..blog_post_iri (blog_id, post_id));
+      q := sprintf ('describe ?x from <%s> where { <%s> sioc:has_reply ?x }', ods_graph (), iri);
     }
   else
     {
-  iri := sioc..blog_comment_iri (blog_id, post_id, comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, sioc..get_graph ());
+      iri := sioc..fix_uri (sioc..blog_comment_iri (blog_id, post_id, comment_id));
+      q := sprintf ('describe <%s> from <%s>', iri, ods_graph ());
     }
   exec_sparql (q);
 ret:
@@ -317,7 +315,6 @@ create procedure ODS.ODS_API."weblog.get" (in inst_id int) __soap_http 'text/xml
 {
   declare uname, inst_name, blog_id varchar;
   declare rc int;
-  declare iri, q varchar;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -329,9 +326,7 @@ create procedure ODS.ODS_API."weblog.get" (in inst_id int) __soap_http 'text/xml
   whenever not found goto ret;
   select WAI_NAME into inst_name from DB.DBA.WA_INSTANCE where WAI_ID = inst_id;
 
-  iri := sioc..blog_iri (inst_name);
-  q := sprintf ('describe <%s> from <%s>', iri, sioc..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (sioc..blog_iri (inst_name));
 ret:
   return '';
 }

@@ -359,7 +359,7 @@ create procedure ODS.ODS_API."photo.comment.get" (
 
 	declare uname varchar;
 	declare inst_id, image_id, id integer;
-	declare q, post_iri, iri varchar;
+	declare post_iri varchar;
 
 	whenever not found goto _exit;
 
@@ -373,10 +373,7 @@ create procedure ODS.ODS_API."photo.comment.get" (
 		return signal('PH001', 'Discussions must be enabled for this instance');
 
   post_iri := SIOC..post_iri_ex (SIOC..photo_iri (PHOTO.WA.domain_name ( inst_id)), image_id);
-  iri := SIOC..gallery_comment_iri (post_iri, comment_id);
-	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-	exec_sparql (q);
-
+  ods_describe_iri (SIOC..gallery_comment_iri (post_iri, comment_id));
 _exit:
 	return '';
 }

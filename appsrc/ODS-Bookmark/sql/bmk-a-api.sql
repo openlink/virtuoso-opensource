@@ -89,16 +89,14 @@ create procedure ODS.ODS_API."bookmark.get" (
 
   declare uname varchar;
   declare inst_id integer;
-  declare q, iri varchar;
 
   inst_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bookmark_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
   {
     return ods_auth_failed ();
   }
-  iri := SIOC..bmk_post_iri (inst_id, bookmark_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..bmk_post_iri (inst_id, bookmark_id));
+  return '';
 }
 ;
 
@@ -358,7 +356,6 @@ create procedure ODS.ODS_API."bookmark.annotation.get" (
 
   declare inst_id, bookmark_id integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -367,10 +364,7 @@ create procedure ODS.ODS_API."bookmark.annotation.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..bmk_annotation_iri (inst_id, bookmark_id, annotation_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..bmk_annotation_iri (inst_id, bookmark_id, annotation_id));
 _exit:
   return '';
 }
@@ -485,7 +479,6 @@ create procedure ODS.ODS_API."bookmark.comment.get" (
 
   declare uname varchar;
   declare inst_id, bookmark_id integer;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -494,10 +487,7 @@ create procedure ODS.ODS_API."bookmark.comment.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..bmk_comment_iri (inst_id, cast (bookmark_id as integer), comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..bmk_comment_iri (inst_id, cast (bookmark_id as integer), comment_id));
 _exit:
   return '';
 }

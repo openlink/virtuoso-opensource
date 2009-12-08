@@ -577,9 +577,7 @@ create procedure ODS.ODS_API."wiki.comment.get" (
   if (not topic.ti_id)
     signal ('37000', 'The topic does not exist');
 
-	iri := SIOC..wiki_comment_iri (topic.ti_id, comment_id);
-	q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-	exec_sparql (q);
+	ods_describe_iri (SIOC..wiki_comment_iri (topic.ti_id, comment_id));
 
 _exit:
 	return '';

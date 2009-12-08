@@ -67,9 +67,8 @@ create procedure ODS.ODS_API."poll.get" (
   inst_id := (select P_DOMAIN_ID from POLLS.WA.POLL where P_ID = poll_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
-  iri := SIOC..poll_post_iri (inst_id, poll_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+  ods_describe_iri (SIOC..poll_post_iri (inst_id, poll_id));
+  return '';
 }
 ;
 
@@ -526,10 +525,7 @@ create procedure ODS.ODS_API."poll.comment.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..poll_comment_iri (inst_id, cast (poll_id as integer), comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..poll_comment_iri (inst_id, cast (poll_id as integer), comment_id));
 _exit:
   return '';
 }

@@ -2555,6 +2555,21 @@ create procedure fix_graph (in g any)
 }
 ;
 
+create procedure fix_uri (in uri any)
+{
+  declare hf any;
+
+  hf := rfc1808_parse_uri (uri);
+  if (hf[1] = registry_get ('URIQADefaultHost'))
+  {
+    hf[0] := 'local';
+    hf[1] := '';
+    uri := DB.DBA.vspx_uri_compose (hf);
+  }
+  return uri;
+}
+;
+
 create procedure DB.DBA.ODS_QUAD_URI (in g_iri any, in s_iri any, in p_iri any, in o_iri any)
 {
   g_iri := fix_graph (g_iri);
@@ -3742,7 +3757,7 @@ create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf i
   else
     accept := '';
   iri := 'http://'||get_cname()||path;
-  qr := sprintf ('SPARQL define input:storage ""  DESCRIBE <%s> FROM <%s>', iri, get_graph ());
+  qr := sprintf ('SPARQL define input:storage ""  DESCRIBE <%s> FROM <%s>', iri, fix_graph (get_graph ()));
 --  dbg_printf ('%s', qr);
   stat := '00000';
   set_user_id ('SPARQL');
@@ -3954,13 +3969,7 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
   hf[1] := '';
   iri := DB.DBA.vspx_uri_compose (hf);
 
-  hf := rfc1808_parse_uri (agent);
-  if (hf[1] = registry_get ('URIQADefaultHost'))
-    {
-      hf[0] := 'local';
-      hf[1] := '';
-      agent := DB.DBA.vspx_uri_compose (hf);
-    }
+  agent := fix_uri (agent);
   if (iri = agent) -- everybody has access to his own protected foaf
     return 1;
   stat := '00000';
@@ -3985,9 +3994,9 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
     {
       rollback work;
       return 0;
-    }
-  ;
+  };
 
+  set_user_id ('dba');
   info := get_certificate_info (9);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
 
@@ -3999,6 +4008,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   if (iri is not null and not foaf_check_friend (iri, agent))
     return 0;
 
+  -- agent := fix_uri (agent);
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   gr := DB.DBA.vspx_uri_compose (hf);
@@ -4027,6 +4037,8 @@ create procedure foaf_check_ssl (in iri varchar)
 {
   declare rc int;
   declare graph, stat, msg varchar;
+
+  set_user_id ('dba');
   rc := foaf_check_ssl_int (iri, graph);
   exec (sprintf ('sparql clear graph <%S>', graph), stat, msg);
   commit work;
@@ -4506,7 +4518,7 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
   declare iri, graph, ses any;
   declare qrs, stat, msg, accept, pref any;
   declare rset, metas any;
-  declare triples, maybe_more any;
+  declare maybe_more any;
 
 --  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
@@ -4521,17 +4533,17 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
     accept := 'text/rdf+n3';
   else
     accept := 'application/rdf+xml';
-  graph := get_graph ();
+  graph := fix_graph (get_graph ());
   ses := string_output ();
-  iri := user_obj_iri (u_name);
+  iri := fix_uri (user_obj_iri (u_name));
   qrs := vector (0,0);
   pref := 'sparql prefix sioc: <http://rdfs.org/sioc/ns#> prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ';
   qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
 	  ' FROM <%s> WHERE { <%s> ?p ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . optional { ?o rdfs:seeAlso ?sa } '||
-	  ' filter (?p != sioc:creator_of) }', iri, get_graph (), iri);
+	  ' filter (?p != sioc:creator_of) }', iri, graph, iri);
   qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . ?s a ?t . ?s rdfs:label ?l . ?s rdfs:seeAlso ?sa . } '||
 	  ' FROM <%s> WHERE { ?s ?p <%s> . optional { ?s a ?t } . optional { ?s rdfs:label ?l } . optional { ?s rdfs:seeAlso ?sa } '||
-	  ' filter (?p != sioc:has_creator) }', iri, get_graph (), iri);
+	  ' filter (?p != sioc:has_creator) }', iri, graph, iri);
 
   if (fmt = 'rdf')
     rdf_head (ses);
@@ -4626,7 +4638,8 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
     accept := 'text/rdf+n3';
   else
     accept := 'application/rdf+xml';
-  graph := get_graph ();
+  graph := fix_graph (get_graph ());
+  iri := fix_uri (iri);
   ses := string_output ();
   lim := 20;--coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
   offs := coalesce (p, 0) * lim;
@@ -4636,16 +4649,16 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
     {
       qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . } '||
       ' FROM <%s> WHERE { <%s> ?p ?o . filter (?p != sioc:container_of && ?p != atom:entry && ?p != atom:contains) }',
-      iri, get_graph (), iri);
+      iri, graph, iri);
       qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . } '||
       ' FROM <%s> WHERE { ?s ?p <%s> . filter (?p != sioc:has_container && ?p != atom:source ) }',
-      iri, get_graph (), iri);
+      iri, graph, iri);
     }
   qrs[2] := sprintf (
     'CONSTRUCT { <%s> sioc:container_of ?o . ?o sioc:has_container <%s> . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
     ' FROM <%s> WHERE { <%s> sioc:container_of ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . '||
     ' optional { ?o rdfs:seeAlso ?sa } . optional { ?o dct:created ?cr } } order by desc (?cr) LIMIT %d OFFSET %d',
-    iri, iri, get_graph (), iri, lim, offs);
+    iri, iri, graph, iri, lim, offs);
 
   if (fmt = 'rdf')
     rdf_head (ses);
@@ -4686,9 +4699,7 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
       if (fmt = 'rdf')
 	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
-	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
-    }
     }
   if (fmt = 'rdf')
     rdf_tail (ses);

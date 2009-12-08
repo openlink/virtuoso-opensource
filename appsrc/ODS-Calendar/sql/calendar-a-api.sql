@@ -89,14 +89,13 @@ create procedure ODS.ODS_API."calendar.get" (
 
   declare uname varchar;
   declare inst_id integer;
-  declare q, iri varchar;
 
   inst_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = event_id);
   if (not ods_check_auth (uname, inst_id, 'author'))
     return ods_auth_failed ();
-  iri := SIOC..calendar_event_iri (inst_id, event_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
+
+  ods_describe_iri (SIOC..calendar_event_iri (inst_id, event_id));
+  return '';
 }
 ;
 
@@ -477,7 +476,6 @@ create procedure ODS.ODS_API."calendar.comment.get" (
 
   declare inst_id, event_id integer;
   declare uname varchar;
-  declare q, iri varchar;
 
   whenever not found goto _exit;
 
@@ -486,10 +484,7 @@ create procedure ODS.ODS_API."calendar.comment.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..calendar_comment_iri (inst_id, cast (event_id as integer), comment_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..calendar_comment_iri (inst_id, cast (event_id as integer), comment_id));
 _exit:
   return '';
 }
@@ -594,10 +589,7 @@ create procedure ODS.ODS_API."calendar.annotation.get" (
   if (not ods_check_auth (uname, inst_id, 'reader'))
     return ods_auth_failed ();
 
-  iri := SIOC..calendar_annotation_iri (inst_id, event_id, annotation_id);
-  q := sprintf ('describe <%s> from <%s>', iri, SIOC..get_graph ());
-  exec_sparql (q);
-
+  ods_describe_iri (SIOC..calendar_annotation_iri (inst_id, event_id, annotation_id));
 _exit:
   return '';
 }
