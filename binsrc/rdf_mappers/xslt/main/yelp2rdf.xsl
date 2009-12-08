@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY review "http:/www.purl.org/stuff/rev#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -39,6 +40,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:review="&review;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dcterms="http://purl.org/dc/terms/">
 
@@ -67,7 +69,7 @@
 				<dc:description>
 					<xsl:value-of select="description" />
 				</dc:description>
-				<sioc:link rdf:resource="{link}" />
+			        <bibo:uri rdf:resource="{link}" />
 				<xsl:for-each select="item">
 				    	<foaf:topic rdf:resource="{vi:proxyIRI (link)}" />
 					<sioc:container_of rdf:resource="{vi:proxyIRI (link)}" />
@@ -80,13 +82,24 @@
 					<dc:title>
 						<xsl:value-of select="title" />
 					</dc:title>
+					<review:rating>
+						<xsl:value-of select="substring-before(substring-after(title, '('), ') on Yelp')" />
+				        </review:rating>
+					<review:reviewer rdf:resource="{vi:proxyIRI (concat(link, '_author'))}"/>
 					<dc:description>
 						<xsl:value-of select="description" />
 					</dc:description>
+				        <bibo:uri rdf:resource="{link}"/>
 					<dcterms:created rdf:datatype="&xsd;dateTime">
 						<xsl:value-of select="vi:http_string_date (pubDate)"/>
 					</dcterms:created>
 				</rdf:Description>
+			        <rdf:Description rdf:about="{vi:proxyIRI (concat(link, '_author'))}">
+				    <rdf:type rdf:resource="&foaf;Person"/>
+				    <foaf:name>
+						<xsl:value-of select="substring-before(title, '(')" />
+				    </foaf:name>
+			        </rdf:Description>
 			</xsl:for-each>
 		</rdf:RDF>
     </xsl:template>
