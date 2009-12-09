@@ -42,6 +42,7 @@
       <v:variable persist="0" name="dest" type="any" default="null" />
       <v:variable persist="0" name="mod" type="any" default="null" />
       <v:variable persist="0" name="rat" type="any" default="null" />
+      <v:variable persist="0" name="lim" type="any" default="null" />
       <v:variable persist="0" name="obj" type="any" default="null" />
       <v:variable persist="0" name="idx" type="any" default="null" />
     </vm:variables>
@@ -99,7 +100,7 @@
     if (self.acl_list is null)
       {
         declare dta, mta any;
-	exec ('select HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE
+	exec ('select HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT
 	from HTTP_ACL where HA_LIST = ? order by HA_ORDER',
 	null, null, vector (self.acl_name), 0, mta, dta);
 	self.acl_list := dta;
@@ -224,6 +225,7 @@
 				    self.obj := (control.vc_parent as vspx_row_template).te_rowset[1];
 				    self.mod := (control.vc_parent as vspx_row_template).te_rowset[4];
 				    self.rat := (control.vc_parent as vspx_row_template).te_rowset[6];
+				    self.lim := (control.vc_parent as vspx_row_template).te_rowset[7];
 				    self.idx := (control.vc_parent as vspx_row_template).te_ctr;
 				    self.edit_acl.vc_data_bind (e);
 				  </v:on-post>
@@ -492,6 +494,14 @@
 			      </td>
 			    </tr>
 			    <tr>
+			      <td>Limit</td><td>
+				<v:text name="lim1" value="--self.lim" default_value="0" error-glyph="*">
+				  <v:validator test="regexp" regexp="^[\-+]?[0-9]+(\.[0-9]+)?$" message="Decimal number is expected"
+				    runat='server'/>
+				</v:text>
+			      </td>
+			    </tr>
+			    <tr>
 			      <td colspan="2">
 				<v:button name="cancel1" value="Cancel" action="simple">
 				  <v:on-post>
@@ -505,7 +515,7 @@
 				  <v:on-post><![CDATA[
 				    declare arr, elm any;
 				    declare l, idx int;
-				    declare obj, filt, acc, mod, dest, rat any;
+				    declare obj, filt, acc, mod, dest, rat, lim any;
 
 				    if (not self.vc_is_valid)
 				      return;
@@ -517,6 +527,7 @@
 				    obj := -1;
                                     mod := -1;
                                     rat := 0;
+                                    lim := 0;
 
 				    if (self.acl_name <> 'HTTP')
 				      dest := self.dest1.ufl_value;
@@ -535,6 +546,7 @@
 					  }
 				      }
 				    rat := atod (self.rat1.ufl_value);
+				    lim := atod (self.lim1.ufl_value);
 
 				    self.ch := 1;
 				    self.edit := 0;
@@ -550,7 +562,7 @@
 				        arr := vector_concat (arr, vector (vector ()));
 			              }
 
-				    arr[self.idx] := vector (self.idx, obj, filt, acc, mod, dest, rat);
+				    arr[self.idx] := vector (self.idx, obj, filt, acc, mod, dest, rat, lim);
                                     self.acl_list := arr;
 
 				    self.idx := null;
@@ -587,8 +599,8 @@
 				arr := self.acl_list;
 				foreach (any elm in arr) do
 				  {
-				    insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE)
-				    values (self.acl_name, i, elm[1], elm[2], elm[3], elm[4], elm[5], elm[6]);
+				    insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT)
+				    values (self.acl_name, i, elm[1], elm[2], elm[3], elm[4], elm[5], elm[6], elm[7]);
 				    i := i + 1;
 				  }
 				commit work;

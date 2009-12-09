@@ -67,6 +67,7 @@ HA_FLAG   integer not NULL default 1, -- Allow/Deny flag, 0 - allow, 1 - deny
 HA_RW   integer default 0,    -- Read/Write flag,  0 - read,  1 - post
 HA_DEST_IP  varchar default '*',    -- Destination IP/Host
 HA_RATE double precision,    -- Rate (hits/second)
+HA_LIMIT  integer default 0,
 PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
 ;
 
@@ -83,7 +84,10 @@ alter table HTTP_ACL add HA_ORDER integer not null
 --!AFTER
 alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 ;
+
 --#ENDIF
+alter table HTTP_ACL add HA_LIMIT integer default 0
+;
 
 -- triggers to keep in sync in-memory representation
 --#IF VER=5
@@ -91,12 +95,12 @@ alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
 --#ENDIF
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
-declare def_rate int;
-if (HA_LIST <> 'NEWS')
-def_rate := 0;
-else
-def_rate := 1;
-http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, coalesce (HA_RATE, def_rate));
+  declare def_rate int;
+  if (HA_LIST <> 'NEWS')
+    def_rate := 0;
+  else
+    def_rate := 1;
+  http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, coalesce (HA_RATE, def_rate), HA_LIMIT);
 }
 ;
 
@@ -106,15 +110,15 @@ http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, H
 --#ENDIF
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
-http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
-http_acl_set (N.HA_LIST, N.HA_ORDER, N.HA_CLIENT_IP, N.HA_FLAG, N.HA_DEST_IP, N.HA_OBJECT, N.HA_RW,
-    coalesce (N.HA_RATE, 0));
+  http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
+  http_acl_set (N.HA_LIST, N.HA_ORDER, N.HA_CLIENT_IP, N.HA_FLAG, N.HA_DEST_IP, N.HA_OBJECT, N.HA_RW,
+      coalesce (N.HA_RATE, 0), N.HA_LIMIT);
 }
 ;
 
 create trigger HTTP_ACL_D after delete on DB.DBA.HTTP_ACL referencing old as O
 {
-http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
+  http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
 }
 ;
 

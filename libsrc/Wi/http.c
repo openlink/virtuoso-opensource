@@ -385,13 +385,15 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 }
 
 static int
-http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit)
+http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit, ws_connection_t * ws)
 {
   int inx;
   DO_BOX (ws_acl_t *, elm, inx, alist)
     {
       if (name && DVC_MATCH == cmp_like (name, elm->ha_mask, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
+	  if (ws)
+	    ws->ws_body_limit = elm->ha_limit;
 	  if (dst == NULL && obj_id < 0 && rw_flag < 0)
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
@@ -416,7 +418,7 @@ ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 
   if (list)
     {
-      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, ACL_CHECK_HITS, hit) > 0) /* 1:deny */
+      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, ACL_CHECK_HITS, hit, ws) > 0) /* 1:deny */
 	rc = 0;
     }
   return rc;
@@ -1460,6 +1462,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_status_line);
   ws->ws_status_line = NULL;
   ws->ws_status_code = 0;
+  ws->ws_body_limit = 0;
   if (ws->ws_cli)
     {
       memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
@@ -1776,6 +1779,13 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
     {
       cnt_enc = WS_CE_GZIP;
       ws->ws_try_pipeline = 0; /* browsers based on webkit workaround */
+    }
+  else if (ws->ws_method != WM_HEAD && ws->ws_body_limit > 0 && ws->ws_body_limit < len)
+    {
+      code = "HTTP/1.1 509 Bandwidth Limit Exceeded";
+      HTTP_SET_STATUS_LINE (ws, code, 1);
+      strses_flush (ws->ws_strses);
+      len = strses_length (ws->ws_strses);
     }
 
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
@@ -8788,7 +8798,7 @@ acl_compare (const void *ileft, const void *iright)
   return 0;
 }
 
-#define ACL_NEW(elm,ord,mask,flag,dst,obj,frw,rate) \
+#define ACL_NEW(elm,ord,mask,flag,dst,obj,frw,rate,limit) \
 ws_acl_t * elm = (ws_acl_t *) dk_alloc (sizeof (ws_acl_t)); \
 { \
   elm->ha_order = (ord); \
@@ -8801,6 +8811,7 @@ ws_acl_t * elm = (ws_acl_t *) dk_alloc (sizeof (ws_acl_t)); \
   elm->ha_cli_ip_w = NULL; \
   elm->ha_cli_ip_r = NULL; \
   elm->ha_hits = NULL; \
+  elm->ha_limit = limit; \
   if (rate) { \
     elm->ha_hits = id_str_hash_create (101); \
     id_hash_set_rehash_pct (elm->ha_hits, 200); \
@@ -8839,7 +8850,7 @@ http_acl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int action, ch
     {
       case ACL_ADD:
 	    {
-	      int obj_is_null = 0, flag_rw_is_null = 0;
+	      int obj_is_null = 0, flag_rw_is_null = 0, limit_is_null = 0;
 	      long order 	= (long) bif_long_arg (qst, args, 1, szMe);
 	      caddr_t mask 	= bif_string_arg (qst, args, 2, szMe);
 	      int flag 		= (int) bif_long_arg (qst, args, 3, szMe);
@@ -8847,10 +8858,11 @@ http_acl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int action, ch
 	      long obj 		= (long) bif_long_or_null_arg (qst, args, 5, szMe, &obj_is_null);
 	      int flag_rw 	= (int) bif_long_or_null_arg (qst, args, 6, szMe, &flag_rw_is_null);
 	      float rate 	= BOX_ELEMENTS (args) > 7 ? bif_float_arg (qst, args, 7, szMe) : 0;
+	      OFF_T limit 	= BOX_ELEMENTS (args) > 8 ? bif_long_or_null_arg (qst, args, 8, szMe, &limit_is_null) : 0;
 
 	      int len = list ? BOX_ELEMENTS (list) : 0;
 	      caddr_t *new_list = (caddr_t *) dk_alloc_box ((len + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-	      ACL_NEW (elm, order, mask, flag, dst, obj, flag_rw, rate);
+	      ACL_NEW (elm, order, mask, flag, dst, obj, flag_rw, rate, limit);
 
 	      if (list)
 		memcpy (new_list, list, sizeof (caddr_t) * len);
@@ -8914,7 +8926,7 @@ http_acl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int action, ch
 
 	      if (check_rate && check_rate != ACL_CHECK_MPS && check_rate != ACL_CHECK_HITS)
 		sqlr_new_error ("22023", "HT080", "Check rate flag must be 0, 1 or 2");
-	      rc =  http_acl_match (list, name, dst, obj_id, rw_flag, check_rate, NULL);
+	      rc =  http_acl_match (list, name, dst, obj_id, rw_flag, check_rate, NULL, NULL);
 	      break;
 	    }
       default:
@@ -9130,7 +9142,7 @@ http_init_acl_and_cache ()
   http_acls = id_str_hash_create (101);
   http_url_cache = id_str_hash_create (101);
   ddl_sel_for_effect ("select count(*) from DB.DBA.HTTP_ACL where "
-      "http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, HA_RATE)");
+      "http_acl_set (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG, HA_DEST_IP, HA_OBJECT, HA_RW, HA_RATE, HA_LIMIT)");
   ddl_sel_for_effect ("select count(*) from WS.WS.SYS_CACHEABLE where http_url_cache_set (CA_URI, CA_CHECK)");
 }
 
