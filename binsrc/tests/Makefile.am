@@ -179,7 +179,6 @@ inifile.vers.c:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	davperf.sql \
-	enquire.c \
 	isql_win32.c \
 	tpccoci.c \
 	davperf.sql \
