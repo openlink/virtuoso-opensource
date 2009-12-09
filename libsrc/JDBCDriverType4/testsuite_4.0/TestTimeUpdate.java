@@ -44,6 +44,10 @@ public class TestTimeUpdate
 	 PreparedStatement ps;
 	 ResultSet rs;
 
+	 try {
+	   stmt.executeUpdate ("drop table EX..TSTTIME");
+	 } catch (Exception e) { }
+
          System.out.print("Execute CREATE TABLE");
          stmt.executeUpdate("create table EX..TSTTIME (TSTTIME time)");
          System.out.println("    PASSED");

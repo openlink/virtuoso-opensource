@@ -57,6 +57,14 @@ public class TestLongXml
             System.out.println("    FAILED");
             System.exit(-1);
          }
+
+         try {
+	    stmt.executeUpdate ("drop table EX..DEMO_XML");
+         } catch (Exception e) { }
+         try {
+	    stmt.executeUpdate ("drop procedure EX..DEMO_XML_PROC");
+         } catch (Exception e) { }
+         
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..DEMO_XML (VAL int primary key, data varchar)") == 0)
             System.out.println("    PASSED");

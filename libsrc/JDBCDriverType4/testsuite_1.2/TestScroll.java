@@ -56,6 +56,11 @@ public class TestScroll
             System.out.println("    FAILED");
             System.exit(-1);
          }
+
+	 try {
+	   stmt.executeUpdate ("drop table EX..DEMO");
+	 } catch (Exception e) { }
+
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table ex..demo (Id integer,filler integer,primary key(Id))") == 0)
             System.out.println("    PASSED");

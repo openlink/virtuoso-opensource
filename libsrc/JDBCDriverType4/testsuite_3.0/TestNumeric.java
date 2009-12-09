@@ -57,6 +57,14 @@ public class TestNumeric
             System.exit(-1);
          }
 	 
+         try {
+	    stmt.executeUpdate ("drop table EX..DEMO");
+         } catch (Exception e) { }
+         try {
+	    stmt.executeUpdate ("drop procedure test_int");
+         } catch (Exception e) { }
+
+         
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..DEMO (ID integer,VAL numeric(9,0))") == 0)
             System.out.println("    PASSED");
