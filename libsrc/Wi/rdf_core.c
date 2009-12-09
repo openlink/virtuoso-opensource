@@ -1845,7 +1845,7 @@ key_name_to_iri_id_1 (lock_trx_t * lt, caddr_t name, int make_new)
   caddr_t pref_id, iri_id;
   if (DV_IRI_ID == DV_TYPE_OF (name))
     return box_copy (name);
-#ifndef NDEBUG
+#ifdef DEBUG
 /*                                             01234567 */
   if (uriqa_dynamic_local && !strncmp (name, "http://", 7))
     {
