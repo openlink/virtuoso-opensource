@@ -534,10 +534,53 @@ read_short (dk_session_t * ses)
 
 
 static void *
+rb_id_deserialize (dk_session_t * ses, dtp_t dtp)
+{
+  int64 n;
+  if (DV_RDF_ID_8 == dtp)
+    n = read_int64 (ses);
+  else
+    n = read_long (ses);
+  return (void*)rbb_from_id (n);
+}
+ 
+
+static void *
+rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
+{
+  rdf_box_t * rb = rb_allocate ();
+  if (RBS_ID_ONLY (flags))
+    rb->rb_serialize_id_only = 1;
+  else if (RBS_HAS_LANG & flags)
+    {
+      rb->rb_lang = read_short (ses);
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+    }
+  else
+    {
+      rb->rb_type = read_short (ses);
+      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+    }
+  if (flags & RBS_64)
+    rb->rb_ro_id = read_int64 (ses);
+  else
+    rb->rb_ro_id = read_long (ses);
+  if (flags & RBS_COMPLETE)
+    {
+      rb->rb_box = scan_session_boxing (ses);
+      rb->rb_is_complete = 1;
+    }
+  return (void*)rb;
+}
+ 
+
+static void *
 rb_deserialize (dk_session_t * ses, dtp_t dtp)
 {
   rdf_box_t *rb;
   dtp_t flags = session_buffered_read_char (ses);
+  if (flags & RBS_EXT_TYPE)
+    return rb_ext_deserialize (ses, flags);
   if (flags & RBS_CHKSUM)
     {
       rb = (rdf_box_t *) rbb_allocate ();
@@ -661,6 +704,8 @@ init_readtable (void)
   readtable[DV_DB_NULL] = box_read_db_null;
   readtable[DV_BOX_FLAGS] = box_read_flags;
   readtable[DV_RDF] = rb_deserialize;
+  readtable[DV_RDF_ID] = rb_id_deserialize;
+  readtable[DV_RDF_ID_8] = rb_id_deserialize;
   strses_readtable_initialize ();
 }
 

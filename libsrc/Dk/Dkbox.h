@@ -445,6 +445,8 @@ ptr += 4
 #define DV_RDF 				246		   /*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
 #define DV_INT64 			247		   /*!< This tag is used in schema and serialization. int box is always int64 */
 #define DV_PLACEHOLDER 			248		   /* This tag keeps placeholder_t structure */
+#define DV_RDF_ID 248 /* no confl w placeholder, pl is not serialized */
+#define DV_RDF_ID_8 249
 
 
 /* Special box for wrapping memory for user-specific objects. */
@@ -607,6 +609,7 @@ typedef struct rdf_box_s
   unsigned 		rb_is_outlined:1;
   unsigned 		rb_chksum_tail:1;
   unsigned 		rb_is_text_index:1;
+  unsigned 		rb_serialize_id_only:1;
   int64 		rb_ro_id;
   caddr_t 		rb_box;
 } rdf_box_t;
@@ -620,7 +623,11 @@ typedef struct rdf_box_s
 #define RBS_CHKSUM			0x10
 #define RBS_64				0x20
 #define RBS_SKIP_DTP			0x40
+#define RBS_EXT_TYPE 0x80
 
+
+#define RBS_ID_ONLY(f) \
+  ((RBS_HAS_LANG | RBS_HAS_TYPE) == (f & (RBS_HAS_LANG | RBS_HAS_TYPE)))
 
 typedef struct rdf_bigbox_s
 {
@@ -680,6 +687,7 @@ EXE_EXPORT (caddr_t, box_vsprintf, (size_t buflen_eval, const char *format, va_l
 #endif
 rdf_box_t *rb_allocate (void);
 rdf_bigbox_t *rbb_allocate (void);
+caddr_t rbb_from_id (int64 n);
 void rdf_box_audit_impl (rdf_box_t * rb);
 #ifdef DEBUG
 #define rdf_box_audit(rb) 		rdf_box_audit_impl(rb)
@@ -816,10 +824,15 @@ extern void dkbox_terminate_module (void);
 
 #ifdef WORDS_BIGENDIAN
 #define DV_INT_TAG_WORD 		0x080000bd
+#define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD 		
 #define DV_IRI_TAG_WORD 		0x080000f3
+#define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
+
 #else
 #define DV_INT_TAG_WORD  		0xbd000008
+#define DV_INT_TAG_WORD_64 0xbd00000800000000
 #define DV_IRI_TAG_WORD 		0xf3000008
+#define DV_IRI_TAG_WORD_64 		0xf300000800000000
 #endif
 
 /* values for box_flags */

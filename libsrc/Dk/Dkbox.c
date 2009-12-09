@@ -1308,6 +1308,18 @@ rbb_allocate (void)
 }
 
 
+caddr_t 
+rbb_from_id (int64 n)
+{
+  rdf_box_t * rb = (rdf_box_t*)rbb_allocate ();
+  rb->rb_ro_id = n;
+  rb->rb_is_outlined = 1;
+  rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  return (caddr_t)rb;
+}
+
+
 void
 rdf_box_audit_impl (rdf_box_t * rb)
 {
