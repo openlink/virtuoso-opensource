@@ -2536,7 +2536,12 @@ create procedure nntp_post_iri (in grp varchar, in msgid varchar)
 
 create procedure dav_res_iri (in path varchar)
 {
-  return sprintf ('http://%s%s', get_cname(), path);
+  declare S any;
+
+  S := string_output ();
+  http_dav_url (path, null, S);
+  S := string_output_string (S);
+  return sprintf ('http://%s%s', get_cname(), S);
 };
 
 registry_set ('URIQADynamicLocal', coalesce (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal'), '0'));
