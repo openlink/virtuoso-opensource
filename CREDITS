@@ -260,3 +260,11 @@ Handle System Client Library
    The Handle System Client Library is distributed under the terms of
    the Handle.NET Software Client Library (VER. 5) -- C Version License:
    <http://hdl.handle.net/4263537/5027>
+
+
+TPC-W
+<http://www.tpc.org/tpcw/>
+
+   Virtuoso distributes a copy of the IMAGEGEN and WGET sources
+   from the Transaction Processing Performance Council as required
+   by <http://www.tpc.org/tpcw/spec/WGEN_README.doc>
