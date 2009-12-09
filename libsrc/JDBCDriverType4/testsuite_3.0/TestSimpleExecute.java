@@ -187,6 +187,11 @@ public class TestSimpleExecute
             System.out.println("    FAILED");
             System.exit(-1);
          }
+
+	 try {
+	   stmt.executeUpdate ("drop table EX..DEMO");
+	 } catch (Exception e) { }
+         
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..DEMO (ID integer,FILLER integer,primary key(ID))") == 0)
             System.out.println("    PASSED");

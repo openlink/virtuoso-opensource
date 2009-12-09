@@ -62,6 +62,14 @@ public class TestExecuteBlob
             System.out.println("    FAILED");
             System.exit(-1);
          }
+
+         try {
+	    stmt.executeUpdate ("drop table EX..EBLOB");
+         } catch (Exception e) { }
+         try {
+	    stmt.executeUpdate ("drop table EX..ECLOB");
+         } catch (Exception e) { }
+         
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..EBLOB (ID integer,FILLER long varbinary,primary key(ID))") == 0)
             System.out.println("    PASSED");

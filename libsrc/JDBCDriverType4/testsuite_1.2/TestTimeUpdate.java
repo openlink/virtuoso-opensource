@@ -42,6 +42,10 @@ public class TestTimeUpdate
 
          Statement stmt = c.createStatement();
 
+	 try {
+	   stmt.executeUpdate ("drop table EX..TSTTIME");
+	 } catch (Exception e) { }
+
          System.out.print("Execute CREATE TABLE");
          stmt.executeUpdate("create table ex..tstTIME (tstTIME time)");
          System.out.println("    PASSED");

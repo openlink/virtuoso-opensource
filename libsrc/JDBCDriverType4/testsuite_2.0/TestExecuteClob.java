@@ -61,6 +61,11 @@ public class TestExecuteClob
             System.out.println("    FAILED");
             System.exit(-1);
          }
+
+         try {
+	    stmt.executeUpdate ("drop table EX..ECLOB");
+         } catch (Exception e) { }
+         
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..ECLOB (ID integer,FILLER long varchar,primary key(ID))") == 0)
             System.out.println("    PASSED");

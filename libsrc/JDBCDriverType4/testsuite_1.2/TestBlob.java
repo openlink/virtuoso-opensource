@@ -75,13 +75,10 @@ public class TestBlob
      {
 
             Statement stmt = conn.createStatement();
-	    try
-	      {
+	    try {
 		stmt.executeUpdate ("drop table EX..TESTBLOB");
-	      }
-	    catch (Exception e)
-	      {
-	      }
+	    } catch (Exception e) { }
+
 	    stmt.executeUpdate ("create table EX..TESTBLOB ( BLOB_COL LONG VARBINARY )");
             // create table EX..TESTBLOB ( BLOB_COL LONG VARBINARY );
             PreparedStatement ps = conn.prepareStatement("insert into EX..TESTBLOB (BLOB_COL) values(?)");
@@ -176,13 +173,9 @@ public class TestBlob
             rs.close();
             ps.close();
 
-	    try
-	      {
+	    try {
 		stmt.executeUpdate ("drop table EX..TESTBLOB");
-	      }
-	    catch (Exception e)
-	      {
-	      }
+	    } catch (Exception e) { }
      }
      catch ( SQLException e )
      {
