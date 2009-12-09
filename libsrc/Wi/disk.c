@@ -2420,6 +2420,91 @@ buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
 }
 
 
+
+void
+gen_bsort (int * in, int n_in, sort_cmp_func_t cmp, void* cd)
+{
+  /* Bubble sort n_in first items in the array. */
+  int n, m;
+  for (m = n_in - 1; m > 0; m--)
+    {
+      for (n = 0; n < m; n++)
+	{
+	  int tmp;
+	  if (DVC_GREATER == cmp (in[n], in[n + 1], cd))
+	    {
+	      tmp = in[n + 1];
+	      in[n + 1] = in[n];
+	      in[n] = tmp;
+	    }
+	}
+    }
+}
+
+
+void
+gen_qsort (int * in, int * left,
+	   int n_in, int depth, sort_cmp_func_t cmp, void* cd)
+{
+  /* sort the ints in in, using cmp for comparison, cmp gets cd for context */
+  if (n_in < 2)
+    return;
+  if (n_in < 3)
+    {
+      if (DVC_GREATER == cmp (in[0], in[1], cd))
+	{
+	  int tmp = in[0];
+	  in[0] = in[1];
+	  in[1] = tmp;
+	}
+    }
+  else
+    {
+      int split;
+      int mid, is_mid = 0;
+      int n_left = 0, n_right = n_in - 1;
+      int inx;
+      if (depth > 60)
+	{
+	  gen_bsort (in, n_in, cmp, cd);
+	  return;
+	}
+      split =  in[n_in / 2];
+      for (inx = 0; inx < n_in; inx++)
+	{
+	  int res = cmp (in[inx], split, cd);
+	  if (!is_mid && DVC_MATCH == res)
+	    {
+	      is_mid = 1;
+	      mid = in[inx];
+	      continue;
+	    }
+	  if (DVC_LESS == res)
+	    {
+	      left[n_left++] = in[inx];
+	    }
+	  else
+	    {
+	      left[n_right--] = in[inx];
+	    }
+	}
+      if (!is_mid)
+	{
+	  log_error ("in gen_qsort, items being sorted look to have changed during sort, result will not be in order");
+	  return;
+	}
+      gen_qsort (left, in, n_left, depth + 1, cmp, cd);
+      gen_qsort (left + n_right + 1, in + n_right + 1,
+		 (n_in - n_right) - 1, depth + 1, cmp, cd);
+      memcpy (in, left, n_left * sizeof (int));
+      in[n_left] = mid;
+      memcpy (in + n_right + 1, left + n_right + 1,
+	  ((n_in - n_right) - 1) * sizeof (int));
+
+    }
+}
+
+
 long last_flush_time = 0;
 
 

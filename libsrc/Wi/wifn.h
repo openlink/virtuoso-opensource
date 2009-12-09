@@ -262,6 +262,10 @@ void buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t _key);
 dp_addr_t bd_phys_page_key (buffer_desc_t * b);
 dp_addr_t bd_phys_page_key (buffer_desc_t * b);
 
+typedef int (*sort_cmp_func_t)(int n1, int n2, void * cd);
+void gen_qsort (int * in, int * left,
+	   int n_in, int depth, sort_cmp_func_t cmp, void* cd);
+
 
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
 buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
