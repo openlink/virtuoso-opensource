@@ -155,13 +155,11 @@ create procedure check_authentication_ssl (
   if (isnull (server_https_port ()) or not is_https_ctx ())
     return 0;
 
-  if (not SIOC..foaf_check_ssl (null))
-    return 0;
-
   uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and WAUI_CERT_FINGERPRINT = get_certificate_info (6));
   if (isnull (uname))
     return 0;
-  return 1;
+
+  return SIOC..foaf_check_ssl (null);
 }
 ;
 
