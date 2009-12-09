@@ -635,13 +635,14 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 {
   /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
    * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
+  client_connection_t *cli = DKS_DB_DATA (ses);
   rdf_box_t * rb = (rdf_box_t *) x;
   rdf_box_audit (rb);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
   if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
-  if (DKS_DB_DATA (ses))
+  if (NULL != cli && cli->cli_version < 3031)
     print_object (rb->rb_box, ses, NULL, NULL);
   else
     {
@@ -657,7 +658,29 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	flags |= RBS_HAS_TYPE;
       if (rb->rb_chksum_tail)
 	flags |= RBS_CHKSUM;
-      if (rb->rb_chksum_tail)
+      if (rb->rb_is_complete && (cli || !(rb->rb_ro_id)))
+        {
+	  flags |= RBS_COMPLETE;
+          flags &= ~RBS_CHKSUM;
+          session_buffered_write_char (flags, ses);
+          if (DV_XML_ENTITY == DV_TYPE_OF (rb->rb_box))
+            xe_serialize ((xml_entity_t *)(rb->rb_box), ses);
+          else
+	    print_object (rb->rb_box, ses, NULL, NULL);
+          if (rb->rb_ro_id)
+            {
+              if (rb->rb_ro_id > INT32_MAX)
+                print_int64_no_tag (rb->rb_ro_id, ses);
+              else
+                print_long (rb->rb_ro_id, ses);
+            }
+          if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+            print_short (rb->rb_type, ses);
+          if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+	    print_short (rb->rb_lang, ses);
+          return;
+	}
+      else if (rb->rb_chksum_tail)
         {
           caddr_t str = ((rdf_bigbox_t *)rb)->rbb_chksum;
           int str_len = box_length (str) - 1;
