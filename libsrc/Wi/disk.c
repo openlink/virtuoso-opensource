@@ -796,26 +796,37 @@ bd_age_key (void * b)
 void buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 	   int n_in, int depth, sort_key_func_t key);
 
+int
+bd_age_cmp (int a1, int a2, void * cd)
+{
+  if ((uint32)a1 < (uint32)a2)
+    return DVC_GREATER;
+  if (a1 == a2)
+    return DVC_MATCH;
+  return DVC_LESS;
+}
+
 
 void
 bp_stats (buffer_pool_t * bp)
 {
-  buffer_desc_t * sample[B_N_SAMPLE + 1];
-  buffer_desc_t * sample_2[B_N_SAMPLE + 1];
+  bp_ts_t sample[B_N_SAMPLE + 1];
+  bp_ts_t sample_2[B_N_SAMPLE + 1];
   int inx, fill = 0;
   for (inx = bp->bp_ts & 0xf; inx < bp->bp_n_bufs; inx += bp->bp_n_bufs / B_N_SAMPLE)
     {
       buffer_desc_t * buf = &bp->bp_bufs[inx];
-      sample[fill++] = buf;
+      sample[fill++] = BUF_AGE (buf);
     }
-  buf_qsort (sample, sample_2, fill, 0, bd_age_key);
+  if (fill < 1 || fill * sizeof (bp_ts_t) > sizeof (sample_2)) GPF_T1 ("buf fill anomaly");
+  gen_qsort ((int*)sample, (int*)sample_2, fill, 0, bd_age_cmp, NULL);
   if (fill < 1) GPF_T1 ("buf fill < 1");
   for (inx = 0; inx < BP_N_BUCKETS - 1; inx++)
     {
-      bp->bp_bucket_limit[inx] = BUF_AGE (sample[(inx + 1) * 4]);
+      bp->bp_bucket_limit[inx] = sample[(inx + 1) * 4];
     }
   if (fill < 1) GPF_T1 ("buf fill < 1");
-  bp->bp_bucket_limit[BP_N_BUCKETS - 1] = BUF_AGE (sample[fill - 1]);
+  bp->bp_bucket_limit[BP_N_BUCKETS - 1] = sample[fill - 1];
   memset (&bp->bp_n_dirty, 0, sizeof (bp->bp_n_dirty));
   memset (&bp->bp_n_clean, 0, sizeof (bp->bp_n_clean));
   for (inx = 0; inx < bp->bp_n_bufs; inx++)
@@ -2361,6 +2372,11 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 	    {
 	      left[n_right--] = in[inx];
 	    }
+	}
+      if (!mid_buf)
+	{
+	  log_error ("In buf_qsort, the items being sorted have moved, so results are not necessarily in order");
+	  return;
 	}
       buf_qsort (left, in, n_left, depth + 1, key);
       buf_qsort (left + n_right + 1, in + n_right + 1,
