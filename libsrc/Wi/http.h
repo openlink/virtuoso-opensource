@@ -125,6 +125,7 @@ typedef struct ws_connection_s
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
     int			ws_proxy_request;
+    OFF_T		ws_body_limit;
 #ifdef _SSL
     SSL_CTX *		ws_ssl_ctx;
 #endif
@@ -154,6 +155,7 @@ typedef struct ws_acl_s
     id_hash_t *	ha_cli_ip_r;		/* hash client IP'S reads*/
     id_hash_t *	ha_cli_ip_w;		/* hash client IP'S writes */
     id_hash_t * ha_hits;
+    OFF_T	ha_limit;
   } ws_acl_t;
 
 typedef struct acl_hit_s
