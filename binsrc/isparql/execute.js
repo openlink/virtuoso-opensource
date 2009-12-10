@@ -197,9 +197,10 @@ var QueryExec = function(optObj) {
 
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
+
 		paramsObj["format"] = "application/rdf+xml";
 		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
-		if (opts.limit) { paramsObj["maxrows"] = opts.limit; }
+	if (opts.maxrows) { paramsObj["maxrows"] = opts.maxrows; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
@@ -264,9 +265,10 @@ var QueryExec = function(optObj) {
 	    xparm = xparm + "&endpoint="  + opts.endpoint;
 
         xparm = xparm + "&resultview=" + self.mini.options.tabs[o.tabIndex][0];
+	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 
 	if (xec != -1)
- 	    plnk.href = nloca + "?" + xparm;
+ 	    plnk.href = nloca + xparm;
 	else
 	    plnk.href = nloca + "execute.html" + xparm;
 
@@ -320,6 +322,8 @@ var QueryExec = function(optObj) {
 
 		var xec = nloca.indexOf('execute.html');
 	        var xparm = "?" + request + "&endpoint="  + opts.endpoint;
+	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 
 		if (xec != -1) 
  	    execURIa.href = nloca + "?" + xparm;
@@ -409,7 +413,15 @@ var QueryExec = function(optObj) {
 	else if (data.match(/Error HTCLI/)) {
 	    msg="<h3>Proxy connection error</h3><p>The proxy could not connect to the endpoint. Please try again later.</p>"
 	}
+	msg += "<p>See Response tab for full response from SPARQL endpoint.</p>"
 	return msg;
+    },
+    this.makeErrorResp = function (data) {
+	var txt = OAT.Xml.serializeXmlDoc(data);
+	if (txt.length == 0) 
+	    txt = data;
+	txt = "<pre>"+txt+"</pre>";
+	return txt;
     },
 	this.draw = function() {
 		var item = self.cache[self.cacheIndex];
@@ -436,6 +448,8 @@ var QueryExec = function(optObj) {
 		var pidx = nloc.indexOf('?');
 		var xec = nloc.indexOf('execute.html');
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
+	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 		nloc = (pidx ? nloc.substring(0, xec ? xec : pidx) : nloc);
 	        a.href = nloc + xparm;
 		a.target = "_blank";
@@ -445,10 +459,10 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.append([self.dom.query,a,q]);
 
-
 		if (wasError) {
 			/* trap http codes */
-	    self.dom.response.innerHTML = self.makeErrorMsg (data);
+	    self.dom.result.innerHTML = self.makeErrorMsg (data);
+	    self.dom.response.innerHTML = self.makeErrorResp (data);
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
 			txt = OAT.Xml.escape(txt);
@@ -471,15 +485,14 @@ var QueryExec = function(optObj) {
 				}
 		else {
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
-		}
-
 		self.miniplnk = OAT.Dom.create ("a");
 		self.miniplnk.innerHTML = "Permalink";
 		self.mRDFCtr = OAT.Dom.create ("div");
 		self.mRDFCtr.id = "mini_rdf_ctr";
 		OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
-
 		self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,showSearch:false});
+		}
+
 				self.mini.processLink = self.processLink;
 				self.mini.store.addXmlDoc(data);
 				self.mini.select.selectedIndex = lastIndex;
