@@ -7196,6 +7196,18 @@ ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
 }
 
 void
+ssg_print_tail_query_options (spar_sqlgen_t *ssg)
+{
+  ssg_puts ("\nOPTION (QUIETCAST");
+  if (NULL != ssg->ssg_sparp->sparp_env->spare_use_ifp)
+    ssg_puts (", IFP");
+  if (NULL != ssg->ssg_sparp->sparp_env->spare_use_same_as)
+    ssg_puts (", SAME_AS");
+  ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
+  ssg_puts (")");
+}
+
+void
 ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
   int gby_ctr, oby_ctr;
@@ -7468,13 +7480,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       ssg_puts (") as \""); ssg_puts (limofs_alias); ssg_puts ("\"");
       ssg->ssg_indent -= 1;
     }
-  ssg_puts ("\nOPTION (QUIETCAST");
-  if (NULL != ssg->ssg_sparp->sparp_env->spare_use_ifp)
-    ssg_puts (", IFP");
-  if (NULL != ssg->ssg_sparp->sparp_env->spare_use_same_as)
-    ssg_puts (", SAME_AS");
-  ssg_prin_option_commalist (ssg, ssg->ssg_sparp->sparp_env->spare_sql_select_options, 1);
-  ssg_puts (")");
+  ssg_print_tail_query_options (ssg);
   if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {
       switch (tree->_.req_top.subtype)
@@ -7485,6 +7491,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         case ASK_L:
           ssg_puts (" ) AS ");
           ssg_prin_id (ssg, top_selid);
+          ssg_print_tail_query_options (ssg);
           ssg->ssg_indent--;
           break;
         }

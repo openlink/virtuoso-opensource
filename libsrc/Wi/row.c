@@ -594,7 +594,7 @@ page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf
       }
     case DV_ANY:
       VL;
-      return mp_box_deserialize_string (mp, xx, len, offset);
+      return mp_box_deserialize_string (mp, (caddr_t)xx, len, offset);
     default:
       {
 	caddr_t box = page_box_col (itc, buf, row, cl);
@@ -1049,7 +1049,7 @@ qst_set_over (caddr_t * qst, state_slot_t * ssl, caddr_t v)
   switch (DV_TYPE_OF (v))
     {
     case DV_STRING:
-      qst_set_string (qst, ssl, v, box_length (v) - 1, box_flags (v));
+      qst_set_string (qst, ssl, (db_buf_t)v, box_length (v) - 1, box_flags (v));
       break;
     case DV_LONG_INT:
       qst_set_long (qst, ssl, unbox (v));
@@ -1456,7 +1456,7 @@ box_to_double (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
     : dk_alloc_box (n, t))
 
 caddr_t
-box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap)
+box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags)
 {
   caddr_t box;
   int init, len;
@@ -1519,7 +1519,7 @@ box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap)
   ROW_OUT_SES (sesn, key_image);
   SESSION_SCH_DATA (ses) = &io;
   memset (SESSION_SCH_DATA (ses), 0, sizeof (scheduler_io_data_t));
-
+  sesn.dks_cluster_flags = ser_flags;
   init = sesn.dks_out_fill;
 
   CATCH_WRITE_FAIL (ses)
@@ -1553,7 +1553,7 @@ box_to_any (caddr_t data, caddr_t * err_ret)
       *err_ret = srv_make_new_error ("42000", "SR483", "Stack Overflow");
       return NULL;
     }
-  return box_to_any_1 (data, err_ret, NULL);
+  return box_to_any_1 (data, err_ret, NULL, 0);
 }
 
 caddr_t
@@ -1586,9 +1586,9 @@ box_to_shorten_any (caddr_t data, caddr_t * err_ret)
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-17))[0] = hi;
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-9))[0] = lo;
       tmp[BOX_SHORT_ANY_LIMIT-1] = '\0';
-      return box_to_any_1 (tmp, err_ret, NULL);
+      return box_to_any_1 (tmp, err_ret, NULL, 0);
     }
-  return box_to_any_1 (data, err_ret, NULL);
+  return box_to_any_1 (data, err_ret, NULL, 0);
 }
 
 
@@ -1850,7 +1850,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       }
 
     case DV_ANY:
-      str = box_to_any (data, err_ret);
+      str = box_to_any_1 (data, err_ret, NULL, rd->rd_any_ser_flags);
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
@@ -1860,7 +1860,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       udt_can_write_to (&cl->cl_sqt, data, err_ret);
       if (err_ret && *err_ret)
 	return;
-      str = box_to_any (data, err_ret);
+      str = box_to_any_1 (data, err_ret, NULL, rd->rd_any_ser_flags);
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
@@ -2140,7 +2140,7 @@ xmltype_in_blob_ok: ;
 		MAX_NAME_LEN, cl_name, MAX_NAME_LEN, dv_type_title (dtp));
 	  }
       }
-      blob_box = box_dv_short_nchars (blob_temp, DV_BLOB_LEN);
+      blob_box = box_dv_short_nchars ((caddr_t)blob_temp, DV_BLOB_LEN);
       ITC_SEARCH_PARAM (ins_itc, blob_box);
       ITC_OWNS_PARAM (ins_itc, blob_box);
       *v_fill += DV_BLOB_LEN;

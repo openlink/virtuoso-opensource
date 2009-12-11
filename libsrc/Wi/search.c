@@ -160,6 +160,11 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
       *head_ret = 1;
       *len_ret = rbs_length (buf);
       break;
+    case DV_BOX_FLAGS:
+      db_buf_length (buf+2, head_ret, len_ret);
+      head_ret[0] += 2;
+      break;
+
     default:
       /* Report */
       bd = NULL;
@@ -512,8 +517,17 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
   int32 n1 = 0, n2 = 0;			/*not used before set */
   db_buf_t org_dv1 = dv1;
   int64 ln1 = 0, ln2 = 0;
-
-
+  dtp_t dv1_flags = 0, dv2_flags = 0;
+  if (DV_BOX_FLAGS == dtp1)
+    {
+      dv1_flags = dv1[1];
+      dv1 += 2;
+    }
+  if (DV_BOX_FLAGS == dtp2)
+    {
+      dv2_flags = dv2[1];
+      dv2 += 2;
+    }
   if (dtp1 == dtp2)
     {
       switch (dtp1)
@@ -541,6 +555,8 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
 			: DVC_GREATER)));
 	  }
 	case DV_SHORT_STRING_SERIAL:
+	  if ((dv1_flags & BF_IRI) != (dv2_flags & BF_IRI))
+	    return ((dv1_flags & BF_IRI) ? DVC_GREATER : DVC_LESS);
 	  n1 = dv1[1];
 	  dv1 += 2;
 
@@ -834,6 +850,8 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
 			: DVC_GREATER)));
 	  case DV_LONG_STRING:
 	  case DV_BIN:
+	    if ((dv1_flags & BF_IRI) != (dv2_flags & BF_IRI))
+	      return ((dv1_flags & BF_IRI) ? DVC_GREATER : DVC_LESS);
 	    if (collation)
 	      while (1)
 		{

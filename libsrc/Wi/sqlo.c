@@ -1277,6 +1277,7 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_
   ST *from = *from_ret;
   ST *dtexp = from->_.table_ref.table;
   op_table_t *dot = sqlo_find_dt (so, dtexp);
+  int dot_opts_len;
 
   sqlo_replace_col_refs_prefixes (so, (ST *) tree->_.select_stmt.selection, dot->ot_new_prefix,
 				  (ST **) dtexp->_.select_stmt.selection, 0);
@@ -1330,6 +1331,25 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_
 	      t_set_push (new_froms, felt);
 	    }
 	}
+    }
+  dot_opts_len = BOX_ELEMENTS_0 (dot->ot_opts);
+  if (0 != dot_opts_len)
+    {
+      int ot_opts_len = BOX_ELEMENTS_0 (ot->ot_opts);
+      if (0 != ot_opts_len)
+        {
+#if 1
+          ot->ot_opts = t_list_concat ((caddr_t)(ot->ot_opts), (caddr_t)(dot->ot_opts));
+#else
+          caddr_t *new_ot_opts = (caddr_t *)t_alloc_box ((ot_opts_len + dot_opts_len) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+          memcpy (new_ot_opts, ot->ot_opts, ot_opts_len * sizeof (caddr_t));
+          memcpy (new_ot_opts + ot_opts_len, dot->ot_opts, dot_opts_len * sizeof (caddr_t));
+          dk_free_tree (ot->ot_opts);
+          ot->ot_opts = new_ot_opts;
+#endif
+        }
+      else
+        ot->ot_opts = (caddr_t *)t_box_copy_tree ((caddr_t)(dot->ot_opts));
     }
 }
 

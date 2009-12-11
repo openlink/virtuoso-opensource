@@ -7766,7 +7766,11 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
           goto val_is_xpack_serialization; /* see below */
         }
       else
-	sqlr_new_error ("HT002", "XI022", "Can't make XML tree from datum of type %d", (int) dtp);
+        {
+	  if (xqr->xqr_is_quiet)
+	    return NULL;
+	  sqlr_new_error ("HT002", "XI022", "Can't make XML tree from datum of type %d", (int) dtp);
+        }
       if (xqr->xqr_xml_parser_cfg)
         {
 	  caddr_t boxed_abs_uri = (('\0' != abs_uri[0]) ? box_dv_short_string (abs_uri) : NULL);
@@ -7869,6 +7873,8 @@ xn_init (xpath_node_t * xn, query_instance_t * qi)
 	  dk_free_box (_str);
 	  if (err)
 	    return err;
+	  if (qi->qi_query->qr_no_cast_error)
+            xqr->xqr_is_quiet = 1;
 	  qst_set (qst, xn->xn_compiled_xqr, (caddr_t) xqr);
 	  qst_set (qst, xn->xn_compiled_xqr_text, box_copy_tree (str));
 	  xqr->xqr_wr_enabled = 0;
@@ -8166,6 +8172,8 @@ xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str)
       dk_free_box (_str);
       if (err)
 	sqlr_resignal (err);
+      if (qi->qi_query->qr_no_cast_error)
+	xqr->xqr_is_quiet = 1;
       qst_set (qst, xn->xn_compiled_xqr, (caddr_t) xqr);
       qst_set (qst, xn->xn_compiled_xqr_text, box_copy_tree (xp_str));
     }

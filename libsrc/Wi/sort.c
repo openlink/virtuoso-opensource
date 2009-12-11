@@ -75,7 +75,7 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
 	}
 */
       if (is_rev && ORDER_DESC == (ptrlong) is_rev->data)
-	rc = DVC_INVERSE (rc);
+	DVC_INVERT_CMP (rc);
       if (rc != DVC_MATCH)
 	return rc;
       is_rev = is_rev ? is_rev->next : NULL;
@@ -96,7 +96,7 @@ setp_key_comp (setp_node_t * setp, caddr_t * qst, state_slot_t ** left, state_sl
       collation_t * coll = setp->setp_keys_box[inx]->ssl_sqt.sqt_collation;
       int rc = cmp_boxes (qst_get (qst, l), qst_get (qst, right[inx]), coll, coll);
       if (is_rev && ORDER_DESC == (ptrlong) is_rev->data)
-	rc = DVC_INVERSE (rc);
+	DVC_INVERT_CMP (rc);
       if (rc != DVC_MATCH)
 	return rc;
       is_rev = is_rev ? is_rev->next : NULL;

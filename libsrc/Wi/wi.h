@@ -1254,6 +1254,7 @@ struct row_delta_s
   short		rd_map_pos;
   row_size_t	rd_non_comp_len;
   char		rd_is_double_lp; /* is 1st of a double leaf pointer in split? Special case with reg'd itcs on parent */
+  char		rd_any_ser_flags;
   int		rd_non_comp_max;
   dp_addr_t		rd_leaf; /* if lp, if upd or ins concerns leaf ptr */
   dbe_col_loc_t **	rd_upd_change;
@@ -1382,14 +1383,19 @@ extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define DVC_MATCH 1
 #define DVC_LESS 2
 #define DVC_GREATER 4
-#define DVC_DTP_LESS (2 | DVC_NOORDER)
-#define DVC_DTP_GREATER	(4 | DVC_NOORDER)
+#define DVC_DTP_LESS (DVC_LESS | DVC_NOORDER)
+#define DVC_DTP_GREATER	(DVC_GREATER | DVC_NOORDER)
 #define DVC_NOORDER 8
 #define DVC_INDEX_END 16
 #define DVC_CMP_MASK 15 /* or of bits for eq, lt, gt */
 #define DVC_UNKNOWN	64  /* comparison of SQL NULL */
 #define DVC_QUEUED 128  /* in cluster, not known yet, added to batch */
-#define DVC_INVERSE(res) ((res) == DVC_LESS ? DVC_GREATER : ((res) == DVC_GREATER ? DVC_LESS : (res)))
+#define DVC_INVERT_CMP(res) do { \
+  switch (res & (DVC_LESS | DVC_GREATER)) \
+    { \
+    case DVC_LESS: res = (res & ~DVC_LESS) | DVC_GREATER; break; \
+    case DVC_GREATER: res = (res & ~DVC_GREATER) | DVC_LESS; break; \
+    } } while (0)
 
 /* Comparison operator codes for search_spec_t, sp_min_op, sp_max_op */
 #define CMP_NONE 0

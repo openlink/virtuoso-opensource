@@ -1991,6 +1991,7 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
   int inx;
   LOCAL_RD (rd);
   rd.rd_key = key;
+  rd.rd_any_ser_flags = DKS_TO_OBY_KEY;
   if (!tree)
     {
       tree = it_temp_allocate (wi_inst.wi_temp);

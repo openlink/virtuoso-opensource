@@ -1099,7 +1099,8 @@ dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli
 boxint safe_atoi (const char *data, caddr_t *err_ret);
 double safe_atof (const char *data, caddr_t *err_ret);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
-caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap);
+caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags);
+#define DKS_TO_OBY_KEY 2 /* flag to indicate that an rdf box with text should be stored with the text, not just id */
 
 caddr_t box_to_shorten_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);

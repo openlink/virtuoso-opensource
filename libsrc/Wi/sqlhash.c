@@ -139,8 +139,10 @@ key_cl_count (dbe_col_loc_t * cls)
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
 {
-  int quietcast = DFE_DT == sc->sc_so->so_dfe->dfe_type ?
+  int quietcast = sc->sc_cc->cc_query->qr_no_cast_error;
+/* This was:  int quietcast = DFE_DT == sc->sc_so->so_dfe->dfe_type ?
     NULL != sqlo_opt_value (sc->sc_so->so_dfe->_.sub.ot->ot_opts, OPT_SPARQL) : 0;
+*/
   int inx;
   int n_keys = dk_set_length (setp->setp_keys);
   int n_deps = dk_set_length (setp->setp_dependent);
