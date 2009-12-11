@@ -26,47 +26,33 @@
 
 use WV;
 
-create function _set (inout object any, in propname varchar, in value any)
+-------------------------------------------------------------------------------
+--
+create procedure _set (
+  inout object any,
+  in propname varchar,
+  in value any)
 {
   object := vector_concat (object, vector (propname, value));
   return object;
 }
 ;
 
-create function _get (inout object any, in propname varchar)
+-------------------------------------------------------------------------------
+--
+create procedure _get (
+  inout object any,
+  in propname varchar)
 {
   return get_keyword (object, propname);
 }
 ;
 
-create function atom_parse (inout xt any)
-{
-  declare _post any;
-  _post := vector();
-  _set(_post, 'title', xpath_eval ('string (/entry/title)', xt));
-  _set(_post, 'excerpt', xpath_eval ('string (/entry/subtitle)', xt, 1));
-  _set(_post, 'summary', xpath_eval ('string (/entry/summary)', xt, 1));
-  _set(_post, 'author', xpath_eval ('string (/entry/author/name)', xt, 1));
-  declare tims varchar;
-  tims := cast(xpath_eval ('/entry/issued/text()', xt, 1) as varchar);
-  if (tims is not null)
-    _set (_post, 'date_created', cast (tims as datetime));
-  if (xpath_eval ('/entry/content[@type="text" or @type="html" or @mode="escaped"]', xt, 1) is not null)
-    {
-       _set (_post, 'description', xpath_eval ('string (/entry/content)', xt));
-    }
-  else
-    {
-       declare ss any; ss := string_output_string ();
-       http_value (xpath_eval ('/entry/content/*', xt, 1), null, ss);
-       _set (_post, 'description', string_output_string (ss));
-    }
-  return _post;
-}
-;
-
-
-create function WV.WIKI.ATOM_BASE (in _user varchar, in _cluster varchar)
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.ATOM_BASE (
+  in _user varchar,
+  in _cluster varchar)
 {
    return sprintf ('/dataspace/%U/wiki/%U/atom-pub', _user, _cluster);
 }
@@ -119,9 +105,13 @@ nf:
 }
 ;
 
-create function WV.WIKI.ATOM_PUBLISH (in _cluster varchar)
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.ATOM_PUBLISH (
+  in _cluster varchar)
 {
    declare _res varchar;
+
    _res := '';
    if (_cluster is null)
      {
@@ -129,18 +119,23 @@ create function WV.WIKI.ATOM_PUBLISH (in _cluster varchar)
          {
            _res := _res || WV.WIKI.ATOM_PUBLISH (WAI_NAME);
          }
-  } else  {
+  }
+  else
+  {
     _res := sprintf ('<collection title="%s" href="http://%s/wiki/Atom/%s/"><accept>entry</accept></collection>\n', _cluster, WV.WIKI.GET_HOST(), _cluster);
      }
    return _res;
 }
 ;
 
-create function WV.WIKI.ATOM_ENTRY (inout _topic WV.WIKI.TOPICINFO)
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.ATOM_ENTRY (
+  inout _topic WV.WIKI.TOPICINFO)
 {
   declare ss any; 
-  ss := string_output ();
   
+  ss := string_output ();
   http ('<entry xmlns="http://www.w3.org/2005/Atom">\n', ss);
 
   http (sprintf('<title>%s</title>\n', _topic.ti_cluster_name || '.' || _topic.ti_local_name), ss);
@@ -158,34 +153,39 @@ create function WV.WIKI.ATOM_ENTRY (inout _topic WV.WIKI.TOPICINFO)
 }
 ;
   
-
-create function WV.WIKI.ATOM_COLLECTION (in _cluster varchar)
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.ATOM_COLLECTION (
+  in _cluster varchar)
 {
-  declare _res any;
+  declare ss any;
 
-  _res := string_output ();
-  http (sprintf ('<feed xmlns="http://www.w3.org/2005/Atom">\n<id>%s</id>\n', WV.WIKI.CLUSTER_CANONICAL (_cluster)), _res);
-  for select LOCALNAME, RESID, RES_MOD_TIME, RES_OWNER
+  ss := string_output ();
+  http (sprintf ('<feed xmlns="http://www.w3.org/2005/Atom">\n<id>%s</id>\n', WV.WIKI.CLUSTER_CANONICAL (_cluster)), ss);
+  for (select LOCALNAME, RESID, RES_MOD_TIME, RES_OWNER
         from WV.WIKI.TOPIC t
                inner join WV.WIKI.CLUSTERS c on (c.CLUSTERID = t.CLUSTERID)
 	inner join WS.WS.SYS_DAV_RES on (RESID = RES_ID)
-    where CLUSTERNAME = _cluster do
+        where CLUSTERNAME = _cluster) do
     {
-      declare _topic WV.WIKI.TOPICINFO;
-      _topic := WV.WIKI.TOPICINFO();
-      _topic.ti_local_name := LOCALNAME;
-      _topic.ti_cluster_name := _cluster;
-      _topic.ti_res_id := RESID;
-      _topic.ti_mod_time := RES_MOD_TIME;
-      _topic.ti_author_id := RES_OWNER;
-      _topic.ti_text := '';
-      http (WV.WIKI.ATOM_ENTRY (_topic), _res);
+    declare topic WV.WIKI.TOPICINFO;
+
+    topic := WV.WIKI.TOPICINFO();
+    topic.ti_local_name := LOCALNAME;
+    topic.ti_cluster_name := _cluster;
+    topic.ti_res_id := RESID;
+    topic.ti_mod_time := RES_MOD_TIME;
+    topic.ti_author_id := RES_OWNER;
+    topic.ti_text := '';
+    http (WV.WIKI.ATOM_ENTRY (topic), ss);
    }
-  http ('</feed>', _res);
-  return string_output_string (_res);
+  http ('</feed>', ss);
+  return string_output_string (ss);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure WV.WIKI.gdata (
 	 in q varchar := null,
 	 in author varchar := null,
@@ -198,7 +198,7 @@ create procedure WV.WIKI.gdata (
   declare _topic_id, _uid, _unauthorized integer;
   declare _user, _password, _role, _uid varchar;
   declare _http_path, _path, _action, _version varchar;
-  declare _atomVersion, _auth, _session, _method, _content_type, _options, _status, _content, _vCalendar, xt any;
+  declare _atomVersion, _auth, _session, _method, _content_type, _content_description, _options, _status, _content, _vCalendar, xt any;
 
   declare h, _cluster varchar;
 
@@ -250,6 +250,7 @@ create procedure WV.WIKI.gdata (
 
   _method := http_request_get ('REQUEST_METHOD');
   _content_type := http_request_header (http_request_header (), 'Content-Type');
+  _content_description := http_request_header (http_request_header (), 'Content-Description');
   _options := http_map_get ('options');
 
   _unauthorized := 0;
@@ -257,17 +258,23 @@ create procedure WV.WIKI.gdata (
   if (_auth = 0)
   {
     _unauthorized := 1;
-  } else {
+  }
+  else
+  {
     if (get_keyword ('authtype', _auth) <> 'basic')
     {
       _unauthorized := 1;
-    } else {
+    }
+    else
+    {
       _user := get_keyword ('username', _auth, '');
       _password := get_keyword ('pass', _auth, '');
       if (not DB.DBA.web_user_password_check (_user, _password))
       {
         _unauthorized := 1;
-      } else {
+      }
+      else
+      {
         if (not WV.WIKI.AUTHENTICATE (_user, _password))
         {
           _unauthorized := 1;
@@ -337,42 +344,36 @@ create procedure WV.WIKI.gdata (
       http (         '</atom:feed>\n', sStream);
     }
     return string_output_string (sStream);
-
-    --if (_cluster is null)
-    --{
-    --  http_header ('Content-Type: application/atomserv+xml\r\n');
-    --
-    --  http ('<?xml version="1.0" encoding=\'utf-8\'?>\n');
-    --  http ('<service xmlns="http://purl.org/atom/app#">\n');
-    --  http ('<workspace title="Wiki">\n');
-    --  http (WV.WIKI.ATOM_PUBLISH (NULL));
-    --  http ('</workspace>\n');
-    --  http ('</service>\n');
-    --} else {
-    --  if (_topic_id = 0)
-    --  {
-    --    http_header ('Content-Type: application/atom+xml\r\n');
-    --
-    --    http ('<?xml version="1.0" encoding=\'utf-8\'?>\n');
-    --    http (WV.WIKI.ATOM_COLLECTION (_cluster));
-    --  } else {
-    --    declare _topic WV.WIKI.TOPICINFO;
-    --
-    --    _topic := WV.WIKI.TOPICINFO();
-    --    _topic.ti_id := _topic_id;
-    --    _topic.ti_find_metadata_by_id ();
-    --
-    --    http_header ('Content-Type: application/atom+xml\r\n');
-    --
-    --    http ('<?xml version="1.0" encoding=\'utf-8\'?>\n');
-    --    http (WV.WIKI.ATOM_ENTRY(_topic));
-    --  }
-    --}
-  } else {
+  }
+  else
+  {
     declare content varchar;
-    declare _newtopic WV.WIKI.TOPICINFO;
+    declare topic WV.WIKI.TOPICINFO;
 
     xt := null;
+    if (_content_description = 'WIKI-ATTACHMENT')
+    {
+      _status := 'HTTP/1.1 404 Not Found';
+      _path := http_request_header (http_request_header (), 'Content-Disposition', 'filename');
+      _path := split_and_decode (_path, 0, '\0\0/');
+      if (length (_path) = 2)
+      {
+        topic := WV.WIKI.TOPICINFO();
+        topic.ti_default_cluster := coalesce (_cluster, 'Main');
+        topic.ti_raw_name := _path[0];
+        topic.ti_parse_raw_name ();
+        topic.ti_fill_cluster_by_name ();
+        topic.ti_find_id_by_local_name ();
+        if (topic.ti_id)
+        {
+          _status := 'HTTP/1.1 200 OK';
+          _content := string_output_string (http_body_read ());
+          WV.WIKI.ATTACH2 (_uid, _path[1], _content_type,  topic.ti_id,  _content,  ' -- ');
+        }
+      }
+    }
+    else
+    {
     if (_content_type in ('application/atom+xml', 'application/x.atom+xml', 'text/xml', 'application/xml'))
     {
       _content := string_output_string (http_body_read ());
@@ -383,62 +384,76 @@ create procedure WV.WIKI.gdata (
     }      
     }
     _atomVersion := cast (xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:version', xt) as varchar);
-    if (isnull (_atomVersion) or (_atomVersion <> '2.0'))
+      if (isnull (_atomVersion) or (_atomVersion not in ('2.0', '3.0')))
     {
       _status := 'HTTP/1.1 412 Precondition Failed';
     }
     else if (_method in ('PUT', 'POST', 'DELETE'))
     {
-          _newtopic := WV.WIKI.TOPICINFO();
-	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
-	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
-	  _newtopic.ti_parse_raw_name ();
-	  _newtopic.ti_fill_cluster_by_name ();
-          _newtopic.ti_find_id_by_local_name ();
-      if (_newtopic.ti_id)
-	    {
-        -- delete attachments
-        declare _attachment_path varchar;
+        topic := WV.WIKI.TOPICINFO();
+        topic.ti_default_cluster := coalesce (_cluster, 'Main');
+        topic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
+        topic.ti_parse_raw_name ();
+        topic.ti_fill_cluster_by_name ();
+        topic.ti_find_id_by_local_name ();
+        if (topic.ti_id)
+          topic.ti_find_metadata_by_id ();
 
-        _attachment_path := DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_col_id, 'C') || _newtopic.ti_local_name || '/';
-        DB.DBA.DAV_DELETE_INT (_attachment_path, 0, null, null, 0);
-    }
-      if (_method in ('PUT', 'POST'))
-      {
-        if ((_method = 'PUT') and (_newtopic.ti_id = 0))
+        if ((_method in ('PUT', 'DELETE')) and (topic.ti_id = 0))
     {
           _status := 'HTTP/1.1 404 Not Found';
         }
-        else
+        else if (_method in ('PUT', 'POST'))
         {
       content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
-      WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content, _user);
+          WV.WIKI.UPLOADPAGE (topic.ti_col_id, topic.ti_local_name || '.txt', content, _user);
           if (_method = 'POST')
       _status := 'HTTP/1.1 201 Created';
 
           -- update attachments
-          declare N, _attachments integer;
-          declare _attachment_name, _attachment_type, _attachment_content any;
+          declare N, attachmentsCount integer;
+          declare attachments_path varchar;
+          declare attachments_list, attachment_names, attachment_name, attachment_type, attachment_content any;
 
           _uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
-          _attachments := xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] count(/entry/wv:attachments/wv:attachment)', xt);
-          for (N := 0; N < _attachments; N := N + 1)
+          attachment_names := vector ();
+          attachmentsCount := xpath_eval ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] count(/entry/wv:attachments/wv:attachment)', xt);
+          for (N := 0; N < attachmentsCount; N := N + 1)
           {
-            _attachment_name := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:name', N+1), xt) as varchar);
-            _attachment_type := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:type', N+1), xt) as varchar);
-            _attachment_content := decode_base64 (cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:content/text()', N+1), xt) as varchar));
-            WV.WIKI.ATTACH2 (_uid, _attachment_name, _attachment_type,  _newtopic.ti_id,  _attachment_content,  ' -- ');
+            attachment_name := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:name', N+1), xt) as varchar);
+            attachment_names := vector_concat (attachment_names, vector (attachment_name));
+            if (_atomVersion = '2.0')
+            {
+              attachment_type := cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:type', N+1), xt) as varchar);
+              attachment_content := decode_base64 (cast (xpath_eval (sprintf ('[ xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" ] /entry/wv:attachments/wv:attachment[%d]/wv:content/text()', N+1), xt) as varchar));
+              WV.WIKI.ATTACH2 (_uid, attachment_name, attachment_type,  topic.ti_id,  attachment_content,  ' -- ');
+            }
+          }
+          attachments_path := DB.DBA.DAV_SEARCH_PATH (topic.ti_col_id, 'C') || topic.ti_local_name || '/';
+          attachments_list := DB.DBA.DAV_DIR_LIST (attachments_path, 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()));
+
+          -- delete non listed attachments
+          if (not isinteger (attachments_list) and length (attachments_list))
+          {
+            foreach (any attachment in attachments_list) do
+            {
+              for (N := 0; N < length (attachment_names); N := N + 1)
+              {
+                if (attachment_names[N] = attachment[10])
+                  goto _skip;
+              }
+              DB.DBA.DAV_DELETE_INT (attachment[0], 0, null, null, 0);
+            _skip:;
           }
         }
     }
     else if (_method = 'DELETE')
     {
-        if (_newtopic.ti_id)
-        {
-        DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_res_id, 'R'), 1, null, null, 0);
-        _status := 'HTTP/1.1 200 OK';
-      } else {
-        _status := 'HTTP/1.1 404 Not Found';
+          declare attachment_path varchar;
+
+          attachment_path := DB.DBA.DAV_SEARCH_PATH (topic.ti_col_id, 'C') || topic.ti_local_name || '/';
+          DB.DBA.DAV_DELETE_INT (attachment_path, 1, null, null, 0);
+          DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (topic.ti_res_id, 'R'), 1, null, null, 0);
       }
         }
     }
@@ -459,6 +474,30 @@ DB.DBA.VHOST_DEFINE (lpath=>'/wiki/Atom',
 
 -----------------------------------------------------------------------------------------
 --
+
+use DB
+;
+
+-- atom related xslt functions
+
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.ATOM_PUB_URI (
+  in _cluster_name varchar)
+{
+  return '/dataspace/' || WV.WIKI.CLUSTERPARAM (_cluster_name, 'creator', 'dav') || '/wiki/' || _cluster_name || '/atom-pub';
+}
+;
+
+grant execute on WV.WIKI.ATOM_PUB_URI to public
+;
+
+
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI')
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure WV.WIKI.tmp_atom_update ()
 {
   if (registry_get ('wiki_atom_update') = '1')
@@ -471,27 +510,6 @@ create procedure WV.WIKI.tmp_atom_update ()
   }
   registry_set ('wiki_atom_update', '1');
 }
-;
-  
------------------------------------------------------------------------------------------
---
-
-use DB
-;
-
--- atom related xslt functions
-
-create function WV.WIKI.ATOM_PUB_URI(in _cluster_name varchar)
-{
-  return '/dataspace/' || WV.WIKI.CLUSTERPARAM (_cluster_name, 'creator', 'dav') || '/wiki/' || _cluster_name || '/atom-pub';
-}
-;
-
-grant execute on WV.WIKI.ATOM_PUB_URI to public
-;
-
-
-xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI')
 ;
 
 WV.WIKI.tmp_atom_update ()
