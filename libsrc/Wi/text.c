@@ -1731,7 +1731,7 @@ create_new_ranges:
 	while (pos < end)
 	  {
 	    int pl, p;
-	    WP_LENGTH (sst->sst_buffer + pos, pl, p, sst->sst_buffer, sst->sst_buffer_size);
+	    WP_LENGTH_IMPL (sst->sst_buffer + pos, pl, p);
 	    pos += pl;
 	    current += p;
 	    if (!to || (((wpos_t) current) >= from && ((wpos_t) current) < to))
