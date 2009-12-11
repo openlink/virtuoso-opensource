@@ -4408,21 +4408,25 @@ do_flush_ses (gzFile file, int flush, dk_session_t *ses_out)
 }
 
 
-static int
-gzclose_ses (gzFile file, dk_session_t * ses_out)
+static void
+gzclose_ses (strses_chunked_out_t * outd)
 {
-  int err;
+  int n, err;
   uLong x;
-  int n;
   char temp[8];
-  gz_stream *s = (gz_stream *) file;
+  dk_session_t * ses_out = outd->sc_out;
+  gz_stream *s = (gz_stream *) outd->sc_buff;
 
   if (s == NULL)
-    return Z_STREAM_ERROR;
+    return;
 
-  err = do_flush_ses (file, Z_FINISH, ses_out);
+  err = do_flush_ses (s, Z_FINISH, ses_out);
   if (err != Z_OK)
-    return gz_s_free ((gz_stream *) file);
+    {
+      gz_s_free (s);
+      outd->sc_buff = NULL;
+      return;
+    }
 
   session_buffered_write (ses_out, "8\r\n", 3);
 
@@ -4442,7 +4446,9 @@ gzclose_ses (gzFile file, dk_session_t * ses_out)
     }
 
   session_buffered_write (ses_out, "\r\n0\r\n\r\n", 7);
-  return gz_s_free ((gz_stream *) file);
+  gz_s_free (s);
+  outd->sc_buff = NULL;
+  return;
 }
 
 static void
@@ -4550,10 +4556,9 @@ strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_
   strses_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   gzwrite_ses (outd, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
-  gzclose_ses (outd->sc_buff, outd->sc_out);
+  gzclose_ses (outd); /* free of the stream and set outd->sc_buff to null as next flush on output may jump ouside with dead memory in outd members */
   session_flush_1 (out);
   outd->sc_bytes_sent = out->dks_bytes_sent - start;
-  outd->sc_buff = NULL;
 }
 
 /*##**********************************************
