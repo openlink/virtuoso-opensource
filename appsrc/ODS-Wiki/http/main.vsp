@@ -22,17 +22,15 @@
 --
 
 {
-  --dbg_obj_print ('main.vsp', path);
   set http_charset='UTF-8';
   declare _uid integer;
   declare _sid, _realm, _user varchar;
   declare cookie_vec any;
   declare _parent varchar;
-  _parent := {?'parent'};
-  if (_parent is not null)
+
+  _parent := get_keyword ('parent', params, '');
+  if (_parent <> '')
     _parent := sprintf('parent=%U', _parent);
-   else
-    _parent := '' ;
 
   -- handle logout
   if ({?'logout'} = 'true')
@@ -40,17 +38,8 @@
       delete from DB.DBA.VSPX_SESSION where vs_sid = {?'sid'} and vs_realm = coalesce({?'realm'}, 'wa');
       commit work;
       WV.WIKI.redirect (sprintf('%s?lastop=Logout', http_path()));
---      http_request_status ('HTTP/1.1 302 Found');
---      http_header (sprintf('Location: %s?lastop=Logout\r\n', http_path()));
       return;
     }
-  -- Google sometimes generates URL with multiply '/' 
---  dbg_obj_print ('01', lines[0], http_path());
---  if (length(lines) and strstr (coalesce (lines[0], ''), '//'))
---    {
---      WV.WIKI.redirect (http_path());
---      return;
---    }
   cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
 
   -- Set cookie when user came from different domain
@@ -58,8 +47,6 @@
     {
       http_header (http_header_get() || sprintf ('Set-Cookie: sid=%s; path=/\r\n', get_keyword ('sid', params)));
       WV.WIKI.redirect (sprintf('%s?%s', http_path(), WV.WIKI.BUILD_PARAMS (WV.WIKI.DROP_PARAM(params, 'sid'))));
---      http_request_status ('HTTP/1.1 302 Found');
---      http_header (http_header_get() || sprintf('Location: %s?%s\r\n', http_path(), WV.WIKI.BUILD_PARAMS (WV.WIKI.DROP_PARAM(params, 'sid'))));
        return;
     }
     
@@ -71,7 +58,6 @@
   _realm := coalesce ({?'realm'}, 'wa');
   connection_set ('WIKI params', params);
 
-  
   declare _cluster, _local_name, _attach, _base_adjust varchar;
   declare _cmd varchar;
   declare _topic_id varchar;
@@ -97,10 +83,9 @@
   _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid);
   connection_set('WikiUser', _user);
   if (_user = 'WikiGuest')
-    params := WV.WIKI.VECTOR_DROP_KEYWORD (
-  WV.WIKI.VECTOR_DROP_KEYWORD (params, 'sid'), 'realm');
+    params := WV.WIKI.VECTOR_DROP_KEYWORD (WV.WIKI.VECTOR_DROP_KEYWORD (params, 'sid'), 'realm');
 
-  _cmd :=  {?'command'};
+  _cmd := get_keyword ('command', params);
   if (_cmd is not null)
     _cmd := WV.WIKI.TRANSLATE_COMMAND (_cmd);
     
@@ -382,7 +367,7 @@ content:
   else if (_cmd = 'do_attach')
     {
       WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
-      declare filename,mime_type varchar;
+      declare filename, filepath, mime_type varchar;
       filename := get_keyword ('filename', get_keyword ('attr-filepath', params));
       mime_type := get_keyword ('Content-Type', get_keyword ('attr-filepath', params), '');
       if (mime_type = '')
@@ -394,14 +379,15 @@ content:
 	  if (arr is not null)
 	    filename := arr[length(arr)-1];
 	}
-      if (length ({?'filepath'}) = 0)
+      filepath := get_keyword ('filepath', params, null, 1);
+      if (length (filepath) = 0)
 	{
 	  _error := 'Can not attach empty file';
 	  _cmd := 'attach';
 	  goto again;
    	}
-      WV.WIKI.ATTACH2 (_uid, filename, mime_type, _topic.ti_id, {?'filepath'}, {?'comment'});
-      if ({?'createlink'} is not null)
+      WV.WIKI.ATTACH2 (_uid, filename, mime_type, _topic.ti_id, filepath, get_keyword ('comment', params));
+      if (get_keyword ('createlink', params) is not null)
 	WV.WIKI.ADDLINK (_topic, mime_type, _uid, filename, _user);
       WV.WIKI.ADDHISTORYITEM (_topic, null, 'Attach', filename, _user);
       _cmd := 'attach';
@@ -508,11 +494,13 @@ content:
     declare _lock_uid int;
     if (_topic.ti_id <> 0)
       {
-        if (0 = (_lock_uid := WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user))) {
+        if (0 = (_lock_uid := WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user)))
+        {
           if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust)))
             WV.WIKI.VSPFOOTER (path, params, lines);
           http_flush();
           WV.WIKI.UPSTREAM_TOPIC_NOW (_topic.ti_id);
+          WV.WIKI.RELEASELOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user);
           return;
         }
         else

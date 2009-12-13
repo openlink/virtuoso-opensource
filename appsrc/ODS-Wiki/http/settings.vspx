@@ -568,7 +568,8 @@
                             <![CDATA[
                                         declare upid int;
                                         upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value);
-                                        if (upid is null) {
+                                        if (upid is null)
+                                        {
                                           insert into WV..UPSTREAM (UP_CLUSTER_ID, UP_NAME, UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER)
                                             values (
                                               self._cluster,
@@ -581,7 +582,8 @@
                                           if (self.initial_insert.ufl_selected)
                                             WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self._cluster and UP_NAME = self.upstream_name.ufl_value) );
                                         }
-                                        else {
+                                        else
+                                        {
                                           update WV..UPSTREAM
                                             set UP_NAME = self.upstream_name.ufl_value,
                                              UP_URI = self.upstream_url.ufl_value,

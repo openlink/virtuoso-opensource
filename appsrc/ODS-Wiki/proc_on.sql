@@ -2443,7 +2443,13 @@ create procedure WV.WIKI.GETATTCOLID (in _topic WV.WIKI.TOPICINFO)
 }
 ;
 
-create procedure WV.WIKI.ATTACH2 (in _uid int, in _filename varchar, in _type varchar, in id integer, inout _text any, in comment varchar)
+create procedure WV.WIKI.ATTACH2 (
+  in _uid int,
+  in _filename varchar,
+  in _type varchar,
+  in id integer,
+  inout _text any,
+  in comment varchar)
 {
   declare _attachment_col_id int;
   declare _topic WV.WIKI.TOPICINFO;
