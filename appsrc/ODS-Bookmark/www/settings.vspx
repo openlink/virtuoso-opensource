@@ -44,7 +44,7 @@
   <vm:pagewrapper>
     <vm:header/>
     <vm:variables>
-      <v:variable name="bSubAction" type="varchar" default="''" />
+      <v:variable name="bSubAction" param-name="sa" type="varchar" default="''" />
 
       <v:variable name="s_url" type="varchar" default="''" />
       <v:variable name="s_tabNo" param-name="tabNo" type="varchar" default="1"/>

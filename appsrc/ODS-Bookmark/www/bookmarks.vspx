@@ -187,6 +187,12 @@
           <span id="tbDelete_gray" class="toolbar" style="display: inline;">
             <img src="image/grey_del_32.png" border="0" alt="Delete"/><?vsp http(self.toolbarLabel('Delete'));?>
           </span>
+
+                  <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
+
+                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('bookmarklet');" title="Bookmarklet">
+                    <img src="image/bmklet_32.png" border="0" alt="Bookmarklet"/><?vsp http(self.toolbarLabel('Bookmarklet'));?>
+                  </span>
         </div>
                 </vm:if>
               <div style="clear: both;">

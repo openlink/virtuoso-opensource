@@ -362,7 +362,7 @@
   <xsl:template match="vm:exchange">
     <vm:if test="self.access_role not in ('public', 'guest')">
     <div class="lc lc_head" onclick="shCell('exchange')">
-      <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Import/Export
+        <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&amp;nbsp;Import/Export
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
         <span onclick="javascript: cExchange('import'); return false;" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</span>
@@ -386,7 +386,7 @@
   <!--=========================================================================-->
   <xsl:template match="vm:formats">
     <div class="lc lc_head" onclick="shCell('gems')">
-      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Data Portability
+      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&amp;nbsp;Data Portability
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
       <?vsp
@@ -416,6 +416,12 @@
     </div>
   </xsl:template>
 
+  <!--=========================================================================-->
+  <xsl:template match="vm:bookmarklet">
+    <div class="lc lc_head" onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'bookmarklet');">
+      <img src="image/bmklet_32.png" border="0" alt="Bookmarklet" height="13" width="13" style="float: left; margin-left: -2px;" />&amp;nbsp;Bookmarklet
+    </div>
+  </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
