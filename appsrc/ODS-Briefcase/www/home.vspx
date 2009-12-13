@@ -134,6 +134,10 @@
       {
         return 1;
       }
+      if (cmd = 'bookmarklet')
+      {
+        return 1;
+      }
       if (cmd = 'home')
       {
         return 1;
@@ -948,6 +952,13 @@
           http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
 
           self.toolbarShow ('upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
+
+          if (self.account_role <> 'public')
+          {
+          http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
+
+          self.toolbarShow ('bookmarklet', 'Bookmarklet', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
+          }
         ?>
       </div>
       <br style="clear: both;" />
@@ -1106,6 +1117,11 @@
                   }
                   ODRIVE.WA.dc_set_criteria (self.search_dc, tagsID, tagType, 'contains_tags', tags);
                   self.search_advanced := self.search_dc;
+                }
+                else if (_action = 'bookmarklet')
+                {
+                  self.vc_redirect (sprintf ('%s/settings.vspx?sa=bookmarklet', ODRIVE.WA.odrive_url (self.domain_id)));
+                  return;
                 }
                 self.vc_data_bind (e);
                ]]>

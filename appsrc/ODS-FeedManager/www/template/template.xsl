@@ -231,9 +231,7 @@
   <!--=========================================================================-->
   <xsl:template name="vm:others">
     <div class="left_container">
-      <div>
-        <v:url value="--'OFM Bookmarklet'" format="%s" url="--'bookmark.vspx'"/>
-      </div>
+      <v:url value='<img src="image/bmklet_32.png" height="16" width="16" border="0" /> Bookmarklet ' format="%s" url="--'bookmark.vspx'"/>
     </div>
   </xsl:template>
 

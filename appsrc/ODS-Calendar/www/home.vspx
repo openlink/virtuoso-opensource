@@ -1130,6 +1130,7 @@
                 <vm:event />
               </vm:if>
               <vm:calendar />
+              <vm:bookmarklet />
               <vm:calendars />
               <vm:exchange />
               <vm:formats />
@@ -1234,6 +1235,7 @@
                           }
                           if (cMode = 'bookmarklet')
                           {
+                            self.cAction := cCommand;
                             self.cSubAction := cMode;
                           }
                           else if (cMode = 'upstreamBrowse')

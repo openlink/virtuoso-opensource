@@ -1060,6 +1060,7 @@ BMK.initLeftPane = function ()
   BMK.forms['share'] = {params: {items: true}, height: '130', postActions:['BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['tags'] = {params: {items: true}, height: '130', postActions:['BMK.loadTags(true)', 'BMK.reloadItems()', 'BMK.resetToolbars()']};
   BMK.forms['delete'] = {params: {items: true}, postActions:['BMK.loadTree(true)', 'BMK.loadTags(true)', 'BMK.resetToolbars()']};
+  BMK.forms['bookmarklet'] = {redirect: 'settings.vspx?sa=bookmarklet'};
 
   BMK.initTabs()
 }
@@ -1470,6 +1471,11 @@ BMK.formShow = function (action, id, params)
 {
   var formParams = action.split('/')[0].toLowerCase();
   var form = BMK.forms[formParams];
+  if (!form) {return;}
+  if (form.redirect)
+  {
+    location.href = form.redirect+BMK.sessionParams();
+  } else {
   var dx = form.width;
   if (!dx) {dx = '720';}
   var dy  = form.height;
@@ -1494,8 +1500,8 @@ BMK.formShow = function (action, id, params)
     }
   }
   formDiv.innerHTML = '<iframe id="forms_iframe" src="'+s+'" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
-
   formDialog.show ();
+}
 }
 
 BMK.formClose = function ()
