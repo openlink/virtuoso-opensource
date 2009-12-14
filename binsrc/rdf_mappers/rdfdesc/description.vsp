@@ -5,7 +5,7 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
-   declare iri_type, iri_uri, links, langs, dspace, sid, error_message varchar;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr varchar;
    declare do_sponge, local_lookup, proxy_iri_fn int;
 
    set http_charset='utf-8';
@@ -21,8 +21,13 @@
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '') -- case when /about/html/www.cname/path i.e. when no scheme the default is http
      gr := 'http://' || gr;
-   cookievec := DB.DBA.vsp_ua_get_cookie_vec (lines);
+   cookiestr := http_request_header (lines, 'Cookie', null, null);  
+   cookiestr := regexp_replace (cookiestr, ';[[:space:]]*', ';', 1, null);
+   cookievec := split_and_decode (cookiestr, 0, '\0\0;=');
+   if (cookievec is not null)
    sid := get_keyword ('__rdf_sponge_sid', cookievec);
+   else
+     sid := null;
    if (sid is null)
      {
         sid := xenc_rand_bytes (6, 1);
