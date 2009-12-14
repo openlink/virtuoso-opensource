@@ -54,6 +54,8 @@ clean-local:
 EXTRA_DIST = \
 	*.sql \
 	make_vad.sh \
+	data/*.sql \
+	data/nyt_people.nt.gz \
 	ontologies/owl/*.owl \
 	ontologies/xbrl/*.owl \
 	rdfdesc/*.sql \
