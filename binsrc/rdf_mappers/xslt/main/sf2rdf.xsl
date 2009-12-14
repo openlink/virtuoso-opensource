@@ -77,7 +77,7 @@
     <xsl:template match="sf:*">
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&sioc;Item"/>
-			<xsl:element name="{local-name()}" namespace="http://www.openlinksw.com/schemas/ecrm#">
+			<xsl:element name="{local-name()}" namespace="http://demo.openlinksw.com/schemas/ecrm#">
 				<xsl:apply-templates select="*|text()" />
 			</xsl:element>
 		</rdf:Description>
