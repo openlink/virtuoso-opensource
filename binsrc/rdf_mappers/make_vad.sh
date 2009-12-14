@@ -197,6 +197,8 @@ directory_init() {
   done
 
   cp *.sql vad/code/rdf_mappers
+  cp data/*.sql vad/code/rdf_mappers
+  cp data/*.gz vad/code/rdf_mappers
   cp rdfdesc/*.sql vad/code/rdf_mappers
   cp xslt/main/*.xsl vad/vsp/rdf_mappers/xslt/main/
   cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
@@ -357,6 +359,7 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/iso_country_codes.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/nyt_people.nt.gz\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
   for file in `find xslt/main -type f -print | grep -v CVS | sort`
   do
