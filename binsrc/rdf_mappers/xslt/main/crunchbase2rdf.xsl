@@ -27,6 +27,7 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -38,6 +39,7 @@
     xmlns:skos="http://www.w3.org/2004/02/skos/core#"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:gr="&gr;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:cb="http://www.crunchbase.com/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -143,6 +145,22 @@
 			    </xsl:when>
 			</xsl:choose>
 		    </xsl:variable>
+		    <xsl:variable name="type2">
+			<xsl:choose>
+			    <xsl:when test="$space = 'company'">
+				<xsl:text>BusinessEntity</xsl:text>
+			    </xsl:when>
+			    <xsl:when test="$space = 'financial-organization'">
+				<xsl:text>BusinessEntity</xsl:text>
+			    </xsl:when>
+			    <xsl:when test="$space = 'product'">
+				<xsl:text>ProductOrService</xsl:text>
+			    </xsl:when>
+			    <xsl:when test="$space = 'service-provider'">
+				<xsl:text>BusinessEntity</xsl:text>
+			    </xsl:when>
+			</xsl:choose>
+		    </xsl:variable>
 		    <xsl:variable name="nam">
 			<xsl:choose>
 			    <xsl:when test="name">
@@ -158,6 +176,7 @@
 			<owl:sameAs rdf:resource="{$sas-iri}"/>
 		    </xsl:if>
 		    <rdf:type rdf:resource="&foaf;{$type}"/>
+		    <rdf:type rdf:resource="&gr;{$type2}"/>
 		    <xsl:apply-templates select="*"/>
 		</rdf:Description>
 	    </xsl:for-each>
@@ -203,6 +222,9 @@
     </xsl:template>
 
     <xsl:template match="name">
+        <gr:legalName>
+		<xsl:value-of select="."/>
+	</gr:legalName>
 	<foaf:name>
 	    <xsl:value-of select="."/>
 	</foaf:name>
