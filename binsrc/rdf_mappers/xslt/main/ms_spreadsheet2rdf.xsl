@@ -51,7 +51,7 @@
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:param name="baseUri"/>    
+    <xsl:param name="baseUri"/>
 	<xsl:param name="nss" />
 
 	<xsl:variable name="prefix" select="string($nss//namespace/@prefix)" />
@@ -61,7 +61,7 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    
+
     <xsl:template match="/">
 	<rdf:RDF>
 		<xsl:if test="$ns_ss='urn:schemas-microsoft-com:office:spreadsheet'">
@@ -77,31 +77,124 @@
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<xsl:apply-templates select="ss:Workbook/o:DocumentProperties" mode="doc"/>
 			</rdf:Description>
-		</xsl:if>	
+			<xsl:for-each select="ss:Workbook/ss:Worksheet">
+				<xsl:apply-templates select="." mode="doc"/>
+			</xsl:for-each>
+		</xsl:if>
 	</rdf:RDF>
+    </xsl:template>
+
+    <xsl:template match="ss:Worksheet"  mode="doc">
+		<xsl:variable name="sheet_name" select="@ss:Name"/>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $sheet_name)}">
+			<rdfs:label><xsl:value-of select="concat('Worksheet: ', $sheet_name)"/></rdfs:label>
+			<dc:title><xsl:value-of select="concat('Worksheet: ', $sheet_name)"/></dc:title>
+			<rdf:type rdf:resource="&bibo;DocumentPart"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<sioc:has_container rdf:resource="{$resourceURL}"/>
+			<xsl:for-each select="ss:Table">
+				<dcterms:hasPart rdf:resource="{vi:proxyIRI($baseUri, '', concat($sheet_name, '_Table_', position()))}"/>
+				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat($sheet_name, '_Table_', position()))}"/>
+			</xsl:for-each>
+		</rdf:Description>
+		<xsl:for-each select="ss:Table">
+			<xsl:variable name="table_num" select="position()"/>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat(../@ss:Name, '_Table_', $table_num))}">
+				<rdfs:label><xsl:value-of select="concat('Table: ', $table_num)"/></rdfs:label>
+				<dc:title><xsl:value-of select="concat('Table: ', $table_num)"/></dc:title>
+				<rdf:type rdf:resource="&bibo;DocumentPart"/>
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<sioc:has_container rdf:resource="{vi:proxyIRI($baseUri, '', $sheet_name)}"/>
+				<xsl:variable name="prev_row_num">0</xsl:variable>
+				<xsl:for-each select="ss:Row">
+					<xsl:variable name="cur_row_num" select="@ss:Index" />
+					<xsl:choose>
+						<xsl:when test="$cur_row_num &gt; 0">
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:variable name="cur_row_num" select="$prev_row_num + 1" />
+						</xsl:otherwise>
+					</xsl:choose>
+					<xsl:variable name="prev_row_num"  select="$cur_row_num"/>
+					<xsl:variable name="prev_cell_num">0</xsl:variable>
+					<xsl:for-each select="ss:Cell">
+						<xsl:variable name="cur_cell_num" select="@ss:Index" />
+						<xsl:choose>
+							<xsl:when test="$cur_cell_num &gt; 0">
+								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))}"/>
+							</xsl:when>
+							<xsl:otherwise>
+								<xsl:variable name="cur_cell_num" select="$prev_cell_num + 1" />
+								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))}"/>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:variable name="prev_cell_num"  select="$cur_cell_num"/>
+					</xsl:for-each>
+				</xsl:for-each>
+			</rdf:Description>
+			<xsl:variable name="prev_row_num">0</xsl:variable>
+			<xsl:for-each select="ss:Row">
+				<xsl:variable name="cur_row_num" select="@ss:Index" />
+				<xsl:choose>
+					<xsl:when test="$cur_row_num &gt; 0">
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:variable name="cur_row_num" select="$prev_row_num + 1" />
+					</xsl:otherwise>
+				</xsl:choose>
+				<xsl:variable name="prev_row_num"  select="$cur_row_num"/>
+				<xsl:variable name="prev_cell_num">0</xsl:variable>
+				<xsl:for-each select="ss:Cell">
+					<xsl:variable name="cur_cell_num" select="@ss:Index" />
+					<xsl:variable name="cellIRI"/>
+					<xsl:variable name="cellName"/>
+					<xsl:choose>
+						<xsl:when test="$cur_cell_num &gt; 0">
+							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))"/>
+							<xsl:variable name="cellName" select="concat('row ', $cur_row_num, ', col ', $cur_cell_num)"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:variable name="cur_cell_num" select="$prev_cell_num + 1" />
+							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))"/>
+							<xsl:variable name="cellName" select="concat('row ', $cur_row_num, ', col ', $cur_cell_num)"/>
+						</xsl:otherwise>
+					</xsl:choose>
+					<rdf:Description rdf:about="{$cellIRI}">
+						<rdf:type rdf:resource="&sioc;Item"/>
+						<rdfs:label><xsl:value-of select="concat('Cell: ', $cellName)"/></rdfs:label>
+						<dc:title><xsl:value-of select="concat('Cell: ', $cellName)"/></dc:title>
+						<sioc:has_container rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num))}"/>
+						<bibo:content>
+							<xsl:value-of select="Data"/>
+						</bibo:content>
+					</rdf:Description>
+					<xsl:variable name="prev_cell_num"  select="$cur_cell_num"/>
+				</xsl:for-each>
+			</xsl:for-each>
+		</xsl:for-each>
     </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:Author"  mode="doc">
 		<dc:creator><xsl:value-of select="."/></dc:creator>
     </xsl:template>
-    
+
     <xsl:template match="o:DocumentProperties/o:Version"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
+    </xsl:template>
 
 
     <!--xsl:template match="o:DocumentProperties/o:Company"  mode="doc">
 		<dc:publisher><xsl:value-of select="."/></dc:publisher>
-    </xsl:template-->	
+    </xsl:template-->
 
     <xsl:template match="o:DocumentProperties/o:Created"  mode="doc">
 		<dcterms:created><xsl:value-of select="."/></dcterms:created>
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:LastSaved"  mode="doc">
 		<dcterms:modified><xsl:value-of select="."/></dcterms:modified>
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="doc" />
 

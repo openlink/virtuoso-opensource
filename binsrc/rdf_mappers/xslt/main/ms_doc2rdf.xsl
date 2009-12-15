@@ -78,7 +78,7 @@
     <xsl:template match="ep:Properties">
 		<xsl:apply-templates/>
 	</xsl:template>
-	
+
 	<xsl:template match="cp:coreProperties">
 		<xsl:apply-templates/>
 	</xsl:template>
@@ -114,7 +114,7 @@
 			<xsl:value-of select="."/>
 		</xsl:element>
     </xsl:template>
-    
+
     <xsl:template match="*">
 		<xsl:variable name="ns">
 			<xsl:call-template name="ns"/>

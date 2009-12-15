@@ -53,7 +53,7 @@
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:param name="baseUri"/>    
+    <xsl:param name="baseUri"/>
 	<xsl:param name="nss" />
 
 	<xsl:variable name="prefix" select="string($nss//namespace/@prefix)" />
@@ -63,7 +63,7 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    
+
     <xsl:template match="/">
 	<rdf:RDF>
 		<xsl:if test="$ns_ss='http://schemas.microsoft.com/office/word/2003/wordml'">
@@ -79,61 +79,61 @@
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<xsl:apply-templates select="w:wordDocument/o:DocumentProperties" mode="doc"/>
 			</rdf:Description>
-		</xsl:if>	
+		</xsl:if>
 	</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:Author"  mode="doc">
 		<dc:creator><xsl:value-of select="."/></dc:creator>
-    </xsl:template>	
+    </xsl:template>
 
     <!--xsl:template match="o:DocumentProperties/o:Company"  mode="doc">
 		<dc:publisher><xsl:value-of select="."/></dc:publisher>
-    </xsl:template-->	
+    </xsl:template-->
 
     <xsl:template match="o:DocumentProperties/o:Created"  mode="doc">
 		<dcterms:created><xsl:value-of select="."/></dcterms:created>
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:LastSaved"  mode="doc">
 		<dcterms:modified><xsl:value-of select="."/></dcterms:modified>
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:Revision"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:TotalTime"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:Pages"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:Words"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:Characters"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:Lines"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="o:DocumentProperties/o:Paragraphs"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:CharactersWithSpaces"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:Version"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="doc" />
