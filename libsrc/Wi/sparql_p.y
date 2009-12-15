@@ -165,6 +165,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token isBLANK_L	/*:: PUNCT_SPAR_LAST("isBLANK") ::*/
 %token isIRI_L		/*:: PUNCT_SPAR_LAST("isIRI") ::*/
 %token isLITERAL_L	/*:: PUNCT_SPAR_LAST("isLITERAL") ::*/
+%token isREF_L		/*:: PUNCT_SPAR_LAST("isREF") ::*/
 %token isURI_L		/*:: PUNCT_SPAR_LAST("isURI") ::*/
 %token LANG_L		/*:: PUNCT_SPAR_LAST("LANG") ::*/
 %token LANGMATCHES_L	/*:: PUNCT_SPAR_LAST("LANGMATCHES") ::*/
@@ -1278,6 +1279,8 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isURI_L, t_list (1, $3)); }
 	| isBLANK_L _LPAR spar_expn _RPAR	/*... | ( 'isBLANK' '(' Expn ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isBLANK_L, t_list (1, $3)); }
+	| isREF_L _LPAR spar_expn _RPAR	/*... | ( 'isREF' '(' Expn ')' ) */
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isREF_L, t_list (1, $3)); }
 	| isLITERAL_L _LPAR spar_expn _RPAR	/*... | ( 'isLITERAL' '(' Expn ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, $3)); }
 	| spar_built_in_regex		/*... | RegexExpn	*/

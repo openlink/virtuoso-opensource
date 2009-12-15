@@ -440,6 +440,7 @@ SPAR_PARAMNAME	((([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|("::"{SPAR_SQL
 <SPARQL>{I}{S}{B}{L}{A}{N}{K}		{ return isBLANK_L	; }
 <SPARQL>{I}{S}{I}{R}{I}			{ return isIRI_L	; }
 <SPARQL>{I}{S}{L}{I}{T}{E}{R}{A}{L}	{ return isLITERAL_L	; }
+<SPARQL>{I}{S}{R}{E}{F}			{ return isREF_L	; }
 <SPARQL>{I}{S}{U}{R}{I}			{ return isURI_L	; }
 <SPARQL>{L}{A}{N}{G}			{ return LANG_L		; }
 <SPARQL>{L}{A}{N}{G}{M}{A}{T}{C}{H}{E}{S}	{ return LANGMATCHES_L		; }

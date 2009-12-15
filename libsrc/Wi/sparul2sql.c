@@ -326,7 +326,7 @@ bnode_found_or_added_for_big_ssl:
         }
       ssl_consts_ptr[0][ssl_count] = (caddr_t)list_to_array (list_of_triples);
       arg1 = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_list (0));
-      arg3 = spar_make_funcall (sparp, 0, "bif:__ssl_const", (SPART *)t_list (1, t_box_num_nonull (ssl_count)));
+      arg3 = spar_make_funcall (sparp, 0, "bif:__ssl_const", (SPART **)t_list (1, t_box_num_nonull (ssl_count)));
       goto args_ready; /* see below */
     }
   for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)

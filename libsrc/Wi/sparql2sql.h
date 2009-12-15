@@ -834,7 +834,7 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 
 #define SSG_RETVAL_USES_ALIAS			0x01	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
 #define SSG_RETVAL_SUPPRESSED_ALIAS		0x02	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */
-#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x04	/*!< The function signals an error instead of returning failure */
+#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x04	/*!< The function signals an error instead of returning failure and tries to relax SSG_RETVAL_FROM_GOOD_SELECTED to SSG_RETVAL_FROM_ANY_SELECTED as a last resort */
 #define SSG_RETVAL_CAN_PRINT_NULL		0x08	/*!< The function should print at least NULL but it can not return failure */
 #define SSG_RETVAL_FROM_GOOD_SELECTED		0x10	/*!< Use result-set columns from 'good' (non-optional) subqueries */
 #define SSG_RETVAL_FROM_ANY_SELECTED		0x20	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */

@@ -513,7 +513,6 @@ sparp_equiv_alloc (sparp_t *sparp)
   memset (res, 0, sizeof (sparp_equiv_t));
   if (BOX_ELEMENTS_INT_0 (eqs) == eqcount)
     {
-      sparp_t *sparp_iter;
       size_t new_size = ((NULL == eqs) ? 4 * sizeof (sparp_equiv_t *) : 2 * box_length (eqs));
       sparp_equiv_t **new_eqs = (sparp_equiv_t **)t_alloc_box (new_size, DV_ARRAY_OF_POINTER);
       if (NULL != eqs)
@@ -3613,6 +3612,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case isBLANK_L: return "isBLANK builtin";
     case isIRI_L: return "isIRI builtin";
     case isLITERAL_L: return "isLITERAL builtin";
+    case isREF_L: return "isREF builtin";
     case isURI_L: return "isURI builtin";
     case LANG_L: return "LANG builtin";
     case LANGMATCHES_L: return "LANGMATCHES builtin";
