@@ -129,7 +129,7 @@ wa_sn_user_ent_set ();
 
 create procedure wa_sn_user_ent_set ()
 {
-  if (registry_get ('__wa_sn_user_ent_set_done2') = 'done_2')
+  if (registry_get ('__wa_sn_user_ent_set_done2') = 'done_3')
     return;
   for (select sne_name as _sne_name from sn_person) do
   {
@@ -137,6 +137,6 @@ create procedure wa_sn_user_ent_set ()
       delete from sn_person where sne_name = _sne_name;
   }
 
-  registry_set ('__wa_sn_user_ent_set_done2', 'done_2');
+  registry_set ('__wa_sn_user_ent_set_done2', 'done_3');
 };
 wa_sn_user_ent_set ();

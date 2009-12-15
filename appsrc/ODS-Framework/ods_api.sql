@@ -52,7 +52,8 @@ create procedure DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING (in par varchar, in fmt v
   return sprintf (fmt, replace (DB.DBA.FTI_MAKE_SEARCH_STRING (v), '\'', '\\\''));
 };
 
-create procedure get_tag_meanings_from_moat (in tag varchar)
+create procedure get_tag_meanings_from_moat (
+  in tag varchar)
 {
   declare cnt, url any;
   declare arr, srv, res any;
@@ -79,7 +80,10 @@ create procedure get_tag_meanings_from_moat (in tag varchar)
 }
 ;
 
-create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_HTTP 'text/html'
+create procedure tag_meanings (
+  in tag varchar,
+  in inst int,
+  in post int) __SOAP_HTTP 'text/html'
 {
   declare cnt, url, ses, str, vec, uid, trs any;
   declare arr, srv any;
@@ -126,7 +130,9 @@ create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_
 
 grant execute on tag_meanings to GDATA_ODS;
 
-create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'application/rdf+xml') __SOAP_HTTP 'text/xml'
+create procedure OdsIriDescribe (
+  in iri varchar,
+  in accept varchar := 'application/rdf+xml') __SOAP_HTTP 'text/xml'
 {
   declare qr, stat, msg any;
   declare rset, metas, this_iri, type_iri, label_iri, name_iri, g_iri any;
@@ -216,11 +222,16 @@ create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'applicati
 
 grant execute on OdsIriDescribe to GDATA_ODS;
 
-
-create procedure
-ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in _host varchar := '',in _creator_username varchar :='',in _creator_passwd varchar :='', in _is_searchable integer := 0, in _show_activity integer := 0)
+create procedure ODS_CREATE_USER (
+  in _username varchar,
+  in _passwd varchar,
+  in _email varchar,
+  in _host varchar := '',
+  in _creator_username varchar := '',
+  in _creator_passwd varchar := '',
+  in _is_searchable integer := 0,
+  in _show_activity integer := 0)
 {
-
    declare dom_reg int;
    declare country, city, lat, lng, xt, xp any;
    declare _err,_port,default_host,default_port,vhost varchar;
@@ -564,12 +575,15 @@ report_err:;
 grant execute on ODS_CREATE_NEW_APP_INST to GDATA_ODS;
 
 
-create procedure
-ODS_DELETE_USER(in _username varchar, in _delDAV integer := 1, in _auth_username varchar :='',in _auth_passwd varchar :='' )
+create procedure ODS_DELETE_USER (
+  in _username varchar,
+  in _delDAV integer := 1,
+  in _auth_username varchar := '',
+  in _auth_passwd varchar := '' )
 {
   declare _err varchar;
-  _err:='';
 
+  _err:='';
   if(web_user_password_check(_auth_username,_auth_passwd)=0
      or
      not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
@@ -589,31 +603,21 @@ ODS_DELETE_USER(in _username varchar, in _delDAV integer := 1, in _auth_username
   return 1;
 
 report_err:;
-
  return _err;
-
-};
+}
+;
 
 grant execute on ODS_DELETE_USER to GDATA_ODS;
 
-
 -- This procedure is called inside trigger SYS_USERS_ON_DELETE_WA_FK on SYS_USERS;
-create procedure
-ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_username varchar :='',in _auth_passwd varchar :='' )
+create procedure ODS_DELETE_USER_DATA (
+  in _username varchar,
+  in _delDAV integer := 1,
+  in _auth_username varchar :='',
+  in _auth_passwd varchar :='' )
 {
   declare _u_name,_err varchar;
   declare _u_id integer;
-  _err:='';
-
-  {
-  declare exit handler for not found{ _err:='Given user name is not ODS user name.';
-                                      goto report_err;
-                                    };
-  select U_NAME,U_ID into _u_name,_u_id from DB.DBA.SYS_USERS,WA_USER_INFO where U_ID=WAUI_U_ID and U_NAME= _username;
-  }
-
-  declare _auth integer;
-  _auth:=0;
 
   if(is_http_ctx())
   {
@@ -632,7 +636,8 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
                _err := 'Authentication is incorrect.';
                goto report_err;
             }
-        }else
+      }
+      else
         {
           if(web_user_password_check(_auth_username,_auth_passwd)=0
              or
@@ -648,18 +653,20 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
           connection_set('odsapi_deldav',_delDAV);
         }
       }
+  }
 
-      _auth:=1;
-  }else
-      _auth:=1;
-
-  if(_auth)
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _username);
+  if (isnull (_u_id))
   {
-
-
+    _err := 'Given user name is not DB user name.';
+    goto report_err;
+  }
     {
     declare _sne_id integer;
-    declare exit handler for not found{goto skip_sn;};
+    declare exit handler for not found
+    {
+      goto skip_sn;
+    };
     select sne_id into _sne_id from sn_entity where sne_org_id = _u_id;
 
     delete from DB.DBA.sn_alias where sna_entity = _sne_id;
@@ -669,21 +676,31 @@ ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_user
     delete from DB.DBA.sn_person  where sne_org_id = _u_id;
     delete from DB.DBA.sn_entity  where sne_org_id = _u_id;
     }
-skip_sn:;
 
-    declare exit handler for SQLSTATE '*' { ROLLBACK WORK; RESIGNAL; };
+skip_sn:;
+  _u_name := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and U_NAME = _username);
+  if (isnull (_u_name))
+  {
+    _err := 'Given user name is not ODS user name.';
+    goto report_err;
+  }
+  {
+    declare exit handler for SQLSTATE '*'
+    {
+      rollback work;
+      resignal;
+    };
 
     declare _p_res any;
+
     _p_res:=ODS_DELETE_USER_INSTANCES(_u_id);
     if(_p_res<>1)
     {
        _err := _p_res;
        goto report_err;
     }
-
-    delete from "DB"."DBA"."WA_USERS"  where "WAU_U_ID" = _u_id;
-    delete from "DB"."DBA"."WA_USER_INFO"  where "WAUI_U_ID" = _u_id;
-
+    delete from DB.DBA.WA_USERS where WAU_U_ID = _u_id;
+    delete from DB.DBA.WA_USER_INFO where WAUI_U_ID = _u_id;
     if(_delDAV)
     {
       _p_res:=ODS_DELETE_USER_DAV(_u_name);
@@ -705,14 +722,12 @@ report_err:;
 }
 ;
 
-
-create procedure
-ODS_DELETE_USER_INSTANCES(in _user_id integer)
+create procedure ODS_DELETE_USER_INSTANCES (
+  in _user_id integer)
 {
   declare _err varchar;
+
   _err:='';
-
-
   if (is_http_ctx())
   {
     if(http_map_get('mounted')='/SOAP/')
@@ -753,8 +768,8 @@ report_err:;
 }
 ;
 
-create procedure
-ODS_DELETE_USER_DAV(in _user_name varchar)
+create procedure ODS_DELETE_USER_DAV (
+  in _user_name varchar)
 {
   declare _err varchar;
   _err:='';
@@ -802,7 +817,9 @@ report_err:;
 }
 ;
 
-create procedure ODS..openid_url_set (in uid int, in url varchar)
+create procedure ODS..openid_url_set (
+  in uid int,
+  in url varchar)
 {
   declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate any;
 
@@ -854,7 +871,9 @@ clear_auth:
 }
 ;
 
-create procedure search_compose_inst_qry (in q any, in iri varchar)
+create procedure search_compose_inst_qry (
+  in q any,
+  in iri varchar)
 {
   declare ses any;
   declare qr varchar;
@@ -874,9 +893,12 @@ create procedure search_compose_inst_qry (in q any, in iri varchar)
   http (node, ses);
   http ('\n }', ses);
   return string_output_string (ses);
-};
+}
+;
 
-create procedure search_compose_qry (in q any, in pars varchar)
+create procedure search_compose_qry (
+  in q any,
+  in pars varchar)
 {
   declare ses any;
   declare arr any;
@@ -943,7 +965,12 @@ create procedure search_compose_qry (in q any, in pars varchar)
 ;
 
 
-create procedure ODS.DBA.search_do_rdf (in q varchar, in pars any, in lines any, in nrows int, in iri varchar := null)
+create procedure ODS.DBA.search_do_rdf (
+  in q varchar,
+  in pars any,
+  in lines any,
+  in nrows int,
+  in iri varchar := null)
 {
   declare qr, ses, stat, msg, metas, rset any;
   declare accept, fmt varchar;
