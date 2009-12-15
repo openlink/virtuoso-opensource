@@ -1,6 +1,7 @@
-use DB;
-SPARQL
-drop quad map virtrdf:ThaliaDemo
+use DB
+;
+
+SPARQL drop quad map virtrdf:ThaliaDemo
 ;
 
 create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
@@ -70,7 +71,7 @@ prefix event: <http://purl.org/NET/c4dm/event.owl#>
 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
-prefix th: <http://purl.org/ontology/thalia/1.0/>
+prefix th: <http://demo.openlinksw.com/schemas/thalia#>
 
 create iri class th:Asu "http://^{URIQADefaultHost}^/thalia/asu/course/%U#this" (in code varchar not null) .
 create iri class th:Brown "http://^{URIQADefaultHost}^/thalia/brown/course/%U#this" (in Code varchar not null) .
@@ -121,7 +122,7 @@ prefix event: <http://purl.org/NET/c4dm/event.owl#>
 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
-prefix th: <http://purl.org/ontology/thalia/1.0/>
+prefix th: <http://demo.openlinksw.com/schemas/thalia#>
 alter quad storage virtrdf:DefaultQuadStorage
 from thalia.demo.asu_v as asus
 from thalia.demo.brown as browns
@@ -142,7 +143,7 @@ from thalia.demo.umd as umds
                         as virtrdf:Asu-Description ;
                     rdfs:seeAlso asus.MoreInfoURL
                         as virtrdf:Asu-MoreInfoURL ;
-                        th:forUniversity "http://purl.org/thalia/university/asu"
+                        th:forUniversity "http://purl.org/thalia/university/asu/university/asu"
                             as virtrdf:Asu-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
                             as virtrdf:Asu-Subject
@@ -402,6 +403,20 @@ delete from db.dba.url_rewrite_rule_list where urrl_list like 'tut_th_%';
 delete from db.dba.url_rewrite_rule where urr_rule like 'tut_th_%';
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_th_rule1',
+    1,
+    '([^#]*)',
+    vector('path'),
+    1,
+    '/about/html/http/^{URIQADefaultHost}^%s%%01this',
+    vector('path'),
+    null,
+    '(text/html)|(\\*/\\*)',
+    0,
+    303
+    );
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_th_rule2',
     1,
     '([^#]*)',
@@ -413,20 +428,6 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
     null
-    );
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tut_th_rule1',
-    1,
-    '([^#]*)',
-    vector('path'),
-    1,
-    '/about/html/http/^{URIQADefaultHost}^%s%%23this',
-    vector('path'),
-    null,
-    '(text/html)|(\\*/\\*)',
-    0,
-    303
     );
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
@@ -446,7 +447,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 create procedure DB.DBA.REMOVE_THALIA_RDF_DET()
 {
   declare colid int;
-  colid := DAV_SEARCH_ID('/DAV/home/demo/thalia', 'C');
+  colid := DAV_SEARCH_ID('/DAV/Thalia', 'C');
   if (colid < 0)
     return;
   update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
@@ -462,9 +463,9 @@ create procedure DB.DBA.THALIA_MAKE_RDF_DET()
     declare uriqa_str varchar;
     uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
     uriqa_str := 'http://' || uriqa_str || '/thalia';
-    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/thalia/RDFData/', uriqa_str, NULL);
+    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/Thalia/RDFData/', uriqa_str, NULL);
     VHOST_REMOVE (lpath=>'/thalia/data/rdf');
-    DB.DBA.VHOST_DEFINE (lpath=>'/thalia/data/rdf', ppath=>'/DAV/home/demo/thalia/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+    DB.DBA.VHOST_DEFINE (lpath=>'/thalia/data/rdf', ppath=>'/DAV/Thalia/RDFData/All/', is_dav=>1, vsp_user=>'dba');
 }
 ;
 
@@ -504,8 +505,26 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
           ));
 
 DB.DBA.VHOST_REMOVE (lpath=>'/thalia');
-DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/home/demo/thalia/', vsp_user=>'dba', is_dav=>1,
+DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/Thalia/', vsp_user=>'dba', is_dav=>1,
            is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
 
-DB.DBA.XML_SET_NS_DECL ('th', 'http://purl.org/ontology/thalia/1.0/', 2);
+create procedure DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV()
+{
+	declare content, urihost varchar;
+	select cast (RES_CONTENT as varchar) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/Thalia/thalia.owl';
+	DB.DBA.RDF_LOAD_RDFXML (content, 'http://demo.openlinksw.com/schemas/thalia#', 'http://demo.openlinksw.com/schemas/ThaliaOntology/1.0/');
+	urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	if (urihost = 'demo.openlinksw.com')
+	{
+		DB.DBA.VHOST_REMOVE (lpath=>'/schemas/thalia');
+		DB.DBA.VHOST_DEFINE (lpath=>'/schemas/thalia', ppath=>'/DAV/Thalia/thalia.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+	}
+}
+;
+DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV()
+;
+drop procedure DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV
+;
 
+DB.DBA.XML_SET_NS_DECL ('thalia', 'http://demo.openlinksw.com/schemas/thalia#', 2)
+;

@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl ="http://www.w3.org/2002/07/owl#"
+         xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+         xml:base="http://demo.openlinksw.com/schemas/thalia#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+         xmlns:cal="http://www.w3.org/2002/12/cal/ical#"
+         xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+         xmlns:product="http://www.swop-project.eu/ontologies/pmo/product.owl#">
+
+<owl:Ontology rdf:about="http://demo.openlinksw.com/schemas/thalia#">
+        <rdfs:label>Thalia</rdfs:label>
+        <rdfs:comment>Thalia classes and properties</rdfs:comment>
+        <virtrdf:catName>Thalia</virtrdf:catName>
+        <virtrdf:version>1.00</virtrdf:version>
+    </owl:Ontology>
+
+    <rdfs:Class rdf:ID="Asu">
+        <rdfs:label>Asu</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    
+    <rdf:Property rdf:ID="forUniversity">
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:domain rdf:resource="Asu"/>
+        <rdfs:domain rdf:resource="Brown"/>
+        <rdfs:domain rdf:resource="Cmu"/>
+        <rdfs:domain rdf:resource="Toronto"/>
+        <rdfs:domain rdf:resource="Ucsd"/>
+        <rdfs:domain rdf:resource="Umd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>forUniversity</rdfs:label>
+    </rdf:Property>
+    
+    <rdfs:Class rdf:ID="Brown">
+        <rdfs:label>Brown</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    <rdf:Property rdf:ID="hasInstructor">
+        <rdfs:range rdf:resource="BrownInstructor"/>
+        <rdfs:domain rdf:resource="Brown"/>
+        <rdfs:domain rdf:resource="Cmu"/>
+        <rdfs:domain rdf:resource="Gatech"/>
+        <rdfs:domain rdf:resource="Toronto"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasInstructor</rdfs:label>
+    </rdf:Property>
+    
+    <rdf:Property rdf:ID="hasInstructor1">
+        <rdfs:domain rdf:resource="Ucsd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasInstructor1</rdfs:label>
+    </rdf:Property>
+
+    <rdf:Property rdf:ID="hasInstructor2">
+        <rdfs:domain rdf:resource="Ucsd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasInstructor2</rdfs:label>
+    </rdf:Property>
+    
+    <rdf:Property rdf:ID="hasInstructor3">
+        <rdfs:domain rdf:resource="Ucsd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasInstructor3</rdfs:label>
+    </rdf:Property>
+    
+    <rdf:Property rdf:ID="hasLecture">
+        <rdfs:range rdf:resource="BrownLecture"/>
+        <rdfs:domain rdf:resource="Brwon"/>
+        <rdfs:domain rdf:resource="Cmu"/>
+        <rdfs:domain rdf:resource="Gatech"/>
+        <rdfs:domain rdf:resource="Toronto"/>
+        <rdfs:domain rdf:resource="Umd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasLecture</rdfs:label>
+    </rdf:Property>
+    
+    <rdf:Property rdf:ID="hasSection">
+        <rdfs:range rdf:resource="SectionTitle"/>
+        <rdfs:domain rdf:resource="Umd"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasSection</rdfs:label>
+    </rdf:Property>
+
+    <rdf:Property rdf:ID="hasPrerequisite">
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:domain rdf:resource="Toronto"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasPrerequisite</rdfs:label>
+    </rdf:Property>
+    
+    <rdfs:Class rdf:ID="SectionTitle">
+        <rdfs:label>SectionTitle</rdfs:label>
+    </rdfs:Class>
+    
+    <rdf:Property rdf:ID="text">
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:domain rdf:resource="Toronto"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>text</rdfs:label>
+    </rdf:Property>
+    
+    <rdfs:Class rdf:ID="BrownInstructor">
+        <rdfs:label>BrownInstructor</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="BrownLecture">
+        <rdfs:label>BrownLecture</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    </rdfs:Class>
+        
+    <rdfs:Class rdf:ID="BrownPlace">
+        <rdfs:label>BrownPlace</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#Point"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="Cmu">
+        <rdfs:label>Cmu</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    <rdf:Property rdf:ID="hasUnits">
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:domain rdf:resource="Cmu"/>
+        <rdfs:cardinality>1</rdfs:cardinality>
+        <rdfs:label>hasUnits</rdfs:label>
+    </rdf:Property>
+    
+    <rdfs:Class rdf:ID="CmuInstructor">
+        <rdfs:label>CmuInstructor</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="CmuLecture">
+        <rdfs:label>CmuLecture</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="CmuPlace">
+        <rdfs:label>CmuPlace</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#Point"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="CmuEventTime">
+        <rdfs:label>CmuEventTime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#Interval"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="CmuDatetime">
+        <rdfs:label>CmuDatetime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#DateTimeDescription"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="Gatech">
+        <rdfs:label>Gatech</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="GatechInstructor">
+        <rdfs:label>GatechInstructor</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="GatechLecture">
+        <rdfs:label>GatechLecture</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="GatechEventTime">
+        <rdfs:label>GatechEventTime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#Interval"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="GatechDatetime">
+        <rdfs:label>GatechDatetime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#DateTimeDescription"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="GatechPlace">
+        <rdfs:label>GatechPlace</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#Point"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="Toronto">
+        <rdfs:label>Toronto</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="TorontoInstructor">
+        <rdfs:label>TorontoInstructor</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="TorontoLecture">
+        <rdfs:label>TorontoLecture</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="TorontoPlace">
+        <rdfs:label>TorontoPlace</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2003/01/geo/wgs84_pos#Point"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="Ucsd">
+        <rdfs:label>Ucsd</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UcsdInstructor1">
+        <rdfs:label>UcsdInstructor1</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UcsdInstructor2">
+        <rdfs:label>UcsdInstructor2</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UcsdInstructor3">
+        <rdfs:label>UcsdInstructor3</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Instructor"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="Umd">
+        <rdfs:label>Umd</rdfs:label>
+        <rdfs:subClassOf rdf:resource="Course"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UmdLecture">
+        <rdfs:label>UmdLecture</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/NET/c4dm/event.owl#Event"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UmdEventTime">
+        <rdfs:label>UmdEventTime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#Interval"/>
+    </rdfs:Class>
+    
+    <rdfs:Class rdf:ID="UmdDatetime">
+        <rdfs:label>UmdDatetime</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#DateTimeDescription"/>
+    </rdfs:Class>
+    
+</rdf:RDF>
