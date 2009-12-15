@@ -27,6 +27,7 @@
          xmlns:owl ="http://www.w3.org/2002/07/owl#"
          xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
          xml:base="http://demo.openlinksw.com/schemas/northwind#">
+  
   <owl:Ontology rdf:about="http://demo.openlinksw.com/schemas/northwind#">
         <rdfs:label>Northwind</rdfs:label>
         <rdfs:comment>Northwind database classes and properties</rdfs:comment>
