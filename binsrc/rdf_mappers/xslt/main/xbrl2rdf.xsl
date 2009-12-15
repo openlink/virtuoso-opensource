@@ -67,7 +67,7 @@
 			    <owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 		    </xsl:if>
-			<xsl:apply-templates select="xbrl" />
+		    <xsl:apply-templates select="xbrl" />
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="xbrl">

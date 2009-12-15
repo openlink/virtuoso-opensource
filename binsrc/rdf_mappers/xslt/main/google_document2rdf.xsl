@@ -47,7 +47,7 @@
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
-    xmlns:foaf="&foaf;"    
+    xmlns:foaf="&foaf;"
     xmlns:dcterms="&dcterms;"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -55,19 +55,19 @@
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
-    
+
 	<xsl:param name="baseUri" />
-    
+
     <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    
+
     <xsl:template match="/">
 		<rdf:RDF>
 			<xsl:apply-templates />
 		</rdf:RDF>
     </xsl:template>
-    
+
     <xsl:template match="a:entry">
 		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
@@ -77,7 +77,7 @@
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
-		
+
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
@@ -95,13 +95,13 @@
 			<rdfs:seeAlso rdf:resource="{content/@src}"/>
 			<dc:creator><xsl:value-of select="a:author/a:name"/> <xsl:value-of select="a:author/a:email" /></dc:creator>
 		</rdf:Description>
-		
+
     </xsl:template>
-    
+
 	<xsl:template match="@*|*" />
 
 	<xsl:template match="text()">
 		<xsl:value-of select="normalize-space(.)" />
 	</xsl:template>
-    
+
 </xsl:stylesheet>

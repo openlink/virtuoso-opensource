@@ -112,7 +112,7 @@
 	<xsl:template name="a-prop-child">
 	    <xsl:for-each select="*">
 		<xsl:call-template name="a-prop"/>
-	    </xsl:for-each>	
+	    </xsl:for-each>
 	</xsl:template>
 
 	<xsl:template name="a-prop">
@@ -183,18 +183,18 @@
 		</xsl:if-->
 		<!-- special case for ugly signup links -->
 		<xsl:if test="not ($elem-nss = '&xhv;' and $obj = 'http://www.yelp.com/signup')">
-		<xsl:element name="{$elem-name}" namespace="{$elem-nss}">
-		    <xsl:if test="$obj != ''">
-			<xsl:attribute name="rdf:resource">
-			    <xsl:value-of select="$obj" />
-			</xsl:attribute>
-		    </xsl:if>
-		    <xsl:if test="$obj = '' and $prop-value">
-			<rdf:Description>
-			    <xsl:copy-of select="$prop-value"/>
-			</rdf:Description>
-		    </xsl:if>
-		</xsl:element>
+		    <xsl:element name="{$elem-name}" namespace="{$elem-nss}">
+			<xsl:if test="$obj != ''">
+			    <xsl:attribute name="rdf:resource">
+				<xsl:value-of select="$obj" />
+			    </xsl:attribute>
+			</xsl:if>
+			<xsl:if test="$obj = '' and $prop-value">
+			    <rdf:Description>
+				<xsl:copy-of select="$prop-value"/>
+			    </rdf:Description>
+			</xsl:if>
+		    </xsl:element>
 		</xsl:if>
 	    </rdf:Description>
 	</xsl:template>

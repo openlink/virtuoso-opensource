@@ -1,9 +1,9 @@
 <!--
-  Generated from oplzillow.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+  Generated from oplzillow.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/
 
   An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
   to handle product descriptions from the Zillow Web Service.
---> 
+-->
 
 <rdf:RDF xmlns="http://www.openlinksw.com/schemas/zillow#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"

@@ -69,21 +69,21 @@
     <xsl:variable name="resourceURL"><xsl:value-of select="vi:proxyIRI ($base)"/></xsl:variable>
 	-->
     <xsl:variable name="base"><xsl:value-of select="concat ('http://www.amazon.com/o/ASIN/', $asin)"/></xsl:variable>
-    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
-    <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-	<!-- For testing with Xalan XSLT processor 
+    <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
+    <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<!-- For testing with Xalan XSLT processor
   	<xsl:variable name="resourceURL" select="$base"/>
   	<xsl:variable  name="docIRI" select="$base"/>
   	<xsl:variable  name="docproxyIRI" select="$base"/>
   	-->
 
     <xsl:template match="/">
-	<rdf:RDF>
-	    <rdf:Description rdf:about="{$docproxyIRI}">
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<rdf:RDF>
+			<rdf:Description rdf:about="{$docproxyIRI}">
+				<rdf:type rdf:resource="&bibo;Document"/>
+				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
-		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 				<xsl:for-each select="//amz:CustomerReviews/amz:Review">
 				  <!-- Xalan
 				  <foaf:topic rdf:resource="{concat ($base, '#', 'Review_', amz:CustomerId)}"/>
@@ -91,8 +91,8 @@
 				  <foaf:topic rdf:resource="{vi:proxyIRI ($base, '', concat('Review_', amz:CustomerId))}"/>
 				</xsl:for-each>
 				<!-- See also 'shortcuts' below for foaf:topic links -->
-		<owl:sameAs rdf:resource="{$docIRI}"/>
-	    </rdf:Description>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
+			</rdf:Description>
 
 			<!--
             <rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'Product')}">
@@ -113,21 +113,21 @@
 						<xsl:variable name="model" select="//amz:ItemAttributes/amz:Model"/>
 		               	<rdfs:comment><xsl:value-of select="concat($brand, ' ', $model)"/> </rdfs:comment>
 
-					    <xsl:apply-templates select="//amz:ItemAttributes" mode="manufacturer" /> 
+					    <xsl:apply-templates select="//amz:ItemAttributes" mode="manufacturer" />
                     </rdf:Description>
                 </gr:hasMakeAndModel>
-		<xsl:choose>
+                <xsl:choose>
 					<xsl:when test="//amz:ProductGroup[ . = 'Book']">
-			<rdf:type rdf:resource="&bibo;Book"/>
-			<rdf:type rdf:resource="&book;Book"/>
+						<rdf:type rdf:resource="&bibo;Book"/>
+						<rdf:type rdf:resource="&book;Book"/>
 						<xsl:apply-templates select="//amz:ItemAttributes" mode="bibo" />
-		    </xsl:when>
+					</xsl:when>
 					<xsl:otherwise/>
-		</xsl:choose>
+				</xsl:choose>
 				<xsl:apply-templates select="//amz:Item"/>
 				<xsl:apply-templates select="//amz:ItemAttributes"/>
 				<xsl:apply-templates select="//amz:CustomerReviews"/>
-	    </rdf:Description>
+			</rdf:Description>
 
 			<xsl:apply-templates select="//amz:Offer" mode="offering"/>
 		</rdf:RDF>
@@ -156,17 +156,17 @@
 			<oplamz:offerListingId><xsl:value-of select="./amz:OfferListing/amz:OfferListingId"/></oplamz:offerListingId>
 			<oplamz:merchantId><xsl:value-of select="./amz:Merchant/amz:MerchantId"/></oplamz:merchantId>
 
-		<gr:hasPriceSpecification>
+			<gr:hasPriceSpecification>
 				<!-- Xalan
 		  		<gr:UnitPriceSpecification rdf:about="{concat ($base, '#', 'OfferPrice_', position())}">
 				-->
 		  		<gr:UnitPriceSpecification rdf:about="{concat(vi:proxyIRI ($base, '', 'OfferPrice_'), position())}">
 					<rdfs:label>Offer price</rdfs:label>
-			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
+					<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="./amz:OfferListing/amz:Price/amz:Amount div 100"/></gr:hasCurrencyValue>
             		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="./amz:OfferListing/amz:Price/amz:CurrencyCode"/></gr:hasCurrency>
-          </gr:UnitPriceSpecification>
-		</gr:hasPriceSpecification>
+          		</gr:UnitPriceSpecification>
+			</gr:hasPriceSpecification>
 		</xsl:element>
 
 		<xsl:element namespace="&gr;" name="BusinessEntity">
@@ -194,20 +194,20 @@
 
 		<!-- shortcuts -->
 		<rdf:Description rdf:about="{$docproxyIRI}">
-			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Vendor_'), position())}"/>	
-			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Offer_'), position())}"/>	
+			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Vendor_'), position())}"/>
+			<foaf:topic rdf:resource="{concat (vi:proxyIRI ($base, '', 'Offer_'), position())}"/>
 			<!-- Xalan
-			<foaf:topic rdf:resource="{concat ($base, '#', 'Vendor_', position())}"/>	
-			<foaf:topic rdf:resource="{concat ($base, '#', 'Offer_', position())}"/>	
+			<foaf:topic rdf:resource="{concat ($base, '#', 'Vendor_', position())}"/>
+			<foaf:topic rdf:resource="{concat ($base, '#', 'Offer_', position())}"/>
 			-->
 		</rdf:Description>
-    
+
     </xsl:template>
-    
+
     <xsl:template match="amz:CustomerReviews/amz:AverageRating">
 		<review:rating><xsl:value-of select="."/></review:rating>
     </xsl:template>
-    
+
     <xsl:template match="amz:CustomerReviews/amz:Review">
 		<review:hasReview>
 			<!-- Xalan
@@ -248,7 +248,7 @@
 		<oplamz:color><xsl:value-of select="."/></oplamz:color>
     </xsl:template>
     <xsl:template match="amz:ItemAttributes/amz:EAN">
-	<gr:hasEAN_UCC-13><xsl:value-of select="."/></gr:hasEAN_UCC-13>
+		<gr:hasEAN_UCC-13><xsl:value-of select="."/></gr:hasEAN_UCC-13>
     </xsl:template>
     <xsl:template match="amz:ItemAttributes/amz:Title">
 		<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
@@ -266,7 +266,7 @@
 			-->
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($base, '', 'ListPrice')}">
 				<rdfs:label>List price</rdfs:label>
-				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
            		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="amz:Amount div 100"/></gr:hasCurrencyValue>
            		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="amz:CurrencyCode"/></gr:hasCurrency>
           	</gr:UnitPriceSpecification>
@@ -292,7 +292,7 @@
 					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
-		    <xsl:value-of select="."/>
+							<xsl:value-of select="."/>
 						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
@@ -300,7 +300,7 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
-		</oplamz:packageHeight> 
+		</oplamz:packageHeight>
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:PackageDimensions/amz:Weight">
@@ -326,9 +326,9 @@
 					</xsl:otherwise>
 				</xsl:choose>
 	  		</gr:QuantitativeValueFloat>
-		</oplamz:packageWeight> 
+		</oplamz:packageWeight>
     </xsl:template>
-    
+
     <xsl:template match="amz:ItemAttributes/amz:PackageDimensions/amz:Length">
 		<oplamz:packageLength>
 			<!-- Xalan
@@ -343,16 +343,16 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 					</xsl:when>
 					<xsl:otherwise>
-	        <gr:hasValueFloat rdf:datatype="&xsd;float">
-	          <xsl:value-of select="."/>
-			</gr:hasValueFloat>
-			<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
-				<xsl:value-of select="@Units"/>
-			</gr:hasUnitOfMeasurement>
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
+							<xsl:value-of select="."/>
+						</gr:hasValueFloat>
+						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
+							<xsl:value-of select="@Units"/>
+						</gr:hasUnitOfMeasurement>
 					</xsl:otherwise>
 				</xsl:choose>
-	  </gr:QuantitativeValueFloat>
-		</oplamz:packageLength> 
+			</gr:QuantitativeValueFloat>
+		</oplamz:packageLength>
     </xsl:template>
 
 	<xsl:template match="amz:ItemAttributes/amz:PackageDimensions/amz:Width">
@@ -361,13 +361,13 @@
 			<gr:QuantitativeValueFloat rdf:about="{concat ($base, '#', 'PackageWidth')}">
 			-->
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'PackageWidth')}">
-	    <xsl:choose>
+				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
-	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
-		</gr:hasValueFloat>
+						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-	      </xsl:when>
+					</xsl:when>
 					<xsl:otherwise>
 						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select="."/>
@@ -378,7 +378,7 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</gr:QuantitativeValueFloat>
-		</oplamz:packageWidth> 
+		</oplamz:packageWidth>
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:ItemDimensions/Height">
@@ -389,22 +389,22 @@
 			<gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($base, '', 'ItemHeight')}">
 				<xsl:choose>
 					<xsl:when test="contains(@Units , 'hundredths-inches')">
-	        <gr:hasValueFloat rdf:datatype="&xsd;float">
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
 							<xsl:value-of select=". div 100"/>
-		</gr:hasValueFloat>
+						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
-	      </xsl:when>
-	      <xsl:otherwise>
-	        <gr:hasValueFloat rdf:datatype="&xsd;float">
-	          <xsl:value-of select="."/>
-		</gr:hasValueFloat>
+					</xsl:when>
+					<xsl:otherwise>
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
+							<xsl:value-of select="."/>
+						</gr:hasValueFloat>
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
 							<xsl:value-of select="@Units"/>
 						</gr:hasUnitOfMeasurement>
-	      </xsl:otherwise>
-	    </xsl:choose>
-	  </gr:QuantitativeValueFloat>
-		</oplamz:itemHeight> 
+					</xsl:otherwise>
+				</xsl:choose>
+			</gr:QuantitativeValueFloat>
+		</oplamz:itemHeight>
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:ItemDimensions/amz:Weight">
@@ -421,16 +421,16 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 					</xsl:when>
 					<xsl:otherwise>
-				<gr:hasValueFloat rdf:datatype="&xsd;float">
-				<xsl:value-of select="."/>
-				</gr:hasValueFloat>
-				<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
-					<xsl:value-of select="@Units"/>
-				</gr:hasUnitOfMeasurement>
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
+							<xsl:value-of select="."/>
+						</gr:hasValueFloat>
+						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
+							<xsl:value-of select="@Units"/>
+						</gr:hasUnitOfMeasurement>
 					</xsl:otherwise>
 				</xsl:choose>
-		</gr:QuantitativeValueFloat>
-		</oplamz:itemWeight> 
+	  		</gr:QuantitativeValueFloat>
+		</oplamz:itemWeight>
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:ItemDimensions/amz:Length">
@@ -447,16 +447,16 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 					</xsl:when>
 					<xsl:otherwise>
-				<gr:hasValueFloat rdf:datatype="&xsd;float">
-				<xsl:value-of select="."/>
-				</gr:hasValueFloat>
-				<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
-					<xsl:value-of select="@Units"/>
-				</gr:hasUnitOfMeasurement>
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
+							<xsl:value-of select="."/>
+						</gr:hasValueFloat>
+						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
+							<xsl:value-of select="@Units"/>
+						</gr:hasUnitOfMeasurement>
 					</xsl:otherwise>
 				</xsl:choose>
-		</gr:QuantitativeValueFloat>
-		</oplamz:itemLength> 
+			</gr:QuantitativeValueFloat>
+		</oplamz:itemLength>
     </xsl:template>
 
 	<xsl:template match="amz:ItemAttributes/amz:ItemDimensions/amz:Width">
@@ -473,16 +473,16 @@
 						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 					</xsl:when>
 					<xsl:otherwise>
-				<gr:hasValueFloat rdf:datatype="&xsd;float">
-				<xsl:value-of select="."/>
-				</gr:hasValueFloat>
-				<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
-					<xsl:value-of select="@Units"/>
-				</gr:hasUnitOfMeasurement>
+						<gr:hasValueFloat rdf:datatype="&xsd;float">
+							<xsl:value-of select="."/>
+						</gr:hasValueFloat>
+						<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">
+							<xsl:value-of select="@Units"/>
+						</gr:hasUnitOfMeasurement>
 					</xsl:otherwise>
 				</xsl:choose>
-		</gr:QuantitativeValueFloat>
-		</oplamz:itemWidth> 
+			</gr:QuantitativeValueFloat>
+		</oplamz:itemWidth>
     </xsl:template>
 
     <xsl:template match="amz:ItemAttributes/amz:image">
@@ -499,17 +499,17 @@
     <xsl:template match="amz:ItemAttributes/amz:ASIN" mode="bibo">
 		<bibo:asin><xsl:value-of select="."/></bibo:asin>
     </xsl:template>
-    
-    
+
+
     <!--xsl:template match="amz:ItemAttributes/amz:Author" mode="bibo">
         <dcterms:contributor>
 			<foaf:Person rdf:about="{vi:proxyIRI ($base, '', 'Author')}">
-		<foaf:name><xsl:value-of select="."/></foaf:name>
+				<foaf:name><xsl:value-of select="."/></foaf:name>
 			</foaf:Person>
-		<bibo:role rdf:resource="&bibo;author"/>
+			<bibo:role rdf:resource="&bibo;author"/>
         </dcterms:contributor>
     </xsl:template-->
-    
+
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />

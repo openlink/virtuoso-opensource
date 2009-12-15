@@ -1,13 +1,13 @@
 <!--
-  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/
 
   An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
   to handle product descriptions from the Amazon Web Service.
- 
+
   See:
   Technical Documentation for Amazon Product Advertising API
   http://developer.amazonwebservices.com/connect/entry.jspa?externalID=2850&categoryID=19
---> 
+-->
 
 <rdf:RDF xmlns="http://www.openlinksw.com/schemas/amazon#"
     xmlns:gr="http://purl.org/goodrelations/v1#"

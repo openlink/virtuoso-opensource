@@ -1,10 +1,10 @@
 <rdf:RDF
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-   xmlns:owl="http://www.w3.org/2002/07/owl#" 
+   xmlns:owl="http://www.w3.org/2002/07/owl#"
    xmlns:dc="http://purl.org/dc/elements/1.1/">
 
- <owl:Ontology 
+ <owl:Ontology
      rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <dc:title>The RDF Vocabulary (RDF)</dc:title>
    <dc:description>This is the RDF Schema for the RDF vocabulary defined in the RDF namespace.</dc:description>
@@ -115,9 +115,9 @@
   <rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#List"/>
   <rdfs:range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#List"/>
 </rdf:Property>
-	
+
 <rdfs:Datatype rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral">
-  <rdfs:subClassOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/> 
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#Literal"/>
   <rdfs:isDefinedBy rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
   <rdfs:label>XMLLiteral</rdfs:label>
   <rdfs:comment>The class of XML literal values.</rdfs:comment>

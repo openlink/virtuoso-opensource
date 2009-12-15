@@ -18,7 +18,7 @@
     <rdfs:comment xml:lang="en">The GoodRelations ontology provides the vocabulary for annotating e-commerce offerings (1) to sell, lease, repair, dispose, or maintain commodity products and (2) to provide commodity services.
 
 GoodRelations allows describing the relationship between (1) Web resources, (2) offerings made by those Web resources, (3) legal entities, (4) prices, (5) terms and conditions, and the aforementioned ontologies for products and services (6).
- 
+
 For more information, see http://purl.org/goodrelations/
 Note: The base URI of GoodRelations has changed to http://purl.org/goodrelations/v1. Please make sure you are only using element identifiers in this namespace, e.g. http://purl.org/goodrelations/v1#BusinessEntity. There may be copies of the ontology file on the Web which can be retrieved from other locations, BUT THOSE LOCATIONS MUST NOT BE USED AS REFERENCES.
 
@@ -184,7 +184,7 @@ Important: When querying for the price, always use hasMaxCurrencyValue and hasMi
   </owl:Class>
   <owl:Class rdf:ID="WarrantyScope">
     <rdfs:label xml:lang="en">WarrantyScope</rdfs:label>
-    <rdfs:comment xml:lang="en">The Warranty Scope represents types of services that will be provided free of charge by the vendor or manufacturer in the case of a defect (e.g. labor and parts, just parts), as part of the warranty included in an Offering. The actual services may be provided by the Business Entity making the Offering, by the manufacturer of the Product, or by a third party. 
+    <rdfs:comment xml:lang="en">The Warranty Scope represents types of services that will be provided free of charge by the vendor or manufacturer in the case of a defect (e.g. labor and parts, just parts), as part of the warranty included in an Offering. The actual services may be provided by the Business Entity making the Offering, by the manufacturer of the Product, or by a third party.
 
 Examples: Parts and Labor, Parts</rdfs:comment>
     <owl:disjointWith rdf:resource="#N-Ary-Relations"/>
@@ -204,7 +204,7 @@ Examples: Parts and Labor, Parts</rdfs:comment>
   </owl:Class>
   <owl:Class rdf:ID="BusinessEntityType">
     <rdfs:label xml:lang="en">BusinessEntityType</rdfs:label>
-    <rdfs:comment xml:lang="en">A Business Entity Type is a conceptual entity representing the legal form, the size, the main line of business, the position in the value chain, or any combination thereof, of a Business Entity. From the ontological point of view, Business Entity Types are mostly roles that a Business Entity has in the market. Business Entity Types are important for specifying eligible customers, since Offerings are often meant only for Business Entities of a certain size, legal structure, or role in the value chain. 
+    <rdfs:comment xml:lang="en">A Business Entity Type is a conceptual entity representing the legal form, the size, the main line of business, the position in the value chain, or any combination thereof, of a Business Entity. From the ontological point of view, Business Entity Types are mostly roles that a Business Entity has in the market. Business Entity Types are important for specifying eligible customers, since Offerings are often meant only for Business Entities of a certain size, legal structure, or role in the value chain.
 
 Examples: Consumers, Retailers, Wholesalers, or Public Institutions</rdfs:comment>
     <owl:disjointWith rdf:resource="#BusinessFunction"/>
@@ -224,7 +224,7 @@ Examples: Consumers, Retailers, Wholesalers, or Public Institutions</rdfs:commen
   </owl:Class>
   <owl:Class rdf:ID="UnitPriceSpecification">
     <rdfs:label xml:lang="en">UnitPriceSpecification</rdfs:label>
-    <rdfs:comment xml:lang="en">A Unit Price Specification is a conceptual entity that specifies the price asked for a given Offering by the respective Business Entity. An Offering may be linked to multiple Unit Price Specifications that specify alternative prices for non-overlapping sets of conditions (e.g. quantities or sales regions). 
+    <rdfs:comment xml:lang="en">A Unit Price Specification is a conceptual entity that specifies the price asked for a given Offering by the respective Business Entity. An Offering may be linked to multiple Unit Price Specifications that specify alternative prices for non-overlapping sets of conditions (e.g. quantities or sales regions).
 
 A Unit Price Specification is characterized by (1) the lower and upper limits and the Unit of Measurement of the eligible quantity, (2) by a monetary amount per unit of the Product or Service Instance in the given Unit of Measurement specified as a literal value of type float in combination with a Currency, and (3)  whether this prices includes local sales taxes, namely VAT.
 
@@ -238,7 +238,7 @@ Whether VAT and sales taxes are included in this price is specified using the da
 
 The price per unit of measurement is specified as a float value of the hasCurrencyValue property. The currency is specified via the hasCurrency datatype property. Whether the price includes VAT or not is indicated by the valueAddedTaxIncluded datatype property.
 
-The property priceType can be used to indicate that the price is a retail price recommendation only (i.e. a list price). 
+The property priceType can be used to indicate that the price is a retail price recommendation only (i.e. a list price).
 
 If the price can only be given as a range, use hasMaxCurrencyValue and hasMinCurrencyValue for the upper and lower bounds.
 
@@ -350,7 +350,7 @@ Since eClassOWL and other large products and services ontologies are used for bo
 
 See the GoodRelations Technical Report for more details on this.
 
-Examples: 
+Examples:
 a) MyCellphone123, i.e. my personal, tangible cell phone
 b) Siemens1234, i.e. the Siemens cell phone make and model 1234
 c) dummyCellPhone123 as a placeholder for actual instances of a certain kind of cell phones.</rdfs:comment>
@@ -373,7 +373,7 @@ c) dummyCellPhone123 as a placeholder for actual instances of a certain kind of 
     <rdfs:label xml:lang="en">TypeAndQuantityNode</rdfs:label>
     <rdfs:comment xml:lang="en">This is a conceptual entity that holds together all aspects of the quaternary relation includesTypeOfGood, namely the Quantity, the Unit of Measurement, the Product or Service, and the Offering to which this belongs.
 
-Note: The link between Offering and TypeAndQuantityNode is represented by the object property includesObject. The Unit of Measurement is attached using the hasUnitOfMeasurement datatype property. The quantity is specified using the datatype property amountOfThisGood (float). The specification of the item included is represented by the object property typeOfGood. 
+Note: The link between Offering and TypeAndQuantityNode is represented by the object property includesObject. The Unit of Measurement is attached using the hasUnitOfMeasurement datatype property. The quantity is specified using the datatype property amountOfThisGood (float). The specification of the item included is represented by the object property typeOfGood.
 
 Example: An offering may consist of 100g Butter and 1 kg of potatoes, or 1 cell phone and 2 headsets.</rdfs:comment>
     <rdfs:subClassOf rdf:resource="#N-Ary-Relations"/>
@@ -407,7 +407,7 @@ Example: Peter Miller offers to repair TV sets made by Siemens, Volkswagen Innsb
   </owl:Class>
   <owl:Class rdf:ID="ProductOrServiceModel">
     <rdfs:label xml:lang="en">ProductOrServiceModel</rdfs:label>
-    <rdfs:comment xml:lang="en">From the ontological perspective, a Product or Service Model is an intangible entity that specifies some characteristics of a group of similar, usually mass-produced Products. In case of mass-produced Products, there exists a relation hasMakeAndModel between the Products and Services Instance and the Product or Service Model. 
+    <rdfs:comment xml:lang="en">From the ontological perspective, a Product or Service Model is an intangible entity that specifies some characteristics of a group of similar, usually mass-produced Products. In case of mass-produced Products, there exists a relation hasMakeAndModel between the Products and Services Instance and the Product or Service Model.
 
 Since eClassOWL and other products and services ontologies don't support this important disctinction, Product or Service Models are a subclass of Product or Service in GoodRelations. This allows using the same properties for (e.g. "hasWeight") for product models and actual products.
 
@@ -763,7 +763,7 @@ In products and services ontologies, only such properties that are no quantitati
 
 For a Unit Price Specification, this is the price for one unit or bundle (as specified in the unit of measurement of the Unit Price Specification) of the respective Product Or Service. For a Delivery Charge Specification or a Payment Charge Specification, it is the price per delivery or payment.
 
-GoodRelations also supports giving price information as intervals only. If this is needed, use hasMaxCurrencyValue for the upper bound and hasMinCurrencyValue for the lower bound. 
+GoodRelations also supports giving price information as intervals only. If this is needed, use hasMaxCurrencyValue for the upper bound and hasMinCurrencyValue for the lower bound.
 
 Using hasCurrencyValue sets the upper and lower bounds to the same given value, i.e., x hasCurrencyValue y implies x hasMinCurrencyValue y, x hasMaxCurrencyValue y.</rdfs:comment>
     <rdfs:domain rdf:resource="#PriceSpecification"/>
@@ -898,11 +898,11 @@ Note: If the shop re-opens on the same day of the week or set of days of the wee
   </owl:DatatypeProperty>
   <owl:DatatypeProperty rdf:ID="hasStockKeepingUnit">
     <rdfs:label xml:lang="en">hasStockKeepingUnit (0..*)</rdfs:label>
-    <rdfs:comment xml:lang="en">The Stock Keeping Unit, or SKU is a unique identifier for a product, service, or bundle from the perspective of a particular supplier, i.e. SKUs are mostly assigned and serialized at the merchant level. 
+    <rdfs:comment xml:lang="en">The Stock Keeping Unit, or SKU is a unique identifier for a product, service, or bundle from the perspective of a particular supplier, i.e. SKUs are mostly assigned and serialized at the merchant level.
 Examples of SKUs are the ordering or parts numbers used by a particular Web shop or catalog.
 
-Consequently, the domain of hasStockKeepingUnit is the union of the classes Offering and Product Or Service. 
-If attached to an Offering, the SKU will usually reflect a merchant-specific identifier, i.e. one valid only for that particular retailer or shop. 
+Consequently, the domain of hasStockKeepingUnit is the union of the classes Offering and Product Or Service.
+If attached to an Offering, the SKU will usually reflect a merchant-specific identifier, i.e. one valid only for that particular retailer or shop.
 If attached to a Product Or Service Model, the SKU should reflect the identifier / part number used by the official manufacturer of that part.
 
 Important: Be careful when assuming two Products or Services instances or Offering instances to be identical based on the SKU. Since SKUs are unique only for the same Business Entity, this can be assumed only when you are sure that the two SKU values refer to the same Business Entity. Such can be done by taking into account the provenance of the data. As long as instances of Offering are concerned, you can also check that the offerings are being offered by the same Business Entity.
@@ -1153,7 +1153,7 @@ In principle, any existing or upcoming vocabulary for Web Services can be used i
   <gr:WarrantyScope rdf:ID="PartsAndLabor-PickUp">
     <rdfs:label xml:lang="en">PartsAndLabor-PickUp (WarrantyScope)</rdfs:label>
     <rdfs:comment xml:lang="en">In case of a defect or malfunction, the buying party has the right to request from the selling Business Entity to pick-up the good from its current location to a suitable service location, where the functionality of the good will be restored. All transportation, labor, parts, and materials needed to fix the problem will be covered by the selling Business Entity or one of its partnering Business Entities.
-    
+
 Note: This is just a rough classification for filtering offers. It is up to the buying party to check the exact scope and terms and conditions of the Warranty Promise.</rdfs:comment>
     <rdfs:isDefinedBy rdf:resource=""/>
   </gr:WarrantyScope>

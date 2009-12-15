@@ -49,7 +49,7 @@
     <label:plural xml:lang="en">depict same resource as</label:plural>
     <rdfs:range rdf:resource="http://open.vocab.org/terms/PrimaryVisualElement"/>
     <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
-    <ns1:markdownDescription xml:lang="en">depictsSameResourceAs is used by a VisualElement to point to the PrimaryVisualElement within the current display. 
+    <ns1:markdownDescription xml:lang="en">depictsSameResourceAs is used by a VisualElement to point to the PrimaryVisualElement within the current display.
 
 both :a and :b are in same display.
 
@@ -472,11 +472,11 @@ See elso http://open.vocab.org/terms/Plot.</ns1:markdownDescription>
     <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
     <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
     <rdfs:label xml:lang="en">DOESNT LIVE HERE ANYMORE</rdfs:label>
-    <ns1:markdownDescription xml:lang="en">Example Usage:  
+    <ns1:markdownDescription xml:lang="en">Example Usage:
 
-http://dilettantes.code4lib.org/about-me/#me ov:doesnt-live-here-anymore _:bn1 .  
-_:bn1 rdf:type geo:SpatialThing .  
-_:bn1 foaf:name &quot;Temple Bar&quot; .  
+http://dilettantes.code4lib.org/about-me/#me ov:doesnt-live-here-anymore _:bn1 .
+_:bn1 rdf:type geo:SpatialThing .
+_:bn1 foaf:name &quot;Temple Bar&quot; .
 </ns1:markdownDescription>
     <dir:etag>&quot;9c548be2-965d-427e-bdb0-bea367396606&quot;</dir:etag>
     <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
@@ -2048,7 +2048,7 @@ Gameshark For Fire Red Rom http://shdeng.com/pyb/29
     <dir:etag>&quot;ba5c9f4b-7ab7-489c-a957-f41ab4fc8b73&quot;</dir:etag>
     <rdfs:label xml:lang="en">Example Instance</rdfs:label>
     <rdfs:comment xml:lang="en">! This term is deprecated. use exampleResource instead.
-A resource that is an example of an instance of an rdfs:Class 
+A resource that is an example of an instance of an rdfs:Class
 
 </rdfs:comment>
     <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>

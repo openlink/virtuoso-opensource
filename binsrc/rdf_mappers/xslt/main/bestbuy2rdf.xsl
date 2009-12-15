@@ -78,7 +78,7 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
-				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="products/product/name"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
@@ -118,11 +118,11 @@
 	                        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                            <rdf:type rdf:resource="&oplbb;Product"/>
-				    <xsl:apply-templates select="products/product" mode="manufacturer" /> 
+				    <xsl:apply-templates select="products/product" mode="manufacturer" />
 		                   <!-- TO DO
 		                   <rdfs:comment>!!#{manufacturer} #{modelNumber}</rdfs:comment>
 		                   -->
-			</rdf:Description>
+	                       </rdf:Description>
 	                   </gr:hasMakeAndModel>
 
 			   <xsl:apply-templates select="products/product" />
@@ -185,11 +185,11 @@
     <xsl:template match="product/freeShipping" mode="offering">
 	<oplbb:freeShipping rdf:datatype="&xsd;boolean"><xsl:value-of select="."/></oplbb:freeShipping>
     </xsl:template>
-    
+
     <xsl:template match="product/name">
-	<rdfs:label>
-	    <xsl:value-of select="."/>
-	</rdfs:label>
+		<rdfs:label>
+			<xsl:value-of select="."/>
+		</rdfs:label>
 		<dc:title>
 			<xsl:value-of select="."/>
 		</dc:title>
@@ -204,7 +204,7 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">USD</gr:hasUnitOfMeasurement>
 		<gr:hasValueFloat rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasValueFloat>
 	    </gr:QuantitativeValueFloat>
-	</oplbb:dollarSaving> 
+	</oplbb:dollarSaving>
     </xsl:template>
 
     <xsl:template match="product/onlineAvailability" mode="offering">
@@ -220,15 +220,15 @@
     </xsl:template>
 
     <xsl:template match="product/url">
-    <xsl:if test="string-length(.) &gt; 0">
+	<xsl:if test="string-length(.) &gt; 0">
 	    <xsl:element namespace="&rdfs;" name="seeAlso">
-			<xsl:attribute name="rdf:resource">
-			<xsl:value-of select="."/>
-			</xsl:attribute>
-		</xsl:element>
-    </xsl:if>
+		<xsl:attribute name="rdf:resource">
+		    <xsl:value-of select="."/>
+		</xsl:attribute>
+	    </xsl:element>
+	</xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="product/shortDescription">
 	<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
     </xsl:template>
@@ -270,24 +270,24 @@
 	<xsl:if test="string-length(.) &gt; 0">
 	    <xsl:element namespace="&oplbb;" name="image">
 		<xsl:attribute name="rdf:resource">
-			<xsl:value-of select="."/>
+		    <xsl:value-of select="."/>
 		</xsl:attribute>
 	    </xsl:element>
 	</xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="product/manufacturer" mode="manufacturer">
-		<gr:hasManufacturer>
+	<gr:hasManufacturer>
 	    <!-- For testing with standalone XSLT processor
 	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
 	    -->
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
 		<rdfs:label>Manufacturer</rdfs:label>
-            <gr:legalName><xsl:value-of select="."/></gr:legalName>
-          </gr:BusinessEntity>
-		</gr:hasManufacturer>
+		<gr:legalName><xsl:value-of select="."/></gr:legalName>
+	    </gr:BusinessEntity>
+	</gr:hasManufacturer>
     </xsl:template>
-    
+
     <xsl:template match="product/details/detail">
 	<oplbb:detail>
 	    <xsl:element namespace="&oplbb;" name="ProductDetail">
@@ -302,13 +302,13 @@
 	    </xsl:element>
 	</oplbb:detail>
     </xsl:template>
-    
+
     <xsl:template match="product/weight">
 	<oplbb:weight> <!-- or cl:hasWeight -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Weight')}">
 	  -->
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Weight')}">
+	  <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Weight')}">
 	    <xsl:choose>
 	      <xsl:when test="contains(. , 'lb')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -329,16 +329,16 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
-			</gr:QuantitativeValueFloat>
-	</oplbb:weight> 
-	</xsl:template>
-	
+	  </gr:QuantitativeValueFloat>
+	</oplbb:weight>
+    </xsl:template>
+
     <xsl:template match="product/shippingWeight">
-	<oplbb:shippingWeight> <!-- or cl:??? -->
+        <oplbb:shippingWeight> <!-- or cl:??? -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'ShippingWeight')}">
 	  -->
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'ShippingWeight')}">
+	  <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'ShippingWeight')}">
 	    <xsl:choose>
 	      <xsl:when test="contains(. , 'lb')">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -359,16 +359,16 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">LBR</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
-			</gr:QuantitativeValueFloat>
-	</oplbb:shippingWeight> 
-	</xsl:template>
-	
+	  </gr:QuantitativeValueFloat>
+	</oplbb:shippingWeight>
+    </xsl:template>
+
     <xsl:template match="product/height">
 	<oplbb:height> <!-- or cl:hasHeight -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Height')}">
 	  -->
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Height')}">
+	  <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Height')}">
 	    <xsl:choose>
 	      <xsl:when test="contains(. , $quote)">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -389,16 +389,16 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
-			</gr:QuantitativeValueFloat>
-	</oplbb:height> 
-	</xsl:template>
-	
+	  </gr:QuantitativeValueFloat>
+	</oplbb:height>
+    </xsl:template>
+
     <xsl:template match="product/depth">
 	<oplbb:depth> <!-- or cl:hasDepth -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Depth')}">
 	  -->
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Depth')}">
+	  <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Depth')}">
 	    <xsl:choose>
 	      <xsl:when test="contains(. , $quote)">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -419,16 +419,16 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
-			</gr:QuantitativeValueFloat>
-	</oplbb:depth> 
-	</xsl:template>
-	
+	  </gr:QuantitativeValueFloat>
+	</oplbb:depth>
+    </xsl:template>
+
     <xsl:template match="product/width">
 	<oplbb:width> <!-- or cl:hasWidth -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'Width')}">
 	  -->
-	    <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Width')}">
+	  <gr:QuantitativeValueFloat rdf:about="{vi:proxyIRI ($baseUri, '', 'Width')}">
 	    <xsl:choose>
 	      <xsl:when test="contains(. , $quote)">
 	        <gr:hasValueFloat rdf:datatype="&xsd;float">
@@ -449,12 +449,12 @@
 		<gr:hasUnitOfMeasurement rdf:datatype="&xsd;string">INH</gr:hasUnitOfMeasurement>
 	      </xsl:otherwise>
 	    </xsl:choose>
-	    </gr:QuantitativeValueFloat>
-	</oplbb:width> 
+	  </gr:QuantitativeValueFloat>
+	</oplbb:width>
     </xsl:template>
 
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />
-    
+
 </xsl:stylesheet>

@@ -51,7 +51,7 @@
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:param name="baseUri"/>    
+    <xsl:param name="baseUri"/>
 	<xsl:param name="nss" />
 
 	<xsl:variable name="prefix" select="string($nss//namespace/@prefix)" />
@@ -61,7 +61,7 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri)"/>
     <xsl:variable name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    
+
     <xsl:template match="/">
 	<rdf:RDF>
 		<xsl:if test="$ns_ss='urn:schemas-microsoft-com:office:spreadsheet'">
@@ -84,7 +84,7 @@
 			<xsl:for-each select="ss:Workbook/ss:Worksheet">
 				<xsl:apply-templates select="." mode="doc"/>
 			</xsl:for-each>
-		</xsl:if>	
+		</xsl:if>
 	</rdf:RDF>
     </xsl:template>
 
@@ -177,28 +177,28 @@
 			</xsl:for-each>
 		</xsl:for-each>
     </xsl:template>
-    
+
     <xsl:template match="o:DocumentProperties/o:Author"  mode="doc">
 		<dc:creator><xsl:value-of select="."/></dc:creator>
     </xsl:template>
-    
+
     <xsl:template match="o:DocumentProperties/o:Version"  mode="doc">
 		<xsl:copy-of select="." />
-    </xsl:template>	
+    </xsl:template>
 
 
     <!--xsl:template match="o:DocumentProperties/o:Company"  mode="doc">
 		<dc:publisher><xsl:value-of select="."/></dc:publisher>
-    </xsl:template-->	
+    </xsl:template-->
 
     <xsl:template match="o:DocumentProperties/o:Created"  mode="doc">
 		<dcterms:created><xsl:value-of select="."/></dcterms:created>
-    </xsl:template>	
+    </xsl:template>
 
     <xsl:template match="o:DocumentProperties/o:LastSaved"  mode="doc">
 		<dcterms:modified><xsl:value-of select="."/></dcterms:modified>
-    </xsl:template>	
-    
+    </xsl:template>
+
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="doc" />
 

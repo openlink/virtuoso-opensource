@@ -14,7 +14,7 @@
   */
 }
 
-/*		
+/*
 .slb {
   position: absolute;
   overflow: hidden;
@@ -23,7 +23,7 @@
   width: 10px;
 }
 */
-		
+
 .slb_handle {
   width: 15px;
   height: 100%;
@@ -36,14 +36,14 @@
   position: absolute;
   border-right: 2px solid #575;
 }
-  
+
 .slb_handle_img {
 position: absolute;
 border-top: 2px solid #575;
 border-bottom: 2px solid #575;
 border-left: 2px solid #575;
-} 
-  
+}
+
 .slb_content {
   color: #334;
   position: absolute;

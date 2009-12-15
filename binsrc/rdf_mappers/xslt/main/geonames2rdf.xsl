@@ -50,7 +50,7 @@
     xmlns:aapi="http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     >
-    
+
     <xsl:param name="baseUri" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
@@ -59,25 +59,25 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:template match="/">
-		<rdf:RDF>
+	<rdf:RDF>
 	    <xsl:apply-templates/>
 	</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="rdf:RDF/geonames:Feature">
 	<rdf:Description rdf:about="{$docproxyIRI}">
-				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
-				<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
-				<dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
-				<rdfs:seeAlso rdf:resource="{@rdf:about}"/>
-				<owl:sameAs rdf:resource="{@rdf:about}"/>
+	    <rdf:type rdf:resource="&bibo;Document"/>
+	    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
+	    <foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
+	    <dcterms:subject rdf:resource="{vi:proxyIRI($baseUri)}"/>
+	    <rdfs:seeAlso rdf:resource="{@rdf:about}"/>
+	    <owl:sameAs rdf:resource="{@rdf:about}"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
-				<rdf:type rdf:resource="&geonames;Feature"/>
-				<xsl:copy-of select="*"/>
-			</rdf:Description>
+	</rdf:Description>
+	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+	    <rdf:type rdf:resource="&geonames;Feature"/>
+	    <xsl:copy-of select="*"/>
+	</rdf:Description>
     </xsl:template>
 
     <xsl:template match="text()|@*"/>

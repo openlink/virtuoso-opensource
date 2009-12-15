@@ -76,14 +76,14 @@
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
 		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
-		<awol:content>
-		    <awol:Content>
+		    <awol:content>
+			<awol:Content>
 			    <!--awol:body rdf:parseType="Literal">
-			    <xsl:apply-templates select="$doc1" mode="content"/>
+				<xsl:apply-templates select="$doc1" mode="content"/>
 			    </awol:body-->
-			<awol:src rdf:resource="{$baseUri}"/>
-		    </awol:Content>
-		</awol:content>
+			    <awol:src rdf:resource="{$baseUri}"/>
+			</awol:Content>
+		    </awol:content>
 		</xsl:if>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
       </rdf:Description>
@@ -162,25 +162,25 @@
   <xsl:template match="a[@href]">
       <xsl:variable name="url" select="resolve-uri ($baseUri, @href)"/>
       <xsl:if test="not ($url like 'javascript:%')">
-      <xsl:choose>
-	  <xsl:when test="$url like 'http://www.amazon.com/gp/product/%' or $url like 'http://www.amazon.%/o/ASIN/%'">
-	      <xsl:variable name="tmp"
-		  select="vi:regexp-match ('(http://www.amazon.com/gp/product/[A-Z0-9]+)|(http://www.amazon.[^/]*/o/ASIN/[A-Z0-9]+)', $url)" />
-	      <rdfs:seeAlso rdf:resource="{$tmp}"/>
-	  </xsl:when>
-	  <xsl:when test="$url like 'http://cgi.sandbox.ebay.com/%&amp;item=%&amp;%' or $url like 'http://cgi.ebay.com/%QQitemZ%QQ%'">
-	      <rdfs:seeAlso rdf:resource="{$url}"/>
-	  </xsl:when>
-	  <xsl:when test="$url like 'urn:lsid:%' or $url like 'doi:%' or $url like 'oai:%'">
-	      <rdfs:seeAlso rdf:resource="{vi:proxyIRI ($url, '', '')}"/>
-	  </xsl:when>
-	  <xsl:when test="$url like 'lsidres:urn:lsid:%'">
-	      <rdfs:seeAlso rdf:resource="{substring-after ($url, 'lsidres:')}"/>
-	  </xsl:when>
-	  <xsl:otherwise>
-	      <sioc:links_to rdf:resource="{$url}"/>
-	  </xsl:otherwise>
-      </xsl:choose>
+	  <xsl:choose>
+	      <xsl:when test="$url like 'http://www.amazon.com/gp/product/%' or $url like 'http://www.amazon.%/o/ASIN/%'">
+		  <xsl:variable name="tmp"
+		      select="vi:regexp-match ('(http://www.amazon.com/gp/product/[A-Z0-9]+)|(http://www.amazon.[^/]*/o/ASIN/[A-Z0-9]+)', $url)" />
+		  <rdfs:seeAlso rdf:resource="{$tmp}"/>
+	      </xsl:when>
+	      <xsl:when test="$url like 'http://cgi.sandbox.ebay.com/%&amp;item=%&amp;%' or $url like 'http://cgi.ebay.com/%QQitemZ%QQ%'">
+		  <rdfs:seeAlso rdf:resource="{$url}"/>
+	      </xsl:when>
+	      <xsl:when test="$url like 'urn:lsid:%' or $url like 'doi:%' or $url like 'oai:%'">
+		  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ($url, '', '')}"/>
+	      </xsl:when>
+	      <xsl:when test="$url like 'lsidres:urn:lsid:%'">
+		  <rdfs:seeAlso rdf:resource="{substring-after ($url, 'lsidres:')}"/>
+	      </xsl:when>
+	      <xsl:otherwise>
+		  <sioc:links_to rdf:resource="{$url}"/>
+	      </xsl:otherwise>
+	  </xsl:choose>
       </xsl:if>
   </xsl:template>
 

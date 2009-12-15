@@ -1,14 +1,14 @@
 <!--
-  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/
 
   An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
   to handle product descriptions from the BestBuy Web Service.
- 
+
   See:
   http://www.ebusiness-unibw.org/wiki/Own_GoodRelations_Vocabularies
   http://remix.bestbuy.com
   http://remix.bestbuy.com/documentation/Product_Data_Dictionary
---> 
+-->
 
 <rdf:RDF xmlns="http://www.openlinksw.com/schemas/bestbuy#"
     xmlns:gr="http://purl.org/goodrelations/v1#"

@@ -65,7 +65,7 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-	<!-- For testing with Xalan XSLT processor 
+	<!-- For testing with Xalan XSLT processor
   	<xsl:variable name="resourceURL" select="$baseUri"/>
   	<xsl:variable  name="docIRI" select="$baseUri"/>
   	<xsl:variable  name="docproxyIRI" select="$baseUri"/>
@@ -88,13 +88,13 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
-			<!-- Xalan 
+			<!-- Xalan
 			<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offer')}">
 			-->
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="ebay:Item/ebay:Title"/></rdfs:label>
-				<!-- Xalan 
+				<!-- Xalan
 			    <gr:includes rdf:resource="{$resourceURL}"/>
 				-->
 			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
@@ -102,19 +102,19 @@
 			    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="ebay:Item/ebay:EndTime"/></gr:validThrough>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			    <xsl:if test="count(//ebay:ShipToLocations) = 1">
-			    <gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
-			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+			    	<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
+			    	<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
 			    </xsl:if>
 			    <xsl:apply-templates mode="offering" />
 			</gr:Offering>
 
-			<!-- Xalan 
+			<!-- Xalan
 	        <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
 			-->
 	        <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
-			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
+				<rdfs:comment>The legal agent making the offering</rdfs:comment>
 		        <gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
-				<!-- Xalan 
+				<!-- Xalan
 		        <gr:offers rdf:resource="{concat ($baseUri, '#', 'Offer')}"/>
 				-->
 				<xsl:variable name="store"><xsl:value-of select="//ebay:Storefront/ebay:StoreName"/></xsl:variable>
@@ -130,19 +130,19 @@
 						<oplebay:eBayStoreURL><xsl:value-of select="//ebay:Storefront/ebay:StoreURL"/></oplebay:eBayStoreURL>
 					</xsl:when>
 					<xsl:otherwise>
-		          <rdfs:label>Ebay Co., Inc.</rdfs:label>
-		          <gr:legalName>Ebay Co., Inc.</gr:legalName>
-			  <foaf:homepage rdf:resource="http://www.ebay.com" />
-			  <owl:sameAs rdf:resource="http://www.ebay.com" />
-			  			<!-- Xalan 
+		        		<rdfs:label>Ebay Co., Inc.</rdfs:label>
+		        		<gr:legalName>Ebay Co., Inc.</gr:legalName>
+			  			<foaf:homepage rdf:resource="http://www.ebay.com" />
+			  			<owl:sameAs rdf:resource="http://www.ebay.com" />
+			  			<!-- Xalan
 						<rdfs:seeAlso rdf:resource="{concat ('http://www.ebay.com')}"/>
 			  			-->
-			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.ebay.com')}"/>
+			  			<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.ebay.com')}"/>
 					</xsl:otherwise>
 				</xsl:choose>
 	        </gr:BusinessEntity>
-	        
-			<!-- Xalan 
+
+			<!-- Xalan
 			<rdf:Description rdf:about="{$resourceURL}">
 			-->
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
@@ -150,14 +150,14 @@
 			    <rdf:type rdf:resource="&oplebay;Product" />
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <gr:hasMakeAndModel>
-				<!-- Xalan 
+				<!-- Xalan
 	            <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
 				-->
 	            <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                <rdf:type rdf:resource="&oplebay;Product"/>
 
-					<xsl:variable name="brand" 
+					<xsl:variable name="brand"
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value"/>
 					<xsl:variable name="make"
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
@@ -183,9 +183,9 @@
 					</xsl:if>
 
 					<!-- Remove
-				    <xsl:apply-templates select="ebay:GetSingleItemResponse/ebay:Item" mode="manufacturer" /> 
+				    <xsl:apply-templates select="ebay:GetSingleItemResponse/ebay:Item" mode="manufacturer" />
 					-->
-				    <xsl:apply-templates select="ebay:Item" mode="manufacturer" /> 
+				    <xsl:apply-templates select="ebay:Item" mode="manufacturer" />
                  </rdf:Description>
                </gr:hasMakeAndModel>
                <xsl:choose>
@@ -213,31 +213,31 @@
     <xsl:template match="ebay:Item">
         <xsl:apply-templates select="*"/>
     </xsl:template>
-    
+
     <xsl:template match="ebay:Item/ebay:ConvertedCurrentPrice" mode="offering">
 		<gr:hasPriceSpecification>
-		  <!-- Xalan 
+		  <!-- Xalan
 		  <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'ConvertedCurrentPrice')}">
 		  -->
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'ConvertedCurrentPrice')}">
 			<rdfs:label>Converted Current Price</rdfs:label>
-			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>	
+			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currencyID"/></gr:hasCurrency>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
-    
+
     <xsl:template match="ebay:Item/ebay:ViewItemURLForNaturalSearch">
-    <xsl:if test="string-length(.) &gt; 0">
+		<xsl:if test="string-length(.) &gt; 0">
 			<xsl:element namespace="&rdfs;" name="seeAlso">
-	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="."/>
-	    </xsl:attribute>
-	</xsl:element>
-	</xsl:if>
+			<xsl:attribute name="rdf:resource">
+				<xsl:value-of select="."/>
+			</xsl:attribute>
+			</xsl:element>
+		</xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="ebay:Item/ebay:Title">
 	<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
 	<dc:title><xsl:value-of select="."/></dc:title>
@@ -262,7 +262,7 @@
 	<xsl:if test="string-length(.) &gt; 0">
 	    <xsl:element namespace="&oplebay;" name="image">
 		<xsl:attribute name="rdf:resource">
-			<xsl:value-of select="."/>
+		    <xsl:value-of select="."/>
 		</xsl:attribute>
 	    </xsl:element>
 	</xsl:if>
@@ -271,19 +271,19 @@
 	<xsl:if test="string-length(.) &gt; 0">
 	    <xsl:element namespace="&oplebay;" name="image">
 		<xsl:attribute name="rdf:resource">
-			<xsl:value-of select="."/>
+		    <xsl:value-of select="."/>
 		</xsl:attribute>
 	    </xsl:element>
 	</xsl:if>
     </xsl:template>
-    
+
 	<!--
     <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']" mode="manufacturer">
 	-->
     <xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']" mode="manufacturer">
 	<gr:hasManufacturer>
 	    <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<!-- Xalan 
+		<!-- Xalan
 	    <gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
 		-->
 		<rdfs:comment>Manufacturer</rdfs:comment>
@@ -292,13 +292,13 @@
 	    </gr:BusinessEntity>
 	</gr:hasManufacturer>
     </xsl:template>
-    
+
 	<xsl:template match="ebay:Item/ebay:ItemSpecifics/ebay:NameValueList">
 	<oplebay:detail>
 	    <xsl:element namespace="&oplebay;" name="ProductDetail">
 	        <xsl:attribute name='rdf:about'>
 	            <xsl:value-of select="concat(vi:proxyIRI ($baseUri, '', 'Detail_'), position())"/>
-				<!-- Xalan 
+				<!-- Xalan
 	            <xsl:value-of select="concat($baseUri, '#', 'Detail_', position())"/>
 				-->
 		</xsl:attribute>
@@ -309,7 +309,7 @@
 				<xsl:choose>
 					<xsl:when test="$val = ''">
 						<xsl:variable name="val">
-			<xsl:value-of select="."/>
+							<xsl:value-of select="."/>
 						</xsl:variable>
 					</xsl:when>
 					<xsl:otherwise>
@@ -324,7 +324,7 @@
 	    </xsl:element>
 	</oplebay:detail>
     </xsl:template>
-    
+
     <xsl:template match="ebay:Item/ebay:Location">
 		<gr:availableAtOrFrom>
 			<xsl:value-of select="."/>
@@ -353,7 +353,7 @@
     <xsl:template match="ebay:ReviewDetails/ebay:AverageRating">
 		<review:rating><xsl:value-of select="."/></review:rating>
     </xsl:template>
-    
+
     <xsl:template match="ebay:ReviewDetails/ebay:Review">
 		<review:hasReview>
 			<!-- Xalan
@@ -373,7 +373,7 @@
 			</review:Review>
 		</review:hasReview>
 	</xsl:template>
-    
+
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />
     <xsl:template match="text()|@*" mode="manufacturer" />

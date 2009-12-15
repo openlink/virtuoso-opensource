@@ -28,7 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#"> 
+<!ENTITY review "http:/www.purl.org/stuff/rev#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -103,5 +103,5 @@
 			</xsl:for-each>
 		</rdf:RDF>
     </xsl:template>
-    
+
 </xsl:stylesheet>

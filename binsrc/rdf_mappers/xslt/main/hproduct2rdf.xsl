@@ -78,31 +78,31 @@
       <xsl:with-param name="val" select="'fn'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="brand">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'brand'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="review">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'review'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="category">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'category'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="price">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'price'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="description">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'description'"/>
@@ -120,19 +120,19 @@
       <xsl:with-param name="val" select="'listing'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="identifier">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'identifier'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="type">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'type'"/>
     </xsl:call-template>
   </xsl:variable>
-  
+
   <xsl:variable name="value">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'value'"/>
@@ -160,7 +160,7 @@
 			<gr:legalName><xsl:value-of select="."/></gr:legalName>
 		</gr:BusinessEntity>
 	</gr:hasManufacturer>
-  </xsl:if>  
+  </xsl:if>
 
   <xsl:if test="$category != 0">
     <v:category>

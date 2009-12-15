@@ -52,11 +52,11 @@
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:template match="/">
-        <rdf:RDF>
-            <xsl:if test="//html/head/script[contains(@src, 'slidy.js')]">
-                <xsl:apply-templates select="html" />
-            </xsl:if>
-        </rdf:RDF>
+	<rdf:RDF>
+	    <xsl:if test="//html/head/script[contains(@src, 'slidy.js')]">
+		<xsl:apply-templates select="html" />
+	    </xsl:if>
+	</rdf:RDF>
     </xsl:template>
 
     <xsl:template match="html">
@@ -69,34 +69,34 @@
 	    <owl:sameAs rdf:resource="{$docIRI}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{$resourceURL}">
-                <rdfs:label>
+	    <rdfs:label>
 		<xsl:value-of select="string (//html/head/title)"/>
-                </rdfs:label>
-                <rdf:type rdf:resource="&bibo;Slideshow"/>
-                <xsl:for-each select="//div[contains(@class, 'slide')]">
-					<xsl:variable name="pos" select="position()"/>
+	    </rdfs:label>
+	    <rdf:type rdf:resource="&bibo;Slideshow"/>
+	    <xsl:for-each select="//div[contains(@class, 'slide')]">
+		<xsl:variable name="pos" select="position()"/>
 		<dcterms:hasPart rdf:resource="{vi:proxyIRI ($baseUri,'', concat ('(',$pos,')'))}"/>
-                </xsl:for-each>
-            </rdf:Description>
-            <xsl:apply-templates select="body"/>
+	    </xsl:for-each>
+	</rdf:Description>
+	<xsl:apply-templates select="body"/>
     </xsl:template>
 
     <xsl:template match="body">
-        <xsl:for-each select="//div[contains(@class, 'slide')]">
-            <xsl:variable name="pos" select="position()"/>
+	<xsl:for-each select="//div[contains(@class, 'slide')]">
+	    <xsl:variable name="pos" select="position()"/>
 	    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', concat ('(',$pos,')'))}">
-                <rdf:type rdf:resource="&bibo;Slide"/>
+		<rdf:type rdf:resource="&bibo;Slide"/>
 		<dcterms:isPartOf rdf:resource="{$resourceURL}"/>
 		<bibo:uri rdf:resource="{concat ($baseUri,'#(',$pos,')')}"/>
-                <rdfs:label><xsl:value-of select="h1"/></rdfs:label>
+		<rdfs:label><xsl:value-of select="h1"/></rdfs:label>
 		<bibo:content><xsl:call-template name="removeTags" /></bibo:content>
 		<!--dc:description><xsl:value-of select="string (.)"/></dc:description>
 		<sioc:content><xsl:value-of select="string (.)"/></sioc:content-->
-                <xsl:for-each select=".//img[@src]">
-                    <foaf:depiction rdf:resource="{@src}"/>
-                </xsl:for-each>
-            </rdf:Description>
-        </xsl:for-each>
+		<xsl:for-each select=".//img[@src]">
+		    <foaf:depiction rdf:resource="{@src}"/>
+		</xsl:for-each>
+	    </rdf:Description>
+	</xsl:for-each>
     </xsl:template>
 
     <xsl:template match="*|text()"/>

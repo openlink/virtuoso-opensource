@@ -56,7 +56,7 @@
 
     <xsl:variable name="ns">http://www.freebase.com/</xsl:variable>
 
-  <xsl:template match="/">
+    <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>

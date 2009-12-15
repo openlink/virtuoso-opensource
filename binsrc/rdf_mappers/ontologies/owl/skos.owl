@@ -3,23 +3,23 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xml:base="http://www.w3.org/2004/02/skos/core">
-  <!-- This schema represents a formalisation of a subset of the semantic conditions 
-    described in the SKOS Reference document. XML comments of the form Sn are used to 
-    indicate the semantic conditions that are being expressed. Comments of the form 
-    [Sn] refer to assertions that are, strictly speaking, redundant as they follow 
+  <!-- This schema represents a formalisation of a subset of the semantic conditions
+    described in the SKOS Reference document. XML comments of the form Sn are used to
+    indicate the semantic conditions that are being expressed. Comments of the form
+    [Sn] refer to assertions that are, strictly speaking, redundant as they follow
     from the RDF(S) or OWL semantics.
-    
+
     A number of semantic conditions are *not* expressed formally in this schema. These are:
-    
+
     S12
     S13
     S14
     S27
     S36
     S46
-    
+
     For the conditions listed above, rdfs:comments are used to indicate the conditions.
-    
+
    -->
   <owl:Ontology rdf:about="http://www.w3.org/2004/02/skos/core">
     <dct:title xml:lang="en">SKOS Vocabulary</dct:title>
@@ -111,7 +111,7 @@
     <!-- For non-OWL aware applications -->
     <rdf:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
     <rdfs:domain rdf:resource="#Concept"/>
-    <rdfs:range rdf:resource="#ConceptScheme"/> 
+    <rdfs:range rdf:resource="#ConceptScheme"/>
   </rdf:Description>
   <rdf:Description rdf:about="#prefLabel">
     <rdfs:label xml:lang="en">preferred label</rdfs:label>

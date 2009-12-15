@@ -1,24 +1,24 @@
 html { margin: 0; padding: 0; }
-body { 
-  font-family: gill sans, sans-serif; 
-  font-size: 80%; 
-  margin: 0; 
+body {
+  font-family: gill sans, sans-serif;
+  font-size: 80%;
+  margin: 0;
   padding: 1.2em 2em}
 
-#rdficon { 
-  float: right; 
-  position: relative; 
-  top: -28px; 
-  vertical-align: middle; 
-  padding: 3px; 
+#rdficon {
+  float: right;
+  position: relative;
+  top: -28px;
+  vertical-align: middle;
+  padding: 3px;
   border: 1px solid #fff}
 
-#header { 
-  width: 100%; 
-  float: left; 
-  clear: left; 
-  border-bottom: 2px solid #696; 
-  margin: 0 0 1.2em; 
+#header {
+  width: 100%;
+  float: left;
+  clear: left;
+  border-bottom: 2px solid #696;
+  margin: 0 0 1.2em;
   padding: 0 0 0.3em; }
 
 #hd_l { width: 64%; float: left;}
@@ -92,14 +92,14 @@ width: 100%; float: left; clear: left;
   color: #4e4e4e;
 }
 
-#footer { 
+#footer {
   width: 100%;
-  float: left; 
+  float: left;
   clear: both;
   color: #666;
-  border-top: 2px solid #696; 
-  margin: 1.2em 0 0; 
-  padding: 0.3em; 
+  border-top: 2px solid #696;
+  margin: 1.2em 0 0;
+  padding: 0.3em;
   background-color: #fff;}
 
 #ft_r { float: right; clear: right;}
@@ -124,7 +124,7 @@ width: 100%; float: left; clear: left;
 
 #navarea li {
 	font-size: 80%;
-	font-family: Verdana, Arial, Helvetica, sans-serif; 
+	font-family: Verdana, Arial, Helvetica, sans-serif;
 	line-height: 175%;
 }
 

@@ -62,7 +62,7 @@
 	xmlns:media="&media;"
 	xmlns:gml="&gml;"
 	xmlns:georss="&georss;"
-    xmlns:owl="&owl;"
+	xmlns:owl="&owl;"
 	xmlns:awol="&awol;"
 	version="1.0">
 	<xsl:output indent="yes" />

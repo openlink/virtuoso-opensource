@@ -108,7 +108,7 @@
 	    <foaf:maker rdf:resource="http://www.youtube.com/user/{a:name}"/>
 	</xsl:when>
 	<xsl:otherwise>
-    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+	    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
 	</xsl:otherwise>
     </xsl:choose>
 </xsl:template>
@@ -116,19 +116,19 @@
 <xsl:template match="a:entry">
     <xsl:apply-templates select="media:*|yt:*" mode="media"/>
     <item rdf:about="{a:link[@href]/@href}">
-		<xsl:apply-templates/>
-		<xsl:if test="a:category[@term]">
-			<xsl:for-each select="a:category[@term]">
-				<sioc:topic>
-					<skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
-						<skos:prefLabel>
-							<xsl:value-of select="@term"/>
-						</skos:prefLabel>
-					</skos:Concept>
-				</sioc:topic>
-			</xsl:for-each>
-		</xsl:if>
-		<xsl:apply-templates select="g:*|gd:*"/>
+	<xsl:apply-templates/>
+	<xsl:if test="a:category[@term]">
+	    <xsl:for-each select="a:category[@term]">
+		<sioc:topic>
+		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
+			<skos:prefLabel>
+			    <xsl:value-of select="@term"/>
+			</skos:prefLabel>
+		    </skos:Concept>
+		</sioc:topic>
+	    </xsl:for-each>
+	</xsl:if>
+	<xsl:apply-templates select="g:*|gd:*"/>
     </item>
 </xsl:template>
 

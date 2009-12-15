@@ -37,237 +37,237 @@
 <!ENTITY bookmark "http://www.w3.org/2002/01/bookmark#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-	xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:dcterms="http://purl.org/dc/terms/"
-	xmlns:foaf="&foaf;"
-	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
-	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-	xmlns:v="http://www.w3.org/2006/vcard/ns#"
-	xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-	xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:foaf="&foaf;"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:v="http://www.w3.org/2006/vcard/ns#"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+    xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+    xmlns:twitter="http://www.openlinksw.com/schemas/twitter/"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
     xmlns:book="&book;"
     xmlns:owl="&owl;"
-	xmlns:scot="&scot;"
-	xmlns:moat="&moat;"
+    xmlns:scot="&scot;"
+    xmlns:moat="&moat;"
     xmlns:skos="&skos;"
     xmlns:bookmark="&bookmark;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
-	version="1.0">
+    version="1.0">
 
-	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
+    <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 
-	<xsl:param name="baseUri" />
-	<xsl:param name="what" />
+    <xsl:param name="baseUri" />
+    <xsl:param name="what" />
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-	<xsl:template match="/">
-		<rdf:RDF>
-			<xsl:apply-templates select="rss/channel" />
-			<xsl:apply-templates select="suggest" />
-		</rdf:RDF>
-	</xsl:template>
+    <xsl:template match="/">
+	<rdf:RDF>
+	    <xsl:apply-templates select="rss/channel" />
+	    <xsl:apply-templates select="suggest" />
+	</rdf:RDF>
+    </xsl:template>
 
-	<xsl:template match="suggest">
+    <xsl:template match="suggest">
 	<rdf:Description rdf:about="{$docproxyIRI}">
-			<rdf:type rdf:resource="&bibo;Document"/>
+	    <rdf:type rdf:resource="&bibo;Document"/>
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	    <owl:sameAs rdf:resource="{$docIRI}"/>
-			<scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
-			<xsl:for-each select="popular">
-				<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
-			</xsl:for-each>
-		</rdf:Description>
-		<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
-			<xsl:for-each select="popular">
-				<scot:hasTag rdf:resource="{vi:proxyIRI(concat ('http://delicious.com/tag/', .))}"/>
-			</xsl:for-each>
-		</scot:Tagcloud>
-	</xsl:template>
+	    <scot:hasScot rdf:resource="{concat($baseUri, '#tagcloud')}"/>
+	    <xsl:for-each select="popular">
+		<sioc:topic rdf:resource="{concat ('http://delicious.com/tag/', .)}"/>
+	    </xsl:for-each>
+	</rdf:Description>
+	<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
+	    <xsl:for-each select="popular">
+		<scot:hasTag rdf:resource="{vi:proxyIRI(concat ('http://delicious.com/tag/', .))}"/>
+	    </xsl:for-each>
+	</scot:Tagcloud>
+    </xsl:template>
 
-	<xsl:template match="channel">
-		<xsl:if test="$what='user'">
+    <xsl:template match="channel">
+	<xsl:if test="$what='user'">
 	    <rdf:Description rdf:about="{$docproxyIRI}">
-				<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<!--dc:title>
-					<xsl:value-of select="title"/>
+		    <xsl:value-of select="title"/>
 		</dc:title-->
-				<dc:description>
-					<xsl:value-of select="description"/>
-				</dc:description>
+		<dc:description>
+		    <xsl:value-of select="description"/>
+		</dc:description>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			</rdf:Description>
+	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
-				<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
-				<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
-				<scot:hasScot rdf:resource="{concat('http://delicious.com/tags/', $author)}"/>
-				<xsl:for-each select="item">
-					<xsl:variable name="guid1" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid1)}" />
-				</xsl:for-each>
-			</rdf:Description>
-			<xsl:for-each select="item">
-				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
-					<rdf:type rdf:resource="&bookmark;Bookmark"/>
-					<sioc:has_container rdf:resource="{vi:proxyIRI($baseUri)}" />
-					<dc:title>
-						<xsl:value-of select="title"/>
-					</dc:title>
-					<xsl:copy-of select="dc:creator" />
-					<bibo:uri rdf:resource="{link}" />
-					<xsl:for-each select="category">
-						<sioc:topic rdf:resource="{concat (@domain, .)}"/>
-					</xsl:for-each>
-					<rdfs:seeAlso rdf:resource="{comments}" />
-					<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
-				</rdf:Description>
-				<xsl:for-each select="category">
-					<rdf:Description rdf:about="{concat (@domain, .)}">
-						<rdf:type rdf:resource="&bibo;Document"/>
-						<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
-					</rdf:Description>
-					<rdf:Description rdf:about="{vi:proxyIRI(concat (@domain, .))}">
-						<rdf:type rdf:resource="&scot;Tag"/>
-						<rdf:type rdf:resource="&moat;Tag"/>
-						<scot:name>
-							<xsl:value-of select="."/>
-						</scot:name>
-						<moat:name>
-							<xsl:value-of select="."/>
-						</moat:name>
-						<skos:prefLabel>
-							<xsl:value-of select="."/>
-						</skos:prefLabel>
-						<skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
-						<foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
-						<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
-					</rdf:Description>
-				</xsl:for-each>
-				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
-					<rdf:type rdf:resource="&scot;Cooccurrence"/>
-					<xsl:for-each select="category">
-						<scot:cooccurTag rdf:resource="{vi:proxyIRI(concat(@domain, .))}"/>
-					</xsl:for-each>
-					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
-				</rdf:Description>
-			</xsl:for-each>
-			<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
-			<scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
-				<xsl:for-each select="//category">
-					<scot:hasTag rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
-				</xsl:for-each>
-			</scot:Tagcloud>
-		</xsl:if>
-		<xsl:if test="$what='tag'">
+		<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
+		<xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
+		<scot:hasScot rdf:resource="{concat('http://delicious.com/tags/', $author)}"/>
+		<xsl:for-each select="item">
+		    <xsl:variable name="guid1" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
+		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid1)}" />
+		</xsl:for-each>
+	    </rdf:Description>
+	    <xsl:for-each select="item">
+		<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
+		    <rdf:type rdf:resource="&bookmark;Bookmark"/>
+		    <sioc:has_container rdf:resource="{vi:proxyIRI($baseUri)}" />
+		    <dc:title>
+			<xsl:value-of select="title"/>
+		    </dc:title>
+		    <xsl:copy-of select="dc:creator" />
+		    <bibo:uri rdf:resource="{link}" />
+		    <xsl:for-each select="category">
+			<sioc:topic rdf:resource="{concat (@domain, .)}"/>
+		    </xsl:for-each>
+		    <rdfs:seeAlso rdf:resource="{comments}" />
+		    <rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
+		</rdf:Description>
+		<xsl:for-each select="category">
+		    <rdf:Description rdf:about="{concat (@domain, .)}">
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<foaf:primaryTopic rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
+		    </rdf:Description>
+		    <rdf:Description rdf:about="{vi:proxyIRI(concat (@domain, .))}">
+			<rdf:type rdf:resource="&scot;Tag"/>
+			<rdf:type rdf:resource="&moat;Tag"/>
+			<scot:name>
+			    <xsl:value-of select="."/>
+			</scot:name>
+			<moat:name>
+			    <xsl:value-of select="."/>
+			</moat:name>
+			<skos:prefLabel>
+			    <xsl:value-of select="."/>
+			</skos:prefLabel>
+			<skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+			<foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+			<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
+		    </rdf:Description>
+		</xsl:for-each>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
+		    <rdf:type rdf:resource="&scot;Cooccurrence"/>
+		    <xsl:for-each select="category">
+			<scot:cooccurTag rdf:resource="{vi:proxyIRI(concat(@domain, .))}"/>
+		    </xsl:for-each>
+		    <scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
+		</rdf:Description>
+	    </xsl:for-each>
+	    <xsl:variable name="author" select="substring-after(link, 'http://delicious.com/')" />
+	    <scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
+		<xsl:for-each select="//category">
+		    <scot:hasTag rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
+		</xsl:for-each>
+	    </scot:Tagcloud>
+	</xsl:if>
+	<xsl:if test="$what='tag'">
 	    <rdf:Description rdf:about="{$docproxyIRI}">
-				<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			</rdf:Description>
+	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
-				<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
-				<rdf:type rdf:resource="&scot;Tag"/>
-				<rdf:type rdf:resource="&moat;Tag"/>
-				<scot:name>
-					<xsl:value-of select="$tag"/>
-				</scot:name>
-				<moat:name>
-					<xsl:value-of select="$tag"/>
-				</moat:name>
-				<skos:prefLabel>
-					<xsl:value-of select="$tag"/>
-				</skos:prefLabel>
-				<xsl:for-each select="item">
-					<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-					<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
-					<skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
-					<foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
-					<scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
-				</xsl:for-each>
-			</rdf:Description>
-			<xsl:for-each select="item">
-				<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
-				<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
-				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
-					<rdf:type rdf:resource="&scot;Cooccurrence"/>
-					<xsl:for-each select="category">
-						<scot:cooccurTag rdf:resource="{vi:proxyIRI(concat(@domain, .))}"/>
-					</xsl:for-each>
-					<scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
-				</rdf:Description>
-				<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
-					<rdf:type rdf:resource="&bookmark;Bookmark"/>
-					<sioc:has_container rdf:resource="{vi:proxyIRI($domain)}" />
-					<sioc:has_container rdf:resource="{$baseUri}" />
-					<dc:title>
-						<xsl:value-of select="title"/>
-					</dc:title>
-					<xsl:copy-of select="dc:creator" />
-					<bibo:uri rdf:resource="{link}" />
-					<xsl:for-each select="category">
-						<sioc:topic rdf:resource="{concat (@domain, .)}"/>
-					</xsl:for-each>
-					<rdfs:seeAlso rdf:resource="{comments}" />
-					<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
-				</rdf:Description>
-				<rdf:Description rdf:about="{vi:proxyIRI($domain)}">
-					<sioc:has_container rdf:resource="{$domain}" />
-					<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
-					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}" />
-				</rdf:Description>
-			</xsl:for-each>
-			<xsl:variable name="author" select="substring-before(substring-after(link, 'http://delicious.com/'), '/')" />
-			<scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
-				<xsl:for-each select="//category">
-					<scot:hasTag rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
-				</xsl:for-each>
-			</scot:Tagcloud>
-		</xsl:if>
-		<xsl:if test="$what='tags'">
-			<scot:Tagcloud rdf:about="{link}">
-				<dc:title>
-					<xsl:value-of select="title"/>
-				</dc:title>
-				<dc:description>
-					<xsl:value-of select="description"/>
-				</dc:description>
-				<xsl:for-each select="item">
-					<scot:hasTag rdf:resource="{vi:proxyIRI(guid)}"/>
-				</xsl:for-each>
-			</scot:Tagcloud>
-		</xsl:if>
-		<xsl:if test="$what='url'">
+		<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
+		<rdf:type rdf:resource="&scot;Tag"/>
+		<rdf:type rdf:resource="&moat;Tag"/>
+		<scot:name>
+		    <xsl:value-of select="$tag"/>
+		</scot:name>
+		<moat:name>
+		    <xsl:value-of select="$tag"/>
+		</moat:name>
+		<skos:prefLabel>
+		    <xsl:value-of select="$tag"/>
+		</skos:prefLabel>
+		<xsl:for-each select="item">
+		    <xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
+		    <xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
+		    <skos:isSubjectOf rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+		    <foaf:page rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}"/>
+		    <scot:cooccurWith rdf:resource="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}"/>
+		</xsl:for-each>
+	    </rdf:Description>
+	    <xsl:for-each select="item">
+		<xsl:variable name="guid" select="substring-after(substring-before(guid, '#'), 'http://delicious.com/url/') " />
+		<xsl:variable name="domain" select="substring(category/@domain, 1, string-length(category/@domain) - 1)" />
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', concat('coocurrence_', $guid))}">
+		    <rdf:type rdf:resource="&scot;Cooccurrence"/>
+		    <xsl:for-each select="category">
+			<scot:cooccurTag rdf:resource="{vi:proxyIRI(concat(@domain, .))}"/>
+		    </xsl:for-each>
+		    <scot:cooccurAFrequency rdf:datatype="&xsd;integer">1</scot:cooccurAFrequency>
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $guid)}">
+		    <rdf:type rdf:resource="&bookmark;Bookmark"/>
+		    <sioc:has_container rdf:resource="{vi:proxyIRI($domain)}" />
+		    <sioc:has_container rdf:resource="{$baseUri}" />
+		    <dc:title>
+			<xsl:value-of select="title"/>
+		    </dc:title>
+		    <xsl:copy-of select="dc:creator" />
+		    <bibo:uri rdf:resource="{link}" />
+		    <xsl:for-each select="category">
+			<sioc:topic rdf:resource="{concat (@domain, .)}"/>
+		    </xsl:for-each>
+		    <rdfs:seeAlso rdf:resource="{comments}" />
+		    <rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
+		</rdf:Description>
+		<rdf:Description rdf:about="{vi:proxyIRI($domain)}">
+		    <sioc:has_container rdf:resource="{$domain}" />
+		    <rdf:type rdf:resource="&sioc;BookmarkFolder"/>
+		    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', $guid)}" />
+		</rdf:Description>
+	    </xsl:for-each>
+	    <xsl:variable name="author" select="substring-before(substring-after(link, 'http://delicious.com/'), '/')" />
+	    <scot:Tagcloud rdf:about="{concat('http://delicious.com/tags/', $author)}">
+		<xsl:for-each select="//category">
+		    <scot:hasTag rdf:resource="{vi:proxyIRI(concat (@domain, .))}"/>
+		</xsl:for-each>
+	    </scot:Tagcloud>
+	</xsl:if>
+	<xsl:if test="$what='tags'">
+	    <scot:Tagcloud rdf:about="{link}">
+		<dc:title>
+		    <xsl:value-of select="title"/>
+		</dc:title>
+		<dc:description>
+		    <xsl:value-of select="description"/>
+		</dc:description>
+		<xsl:for-each select="item">
+		    <scot:hasTag rdf:resource="{vi:proxyIRI(guid)}"/>
+		</xsl:for-each>
+	    </scot:Tagcloud>
+	</xsl:if>
+	<xsl:if test="$what='url'">
 	    <rdf:Description rdf:about="{$docproxyIRI}">
-				<rdf:type rdf:resource="&bibo;Document"/>
+		<rdf:type rdf:resource="&bibo;Document"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
 		<!--dc:title>
-					<xsl:value-of select="title"/>
+		    <xsl:value-of select="title"/>
 		</dc:title-->
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			</rdf:Description>
+	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
-				<rdf:type rdf:resource="&bookmark;Bookmark"/>
+		<rdf:type rdf:resource="&bookmark;Bookmark"/>
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
-				<dc:title>
-					<xsl:value-of select="title"/>
-				</dc:title>
-				<bibo:uri rdf:resource="{//item/link}" />
-			</rdf:Description>
-		</xsl:if>
-	</xsl:template>
+		<dc:title>
+		    <xsl:value-of select="title"/>
+		</dc:title>
+		<bibo:uri rdf:resource="{//item/link}" />
+	    </rdf:Description>
+	</xsl:if>
+    </xsl:template>
 
 </xsl:stylesheet>

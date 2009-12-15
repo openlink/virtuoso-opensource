@@ -167,24 +167,24 @@
 				<xsl:value-of select="mmd:release-event-list/mmd:event/@date"/>
 			</dcterms:published>
 			<xsl:if test="mmd:release-event-list/mmd:event/@country">
-   			<vcard:Country>
+			    <vcard:Country>
 				<xsl:value-of select="mmd:release-event-list/mmd:event/@country"/>
-			</vcard:Country>
+			    </vcard:Country>
 			</xsl:if>
 			<xsl:if test="mmd:release-event-list/mmd:event/@barcode">
-			<mmd:barcode>
+			    <mmd:barcode>
 				<xsl:value-of select="mmd:release-event-list/mmd:event/@barcode"/>
-			</mmd:barcode>
+			    </mmd:barcode>
 			</xsl:if>
 			<xsl:if test="mmd:release-event-list/mmd:event/@format">
-			<mmd:format>
+			    <mmd:format>
 				<xsl:value-of select="mmd:release-event-list/mmd:event/@format"/>
-			</mmd:format>
+			    </mmd:format>
 			</xsl:if>
 			<xsl:if test="mmd:release-event-list/mmd:event/@catalog-number">
-			<mmd:catalog-number>
+			    <mmd:catalog-number>
 				<xsl:value-of select="mmd:release-event-list/mmd:event/@catalog-number"/>
-			</mmd:catalog-number>
+			    </mmd:catalog-number>
 			</xsl:if>
 			<foaf:maker rdf:resource="{vi:proxyIRI (concat($base, 'artist/', mmd:artist/@id, '.html'))}"/>
 			<dcterms:creator rdf:resource="{vi:proxyIRI (concat($base, 'artist/', mmd:artist/@id, '.html'))}"/>

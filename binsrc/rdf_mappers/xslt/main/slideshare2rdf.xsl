@@ -44,17 +44,17 @@
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-	
+
 	<xsl:template match="/">
-		<rdf:RDF>
-			<xsl:apply-templates select="Slideshows" />
-			<xsl:apply-templates select="Tag" />
-			<xsl:apply-templates select="User" />
-			<xsl:apply-templates select="Group" />
-			<xsl:apply-templates select="Slideshow" />
-		</rdf:RDF>
+	    <rdf:RDF>
+		<xsl:apply-templates select="Slideshows" />
+		<xsl:apply-templates select="Tag" />
+		<xsl:apply-templates select="User" />
+		<xsl:apply-templates select="Group" />
+		<xsl:apply-templates select="Slideshow" />
+	    </rdf:RDF>
 	</xsl:template>
-	
+
 	<xsl:template match="Slideshows|Tag|User|Group">
 		<bibo:Collection rdf:about="{$docproxyIRI}">
 			<bibo:uri rdf:resource="{$docIRI}" />
@@ -89,10 +89,10 @@
 					<foaf:made rdf:resource="{vi:proxyIRI(Permalink)}" />
 				</xsl:for-each>
 			</foaf:Person>
-		</xsl:for-each>		
+		</xsl:for-each>
 		<xsl:apply-templates select="Slideshow" />
 	</xsl:template>
-	
+
 	<xsl:template match="Slideshows/Slideshow|Slideshow">
 		<xsl:choose>
 			<xsl:when test="URL">
@@ -102,8 +102,8 @@
 				<xsl:variable name="res" select="Permalink" />
 			</xsl:otherwise>
 		</xsl:choose>
-	  
-	  
+
+
 	  <rdf:Description rdf:about="{$docproxyIRI}">
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
@@ -113,7 +113,7 @@
  			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($res)}"/>
  		</xsl:if>
  	  </rdf:Description>
- 	  
+
       <rdf:Description rdf:about="{$res}">
  		<rdf:type rdf:resource="&bibo;Document"/>
  		<sioc:container_of rdf:resource="{vi:proxyIRI($res)}"/>
