@@ -7,7 +7,6 @@ create procedure DB.DBA.exec_no_error (in expr varchar)
 }
 ;
 
---GRANT SPARQL_UPDATE TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_RES" TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_COL" TO "SPARQL";
 GRANT SELECT ON "WS"."WS"."SYS_DAV_PROP" TO "SPARQL";
@@ -69,8 +68,8 @@ create function DB.DBA.SECTION_IRI_INVERSE (in _iri varchar) returns integer
 
 grant execute on DB.DBA.POST_IRI to "SPARQL";
 grant execute on DB.DBA.POST_IRI_INVERSE to "SPARQL";
-grant execute on DB.DBA.COL_IRI to "SPARQL";
-grant execute on DB.DBA.COL_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.SECTION_IRI to "SPARQL";
+grant execute on DB.DBA.SECTION_IRI_INVERSE to "SPARQL";
 
 SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial_view") .
 ;
@@ -81,36 +80,33 @@ SPARQL drop quad map virtrdf:tutorial .
 SPARQL
 prefix tutorial: <http://demo.openlinksw.com/schemas/tutorial#>
 prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class tutorial:Post "http://^{URIQADefaultHost}^/tutorial_view/Post/%d/%U#this" (in post_id integer not null, in post_name varchar not null) .
-create iri class tutorial:Section "http://^{URIQADefaultHost}^/tutorial_view/Section/%d/%U#this" (in col_id integer not null, in col_name varchar not null) .
+create iri class tutorial:Section "http://^{URIQADefaultHost}^/tutorial_view/Section/%d/%U#this" (in col_id integer not null, in col_name1 varchar not null) .
 create iri class tutorial:DocPath "http://^{URIQADefaultHost}^%U#this" (in prop_name varchar not null) .
 ;
 
 SPARQL
 prefix tutorial: <http://demo.openlinksw.com/schemas/tutorial#>
 prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class tutorial:post_iri using
     function DB.DBA.POST_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.POST_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.POST_IRI_INVERSE (in customer_iri varchar) returns integer .
 create iri class tutorial:section_iri using
     function DB.DBA.SECTION_IRI (in customer_id integer) returns varchar,
-    function DB.DBA.SECTION_IRI_INVERSE (in customer_iri varchar) returns integer.
+    function DB.DBA.SECTION_IRI_INVERSE (in customer_iri varchar) returns integer .
 ;
 
 SPARQL
 prefix tutorial: <http://demo.openlinksw.com/schemas/tutorial#>
 prefix bibo: <http://purl.org/ontology/bibo/>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -189,19 +185,20 @@ where (DB.DBA.DAV_SEARCH_PATH(^{collections.}^.COL_ID, 'c') LIKE '/DAV/VAD/tutor
 delete from db.dba.url_rewrite_rule_list where urrl_list like 'tutorial_%';
 delete from db.dba.url_rewrite_rule where urr_rule like 'tutorial_%';
 
-create procedure tutorial_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
-
-create procedure tutorial_html_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*#', path);
-  return subseq (r, 0, length (r)-1);
-};
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tutorial_rule1',
+    1,
+    '(/[^#]*)',
+    vector('path'),
+    1,
+    '/about/html/http/^{URIQADefaultHost}^%s%%23this',
+    vector('path'),
+    null,
+    '(text/html)|(\\*/\\*)',
+    0,
+    303
+    )
+;
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tutorial_rule2',
@@ -215,30 +212,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
     null
-    );
-
---DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
---    'tutorial_rule1',
---    1,
---    '(/[^#]*)',
---    vector('path'),
---    1,
---    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
---    vector('path'),
---    null,
---    '(text/html)|(\\*/\\*)',
---    0,
---    303
---    );
-
-DB.DBA.exec_no_error('
-DB.DBA.URLREWRITE_DROP_RULELIST (\'tutorial_rule_list1\')
-');
-
-DB.DBA.exec_no_error('
-DB.DBA.URLREWRITE_DROP_RULE (\'tutorial_rule1\')
-');
-
+    )
+;
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tutorial_rule3',
@@ -246,42 +221,29 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)/\x24',
     vector('path'),
     1,
-    '%s',
+    '%U',
     vector('path'),
     null,
     null,
     0,
     null
-    );
-
-create procedure DB.DBA.REMOVE_TUT_RDF_DET()
-{
-  declare colid int;
-  colid := DAV_SEARCH_ID('/DAV/home/tutorial_view/', 'C');
-  if (colid < 0)
-    return;
-  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
-}
+    )
 ;
-
-DB.DBA.REMOVE_TUT_RDF_DET();
-
-drop procedure DB.DBA.REMOVE_TUT_RDF_DET;
 
 create procedure DB.DBA.TUT_MAKE_RDF_DET()
 {
     declare uriqa_str varchar;
     uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
     uriqa_str := 'http://' || uriqa_str || '/tutorial_view';
-    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/tutorial_view/RDFData/', uriqa_str, NULL);
+    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/tutorial/RDFData/', uriqa_str, NULL);
     VHOST_REMOVE (lpath=>'/tutorial_view/data/rdf');
-    DB.DBA.VHOST_DEFINE (lpath=>'/tutorial_view/data/rdf', ppath=>'/DAV/home/tutorial_view/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+    DB.DBA.VHOST_DEFINE (lpath=>'/tutorial_view/data/rdf', ppath=>'/DAV/VAD/tutorial/RDFData/All/', is_dav=>1, vsp_user=>'dba');
 }
 ;
-
-DB.DBA.TUT_MAKE_RDF_DET();
-
-drop procedure DB.DBA.TUT_MAKE_RDF_DET;
+DB.DBA.TUT_MAKE_RDF_DET()
+;
+drop procedure DB.DBA.TUT_MAKE_RDF_DET
+;
 
 -- procedure to convert path to DET resource name
 create procedure DB.DBA.TUT_DET_REF (in par varchar, in fmt varchar, in val varchar)
@@ -302,41 +264,26 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('tutorial_rdf', 1,
     'DB.DBA.TUT_DET_REF',
     'application/rdf.xml',
     2,  
-    303);
-    
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tutorial_rule4',
-    1,
-    '/schemas/tutorial#(.*)',
-    vector('path'),
-    1,
-    '/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/tutorial%23%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/TutOntology/1.0/%3E',
-    vector('path'),
-    null,
-    '(text/rdf.n3)|(application/rdf.xml)',
-    0,
-    null
-    );
+    303)
+;
 
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'tutorial_rule_list1',
     1,
     vector (
+                'tutorial_rule1',
                 'tutorial_rule2',
                 'tutorial_rule3',
-                'tutorial_rule4',
                 'tutorial_rdf'
-          ));
-
+          ))
+;
 
 VHOST_REMOVE (lpath=>'/tutorial_view');
-DB.DBA.VHOST_DEFINE (lpath=>'/tutorial_view', ppath=>'/DAV/home/tutorial_view/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
-          is_brws=>0, opts=>vector ('url_rewrite', 'tutorial_rule_list1'));
+DB.DBA.VHOST_DEFINE (lpath=>'/tutorial_view', ppath=>'/DAV/VAD/tutorial/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx', is_brws=>0, opts=>vector ('url_rewrite', 'tutorial_rule_list1'));
 
 create procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV()
 {
   declare content1, urihost varchar;
-  whenever not found goto none;
   select cast (RES_CONTENT as varchar) into content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/tutorial/tutorial.owl';
   DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/tutorial#', 'http://demo.openlinksw.com/schemas/TutOntology/1.0/');
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
@@ -344,35 +291,10 @@ create procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV()
   {
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial');
     DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
   }
-  none:
-  ;
-};
-
-DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV();
-
-drop procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV;
-
-create procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV2()
-{
-  declare urihost varchar;
- whenever not found goto none;
-  sparql base <http://demo.openlinksw.com/schemas/tutorial#> load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/VAD/tutorial/tutorial.owl")
-   into graph <http://demo.openlinksw.com/schemas/TutOntology/1.0/>;
-  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-  if (urihost = 'demo.openlinksw.com')
-  {
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tutorial#');
-    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tutorial#', ppath=>'/DAV/VAD/tutorial/tutorial.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
-  }
-  none:
-  ;
-};
-
---DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV2();
-
-drop procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV2;
+}
+;
+DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV()
+;
+drop procedure DB.DBA.LOAD_TUT_ONTOLOGY_FROM_DAV
+;
