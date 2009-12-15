@@ -398,7 +398,7 @@ OAT.Form = function(targetElm,optObj) {
 			   >0 -> api loading in progress,
 			   =0 -> api loading finished
 			 */
-			if (counter == -1 || counter == 0) { this.initialData(); }
+			if (counter == -1 || counter == 0) { self.initialData(); }
 		}
 		
 		var qualifiersCallback = function() { /* what to do when qualifiers are ready */
