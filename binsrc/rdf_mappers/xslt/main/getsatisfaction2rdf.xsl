@@ -29,20 +29,20 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
-    xmlns:dcterms="http://purl.org/dc/terms/" 
-    xmlns:foaf="&foaf;" 
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:foaf="&foaf;"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:v="http://www.w3.org/2006/vcard/ns#"
-	xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/" 
-	xmlns:gr="&gr;"
+    xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/"
+    xmlns:gr="&gr;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:bibo="&bibo;"
-	version="1.0">
+    version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
 	<xsl:param name="baseUri" />

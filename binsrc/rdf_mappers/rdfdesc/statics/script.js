@@ -2,8 +2,8 @@ var featureList = ["slidebar", "resize"];
 
 function init() {
   var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500, handleWidth: 15, handleOpenImg: "whats_this_open_hndl_15w.png", handleCloseImg: "whats_this_close_hndl_15w.png"});
-	init_long_list ();
-	init_long_literals();
+  init_long_list ();
+  init_long_literals();
   var restrict = function(x,y) { return (x < 25); }
   if ($('x_content'))
     {
@@ -40,10 +40,10 @@ function init_long_literals() {
 var long_ul_counter = 0;
 var long_uls = {};
 var long_uls_nodes = {};
-function init_long_list() 
+function init_long_list()
 {
     var uls = document.getElementsByTagName('ul');
-    for (i = 0; i < uls.length; i++) 
+    for (i = 0; i < uls.length; i++)
       {
 	if (uls[i].className != 'obj') continue;
 	if (uls[i].childNodes.length <= 10) continue;
@@ -117,22 +117,22 @@ function Hide(objid)
   obj.visible = false;
 }
 
-function toggle_tab(div_id) 
+function toggle_tab(div_id)
 {
   var obj = document.getElementById('tab_'+div_id);
   var ul_obj = document.getElementById('navlist');
   var nodeList = returnListOfNodes(ul_obj.childNodes);
-  for(var i=0; i < nodeList.length;i++) 
+  for(var i=0; i < nodeList.length;i++)
   {
     returnListOfNodes(nodeList[i].childNodes)[0].className = "";
   };
   obj.className = "current";
-  
+
   var ContentDivs = Array(
     document.getElementById('attributes'),
     document.getElementById('attributeof'));
 
-  for (var i = 0; i < ContentDivs.length; i++) 
+  for (var i = 0; i < ContentDivs.length; i++)
   {
     if (ContentDivs[i].id == div_id && ContentDivs[i].style.display == 'none')
       Show(ContentDivs[i].id);

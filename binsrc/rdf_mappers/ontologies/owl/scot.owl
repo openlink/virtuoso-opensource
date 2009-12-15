@@ -8,13 +8,13 @@
 
 	http://scot-project.org/
 
-	This is an evolving RDF vocabulary - all modifications are reported to 
+	This is an evolving RDF vocabulary - all modifications are reported to
 	the SCOT Changelog:
-	
+
 	http://scot-project.org/scot/archives/changelog.html
 
-	Email comments and suggestions on this vocabulary to: 
-	
+	Email comments and suggestions on this vocabulary to:
+
 	scot-dev@googlegroups.com
 -->
 
@@ -24,7 +24,7 @@
   <dc:title xml:lang="en">SCOT Ontology Namespace</dc:title>
   <owl:versionInfo>Revision: 2008-06-25</owl:versionInfo>
   <dc:description xml:lang="en">SCOT (Social Semantic Cloud of Tags) is an ontology for describing the structure and the semantics for tagging data across heterogenous users, sources, and applications.
-  </dc:description>  
+  </dc:description>
   <dc:creator>Hak-Lae Kim</dc:creator>
   <dc:creator>John G. Breslin</dc:creator>
   <dcterms:issued>2007-03-23</dcterms:issued>
@@ -70,7 +70,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#createdBy">
 	<rdfs:label xml:lang="en">created by</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/maker"/> 
+	<rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/maker"/>
 	<rdfs:comment xml:lang="en">Indicates the agent, as a type of foaf:Agent, who generates a TagCloud.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#TagCloud"/>
 	<rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
@@ -122,7 +122,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#usedBy">
 	<rdfs:label xml:lang="en">used by</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#has_creator"/> 
+	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#has_creator"/>
 	<rdfs:comment xml:lang="en">Refers to the sioc:User who uses or creates a tag.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://rdfs.org/sioc/ns#User"/>
@@ -133,7 +133,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#tagOf">
 	<rdfs:label xml:lang="en">tag of</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/isTagOf"/> 
+	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/isTagOf"/>
 	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#hasTag"/>
 	<rdfs:comment xml:lang="en">Indicates that a tag is assigned to the sioc:Item.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -145,7 +145,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#hasTag">
 	<rdfs:label xml:lang="en">has tag</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#topic"/> 
+	<rdfs:subPropertyOf rdf:resource="http://rdfs.org/sioc/ns#topic"/>
 	<owl:inverseOf rdf:resource="http://scot-project.org/scot/ns#tagOf"/>
 	<rdfs:comment xml:lang="en">An item has one and more tags.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://rdfs.org/sioc/ns#Item"/>
@@ -219,7 +219,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#acronym">
 	<rdfs:label xml:lang="en">acronym</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/>
 	<rdfs:comment xml:lang="en">An abbreviation formed by the first letters of the compound word.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -230,7 +230,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#plural">
 	<rdfs:label xml:lang="en">plural</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/>
 	<rdfs:comment xml:lang="en">A tag name refers to more than one thing.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -241,7 +241,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#singular">
 	<rdfs:label xml:lang="en">singular</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/>
 	<rdfs:comment xml:lang="en">A tag name refers to one thing.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -252,7 +252,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#synonym">
 	<rdfs:label xml:lang="en">synonym</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/equivalentTag"/> 
+	<rdfs:subPropertyOf rdf:resource="http://www.holygoat.co.uk/owl/redwood/0.1/tags/equivalentTag"/>
 	<rdfs:comment xml:lang="en">A word which means the same as another word.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -263,7 +263,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#delimited">
 	<rdfs:label xml:lang="en">delimited</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#spellingVariant"/>
 	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by a certain character.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -274,7 +274,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#hypenated">
 	<rdfs:label xml:lang="en">hypenated</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/>
 	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by a hyphen.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -285,7 +285,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#underscored">
 	<rdfs:label xml:lang="en">underscored</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/>
 	<rdfs:comment xml:lang="en">A multiple-word tag name where each word is separated by an underscore.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -296,7 +296,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#slashed">
 	<rdfs:label xml:lang="en">slashed</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/>
 	<rdfs:comment xml:lang="en">A multiple-word tag name whereeach word is separated by a slash.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>
@@ -307,7 +307,7 @@
 <rdf:Property rdf:about="http://scot-project.org/scot/ns#spaced">
 	<rdfs:label xml:lang="en">spaced</rdfs:label>
 	<rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
-	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/> 
+	<rdfs:subPropertyOf rdf:resource="http://scot-project.org/scot/ns#delimited"/>
 	<rdfs:comment xml:lang="en">A multiple-word tag name where each piece of word is separated by a space.</rdfs:comment>
 	<rdfs:domain rdf:resource="http://scot-project.org/scot/ns#Tag"/>
 	<rdfs:range rdf:resource="http://scot-project.org/scot/ns#Tag"/>

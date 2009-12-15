@@ -115,7 +115,7 @@
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
-		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">    	
+		<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 			<rdf:type rdf:resource="&sioc;Thread"/>
 			<rdf:type rdf:resource="&wf;Task"/>
 			<dc:title>

@@ -36,31 +36,31 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 <xsl:stylesheet
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:rdf="&rdf;"
+    xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
-  xmlns:foaf="&foaf;"
-  xmlns:bibo="&bibo;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
-  xmlns:gr="&gr;"
+    xmlns:gr="&gr;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:owl="&owl;"
     xmlns:cl="&cl;"
     xmlns:oplbb="&oplbb;"
-  xmlns:po="http://purl.org/ontology/po/"
-  xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
-  version="1.0">
+    xmlns:po="http://purl.org/ontology/po/"
+    xmlns:redwood-tags="http://www.holygoat.co.uk/owl/redwood/0.1/tags/"
+	version="1.0">
 
   <xsl:output method="xml" indent="yes"/>
 
-  <xsl:param name="baseUri" />
+	<xsl:param name="baseUri"/>
 	<xsl:param name="currentDateTime"/>
 
-  <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
-  <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
-  <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 	<!-- Xalan
 	<xsl:variable name="resourceURL" select="$baseUri"/>
 	<xsl:variable  name="docIRI" select="$baseUri"/>
@@ -93,7 +93,7 @@
   </xsl:template>
 
   <xsl:template match="html/head">
-      <rdf:Description rdf:about="{$docproxyIRI}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
 		<rdf:type rdf:resource="&bibo;Document"/>
 		<sioc:container_of rdf:resource="{$resourceURL}"/>
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
@@ -106,9 +106,9 @@
 		<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 		<owl:sameAs rdf:resource="{$docIRI}"/>
-	  </rdf:Description>
+	</rdf:Description>
 
-	<!-- Xalan 
+	<!-- Xalan
 	<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offering')}">
 	-->
 	<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
@@ -152,33 +152,33 @@
 				<dcterms:extent><xsl:value-of select="normalize-space($extent)" /></dcterms:extent>
 			</xsl:when>
 			<xsl:when test="$category='books'">
-		<rdf:type rdf:resource="&bibo;Book"/>
+				<rdf:type rdf:resource="&bibo;Book"/>
 				<bibo:numPages><xsl:value-of select="normalize-space($extent)" /></bibo:numPages>
 			</xsl:when>
 		</xsl:choose>
     	<bibo:shortTitle><xsl:value-of select="$title"/></bibo:shortTitle>
     	<dc:title><xsl:value-of select="concat($title, ' - ', $subtitle)"/></dc:title>
 		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
-		<xsl:apply-templates select="meta"/>
+		<xsl:apply-templates select="meta" />
   		<xsl:apply-templates select="//div[@id='short-description']/div" />
   		<xsl:apply-templates select="//div[@id='fulldesc']/div" />
   		<xsl:apply-templates select="//div[@class='product-metadata']//*[@typeof='foaf:Person']" />
-      </rdf:Description>
+	</rdf:Description>
   </xsl:template>
 
-  <xsl:template match="//span[@typeof='gr:UnitPriceSpecification']" mode="offering">
-	<gr:hasPriceSpecification>
+  	<xsl:template match="//span[@typeof='gr:UnitPriceSpecification']" mode="offering">
+		<gr:hasPriceSpecification>
 			<!-- Xalan
 	    	<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
 			-->
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('UnitPriceSpecification_', position()))}">
-	    <rdfs:label>sale price</rdfs:label>
-		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
-		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
-		<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="span[@property='gr:hasCurrency']/@content" /></gr:hasCurrency>
-	    </gr:UnitPriceSpecification>
-	</gr:hasPriceSpecification>
-    </xsl:template>
+	    		<rdfs:label>sale price</rdfs:label>
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="span[@property='gr:hasCurrencyValue']" /></gr:hasCurrencyValue>
+				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="span[@property='gr:hasCurrency']/@content" /></gr:hasCurrency>
+	    	</gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+	</xsl:template>
 
   <!-- Not valid for videos, which also seem to have object.type of 'book'
   <xsl:template match="meta[translate (@name, $uc, $lc)='object.type']">
@@ -194,23 +194,23 @@
 	</bibo:authorList>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.isbn']">
-      <bibo:isbn13>
-	  <xsl:value-of select="@content"/>
-      </bibo:isbn13>
+	<xsl:template match="meta[translate (@name, $uc, $lc)='book.isbn']">
+    	<bibo:isbn13>
+	  		<xsl:value-of select="@content"/>
+      	</bibo:isbn13>
       	<dcterms:identifier>
-	  <xsl:value-of select="@content"/>
+	  		<xsl:value-of select="@content"/>
       	</dcterms:identifier>
-  </xsl:template>
+	</xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='book.link']">
       <bibo:uri rdf:resource="{$resourceURL}" />
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book.tags']">
-      <redwood-tags:tag>
-	  <xsl:value-of select="@content"/>
-      </redwood-tags:tag>
+	<xsl:template match="meta[translate (@name, $uc, $lc)='book.tags']">
+    	<redwood-tags:tag>
+	  		<xsl:value-of select="@content"/>
+		</redwood-tags:tag>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='reference']">
@@ -219,13 +219,13 @@
       </dcterms:references>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='isbn']">
-      <bibo:isbn10>
-	  <xsl:value-of select="@content"/>
-      </bibo:isbn10>
+	<xsl:template match="meta[translate (@name, $uc, $lc)='isbn']">
+      	<bibo:isbn10>
+	  		<xsl:value-of select="@content"/>
+      	</bibo:isbn10>
       	<xsl:variable name="amazonBookURL">
-		<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn)"/>
-      </xsl:variable>
+			<xsl:value-of select="concat('http://www.amazon.com/', translate($title, ' ', '-'), '/dp/', $isbn)"/>
+      	</xsl:variable>
 	  	<owl:sameAs rdf:resource="{$amazonBookURL}" />
   </xsl:template>
 
@@ -247,12 +247,12 @@
       <foaf:img rdf:resource="{@content}"/>
   </xsl:template>
 
-	<!-- Used concatentation of metas book.title & subtitle instead 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='book_title']">
-      <dc:title>
-	  <xsl:value-of select="@content"/>
-      </dc:title>
-  </xsl:template>
+	<!-- Used concatentation of metas book.title & subtitle instead
+	<xsl:template match="meta[translate (@name, $uc, $lc)='book_title']">
+    	<dc:title>
+	  		<xsl:value-of select="@content"/>
+      	</dc:title>
+	</xsl:template>
 	-->
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
@@ -265,24 +265,24 @@
 	</xsl:if>
   </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='description']">
+	<xsl:template match="meta[translate (@name, $uc, $lc)='description']">
 		<bibo:abstract rdf:datatype="&xsd;string">
-	  <xsl:value-of select="@content"/>
+			<xsl:value-of select="@content"/>
 		</bibo:abstract>
     </xsl:template>
 
-  <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
+	<xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
     	<dcterms:subject>
-	  <xsl:value-of select="@content"/>
+	  		<xsl:value-of select="@content"/>
       	</dcterms:subject>
-  </xsl:template>
+	</xsl:template>
 
 	<xsl:template match="meta[@name='search_date']">
 		<!-- search_date is in ISO 8601 format as required by Dublin Core spec -->
     	<dcterms:issued>
-	  <xsl:value-of select="@content"/>
+	  		<xsl:value-of select="@content"/>
       	</dcterms:issued>
-  </xsl:template>
+	</xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='publisher']">
       <dc:publisher>

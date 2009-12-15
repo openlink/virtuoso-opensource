@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:v="http://www.w3.org/2006/vcard/ns#"
+    		xmlns:v="http://www.w3.org/2006/vcard/ns#"
 		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 		xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 		xmlns:h="http://www.w3.org/1999/xhtml"
@@ -51,7 +51,7 @@
   <xsl:if test="$vcard != 0">
     <rdf:Description rdf:about="{$baseUri}">
       <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcard')}"/>
-    </rdf:Description>  
+    </rdf:Description>
     <v:VCard rdf:about="{vi:proxyIRI ($baseUri, '', 'hcard')}">
       <xsl:apply-templates mode="extract-vcard"/>
     </v:VCard>

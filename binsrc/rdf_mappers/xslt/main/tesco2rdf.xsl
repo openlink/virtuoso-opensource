@@ -85,7 +85,7 @@
 		</xsl:element>
     </xsl:if>
     </xsl:template>
-    
+
     <xsl:template match="Name">
 		<rdfs:label>
 			<xsl:value-of select="."/>
@@ -94,7 +94,7 @@
 			<xsl:value-of select="."/>
 		</dc:title>
     </xsl:template>
-    
+
     <xsl:template match="manufacturer">
 		<gr:hasManufacturer>
 		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'manufacturer')}">
@@ -103,7 +103,7 @@
           </gr:BusinessEntity>
 		</gr:hasManufacturer>
     </xsl:template>
-    
+
     <xsl:template match="Price">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
@@ -128,5 +128,5 @@
 	</xsl:element>
 	</xsl:if>
     </xsl:template>
-    
+
 </xsl:stylesheet>

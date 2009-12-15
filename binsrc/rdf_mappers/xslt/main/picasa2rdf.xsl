@@ -89,7 +89,7 @@
 	      <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	  </xsl:otherwise>
       </xsl:choose>
-  <rdf:RDF>
+      <rdf:RDF>
 	  <rdf:Description rdf:about="{$docproxyIRI}">
 	      <rdf:type rdf:resource="&bibo;Document"/>
 	      <sioc:container_of rdf:resource="{$resourceURL}"/>
@@ -99,7 +99,7 @@
 	      <owl:sameAs rdf:resource="{$docIRI}"/>
 	  </rdf:Description>
 	  <xsl:apply-templates select="a:feed"/>
-  </rdf:RDF>
+      </rdf:RDF>
   </xsl:template>
 
   <xsl:template match="a:feed[a:link[@rel='&fe;feed']]|a:entry[a:link[@rel='&fe;feed']]">
@@ -129,8 +129,8 @@
 		      <sioc:container_of rdf:resource="{vi:proxyIRI (a:link[@rel='&fe;feed']/@href)}"/>
 		  </xsl:when>
 	      </xsl:choose>
-		</xsl:for-each>
-    </rdf:Description>
+	  </xsl:for-each>
+      </rdf:Description>
       <xsl:apply-templates select="a:entry" />
   </xsl:template>
 
@@ -147,7 +147,7 @@
   </xsl:template>
 
   <xsl:template match="a:content">
-  <dc:description><xsl:call-template name="removeTags" /></dc:description>
+      <dc:description><xsl:call-template name="removeTags" /></dc:description>
 </xsl:template>
 
 <xsl:template match="a:published">
@@ -155,7 +155,7 @@
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
-  <dc:source><xsl:value-of select="@href" /></dc:source>
+    <dc:source><xsl:value-of select="@href" /></dc:source>
 </xsl:template>
 
 <xsl:template match="a:author[parent::a:entry]">
@@ -164,7 +164,7 @@
 
 
 <xsl:template match="media:title">
-    <dc:title><xsl:value-of select="."/></dc:title> 
+    <dc:title><xsl:value-of select="."/></dc:title>
 </xsl:template>
 
 <xsl:template match="media:content[@medium='image']">
@@ -176,7 +176,7 @@
 </xsl:template>
 
 <xsl:template match="media:description[ . != '']">
-    <dc:description><xsl:value-of select="."/></dc:description> 
+    <dc:description><xsl:value-of select="."/></dc:description>
 </xsl:template>
 
 <xsl:template match="media:group">

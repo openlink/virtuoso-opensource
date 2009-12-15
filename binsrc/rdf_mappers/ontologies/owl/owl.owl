@@ -24,7 +24,7 @@
     the RDF/XML syntax of OWL Full, OWL DL and OWL Lite.
     We do not expect people to import this file
     explicitly into their ontology. People that do import this file
-    should expect their ontology to be an OWL Full ontology. 
+    should expect their ontology to be an OWL Full ontology.
   </rdfs:comment>
   <versionInfo>10 February 2004, revised $Date$</versionInfo>
   <priorVersion rdf:resource="http://www.daml.org/2001/03/daml+oil"/>
@@ -68,7 +68,7 @@
   <rdfs:subPropertyOf rdf:resource="&rdfs;subPropertyOf"/>
 </rdf:Property>
 
-<rdf:Property rdf:ID="sameAs"> 
+<rdf:Property rdf:ID="sameAs">
   <rdfs:label>sameAs</rdfs:label>
   <rdfs:domain rdf:resource="#Thing"/>
   <rdfs:range rdf:resource="#Thing"/>
@@ -89,7 +89,7 @@
   <rdfs:domain rdf:resource="#AllDifferent"/>
   <rdfs:range rdf:resource="&rdf;List"/>
 </rdf:Property>
-  
+
 <rdf:Property rdf:ID="unionOf">
   <rdfs:label>unionOf</rdfs:label>
   <rdfs:domain rdf:resource="#Class"/>

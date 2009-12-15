@@ -51,7 +51,7 @@
     <xsl:variable name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
     <xsl:template match="office:document-meta|office:meta" priority="1">
-	<xsl:apply-templates select="*"/>
+		<xsl:apply-templates select="*"/>
     </xsl:template>
 
     <xsl:template match="/office:document">
@@ -65,8 +65,8 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&bibo;Document"/>
-		<xsl:apply-templates select="office:meta"/>
+			<rdf:type rdf:resource="&bibo;Document"/>
+			<xsl:apply-templates select="office:meta"/>
 	    </rdf:Description>
 	</rdf:RDF>
     </xsl:template>

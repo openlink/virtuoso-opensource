@@ -59,12 +59,12 @@
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ </xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz_</xsl:variable>
-    
+
 	<!-- Process GetDeepSearchResults response -->
 
     <xsl:template match="/SearchResults:searchresults">
 		<rdf:RDF>
-	    <rdf:Description rdf:about="{$docproxyIRI}">
+			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
@@ -73,7 +73,7 @@
 				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
 				<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
 
-		<owl:sameAs rdf:resource="{$docIRI}"/>
+				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
@@ -85,14 +85,14 @@
 			</gr:Offering>
 
             <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
-			  <rdfs:comment>The legal agent making the offering</rdfs:comment>
-		      <rdfs:label>Zillow Co., Inc.</rdfs:label>
-		      <gr:legalName>Zillow Co., Inc.</gr:legalName>
-		      <gr:offers rdf:resource="{$resourceURL}"/>
+			  	<rdfs:comment>The legal agent making the offering</rdfs:comment>
+		      	<rdfs:label>Zillow Co., Inc.</rdfs:label>
+		      	<gr:legalName>Zillow Co., Inc.</gr:legalName>
+		      	<gr:offers rdf:resource="{$resourceURL}"/>
 			  	<foaf:homepage rdf:resource="http://www.zillow.com" />
-			  <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.zillow.com')}"/>
+			  	<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.zillow.com')}"/>
             </gr:BusinessEntity>
-            
+
             <rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
@@ -100,10 +100,9 @@
 				<gr:amountOfThisGood>1</gr:amountOfThisGood>
 				<xsl:apply-templates select="response/results/result" />
 			</rdf:Description>
-
 		</rdf:RDF>
     </xsl:template>
-    
+
     <xsl:template match="result">
 		<oplzllw:zpid><xsl:value-of select="zpid"/></oplzllw:zpid>
 		<oplzllw:bathrooms>
@@ -137,13 +136,13 @@
 		<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
 		<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
     </xsl:template>
-    
+
     <xsl:template match="localRealEstate" />
 
     <xsl:template match="useCode">
 		<oplzllw:homeType><xsl:value-of select="."/></oplzllw:homeType>
-    </xsl:template>
-    
+	</xsl:template>
+
     <xsl:template match="lastSoldPrice" mode="offering">
 		<xsl:variable name="amount" select="." />
 		<gr:hasPriceSpecification>
@@ -156,16 +155,16 @@
 			</gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
-    
+
 	<!-- Process GetUpdatedPropertyDetails response -->
 
-	<!-- 
-	The GetUpdatedPropertyDetails response includes the property's sale price, whereas the GetDeepSearchResults 
+	<!--
+	The GetUpdatedPropertyDetails response includes the property's sale price, whereas the GetDeepSearchResults
 	response only includes the lastSoldPrice. lastSoldPrice is used to create a UnitPriceSpecification labelled
 	'Last Sold Price' for the Offering. The price returned by GetUpdatedPropertyDetails is used to create a second
 	UnitPriceSpecification labelled 'Current Price'. However this information is not always available.
 	GetUpdatedPropertyDetails often returns error code 501 - "The updated data for the property you are requesting
-	is not available due to legal restrictions". It looks like properties being sold by agents return this code, 
+	is not available due to legal restrictions". It looks like properties being sold by agents return this code,
 	while properties being sold directly by the owner make the information available.
 	-->
 
@@ -189,13 +188,13 @@
 		<gr:hasPriceSpecification>
 			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'CurrentPrice')}">
 				<rdfs:label>Current Price</rdfs:label>
-			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
-            <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
-			<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
-          </gr:UnitPriceSpecification>
+				<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="$amount"/></gr:hasCurrencyValue>
+				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="@currency"/></gr:hasCurrency>
+			</gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>
-        
+
     <xsl:template match="yearUpdated">
 		<oplzllw:yearUpdated><xsl:value-of select="."/></oplzllw:yearUpdated>
 	</xsl:template>
@@ -236,7 +235,7 @@
 		<oplzllw:rooms><xsl:value-of select="."/></oplzllw:rooms>
 	</xsl:template>
     <xsl:template match="image/url">
-		<!-- 
+		<!--
 		Remove any query string from image URL or it won't render in description.vsp
 	 	e.g. from http://images3.zillow.com/is/image/i0/i1/i2283/IS131nd4m22pf37.jpg?op_sharpen=1&amp;qlt=90&amp;size=400,400
 		-->

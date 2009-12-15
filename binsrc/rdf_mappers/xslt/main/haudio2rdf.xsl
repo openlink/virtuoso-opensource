@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns="http://purl.org/ontology/mo/"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
@@ -15,9 +15,9 @@
 
 <xsl:strip-space elements="*"/>
 
-<xsl:output method="xml" 
-		   indent="yes" 
-		   encoding="UTF-8" 
+<xsl:output method="xml"
+		   indent="yes"
+		   encoding="UTF-8"
 		   media-type="application/xml"/>
 
 <!-- recomended for all GRDDL-able documents use <base href="http://yourdocument.url/" /> in the <head> of your xhtml page -->
