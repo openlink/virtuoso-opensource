@@ -1477,7 +1477,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
       switch (tree->_.builtin.btype)
         {
         case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L: case BOUND_L:
-	case isIRI_L: case isURI_L: case isBLANK_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
+	case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
         case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
         default: return SSG_VALMODE_SQLVAL;
         }
@@ -1687,7 +1687,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
       switch (tree->_.builtin.btype)
         {
         case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L:
-        case isIRI_L: case isURI_L: case isBLANK_L: case isLITERAL_L: case BOUND_L:
+        case isIRI_L: case isURI_L: case isBLANK_L: case isREF_L: case isLITERAL_L: case BOUND_L:
           return SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
         case IRI_L: return SPART_VARR_IS_REF ;
         case DATATYPE_L: return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
@@ -3289,6 +3289,40 @@ IN_op_fnt_found:
             spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isURI()");
         }
       return;
+    case isREF_L:
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
+      else
+        {
+          arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
+          if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
+            {
+#ifdef NDEBUG
+              ssg_puts (" 0");
+#else
+              ssg_puts (" 0 /* optimized isREF */");
+#endif
+              return;
+            }
+          if (arg1_restr_bits & SPART_VARR_IS_REF & SPART_VARR_NOT_NULL)
+            {
+#ifdef NDEBUG
+              ssg_puts (" 1");
+#else
+              ssg_puts (" 1 /* optimized isREF */");
+#endif
+              return;
+            }
+          if (IS_BOX_POINTER (arg1_native))
+            ssg_print_tmpl (ssg, arg1_native, arg1_native->qmfIsrefOfShortTmpl, NULL, NULL, arg1, NULL_ASNAME);
+          else if (SSG_VALMODE_LONG == arg1_native)
+            ssg_print_tmpl (ssg, arg1_native, " isiri_id (^{tree}^)", NULL, NULL, arg1, NULL);
+          else if (SSG_VALMODE_SQLVAL == arg1_native)
+            ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_REF (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
+          else
+            spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isREF()");
+        }
+      return;
     case isLITERAL_L:
       if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
@@ -3318,7 +3352,7 @@ IN_op_fnt_found:
           else if (SSG_VALMODE_LONG == arg1_native)
             ssg_print_tmpl (ssg, arg1_native,
               (top_filter_op ?
-                " (not (isiri_id (^{tree}^))" : "iszero (isiri_id (^{tree}^))" ),
+                " (not (isiri_id (^{tree}^)))" : " iszero (isiri_id (^{tree}^))" ),
               NULL, NULL, arg1, NULL );
           else if (SSG_VALMODE_SQLVAL == arg1_native)
             ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_LITERAL (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
@@ -4000,7 +4034,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             gp = sparp_find_gp_by_alias (ssg->ssg_sparp, tree->_.var.selid);
             if ((NULL == gp) && (SPART_VARR_EXPORTED & tree->_.var.rvr.rvrRestrictions))
               gp = ssg->ssg_tree->_.req_top.pattern;
-            ssg_print_equiv_retval_expn (ssg, gp, eq, SSG_RETVAL_FROM_JOIN_MEMBER | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_USES_ALIAS, needed, asname);
+            ssg_print_equiv_retval_expn (ssg, gp, eq, SSG_RETVAL_FROM_JOIN_MEMBER | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_CAN_PRINT_NULL | SSG_RETVAL_USES_ALIAS, needed, asname);
           }
 #endif
         return;
@@ -4770,9 +4804,7 @@ ssg_print_retval_restrictions_ex (spar_sqlgen_t *ssg, SPART *retval, rdf_val_ran
     {
       ssg_print_where_or_and (ssg, "'any' retval is a reference");
       ssg_print_scalar_expn (ssg,
-        spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-          spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, retval)),
-          NULL ),
+        spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isREF_L, t_list (1, retval)),
         SSG_VALMODE_BOOL, NULL_ASNAME);
     }
   else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & retval_restr)))
@@ -5144,34 +5176,96 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
   int good_eq_is_printed = 0;
   if (!print_equs_to_globals)
     goto print_cross_equs; /* see below */;
-  if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) &&
-    (SPART_VARR_FIXED & eq->e_replaces_filter) &&
-    (0 == eq->e_gspo_uses) && (0 < BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) )
+  if ((eq->e_replaces_filter) && (0 == eq->e_gspo_uses) &&
+    ((0 != eq->e_nested_bindings) || (OPTIONAL_L != eq->e_gp->_.gp.subtype)) )
     {
-      SPART *sample_var, *bop;
-      /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
-      if (0 < eq->e_var_count)
-        sample_var = eq->e_vars[0];
-      else
+      int restrs_not_filtered_in_subqs = eq->e_replaces_filter;
+      int sub_ctr;
+      if (eq->e_replaces_filter & ~(eq->e_rvr.rvrRestrictions) & ~SPART_VARR_EQ_VAR)
+        spar_internal_error (ssg->ssg_sparp, "lost filters in equivs");
+      if (UNION_L != eq->e_gp->_.gp.subtype)
         {
-          caddr_t name = eq->e_varnames[0];
-          sample_var = spartlist (ssg->ssg_sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
-            SPAR_VARIABLE, name,
-            eq->e_gp->_.gp.selid, NULL,
-            (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
-          if (SPART_VARNAME_IS_GLOB(name))
-            sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
-          if (eq != sparp_equiv_get (ssg->ssg_sparp, eq->e_gp, sample_var, SPARP_EQUIV_INS_VARIABLE))
-            spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
+          DO_BOX_FAST (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
+            {
+              sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_idx);
+              if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+                continue;
+              restrs_not_filtered_in_subqs &= (~(sub_eq->e_rvr.rvrRestrictions) |
+                ~(SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL ) );
+              if ((SPART_VARR_FIXED & restrs_not_filtered_in_subqs) &&
+                (SPART_VARR_FIXED & sub_eq->e_rvr.rvrRestrictions) &&
+                (DVC_MATCH == cmp_boxes_safe (eq->e_rvr.rvrFixedValue, sub_eq->e_rvr.rvrFixedValue, NULL, NULL)) )
+                restrs_not_filtered_in_subqs &= ~SPART_VARR_FIXED;
+              if ((SPART_VARR_TYPED & restrs_not_filtered_in_subqs) &&
+                (SPART_VARR_TYPED & sub_eq->e_rvr.rvrRestrictions) &&
+                (DVC_MATCH == cmp_boxes_safe (eq->e_rvr.rvrDatatype, sub_eq->e_rvr.rvrDatatype, NULL, NULL)) )
+                restrs_not_filtered_in_subqs &= ~SPART_VARR_TYPED;
+            }
+          END_DO_BOX_FAST;
         }
-      bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, eq->e_rvr.rvrFixedValue);
-      eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
-      sample_var->_.var.rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
-      ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
-      ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
-      eq->e_rvr.rvrRestrictions |= SPART_VARR_FIXED;
-      sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-   }
+      if (restrs_not_filtered_in_subqs)
+        {
+          SPART *sample_var;
+          ptrlong saved_var_restr, saved_eq_restr;
+          /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
+          if (0 < eq->e_var_count)
+            sample_var = eq->e_vars[0];
+          else
+            {
+              caddr_t name = eq->e_varnames[0];
+              sample_var = spartlist (ssg->ssg_sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+                SPAR_VARIABLE, name,
+                eq->e_gp->_.gp.selid, NULL,
+                (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+              if (SPART_VARNAME_IS_GLOB(name))
+                sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
+              if (eq != sparp_equiv_get (ssg->ssg_sparp, eq->e_gp, sample_var, SPARP_EQUIV_INS_VARIABLE))
+                spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
+            }
+          saved_var_restr = sample_var->_.var.rvr.rvrRestrictions;
+          saved_eq_restr = eq->e_rvr.rvrRestrictions;
+          eq->e_rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
+          sample_var->_.var.rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
+          if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
+            {
+              SPART *bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, eq->e_rvr.rvrFixedValue);
+              ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
+              ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_IS_IRI & restrs_not_filtered_in_subqs)
+            {
+              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isIRI_L), t_list (1, sample_var));
+              ssg_print_where_or_and (ssg, "value of equiv class, isIRI check by replaced filter");
+              ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_IS_BLANK & restrs_not_filtered_in_subqs)
+            {
+              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isBLANK_L), t_list (1, sample_var));
+              ssg_print_where_or_and (ssg, "value of equiv class, isBLANK check by replaced filter");
+              ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_IS_REF & restrs_not_filtered_in_subqs)
+            {
+              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isREF_L), t_list (1, sample_var));
+              ssg_print_where_or_and (ssg, "value of equiv class, isREF check by replaced filter");
+              ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_IS_LIT & restrs_not_filtered_in_subqs)
+            {
+              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(isLITERAL_L), t_list (1, sample_var));
+              ssg_print_where_or_and (ssg, "value of equiv class, isLITERAL check by replaced filter");
+              ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs)
+            {
+              SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(BOUND_L), t_list (1, sample_var));
+              ssg_print_where_or_and (ssg, "value of equiv class, BOUND check by replaced filter");
+              ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          sample_var->_.var.rvr.rvrRestrictions = saved_var_restr;
+          eq->e_rvr.rvrRestrictions = saved_eq_restr;
+        }
+    }
   /* Printing equalities with constants */
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {

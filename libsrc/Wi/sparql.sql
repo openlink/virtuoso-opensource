@@ -1580,20 +1580,58 @@ create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any, in dflt varchar := '') 
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
 {
-  if (not isstring (v))
-    return 0;
-  if ("LEFT" (v, 9) <> 'nodeID://')
-    return 0;
-  return 1;
+  if ((__tag (v) = 217) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
+    {
+      if ("LEFT" (v, 9) <> 'nodeID://')
+        return 0;
+      return 1;
+    }
+  if (__tag (v) = 243)
+    {
+      if (v < min_bnode_iri_id)
+        return 0;
+      return 1;
+    }
+  return 0;
 }
 ;
 
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 {
-  if (not (__tag (v) in (__tag of varchar, 217)))
+  if ((__tag (v) = 217) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
+    {
+      if ("LEFT" (v, 9) <> 'nodeID://')
+        return 1;
+      return 0;
+    }
+  if (__tag (v) = 243)
+    {
+      if (v < min_bnode_iri_id)
+        return 1;
+      return 0;
+    }
+  return 0;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_IS_REF (in v any) returns any
+{
+  if (__tag (v) in (217, 243))
+    return 1;
+  if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
+    return 1;
+  return 0;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_IS_LITERAL (in v any) returns any
+{
+  if (__tag (v) in (217, 243))
     return 0;
-  if ("LEFT" (v, 9) = 'nodeID://')
+  if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 0;
   return 1;
 }

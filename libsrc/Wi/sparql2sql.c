@@ -1112,6 +1112,11 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
             arg1_eq->e_rvr.rvrRestrictions |= flags;
             arg1_eq->e_replaces_filter |= flags;
             return 1;
+          case isREF_L:
+            flags = SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
+            arg1_eq->e_rvr.rvrRestrictions |= flags;
+            arg1_eq->e_replaces_filter |= flags;
+            return 1;
           case isLITERAL_L:
             flags = SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
             arg1_eq->e_rvr.rvrRestrictions |= flags;
