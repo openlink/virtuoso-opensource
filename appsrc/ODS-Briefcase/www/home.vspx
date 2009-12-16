@@ -508,7 +508,7 @@
           if (self.dav_type = 'C')
             dav_fullPath := dav_fullPath || '/';
           dav_fullPath := ODRIVE.WA.odrive_real_path (dav_fullPath, 1, self.dav_type);
-              if (isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET(self.dav_item, 'fullPath') <> dav_fullPath))
+          if ((isnull (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')) or (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath') <> dav_fullPath)) and ((self.dav_type = 'C') or (self.command_mode = 10)))
               {
               retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
               if (not ODRIVE.WA.DAV_ERROR(retValue))
@@ -1260,8 +1260,8 @@
             </tr>
             <tr>
               <td><?V ODRIVE.WA.dav_get (old_vector, 'name') ?></td>
-              <td><?V ODRIVE.WA.dav_get (old_vector, 'length') ?></td>
-              <td><?V left ( cast (ODRIVE.WA.dav_get (old_vector, 'modificationTime') as varchar), 19) ?></td>
+              <td><?vsp http (ODRIVE.WA.ui_size (ODRIVE.WA.dav_get (old_vector, 'length'))); ?></td>
+              <td><?vsp http (ODRIVE.WA.ui_date (ODRIVE.WA.dav_get (old_vector, 'modificationTime'))); ?></td>
               <td><?V ODRIVE.WA.dav_get (old_vector, 'mimeType') ?></td>
               <td><?V ODRIVE.WA.dav_get (old_vector, 'ownerName') ?></td>
               <td><?V ODRIVE.WA.dav_get (old_vector, 'groupName') ?></td>
@@ -1272,8 +1272,8 @@
             </tr>
             <tr>
               <td><?V ODRIVE.WA.dav_get (old_vector, 'name') ?></td>
-              <td><?V length (self.dav_vector [1]) ?></td>
-              <td><?V left (cast (now() as varchar), 19) ?></td>
+              <td><?vsp http (ODRIVE.WA.ui_size (length (self.dav_vector [1]))); ?></td>
+              <td><?vsp http (ODRIVE.WA.ui_date (now())); ?></td>
               <td><?V self.dav_vector [2] ?></td>
               <td><?V ODRIVE.WA.odrive_user_name (self.dav_vector [4]) ?></td>
               <td><?V ODRIVE.WA.odrive_user_name (self.dav_vector [5]) ?></td>
@@ -1688,7 +1688,7 @@
                     </td>
                   </tr>
                 </v:template>
-                <v:template name="tform_18" type="simple" enabled="-- equ(self.dav_type, 'R')">
+                <v:template name="tform_18" type="simple" enabled="--case when ((self.dav_type = 'R') and (self.command_mode = 10)) then 1 else 0 end">
                   <tr id="davRow_tagsPublic">
                     <th>
                       <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
@@ -1858,6 +1858,7 @@
                     </tr>
                   </table>
                 </fieldset>
+                <vm:if test="not isnull (server_https_port ())">
                   <fieldset>
                     <legend><b>FOAF+SSL users</b></legend>
                     <table>
@@ -1904,6 +1905,7 @@
                       </tr>
                     </table>
                   </fieldset>
+                </vm:if>
               </div>
             </v:template>
 

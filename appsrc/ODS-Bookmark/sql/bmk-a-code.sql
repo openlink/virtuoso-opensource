@@ -639,15 +639,6 @@ create procedure BMK.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.domain_iri (
-  in domain_id integer)
-{
-  return sprintf ('http://%s/dataspace/%U/bookmark/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id), BMK.WA.domain_name (domain_id));
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure BMK.WA.forum_iri (
   in domain_id integer)
 {
@@ -664,7 +655,7 @@ create procedure BMK.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U/bookmark/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id), BMK.WA.domain_name (domain_id));
+  S := BMK.WA.iri_fix (BMK.WA.forum_iri (domain_id));
   return BMK.WA.url_fix (S, sid, realm);
 }
 ;
@@ -786,7 +777,7 @@ create procedure BMK.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (BMK.WA.domain_owner_id (domain_id), null));
+  S := BMK.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (BMK.WA.domain_owner_id (domain_id), null)));
   return BMK.WA.url_fix (S, sid, realm);
 }
 ;
@@ -2311,6 +2302,24 @@ create procedure BMK.WA.xslt_full(
   in xslt_file varchar)
 {
   return concat(BMK.WA.xslt_root(), xslt_file);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
 }
 ;
 

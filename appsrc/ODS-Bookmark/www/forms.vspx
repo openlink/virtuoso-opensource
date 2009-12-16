@@ -134,7 +134,7 @@
           for (N := 0; N < length (tags); N := N + 1)
           {
             http (delimiter);
-            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (BMK.WA.domain_iri (self.domain_id), tags[N]), tags[N]));
+            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (BMK.WA.forum_iri (self.domain_id), tags[N]), tags[N]));
             delimiter := ', ';
           }
         }

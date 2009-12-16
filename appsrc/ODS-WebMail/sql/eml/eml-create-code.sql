@@ -1414,7 +1414,7 @@ create procedure OMAIL.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U/mail/%U', DB.DBA.wa_cname (), OMAIL.WA.domain_owner_name (domain_id), OMAIL.WA.domain_name (domain_id));
+  S := OMAIL.WA.iri_fix (SIOC..mail_iri (OMAIL.WA.domain_name (domain_id)));
   return OMAIL.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1477,7 +1477,7 @@ create procedure OMAIL.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (OMAIL.WA.domain_owner_id (domain_id), null));
+  S := OMAIL.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (OMAIL.WA.domain_owner_id (domain_id), null)));
   return OMAIL.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1491,6 +1491,24 @@ create procedure OMAIL.WA.user_name (
   if (not is_empty_or_null(trim(u_full_name)))
     return trim (u_full_name);
   return u_name;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
 }
 ;
 
