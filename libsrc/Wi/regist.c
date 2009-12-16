@@ -200,7 +200,7 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
 {
   dtp_t dvrdf_temp[50];
   scheduler_io_data_t iod;
-  caddr_t reg;
+  caddr_t reg, buf = dvrdf_temp;
 
   dk_session_t ses;
   /* read_object will not box top level numbers */
@@ -230,12 +230,12 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
       if (!opt_len)
 	opt_len = box_length (text);
       if (opt_len > sizeof (dvrdf_temp))
-	GPF_T1 ("rdf box serialization too long");
+	buf = dk_alloc (opt_len);
       if (offset)
 	{
-	  memcpy (dvrdf_temp, text, opt_len);
-	  dvrdf_temp[opt_len - 1] += offset;
-	  text = (char*)dvrdf_temp;
+	  memcpy (buf, text, opt_len);
+	  buf[opt_len - 1] += offset;
+	  text = (char*)buf;
 	}
       break;
     }
@@ -249,6 +249,8 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
   SESSION_SCH_DATA ((&ses)) = &iod;
 
   reg = (caddr_t) read_object (&ses);
+  if (buf != dvrdf_temp)
+    dk_free (buf, opt_len);
   return reg;
 }
 
