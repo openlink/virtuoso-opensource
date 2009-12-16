@@ -799,7 +799,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    if (DFE_FALSE != dfe && DFE_TRUE != dfe)
 	      dfe->dfe_tables = t_set_union (dfe_tables (c1), dfe_tables (c2));
 	  }
-	else if (BOP_NOT == tree->type)
+	else if (BOP_NOT == tree->type && DFE_TEXT_PRED != dfe->dfe_type) /* a text pred tree starts with a not but this branch is not for it */
 	  {
 	    df_elt_t * c1 = sqlo_const_cond (so, dfe->_.bin.left);
 	    if (DFE_FALSE == c1)
