@@ -472,6 +472,24 @@ create procedure ODRIVE.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.url_fix (
   in S varchar,
   in sid varchar := null,
@@ -1394,7 +1412,8 @@ create procedure ODRIVE.WA.domain_is_public (
 create procedure ODRIVE.WA.domain_ping (
   in domain_id integer)
 {
-  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
+  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
+  {
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), ODRIVE.WA.sioc_url (domain_id));
   }
 }
@@ -1409,7 +1428,7 @@ create procedure ODRIVE.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U/briefcase/%U', DB.DBA.wa_cname (), ODRIVE.WA.domain_owner_name (domain_id), ODRIVE.WA.domain_name (domain_id));
+  S := ODRIVE.WA.iri_fix (SIOC..briefcase_iri (ODRIVE.WA.domain_name (domain_id)));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1432,7 +1451,7 @@ create procedure ODRIVE.WA.account() returns varchar
 create procedure ODRIVE.WA.account_id (
   in account_name varchar)
 {
-  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name), '');
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name), -1);
 }
 ;
 
@@ -1481,7 +1500,7 @@ create procedure ODRIVE.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id), null));
+  S := ODRIVE.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (ODRIVE.WA.domain_owner_id (domain_id), null)));
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;

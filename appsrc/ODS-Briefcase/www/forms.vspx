@@ -596,6 +596,7 @@
                     </tr>
                   </table>
                 </fieldset>
+                <vm:if test="not isnull (server_https_port ())">
                 <fieldset>
                   <legend><b>FOAF+SSL users</b></legend>
                   <table>
@@ -623,6 +624,7 @@
                     </tr>
                   </table>
                 </fieldset>
+                </vm:if>
               </div>
             </div>
           </div>

@@ -176,7 +176,10 @@ create procedure ENEWS.WA.check_admin(
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
+create procedure ENEWS.WA.check_grants (
+  in domain_id integer,
+  in user_id integer,
+  in role_name varchar)
 {
   whenever not found goto _end;
 
@@ -215,7 +218,22 @@ _end:
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.check_grants2(in role_name varchar, in page_name varchar)
+create procedure ENEWS.WA.check_feed_grants (
+  in feed_id integer,
+  in user_id integer)
+{
+  if (ENEWS.WA.check_admin ( user_id))
+    return 1;
+
+  return coalesce ((select 1 from ENEWS.WA.FEED_ACCESS where EFA_FEED_ID = feed_id and EFA_USER_ID = user_id), 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.check_grants2 (
+  in role_name varchar,
+  in page_name varchar)
 {
   declare tree any;
 
@@ -228,7 +246,9 @@ create procedure ENEWS.WA.check_grants2(in role_name varchar, in page_name varch
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.access_role(in domain_id integer, in user_id integer)
+create procedure ENEWS.WA.access_role (
+  in domain_id integer,
+  in user_id integer)
 {
   whenever not found goto _end;
 
@@ -782,6 +802,15 @@ create procedure ENEWS.WA.account_delete(
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.account_id (
+  in account_name varchar)
+{
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name), -1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.account_name(
   in account_id integer)
 {
@@ -868,14 +897,7 @@ create procedure ENEWS.WA.feeds_agregator (
 
   p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
   f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
-  u := case p
-         when 'daily' then 1440
-         when 'weekly' then 10080
-         when 'monthly' then 43200
-         when 'yearly' then 525600
-         else 1440
-       end;
-  u := u / f;
+  u := ENEWS.WA.channel_update_period (p, f);
 
   dt := now();
   declare cr static cursor for select EF_ID,
@@ -894,7 +916,8 @@ create procedure ENEWS.WA.feeds_agregator (
   whenever not found goto enf;
   open cr (exclusive, prefetch 1);
   fetch cr first into id, uri, days, tag;
-  while (1) {
+  while (1)
+  {
     bm := bookmark(cr);
     err := 0;
     close cr;
@@ -3495,7 +3518,8 @@ create procedure ENEWS.WA.sfolder_delete(
 create procedure ENEWS.WA.tag_prepare(
   in tag varchar)
 {
-  if (not is_empty_or_null(tag)) {
+  if (not is_empty_or_null(tag))
+  {
     tag := trim(tag);
     tag := trim(tag, '\n');
     tag := trim(tag, '\r');

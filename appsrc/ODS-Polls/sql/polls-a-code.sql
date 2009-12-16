@@ -353,6 +353,24 @@ create procedure POLLS.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.url_fix (
   in S varchar,
   in sid varchar := null,
@@ -791,7 +809,7 @@ create procedure POLLS.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U/polls/%U', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id), POLLS.WA.domain_name (domain_id));
+  S := POLLS.WA.iri_fix (POLLS.WA.forum_iri (domain_id));
   return POLLS.WA.url_fix (S, sid, realm);
 }
 ;
@@ -890,7 +908,7 @@ create procedure POLLS.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (POLLS.WA.domain_owner_id (domain_id), null));
+  S := POLLS.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (POLLS.WA.domain_owner_id (domain_id), null)));
   return POLLS.WA.url_fix (S, sid, realm);
 }
 ;

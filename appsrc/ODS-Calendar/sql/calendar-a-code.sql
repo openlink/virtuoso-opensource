@@ -308,6 +308,24 @@ create procedure CAL.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.url_fix (
   in S varchar,
   in sid varchar := null,
@@ -801,7 +819,7 @@ create procedure CAL.WA.domain_ping (
 create procedure CAL.WA.domain_iri (
   in domain_id integer)
 {
-  return sprintf ('http://%s/dataspace/%U/calendar/%U', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
+  return SIOC..calendar_iri (CAL.WA.domain_name (domain_id));
 }
 ;
 
@@ -814,7 +832,7 @@ create procedure CAL.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := sprintf ('http://%s/dataspace/%U/calendar/%U', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
+  S := CAL.WA.iri_fix (CAL.WA.domain_iri (domain_id));
   return CAL.WA.url_fix (S, sid, realm);
 }
 ;
@@ -913,7 +931,7 @@ create procedure CAL.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (CAL.WA.domain_owner_id (domain_id), null));
+  S := CAL.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (CAL.WA.domain_owner_id (domain_id), null)));
   return CAL.WA.url_fix (S, sid, realm);
 }
 ;

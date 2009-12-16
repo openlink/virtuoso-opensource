@@ -369,6 +369,24 @@ create procedure AB.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.url_fix (
   in S varchar,
   in sid varchar := null,
@@ -820,15 +838,6 @@ create procedure AB.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.domain_iri (
-  in domain_id integer)
-{
-  return sprintf ('http://%s/dataspace/%U/addressbook/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), AB.WA.domain_name (domain_id));
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure AB.WA.forum_iri (
   in domain_id integer)
 {
@@ -843,7 +852,7 @@ create procedure AB.WA.domain_sioc_url (
   in sid varchar := null,
   in realm varchar := null)
 {
-  return AB.WA.url_fix (AB.WA.domain_iri (domain_id), sid, realm);
+  return AB.WA.url_fix (AB.WA.iri_fix (AB.WA.forum_iri (domain_id)), sid, realm);
 }
 ;
 
@@ -956,7 +965,7 @@ create procedure AB.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (AB.WA.domain_owner_id (domain_id), null));
+  S := AB.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (AB.WA.domain_owner_id (domain_id), null)));
   return AB.WA.url_fix (S, sid, realm);
 }
 ;
