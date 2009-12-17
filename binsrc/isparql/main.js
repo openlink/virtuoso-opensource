@@ -174,7 +174,7 @@ iSPARQL.QueryExec = function(optObj) {
 	var req = { query:opts.query, format:opts.format };
 
 	if (opts.defaultGraph && !opts.query.match(/from *</i)) { req["default-graph-uri"] = opts.defaultGraph; }
-	if (opts.limit) { req["maxrows"] = opts.limit; }
+	if (opts.maxrows) { req["maxrows"] = opts.maxrows; }
 	if (opts.sponge && self.options.virtuoso) { req["should-sponge"] = opts.sponge; }
 
 	var arr = [];
@@ -188,10 +188,10 @@ iSPARQL.QueryExec = function(optObj) {
 	    if (opts.callback) { opts.callback(data); }
 	}
 
-	if (opts.endpoint.match(/^http/i)) {
-	    var query = "url=" + encodeURIComponent(opts.endpoint + "?" + arr.join ("&"));
-	    opts.endpoint = "/proxy";
-	}
+//	if (opts.endpoint.match(/^http/i)) {
+//	    var query = "url=" + encodeURIComponent(opts.endpoint + "?" + arr.join ("&"));
+//	    opts.endpoint = "/proxy";
+//	}
 
 	var o = {
 	    onerror:opts.errorHandler,

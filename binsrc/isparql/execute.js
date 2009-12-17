@@ -58,7 +58,8 @@ var QueryExec = function(optObj) {
 		div:false,
 		virtuoso:false,
 		executeCallback:false
-	}
+    };
+
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
 	this.queryOptions = {
@@ -73,8 +74,8 @@ var QueryExec = function(optObj) {
 		defaultGraph:false,
 		namedGraphs:[],
 		sponge:false,
-		limit:false
-	}
+	maxrows:false
+    };
 
 	this.cache = [];
 	this.cacheIndex = -1;
@@ -118,7 +119,7 @@ var QueryExec = function(optObj) {
 		OAT.Event.attach(self.dom.check,"click",function(){
 			if (self.cacheIndex > -1) { self.draw(); }
 		});
-	}
+    };
 
 	this.initNav = function() {
 		var ip = OAT.Preferences.imagePath;
@@ -161,7 +162,7 @@ var QueryExec = function(optObj) {
 			}
 		});
 		self.refreshNav();
-	}
+    };
 
 	this.refreshNav = function() {
 		var activate = function(elm) {
@@ -187,20 +188,20 @@ var QueryExec = function(optObj) {
 			deactivate(self.dom.next);
 			deactivate(self.dom.last);
 		}
-	}
+    };
 
 	this.isNew = function(query) {
 		if (self.cacheIndex == -1) { return true; }
 		var cache = self.cache[self.cacheIndex];
 		return (cache.opts.query != query);
-	}
+    };
 
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
 
 		paramsObj["format"] = "application/rdf+xml";
 		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
-	if (opts.maxrows) { paramsObj["maxrows"] = opts.maxrows; }
+	if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { paramsObj["maxrows"] = opts.maxrows; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
@@ -232,11 +233,11 @@ var QueryExec = function(optObj) {
 	}
 
 		return arr.join("&");
-	}
+    };
 
 	this.addResponse = function(request,opts,wasError,data) { /* something arrived. maybe cache and visualize */
 		if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
-		if (self.isNew(opts.query)) {
+	if (self.isNew(opts.query) || (self.cache[self.cacheIndex].wasError && !wasError)) {
 			var cache = {
 				opts:opts,
 				wasError:wasError,
@@ -247,18 +248,16 @@ var QueryExec = function(optObj) {
 			self.cacheIndex = self.cache.length-1;
 		}
 		self.draw();
-    },
+    };
+
     this.makeMiniRDFPlinkURI = function (caller,msg,o) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 	var request = item.request;
 	var plnk = self.miniplnk;
 
-	var nloca = document.location.toString();
-	var pidxa = nloca.indexOf('?');
-	nloca = (pidxa ? nloca.substring(0, pidxa) : nloca);
+	var nloca = document.location;
 
-	var xec = nloca.indexOf('execute.html');
 	var xparm = "?query=" + encodeURIComponent(opts.query);
 
 	if (opts.endpoint)
@@ -267,19 +266,18 @@ var QueryExec = function(optObj) {
         xparm = xparm + "&resultview=" + self.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 
-	if (xec != -1)
- 	    plnk.href = nloca + xparm;
-	else
-	    plnk.href = nloca + "execute.html" + xparm;
-
 	plnk.target = "_blank";
-    },
+	plnk.href= nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
+
+    }
+
     this.parseTabIndex = function (rvVal, tabs) {
 	for (var i=0;i < tabs.length;i++) {
 	    if (rvVal == tabs[i][0]) return i;
 	}
 	return 0;
-    },
+    };
+
 	this.drawTable = function() {
 		OAT.Dom.clear(self.dom.result);
 
@@ -316,19 +314,13 @@ var QueryExec = function(optObj) {
 
 		var execURIa = OAT.Dom.create ("a");
 		execURIa.innerHTML = "Execute Permalink";
-		var nloca = document.location.toString();
-		var pidxa = nloca.indexOf('?');
-		nloca = (pidxa ? nloca.substring(0, pidxa) : nloca)
+	var nloca = document.location;
 
-		var xec = nloca.indexOf('execute.html');
 	        var xparm = "?" + request + "&endpoint="  + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 
-		if (xec != -1) 
- 	    execURIa.href = nloca + "?" + xparm;
-		else
-		    execURIa.href = nloca + "execute.html" + xparm;
+	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 
 		execURIa.target = "_blank";
 
@@ -401,7 +393,8 @@ var QueryExec = function(optObj) {
 				}
 			}
 		}
-    },
+    };
+
     this.makeErrorMsg = function (data) {
 	var msg;
 	var r = data.match(/Error (..[0-9]{3})/);
@@ -411,18 +404,22 @@ var QueryExec = function(optObj) {
 		msg += "<p>Resource not found<br/>Check your query and try again</p>";
 	}
 	else if (data.match(/Error HTCLI/)) {
-	    msg="<h3>Proxy connection error</h3><p>The proxy could not connect to the endpoint. Please try again later.</p>"
+	    msg = "<h3>Proxy connection error</h3><p>The proxy could not connect to the endpoint ";
+	    msg += "<span class=\"endpoint_url\">" + self.cache[self.cacheIndex].opts.endpoint;
+	    msg += "</span>. Please try again later.</p>";
 	}
 	msg += "<p>See Response tab for full response from SPARQL endpoint.</p>"
 	return msg;
-    },
+    };
+
     this.makeErrorResp = function (data) {
 	var txt = OAT.Xml.serializeXmlDoc(data);
 	if (txt.length == 0) 
 	    txt = data;
 	txt = "<pre>"+txt+"</pre>";
 	return txt;
-    },
+    };
+
 	this.draw = function() {
 		var item = self.cache[self.cacheIndex];
 		var opts = item.opts;
@@ -459,10 +456,13 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.append([self.dom.query,a,q]);
 
-		if (wasError) {
+	if (wasError && !data.match(/Error SR171/)) { // Timeout SR171 means there may be data to display
 			/* trap http codes */
 	    self.dom.result.innerHTML = self.makeErrorMsg (data);
 	    self.dom.response.innerHTML = self.makeErrorResp (data);
+	    self.tab.go(0); // buggy JS in FireFox...
+	    self.refreshNav();
+	    return;
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
 			txt = OAT.Xml.escape(txt);
@@ -477,11 +477,13 @@ var QueryExec = function(optObj) {
 					["triples","Grid View",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
-					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}]
+		    ["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y, markerMode: OAT.RDFTabsData.MARKER_MODE_AUTO}]
 				];
 
 				if(self.mini) {
 					lastIndex = self.mini.select.selectedIndex;
+		    OAT.Dom.clear (self.dom.result);
+		    OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
 				}
 		else {
 		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
@@ -490,9 +492,10 @@ var QueryExec = function(optObj) {
 		self.mRDFCtr = OAT.Dom.create ("div");
 		self.mRDFCtr.id = "mini_rdf_ctr";
 		OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
-		self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,showSearch:false});
+		    self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,
+							      showSearch:false});
 		}
-
+		self.tab.go(0); // got to do here or maps won't resize properly.
 				self.mini.processLink = self.processLink;
 				self.mini.store.addXmlDoc(data);
 				self.mini.select.selectedIndex = lastIndex;
@@ -506,10 +509,9 @@ var QueryExec = function(optObj) {
 				self.drawTable();
 			}
 		}
-
 		self.tab.go(0);
 		self.refreshNav();
-	}
+    };
 
 	this.simplifyPrefix = function(str) {
 		var plist = window.defaultPrefixes;
@@ -524,7 +526,7 @@ var QueryExec = function(optObj) {
 			}
 		}
 		return s;
-	}
+    };
 
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function(event) {
@@ -548,7 +550,7 @@ var QueryExec = function(optObj) {
 
 			o.backupQuery = bq;
 			self.execute(o);
- 		}
+ 	};
 
 		var selectRef = function(event) {
 			OAT.Dom.prevent(event);
@@ -564,7 +566,7 @@ var QueryExec = function(optObj) {
 
 			o.query = q;
 			self.execute(o);
-		}
+	};
 
 		var genRef = function() {
 			var ul = OAT.Dom.create("ul",{marginLeft:"20px",marginTop:"10px"});
@@ -592,7 +594,7 @@ var QueryExec = function(optObj) {
 			OAT.Dom.append([ul,li],[li,a]);
 
 			return ul;
-		}
+	};
 
 		var obj = {
 			title:"URL",
@@ -621,7 +623,7 @@ var QueryExec = function(optObj) {
 
 //	domNode.parentNode.appendChild(img1);
 //	domNode.parentNode.appendChild(a);
-	}
+    };
 
 	this.execute = function(optObj) {
 		var opts = {};
@@ -632,7 +634,8 @@ var QueryExec = function(optObj) {
 		var callback = function(data) {
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }
-		}
+	};
+
 		var onerror = function(xhr) {
 			var txt = xhr.getResponseText();
 			if (txt.match(/SP031/) && optObj.backupQuery) {
@@ -645,13 +648,14 @@ var QueryExec = function(optObj) {
 				self.addResponse(request,optObj,1,txt);
 				if (opts.onerror) { opts.onerror(txt); }
 			}
-		}
+	};
+
 		var o = {
 			type:OAT.AJAX.TYPE_XML,
 			onstart:opts.onstart,
 			onend:opts.onend,
 			onerror:onerror
-		}
+	};
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
 
