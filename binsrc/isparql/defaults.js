@@ -8,6 +8,7 @@ iSPARQL.defaults = {
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
 		 "http://myopenlink.net:8890/sparql/",
+		 "http://dbpedia.org/sparql",
 		 "http://www.govtrack.us/sparql",
 		 "http://xmlarmyknife.org/api/rdf/sparql/query",
 		 "http://www.sparql.org/sparql",

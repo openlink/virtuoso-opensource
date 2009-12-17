@@ -751,11 +751,6 @@ iSPARQL.QBE = function (def_obj) {
 	    var callback = function(data) {
 		var JSONData = eval('(' + data + ')');
 
-		if (JSONData.results.bindings.length > 1500) { // XXXX this must go away as soon as local schema update is implemented
-		    alert("Schema too large ("+JSONData.results.bindings.length+"). Not updating the schema tree");
-		    return;
-		}
-
 		var insert = function(obj,type,schemaParts) {
 		    var uri = obj.uri.value;
 		    var parts = self.getPrefixParts(uri);
@@ -787,9 +782,26 @@ iSPARQL.QBE = function (def_obj) {
 			    break;
 			}
 		    } /* for all elements */
-		    for (var i=0;i<classes.length;i++) { var c = classes[i]; var type = 'class'; insert(c,type,schemaParts); }
-		    for (var i=0;i<attrs.length;i++) { var a = attrs[i]; var type = 'property_attr'; insert(a,type,schemaParts); }
-		    for (var i=0;i<rels.length;i++) { var r = rels[i]; var type = 'property_rel'; insert(r,type,schemaParts); }
+		    var lmax = min (classes.length, 200);
+		    for (var i=0;i<lmax;i++) {
+			var c = classes[i];
+			var type = 'class';
+			insert(c,type,schemaParts);
+		    }
+
+		    var lmax = min (attrs.length, 200);
+		    for (var i=0;i<lmax;i++) {
+			var a = attrs[i];
+			var type = 'property_attr';
+			insert(a,type,schemaParts);
+		    }
+
+		    var lmax = min (rels.length, 200);
+		    for (var i=0;i<lmax;i++) {
+			var r = rels[i];
+			var type = 'property_rel';
+			insert(r,type,schemaParts);
+		    }
 		} /* if data ok */
 	    }
 	    var oldIcon = "";
@@ -819,7 +831,7 @@ iSPARQL.QBE = function (def_obj) {
 		'ORDER BY ?uri',
 		//default_graph_uri:node.li.uri,
 		default_graph_uri:'',
-		maxrows:0,
+		maxrows:1000,
 		should_sponge:((node.bound)?'':'soft'),
 		format:'application/sparql-results+json',
 		errorHandler:function(xhr) {
@@ -1440,7 +1452,7 @@ iSPARQL.QBE = function (def_obj) {
 	    sponge:$v("qbe_sponge"),
 	    endpoint:iSPARQL.endpointOpts.endpointPath,
 	    pragmas:iSPARQL.endpointOpts.pragmas,
-	    limit:iSPARQL.dataObj.maxrows
+	    maxrows:iSPARQL.dataObj.maxrows
 	}
 	qe.execute(p);
     }
