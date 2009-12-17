@@ -936,12 +936,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	OAT.RDFTabs.parent(self);
 	
 	this.options = {
-	provider:OAT.MapData.TYPE_Y,
+		provider:OAT.MapData.TYPE_Y,
 		fix:OAT.MapData.FIX_ROUND1,
-	markerMode: OAT.RDFTabsData.MARKER_MODE_DISTINCT_O, // backwards compatible default
+		markerMode: OAT.RDFTabsData.MARKER_MODE_DISTINCT_O, // backwards compatible default
 		description:"This module plots all geodata found in filtered resources onto a map.",
-		desc:"Plots all geodata onto a map"
+		desc:"Plots all geodata onto a map",
+		clickPopup:true,
+		hoverPopup:true
 	}
+
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.map = false;
@@ -1073,7 +1076,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	this.attachMarker = function(coords,item) {
 		var m = false;
-		var callback = function() { /* draw item contents */
+	var clickCB = function() { /* draw item contents */
 			if (OAT.AnchorData && OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 			var div = OAT.Dom.create("div",{overflow:"auto",width:"450px",height:"250px"});
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
@@ -1097,10 +1100,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-
 	var file = self.getMarker(item);
 
-		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback,callback);	
+	m = self.map.addMarker(1,coords[0],coords[1],file,18,41,self.options.clickPopup?clickCB:false,self.options.hoverPopup?clickCB:false);	
 	}
 	
 	this.redraw = function() {
