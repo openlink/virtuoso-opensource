@@ -246,7 +246,25 @@ typedef unsigned char * db_buf_t;
 
 
 
+#ifdef WORDS_BIGENDIAN
 
+#define INT64_REF(p) \
+    ( \
+      (  ((int64)((short*)(p))[0]) << 48) \
+      | (((int64)((unsigned short*)(p))[1]) << 32) \
+      | (((int32)((unsigned short*)(p))[2]) << 16) \
+      | (((unsigned short*)(p))[3]) \
+    )
+
+#define INT64_SET(p, v) \
+	{ \
+	  ((unsigned short *) (p))[0] = (unsigned short)((v) >> 48); \
+	  ((unsigned short *) (p))[1] = (unsigned short)((v) >> 32); \
+	  ((unsigned short *) (p))[2] = (unsigned short)((v) >> 16); \
+	  ((unsigned short *) (p))[3] = (unsigned short)(v); \
+       	}
+
+#else
 
 /* row layout as 2 32 bit words, aligned on 4, machine byte order, most significant first */
 
@@ -259,7 +277,7 @@ typedef unsigned char * db_buf_t;
   {((unsigned int32*)(place))[0] = (v) >> 32; \
   ((unsigned int32*)(place))[1] = (int32)(v); }
 
-
+#endif
 
 /* Index entry flags. Used only for uncommitted rows */
 

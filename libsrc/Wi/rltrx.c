@@ -1803,7 +1803,10 @@ void
 lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev,
 		 buffer_desc_t * buf, db_buf_t row, char op)
 {
-  dtp_t image [MAX_ROW_BYTES];
+  union {
+      short dummy;
+      dtp_t image [MAX_ROW_BYTES];
+    } image_union;
   key_ver_t kv = IE_KEY_VERSION (row);
   row_fill_t rf;
   dbe_key_t * key = buf->bd_tree->it_key->key_versions[kv];
@@ -1817,7 +1820,7 @@ lt_rb_new_entry (lock_trx_t * lt, uint32 rb_code, rb_entry_t * prev,
     }
 
   rf.rf_row = lt->lt_rb_page + lt->lt_rbp_fill;
-  rf.rf_large_row = &image[0];
+  rf.rf_large_row = &(image_union.image[0]);
   rf.rf_fill = min_len;
   rf.rf_pf_hash = NULL;
   rf.rf_space = PAGE_DATA_SZ - lt->lt_rbp_fill;
