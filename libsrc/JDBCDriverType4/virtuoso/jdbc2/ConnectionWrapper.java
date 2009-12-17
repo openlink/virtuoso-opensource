@@ -847,7 +847,7 @@ public class ConnectionWrapper implements java.sql.Connection {
           || vendor == VirtuosoException.CLOSED
           || vendor == VirtuosoException.EOF
           || vendor == VirtuosoException.NOLICENCE
-          || vendor == VirtuosoException.UNKNOWN)
+          || vendor == VirtuosoException.UNKNOWN && pconn != null)
         pconn.sendErrorEvent(ex);
   }
 
