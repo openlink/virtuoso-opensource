@@ -225,7 +225,7 @@ create procedure ENEWS.WA.check_feed_grants (
   if (ENEWS.WA.check_admin ( user_id))
     return 1;
 
-  return coalesce ((select 1 from ENEWS.WA.FEED_ACCESS where EFA_FEED_ID = feed_id and EFA_USER_ID = user_id), 0);
+  return 0;
 }
 ;
 

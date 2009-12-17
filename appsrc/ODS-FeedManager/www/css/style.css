@@ -29,6 +29,11 @@ body
   font-size: 9pt;
 }
 
+.pointer
+{
+  cursor: pointer;
+}
+
 a
 {
   text-decoration: none

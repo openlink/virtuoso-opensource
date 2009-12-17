@@ -100,13 +100,17 @@ ENEWS.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.channel_trigger (
-  in id any,
+create procedure ENEWS.WA.channel_update_period (
   in period any,
-  in freq any)
+  in freq any,
+  in checkNull integer := 0)
 {
-  declare upd int;
+  declare upd integer;
 
+  if (checkNull and isnull (period))
+    return 0;
+  if (checkNull and isnull (freq))
+    return 0;
   period := lower (coalesce (period, 'daily'));
 
   -- Hourly, Daily, Weekly, Monthly, Yearly
@@ -118,11 +122,19 @@ create procedure ENEWS.WA.channel_trigger (
            when 'yearly' then 525600
            else 1440
          end;
-  upd := upd / freq;
-  set triggers off;
+  return upd / freq;
+};
 
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.channel_trigger (
+  in id integer,
+  in period any,
+  in freq any)
+{
+  set triggers off;
   update ENEWS.WA.FEED
-     set EF_UPDATE = upd
+     set EF_UPDATE = ENEWS.WA.channel_update_period (period, freq)
    where EF_ID = id;
 };
 
