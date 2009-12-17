@@ -37,6 +37,14 @@
 	
 	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider .rdf_tagcloud .rdf_tagcloud_title
 */
+
+
+OAT.RDFTabsData = {
+    MARKER_MODE_DISTINCT_O: 1, // Old default behaviour - distinct markers by ouri
+    MARKER_MODE_BY_TYPE:    2, // Markers by item type match
+    MARKER_MODE_EXPLICIT:   3,  // Markers by explicit property oat:rdfTabsMarker <marker URL>
+};
+
 if (!OAT.RDFTabs) { OAT.RDFTabs = {}; }
 
 OAT.RDFTabs.parent = function(obj) {
@@ -928,8 +936,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	OAT.RDFTabs.parent(self);
 	
 	this.options = {
-		provider:OAT.MapData.TYPE_G,
+	provider:OAT.MapData.TYPE_Y,
 		fix:OAT.MapData.FIX_ROUND1,
+	markerMode: OAT.RDFTabsData.MARKER_MODE_DISTINCT_O, // backwards compatible default
 		description:"This module plots all geodata found in filtered resources onto a map.",
 		desc:"Plots all geodata onto a map"
 	}
@@ -942,7 +951,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.elm.style.position = "relative";
 	this.elm.style.height = "600px";
 	
-	this.keyProperties    = ["based_near","http://www.w3.org/2003/01/geo/wgs84_pos", "foaf:based_near", "geo:wgs84_pos"]; /* containing coordinates */
+    this.keyProperties    = ["based_near","http://www.w3.org/2003/01/geo/wgs84_pos","foaf:based_near","geo:wgs84_pos","geo:geometry","geometry"]; /* containing coordinates */
 	this.locProperties    = ["location", "foaf:location", "vcard:Locality"]; /* containing location */
 	this.latProperties    = ["geo:lat","geo:latitude", "lat", "latitude", "vcard:latitude"];
 	this.lonProperties    = ["geo:lng","geo:lon","geo:long","geo:longitude", "lon", "long", "longitude", "vcard:longitude"];
@@ -979,7 +988,19 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			self.geoCode(locValue,item);
 			return;
 		}
+	if (typeof(pointResource == "string")) { // handle geo:geometry coords
+	    var cmatches = pointResource.match (/POINT\((\d+\.*\d*) (\d+\.*\d*)/)
+	    if (cmatches.length == 3) {
+		coords[0] = cmatches[2];
+		coords[1] = cmatches[1];
+		if (coords[0] == 0 || coords[1] == 0) { return; }
+		self.pointList.push(coords);
+		self.attachMarker(coords,item);
+		return;
+	    }
+	}
 		if (typeof(pointResource) != "object") { return; } /* not a reference */
+
 		self.usedBlanknodes.push(pointResource);
 		/* normal marker add */
 		var it = pointResource;
@@ -1010,6 +1031,46 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.attachMarker(coords,item);
 	} /* trySimple */
 
+    this.getMarker = function(item) {
+	var markerPath = OAT.Preferences.imagePath+"markers/";
+	var markerFile;
+	var mpred;
+
+	switch (self.options.markerMode) {
+	case OAT.RDFTabsData.MARKER_MODE_DISTINCT_O:
+            var ouri = item.ouri;
+            if (!(ouri in self.markerMapping)) {
+                self.markerMapping[ouri] = self.markerFiles[self.markerIndex % self.markerFiles.length];
+                self.markerIndex++;
+            }
+            markerFile = self.markerMapping[ouri];
+	    break;
+	case OAT.RDFTabsData.MARKER_MODE_BY_TYPE:
+	    return markerPath + '01.png';
+	    break;
+	case OAT.RDFTabsData.MARKER_MODE_EXPLICIT:
+	    mpred = item.preds['http://www.openlinksw.com/schemas/oat/rdftabs#useMarker'];
+	    if (typeof (mpred) != 'undefined')
+		markerFile = markerPath + mpred + '.png';
+	    break;
+	case OAT.RDFTabsData.MARKER_MODE_AUTO:
+	    mpred = item.preds['http://www.openlinksw.com/schemas/oat/rdftabs#useMarker'];
+	    if (typeof (mpred) != 'undefined') { // explicit marker def takes precedence
+		markerFile = markerPath + mpred + '.png';
+		break;
+	    }
+	    else {
+		markerFile = self.getMarkerByType (item);
+	    }
+
+	}
+	return markerFile;
+    }
+
+    this.getMarkerByType = function (item) { // XXX not implemented
+	return '01.png'; 
+    }
+
 	this.attachMarker = function(coords,item) {
 		var m = false;
 		var callback = function() { /* draw item contents */
@@ -1036,12 +1097,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-		var ouri = item.ouri;
-		if (!(ouri in self.markerMapping)) {
-			self.markerMapping[ouri] = self.markerFiles[self.markerIndex % self.markerFiles.length];
-			self.markerIndex++;
-		}
-		var file = self.markerMapping[ouri];
+
+	var file = self.getMarker(item);
+
 		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback,callback);	
 	}
 	
@@ -1073,7 +1131,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			}
 		}
 
-		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
+	self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix},self.options.specificOpts);
 		self.map.loadApi(self.options.provider,cb);
 		
 		OAT.Resize.createDefault(self.elm);
