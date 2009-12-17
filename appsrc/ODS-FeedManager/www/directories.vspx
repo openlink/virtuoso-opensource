@@ -206,8 +206,10 @@
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare exit handler for SQLSTATE '*' {
-                  if (__SQL_STATE = 'TEST') {
+                declare exit handler for SQLSTATE '*'
+                {
+                  if (__SQL_STATE = 'TEST')
+                  {
                     self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
                  		self.vc_is_valid := 0;
               		  return;
@@ -226,7 +228,8 @@
                 if ((self.v_mode <> 'create') and ENEWS.WA.directory_check_parent(self.v_id, self.v_parent_id))
                   signal('TEST', 'Please, enter other parent directory. This directory is superior of the selected parent directory!<>');
 
-    	        if (self.v_mode = 'create') {
+      	        if (self.v_mode = 'create')
+      	        {
       	          insert into ENEWS.WA.DIRECTORY(ED_PARENT_ID, ED_NAME) values(self.v_parent_id, self.f_name.ufl_value);
       	        } else {
       	          update ENEWS.WA.DIRECTORY
