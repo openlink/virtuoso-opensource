@@ -441,14 +441,10 @@ var QueryExec = function(optObj) {
 
 		var a = OAT.Dom.create("a");
 		a.innerHTML = "Query Permalink";
-		var nloc = document.location.toString();
-		var pidx = nloc.indexOf('?');
-		var xec = nloc.indexOf('execute.html');
 	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-		nloc = (pidx ? nloc.substring(0, xec ? xec : pidx) : nloc);
-	        a.href = nloc + xparm;
+	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
 		a.target = "_blank";
 
 		var q = OAT.Dom.create("pre");
@@ -477,7 +473,10 @@ var QueryExec = function(optObj) {
 					["triples","Grid View",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
-		    ["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y, markerMode: OAT.RDFTabsData.MARKER_MODE_AUTO}]
+		    ["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y, 
+					markerMode:OAT.RDFTabsData.MARKER_MODE_AUTO,
+					clickPopup:true,
+					hoverPopup:false}] 
 				];
 
 				if(self.mini) {
