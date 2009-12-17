@@ -606,6 +606,7 @@ public class VirtuosoResultSet implements ResultSet
 			      (String)result.elementAt(2),
 			      (String)result.elementAt(1),
 			      VirtuosoException.SQLERROR));
+		  break;
                case VirtuosoTypes.QA_PROC_RETURN:
                   //System.out.println("---> QA_PROC_RETURN " + result + " " + statement.objparams);
                   // Copy out parameters in the parameter vector
