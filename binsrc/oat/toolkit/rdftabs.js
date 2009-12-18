@@ -43,6 +43,7 @@ OAT.RDFTabsData = {
     MARKER_MODE_DISTINCT_O: 1, // Old default behaviour - distinct markers by ouri
     MARKER_MODE_BY_TYPE:    2, // Markers by item type match
     MARKER_MODE_EXPLICIT:   3,  // Markers by explicit property oat:rdfTabsMarker <marker URL>
+    MARKER_MODE_AUTO:       4
 };
 
 if (!OAT.RDFTabs) { OAT.RDFTabs = {}; }
@@ -1063,7 +1064,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		break;
 	    }
 	    else {
-		markerFile = self.getMarkerByType (item);
+		markerFile = markerPath + self.getMarkerByType (item);
 	    }
 
 	}
