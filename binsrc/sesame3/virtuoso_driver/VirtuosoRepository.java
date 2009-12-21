@@ -67,6 +67,7 @@ public class VirtuosoRepository implements Repository {
 	private String host = "localhost";
 	private int port = 1111;
 	private String charset = "UTF-8";
+	private boolean roundrobin = false;
 	String defGraph;
 
 	boolean useLazyAdd = false;
@@ -311,6 +312,7 @@ public class VirtuosoRepository implements Repository {
 			pds.setUser(user);
 			pds.setPassword(password);
 			pds.setCharset(charset);
+			pds.setRoundrobin(roundrobin);
 			javax.sql.PooledConnection pconn = pds.getPooledConnection();
 			java.sql.Connection connection = pconn.getConnection();
 			return new VirtuosoRepositoryConnection(this, connection);
@@ -334,8 +336,26 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Get the buffer fetch size
 	 */
-	public int getFetchSize(int sz) {
+	public int getFetchSize() {
 		return this.prefetchSize;
+	}
+
+
+	/**
+	 * Set the RoundRobin state for connection(default false) 
+	 * 
+	 * @param sz
+	 *        buffer fetch size.
+	 */
+	public void setRoundrobin(boolean v) {
+		this.roundrobin = v;
+	}
+
+	/**
+	 * Get the RoundRobin state for connection
+	 */
+	public boolean getRoundrobin() {
+		return this.roundrobin;
 	}
 
 
