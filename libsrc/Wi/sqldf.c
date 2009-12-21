@@ -4466,8 +4466,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
 	      /* not scored yet */
 	      sqlo_score (dfe->dfe_super, dfe->dfe_super->_.sub.in_arity);
 	    }
-	  sub_arity = dfe->dfe_arity;
-	  break;
+	  sub_arity *= dfe->dfe_arity;
 	}
       dfe = dfe->dfe_prev;
     }
@@ -4576,7 +4575,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dt_mode = (int) (ptrlong) sqlo_opt_value (super_ot->ot_opts, OPT_JOIN);
   if (!mode)
     mode = dt_mode;
-  if (!mode && 100 > dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key))
+  if (0 && !mode && 100 > dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key))
     return 0; /* temp patch to avoid hash joins of lookups breaking colocation in tpch */
   ref_arity = dfe_arity_with_supers (dfe->dfe_prev);
   if (!hash_join_enable || (mode && OPT_HASH != mode))
