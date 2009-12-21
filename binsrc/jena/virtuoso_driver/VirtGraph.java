@@ -51,12 +51,13 @@ public class VirtGraph extends GraphBase
     private String url_hostlist;
     private String user;
     private String password;
+    private boolean roundrobin = false;
     private int prefetchSize = 200;
     private Connection connection = null;
     static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
-    static final String utf8 = "charset=UTF-8";
+    static final String utf8 = "charset=utf-8";
     static final String charset = "UTF-8";
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
@@ -64,25 +65,32 @@ public class VirtGraph extends GraphBase
 
     public VirtGraph()
     {
-	this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
-    }
-
-    public VirtGraph(String url_hostlist, String user, String password)
-    {
-	this(null, url_hostlist, user, password);
+	this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null, false);
     }
 
     public VirtGraph(String graphName)
     {
-	this(graphName, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null);
+	this(graphName, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null, false);
     }
 
-    public VirtGraph(String graphName, String _url_hostlist, String user, String password)
+    public VirtGraph(String url_hostlist, String user, String password)
+    {
+	this(null, url_hostlist, user, password, false);
+    }
+
+    public VirtGraph(String graphName, String _url_hostlist, String user, 
+    		String password)
+    {
+	this(graphName, _url_hostlist, user, password, false);
+    }
+
+    public VirtGraph(String graphName, String _url_hostlist, String user, 
+    		String password, boolean _roundrobin)
     {
 	super();
 
 	this.url_hostlist = _url_hostlist.trim();
-
+	this.roundrobin = _roundrobin;
 	this.graphName = graphName;
 	this.user = user;
 	this.password = password;
@@ -95,11 +103,17 @@ public class VirtGraph extends GraphBase
 	        if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 
 	            String url = url_hostlist;
-                    if (url.indexOf(utf8) == -1) {
+                    if (url.toLowerCase().indexOf(utf8) == -1) {
 	  	        if (url.charAt(url.length()-1) != '/') 
-	                    url = url + "/" + utf8;
+	                    url = url + "/charset=UTF-8";
 	                else
-	                    url = url + utf8;
+	                    url = url + "charset=UTF-8";
+	            }
+                    if (roundrobin && url.toLowerCase().indexOf("roundrobin=") == -1) {
+	  	        if (url.charAt(url.length()-1) != '/') 
+	                    url = url + "/roundrobin=1";
+	                else
+	                    url = url + "roundrobin=1";
 	            }
 		    Class.forName("virtuoso.jdbc3.Driver");
 		    connection = DriverManager.getConnection(url, user, password);
@@ -108,6 +122,7 @@ public class VirtGraph extends GraphBase
 		    pds.setUser(user);
 		    pds.setPassword(password);
 		    pds.setCharset(charset);
+		    pds.setRoundrobin(roundrobin);
 		    javax.sql.PooledConnection pconn = pds.getPooledConnection();
 		    connection = pconn.getConnection();
 	        }

@@ -53,17 +53,18 @@ public class VirtuosoRepository implements Repository {
 	File dataDir;
 	
         private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
-	public String url_hostlist;
-	public String user;
-	public String password;
-	public String defGraph;
-	public boolean useLazyAdd = false;
-	public int prefetchSize = 200;
-	public int resultsHandlerType = 0;
+	private String url_hostlist;
+	private String user;
+	private String password;
+	private int resultsHandlerType = 0;
+	private boolean roundrobin;
 	private String charset = "UTF-8";
-        static final String utf8 = "charset=UTF-8";
+        static final String utf8 = "charset=utf-8";
 	private boolean initialized = false;
     
+	boolean useLazyAdd = false;
+	String defGraph;
+	int prefetchSize = 200;
 	
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
@@ -205,11 +206,18 @@ public class VirtuosoRepository implements Repository {
 			try {
 				Class.forName("virtuoso.jdbc4.Driver");
 				String url = url_hostlist;
-				if (url.indexOf(utf8) == -1) {
+				if (url.toLowerCase().indexOf(utf8) == -1) {
 	   				if (url.charAt(url.length()-1) != '/')
-	     					url = url + "/" + utf8;
+	     					url = url + "/charset=UTF-8";
 	   				else
-	     					url = url + utf8;
+	     					url = url + "charset=UTF-8";
+				}
+
+				if (roundrobin && url.toLowerCase().indexOf("roundrobin=") == -1) {
+	   				if (url.charAt(url.length()-1) != '/')
+	     					url = url + "/roundrobin=1";
+	   				else
+	     					url = url + "roundrobin=1";
 				}
 		
 				java.sql.Connection connection = DriverManager.getConnection(url, user, password);
@@ -226,6 +234,7 @@ public class VirtuosoRepository implements Repository {
 				pds.setUser(user);
 				pds.setPassword(password);
 				pds.setCharset(charset);
+				pds.setRoundrobin(roundrobin);
 				javax.sql.PooledConnection pconn = pds.getPooledConnection();
 				java.sql.Connection connection = pconn.getConnection();
 				return new VirtuosoRepositoryConnection(this, connection);
@@ -250,10 +259,28 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Get the buffer fetch size
 	 */
-	public int getFetchSize(int sz) {
+	public int getFetchSize() {
 		return this.prefetchSize;
 	}
 
+	/**
+	 * Set the RoundRobin state for connection(default false) 
+	 * 
+	 * @param sz
+	 *        buffer fetch size.
+	 */
+	public void setRoundrobin(boolean v) {
+		this.roundrobin = v;
+	}
+
+	/**
+	 * Get the RoundRobin state for connection
+	 */
+	public boolean getRoundrobin() {
+		return this.roundrobin;
+	}
+
+	
 	/**
 	 * Get the directory where data and logging for this repository is stored.
 	 * 
