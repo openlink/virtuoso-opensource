@@ -3223,6 +3223,11 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   read (fd, (char *) zero, PAGE_SZ);
   memcpy (cfg_page, zero, sizeof (*cfg_page));
   storage_ver = atoi (cfg_page->db_generic);
+  if (storage_ver < 3100)
+    {
+      log_error ("The database was created with a pre-6.0 server.  This server does not read this format.  Exiting.");
+      call_exit (-1);
+    }
   if (storage_ver > atoi (DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR))
     {
       log_error ("The database you are opening was last closed with a server of version %d." , storage_ver);
