@@ -78,12 +78,11 @@
   (hi->hi_buckets [(((uint32)code) % hi->hi_size) / HE_BPTR_PER_PAGE])
 #endif
 long hi_end_memcache_size = 1100000;
+int enable_mem_hash_join = 1;
 
-#if 1
-#define HA_MEMCACHE(ha) (ha->ha_op != HA_PROC_FILL && ha->ha_op != HA_FILL)
-#else
-#define HA_MEMCACHE(ha) (ha->ha_op != HA_PROC_FILL)
-#endif
+#define HA_MEMCACHE(ha) \
+  (HA_PROC_FILL == ha->ha_op ? 0 : HA_FILL == ha->ha_op ? enable_mem_hash_join : 0)
+
 #define set_dbg_fprintf(x)
 #define retr_dbg_fprintf(x)
 
@@ -2105,6 +2104,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
       if (qst_cont)
 	{
 	  BOX_AUTO((((caddr_t *)(&(hmk.hmk_data)))[0]), hmk_data_buf, n_keys * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	  qst[hs->hs_current_inx] = NULL;
 	  DO_BOX (state_slot_t *, ref, inx, hs->hs_ref_slots)
 	    {
 	      int d = 0;
@@ -2249,7 +2249,7 @@ hash_source_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont)
 	return;
       if (hi->hi_memcache)
 	{
-	  hash_source_input_memcache (hs, qst, qst_cont);
+	  hash_source_input_memcache (hs, qst, start ? qst : NULL);
 	  return;
 	}
 #ifdef NEW_HASH

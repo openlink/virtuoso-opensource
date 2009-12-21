@@ -2520,7 +2520,8 @@ fun_ref_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
     {
       setp_node_t * setp = fref->fnr_setp;
       hash_area_t * ha = setp->setp_ha;
-      itc_ha_flush_memcache (ha, inst);
+      if (HA_FILL != ha->ha_op)
+	itc_ha_flush_memcache (ha, inst);
       setp_filled (setp, state);
       setp_mem_sort_flush (setp, state);
       if (setp->setp_ordered_gb_fref)

@@ -182,6 +182,7 @@ extern long tc_unused_read_aside;
 extern long tc_read_aside;
 extern int em_ra_window;
 extern int em_ra_threshold;
+extern int enable_mem_hash_join;
 extern int enable_dfg;
 extern int enable_setp_partition;
 extern int enable_min_card;
@@ -1505,6 +1506,7 @@ stat_desc_t dbf_descs [] =
     {"cl_dfg_batch_bytes", &cl_dfg_batch_bytes, SD_INT32},
     {"cl_res_buffer_bytes", &cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", &cl_batches_per_rpc, SD_INT32},
+    {"enable_mem_hash_join", &    enable_mem_hash_join, SD_INT32},
     {"enable_dfg", &enable_dfg, SD_INT32},
     {"enable_setp_partition", &enable_setp_partition, SD_INT32},
     {"enable_dfg_print", &enable_dfg_print, SD_INT32},
