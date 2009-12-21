@@ -198,8 +198,9 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
 {
   it_map_t * itm;
   extent_map_t * em = it->it_extent_map;
-  int ext_type = (!it->it_blobs_with_index && (DPF_BLOB  == type || DPF_BLOB_DIR == type)) ? EXT_BLOB : EXT_INDEX;
+  int ext_type = (!it->it_blobs_with_index && (DPF_BLOB  == type || DPF_BLOB_DIR == type)) ? EXT_BLOB : EXT_INDEX, n_tries;
   buffer_desc_t *buf;
+  buffer_pool_t * action_bp = NULL;
   dp_addr_t physical_dp;
 
   if (in_pmap)
@@ -227,7 +228,26 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
     it->it_n_index_est++;
   else
     it->it_n_blob_est++;
-  buf = bp_get_buffer (NULL, BP_BUF_REQUIRED);
+  for (n_tries =  0; ; n_tries++)
+    {
+      buf = bp_get_buffer_1 (NULL, &action_bp, BP_BUF_IF_AVAIL);
+      if (buf)
+	break;
+      if (action_bp)
+	bp_delayed_stat_action (action_bp);
+      action_bp = NULL;
+      if (n_tries > 10)
+	{
+	  log_error ("Signaling out of disk due to failure to get a buffer.  This condition is not a case of running out of disk");
+	  return NULL;
+	}
+      if (5 == n_tries)
+	log_info ("Failed to get a buffer for a new page. Retrying.  If the failure repeats, an out of disk error will be signnalled.  The cause of this is having too many buffers wired down for preread, flush or group by/hash join temp space.  To correct, increase the number of buffers in the configuration file.  If this repeats in spite of having hundreds of thousands  of buffers, please report to support.");
+      if (n_tries > 4)
+	virtuoso_sleep (0, 50000);
+    }
+  if (action_bp)
+    bp_delayed_stat_action (action_bp);
   if (buf->bd_readers != 1)
     GPF_T1 ("expecting buf to be wired down when allocated");
     buf_dbg_printf (("Buf %x new in tree %x dp=%d\n", buf, isp, physical_dp));
