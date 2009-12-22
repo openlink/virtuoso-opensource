@@ -357,14 +357,19 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
-         '\n SELECT ?c ?sc' ||
+         '\n SELECT distinct ?c ?sc' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
          '\n          ?c rdf:type owl:Class .' ||
-         '\n          OPTIONAL {?c rdfs:subClassOf ?sc }.' ||
+         '\n          OPTIONAL ' ||
+         '\n          { ' ||
+         '\n            ?c rdfs:subClassOf ?sc .' ||
+         '\n            filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n          }.' ||
          '\n          filter (str(?c) like "%s%%").' ||
          '\n        }' ||
-         '\n  ORDER BY ?c',
+         '\n  ORDER BY ?c ?sc',
+         ontology,
          ontology,
          ontology);
   data := ODS.ODS_API."ontology.sparql" (S);
@@ -572,7 +577,11 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'sioct','http://rdfs.org/sioc/types#',
                  'mo',   'http://purl.org/ontology/mo/',
                  'book', 'http://purl.org/NET/book/vocab#',
-                 'acl',  'http://www.w3.org/ns/auth/acl#'
+                 'acl',  'http://www.w3.org/ns/auth/acl#',
+                 'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
+                 'atom', 'http://atomowl.org/ontologies/atomrdf#',
+                 'annotation', 'http://www.w3.org/2000/10/annotation-ns#',
+                 'ibis', 'http://purl.org/ibis#'
                 );
 }
 ;

@@ -661,6 +661,28 @@ function updateComboOption10 (fld, fldValue, ontologyClassName)
   }
 }
 
+function sortSelect(obj)
+{
+	if (!obj || !obj.options) { return; }
+
+	var o = new Array();
+	for (var i=0; i<obj.options.length; i++) {
+		o[o.length] = new Option( obj.options[i].text, obj.options[i].value, obj.options[i].defaultSelected, obj.options[i].selected) ;
+	}
+	if (o.length==0) { return; }
+	o = o.sort(
+		function(a,b) {
+			if ((a.text+"") < (b.text+"")) { return -1; }
+			if ((a.text+"") > (b.text+"")) { return 1; }
+			return 0;
+			}
+		);
+
+	for (var i=0; i<o.length; i++) {
+		obj.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
+	}
+}
+
 function updateField1 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
@@ -812,6 +834,7 @@ function updateField10 (elm, fldName, prefix, No, fldOptions)
   updateComboOption2(fld, fldValue, '', '');
   updateComboOption10 (fld, fldValue, fld.product.objectClass);
   fld.onchange = function (){GR.changePropertyValue(fld);};
+  sortSelect (fld);
 
   var elm = $(elm);
   elm.appendChild(fld);
@@ -888,7 +911,7 @@ function updateField12 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
 
-  var fld = OAT.Dom.image("images/icons/orderdown_16.png");
+  var fld = OAT.Dom.image("images/throbber.gif");
   fld.id = fldName;
   fld.mode = 'show';
   fld.title = 'Show Items';
@@ -928,7 +951,7 @@ function updateField21 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
 
-  var fld = OAT.Dom.image("images/icons/orderdown_16.png");
+  var fld = OAT.Dom.image("images/throbber.gif");
   fld.id = fldName;
   fld.mode = 'show';
   fld.title = 'Show Properties';
@@ -960,6 +983,7 @@ function updateField30 (elm, fldName, prefix, No, fldOptions)
   updateComboOption2(fld, fldValue, '', '');
   updateComboOption30 (fld, fldValue, fld.item.className);
   fld.onchange = function(){RDF.changePropertyValue(fld);};
+  sortSelect (fld);
 
   var elm = $(elm);
   elm.appendChild(fld);
@@ -1909,24 +1933,29 @@ RDF.addItemType = function(prefix, No)
 {
   var tr = $(prefix+'_tr_'+No);
   if (!tr) {return;}
-  var fld = $(prefix+'_fld_2_' + No);
-  if (!fld) {return;}
-  var fValue = fld.value.trim();
-  if (fValue == '')
-    return alert ('Please enter value!');
+
+  var fld1 = $(prefix+'_fld_1_' + No);
+  if (!fld1) {return;}
+
+  var fld2 = $(prefix+'_fld_2_' + No);
+  if (!fld2) {return;}
+
+  var fValue = fld2.value.trim();
+  if (fValue == '') {return alert ('Please enter value!');}
+
   for (var i = 0; i < this.itemTypes.length; i++)
     if (this.itemTypes[i].ontology == fValue)
       return alert ('This favorite type already exists. Please enter another value!');
 
-  OAT.Dom.show(prefix+'_fld_1_'+No);
+  OAT.Dom.show(fld1);
   var td = $(prefix+'_td_'+No+'_2');
-  if (td)
-  {
+  if (!td) {return;}
+
     // create new item object
     var itemType = new Object();
     itemType.ontology = fValue;
     itemType.id = No;
-    this.loadOntology(itemType.ontology);
+    this.loadOntology(itemType.ontology, function(){fld1.onclick();});
 
     // add item
     this.itemTypes[this.itemTypes.length] = itemType;
@@ -1935,13 +1964,13 @@ RDF.addItemType = function(prefix, No)
     td.innerHTML = '';
 
     // add hidden item
-    td.appendChild(fld);
-    OAT.Dom.hide(fld);
+  td.appendChild(fld2);
+  OAT.Dom.hide(fld2);
 
     // show combo value as text
     var fld = OAT.Dom.text(fValue+' ('+this.ontologyPrefix(fValue)+')');
     td.appendChild(fld);
-  }
+
 	OAT.Dom.hide(prefix+'_btn_2_'+No);
 }
 
@@ -2064,20 +2093,23 @@ RDF.addItem = function(prefix, No)
   var tr = $(prefix+'_tr_'+No);
   if (!tr) {return;}
 
-  var fld = $(prefix+'_fld_2_' + No);
-  if (!fld) {return;}
+  var fld1 = $(prefix+'_fld_1_' + No);
+  if (!fld1) {return;}
 
-  var fValue = fld.value.trim();
+  var fld2 = $(prefix+'_fld_2_' + No);
+  if (!fld2) {return;}
+
+  var fValue = fld2.value.trim();
   if (fValue == '')
     return alert ('Please enter value!');
 
-  var itemType = fld.itemType;
+  var itemType = fld2.itemType;
   if (!itemType) {return;}
 
-  OAT.Dom.show(prefix+'_fld_1_'+No);
+  OAT.Dom.show(fld1);
   var td = $(prefix+'_td_'+No+'_2');
-  if (td)
-  {
+  if (!td) {return;}
+
     // create new item
     var item = new Object();
     item.className = fValue;
@@ -2088,12 +2120,15 @@ RDF.addItem = function(prefix, No)
       itemType.items = [];
     itemType.items[itemType.items.length] = item;
 
+  // load properties
+  this.loadClassProperties(item.className, function(){fld1.onclick();});
+
     // clear childs
     td.innerHTML = '';
 
     // add hidden item
-    td.appendChild(fld);
-    OAT.Dom.hide(fld);
+  td.appendChild(fld2);
+  OAT.Dom.hide(fld2);
 
     // show combo value as text
     var fld = OAT.Dom.text(fValue);
@@ -2101,7 +2136,7 @@ RDF.addItem = function(prefix, No)
 
     // update selectors
     RDF.addItemToSelects(item);
-  }
+
 	OAT.Dom.hide(prefix+'_btn_2_'+No);
 }
 

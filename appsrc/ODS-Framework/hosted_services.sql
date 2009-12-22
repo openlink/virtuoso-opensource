@@ -617,6 +617,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'ho
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_STORE_DAYS', 'integer default 30')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_HTTPS', 'integer default 0')
 ;
 
@@ -640,7 +643,21 @@ wa_exec_no_error(
 )
 ;
 
-wa_exec_no_error('create table WA_ACTIVITIES (
+wa_exec_no_error(
+'create table WA_SETTINGS_FEEDS
+ (
+   WSF_INSTANCE_ID integer,
+   WSF_ACCESS varchar,
+
+   constraint FK_WA_SETTINGS_FEEDS_01 FOREIGN KEY (WSF_INSTANCE_ID) references WA_INSTANCE (WAI_ID) ON DELETE CASCADE,
+
+   primary key (WSF_INSTANCE_ID)
+ )
+')
+;
+
+wa_exec_no_error(
+'create table WA_ACTIVITIES (
      WA_ID int identity,
      WA_U_ID int,
      WA_SRC_ID int,
