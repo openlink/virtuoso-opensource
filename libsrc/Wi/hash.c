@@ -1650,7 +1650,13 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   itc_ha_disk_row (itc, NULL, ha, qst, tree, var_len, code, feed_temp_blobs, NULL, NULL, NULL);
 #endif
 #ifdef NEW_HASH
-  itc_ha_disk_row (itc, NULL, ha, qst, tree, var_len, code, feed_temp_blobs, NULL, NULL, &hibp);
+  ITC_FAIL (itc)
+    {
+      itc_ha_disk_row (itc, NULL, ha, qst, tree, var_len, code, feed_temp_blobs, NULL, NULL, &hibp);
+    }
+  ITC_FAILED
+  END_FAIL (itc);
+
   if (ha_rehash_pct &&  hi->hi_count > (hi->hi_size / 100) * ha_rehash_pct
       && HI_NEXT_SIZE (hi) < HI_MAX_SIZE)
     ha_rehash (qst, ha, tree);
