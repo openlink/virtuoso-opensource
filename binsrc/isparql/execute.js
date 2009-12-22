@@ -190,10 +190,10 @@ var QueryExec = function(optObj) {
 		}
     };
 
-	this.isNew = function(query) {
+    this.isNew = function(opts) {
 		if (self.cacheIndex == -1) { return true; }
 		var cache = self.cache[self.cacheIndex];
-		return (cache.opts.query != query);
+	return (cache.opts.query != opts.query || cache.opts.endpoint != opts.endpoint || cache.opts.defaultGraph != opts.defaultGraph);
     };
 
 	this.buildRequest = function(opts) {
@@ -237,7 +237,7 @@ var QueryExec = function(optObj) {
 
 	this.addResponse = function(request,opts,wasError,data) { /* something arrived. maybe cache and visualize */
 		if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
-	if (self.isNew(opts.query) || (self.cache[self.cacheIndex].wasError && !wasError)) {
+	if (self.isNew(opts) || (self.cache[self.cacheIndex].wasError && !wasError)) {
 			var cache = {
 				opts:opts,
 				wasError:wasError,
@@ -296,8 +296,9 @@ var QueryExec = function(optObj) {
 			}
 		}
 
-		var h = OAT.Dom.create("h3");
+/*	var h = OAT.Dom.create("h3");
 		h.innerHTML = "This page is about:";
+	
 		if (entCount) {
 			var ul = OAT.Dom.create("ul");
 			for (var p in entities) {
@@ -305,9 +306,9 @@ var QueryExec = function(optObj) {
 				ul.appendChild(li);
 				li.innerHTML = p;
 			}
-			OAT.Dom.append([self.dom.result,h,ul]);
+	    OAT.Dom.append([self.dom.result,ul]);
 		}
-
+*/	
 		var item = self.cache[self.cacheIndex];
 		var opts = item.opts;
 		var request = item.request;
