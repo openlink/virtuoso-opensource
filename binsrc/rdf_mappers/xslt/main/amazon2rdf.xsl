@@ -89,6 +89,16 @@
 							    </xsl:for-each>
 						    </rdf:Description>
 				    </xsl:when>
+				    <xsl:when test="$wish_list = '2'">
+						<rdf:Description rdf:about="{$docproxyIRI}">
+							    <rdf:type rdf:resource="&bibo;Document"/>
+							    <rdf:type rdf:resource="&sioc;Container"/>
+							    <xsl:for-each select="//amz:ItemSearchResponse/amz:Items/amz:Item">
+							      <gr:seeks rdf:resource="{amz:DetailPageURL}"/>
+							    </xsl:for-each>
+						    </rdf:Description>
+				    </xsl:when>
+			
 			<xsl:otherwise>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>

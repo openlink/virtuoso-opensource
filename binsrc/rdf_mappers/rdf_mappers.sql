@@ -89,6 +89,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+        '(http://.*amazon.[^/]+/s\?.*)|' ||
         '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
@@ -270,6 +271,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
+	'(http://.*amazon.[^/]+/s\?.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
         '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
@@ -4777,7 +4779,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (in canon any, in secret_key any
 create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-  declare xd, xd_utf8, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
+  declare index1, xd, xd_utf8, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
   declare pos, is_wish_list integer;
   asin := null;
   is_wish_list := 0;
@@ -4801,6 +4803,30 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/registry/wishlist/%s', 0);
       asin := rtrim (tmp[2], '/');
       is_wish_list := 1;
+    }
+    else if (new_origin_uri like 'http://%amazon.%/s?%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/s?%skeywords=%s', 0);
+      asin := tmp[3];
+      if (strchr(asin, '&') is not NULL)
+      {
+        tmp := sprintf_inverse (asin, '%s&%s', 0);
+        asin := tmp[0];
+        if (strchr(tmp[1], 'index=') is not NULL)
+        {
+            tmp := sprintf_inverse (tmp[1], 'index=%s', 0);
+            index1 := tmp[0];
+            if (strchr(index1, '&') is not NULL)
+            {
+                index1 := left(index1, strchr(index1, '&'));
+            }
+        }
+        else
+        {
+            index1 := 'None';
+        }
+      }
+      is_wish_list := 2;
     }
   else if (new_origin_uri like 'http://%amazon.%/o/ASIN/%')
     {
@@ -4877,6 +4903,10 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (is_wish_list = 1)
   {
     canon := sprintf('AWSAccessKeyId=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+  }
+  else if (is_wish_list = 2)
+  {
+    canon := sprintf('AWSAccessKeyId=%s&Availability=Available&Condition=All&Keywords=%s&MerchantId=All&Operation=ItemSearch&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&SearchIndex=%s&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, index1, datenow);
   }
   else
   {
