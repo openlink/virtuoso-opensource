@@ -25,6 +25,7 @@ package virtuoso.sesame3.driver;
 
 import java.io.File;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.URIFactory;
@@ -317,7 +318,7 @@ public class VirtuosoRepository implements Repository {
 			java.sql.Connection connection = pconn.getConnection();
 			return new VirtuosoRepositoryConnection(this, connection);
 		}
-		catch (Exception e) {
+		catch (SQLException e) {
 			System.out.println("Connection to " + host + " is FAILED.");
 			throw new StoreException(e);
 		}
