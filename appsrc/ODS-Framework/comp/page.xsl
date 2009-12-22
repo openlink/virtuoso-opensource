@@ -2071,85 +2071,68 @@ if (i > 0)
 
 <xsl:template match="vm:site-server">
   <v:form type="simple" name="ssetfffdoma" method="POST">
-    <table class="ctl_grp">
-      <tr>
-	  <th><h3>Show system error messages in user dialogs</h3></th>
-        <td>
+    <fieldset>
+			<legend><b>Error Messages</b></legend>
+      <label>
           <v:check-box name="s_sys_errors" value="1" initial-checked="--(select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS)" />
-        </td>
-        <td>
+        Show system error messages in user dialogs
+      </label>
+      <br /><br />
           <v:button name="ssetb1" action="simple" value="Set">
             <v:on-post>
               <v:script>
                 <![CDATA[
-                  if (wa_user_is_dba (self.u_name, self.u_group))
-                    goto admin_user;
-                  else
+              if (not wa_user_is_dba (self.u_name, self.u_group))
                   {
                     self.vc_is_valid := 0;
                     control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                     return;
                   }
-                  admin_user:;
-                  update WA_SETTINGS set
-                    WS_SHOW_SYSTEM_ERRORS = self.s_sys_errors.ufl_selected;
+              update WA_SETTINGS set WS_SHOW_SYSTEM_ERRORS = self.s_sys_errors.ufl_selected;
                   if (row_count() = 0)
-                  {
-                    insert into WA_SETTINGS
-                      (WS_SHOW_SYSTEM_ERRORS)
-                      values (self.s_sys_errors.ufl_selected);
-                  }
+                insert into WA_SETTINGS (WS_SHOW_SYSTEM_ERRORS) values (self.s_sys_errors.ufl_selected);
                 ]]>
               </v:script>
             </v:on-post>
           </v:button>
-        </td>
-      </tr>
-    </table>
+    </fieldset>
   </v:form>
   <v:form type="simple" name="fssl" method="POST">
-    <table class="ctl_grp">
-      <tr>
-	  <th><h3>Allways redirect to secure site (HTTPS)</h3></th>
-        <td>
+    <fieldset>
+			<legend><b>Redirects</b></legend>
+      <label>
           <v:check-box name="s_ssl" value="1" initial-checked="--(select top 1 WS_HTTPS from WA_SETTINGS)" />
-        </td>
-        <td>
+        Allways redirect to secure site (HTTPS)
+      </label>
+      <br /><br />
           <v:button name="bt_ssl" action="simple" value="Set">
             <v:on-post>
               <v:script>
                 <![CDATA[
-                  if (wa_user_is_dba (self.u_name, self.u_group))
-                    goto admin_user;
-                  else
+              if (not wa_user_is_dba (self.u_name, self.u_group))
                   {
                     self.vc_is_valid := 0;
                     control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                     return;
                   }
-                  admin_user:;
                   update WA_SETTINGS set WS_HTTPS = self.s_ssl.ufl_selected;
                   if (row_count() = 0)
-                  {
                     insert into WA_SETTINGS (WS_HTTPS) values (self.s_ssl.ufl_selected);
-                  }
                 ]]>
               </v:script>
             </v:on-post>
           </v:button>
-        </td>
-      </tr>
-    </table>
+    </fieldset>
   </v:form>
+  <v:template type="simple" enabled="--case when isnull (VAD_CHECK_VERSION ('Feed Manager')) then 0 else 1 end">
   <v:form type="simple" name="form2" method="POST">
+      <fieldset>
+  			<legend><b>Set Feeds Parameters</b></legend>
     <table class="ctl_grp">
       <tr>
-        <th>
-          <h3>Set feeds update interval</h3>
-        </th>
-        <th>
+            <td>
           Update period
-        </th>
+            </td>
         <td>
           <v:select-list name="s_update_period">
             <v:item name="daily" value="daily" />
@@ -2161,12 +2144,38 @@ if (i > 0)
             </v:before-data-bind>
           </v:select-list>
         </td>
+          </tr>
+          <tr>
         <td>
+              Update frequency
+            </td>
+            <td>
+              <v:text name="s_update_frequency" xhtml_class="textbox" xhtml_size="3">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1) as varchar);
+                </v:before-data-bind>
+              </v:text>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Store days for items
+            </td>
+            <td>
+              <v:text name="s_store_days" xhtml_class="textbox" xhtml_size="3">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_STORE_DAYS from WA_SETTINGS), 30) as varchar);
+                </v:before-data-bind>
+              </v:text>
+            </td>
+          </tr>
+        </table>
+        <br />
           <v:button name="set2" action="simple" value="Set">
             <v:on-post>
               <v:script>
                 <![CDATA[
-                  declare u, p, f any;
+                declare u, p, f, d any;
 
                   if (not (wa_user_is_dba (self.u_name, self.u_group)))
                   {
@@ -2197,49 +2206,123 @@ if (i > 0)
                     self.vc_is_valid := 0;
                     return;
                   }
-                  update WA_SETTINGS
-                     set WS_FEEDS_UPDATE_PERIOD = self.s_update_period.ufl_value;
+                d := atoi (self.s_store_days.ufl_value);
+                if (d < 1)
+                {
+                  self.s_store_days.vc_error_message := 'Please, enter correct store days value.';
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                update WA_SETTINGS set WS_FEEDS_UPDATE_PERIOD = self.s_update_period.ufl_value;
                   if (row_count() = 0)
                   {
-                    insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD)
-                      values (self.s_update_period.ufl_value);
+                  insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD) values (self.s_update_period.ufl_value);
                   }
-                  update WA_SETTINGS
-                     set WS_FEEDS_UPDATE_FREQ = f;
+                update WA_SETTINGS set WS_FEEDS_UPDATE_FREQ = f;
                   if (row_count() = 0)
                   {
-                    insert into WA_SETTINGS (WS_FEEDS_UPDATE_FREQ)
-                      values (f);
+                  insert into WA_SETTINGS (WS_FEEDS_UPDATE_FREQ) values (f);
+                }
+                update WA_SETTINGS set WS_STORE_DAYS = d;
+                if (row_count() = 0)
+                {
+                  insert into WA_SETTINGS (WS_STORE_DAYS) values (d);
                   }
                 ]]>
               </v:script>
             </v:on-post>
           </v:button>
+      </fieldset>
+    </v:form>
+    <v:form type="simple" name="form3" method="POST">
+      <fieldset>
+  			<legend><b>Feed Instances with Admin Rights</b></legend>
+        <v:data-source name="wsf_source" expression-type="sql" nrows="0" initial-offset="0">
+          <v:expression>
+            <![CDATA[
+              select WSF_INSTANCE_ID, WAI_NAME from WA_SETTINGS_FEEDS, WA_INSTANCE where WAI_ID = WSF_INSTANCE_ID
+            ]]>
+          </v:expression>
+        </v:data-source>
+        <div style="width: 400px;">
+        <table class="listing">
+          <tr class="listing_header_row">
+            <th>Instance</th>
+            <th>Action</th>
+          </tr>
+          <v:data-set name="wsf" scrollable="1" edit="1" data-source="self.wsf_source">
+            <vm:template name="wsf_repeat" type="repeat">
+              <vm:template name="wsf_browse" type="browse">
+                <tr>
+                  <td>
+                    <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                  </td>
+                  <td>
+                    <v:button name="wsf_remove" action="simple" value="Remove">
+                      <v:on-post>
+                        <![CDATA[
+                          if (not wa_user_is_dba (self.u_name, self.u_group))
+                          {
+                            self.vc_is_valid := 0;
+                            control.vc_parent.vc_error_message := 'Only admin user can change global settings';
+                            return;
+                          }
+                          delete from WA_SETTINGS_FEEDS where WSF_INSTANCE_ID = (control.vc_parent as vspx_row_template).te_rowset[0];
+                          self.wsf_instance_id.ufl_value := null;
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
         </td>
       </tr>
+              </vm:template>
+            </vm:template>
+          </v:data-set>
       <tr>
-        <th />
-        <th>
-          Update frequency
-        </th>
         <td>
-          <v:text name="s_update_frequency" xhtml_class="textbox" xhtml_size="3">
-            <v:before-data-bind>
-              control.ufl_value := cast (coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1) as varchar);
-            </v:before-data-bind>
-          </v:text>
+              <v:data-list name="wsf_instance_id" sql="select '' as WAI_ID, '' as WAI_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select WAI_ID, WAI_NAME from WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' order by WAI_NAME" key-column="WAI_ID" value-column="WAI_NAME" />
+            </td>
+            <td>
+              <v:button name="wsf_add" action="simple" value="Add">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      if (not wa_user_is_dba (self.u_name, self.u_group))
+                      {
+                        self.vc_is_valid := 0;
+                        self.wsf_instance_id.vc_error_message := 'Only admin user can change global settings';
+                        return;
+                      }
+                      if (self.wsf_instance_id.ufl_value = '')
+                      {
+                        self.vc_is_valid := 0;
+                        self.wsf_instance_id.vc_error_message := 'Please, select feeds instance.';
+                        return;
+                      }
+                      if (exists (select 1 from WA_SETTINGS_FEEDS where WSF_INSTANCE_ID = self.wsf_instance_id.ufl_value))
+                      {
+                        self.vc_is_valid := 0;
+                        self.wsf_instance_id.vc_error_message := 'Instance allready exists.';
+                        return;
+                      }
+                      insert into WA_SETTINGS_FEEDS (WSF_INSTANCE_ID, WSF_ACCESS) values (self.wsf_instance_id.ufl_value, 'RW');
+                      self.wsf_instance_id.ufl_value := null;
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
         </td>
-        <td />
       </tr>
     </table>
+        </div>
+      </fieldset>
   </v:form>
+  </v:template>
   <v:form type="simple" name="ssetdoma" method="POST">
+    <fieldset>
+			<legend><b>Hosted Mail Domains</b></legend>
     <table class="ctl_grp">
-      <tr>
-        <th>
-          <h3>Existing Hosted Mail Domains</h3>
-        </th>
-      </tr>
       <tr>
         <td>
           <v:data-source name="domains_source" expression-type="sql" nrows="-1" initial-offset="0">
@@ -2262,14 +2345,11 @@ if (i > 0)
                     <td>
                       <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"/>
                     </td>
-                    <td>
-                      <v:label format="%s" value="--coalesce (cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar), '')"/>
-                    </td>
                     <!--td>
                       <v:label format="%s" value="-#-coalesce (cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar), '')"/>
                     </td-->
                     <td>
-                      <v:button action="simple" value="Remove" style="url">
+                        <v:button action="simple" value="Remove">
                         <v:before-render>
                           <![CDATA[
                             declare host1, host2 varchar;
@@ -2283,16 +2363,14 @@ if (i > 0)
                         </v:before-render>
                         <v:on-post>
                           <![CDATA[
-                            if (wa_user_is_dba (self.u_name, self.u_group))
-                              goto admin_user;
-                            else
+                              if (not wa_user_is_dba (self.u_name, self.u_group))
                             {
                               self.vc_is_valid := 0;
                               control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                               return;
                             }
-                            admin_user:;
                             delete from WA_DOMAINS where WD_DOMAIN = (control.vc_parent as vspx_row_template).te_rowset[0];
+                              self.t_hp_host.ufl_value := '';
                             self.vc_data_bind(e);
                           ]]>
                         </v:on-post>
@@ -2304,27 +2382,23 @@ if (i > 0)
             </v:data-set>
             <tr>
               <td>
-                <v:text name="t_hp_host" error-glyph="*" value="">
-                </v:text>
+                  <v:text name="t_hp_host" error-glyph="*" value="" />
               </td>
               <!--td>
                 <v:text name="t_hp_listen_host" error-glyph="*" value="">
                 </v:text>
               </td-->
               <td>
-                <v:button name="chhptn1" action="simple" value="Add" style="url">
+                  <v:button name="chhptn1" action="simple" value="Add">
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                        if (wa_user_is_dba (self.u_name, self.u_group))
-                          goto admin_user;
-                        else
+                          if (not wa_user_is_dba (self.u_name, self.u_group))
                         {
                           self.vc_is_valid := 0;
                           control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                           return;
                         }
-                        admin_user:;
                         -- here we just register a domain, the listen interface may not needed as in case of mail
                         --
                         {
@@ -2364,6 +2438,7 @@ if (i > 0)
                             self.vc_is_valid := 0;
                             return;
                           }
+                            self.t_hp_host.ufl_value := '';
                           self.vc_data_bind(e);
                         }
                       ]]>
@@ -2376,41 +2451,32 @@ if (i > 0)
         </td>
       </tr>
     </table>
+    </fieldset>
   </v:form>
   <v:form type="simple" name="ssetsu" method="POST">
-    <table class="ctl_grp">
-      <tr>
-        <th colspan="3"><h3>Act as user</h3></th>
-      </tr>
-      <tr>
-        <th>Username</th>
-        <td>
+    <fieldset>
+			<legend><b>Act as user</b></legend>
+      Username
           <v:text name="t_user" xhtml_size="10" error-glyph="*">
             <v:validator name="v_user" test="regexp" regexp="[;.\-0-9A-Za-z]." message="* You should provide a valid username."/>
           </v:text>
-        </td>
-        <td>
+      <br /><br />
           <v:button name="ssetsub1" action="simple" value="Set">
             <v:on-post>
               <v:script>
                 <![CDATA[
-                  if (wa_user_is_dba (self.u_name, self.u_group))
-                    goto admin_user;
-                  else
+              if (not wa_user_is_dba (self.u_name, self.u_group))
                   {
                     self.vc_is_valid := 0;
                     control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                     return;
                   }
-                  admin_user:;
                   update VSPX_SESSION set VS_UID = 'dba' where VS_UID=self.t_user.ufl_value and VS_REALM='wa';
                 ]]>
               </v:script>
             </v:on-post>
           </v:button>
-        </td>
-      </tr>
-    </table>
+    </fieldset>
   </v:form>
 </xsl:template>
 
