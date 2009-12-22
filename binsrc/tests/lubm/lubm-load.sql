@@ -62,7 +62,7 @@ ECHO BOTH ": Data loaded: " $LAST[1] " rows\n";
 --  select iri_to_id ('lubm', 0), "x", iri_to_id ('http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#subOrganizationOf', 0), "z" from (
 --  sparql define output:valmode "LONG" prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 --  select   ?x   ?z   from <lubm> where { ?x ub:subOrganizationOf ?y . ?y ub:subOrganizationOf ?z . }) c;
--- 
+--
 
 sparql prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#>
 insert into graph <lubm> { ?x ub:subOrganizationOf ?z  } from <lubm> where { ?x ub:subOrganizationOf ?y . ?y ub:subOrganizationOf ?z . };
