@@ -43,6 +43,7 @@ OAT.RDFTabsData = {
     MARKER_MODE_DISTINCT_O: 1, // Old default behaviour - distinct markers by ouri
     MARKER_MODE_BY_TYPE:    2, // Markers by item type match
     MARKER_MODE_EXPLICIT:   3,  // Markers by explicit property oat:rdfTabsMarker <marker URL>
+    MARKER_MODE_AUTO:       4
 };
 
 if (!OAT.RDFTabs) { OAT.RDFTabs = {}; }
@@ -929,6 +930,159 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 		}
 		this.elm.style.backgroundColor = '#cacce7';
 	}
+},
+
+//
+// Ordered data structure for points
+// Not an R-Tree but should do the trick for now
+//
+
+OAT.RDFTabs.PointList = function (opts) {
+    var self = this;
+    this._uniqueInsert = opts.uniqueInsert;
+    this._list = [];
+
+    this.__ins_new = function (pos, p, o) {
+	self._list.splice (pos, 0, new Array (p[0], new Array (new Array (p[1], o))));
+    }
+
+    this._k = function (x) {
+	if (typeof (x) != 'object') return x;
+	return x[0];
+    }
+
+    this.find = function (p) {
+    }
+
+    this.find_1 = function (p) {}
+
+    this.insert = function (p, o) {
+	if (typeof (p) != 'object') throw new Error ('Invalid Point Type in Insert');
+	
+	if (typeof (p[0]) == 'string')
+	    p[0] = parseFloat (p[0]);
+	
+	if (typeof (p[1]) == 'string')
+	    p[1] = parseFloat (p[1]);
+	
+	if (!self._list.length || self._k(self._list[0] > p[0])) {
+	    self.__ins_new (0, p, o)
+	    return p;
+	}
+	
+	if (self._k(self._list[self._list.length-1]) < p[0]) {
+	    self._list.push(new Array (p[0], new Array (new Array (p[1], o))));
+	    return (p);
+	}
+
+	return (self._ins_1 (p, o, 0, self._list.length-1));
+    }
+    
+    this._ins_1 = function (p, o, st, en) {
+	if (self._k(self._list[st]) == p[0])
+	    return (self.ins_y (p, o, self._list[st][1])) // found existing X, now insert y in ylist
+	
+	if (st == en) {
+	    if (self._k(self._list[st]) > p[0])
+		self.__ins_new (st, p, o);
+	    else
+		self.__ins_new (st+1, p, o);
+	    return p;
+	}
+
+	// recurse
+
+	var split = Math.floor (((en-st)/2)+st);
+
+	if (self._k(self._list[split]) < p[0])
+	    return (self._ins_1 (p, o, split+1, en))
+	else
+	    return (self._ins_1 (p, o, st, split));
+    }
+
+    this.ins_y = function (p, o, lst) {
+	if (p[1] < lst[0][0]) {
+	    lst.splice (0, 0, new Array (p[1], o));
+	    return p;
+	}
+
+	if (p[1] > lst[lst.length-1]) {
+	    lst.push (p[1]);
+	    return p;
+	}
+
+	return (self.ins_y_1 (p, o, lst, 0, lst.length-1));
+    }
+
+    this.ins_y_1 = function (p, o, lst, st, en) {
+	if (self._k(lst[st]) == p[1]) {
+	    if (!self._uniqueInsert)
+		lst.splice (st, 0, new Array (p[1], o));
+	    return p;
+	}
+
+	if (st == en) {
+	    if (self._k(lst[st]) > p[1])
+		lst.splice (st, 0, new Array (p[1], o))
+	    else
+		lst.splice (st+1, 0, new Array (p[1], o));
+	    return p;
+	}
+
+	// recurse
+
+	var split = Math.floor (((en-st)/2)+st);
+
+	if (self._k(lst[split]) < p[1])
+	    return (self.ins_y_1 (p, o, lst, split+1, en));
+	else
+	    return (self.ins_y_1 (p, o, lst, 0, split));
+    }
+
+    this.clear = function () {
+	self._list = [];
+    }
+
+    this.length = function () {
+	return self._list.length;
+    }
+    
+    //
+    // Get array of points [[2.3, 43.4][2.1, 42.2]..[]]
+    //
+
+    this.makeArray = function (unique) {
+	var retArr = [];
+	var vo, vn;
+	for (var i=0;i<self._list.length;i++) {
+	    vo = -1;
+	    vn = -1;
+	    for (var j=0;j<self._list[i][1].length;j++) {
+		vn = self._list[i][1][j][0];
+		if (!unique || vo == -1 || vn != vo) {
+		    retArr.push (new Array (self._list[i][0], vn, self._list[i][1][j][1]));
+		    vo = vn;
+		}
+	    }
+	}
+	return retArr;
+    }
+
+    this.makePointsArray = function (unique) {
+	var retArr = [];
+	for (var i=0;i<self._list.length;i++) {
+	    var vo = -1;
+	    var vn = -1;
+	    for (var j=0;j<self._list[i][1].length;j++) {
+		vn = self._list[i][1][j][0];
+		if (!unique || vo == -1 || vn != vo) {
+		    retArr.push (new Array (self._list[i][0], vn));
+		    vo = vn;
+		}
+	    }
+	}
+	return retArr;
+    }
 }
 
 OAT.RDFTabs.map = function(parent,optObj) {
@@ -961,12 +1115,12 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	this.lookupProperties = ["name","foaf:name","location","foaf:location"]; /* interesting to be put into lookup pin */
 	
 	this.usedBlanknodes = [];
+    this.pointList = new OAT.RDFTabs.PointList({uniqueInsert:true});
 
 	this.geoCode = function(address,item) {
 		self.pointListLock++;
 		var cb = function(coords) {
 			if (coords && coords[0] != 0 && coords[1] != 0) {
-				self.pointList.push(coords);
 				self.attachMarker(coords,item);
 			}
 			self.pointListLock--;
@@ -997,7 +1151,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		coords[0] = cmatches[2];
 		coords[1] = cmatches[1];
 		if (coords[0] == 0 || coords[1] == 0) { return; }
-		self.pointList.push(coords);
 		self.attachMarker(coords,item);
 		return;
 	    }
@@ -1015,7 +1168,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			if (self.lonProperties.find(simple) != -1) { coords[1] = pred[0]; }
 		} /* for all geo properties */
 		if (coords[0] == 0 || coords[1] == 0) { return; }
-		self.pointList.push(coords);
 		self.attachMarker(coords,item);
 	} /* tryItem */
 	
@@ -1030,7 +1182,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			if (self.lonProperties.find(simple) != -1) { coords[1] = pred[0]; } /* longitude */
 		}
 		if (!coords[0] && !coords[1]) { return; }
-		self.pointList.push(coords);
 		self.attachMarker(coords,item);
 	} /* trySimple */
 
@@ -1063,7 +1214,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		break;
 	    }
 	    else {
-		markerFile = self.getMarkerByType (item);
+		markerFile = markerPath + self.getMarkerByType (item);
 	    }
 
 	}
@@ -1075,6 +1226,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
     }
 
 	this.attachMarker = function(coords,item) {
+	self.pointList.insert (coords, {item: item});
+    }
+
+    this.makeAndAddMarker = function (x,y,item) {
 		var m = false;
 	var clickCB = function() { /* draw item contents */
 			if (OAT.AnchorData && OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
@@ -1100,9 +1255,24 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-	var file = self.getMarker(item);
 
-	m = self.map.addMarker(1,coords[0],coords[1],file,18,41,self.options.clickPopup?clickCB:false,self.options.hoverPopup?clickCB:false);	
+	var markerImg = self.getMarker(item);
+	
+	m = self.map.addMarker(1,x,y,markerImg,18,41,self.options.clickPopup?clickCB:false,self.options.hoverPopup?clickCB:false);
+    }
+
+    this.addMarkers = function () {
+	var pArr = self.pointList.makeArray (true);
+	var o,x,y,clickCB,hoverCB,markerImg;
+	var item;
+
+	for (var i=0; i<pArr.length; i++) {
+	    x = pArr[i][0];
+	    y = pArr[i][1];
+	    item = pArr[i][2].item;
+
+	    self.makeAndAddMarker (x,y,item);
+	}
 	}
 	
 	this.redraw = function() {
@@ -1121,7 +1291,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			self.map.addTypeControl();
 			self.map.addMapControl();
 			self.map.addTrafficControl();
-			self.pointList = [];
+	    self.pointList.clear();
 			self.pointListLock = 0;
 			for (var i=0;i<self.parent.data.structured.length;i++) {
 				var item = self.parent.data.structured[i];
@@ -1131,6 +1301,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 				var item = self.parent.data.structured[i];
 				self.trySimple(item);
 			}
+	    self.addMarkers();
 		}
 
 	self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix},self.options.specificOpts);
@@ -1140,12 +1311,12 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 		function tryList() {
 			if (!self.pointListLock) { 
-				if (!self.pointList.length) { 
+		if (!self.pointList.length()) { 
 					var note = new OAT.Notify();
 					var msg = "Current data set contains nothing that could be displayed on the map.";
 					note.send(msg);
 				}
-				self.map.optimalPosition(self.pointList); 
+		self.map.optimalPosition(self.pointList.makePointsArray(false)); 
  			} else {
 				setTimeout(tryList,500);
 			}
