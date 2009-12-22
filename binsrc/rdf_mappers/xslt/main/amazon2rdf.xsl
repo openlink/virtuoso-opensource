@@ -61,7 +61,7 @@
     <xsl:param name="baseUri" />
     <xsl:param name="asin" />
     <xsl:param name="currentDateTime"/>
-
+    <xsl:param name="wish_list" />
 
 	<!-- Amazon provides a short URL http://www.amazon.com/o/ASIN/{asin} for each product  -->
     <xsl:variable name="resourceURL"><xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/o/ASIN/', $asin))"/></xsl:variable>
@@ -79,6 +79,17 @@
 
     <xsl:template match="/">
 		<rdf:RDF>
+			<xsl:choose>
+				    <xsl:when test="$wish_list = '1'">
+						<rdf:Description rdf:about="{$docproxyIRI}">
+							    <rdf:type rdf:resource="&bibo;Document"/>
+							    <rdf:type rdf:resource="&sioc;Container"/>
+							    <xsl:for-each select="//amz:ListLookupResponse/amz:Lists/amz:List/amz:ListItem/amz:Item">
+							      <gr:seeks rdf:resource="{amz:DetailPageURL}"/>
+							    </xsl:for-each>
+						    </rdf:Description>
+				    </xsl:when>
+			<xsl:otherwise>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
@@ -130,6 +141,8 @@
 			</rdf:Description>
 
 			<xsl:apply-templates select="//amz:Offer" mode="offering"/>
+			</xsl:otherwise>
+			</xsl:choose>
 		</rdf:RDF>
     </xsl:template>
 
