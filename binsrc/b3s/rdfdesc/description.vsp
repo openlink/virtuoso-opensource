@@ -82,6 +82,12 @@
 
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
 
+  if (get_keyword ('sp', params) = '1')
+    {
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', gr), 'SPARQL');
+      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+    }
+
    odd_position := 0;
    set http_charset='utf-8';
    set isolation = 'uncommitted';

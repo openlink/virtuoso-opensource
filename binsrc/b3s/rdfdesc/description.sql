@@ -535,6 +535,7 @@ again:
 
        rdfa := b3s_rel_print (prop, rel, 0);
        http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid), b3s_uri_curie(_url)));
+       http (sprintf ('&nbsp;<a class="uri" %s href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge"/></a>', rdfa, b3s_http_url (_url, sid)));
 
      }
    else if (__tag (_object) = 189)
