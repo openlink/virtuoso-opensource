@@ -25,6 +25,7 @@ package virtuoso.sesame2.driver;
 
 import java.io.File;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ValueFactoryImpl;

@@ -160,18 +160,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int prefetchSize = 200;
 
 
-	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) {
+	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
 		this.quadStoreConnection = connection;
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
-		try {
-			this.repository.initialize();
-		}
-		catch (RepositoryException e) {
-			throw new RuntimeException(e.toString());
-		}
+		this.repository.initialize();
 
 	}
 
@@ -221,7 +216,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -749,7 +744,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			getQuadStoreConnection().setAutoCommit(autoCommit);
 		}
 		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -764,7 +759,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return getQuadStoreConnection().getAutoCommit();
 		}
 		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -782,7 +777,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			getQuadStoreConnection().commit();
 		}
 		catch (SQLException e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 	}
 
@@ -1476,7 +1471,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         rs.close();
 		}
 		catch (Exception e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 		return createRepositoryResult(namespaceList);// new RepositoryResult<Namespace>(new IteratorWrapper(v.iterator()));
 	}
@@ -1509,7 +1504,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			rs.close();
 		}
 		catch (Exception e) {
-			throw new RepositoryException(e.toString());
+			throw new RepositoryException(e);
 		}
 		return retVal;
 	}
@@ -1584,7 +1579,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleQueryResult executeSPARQLForTupleResult(String query, Dataset dataset) {
+	protected TupleQueryResult executeSPARQLForTupleResult(String query, Dataset dataset) throws QueryEvaluationException {
 
 		Vector<String> names = new Vector<String>();
 		try {
@@ -1606,11 +1601,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new TupleQueryResultImpl(names, new CloseableIterationBindingSet(rs));
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new QueryEvaluationException(e);
 		}
 	}
 	
-	protected GraphQueryResult executeSPARQLForGraphResult(String query, Dataset dataset) {
+	protected GraphQueryResult executeSPARQLForGraphResult(String query, Dataset dataset) throws QueryEvaluationException {
 
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
 
@@ -1629,12 +1624,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new GraphQueryResultImpl(new HashMap<String,String>(), new CloseableIterationGraphResult(rs));
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new QueryEvaluationException(e);
 		}
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) {
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) throws QueryEvaluationException {
 		Vector<String> names = new Vector<String>();
 		Vector<BindingSet> bindings = new Vector<BindingSet>();
 		boolean result = false;
@@ -1654,12 +1649,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return result;
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new QueryEvaluationException(e);
 		}
 	}
 
 
-	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query, Dataset dataset) {
+	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query, Dataset dataset) throws QueryEvaluationException, TupleQueryResultHandlerException {
 		LinkedList<String> names = new LinkedList<String>();
 		try {
 			verifyIsOpen();
@@ -1690,12 +1685,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         stmt.close();
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new QueryEvaluationException(e);
 		}
 	}
 
 
-	protected void executeSPARQLForHandler(RDFHandler tqrh, String query, Dataset dataset) {
+	protected void executeSPARQLForHandler(RDFHandler tqrh, String query, Dataset dataset) throws QueryEvaluationException, RDFHandlerException {
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
@@ -1748,7 +1743,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			stmt.close();
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e.toString());
+			throw new QueryEvaluationException(e);
 		}
 	}
 	
@@ -1771,7 +1766,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
 			return stmt.getUpdateCount();
 		}
-		catch (Exception e) {
+		catch (SQLException e) {
 			throw new RepositoryException(e);
 		}
 	}
@@ -1970,7 +1965,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			rs = stmt.executeQuery(query.toString());
 		}
 		catch (Exception e) {
-			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]");
+			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]", e);
 		}
 
 		return new CloseableIterationStmt(rs, subject, predicate, object);
@@ -2028,7 +2023,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    }
 		}
 		catch (Exception e) {
-		    throw new RepositoryException(e.toString());
+		    throw new RepositoryException(e);
 		}
 	}
 
@@ -2145,7 +2140,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						return getRepository().getValueFactory().createURI(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
-					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"");
+					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"", iaex);
 				}
 			}
 			else if (ves.getIriType() == ExtendedString.BNODE) {
@@ -2154,7 +2149,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					return getRepository().getValueFactory().createBNode(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
-					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"");
+					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\"", iaex);
 				}
 			}
 			else {
@@ -2162,7 +2157,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					return getRepository().getValueFactory().createLiteral(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
-					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.getIriType());
+					throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Invalid value from Virtuoso: \"" + valueString + "\", STRTYPE = " + ves.getIriType(), iaex);
 				}
 			}
 		}
@@ -2215,7 +2210,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				return getRepository().getValueFactory().createLiteral((String) val);
 			}
 			catch (IllegalArgumentException iaex2) {
-				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + val);
+				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + val, iaex2);
 			}
 		}
 	}
@@ -2384,7 +2379,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 			}
 			catch (ClassCastException ccex) {
-				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val, ccex);
 			}
 
 			if (_subject == null && col_s != -1) 
@@ -2393,7 +2388,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				_subject = (Resource) castValue(val);
 			  }
 			  catch (ClassCastException ccex) {
-				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val);
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val, ccex);
 			  }
 
 			if (_predicate == null && col_p != -1) 
@@ -2402,7 +2397,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				_predicate = (URI) castValue(val);
 			  }
 			  catch (ClassCastException ccex) {
-				throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val);
+				throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val, ccex);
 			  }
 
 			if (_object == null && col_o != -1) 
