@@ -4,11 +4,11 @@ if (typeof iSPARQL == 'undefined')
 iSPARQL.defaults = {
     endpoints: [ "/sparql",
 		 "http://uriburner.com/sparql",
+		 "http://dbpedia.org/sparql",
 		 "http://lod.openlinksw.com/sparql",
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
 		 "http://myopenlink.net:8890/sparql/",
-		 "http://dbpedia.org/sparql",
 		 "http://www.govtrack.us/sparql",
 		 "http://xmlarmyknife.org/api/rdf/sparql/query",
 		 "http://www.sparql.org/sparql",
