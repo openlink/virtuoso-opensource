@@ -89,6 +89,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'(http://.*amazon.[^/]+/[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+        '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
@@ -270,6 +271,7 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	'(http://.*amazon.[^/]+/dp/[^/]+(/.*)?)|'||
 	'(http://.*amazon.[^/]+/[^/]+/product-reviews/.*)|'||
 	'(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+        '(http://.*amazon.[^/]+/gp/registry/wishlist/.*)|' ||
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
@@ -4776,8 +4778,9 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xd_utf8, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
-  declare pos integer;
+  declare pos, is_wish_list integer;
   asin := null;
+  is_wish_list := 0;
   declare exit handler for sqlstate '*'
     {
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -4792,6 +4795,12 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
       asin := rtrim (tmp[2], '/');
+    }
+  else if (new_origin_uri like 'http://%amazon.%/gp/registry/wishlist/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/registry/wishlist/%s', 0);
+      asin := rtrim (tmp[2], '/');
+      is_wish_list := 1;
     }
   else if (new_origin_uri like 'http://%amazon.%/o/ASIN/%')
     {
@@ -4863,19 +4872,23 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     return 0;
     
   datenow := replace(date_iso8601 (dt_set_tz (now(), 0)), ':', '%3A');
-
   -- Note: Query parameter/value pairs *must* be sorted by byte value before the query string is signed.
   --       Lowercase parameters will come after uppercase ones in the canonical query string.
-
+  if (is_wish_list = 1)
+  {
+    canon := sprintf('AWSAccessKeyId=%s&Condition=All&ListId=%s&ListType=WishList&MerchantId=All&Operation=ListLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+  }
+  else
+  {
   canon := sprintf('AWSAccessKeyId=%s&Condition=All&ItemId=%s&MerchantId=All&Operation=ItemLookup&ResponseGroup=ItemAttributes%%2COffers%%2CReviews&Service=AWSECommerceService&SignatureMethod=HmacSHA1&Timestamp=%s', api_key, asin, datenow);
+  }
   url := DB.DBA.RDF_LOAD_AMAZON_QRY_SGN (canon, secret_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar), 'wish_list', cast(is_wish_list as varchar)));
   xd_utf8 := serialize_to_UTF8_xml (xt);
-
    {
      declare mlist varchar;
      declare xdMerchants, merchantIds any;

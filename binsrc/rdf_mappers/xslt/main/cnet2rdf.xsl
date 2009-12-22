@@ -390,7 +390,7 @@
   <!-- Applies to SoftwareProduct | TechProduct -->
 
   <xsl:template match="cnet:TechProduct/cnet:Name | cnet:SoftwareProduct/cnet:Name" mode="offering">
-	<rdfs:label><xsl:value-of select="concat(., ' offering')"/></rdfs:label>
+	<rdfs:label><xsl:value-of select="."/></rdfs:label>
   </xsl:template>
   <xsl:template match="cnet:TechProduct/cnet:Name | cnet:SoftwareProduct/cnet:Name">
 	<rdfs:label><xsl:value-of select="."/></rdfs:label>

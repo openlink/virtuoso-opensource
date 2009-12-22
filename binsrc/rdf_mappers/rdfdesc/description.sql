@@ -435,7 +435,7 @@ again:
 	   usual_iri:
 	   http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, rdfdesc_http_url (_url), rdfdesc_uri_curie(_url, _label)));
 	   if (rdfdesc_is_external (_url, prop))
-	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/html.png" title="Open Actual (X)HTML page" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a class="uri" href="%s"><img src="images/goout.gif" title="Open Actual (X)HTML page" border="0"/></a>', _url));
 	 }
 
      }
