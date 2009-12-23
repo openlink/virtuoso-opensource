@@ -4051,13 +4051,29 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
       -- dbg_obj_princ ('generated triple:', triple_vec);
       if (1 = ctor_op)
         {
-          delete from DB.DBA.RDF_QUAD
-          where G = _env[0] and S = triple_vec[0] and P = triple_vec[1] and O = DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]);
+--          delete from DB.DBA.RDF_QUAD
+--          where G = _env[0] and S = triple_vec[0] and P = triple_vec[1] and O = DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]);
+          declare dict any;
+          dict := _env[3];
+          dict_put (dict, triple_vec, 1);
+          if (80000 < dict_size (dict))
+            {
+              DB.DBA.RDF_DELETE_TRIPLES (_env[0], dict, _env[5]);
+              dict_zap (dict);
+            }
         }
       else
         {
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-          values (_env[0], triple_vec[0], triple_vec[1], DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]));
+--          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
+--          values (_env[0], triple_vec[0], triple_vec[1], DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]));
+          declare dict any;
+          dict := _env[4];
+          dict_put (dict, triple_vec, 1);
+          if (80000 < dict_size (dict))
+            {
+              DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict, _env[5]);
+              dict_zap (dict);
+            }
         }
       action_ctr := action_ctr + 1;
 end_of_adding_triple: ;
