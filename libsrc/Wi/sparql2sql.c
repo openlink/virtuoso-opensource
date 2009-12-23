@@ -769,23 +769,29 @@ sparp_rotate_comparisons_by_rank (SPART *filt)
 
 typedef struct so_BOP_OR_filter_ctx_s
 {
-  SPART *bofc_var_sample;	/*!< Common optimizable variable in question, set to (ptrlong)1 if not common or not optimizable or global */
+  sparp_t *bofc_sparp;			/*!< parser/compiler context, to not pass an extra argument */
+  SPART *bofc_var_sample;		/*!< Common optimizable variable in question */
   dk_set_t bofc_strings;	/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
-  ptrlong bofc_can_be_iri;	/*!< Flag if there's at least equality to the IRI */
-  ptrlong bofc_can_be_literal;	/*!< Flag if there's at least equality to the literal string */
+  ptrlong bofc_not_optimizable;		/*!< Teh filter is of complicated form or the variable is not common or global */
+  ptrlong bofc_can_be_iri;		/*!< Flag if there's at least equality to a IRI */
+  ptrlong bofc_can_be_string;		/*!< Flag if there's at least equality to a literal string */
+  ptrlong bofc_can_be_nonstringlit;	/*!< Flag if there's at least equality to a non-string literal */
 } so_BOP_OR_filter_ctx_t;
 
 int
 sparp_optimize_BOP_OR_filter_walk_lvar (SPART *lvar, so_BOP_OR_filter_ctx_t *ctx)
 {
   if (SPAR_VARIABLE != SPART_TYPE (lvar))
-    return 1; /* for optimization, there should be variable at left */
+    { /* for optimization, there should be variable at left */
+      ctx->bofc_not_optimizable = 1;
+      return 1;
+    }
   if (NULL == ctx->bofc_var_sample)
     ctx->bofc_var_sample = lvar;
   else if (strcmp (ctx->bofc_var_sample->_.var.vname, lvar->_.var.vname))
-    {
-      ctx->bofc_var_sample = (SPART *)((ptrlong)1);
-      return 1; /* for optimization, there should be _same_ variable at left */
+    { /* for optimization, there should be _same_ variable at left */
+      ctx->bofc_not_optimizable = 1;
+      return 1;
     }
   return 0;
 }
@@ -793,36 +799,117 @@ sparp_optimize_BOP_OR_filter_walk_lvar (SPART *lvar, so_BOP_OR_filter_ctx_t *ctx
 int
 sparp_optimize_BOP_OR_filter_walk_rexpn (SPART *rexpn, so_BOP_OR_filter_ctx_t *ctx)
 {
-  if (SPAR_QNAME == SPART_TYPE (rexpn))
+  caddr_t lit_val;
+  switch (SPART_TYPE (rexpn))
     {
+    case SPAR_QNAME:
       ctx->bofc_can_be_iri++;
       dk_set_push (&(ctx->bofc_strings), rexpn->_.lit.val);
       return 0;
-    }
-  if (SPAR_LIT == SPART_TYPE (rexpn))
-    {
-      caddr_t lit_val = rexpn->_.lit.val;
+    case SPAR_LIT:
+      lit_val = rexpn->_.lit.val;
       if (!IS_STRING_DTP (DV_TYPE_OF (lit_val)))
-        return 1;
-      ctx->bofc_can_be_literal++;
+        ctx->bofc_can_be_nonstringlit++;
+      else
+        {
+          ctx->bofc_can_be_string++;
       dk_set_push (&(ctx->bofc_strings), lit_val);
+        }
       return 0;
+/* !!! TBD support for constant expressions here */
     }
+  ctx->bofc_not_optimizable = 1;
   return 1;
 }
 
 int
+sparp_merge_BOP_OR_of_INs_prep (SPART *tree, so_BOP_OR_filter_ctx_t *ctx, SPART **var_ret, SPART ***vals_ret, int *val_count_ret)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case BOP_EQ:
+      var_ret[0] = tree->_.bin_exp.left;
+      vals_ret[0] = &(tree->_.bin_exp.right);
+      val_count_ret[0] = 1;
+      break;
+    case SPAR_BUILT_IN_CALL:
+      if (IN_L != tree->_.builtin.btype)
+        return 1;
+      var_ret[0] = tree->_.builtin.args[0];
+      vals_ret[0] = tree->_.builtin.args+1;
+      val_count_ret[0] = BOX_ELEMENTS (tree->_.builtin.args) - 1;
+      break;
+    default:
+      return 1;
+    }
+  if (SPAR_VARIABLE != SPART_TYPE (var_ret[0]))
+    return 1;
+  return 0;
+}
+
+SPART *
+sparp_merge_BOP_OR_of_INs (SPART *first, SPART *second, so_BOP_OR_filter_ctx_t *ctx)
+{
+  sparp_t *sparp = ctx->bofc_sparp;
+  SPART *first_var, *second_var;
+  SPART **first_vals, **second_vals;
+  SPART **res_IN_args;
+  int first_val_count, second_val_count;
+  if (sparp_merge_BOP_OR_of_INs_prep (first, ctx, &first_var, &first_vals, &first_val_count))
+    return NULL;
+  if (sparp_merge_BOP_OR_of_INs_prep (second, ctx, &second_var, &second_vals, &second_val_count))
+    return NULL;
+  if (strcmp (first_var->_.var.vname, second_var->_.var.vname))
+    return NULL;
+  res_IN_args = (SPART **)t_alloc_box ((1 + first_val_count + second_val_count) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  res_IN_args[0] = first_var;
+  memcpy (res_IN_args + 1, first_vals, first_val_count * sizeof (caddr_t));
+  memcpy (res_IN_args + 1 + first_val_count, second_vals, second_val_count * sizeof (caddr_t));
+  sparp_equiv_remove_var (sparp, SPARP_EQUIV (sparp, second_var->_.var.equiv_idx), second_var);
+  return spartlist (sparp, 3, SPAR_BUILT_IN_CALL, IN_L, res_IN_args);
+}
+
+SPART *
 sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
 {
   ptrlong filt_type = SPART_TYPE (filt);
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &filt_type, 8000))
+    spar_error (ctx->bofc_sparp, "Stack overflow");
   switch (filt_type)
     {
     case BOP_OR:
-      if (sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.left, ctx))
-        return 1;
-      if (sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.right, ctx))
-        return 1;
-      return 0;
+      {
+        SPART *new_l = sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.left, ctx);
+        SPART *new_r = sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.right, ctx);
+        SPART *new_merged;
+        if (BOP_OR != SPART_TYPE (new_r))
+          {
+            if (BOP_OR != SPART_TYPE (new_l))
+              {
+                new_merged = sparp_merge_BOP_OR_of_INs (new_l, new_r, ctx);
+                if (NULL != new_merged)
+                  return new_merged;
+              }
+            else
+              {
+                new_merged = sparp_merge_BOP_OR_of_INs (new_l->_.bin_exp.left, new_r, ctx);
+                if (NULL != new_merged)
+                  {
+                    new_l->_.bin_exp.left = new_merged;
+                    return new_l;
+                  }
+                new_merged = sparp_merge_BOP_OR_of_INs (new_l->_.bin_exp.right, new_r, ctx);
+                if (NULL != new_merged)
+                  {
+                    new_l->_.bin_exp.right = new_merged;
+                    return new_l;
+                  }
+              }
+          }
+        filt->_.bin_exp.left = new_l;
+        filt->_.bin_exp.right = new_r;
+        return filt;
+      }
     case SPAR_BUILT_IN_CALL:
       if (IN_L == filt->_.builtin.btype)
         {
@@ -834,7 +921,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
               if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.builtin.args[argctr], ctx))
                 goto cannot_optimize; /* see below */
             }
-          return 0;
+          return filt;
         }
       if (SAMETERM_L != filt->_.builtin.btype)
         goto cannot_optimize; /* see below */
@@ -845,43 +932,54 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
         goto cannot_optimize; /* see below */
       if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.bin_exp.right, ctx))
         goto cannot_optimize; /* see below */
-      return 0;
+      return filt;
     default: ;
     }
 cannot_optimize:
 /* The very natural default is to say 'cannot optimize' and escape */
-  ctx->bofc_var_sample = (SPART*)(ptrlong)1;
-  return 1;
+  ctx->bofc_not_optimizable = 1;
+  return filt;
 }
 
 /*! Processes of simple filters inside BOP_OR (or top-level IN_L) that introduce restrictions on variables. */
-int
+SPART *
 sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
 {
   sparp_equiv_t *eq_l;
   rdf_val_range_t new_rvr;
   so_BOP_OR_filter_ctx_t ctx;
   int sff_ctr;
+  SPART *new_filt;
   memset (&ctx, 0, sizeof (so_BOP_OR_filter_ctx_t));
-  if (sparp_optimize_BOP_OR_filter_walk (filt, &ctx))
+  ctx.bofc_sparp = sparp;
+  new_filt = sparp_optimize_BOP_OR_filter_walk (filt, &ctx);
+  if (ctx.bofc_not_optimizable)
     {
       while (NULL != ctx.bofc_strings) dk_set_pop (&(ctx.bofc_strings));
-      return 0;
+      return new_filt;
     }
   eq_l = sparp_equiv_get (sparp, curr, ctx.bofc_var_sample, 0);
   memset (&new_rvr, 0, sizeof (rdf_val_range_t));
+  new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
   if (0 == ctx.bofc_can_be_iri)
     new_rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
-  if (0 == ctx.bofc_can_be_literal)
+  if ((0 == ctx.bofc_can_be_string) && (0 == ctx.bofc_can_be_nonstringlit))
     new_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI;
-  new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | SPART_VARR_SPRINTFF;
+  if (0 == ctx.bofc_can_be_nonstringlit)
+    {
+      new_rvr.rvrRestrictions |= SPART_VARR_SPRINTFF;
   new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
   new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (new_rvr.rvrSprintffCount * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
   for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
     new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
+    }
+  else
+    {
+      while (NULL != ctx.bofc_strings) dk_set_pop (&(ctx.bofc_strings));
+    }
   sparp_equiv_tighten (sparp, eq_l, &new_rvr, ~0);
 /* TBD: it is possible to remove branches of OR that contradicts with known restrictions of \c eq_l */
-  return 0;
+  return new_filt;
 }
 
 int
@@ -1175,13 +1273,15 @@ select * where { graph <g1> { ?s1 ?p1 ?o1 . filter (?o1 = <const>) } optional { 
       int ret;
       if (BOP_OR == SPART_TYPE (filt))
         {
-          ret = sparp_optimize_BOP_OR_filter (sparp, curr, filt);
-          if (0 == ret)
+          SPART *new_filt = sparp_optimize_BOP_OR_filter (sparp, curr, filt);
+          if (NULL == new_filt)
+            sparp_gp_detach_filter (sparp, curr, fctr, NULL);
+          else
+            curr->_.gp.filters[fctr] = new_filt;
             continue;
         }
       ret = sparp_filter_to_equiv (sparp, curr, filt);
-      if (0 == ret)
-        continue;
+      if (0 != ret)
       sparp_gp_detach_filter (sparp, curr, fctr, NULL);
     }
   return 0;
