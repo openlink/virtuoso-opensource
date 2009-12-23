@@ -106,8 +106,8 @@ public class ConnectionWrapper implements java.sql.Connection {
   public synchronized void close() throws java.sql.SQLException {
     if (rconn == null)
       return;
-
-    pconn.sendCloseEvent();
+    if (pconn != null)
+      pconn.sendCloseEvent();
     rconn = null;
     pconn = null;
   }
@@ -833,22 +833,9 @@ public class ConnectionWrapper implements java.sql.Connection {
 
 
   protected void exceptionOccurred(SQLException ex) {
-      if (ex == null)
-        return;
-      String SQLstate = ex.getSQLState();
-      if (SQLstate != null && SQLstate.startsWith("08") && pconn != null)
+      if (pconn != null && VirtuosoConnection.isCriticalError(ex)) {
         pconn.sendErrorEvent(ex);
-
-      int vendor = ex.getErrorCode();
-      if (vendor == VirtuosoException.DISCONNECTED
-          || vendor == VirtuosoException.IOERROR
-          || vendor == VirtuosoException.BADLOGIN
-          || vendor == VirtuosoException.BADTAG
-          || vendor == VirtuosoException.CLOSED
-          || vendor == VirtuosoException.EOF
-          || vendor == VirtuosoException.NOLICENCE
-          || vendor == VirtuosoException.UNKNOWN && pconn != null)
-        pconn.sendErrorEvent(ex);
+      }
   }
 
 
