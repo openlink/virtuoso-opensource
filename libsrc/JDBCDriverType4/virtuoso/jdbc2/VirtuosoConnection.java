@@ -2231,26 +2231,42 @@ public class VirtuosoConnection implements Connection
 	else
 	    vex = (VirtuosoException) e;
 #if JDK_VER >= 14
-        if (pooled_connection != null)
-	{
-          String SQLstate = vex.getSQLState();
-          if (SQLstate != null && SQLstate.startsWith("08"))
-            pooled_connection.sendErrorEvent(vex);
-
-          int vendor = vex.getErrorCode();
-          if (vendor == VirtuosoException.DISCONNECTED
-              || vendor == VirtuosoException.IOERROR
-              || vendor == VirtuosoException.BADLOGIN
-              || vendor == VirtuosoException.BADTAG
-              || vendor == VirtuosoException.CLOSED
-              || vendor == VirtuosoException.EOF
-              || vendor == VirtuosoException.NOLICENCE
-              || vendor == VirtuosoException.UNKNOWN)
+        if (pooled_connection != null && isCriticalError(vex)) {
             pooled_connection.sendErrorEvent(vex);
 	}
 #endif
 	return vex;
     }
+
+    public static boolean isCriticalError(SQLException ex)
+    {
+      if (ex == null)
+        return false;
+      String SQLstate = ex.getSQLState();
+      if (SQLstate != null && SQLstate.startsWith("08") 
+          && SQLstate != "08C04" 
+          && SQLstate != "08C03" 
+          && SQLstate != "08001"
+          && SQLstate != "08003"
+          && SQLstate != "08006"
+          && SQLstate != "08007"
+          )
+        return true;
+
+      int vendor = ex.getErrorCode();
+      if (vendor == VirtuosoException.DISCONNECTED
+          || vendor == VirtuosoException.IOERROR
+          || vendor == VirtuosoException.BADLOGIN
+          || vendor == VirtuosoException.BADTAG
+          || vendor == VirtuosoException.CLOSED
+          || vendor == VirtuosoException.EOF
+          || vendor == VirtuosoException.NOLICENCE
+          || vendor == VirtuosoException.UNKNOWN)
+        return true;
+      else
+        return false;
+    }
+
 }
 
 #ifdef SSL
