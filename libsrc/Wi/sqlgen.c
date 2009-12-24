@@ -3846,8 +3846,15 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 		  data_source_t * nxt = qn_next ((data_source_t *) inv_cond);
 		  if (nxt)
 		    {
+		      dpipe_node_t * dp = sc->sc_qn_to_dpipe
+			? (dpipe_node_t *) gethash ((void*)nxt, so->so_sc->sc_qn_to_dpipe) : NULL;
 		      inv_cond->src_gen.src_pre_code = nxt->src_pre_code;
 		      nxt->src_pre_code = NULL;
+		      if (dp)
+			{
+			  sethash ((void*)inv_cond, sc->sc_qn_to_dpipe, (void*)dp);
+			  sethash ((void*)nxt, sc->sc_qn_to_dpipe, NULL);
+			}
 		    }
 		}
 	      break;
