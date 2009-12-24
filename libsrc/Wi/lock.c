@@ -1850,11 +1850,6 @@ dk_mutex_t *time_mtx;
 unsigned long checkpointed_last_time = 0;
 
 
-
-#ifdef unix
-#define HAVE_GETRUSAGE
-#endif
-
 #ifdef HAVE_GETRUSAGE
 #include <sys/resource.h>
 #endif
