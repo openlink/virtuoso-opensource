@@ -12721,10 +12721,6 @@ bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-#ifdef unix
-#define HAVE_GETRUSAGE
-#endif
-
 #ifdef HAVE_GETRUSAGE
 #include <sys/resource.h>
 #endif
