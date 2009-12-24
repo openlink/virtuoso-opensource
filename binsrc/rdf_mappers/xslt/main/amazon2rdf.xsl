@@ -61,6 +61,7 @@
     <xsl:param name="baseUri" />
     <xsl:param name="asin" />
     <xsl:param name="currentDateTime"/>
+    <xsl:param name="associate_key"/>
     <xsl:param name="wish_list" />
 
 	<!-- Amazon provides a short URL http://www.amazon.com/o/ASIN/{asin} for each product  -->
@@ -164,6 +165,9 @@
 				-->
 				<xsl:value-of select="concat (vi:proxyIRI($base, '', 'Offer_'), position())"/>
 			</xsl:attribute>
+			<xsl:if test="$associate_key != ''">
+			    <owl:sameAs rdf:resource="{concat ($base, '/ref=nosim/', $associate_key)}"/>
+			</xsl:if>		    
 	    	<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 		    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 	    	<gr:includes rdf:resource="{$resourceURL}"/>
