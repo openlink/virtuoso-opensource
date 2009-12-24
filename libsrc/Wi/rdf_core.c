@@ -52,12 +52,12 @@ extern "C" {
 int uriqa_dynamic_local = 0;
 
 caddr_t
-uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https)
+uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
 {
   caddr_t res = NULL;
-  if (NULL != qi->qi_client->cli_http_ses)
+  if (cli && NULL != cli->cli_ws)
     {
-      ws_connection_t *ws = qi->qi_client->cli_ws;
+      ws_connection_t *ws = cli->cli_ws;
       res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
       if (NULL != is_https)
 	*is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
@@ -127,10 +127,10 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
       return NULL;
     }
   if (!strcmp ("WSHost", varname))
-    return uriqa_get_host_for_dynamic_local (qi, NULL);
+    return uriqa_get_host_for_dynamic_local (qi->qi_client, NULL);
   if (!strcmp ("WSHostName", varname))
     {
-      caddr_t host = uriqa_get_host_for_dynamic_local (qi, NULL);
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi->qi_client, NULL);
       const char *colon;
       caddr_t res;
       if (NULL == host)
@@ -144,7 +144,7 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
     }
   if (!strcmp ("WSHostPort", varname))
     {
-      caddr_t host = uriqa_get_host_for_dynamic_local (qi, NULL);
+      caddr_t host = uriqa_get_host_for_dynamic_local (qi->qi_client, NULL);
       const char *colon;
       caddr_t res;
       if (NULL == host)
@@ -2251,6 +2251,33 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
   return iri;
 }
 
+caddr_t
+uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli)
+{
+  if (!strncmp (name, "local:", 6))
+    {
+      caddr_t host;
+      int is_https = 0;
+      host = uriqa_get_host_for_dynamic_local (cli, &is_https);
+      if (NULL != host)
+        {
+          int name_box_len = box_length (name);
+          int host_strlen = strlen (host);
+          caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7 + is_https + host_strlen), DV_STRING);
+/*                                01234567 */
+	  if (!is_https)
+	    memcpy (expanded_name, "http://", 7);
+	  else
+	    memcpy (expanded_name, "https://", 8);
+          memcpy (expanded_name + 7 + is_https, host, host_strlen);
+          memcpy (expanded_name + 7 + is_https + host_strlen, name + 6, name_box_len - 6);
+          dk_free_box (name);
+          name = expanded_name;
+	  dk_free_box (host);
+        }
+    }
+  return name;
+}
 
 caddr_t
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
@@ -2313,12 +2340,13 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   dk_free_box (prefix);
   dk_free_box (local);
 
+  /* may be replace following with uriqa_dynamic_local_replace */
 /*                    0123456 */
   if (!strncmp (name, "local:", 6))
     {
       caddr_t host;
       int is_https = 0;
-      host = uriqa_get_host_for_dynamic_local (qi, &is_https);
+      host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
       if (NULL != host)
         {
           int name_box_len = box_length (name);
@@ -2390,12 +2418,13 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 	  lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	}
     }
+  /* may be replace following with uriqa_dynamic_local_replace */
 /*                       0123456 */
   if (!strncmp (prefix, "local:", 6))
     {
       caddr_t host;
       int is_https = 0;
-      host = uriqa_get_host_for_dynamic_local (qi, &is_https);
+      host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
       if (NULL != host)
         {
 /*                                         012345678    01234567 */
@@ -2981,6 +3010,14 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return iri_ensure (qst, name, 0, err_ret);
 }
 
+caddr_t
+bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
+  name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
+  return name;
+}
+
 
 void rdf_inf_init ();
 
@@ -3099,6 +3136,7 @@ rdf_core_init (void)
   bif_define ("__id2in", bif_id_to_iri_nosignal);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif

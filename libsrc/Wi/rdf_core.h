@@ -237,7 +237,7 @@ extern id_hash_t *rdf_obj_ft_rules_by_iids;
 extern id_hash_t *rdf_obj_ft_rules_by_iris;
 
 extern int uriqa_dynamic_local;
-extern caddr_t uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https);
+extern caddr_t uriqa_get_host_for_dynamic_local (client_connection_t *qi, int * is_https);
 extern caddr_t uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname);
 /*!< checks whether the given \c iri starts with the http://default-host , returns zero if not or number of leading chars to cut the local part. */
 extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
@@ -267,5 +267,7 @@ extern caddr_t boxed_nobody_uid;
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 void rdf_graph_keyword (iri_id_t id, char *ret);
+caddr_t uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli);
+
 
 #endif
