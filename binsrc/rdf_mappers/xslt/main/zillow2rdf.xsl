@@ -88,7 +88,7 @@
 			  	<rdfs:comment>The legal agent making the offering</rdfs:comment>
 		      	<rdfs:label>Zillow Co., Inc.</rdfs:label>
 		      	<gr:legalName>Zillow Co., Inc.</gr:legalName>
-		      	<gr:offers rdf:resource="{$resourceURL}"/>
+		      	<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
 			  	<foaf:homepage rdf:resource="http://www.zillow.com" />
 			  	<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.zillow.com')}"/>
             </gr:BusinessEntity>

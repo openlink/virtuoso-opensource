@@ -144,6 +144,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare', vector ('SharedSecret', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://.*revyu.com/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_REVYU', null, 'Revyu');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://bugs.*)|'||
 	'(http://.*/show_bug.cgi\\?id.*)|'||
 	'(http://.*bugzilla.*)|'||
@@ -4505,6 +4509,38 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_REVYU (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
+	declare pos int;
+	declare link, user_id varchar;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://%revyu.com/people/%')
+	{
+            tmp := sprintf_inverse (new_origin_uri, 'http://%srevyu.com/people/%s', 0);
+            user_id := tmp[1];
+            pos := strstr(user_id, '/about');
+            if (pos is not NULL)
+            {
+                user_id := subseq(user_id, 0, pos);
+            }
+            url := sprintf('http://revyu.com/people/%s/about/rdf', user_id);
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/revyu2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
@@ -4781,7 +4817,9 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 {
   declare index1, xd, xd_utf8, xt, url, tmp, api_key, asin, hdr, exif, secret_key, datenow, canon, StringToSign, hmacKey, signed any;
   declare pos, is_wish_list integer;
+  declare associate_key varchar;
   asin := null;
+  associate_key := null;
   is_wish_list := 0;
   declare exit handler for sqlstate '*'
     {
@@ -4891,6 +4929,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (isarray (opts) and 0 = mod (length(opts), 2))
     {
       secret_key := get_keyword ('secret_key', opts);
+      associate_key := get_keyword ('associate_key', opts);
     }
   if ((0 = length (api_key)) or (0 = length (secret_key)))
     return 0;
@@ -4917,7 +4956,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar), 'wish_list', cast(is_wish_list as varchar)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/amazon2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'asin', asin, 'currentDateTime', cast(date_iso8601(now()) as varchar), 'wish_list', cast(is_wish_list as varchar), 'associate_key', associate_key));
   xd_utf8 := serialize_to_UTF8_xml (xt);
    {
      declare mlist varchar;

@@ -75,18 +75,17 @@
 		<xsl:variable name="doc1">
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
-		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
-		    <awol:content>
-			<awol:Content>
-			    <!--awol:body rdf:parseType="Literal">
-				<xsl:apply-templates select="$doc1" mode="content"/>
-			    </awol:body-->
-			    <awol:src rdf:resource="{$baseUri}"/>
-			</awol:Content>
-		    </awol:content>
-		</xsl:if>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
+		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+		    <awol:content rdf:resource="{$resourceURL}#content"/>
+		</xsl:if>
       </rdf:Description>
+      <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+	  <rdf:Description rdf:about="{$resourceURL}#content">
+	      <rdf:type rdf:resource="&awol;Content"/>
+	      <awol:src rdf:resource="{$baseUri}"/>
+	  </rdf:Description>
+      </xsl:if>
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">

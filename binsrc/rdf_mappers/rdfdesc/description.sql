@@ -53,6 +53,7 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://purl.org/ontology/mo/MusicArtist> rdfs:subClassOf foaf:Person .
 foaf:maker rdfs:subClassOf dc:creator .
 <http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
+<http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
@@ -180,6 +181,18 @@ create procedure rdfdesc_label (in _S any, in _G varchar, in lines any := null)
 	}
     }
   return best_str;
+}
+;
+
+create procedure rdfdesc_buy_link (in _G varchar, in _S varchar)
+{
+  declare ret any;
+  ret := (sparql 
+  define input:storage "" 
+  prefix gr: <http://purl.org/goodrelations/v1#>
+  prefix owl: <http://www.w3.org/2002/07/owl#>
+  select ?sas { graph `iri(?:_G)` { ?s a gr:Offering ; owl:sameAs ?sas }});
+  return ret;
 }
 ;
 
@@ -413,7 +426,7 @@ again:
 	 _label := null;
 
        rdfa := rdfdesc_rel_print (prop, rel, _url, 0, null);
-       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like 'nodeID://%')
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content')
 	 {
 	   declare src any;
 	   whenever not found goto usual_iri;
