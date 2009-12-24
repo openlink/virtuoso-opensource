@@ -2058,8 +2058,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   _identity := trim (foafIRI);
   _loc_idn := trim (foafIRI);
   V := rfc1808_parse_uri (_identity);
-  if (atoi (sys_stat ('st_dbms_ver')) < 6 and is_https_ctx () and
-      cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
+  if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
     {
       V [0] := 'local';
       V [1] := '';
@@ -2084,6 +2083,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   exec (S, st, msg, vector (), 0);
   if (st <> '00000')
     goto _exit;
+  commit work;
+  set isolation='committed';
   if (sslFOAFCheck)
   {
     declare info any;

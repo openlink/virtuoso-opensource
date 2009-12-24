@@ -318,12 +318,12 @@ fi
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
 
 
-  cd vad/vsp/$VAD_NAME 2>&1>/dev/null
+  cd vad/vsp/$VAD_NAME
   for file in `find . -type f -print | grep -v CVS | grep -v ".sql" | sort | cut -b3-`
   do
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../../../$STICKER
   done
-  cd ../../.. 2>&1>/dev/null
+  cd ../../..
 
   echo "</resources>" >> $STICKER
   echo "<registry>" >> $STICKER

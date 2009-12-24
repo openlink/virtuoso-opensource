@@ -2548,9 +2548,7 @@ registry_set ('URIQADynamicLocal', coalesce (cfg_item_value (virtuoso_ini_path (
 
 create procedure fix_graph (in g any)
 {
-  if (
-      --registry_get ('URIQADynamicLocal') = '1' and 
-      isstring (g) and g like get_graph () || '%')
+  if (registry_get ('URIQADynamicLocal') = '1' and isstring (g) and g like get_graph () || '%')
     {
       declare pref any;
       pref := sprintf ('http://%s', get_cname ());
@@ -2565,7 +2563,7 @@ create procedure fix_uri (in uri any)
   declare hf any;
 
   hf := rfc1808_parse_uri (uri);
-  if (hf[1] = registry_get ('URIQADefaultHost'))
+  if (hf[1] = registry_get ('URIQADefaultHost') and registry_get ('URIQADynamicLocal') = '1')
   {
     hf[0] := 'local';
     hf[1] := '';
@@ -3967,11 +3965,17 @@ create procedure std_pref_declare ()
 
 create procedure foaf_check_friend (in iri varchar, in agent varchar)
 {
-  declare hf, stat, msg, meta, data any;
+  declare hf, stat, msg, meta, data, graph any;
 
   hf := rfc1808_parse_uri (iri);
+  if (registry_get ('URIQADynamicLocal') = '1')
+    {
+      graph := 'local:/dataspace';
   hf[0] := 'local';
   hf[1] := '';
+    }
+  else
+    graph := get_graph ();
   iri := DB.DBA.vspx_uri_compose (hf);
 
   agent := fix_uri (agent);
@@ -3979,8 +3983,9 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
     return 1;
   stat := '00000';
   msg := 'OK';
-  exec (sprintf ('sparql define input:storage ""  prefix foaf: <http://xmlns.com/foaf/0.1/> ask from <local:/dataspace> where { <%S> foaf:knows <%S> }',
-	iri, agent), stat, msg, vector (), 0, meta, data);
+  exec (
+  	sprintf ('sparql define input:storage ""  prefix foaf: <http://xmlns.com/foaf/0.1/> ask from <%s> where { <%S> foaf:knows <%S> }',
+	  graph, iri, agent), stat, msg, vector (), 0, meta, data);
   if (stat = '00000' and length (data) and length (data[0]) and data[0][0] = 1)
     return 1;
   return 0;
@@ -4060,7 +4065,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   declare pers_iri, http_hdr, iri_pref varchar;
 
   set http_charset='utf-8';
+  if (registry_get ('URIQADynamicLocal') = '1')
   graph := 'local:/dataspace'; 
+  else
+    graph := get_graph ();
   iri_pref := graph; --get_graph ();
   ses := string_output ();
 
@@ -4109,7 +4117,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs[7] := null;
   if (is_https_ctx () and foaf_check_ssl (pers_iri))
     {
-      qrs[6] := sprintf ('sparql define input:storage ""  construct { ?s ?p ?o } from <local:/dataspace/protected/%U> where { ?s ?p ?o }', u_name);
+      qrs[6] := sprintf ('sparql define input:storage ""  construct { ?s ?p ?o } from <%s/protected/%U> where { ?s ?p ?o }', graph, u_name);
     }
 
   part := sprintf (
@@ -4469,7 +4477,7 @@ execute_qr:
       if (q is not null)
 	{
 --	  dbg_printf ('%s', q);
-	  exec (q, state, msg, vector(), maxrows, metas, rset);
+    	  exec (q, state, msg, vector(), vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
 	  if (state <> '00000')
 	    signal (state, msg);
 	  if (fmt = 'rdf')
