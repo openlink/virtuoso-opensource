@@ -220,7 +220,7 @@ create procedure sessionValidateX509 (
     exec (S, st, msg);
     commit work;
     loc_idn := agent;
-    if (atoi (sys_stat ('st_dbms_ver')) < 6 and is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and vec [1] = registry_get ('URIQADefaultHost'))
+    if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and vec [1] = registry_get ('URIQADefaultHost'))
       {
 	vec [0] := 'local';
 	vec [1] := '';

@@ -590,6 +590,53 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
 }
 ;
 
+create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in oauth_secret varchar := '', in sid varchar := null) __SOAP_HTTP 'text/plain'
+{
+  declare signature, timest, nonce varchar;
+  declare ret varchar;
+  declare consumer_secret, oauth_token varchar;
+  declare inx int;
+  declare arr, hf any;
+
+  nonce := xenc_rand_bytes (8, 1);
+  timest := datediff ('second', stringdate ('1970-1-1'), now ()) - (timezone (now()) * 60);
+  if (length (params) and params not like '%&')
+    params := params || '&';
+
+  params := params ||
+            sprintf ('oauth_consumer_key=%s&oauth_signature_method=HMAC-SHA1&oauth_timestamp=%ld&oauth_nonce=%s&oauth_version=1.0',
+                  	 consumer_key,
+                 		 timest,
+                 		 nonce);
+  oauth_token := get_auth_token (sid);
+  if (length (oauth_token))
+    params := params || sprintf ('&oauth_token=%s', oauth_token);
+  hf := rfc1808_parse_uri (url);
+  if (hf[4] <> '')
+    params := hf[4] || '&' || params;
+  params := OAUTH..normalize_params (params);
+  url := OAUTH..normalize_url (url, vector ());
+  dbg_obj_print (params);
+
+  declare exit handler for not found {signal ('OAUTH', 'Cannot find secret');};
+  select a_secret into consumer_secret from OAUTH..APP_REG where a_key = consumer_key;
+  if (length (sid))
+    select cs_token, cs_secret into oauth_token, oauth_secret from OAUTH..CLI_SESSIONS where cs_sid = sid;
+  signature := OAUTH..sign_hmac_sha1 (meth, url, params, consumer_secret, oauth_secret);
+  ret := params||'&oauth_signature='||sprintf ('%U', signature);
+  arr := split_and_decode (ret, 0);
+  ret := 'Authorization: OAuth';
+  for (inx := 0; inx < length (arr); inx := inx + 2) 
+     {
+       if (arr[inx] like 'oauth_%')
+	 ret := ret || ' ' || arr[inx] || '="' || sprintf ('%U', arr[inx+1]) || '"' || ','; 
+     }
+  ret := rtrim (ret, ',');   
+  dbg_obj_print (ret);
+  return ret;
+}
+;
+
 create procedure OAUTH..keys_request (in consumer varchar) __SOAP_HTTP 'text/plain'
 {
   declare options varchar;
