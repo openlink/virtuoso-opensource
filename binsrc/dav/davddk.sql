@@ -45,6 +45,7 @@ create table WS.WS.SYS_DAV_COL (
 alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
 create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
 create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_ID int)
+create index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
 ;
 
 --#IF VER=5
@@ -89,6 +90,7 @@ create table WS.WS.SYS_DAV_RES (
 create unique index SYS_DAV_RES_COL on WS.WS.SYS_DAV_RES (RES_COL, RES_NAME) partition (RES_COL int)
 create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH) partition (RES_FULL_PATH varchar (-10, 0hexffff))
 alter index SYS_DAV_RES on WS.WS.SYS_DAV_RES partition (RES_ID int)
+create index SYS_DAV_RES_IID on WS.WS.SYS_DAV_RES (RES_IID) partition (RES_IID int (0hexffff00))
 ;
 
 --#IF VER=5
@@ -1132,7 +1134,15 @@ props_done:
 }
 ;
 
-WS.WS.SYS_DAV_INIT ()
+create procedure WS.WS.SYS_DAV_INIT_1 ()
+{
+  if (sys_stat ('cl_run_local_only') <> 1)
+    return;
+  WS.WS.SYS_DAV_INIT ();
+}
+;
+
+WS.WS.SYS_DAV_INIT_1 ()
 ;
 
 create procedure
