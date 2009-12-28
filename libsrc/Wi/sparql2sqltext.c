@@ -5151,6 +5151,7 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
           ssg_puts (" =");
           ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), vmode, eq_idx_asname);
         }
+      return;
     }
   if ((0 == col_count) || !(SPART_VARR_IS_REF & rvr->rvrRestrictions) || !short_cmp_is_legal)
     {
