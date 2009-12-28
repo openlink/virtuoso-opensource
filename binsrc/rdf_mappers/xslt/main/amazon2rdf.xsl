@@ -527,15 +527,13 @@
 		<bibo:asin><xsl:value-of select="."/></bibo:asin>
     </xsl:template>
 
-
-    <!--xsl:template match="amz:ItemAttributes/amz:Author" mode="bibo">
-        <dcterms:contributor>
-			<foaf:Person rdf:about="{vi:proxyIRI ($base, '', 'Author')}">
-				<foaf:name><xsl:value-of select="."/></foaf:name>
-			</foaf:Person>
-			<bibo:role rdf:resource="&bibo;author"/>
-        </dcterms:contributor>
-    </xsl:template-->
+    <xsl:template match="amz:ItemAttributes/amz:Author" mode="bibo">
+      <bibo:authorList rdf:parseType="Collection">
+        <rdf:Description rdf:about="{vi:proxyIRI ($base, '', 'Author')}">
+	    <rdf:value><xsl:value-of select="."/></rdf:value>
+	</rdf:Description>
+      </bibo:authorList>
+    </xsl:template>
 
     <xsl:template match="text()|@*"/>
     <xsl:template match="text()|@*" mode="offering" />

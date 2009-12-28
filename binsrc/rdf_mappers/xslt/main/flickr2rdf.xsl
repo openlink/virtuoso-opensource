@@ -126,10 +126,10 @@
     </xsl:template>
     <xsl:template match="dates">
 	<dcterms:created rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
-	    <!--xsl:value-of select="v:unixTime2ISO (@posted)"/-->
+	    <xsl:value-of select="v:unixTime2ISO (@posted)"/>
 	</dcterms:created>
 	<dcterms:modified rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
-	    <!--xsl:value-of select="v:unixTime2ISO (@lastupdate)"/-->
+	    <xsl:value-of select="v:unixTime2ISO (@lastupdate)"/>
 	</dcterms:modified>
 	<dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime"><xsl:value-of select="translate (@taken, ' ', 'T')"/></dc:date>
     </xsl:template>
