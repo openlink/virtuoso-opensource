@@ -4744,7 +4744,7 @@ bif_chr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "lcase");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "lcase");
   long len;
   caddr_t res;
   int i;
@@ -4785,7 +4785,7 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "ucase");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "ucase");
   long len;
   caddr_t res;
   int i;
