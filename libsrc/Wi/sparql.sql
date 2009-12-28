@@ -4398,12 +4398,15 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside
 }
 ;
 
-create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resource varchar, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer) returns any
 {
+  declare old_log_enable integer;
   declare grab_params any;
   declare grabbed any;
   declare res integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL LOAD');
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -4417,6 +4420,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resourc
   commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
   commit work;
+  log_enable (old_log_enable, 1);
   if (res)
     {
       if (compose_report)
@@ -4434,8 +4438,9 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in uid integer, in resourc
 }
 ;
 
-create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silent integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
 {
+  declare old_log_enable integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CREATE GRAPH');
   if (exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
@@ -4451,8 +4456,11 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silen
     }
   if (silent)
     {
+      old_log_enable := log_enable (log_mode, 1);
+      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
       insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
-      commit work;
+      /*091202 commit work; */
+      log_enable (old_log_enable, 1);
       if (compose_report)
         return sprintf ('Create silent graph <%s> -- done', graph_iri);
       else
@@ -4464,8 +4472,11 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silen
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
-  commit work;
+  /*091202 commit work; */
+  log_enable (old_log_enable, 1);
   if (compose_report)
     return sprintf ('Create graph <%s> -- done', graph_iri);
   else
@@ -4473,9 +4484,12 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in uid integer, in silen
 }
 ;
 
-create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_DROP (in graph_iri any, in silent integer, in uid integer, in log_mode integer, in compose_report integer) returns any
 {
+  declare old_log_enable integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DROP GRAPH');
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri)))
     {
       if (silent)
@@ -4483,6 +4497,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
           if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
             {
               DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
+              log_enable (old_log_enable, 1);
               if (compose_report)
                 return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', graph_iri);
               else
@@ -4500,7 +4515,8 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
     {
       DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
       delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
-      commit work;
+      /*091202 commit work; */
+      log_enable (old_log_enable, 1);
       if (compose_report)
         return sprintf ('Drop silent graph <%s> -- done', graph_iri);
       else
@@ -4512,7 +4528,8 @@ create function DB.DBA.SPARUL_DROP (in graph_iri any, in uid any, in silent inte
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
   DB.DBA.SPARUL_CLEAR (graph_iri, 0, uid);
   delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = iri_to_id (graph_iri);
-  commit work;
+  log_enable (old_log_enable, 1);
+  /*091202 commit work; */
   if (compose_report)
     return sprintf ('Drop graph <%s> -- done', graph_iri);
   else
@@ -4669,6 +4686,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
       declare fld_ctr integer;
       declare triple_vec any;
       triple_vec := vector (0,0,0);
+      -- dbg_obj_princ ('opcodes[triple_ctr]=', opcodes[triple_ctr]);
       for (fld_ctr := 2; fld_ctr >= 0; fld_ctr := fld_ctr - 1)
         {
           declare op integer;
@@ -4732,6 +4750,8 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                     __tag (arg), __box_flags (arg),
                     __rdf_strsqlval (arg),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
+              else if (__tag of vector = __tag (arg))
+                arg := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (arg[0], arg[1], arg[2]);
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_CONSTRUCT()');
