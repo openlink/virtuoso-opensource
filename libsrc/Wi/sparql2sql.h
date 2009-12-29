@@ -894,11 +894,13 @@ An occurrence of a non-blocking feature provides some hint to the optimizer of t
 #define SSG_SD_IN		0x0020	/*!< Allows the use of IN operator, non-blocking because can be replaced with '=' */
 #define SSG_SD_LIKE		0x0040	/*!< Allows the use of LIKE operator, blocking */
 #define SSG_SD_BI		0x0080	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
-#define SSG_SD_VOS_509		0x00FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
-#define SSG_SD_SERVICE		0x0100	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_TRANSIT		0x0200	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_VOS6		0x0FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
-#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_509	/*!< Allows everything that is supported by current version of Virtuoso */
+#define SSG_SD_VIRTSPECIFIC	0x0100	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
+#define SSG_SD_VOS_509		0x01FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
+#define SSG_SD_SERVICE		0x0200	/*!< Allows the use of SERVICE extension, blocking */
+#define SSG_SD_VOS_5_LATEST	0x03FF	/*!< Allows everything that is supported by CVS had of Virtuoso Open Source 5.x.x */
+#define SSG_SD_TRANSIT		0x0400	/*!< Allows the use of transitivity extension, blocking */
+#define SSG_SD_VOS_6		0x07FF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
+#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso */
 
 extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);

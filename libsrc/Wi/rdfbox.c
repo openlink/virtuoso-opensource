@@ -3019,11 +3019,11 @@ bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char
   caddr_t app_uid = NULL;
   oid_t uid;
   int perms, failed_perms;
-  caddr_t graph = bif_arg (qst, args, 0, "rgs_assert");
+  caddr_t graph = bif_arg (qst, args, 0, fname);
   caddr_t graph_boxed_iid = NULL;
   caddr_t graph_iri = NULL;
-  int req_perms = bif_long_arg (qst, args, 2, "rgs_assert");
-  const char *opname = (3 < BOX_ELEMENTS (args)) ? bif_string_arg (qst, args, 3, "rgs_assert") : "SPARQL query";
+  int req_perms = bif_long_arg (qst, args, 2, fname);
+  const char *opname = (3 < BOX_ELEMENTS (args)) ? bif_string_arg (qst, args, 3, fname) : "SPARQL query";
   const char *user_type = "database";
   if (DV_IRI_ID == DV_TYPE_OF (graph))
     graph_boxed_iid = graph;

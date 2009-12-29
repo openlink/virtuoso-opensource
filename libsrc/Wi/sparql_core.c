@@ -76,6 +76,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case SPAR_LIST:		return sizeof (sample._.list);
     case SPAR_GRAPH:		return sizeof (sample._.graph);
     case SPAR_WHERE_MODIFS:	return sizeof (sample._.wm);
+    case SPAR_SERVICE_INV:	return sizeof (sample._.sinv);
     case ORDER_L:		return sizeof (sample._.oby);
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
@@ -341,6 +342,13 @@ spar_internal_error (sparp_t *sparp, const char *msg)
     "%.400s: Internal error: %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
 #endif
+}
+
+void
+spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const char *feature_name)
+{
+  spar_error (sparp, "The support of %.200s syntax is disabled for debugging or security purpose by disabling bit 0x%x of define lang:dialect",
+    feature_name, feature_name );
 }
 
 #ifdef MALLOC_DEBUG
@@ -1565,6 +1573,43 @@ in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
 }
 
+void
+spar_compose_service_inv (sparp_t *sparp, SPART *gp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax)
+{
+  dk_set_t iri_params = NULL;
+  dk_set_t param_varnames = NULL;
+  dk_set_t rset_varnames = NULL;
+  dk_set_t defines = NULL;
+  while (NULL != all_options)
+    {
+      caddr_t optvalue = t_set_pop (&all_options);
+      caddr_t optname = t_set_pop (&all_options);
+      if (DEFINE_L == (ptrlong)optname)
+        {
+          t_set_push (&defines, ((SPART **)optvalue)[0]);
+          t_set_push (&defines, ((SPART **)optvalue)[1]);
+        }
+      else if (IN_L == (ptrlong)optname)
+        {
+          DO_SET (SPART *, var, (dk_set_t *)(&optvalue))
+            {
+              caddr_t vname = var->_.var.vname;
+              if (0 <= dk_set_position_of_string (param_varnames, vname))
+                spar_error (sparp, "Duplicate IN variable name \"%.100s\" in OPTIONs of SERVICE invocation", vname);
+              t_set_push (&param_varnames, vname);
+            }
+          END_DO_SET()
+        }
+/*! TBD: add other cases */
+    }
+  SPART *sinv = spartlist (sparp, 7, SPAR_SERVICE_INV, endpoint,
+    t_revlist_to_array (iri_params),
+    t_box_num (permitted_syntax),
+    t_revlist_to_array (param_varnames),
+    t_revlist_to_array (rset_varnames),
+    t_revlist_to_array (defines) );
+  gp->_.gp.options = (SPART **)t_list_concat_tail ((caddr_t)(gp->_.gp.options), 2, SPAR_SERVICE_INV, sinv);
+}
 
 int
 spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
@@ -2703,7 +2748,7 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
           spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
   else
     call = spar_make_funcall (sparp, 0, t_box_sprintf (30, "sql:SPARUL_%.15s", opname),
-      (SPART **)t_list (4, graph_precode, spar_exec_uid_and_gs_cbk (sparp), aux_op, spar_compose_report_flag (sparp)) );
+      (SPART **)t_list (5, graph_precode, aux_op, spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp)) );
   top = spar_make_top_or_special_case_from_wm (sparp, subtype,
     (SPART **)t_list (1, call),
     spar_selid_pop (sparp), fake_sol );
@@ -3030,6 +3075,7 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
       sparp->sparp_sparqre = &sparqre;
       sparp->sparp_text = t_box_copy (str);
       sparp->sparp_env = se;
+      sparp->sparp_permitted_syntax = ~0;
       sparp->sparp_synthighlight = 1;
       sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL analyzer");
       if (NULL == query_charset)
@@ -3105,6 +3151,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   if ((NULL == sparqre->sparqre_exec_user) && (NULL != sparqre->sparqre_cli))
     sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   sparp->sparp_env = spare;
+  sparp->sparp_permitted_syntax = ~0;
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
     {
@@ -3595,6 +3642,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   sparqre.sparqre_param_ctr = &param_ctr_for_sparqre;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp.sparp_sparqre = &sparqre;
+  sparp.sparp_permitted_syntax = ~0;
   sparp.sparp_env = &spare;
   sparp.sparp_sg = &sparp_globals;
   memset (&ssg, 0, sizeof (spar_sqlgen_t));

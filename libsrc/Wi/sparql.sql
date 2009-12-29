@@ -1559,7 +1559,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
         iri_to_id (o_type),
         o_lang );
     }
-  if (isstring (o_lang))
+  if (__tag (o_lang) in (__tag of varchar, 217))
     return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
   return DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (o_val);
 }
@@ -4369,20 +4369,23 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
 ;
 
 --!AFTER
-create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside_sponge integer := 0, in compose_report integer := 0) returns any
+create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0) returns any
 {
-  commit work;
+  declare old_log_enable integer;
+  /* 091202 commit work; */
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CLEAR GRAPH');
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   delete from DB.DBA.RDF_QUAD
-  where G = iri_to_id (graph_iri) and
+  where G = iri_to_id (graph_iri) /*091202 and
   case (gt (__trx_disk_log_length (0, S, O), 1000000))
-  when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end;
-  commit work;
+  when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end */ ;
+  /*091202 commit work; */
   delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS
-  where VT_WORD = cast (iri_to_id (graph_iri) as varchar) and
+  where VT_WORD = cast (iri_to_id (graph_iri) as varchar) /*091202 and
   case (gt (__trx_disk_log_length (0, VT_D_ID, VT_D_ID_2), 1000000))
-  when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
-  commit work;
+  when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end */;
+  /*091202commit work; */
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   if (not inside_sponge)
@@ -4390,7 +4393,8 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any, in uid integer, in inside
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (graph_iri), '&graphMD5=%');
     }
-  commit work;
+  /*091202 commit work; */
+  log_enable (old_log_enable, 1);
   if (compose_report)
     return sprintf ('Clear <%s> -- done', graph_iri);
   else
@@ -6093,7 +6097,7 @@ create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
 create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in rootinst varchar, in destinst varchar, in dest_iid iri_id, inout noinherits any, inout inh_stack any)
 {
   declare base_iid iri_id;
-  declare baseinst varchar;
+  declare baseinst, "pred" varchar;
   -- dbg_obj_princ ('JSO_MAKE_INHERITANCE (', jgraph, class, rootinst, destinst, ')');
   inh_stack := vector_concat (inh_stack, vector (destinst));
   baseinst := null;
@@ -6179,23 +6183,23 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
     }
   if (baseinst is null)
     return;
-  for (select "pred", "predval"
+  for (select "pred_id", "predval"
     from (sparql
       define input:storage ""
       define output:valmode "LONG"
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-      select ?pred, ?predval
+      select ?pred_id, ?predval
       where {
           graph ?:jgraph {
-              ?:base_iid ?pred ?predval
+              ?:base_iid ?pred_id ?predval
             } } ) as "t00"
       where not exists (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-          ask where { graph ?:jgraph { ?:"t00"."pred" virtrdf:loadAs virtrdf:jsoTriple } } )
+          ask where { graph ?:jgraph { ?:"t00"."pred_id" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
-      "pred" := id_to_iri ("pred");
+      "pred" := id_to_iri ("pred_id");
       if (DB.DBA.RDF_LANGUAGE_OF_LONG ("predval", null) is not null)
         signal ('22023', 'JSO_MAKE_INHERITANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "pred")
@@ -6220,7 +6224,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
 {
   declare jinst_iid, jgraph_iid IRI_ID;
   declare jclass varchar;
-  declare noinherits, inh_stack any;
+  declare noinherits, inh_stack, "p" any;
   -- dbg_obj_princ ('JSO_LOAD_INSTANCE (', jgraph, ')');
   noinherits := dict_new ();
   jinst_iid := iri_to_id (jinst);
@@ -6262,24 +6266,23 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     jso_delete (jclass, jinst, 1);
   if (make_new)
     jso_new (jclass, jinst);
-  for (select "p", coalesce ("o2", "o1") as "o"
+  for (select "p_id", coalesce ("o2", "o1") as "o"
       from (sparql
           define input:storage ""
           define output:valmode "LONG"
-          define sql:table-option "LOOP, index RDF_QUAD"
-          select ?p ?o1 ?o2
+          select ?p_id ?o1 ?o2
           where {
           graph ?:jgraph {
-              { ?:jsubj_iid ?p ?o1 }  optional { ?o1 rdf:name ?o2 }
+              { ?:jsubj_iid ?p_id ?o1 }  optional { ?o1 rdf:name ?o2 }
             } }
         ) as "t00"
       where not exists (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-          ask where { graph ?:jgraph_iid { ?:"t00"."p" virtrdf:loadAs virtrdf:jsoTriple } } )
+          ask where { graph ?:jgraph_iid { ?:"t00"."p_id" virtrdf:loadAs virtrdf:jsoTriple } } ) option (quietcast)
       ) do
     {
-      "p" := id_to_iri ("p");
+      "p" := id_to_iri ("p_id");
       if (DB.DBA.RDF_LANGUAGE_OF_LONG ("o", null) is not null)
         signal ('22023', 'JSO_LOAD_INSTANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "p")

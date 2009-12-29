@@ -52,11 +52,11 @@ extern "C" {
 #define SPAR_ALIAS		(ptrlong)1001
 #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002
 #define SPAR_BUILT_IN_CALL	(ptrlong)1003
-#define SPAR_CONV		(ptrlong)1004	/*!< temporary use in SQL printer */
+#define SPAR_CONV		(ptrlong)1004	/*!< Tree type for temporary use in SQL printer (conversion from one format to other) */
 #define SPAR_FUNCALL		(ptrlong)1005
 #define SPAR_GP			(ptrlong)1006
 #define SPAR_REQ_TOP		(ptrlong)1007
-#define SPAR_RETVAL		(ptrlong)1008	/*!< temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
+#define SPAR_RETVAL		(ptrlong)1008	/*!< Tree type for temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
 #define SPAR_LIT		(ptrlong)1009
 #define SPAR_QNAME		(ptrlong)1011
 #define SPAR_SQLCOL		(ptrlong)1012
@@ -67,6 +67,7 @@ extern "C" {
 #define SPAR_LIST		(ptrlong)1017
 #define SPAR_GRAPH		(ptrlong)1018
 #define SPAR_WHERE_MODIFS	(ptrlong)1019
+#define SPAR_SERVICE_INV	(ptrlong)1020	/*!< Tree type for details of invocation of an external service endpoint */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -256,6 +257,7 @@ typedef struct sparp_s {
   int sparp_yydebug;
 #endif
   caddr_t sparp_text;
+  int sparp_permitted_syntax;		/*!< Bitmask of permitted syntax extensions, 0 for default */
   int sparp_unictr;			/*!< Unique counter for objects */
 /* Environment of yacc */
   sparp_env_t * sparp_env;
@@ -311,6 +313,11 @@ extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
 extern caddr_t spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld);
 extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);
 extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
+extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const char *feature_name);
+#define SPAR_ERROR_IF_UNSUPPORTED_SYNTAX(feat,name) do { \
+  if (!((feat) & sparp_arg->sparp_permitted_syntax)) \
+    spar_error_if_unsupported_syntax_imp (sparp_arg, (feat), (name)); \
+    } while (0)
 
 #define SPART_HEAD 2 /* number of elements before \c _ union in spar_tree_t */
 #define SPART_TYPE(st) ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(st)) ? (st)->type : SPAR_LIT)
@@ -326,14 +333,14 @@ extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short
 #define SPART_TRIPLE_FIELDS_COUNT 4
 
 /* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
-#define SPART_GRAPH_FROM		0x100
-#define SPART_GRAPH_GROUP_BIT		0x001
-#define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NAMED		0x110
-#define SPART_GRAPH_MIN_NEGATION	0x17F
-#define SPART_GRAPH_NOT_FROM		0x180
-#define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x190
+#define SPART_GRAPH_FROM		0x80
+#define SPART_GRAPH_GROUP_BIT		0x02
+#define SPART_GRAPH_GROUP		0x82	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NAMED		0x84
+#define SPART_GRAPH_MIN_NEGATION	0x90
+#define SPART_GRAPH_NOT_FROM		0x91
+#define SPART_GRAPH_NOT_GROUP		0x93	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NOT_NAMED		0x95
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
 
@@ -543,6 +550,15 @@ typedef struct spar_tree_s
         caddr_t lim;		/*!< Boxed LIMIT value */
         caddr_t ofs;		/*!< Boxed OFFSET value */
       } wm;
+    struct {
+        /* define SPAR_SERVICE_INV	(ptrlong)1020 */
+        caddr_t endpoint;	/*!< An IRI of web service endpoint without static parameters */
+        SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
+        caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
+        caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
+        caddr_t *rset_varnames;	/*!< Names of variables that are returned in the result set from the endpoint, in the order in the rset */
+        SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
+      } sinv;
   } _;
 } sparp_tree_t;
 
@@ -659,6 +675,7 @@ extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, in
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 extern SPART *spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong from_group_subtype, ptrlong from2_subtype, ptrlong req_perms, SPART *needle_in);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
+extern void spar_compose_service_inv (sparp_t *sparp, SPART *gp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);

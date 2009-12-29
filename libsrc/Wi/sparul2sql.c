@@ -139,7 +139,9 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
         return SPAR_GPT_COMPLETED;
       return SPAR_GPT_NODOWN;
     case SPAR_GP:
-      if (SELECT_L == curr->_.gp.subtype)
+      switch (curr->_.gp.subtype)
+        {
+        case SELECT_L:
         {
 #if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
           return SPAR_GPT_COMPLETED;
@@ -152,6 +154,9 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
             return SPAR_GPT_COMPLETED;
           return SPAR_GPT_NODOWN;
 #endif
+        }
+        case SERVICE_L:
+          return 0; /* remote triples can not interfere with local data manipulations. This may change in the future if SERVICE group ctor template is added in SPARUL */
         }
       break;
     }
@@ -932,7 +937,7 @@ ins_is_bad: ;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_MODIFY_CTOR",
     (SPART **)t_list (6,
       spar_make_funcall (sparp, 0,
-        ((NULL == sparp->sparp_gs_app_callback) ? "bif:__rgs_assert" :  "bif:__rgs_assert_cbk"),
+        ((NULL == sparp->sparp_gs_app_callback) ? "SPECIAL::bif:__rgs_assert" :  "SPECIAL::bif:__rgs_assert_cbk"),
         (SPART **)t_list (4, graph_expn, uid_expn, (ptrlong)3,
           t_box_dv_short_string ("SPARUL MODIFY") ) ),
       spar_make_funcall (sparp, 0, "bif:vector",
