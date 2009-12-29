@@ -43,9 +43,9 @@ echo both ": distinct p's w o between Ass and Ast\n";
 select top 10  (__ro2sq (o))  from rdf_quad where __ro2sq (o) between 'Ass'and 'Ast';
 
 
--- select distinct top 10   (__ro2sq (o))  from rdf_quad where __ro2sq (o) between 'Ass'and 'Ast' and p = iri_to_id ('http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#name');
--- echo both $if $equ $last[1] "AssistantProfessor9" "PASSED" "***FAILED";
--- echo both ": distinct o range\n";
+select distinct top 10   (__ro2sq (o))  from rdf_quad where __ro2sq (o) between 'Ass'and 'Ast' and p = iri_to_id ('http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#name');
+echo both $if $equ $last[1] "AssistantProfessor9" "PASSED" "***FAILED";
+echo both ": distinct o range\n";
 
 
 
@@ -129,3 +129,58 @@ create procedure RRC_TEST (in strings any := null)
 
 RRC_TEST()
 ;
+
+sparql clear graph <http://big1>;
+sparql clear graph <http://big2>;
+sparql clear graph <http://big3>;
+sparql clear graph <http://big4>;
+sparql clear graph <http://mix5>;
+
+sparql insert data in <http://big1> { <s1> <p1> 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+sparql insert in <http://big2> { <s1> <p1> `?o1 * 10 + ?o2` } where { graph <http://big1> { <s1> <p1> ?o1 , ?o2 }};
+sparql select (count (1)) from <http://big2> where { ?s ?p ?o };
+echo both $if $equ $last[1] 100 "PASSED" "***FAILED";
+echo both ": count in http://big2\n";
+
+sparql insert in <http://big3> { <s1> <p1> `?o1 * 100 + ?o2` } where { graph <http://big2> { <s1> <p1> ?o1 , ?o2 }};
+sparql select (count (1)) from <http://big3> where { ?s ?p ?o };
+echo both $if $equ $last[1] 10000 "PASSED" "***FAILED";
+echo both ": count in http://big3\n";
+
+sparql insert in <http://big4> { <s1> <p1> `?o1 * 10000 + ?o2` } where { graph <http://big1> { <s1> <p1> ?o1 }  graph <http://big3> { <s1> <p1> ?o2 }};
+sparql select (count (1)) from <http://big4> where { ?s ?p ?o };
+echo both $if $equ $last[1] 100000 "PASSED" "***FAILED";
+echo both ": count in http://big4\n";
+
+
+cl_text_index(1);
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://mix5', null, 'big_ins_del');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://mix6', null, 'big_ins_del');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://mix7', null, 'big_ins_del');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://mix8', null, 'big_ins_del');
+
+sparql insert in <http://mix5> { <s1> <p1>
+  `iri (bif:sprintf ('http://o%d0', ?o1))`,
+  `iri (bif:sprintf ('http://o%d1', ?o1))`,
+  `iri (bif:sprintf ('http://o%d2', ?o1))`,
+  `iri (bif:sprintf ('http://o%d3', ?o1))`,
+  `bif:sprintf ('str%d4', ?o1)`,
+  `bif:sprintf ('str%d5', ?o1)`,
+  `bif:sprintf ('str%d6', ?o1)`,
+  `bif:sprintf ('str%d7', ?o1)`,
+  `?o1*10+8`,
+  `?o1*10+9` }
+where { graph <http://big3> { <s1> <p1> ?o1 } };
+sparql select (count (1)) from <http://mix5> where { ?s ?p ?o };
+echo both $if $equ $last[1] 100000 "PASSED" "***FAILED";
+echo both ": count in http://mix5\n";
+
+sparql insert in <http://mix6> { <s1> <p1> ?o1 } where { graph <http://mix5> { <s1> <p1> ?o1 } };
+sparql select (count (1)) from <http://mix6> where { ?s ?p ?o };
+echo both $if $equ $last[1] 100000 "PASSED" "***FAILED";
+echo both ": count in http://mix6\n";
+
+sparql insert in <http://mix7> { <s1> <p1> ?o1 } where { graph `iri(bif:concat ('http://', 'mix6'))` { <s1> <p1> ?o1 } };
+sparql select (count (1)) from <http://mix7> where { ?s ?p ?o };
+echo both $if $equ $last[1] 100000 "PASSED" "***FAILED";
+echo both ": count in http://mix7\n";
