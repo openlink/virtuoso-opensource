@@ -218,11 +218,14 @@ _end:
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.check_feed_grants (
-  in feed_id integer,
+create procedure ENEWS.WA.check_feeds_grants (
+  in domain_id integer,
   in user_id integer)
 {
   if (ENEWS.WA.check_admin ( user_id))
+    return 1;
+
+  if (exists (select 1 from DB.DBA.WA_SETTINGS_FEEDS where WSF_INSTANCE_ID = domain_id))
     return 1;
 
   return 0;
@@ -895,10 +898,9 @@ create procedure ENEWS.WA.feeds_agregator (
   declare dt datetime;
   declare p, f, u any;
 
-  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
-  f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
+  p := (select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS);
+  f := (select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS);
   u := ENEWS.WA.channel_update_period (p, f);
-
   dt := now();
   declare cr static cursor for select EF_ID,
                                       EF_URI,
@@ -3028,17 +3030,9 @@ create procedure ENEWS.WA.blogs_agregator ()
   declare dt datetime;
   declare p, f, u any;
 
-  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
-  f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
-  u := case p
-         when 'daily' then 1440
-         when 'weekly' then 10080
-         when 'monthly' then 43200
-         when 'yearly' then 525600
-         else 1440
-       end;
-  u := u / f;
-
+  p := (select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS);
+  f := (select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS);
+  u := ENEWS.WA.channel_update_period (p, f);
   dt := now();
   declare cr static cursor for select EB_ID,
                                       EB_STORE_DAYS

@@ -408,7 +408,7 @@
                 <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
               </td>
             </tr>
-            <v:template type="simple" enabled="--case when (ENEWS.WA.check_feed_grants (self.v_feed_id, self.account_id) = 1) then 1 else 0 end">
+            <v:template type="simple" enabled="--case when (ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id) = 1) then 1 else 0 end">
               <tr>
                 <th>
                   <v:label for="f_update_period" value="Update period"/>
@@ -488,7 +488,7 @@
                 declare params any;
 
                 params := self.vc_page.vc_event.ve_params;
-                isAdmin := ENEWS.WA.check_admin (self.account_id);
+                isAdmin := ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id);
                 home := null;
                 if (trim(self.f_home.ufl_value) <> '')
                   home := trim(self.f_home.ufl_value);
@@ -525,7 +525,6 @@
                 }
 
                 self.v_tags := ENEWS.WA.tag_prepare (trim (self.f_tags.ufl_value));
-                dbg_obj_print ('', self.v_tags);
                 if (not isnull (self.v_tags) and not ENEWS.WA.validate_tags (self.v_tags))
                 {
                   self.vc_is_valid := 0;
