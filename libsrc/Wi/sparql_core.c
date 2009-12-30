@@ -1580,6 +1580,7 @@ spar_compose_service_inv (sparp_t *sparp, SPART *gp, caddr_t endpoint, dk_set_t 
   dk_set_t param_varnames = NULL;
   dk_set_t rset_varnames = NULL;
   dk_set_t defines = NULL;
+  SPART *sinv;
   while (NULL != all_options)
     {
       caddr_t optvalue = t_set_pop (&all_options);
@@ -1602,7 +1603,7 @@ spar_compose_service_inv (sparp_t *sparp, SPART *gp, caddr_t endpoint, dk_set_t 
         }
 /*! TBD: add other cases */
     }
-  SPART *sinv = spartlist (sparp, 7, SPAR_SERVICE_INV, endpoint,
+  sinv = spartlist (sparp, 7, SPAR_SERVICE_INV, endpoint,
     t_revlist_to_array (iri_params),
     t_box_num (permitted_syntax),
     t_revlist_to_array (param_varnames),
