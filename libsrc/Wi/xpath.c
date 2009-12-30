@@ -5261,7 +5261,7 @@ sqlr_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_locat
 caddr_t
 sqlr_make_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, ...)
 {
-  caddr_t *err;
+  caddr_t err;
   va_list vlst;
   va_start (vlst, string);
   err = sqlr_make_new_error_xdl_base (code, virt_code, xdl, string, vlst);
