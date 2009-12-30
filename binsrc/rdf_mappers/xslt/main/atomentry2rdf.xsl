@@ -109,6 +109,7 @@
 	</xsl:when>
 	<xsl:otherwise>
 	    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+<foaf:mbox rdf:resource="mailto:{a:email}"/>
 	</xsl:otherwise>
     </xsl:choose>
 </xsl:template>

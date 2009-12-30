@@ -86,8 +86,12 @@
 							    <rdf:type rdf:resource="&bibo;Document"/>
 							    <rdf:type rdf:resource="&sioc;Container"/>
 							    <xsl:for-each select="//amz:ListLookupResponse/amz:Lists/amz:List/amz:ListItem/amz:Item">
-							      <gr:seeks rdf:resource="{amz:DetailPageURL}"/>
+                                                                        <xsl:variable name="curasin"><xsl:value-of select="substring-before(substring-after(amz:DetailPageURL, '/dp/'), '%3F')"/></xsl:variable>
+                                                                        <xsl:variable name="curresourceURL"><xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/o/ASIN/', $curasin))"/></xsl:variable>
+                                                                        <gr:seeks rdf:resource="{$curresourceURL}"/>
+                                                                        <sioc:container_of rdf:resource="{$curresourceURL}"/>
 							    </xsl:for-each>
+                                                            <owl:sameAs rdf:resource="{$docIRI}"/>
 						    </rdf:Description>
 				    </xsl:when>
 				    <xsl:when test="$wish_list = '2'">
@@ -95,8 +99,12 @@
 							    <rdf:type rdf:resource="&bibo;Document"/>
 							    <rdf:type rdf:resource="&sioc;Container"/>
 							    <xsl:for-each select="//amz:ItemSearchResponse/amz:Items/amz:Item">
-							      <gr:seeks rdf:resource="{amz:DetailPageURL}"/>
+                                                                        <xsl:variable name="curasin"><xsl:value-of select="substring-before(substring-after(amz:DetailPageURL, '/dp/'), '%3F')"/></xsl:variable>
+                                                                        <xsl:variable name="curresourceURL"><xsl:value-of select="vi:proxyIRI (concat ('http://www.amazon.com/o/ASIN/', $curasin))"/></xsl:variable>
+                                                                        <gr:seeks rdf:resource="{$curresourceURL}"/>
+                                                                        <sioc:container_of rdf:resource="{$curresourceURL}"/>
 							    </xsl:for-each>
+                                                            <owl:sameAs rdf:resource="{$docIRI}"/>
 						    </rdf:Description>
 				    </xsl:when>
 			

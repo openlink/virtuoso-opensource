@@ -209,6 +209,7 @@
 					<foaf:name>
 						<xsl:apply-templates />
 					</foaf:name>
+			                <foaf:mbox rdf:resource="{//foaf:mbox/@rdf:resource}" />                  
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
 						<xsl:variable name="this" select="@rdf:about" />
 						<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">

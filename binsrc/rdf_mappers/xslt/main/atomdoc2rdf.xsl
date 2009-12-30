@@ -66,7 +66,6 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:bibo="&bibo;"
   xmlns:foaf="&foaf;"
-  xmlns:sioc="&sioc;"
   xmlns:dcterms="&dcterms;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   version="1.0">
@@ -143,6 +142,7 @@
 
 <xsl:template match="a:author">
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+<foaf:mbox rdf:resource="mailto:{a:email}"/>
 </xsl:template>
 
 <xsl:template match="a:entry" mode="li">
