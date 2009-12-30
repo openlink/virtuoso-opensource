@@ -112,6 +112,7 @@ create procedure ENEWS.WA.channel_update_period (
   if (checkNull and isnull (freq))
     return 0;
   period := lower (coalesce (period, 'daily'));
+  freq := coalesce (freq, 1);
 
   -- Hourly, Daily, Weekly, Monthly, Yearly
   upd := case period
