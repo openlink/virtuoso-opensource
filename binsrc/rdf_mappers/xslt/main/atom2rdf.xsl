@@ -63,6 +63,7 @@
   xmlns:georss="&georss;"
   xmlns:gphoto="http://schemas.google.com/photos/2007"
   xmlns:ff="&ff;"
+  xmlns:foaf="&foaf;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -125,6 +126,7 @@
 
 <xsl:template match="a:author">
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+    <foaf:mbox rdf:resource="mailto:{a:email}"/>
 </xsl:template>
 
 <xsl:template match="a:entry" mode="li">
