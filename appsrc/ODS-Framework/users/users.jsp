@@ -26,16 +26,23 @@
 
 <%@ page import="java.sql.*" %>
 <%@ page import="java.io.*" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.net.HttpURLConnection" %>
+<%@ page import="java.net.MalformedURLException" %>
+<%@ page import="java.net.ProtocolException" %>
+<%@ page import="java.net.URL" %>
+<%@ page import="java.net.URLEncoder" %>
 
-<%@ page import="javax.xml.parsers.DocumentBuilderFactory" %>
-<%@ page import="javax.xml.parsers.DocumentBuilder" %>
-<%@ page import="javax.xml.xpath.XPathFactory" %>
-<%@ page import="javax.xml.xpath.XPath" %>
-<%@ page import="javax.xml.xpath.XPathExpressionException" %>
+<%@ page import="java.security.MessageDigest" %>
+<%@ page import="java.security.NoSuchAlgorithmException" %>
+<%@ page import="sun.misc.BASE64Encoder" %>
+
+<%@ page import="javax.xml.parsers.*" %>
+<%@ page import="javax.xml.xpath.*" %>
 
 <%@ page import="org.xml.sax.InputSource" %>
 
-<%@ page import="org.w3c.dom.Document" %>
+<%@ page import="org.w3c.dom.*" %>
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
@@ -44,11 +51,43 @@
     <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <script type="text/javascript" src="/ods/users/js/oid_login.js"></script>
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
+      // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "tab", "dimmer"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript">
+      // publics
+      var cPopup;
+      function myInit()
+      {
+        // CalendarPopup
+        if ($("cDiv"))
+        {
+          cPopup = new CalendarPopup("cDiv");
+          cPopup.isShowYearNavigation = true;
+        }
+
+        OAT.Preferences.imagePath = "/ods/images/oat/";
+        OAT.Preferences.stylePath = "/ods/oat/styles/";
+        OAT.Preferences.showAjax = false;
+
+        if ($("pf"))
+        {
+          var tab = new OAT.Tab ("content");
+          tab.add ("tab_0", "page_0");
+          tab.add ("tab_1", "page_1");
+          tab.add ("tab_2", "page_2");
+          tab.add ("tab_3", "page_3");
+          tab.add ("tab_4", "page_4");
+          tab.go (0);
+        }
+      }
+      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+    </script>
   </head>
   <%!
     XPathFactory factory = XPathFactory.newInstance();
@@ -74,18 +113,102 @@
       }
     }
 
+    String encrypt (String S)
+    {
+      String hash = new String("");
+      try {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] textBytes = S.getBytes("UTF-8");
+        md.update(textBytes);
+        for (byte b : md.digest()) {
+          hash += Integer.toHexString(b & 0xff);
+        }
+      }
+      catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+      }
+      catch (UnsupportedEncodingException ex) {
+        ex.printStackTrace();
+      }
+      return hash;
+    }
+
+    String httpParam (String prefix, String key, String value)
+      throws Exception
+    {
+      String S = "";
+      if (value != null)
+        S = prefix + key + "=" + URLEncoder.encode(value);
+      return S;
+    }
+
+    String httpRequest (String httpMethod, String method, String params)
+      throws Exception
+    {
+      HttpURLConnection connection = null;
+      DataOutputStream wr = null;
+      BufferedReader rd  = null;
+      StringBuilder sb = null;
+      String line = null;
+      URL serverAddress = null;
+      Boolean isFirst = true;
+
+      try {
+        serverAddress = new URL("http://localhost:8005/ods/api/"+method);
+
+        //Set up the initial connection
+        connection = (HttpURLConnection)serverAddress.openConnection();
+        connection.setRequestMethod(httpMethod);
+        connection.setDoOutput(true);
+        connection.setDoInput(true);
+        connection.setReadTimeout(10000);
+        connection.connect();
+
+        //get the output stream writer and write the output to the server
+        wr = new DataOutputStream(connection.getOutputStream());
+        if (params != null) {
+          wr.writeBytes(params);
+        }
+        wr.flush ();
+        wr.close ();
+
+        //read the result from the server
+        rd = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        sb = new StringBuilder();
+
+        while ((line = rd.readLine()) != null) {
+          if (!isFirst)
+            sb.append('\n');
+          sb.append(line);
+          isFirst = false;
+        }
+        rd.close ();
+        return sb.toString();
+      }
+      catch (MalformedURLException e) {
+        e.printStackTrace();
+      }
+      catch (ProtocolException e) {
+        e.printStackTrace();
+      }
+      catch (IOException e) {
+        e.printStackTrace();
+      }
+      finally {
+        //close the connection, set all objects to null
+        connection.disconnect();
+        rd = null;
+        sb = null;
+        wr = null;
+        connection = null;
+      }
+      throw new Exception ("Bad request!");
+    }
+
     String xpathEvaluate (Document doc, String xpathString)
       throws XPathExpressionException
     {
       return xpath.evaluate(xpathString, doc);
-    }
-
-    void outPrint (javax.servlet.jsp.JspWriter out, String S)
-      throws IOException
-    {
-      if (S == null)
-        return;
-      out.print(S);
     }
 
     void outFormTitle (javax.servlet.jsp.JspWriter out, String formName)
@@ -101,159 +224,74 @@
         out.print("Edit Profile");
     }
 
-    void outSelectOptions (javax.servlet.jsp.JspWriter out, Connection conn, String sql, String fieldValue, String paramValue)
+    void outSelectOptions (javax.servlet.jsp.JspWriter out, String fieldValue, String listValue)
       throws IOException, SQLException
     {
-      PreparedStatement ps = null;
-      ResultSet rs = null;
+      outSelectOptions (out, fieldValue, listValue, null);
+    }
 
+    void outSelectOptions (javax.servlet.jsp.JspWriter out, String fieldValue, String listValue, String paramValue)
+    {
       try
       {
-        ps = conn.prepareStatement(sql);
+        String params;
+        params = httpParam ("", "key", listValue);
         if (paramValue != null)
-          ps.setObject(1, paramValue);
-        rs = ps.executeQuery();
-        while (rs.next())
-        {
-          String F = rs.getString("NAME");
+          params += httpParam ("&", "param", paramValue);
+        String retValue = httpRequest ("GET", "lookup.list", params);
+        Document doc = createDocument(retValue);
+
+        XPathFactory factory = XPathFactory.newInstance();
+        XPath xpath = factory.newXPath();
+        XPathExpression expr = xpath.compile("/items/item/text()");
+
+        Object result = expr.evaluate(doc, XPathConstants.NODESET);
+        NodeList nodes = (NodeList) result;
+        for (int i = 0; i < nodes.getLength(); i++) {
+          String F = nodes.item(i).getNodeValue();
           out.print ("<option" + ((fieldValue.equals(F)) ? " selected=\"selected\"": "") + ">" + F + "</option>");
         }
-      }
-      finally
-      {
-        if (rs != null)
-        {
-          try
-          {
-            rs.close();
-          } catch (SQLException e) {
-          }
-        }
-        if (ps != null)
-        {
-          try {
-            ps.close();
-          } catch (SQLException e) {
-          }
-        }
+      } catch (Exception e) {
       }
     }
   %>
-  <%@ include file="users_dsn.jsp" %>
   <%
-    String $_form = "login";
-    if (request.getParameter("form") != null)
-      $_form = request.getParameter("form");
+    String $_form = request.getParameter("form");
+    if ($_form == null)
+      $_form = "login";
     String $_sid = request.getParameter("sid");
-    String $_realm = request.getParameter("realm");
+    String $_realm = "wa";
     String $_error = "";
     String $_retValue;
     Document $_document = null;
-
-    Connection conn = null;
-    CallableStatement cs = null;
+    String params = null;
 
     try
     {
-	    Class.forName("virtuoso.jdbc3.Driver");
-      conn = DriverManager.getConnection($_dsn, $_user, $_pass);
       if ($_form.equals("login"))
       {
         if (request.getParameter("lf_login") != null)
         {
           try
           {
-            cs = conn.prepareCall("{? = call ODS_USER_LOGIN(?, ?)}");
-            cs.registerOutParameter(1, Types.VARCHAR);
-            cs.setString(2, request.getParameter("lf_uid"));
-            cs.setString(3, request.getParameter("lf_password"));
-
-            // Execute and retrieve the returned value
-            cs.execute();
-            $_retValue = cs.getString(1);
-  		      $_document = createDocument($_retValue);
-            if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
+            params = httpParam ( "", "user_name", request.getParameter("lf_uid")) +
+                     httpParam ("&", "password_hash", encrypt (request.getParameter("lf_uid")+request.getParameter("lf_password")));
+            $_retValue = httpRequest ("GET", "user.authenticate", params);
+            if ($_retValue.indexOf("<failed>") == 0)
             {
-              $_error = xpathEvaluate($_document, "//error/message");
-            }
-            else
-            {
-              $_sid = xpathEvaluate($_document, "/root/session/sid");
-              $_realm = xpathEvaluate($_document, "/root/session/realm");
-              $_form = "user";
-            }
-          }
-          catch (Exception e)
-          {
-            $_error = e.getMessage();
-          }
-        }
-        if (request.getParameter("lf_register") != null)
-          $_form = "register";
-      }
-      if ($_form.equals("register"))
-      {
-        if (request.getParameter("rf_signup") != null)
-        {
-          if (request.getParameter("rf_uid").length() == 0)
-          {
-            $_error = "Bad username. Please correct!";
-          }
-          else if (request.getParameter("rf_mail").length() == 0)
-          {
-            $_error = "Bad mail. Please correct!";
-          }
-          else if (request.getParameter("rf_password").length() == 0)
-          {
-            $_error = "Bad password. Please correct!";
-          }
-          else if (request.getParameter("rf_password").compareTo(request.getParameter("rf_password2")) != 0)
-          {
-            $_error = "Bad password. Please retype!";
-          }
-          else if (request.getParameter("rf_is_agreed") == null)
-          {
-            $_error = "You have not agreed to the Terms of Service!";
-          }
-          else
-          {
-            try
-            {
-              cs = conn.prepareCall("{? = call ODS_USER_REGISTER(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}");
-              cs.registerOutParameter(1, Types.VARCHAR);
-              cs.setString( 2, request.getParameter("rf_uid"));
-              cs.setString( 3, request.getParameter("rf_password"));
-              cs.setString( 4, request.getParameter("rf_mail"));
-              cs.setString( 5, request.getParameter("rf_identity"));
-              cs.setString( 6, request.getParameter("rf_fullname"));
-              cs.setString( 7, request.getParameter("rf_birthday"));
-              cs.setString( 8, request.getParameter("rf_gender"));
-              cs.setString( 9, request.getParameter("rf_postcode"));
-              cs.setString(10, request.getParameter("rf_country"));
-              cs.setString(11, request.getParameter("rf_tz"));
-
-              // Execute and retrieve the returned value
-              cs.execute();
-              $_retValue = cs.getString(1);
     		      $_document = createDocument($_retValue);
-              if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
-              {
-                $_error = xpathEvaluate($_document, "//error/message");
+              throw new Exception(xpathEvaluate($_document, "/failed/message"));
               }
-              else
-              {
-                $_sid = xpathEvaluate($_document, "/root/session/sid");
-                $_realm = xpathEvaluate($_document, "/root/session/realm");
+            $_sid = $_retValue;
                 $_form = "user";
               }
-            }
             catch (Exception e)
             {
               $_error = e.getMessage();
             }
           }
         }
-      }
+
       if ($_form.equals("user"))
       {
         if (request.getParameter("uf_profile") != null)
@@ -263,126 +301,103 @@
       {
         if (request.getParameter("pf_update") != null)
         {
-          cs = conn.prepareCall("{? = call ODS_USER_UPDATE(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}");
-          cs.registerOutParameter(1, Types.VARCHAR);
-          cs.setString( 2, $_sid);
-          cs.setString( 3, $_realm);
-          cs.setString( 4, request.getParameter("pf_mail"));
-          cs.setString( 5, request.getParameter("pf_title"));
-          cs.setString( 6, request.getParameter("pf_firstName"));
-          cs.setString( 7, request.getParameter("pf_lastName"));
-          cs.setString( 8, request.getParameter("pf_fullName"));
-          cs.setString( 9, request.getParameter("pf_gender"));
-          cs.setString(10, request.getParameter("pf_birthdayDay"));
-          cs.setString(11, request.getParameter("pf_birthdayMonth"));
-          cs.setString(12, request.getParameter("pf_birthdayYear"));
-          cs.setString(13, request.getParameter("pf_icq"));
-          cs.setString(14, request.getParameter("pf_skype"));
-          cs.setString(15, request.getParameter("pf_yahoo"));
-          cs.setString(16, request.getParameter("pf_aim"));
-          cs.setString(17, request.getParameter("pf_msn"));
-          cs.setString(18, request.getParameter("pf_homeDefaultMapLocation"));
-          cs.setString(19, request.getParameter("pf_homeCountry"));
-          cs.setString(20, request.getParameter("pf_homeState"));
-          cs.setString(21, request.getParameter("pf_homeCity"));
-          cs.setString(22, request.getParameter("pf_homeCode"));
-          cs.setString(23, request.getParameter("pf_homeAddress1"));
-          cs.setString(24, request.getParameter("pf_homeAddress2"));
-          cs.setString(25, request.getParameter("pf_homeTimeZone"));
-          cs.setString(26, request.getParameter("pf_homeLatitude"));
-          cs.setString(27, request.getParameter("pf_homeLongitude"));
-          cs.setString(28, request.getParameter("pf_homePhone"));
-          cs.setString(29, request.getParameter("pf_homeMobile"));
-          cs.setString(30, request.getParameter("pf_businessIndustry"));
-          cs.setString(31, request.getParameter("pf_businessOrganization"));
-          cs.setString(32, request.getParameter("pf_businessHomePage"));
-          cs.setString(33, request.getParameter("pf_businessJob"));
-          cs.setString(34, request.getParameter("pf_businessCountry"));
-          cs.setString(35, request.getParameter("pf_businessState"));
-          cs.setString(36, request.getParameter("pf_businessCity"));
-          cs.setString(37, request.getParameter("pf_businessCode"));
-          cs.setString(38, request.getParameter("pf_businessAddress1"));
-          cs.setString(39, request.getParameter("pf_businessAddress2"));
-          cs.setString(40, request.getParameter("pf_businessTimeZone"));
-          cs.setString(41, request.getParameter("pf_businessLatitude"));
-          cs.setString(42, request.getParameter("pf_businessLongitude"));
-          cs.setString(43, request.getParameter("pf_businessPhone"));
-          cs.setString(44, request.getParameter("pf_businessMobile"));
-          cs.setString(45, request.getParameter("pf_businessRegNo"));
-          cs.setString(46, request.getParameter("pf_businessCareer"));
-          cs.setString(47, request.getParameter("pf_businessEmployees"));
-          cs.setString(48, request.getParameter("pf_businessVendor"));
-          cs.setString(49, request.getParameter("pf_businessService"));
-          cs.setString(50, request.getParameter("pf_businessOther"));
-          cs.setString(51, request.getParameter("pf_businessNetwork"));
-          cs.setString(52, request.getParameter("pf_businessResume"));
-          cs.setString(53, request.getParameter("pf_securitySecretQuestion"));
-          cs.setString(54, request.getParameter("pf_securitySecretAnswer"));
-          cs.setString(55, request.getParameter("pf_securitySiocLimit"));
+          try {
+            params = httpParam ( "", "sid"                   , $_sid) +
+                     httpParam ("&", "realm"                 , $_realm) +
+                     httpParam ("&", "mail"                  , request.getParameter("pf_mail")) +
+                     httpParam ("&", "title"                 , request.getParameter("pf_title")) +
+                     httpParam ("&", "firstName"             , request.getParameter("pf_firstName")) +
+                     httpParam ("&", "lastName"              , request.getParameter("pf_lastName")) +
+                     httpParam ("&", "fullName"              , request.getParameter("pf_fullName")) +
+                     httpParam ("&", "gender"                , request.getParameter("pf_gender")) +
+                     httpParam ("&", "birthday"              , request.getParameter("pf_birthday")) +
+                     httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
+                     httpParam ("&", "skype"                 , request.getParameter("pf_skype")) +
+                     httpParam ("&", "yahoo"                 , request.getParameter("pf_yahoo")) +
+                     httpParam ("&", "aim"                   , request.getParameter("pf_aim")) +
+                     httpParam ("&", "msn"                   , request.getParameter("pf_msn")) +
+                     httpParam ("&", "homeDefaultMapLocation", request.getParameter("pf_homeDefaultMapLocation")) +
+                     httpParam ("&", "homeCountry"           , request.getParameter("pf_homecountry")) +
+                     httpParam ("&", "homeState"             , request.getParameter("pf_homestate")) +
+                     httpParam ("&", "homeCity"              , request.getParameter("pf_homecity")) +
+                     httpParam ("&", "homeCode"              , request.getParameter("pf_homecode")) +
+                     httpParam ("&", "homeAddress1"          , request.getParameter("pf_homeaddress1")) +
+                     httpParam ("&", "homeAddress2"          , request.getParameter("pf_homeaddress2")) +
+                     httpParam ("&", "homeTimezone"          , request.getParameter("pf_homeTimezone")) +
+                     httpParam ("&", "homeLatitude"          , request.getParameter("pf_homelat")) +
+                     httpParam ("&", "homeLongitude"         , request.getParameter("pf_homelng")) +
+                     httpParam ("&", "homePhone"             , request.getParameter("pf_homePhone")) +
+                     httpParam ("&", "homeMobile"            , request.getParameter("pf_homeMobile")) +
+                     httpParam ("&", "businessIndustry"      , request.getParameter("pf_businessIndustry")) +
+                     httpParam ("&", "businessOrganization"  , request.getParameter("pf_businessOrganization")) +
+                     httpParam ("&", "businessHomePage"      , request.getParameter("pf_businessHomePage")) +
+                     httpParam ("&", "businessJob"           , request.getParameter("pf_businessJob")) +
+                     httpParam ("&", "businessCountry"       , request.getParameter("pf_businesscountry")) +
+                     httpParam ("&", "businessState"         , request.getParameter("pf_businessstate")) +
+                     httpParam ("&", "businessCity"          , request.getParameter("pf_businesscity")) +
+                     httpParam ("&", "businessCode"          , request.getParameter("pf_businesscode")) +
+                     httpParam ("&", "businessAddress1"      , request.getParameter("pf_businessaddress1")) +
+                     httpParam ("&", "businessAddress2"      , request.getParameter("pf_businessaddress2")) +
+                     httpParam ("&", "businessTimezone"      , request.getParameter("pf_businessTimezone")) +
+                     httpParam ("&", "businessLatitude"      , request.getParameter("pf_businesslat")) +
+                     httpParam ("&", "businessLongitude"     , request.getParameter("pf_businesslng")) +
+                     httpParam ("&", "businessPhone"         , request.getParameter("pf_businessPhone")) +
+                     httpParam ("&", "businessMobile"        , request.getParameter("pf_businessMobile")) +
+                     httpParam ("&", "businessRegNo"         , request.getParameter("pf_businessRegNo")) +
+                     httpParam ("&", "businessCareer"        , request.getParameter("pf_businessCareer")) +
+                     httpParam ("&", "businessEmployees"     , request.getParameter("pf_businessEmployees")) +
+                     httpParam ("&", "businessVendor"        , request.getParameter("pf_businessVendor")) +
+                     httpParam ("&", "businessService"       , request.getParameter("pf_businessService")) +
+                     httpParam ("&", "businessOther"         , request.getParameter("pf_businessOther")) +
+                     httpParam ("&", "businessNetwork"       , request.getParameter("pf_businessNetwork")) +
+                     httpParam ("&", "businessResume"        , request.getParameter("pf_businessResume")) +
+                     httpParam ("&", "securitySecretQuestion", request.getParameter("pf_securitySecretQuestion")) +
+                     httpParam ("&", "securitySecretAnswer"  , request.getParameter("pf_securitySecretAnswer")) +
+                     httpParam ("&", "securitySiocLimit"     , request.getParameter("pf_securitySiocLimit"));
 
-          // Execute and retrieve the returned value
-          cs.execute();
-          $_retValue = cs.getString(1);
-		      $_document = createDocument($_retValue);
-          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
+            $_retValue = httpRequest ("POST", "user.update.fields", params);
+            if ($_retValue.indexOf("<failed>") == 0)
           {
-            $_error = xpathEvaluate($_document, "//error/message");
-            $_form = "login";
+  		        $_document = createDocument($_retValue);
+              throw new Exception(xpathEvaluate($_document, "/failed/message"));
           }
-          else
-          {
             $_form = "user";
           }
-        }
-        if (request.getParameter("pf_cancel") != null)
-          $_form = "user";
-        if ($_form.equals("profile"))
-        {
-          cs = conn.prepareCall("{? = call ODS_USER_SELECT(?, ?, ?)}");
-          cs.registerOutParameter(1, Types.VARCHAR);
-          cs.setString(2, $_sid);
-          cs.setString(3, $_realm);
-          cs.setInt(4, 0);
-
-          // Execute and retrieve the returned value
-          cs.execute();
-          $_retValue = cs.getString(1);
-		      $_document = createDocument($_retValue);
-          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
+          catch (Exception e)
           {
-            $_error = xpathEvaluate($_document, "//error/message");
+            $_error = e.getMessage();
             $_form = "login";
           }
         }
+        else if (request.getParameter("pf_cancel") != null)
+        {
+          $_form = "user";
+        }
       }
-      if ($_form.equals("user"))
+
+      if ($_form.equals("user") || $_form.equals("profile"))
       {
         try
         {
-          cs = conn.prepareCall("{? = call ODS_USER_SELECT(?, ?)}");
-          cs.registerOutParameter(1, Types.VARCHAR);
-          cs.setString(2, $_sid);
-          cs.setString(3, $_realm);
-
-          // Execute and retrieve the returned value
-          cs.execute();
-          $_retValue = cs.getString(1);
+          params = httpParam ( "", "sid"   , $_sid) +
+                   httpParam ("&", "realm" , $_realm);
+          if ($_form.equals("profile"))
+            params += httpParam ("&", "short", "0");
+          $_retValue = httpRequest ("GET", "user.info", params);
 		      $_document = createDocument($_retValue);
-          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
-          {
-            $_error = xpathEvaluate($_document, "//error/message");
-            $_form = "login";
-          }
+          if ("".compareTo(xpathEvaluate($_document, "/failed/message")) != 0)
+            throw new Exception (xpathEvaluate($_document, "/failed/message"));
         }
         catch (Exception e)
         {
           $_error = e.getMessage();
+          $_form = "login";
         }
       }
+
       if ($_form.equals("login"))
       {
         $_sid = "";
-        $_realm = "";
       }
     }
     catch (Exception e)
@@ -391,12 +406,14 @@
     }
   %>
   <body>
+    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+    </div>
     <form name="page_form" method="post">
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
       <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
+        <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&amp;realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
         <%
           if ($_form != "login")
           {
@@ -466,81 +483,6 @@
                 </table>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit2();" />
-                  <input type="submit" name="lf_register" value="Sign Up" id="lf_register" />
-                </div>
-              </div>
-              <%
-              }
-              if ($_form.equals("register"))
-              {
-              %>
-              <div id="rf" class="form">
-                <%
-                  if ($_error != "")
-                  {
-                    out.print("<div class=\"error\">" + $_error + "</div>");
-                  }
-                %>
-                <div class="header">
-                  Enter register data
-                </div>
-                <table class="form" cellspacing="5">
-                  <tr>
-                    <th width="30%">
-                      <label for="rf_openID">Register with OpenID</label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_openID" value="<% outPrint(out, request.getParameter("rf_openID")); %>" id="rf_openID" class="openID" size="40"/>
-                      <input type="button" name="rf_authenticate" value="Authenticate" id="rf_authenticate" onclick="javascript: return rfAuthenticateSubmit();"/>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th />
-                    <td nowrap="nowrap">
-                      <input type="checkbox" name="rf_useOpenID" id="rf_useOpenID" onclick="javascript: rfAlternateLogin(this);" value="1" />
-                      <label for="rf_useOpenID">Do not create password, I want to use my OpenID URL to login</label>
-                    </td>
-                  </tr>
-                  <tr id="rf_login_1">
-                    <th>
-                      <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="<% outPrint(out, request.getParameter("rf_uid")); %>" id="rf_uid" />
-                    </td>
-                  </tr>
-                  <tr id="rf_login_2">
-                    <th>
-                      <label for="rf_mail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_mail" value="<% outPrint(out, request.getParameter("rf_mail")); %>" id="rf_mail" size="40"/>
-                    </td>
-                  </tr>
-                  <tr id="rf_login_3">
-                    <th>
-                      <label for="rf_pwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="password" name="rf_password" value="" id="rf_password" />
-                    </td>
-                  </tr>
-                  <tr id="rf_login_4">
-                    <th>
-                      <label for="rf_pwd2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="password" name="rf_password2" value="" id="rf_password2" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td nowrap="nowrap" colspan="2">
-                      <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
-                    </td>
-                  </tr>
-                </table>
-                <div class="footer" id="rf_login_5">
-                  <input type="submit" name="rf_signup" value="Sign Up" />
                 </div>
               </div>
               <%
@@ -558,7 +500,7 @@
                       Login Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_name"><% out.print(xpathEvaluate($_document, "/root/user/name")); %></span>
+                      <span id="uf_name"><% out.print(xpathEvaluate($_document, "/user/name")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -566,7 +508,7 @@
                       E-mail
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_mail"><% out.print(xpathEvaluate($_document, "/root/user/mail")); %></span>
+                      <span id="uf_mail"><% out.print(xpathEvaluate($_document, "/user/mail")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -574,7 +516,7 @@
                       Title
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_title"><% out.print(xpathEvaluate($_document, "/root/user/title")); %></span>
+                      <span id="uf_title"><% out.print(xpathEvaluate($_document, "/user/title")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -582,7 +524,7 @@
                       First Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_firstName"><% out.print(xpathEvaluate($_document, "/root/user/firstName")); %></span>
+                      <span id="uf_firstName"><% out.print(xpathEvaluate($_document, "/user/firstName")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -590,7 +532,7 @@
                       Last Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_lastName"><% out.print(xpathEvaluate($_document, "/root/user/lastName")); %></span>
+                      <span id="uf_lastName"><% out.print(xpathEvaluate($_document, "/user/lastName")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -598,7 +540,7 @@
                       Full Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_fullName"><% out.print(xpathEvaluate($_document, "/root/user/fullName")); %></span>
+                      <span id="uf_fullName"><% out.print(xpathEvaluate($_document, "/user/fullName")); %></span>
                     </td>
                   </tr>
                 </table>
@@ -643,7 +585,7 @@
                             <%
                               {
                                 String[] V = {"Mr", "Mrs", "Dr", "Ms"};
-                                String S = xpathEvaluate($_document, "/root/user/title");
+                                String S = xpathEvaluate($_document, "/user/title");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option" + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -656,7 +598,7 @@
                           <label for="pf_firstName">First Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_firstName" value="<% out.print(xpathEvaluate($_document, "/root/user/firstName")); %>" id="pf_firstName" size="40" />
+                          <input type="text" name="pf_firstName" value="<% out.print(xpathEvaluate($_document, "/user/firstName")); %>" id="pf_firstName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -664,7 +606,7 @@
                           <label for="pf_lastName">Last Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_lastName" value="<% out.print(xpathEvaluate($_document, "/root/user/lastName")); %>" id="pf_lastName" size="40" />
+                          <input type="text" name="pf_lastName" value="<% out.print(xpathEvaluate($_document, "/user/lastName")); %>" id="pf_lastName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -672,7 +614,7 @@
                           <label for="pf_fullName">Full Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_fullName" value="<% out.print(xpathEvaluate($_document, "/root/user/fullName")); %>" id="pf_fullName" size="60" />
+                          <input type="text" name="pf_fullName" value="<% out.print(xpathEvaluate($_document, "/user/fullName")); %>" id="pf_fullName" size="60" />
                         </td>
                       </tr>
                       <tr>
@@ -680,11 +622,11 @@
                           <label for="pf_mail">E-mail</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_mail" value="<% out.print(xpathEvaluate($_document, "/root/user/mail")); %>" id="pf_mail" size="40" />
+                          <input type="text" name="pf_mail" value="<% out.print(xpathEvaluate($_document, "/user/mail")); %>" id="pf_mail" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_gender">Gender</label>
                         </th>
                         <td>
@@ -694,7 +636,7 @@
                               {
                                 String[] V = {"Male", "Female"};
                                 String[] V1 = {"male", "female"};
-                                String S = xpathEvaluate($_document, "/root/user/gender");
+                                String S = xpathEvaluate($_document, "/user/gender");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option value=\"" + V1[N] + "\"" +((V1[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -703,52 +645,12 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_birthday">Birthday</label>
                         </th>
                         <td>
-                          <select name="pf_birthdayDay" id="pf_birthdayDay">
-                            <option></option>
-                            <%
-                              {
-                                String S = xpathEvaluate($_document, "/root/user/birthdayDay");
-                                String NS;
-                                for (int N = 1; N <= 31; N++) {
-                                  NS = Integer.toString(N);
-                                  out.print("<option value=\"" + NS + "\"" +((NS.equals(S)) ? (" selected=\"selected\""): ("")) + ">" + NS + "</option>");
-                                }
-                              }
-                            %>
-                          </select>
-        		              -
-                          <select name="pf_birthdayMonth" id="pf_birthdayMonth">
-                            <option></option>
-                            <%
-                              {
-                                String[] V = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
-                                String S = xpathEvaluate($_document, "/root/user/birthdayMonth");
-                                String NS;
-                                for (int N = 1; N <= V.length; N++) {
-                                  NS = Integer.toString(N);
-                                  out.print("<option value=\"" + NS + "\"" +((NS.equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N-1] + "</option>");
-                                }
-                              }
-                            %>
-                          </select>
-                          -
-                          <select name="pf_birthdayYear" id="pf_birthdayYear">
-                            <option></option>
-                            <%
-                              {
-                                String S = xpathEvaluate($_document, "/root/user/birthdayYear");
-                                String NS;
-                                for (int N = 1950; N <= 2003; N++) {
-                                  NS = Integer.toString(N);
-                                  out.print("<option value=\"" + NS + "\"" +((NS.equals(S)) ? (" selected=\"selected\""): ("")) + ">" + NS + "</option>");
-                                }
-                              }
-                            %>
-                          </select>
+                          <input name="pf_birthday" id="pf_birthday" value="<% out.print(xpathEvaluate($_document, "/user/birthday")); %>" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
+                          <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
                         </td>
                       </tr>
                     </table>
@@ -761,7 +663,7 @@
                           <label for="pf_icq">ICQ</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/root/user/icq")); %>" id="pf_icq" size="40" />
+                          <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/user/icq")); %>" id="pf_icq" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -769,7 +671,7 @@
                           <label for="pf_skype">Skype</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/root/user/skype")); %>" id="pf_skype" size="40" />
+                          <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/user/skype")); %>" id="pf_skype" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -777,7 +679,7 @@
                           <label for="pf_yahoo">Yahoo</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/root/user/yahoo")); %>" id="pf_yahoo" size="40" />
+                          <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/user/yahoo")); %>" id="pf_yahoo" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -785,7 +687,7 @@
                           <label for="pf_aim">AIM</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/root/user/aim")); %>" id="pf_aim" size="40" />
+                          <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/user/aim")); %>" id="pf_aim" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -793,7 +695,7 @@
                           <label for="pf_msn">MSN</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/root/user/msn")); %>" id="pf_msn" size="40" />
+                          <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/user/msn")); %>" id="pf_msn" style="width: 220px;" />
                         </td>
                       </tr>
                     </table>
@@ -803,71 +705,70 @@
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
-                          <label for="pf_homeCountry">Country</label>
+                          <label for="pf_homecountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_homeCountry" id="pf_homeCountry" onchange="javascript: return updateState('pf_homeCountry', 'pf_homeState');">
+                          <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
                             <option></option>
                             <%
-                              outSelectOptions (out, conn, "select WC_NAME NAME from DB.DBA.WA_COUNTRY order by WC_NAME", xpathEvaluate($_document, "/root/user/homeCountry"), null);
+                              outSelectOptions (out, xpathEvaluate($_document, "/user/homeCountry"), "Country");
                             %>
                           </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeState">State/Province</label>
+                          <label for="pf_homestate">State/Province</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_homeState" id="pf_homeState">
-                            <option></option>
-                            <%
-                              outSelectOptions (out, conn, "select WP_PROVINCE NAME from DB.DBA.WA_PROVINCE where WP_COUNTRY = ? and WP_COUNTRY <> '' order by WP_PROVINCE", xpathEvaluate($_document, "/root/user/homeState"), xpathEvaluate($_document, "/root/user/homeCountry"));
-                            %>
-                          </select>
+                          <span id="span_pf_homestate">
+                            <script type="text/javascript">
+                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_homecountry", "pf_homestate", "<% out.print(xpathEvaluate($_document, "/user/homeState")); %>");});
+                            </script>
+                          </span>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCity">City/Town</label>
+                          <label for="pf_homecity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCity" value="<% out.print(xpathEvaluate($_document, "/root/user/homeCity")); %>" id="pf_homeCity" size="40" />
+                          <input type="text" name="pf_homecity" value="<% out.print(xpathEvaluate($_document, "/user/homeCity")); %>" id="pf_homecity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCode">Zip/Postal Code</label>
+                          <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCode" value="<% out.print(xpathEvaluate($_document, "/root/user/homeCode")); %>" id="pf_homeCode" />
+                          <input type="text" name="pf_homecode" value="<% out.print(xpathEvaluate($_document, "/user/homeCode")); %>" id="pf_homecode" style="width: 220px;"/>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress1">Address1</label>
+                          <label for="pf_homeaddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress1" value="<% out.print(xpathEvaluate($_document, "/root/user/homeAddress1")); %>" id="pf_homeAddress1" size="40" />
+                          <input type="text" name="pf_homeaddress1" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress1")); %>" id="pf_homeaddress1" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress2">Address2</label>
+                          <label for="pf_homeaddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress2" value="<% out.print(xpathEvaluate($_document, "/root/user/homeAddress2")); %>" id="pf_homeAddress2" size="40" />
+                          <input type="text" name="pf_homeaddress2" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress2")); %>" id="pf_homeaddress2" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeTimeZone">Time-Zone</label>
+                        <th>
+                          <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimeZone" id="pf_homeTimeZone">
+                          <select name="pf_homeTimezone" id="pf_homeTimezone">
                             <%
                               {
-                                String S = xpathEvaluate($_document, "/root/user/birthdayDay");
+                                String S = xpathEvaluate($_document, "/user/homeTimezone");
                                 String NS;
                                 for (int N = -12; N <= 12; N++) {
                                   NS = Integer.toString(N);
@@ -879,38 +780,39 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeLatitude">Latitude</label>
+                        <th>
+                          <label for="pf_homelat">Latitude</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeLatitude" value="<% out.print(xpathEvaluate($_document, "/root/user/homeLatitude")); %>" id="pf_homeLatitude" />
-                          <input type="button" name="pf_setHomeLocation" value="Set From Address" onclick="javascript: pfGetLocation('home');" />
+                          <input type="text" name="pf_homelat" value="<% out.print(xpathEvaluate($_document, "/user/homeLatitude")); %>" id="pf_homelat" />
+                          <label>
                           <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                          <label for="pf_homeDefaultMapLocation">Default Map Location</label>
+                            Default Map Location
+                          </label>
                         <td>
                       <tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeLongitude">Longitude</label>
+                        <th>
+                          <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeLongitude" value="<% out.print(xpathEvaluate($_document, "/root/user/homeLongitude")); %>" id="pf_homeLongitude" />
+                          <input type="text" name="pf_homelng" value="<% out.print(xpathEvaluate($_document, "/user/homeLongitude")); %>" id="pf_homelng" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="<% out.print(xpathEvaluate($_document, "/root/user/homePhone")); %>" id="pf_homePhone" />
+                          <input type="text" name="pf_homePhone" value="<% out.print(xpathEvaluate($_document, "/user/homePhone")); %>" id="pf_homePhone" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="<% out.print(xpathEvaluate($_document, "/root/user/homeMobile")); %>" id="pf_homeMobile" />
+                          <input type="text" name="pf_homeMobile" value="<% out.print(xpathEvaluate($_document, "/user/homeMobile")); %>" id="pf_homeMobile" />
                         </td>
                       </tr>
                     </table>
@@ -923,10 +825,10 @@
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessIndustry" id="pf_businessIndustry">
+                          <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
                             <option></option>
                             <%
-                              outSelectOptions (out, conn, "select WI_NAME NAME from DB.DBA.WA_INDUSTRY order by WI_NAME", xpathEvaluate($_document, "/root/user/businessIndustry"), null);
+                              outSelectOptions (out, xpathEvaluate($_document, "/user/businessIndustry"), "Industry");
                             %>
                           </select>
                         </td>
@@ -936,7 +838,7 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/root/user/businessOrganization")); %>" id="pf_businessOrganization" size="40" />
+                          <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/user/businessOrganization")); %>" id="pf_businessOrganization" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -944,7 +846,7 @@
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/root/user/businessHomePage")); %>" id="pf_businessNetwork" size="40" />
+                          <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/user/businessHomePage")); %>" id="pf_businessNetwork" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -952,76 +854,75 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/root/user/businessJob")); %>" id="pf_businessJob" size="40" />
+                          <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/user/businessJob")); %>" id="pf_businessJob" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th width="30%">
-                          <label for="pf_businessCountry">Country</label>
+                          <label for="pf_businesscountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessCountry" id="pf_businessCountry" onchange="javascript: return updateState('pf_businessCountry', 'pf_businessState');">
+                          <select name="pf_businesscountry" id="pf_businesscountry" onchange="javascript: return updateState('pf_businesscountry', 'pf_businessState');" style="width: 220px;">
                             <option></option>
                             <%
-                              outSelectOptions (out, conn, "select WC_NAME NAME from DB.DBA.WA_COUNTRY order by WC_NAME", xpathEvaluate($_document, "/root/user/businessCountry"), null);
+                              outSelectOptions (out, xpathEvaluate($_document, "/user/businessCountry"), "Country");
                             %>
                           </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessState">State/Province</label>
+                          <label for="pf_businessstate">State/Province</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessState" id="pf_businessState">
-                            <option></option>
-                            <%
-                              outSelectOptions (out, conn, "select WP_PROVINCE NAME from DB.DBA.WA_PROVINCE where WP_COUNTRY = ? and WP_COUNTRY <> '' order by WP_PROVINCE", xpathEvaluate($_document, "/root/user/businessState"), xpathEvaluate($_document, "/root/user/businessCountry"));
-                            %>
-                          </select>
+                          <span id="span_pf_businessstate">
+                            <script type="text/javascript">
+                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
+                            </script>
+                          </span>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessCity">City/Town</label>
+                          <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCity" value="<% out.print(xpathEvaluate($_document, "/root/user/businessCity")); %>" id="pf_businessCity" size="40" />
+                          <input type="text" name="pf_businesscity" value="<% out.print(xpathEvaluate($_document, "/user/businessCity")); %>" id="pf_businesscity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessCode">Zip/Postal Code</label>
+                          <label for="pf_businesscode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCode" value="<% out.print(xpathEvaluate($_document, "/root/user/businessCode")); %>" id="pf_businessCode" />
+                          <input type="text" name="pf_businesscode" value="<% out.print(xpathEvaluate($_document, "/user/businessCode")); %>" id="pf_businesscode" style="width: 220px;"/>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessAddress1">Address1</label>
+                          <label for="pf_businessaddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessAddress1" value="<% out.print(xpathEvaluate($_document, "/root/user/businessAddress1")); %>" id="pf_businessAddress1" size="40" />
+                          <input type="text" name="pf_businessaddress1" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress1")); %>" id="pf_businessaddress1" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessAddress2">Address2</label>
+                          <label for="pf_businessaddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessAddress2" value="<% out.print(xpathEvaluate($_document, "/root/user/businessAddress2")); %>" id="pf_businessAddress2" size="40" />
+                          <input type="text" name="pf_businessaddress2" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress2")); %>" id="pf_businessaddress2" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessTimeZone">Time-Zone</label>
+                        <th>
+                          <label for="pf_businessTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimeZone" id="pf_businessTimeZone">
+                          <select name="pf_businessTimezone" id="pf_businessTimezone">
                             <%
                               {
-                                String S = xpathEvaluate($_document, "/root/user/birthdayDay");
+                                String S = xpathEvaluate($_document, "/user/businessTimezone");
                                 String NS;
                                 for (int N = -12; N <= 12; N++) {
                                   NS = Integer.toString(N);
@@ -1033,59 +934,60 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessLatitude">Latitude</label>
+                        <th>
+                          <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessLatitude" value="<% out.print(xpathEvaluate($_document, "/root/user/businessLatitude")); %>" id="pf_businessLatitude" />
-                          <input type="button" name="pf_setHomeLocation" value="Set From Address" onclick="javascript: pfGetLocation('business');" />
+                          <input type="text" name="pf_businesslat" value="<% out.print(xpathEvaluate($_document, "/user/businessLatitude")); %>" id="pf_businesslat" />
+                          <label>
                           <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'business');" />
-                          <label for="pf_businessDefaultMapLocation">Default Map Location</label>
+                            Default Map Location
+                          </label>
                         <td>
                       <tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessLongitude">Longitude</label>
+                        <th>
+                          <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessLongitude" value="<% out.print(xpathEvaluate($_document, "/root/user/businessLongitude")); %>" id="pf_businessLongitude" />
+                          <input type="text" name="pf_businesslng" value="<% out.print(xpathEvaluate($_document, "/user/businessLongitude")); %>" id="pf_businesslng" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/root/user/businessPhone")); %>" id="pf_businessPhone" />
+                          <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/user/businessPhone")); %>" id="pf_businessPhone" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/root/user/businessMobile")); %>" id="pf_businessMobile" />
+                          <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/user/businessMobile")); %>" id="pf_businessMobile" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessRegNo" value="<% out.print(xpathEvaluate($_document, "/root/user/businessRegNo")); %>" id="pf_businessRegNo" size="40" />
+                          <input type="text" name="pf_businessRegNo" value="<% out.print(xpathEvaluate($_document, "/user/businessRegNo")); %>" id="pf_businessRegNo" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessCareer">Career / Organization Status</label>
                         </th>
                         <td>
-                          <select name="pf_businessCareer" id="pf_businessCareer">
+                          <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
                             <option />
                             <%
                               {
                                 String[] V = {"Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier"};
-                                String S = xpathEvaluate($_document, "/root/user/businessCareer");
+                                String S = xpathEvaluate($_document, "/user/businessCareer");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option" + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -1094,16 +996,16 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessEmployees">No. of Employees</label>
                         </th>
                         <td>
-                          <select name="pf_businessEmployees" id="pf_businessEmployees">
+                          <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
                             <option />
                             <%
                               {
                                 String[] V = {"1-100", "101-250", "251-500", "501-1000", ">1000"};
-                                String S = xpathEvaluate($_document, "/root/user/businessEmployees");
+                                String S = xpathEvaluate($_document, "/user/businessEmployees");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option" + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -1112,16 +1014,16 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessVendor">Are you a technology vendor</label>
                         </th>
                         <td>
-                          <select name="pf_businessVendor" id="pf_businessVendor">
+                          <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
                             <option />
                             <%
                               {
                                 String[] V = {"Not a Vendor", "Vendor", "VAR", "Consultancy"};
-                                String S = xpathEvaluate($_document, "/root/user/businessVendor");
+                                String S = xpathEvaluate($_document, "/user/businessVendor");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option" + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -1130,16 +1032,16 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessService">If so, what technology and/or service do you provide?</label>
                         </th>
                         <td>
-                          <select name="pf_businessService" id="pf_businessService">
+                          <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
                             <option />
                             <%
                               {
                                 String[] V = {"Enterprise Data Integration", "Business Process Management", "Other"};
-                                String S = xpathEvaluate($_document, "/root/user/businessService");
+                                String S = xpathEvaluate($_document, "/user/businessService");
                                 for (int N = 0; N < V.length; N++)
                                   out.print("<option" + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N] + "</option>");
                               }
@@ -1148,27 +1050,27 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessOther">Other Technology service</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOther" value="<% out.print(xpathEvaluate($_document, "/root/user/businessOther")); %>" id="pf_businessOther" size="40" />
+                          <input type="text" name="pf_businessOther" value="<% out.print(xpathEvaluate($_document, "/user/businessOther")); %>" id="pf_businessOther" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessNetwork" value="<% out.print(xpathEvaluate($_document, "/root/user/businessNetwork")); %>" id="pf_businessNetwork" size="40" />
+                          <input type="text" name="pf_businessNetwork" value="<% out.print(xpathEvaluate($_document, "/user/businessNetwork")); %>" id="pf_businessNetwork" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessResume">Resume</label>
                         </th>
                         <td>
-                          <textarea name="pf_businessResume" id="pf_businessResume" cols="50"><% out.print(xpathEvaluate($_document, "/root/user/businessResume")); %></textarea>
+                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 220px;"><% out.print(xpathEvaluate($_document, "/user/businessResume")); %></textarea>
                         </td>
                       </tr>
                     </table>
@@ -1195,7 +1097,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -1203,7 +1105,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_password">Repeat Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -1217,27 +1119,26 @@
                         </th>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretQuestion" value="<% out.print(xpathEvaluate($_document, "/root/user/securitySecretQuestion")); %>" id="pf_securitySecretQuestion" size="40" />
-                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();">
+                          <input type="text" name="pf_securitySecretQuestion" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretQuestion")); %>" id="pf_securitySecretQuestion" style="width: 220px;" />
+                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();" style="width: 220px;">
                             <option value="">~pick predefined~</option>
                             <option value="First Car">First Car</option>
                             <option value="Mothers Maiden Name">Mothers Maiden Name</option>
                             <option value="Favorite Pet">Favorite Pet</option>
                             <option value="Favorite Sports Team">Favorite Sports Team</option>
                           </select>
-                          <?php print($_xml->user->securitySecretQuestion); ?>
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretAnswer" value="<% out.print(xpathEvaluate($_document, "/root/user/securitySecretAnswer")); %>" id="pf_securitySecretAnswer" size="40" />
+                          <input type="text" name="pf_securitySecretAnswer" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretAnswer")); %>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1246,11 +1147,11 @@
                         </th>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/root/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
+                          <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                     </table>

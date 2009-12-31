@@ -55,7 +55,7 @@ create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
     }
   if (rc >= 0)
     return sprintf ('<result><code>%d</code><message>%V</message></result>', rc, msg);
-  else
+
     return sprintf ('<failed><code>%d</code><message>%V</message></failed>', rc, msg);
 }
 ;
@@ -251,6 +251,15 @@ create procedure ods_describe_iri (
 create procedure ods_auth_failed ()
 {
   return ods_serialize_int_res (-12);
+}
+;
+
+create procedure ods_xml_item (
+  in pTag varchar,
+  in pValue any)
+{
+  if (not DB.DBA.is_empty_or_null (pValue))
+    http (sprintf ('<%s>%V</%s>', pTag, cast (pValue as varchar), pTag));
 }
 ;
 
@@ -706,7 +715,8 @@ _again:
 ;
 
 create procedure ODS.ODS_API."lookup.list" (
-  in "key" varchar)  __soap_http 'text/plain'
+  in "key" varchar,
+  in "param" varchar := '')  __soap_http 'text/plain'
 {
   if ("key" = 'onlineAccounts')
   {
@@ -773,6 +783,76 @@ create procedure ODS.ODS_API."lookup.list" (
       || '\n'|| 'YouTube'
       || '\n'|| 'Zooomr'
     );
+  }
+  else if ("key" = 'Industry')
+  {
+    http ('<items>');
+    for (select WI_NAME from DB.DBA.WA_INDUSTRY order by WI_NAME) do {
+      http (sprintf ('<item>%s</item>', WI_NAME));
+    }
+    http ('</items>');
+  }
+  else if ("key" = 'Country')
+  {
+    http ('<items>');
+    for (select WC_NAME from DB.DBA.WA_COUNTRY order by WC_NAME) do {
+      http (sprintf ('<item>%s</item>', WC_NAME));
+    }
+    http ('</items>');
+  }
+  else if ("key" = 'Province')
+  {
+    http ('<items>');
+    for (select WP_PROVINCE from DB.DBA.WA_PROVINCE where WP_COUNTRY = param and WP_COUNTRY <> '' order by WP_PROVINCE) do {
+      http (sprintf ('<item>%s</item>', WP_PROVINCE));
+    }
+    http ('</items>');
+  }
+  else if ("key" = 'DataSpaces')
+  {
+    http ('<items>');
+    for (select SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) as instance_iri, WAI_NAME
+           from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
+          where WAM_INST = WAI_NAME and WAM_USER = param and U_ID = WAM_USER) do
+    {
+      http (sprintf ('<item href="%V">%V</item>', instance_iri, WAI_NAME));
+    }
+    http ('</items>');
+  }
+  else if ("key" = 'WebServices')
+  {
+    declare N integer;
+    declare sql varchar;
+    declare st, msg, meta, rows any;
+
+    sql := 'sparql
+            PREFIX sioc: <http://rdfs.org/sioc/ns#>
+            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+            SELECT ?title, ?service_definition
+              FROM <%s>
+             WHERE {
+                     ?forum foaf:maker <%s>.
+                     ?forum sioc:id ?title.
+                     ?forum sioc:has_service ?svc.
+                     ?svc sioc:service_definition ?service_definition.
+                     ?svc sioc:service_protocol "SOAP".
+                   }
+             ORDER BY ?title';
+
+    sql := sprintf (sql, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (param)));
+    st := '00000';
+
+    set_user_id ('dba');
+    exec (sql, st, msg, vector (), 0, meta, rows);
+    http ('<items>');
+    if ('00000' = st)
+    {
+      for (N := 0; N < length (rows); N := N + 1)
+      {
+        http (sprintf ('<item href="%V">%V</item>', rows[N][1], rows[N][0]));
+      }
+    }
+    http ('</items>');
   }
   return '';
 }
@@ -885,6 +965,38 @@ create procedure ODS.ODS_API."user.authenticate" (
 }
 ;
 
+create procedure ODS.ODS_API."user.login" (
+  in user_name varchar,
+	in password_hash varchar) __soap_http 'text/plain'
+{
+  return ODS.ODS_API."user.authenticate" (user_name, password_hash);
+}
+;
+
+create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  rc := 0;
+  if (ods_check_auth (uname))
+  {
+    declare params, sid, realm any;
+
+    params := http_param ();
+    sid := get_keyword ('sid', params);
+    realm := get_keyword ('realm', params);
+    delete from DB.DBA.VSPX_SESSION where VS_REALM = realm and VS_SID = sid;
+    rc := row_count ();
+  }
+  return ods_serialize_int_res (rc);
+}
+;
 
 create procedure ODS.ODS_API."user.update" (
 	in user_info any) __soap_http 'text/xml'
@@ -913,6 +1025,153 @@ create procedure ODS.ODS_API."user.update" (
       rc := 1;
     }
   return ods_serialize_int_res (rc, 'Profile was updated');
+}
+;
+
+create procedure ODS.ODS_API."user.update.field" (
+  in userName varchar,
+  in fieldName varchar,
+  in fieldValue varchar)
+{
+  if (isnull (fieldValue))
+    return;
+
+  DB.DBA.WA_USER_EDIT (userName, fieldName, fieldValue);
+}
+;
+
+create procedure ODS.ODS_API."user.update.fields" (
+  in mail varchar := null,
+  in title varchar := null,
+  in firstName varchar := null,
+  in lastName varchar := null,
+  in fullName varchar := null,
+  in gender varchar := null,
+  in birthday varchar := null,
+  in icq varchar := null,
+  in skype varchar := null,
+  in yahoo varchar := null,
+  in aim varchar := null,
+  in msn varchar := null,
+  in defaultMapLocation varchar := null,
+  in homeCountry varchar := null,
+  in homeState varchar := null,
+  in homeCity varchar := null,
+  in homeCode varchar := null,
+  in homeAddress1 varchar := null,
+  in homeAddress2 varchar := null,
+  in homeTimezone varchar := null,
+  in homeLatitude varchar := null,
+  in homeLongitude varchar := null,
+  in homePhone varchar := null,
+  in homeMobile varchar := null,
+  in businessIndustry varchar := null,
+  in businessOrganization varchar := null,
+  in businessHomePage varchar := null,
+  in businessJob varchar := null,
+  in businessCountry varchar := null,
+  in businessState varchar := null,
+  in businessCity varchar := null,
+  in businessCode varchar := null,
+  in businessAddress1 varchar := null,
+  in businessAddress2 varchar := null,
+  in businessTimezone varchar := null,
+  in businessLatitude varchar := null,
+  in businessLongitude varchar := null,
+  in businessPhone varchar := null,
+  in businessMobile varchar := null,
+  in businessRegNo varchar := null,
+  in businessCareer varchar := null,
+  in businessEmployees varchar := null,
+  in businessVendor varchar := null,
+  in businessService varchar := null,
+  in businessOther varchar := null,
+  in businessNetwork varchar := null,
+  in businessResume varchar := null,
+  in securitySecretQuestion varchar := null,
+  in securitySecretAnswer varchar := null,
+  in securitySiocLimit varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  -- Personal
+  ODS.ODS_API."user.update.field" (uname, 'E_MAIL', mail);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_TITLE', title);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FIRST_NAME', firstName);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_LAST_NAME', lastName);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FULL_NAME', fullName);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_GENDER', gender);
+  {
+    declare dt any;
+    declare continue handler for sqlstate '*'
+	  {
+	    goto _skip;
+		};
+    dt := stringdate (birthday);
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_BIRTHDAY', dt);
+  _skip:;
+	}
+
+  -- Contact
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_ICQ', icq);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SKYPE', skype);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_AIM', yahoo);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_YAHOO', aim);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_MSN', msn);
+
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_LATLNG_HBDEF', defaultMapLocation);
+  -- Home
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HCOUNTRY', homeCountry);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HSTATE', homeState);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HCITY', homeCity);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HCODE', homeCode);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HADDRESS1', homeAddress1);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HADDRESS2', homeAddress2);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HTZONE', homeTimezone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_LAT', homeLatitude);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_LNG', homeLongitude);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HPHONE', homePhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HMOBILE', homeMobile);
+
+  -- Business
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BINDUSTRY', businessIndustry);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BORG', businessOrganization);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BORG_HOMEPAGE', businessHomePage);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BJOB', businessJob);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BCOUNTRY', businessCountry);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BSTATE', businessState);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BCITY', businessCity);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BCODE', businessCode);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BADDRESS1', businessAddress1);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BADDRESS2', businessAddress2);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BTZONE', businessTimezone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BLAT', businessLatitude);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BLNG', businessLongitude);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BPHONE', businessPhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BMOBILE', businessMobile);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BREGNO', businessRegNo);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BCAREER', businessCareer);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BEMPTOTAL', businessEmployees);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BVENDOR', businessVendor);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BSERVICE', businessService);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BOTHER', businessOther);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BNETWORK', businessNetwork);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_RESUME', businessResume);
+
+  -- Security
+  ODS.ODS_API."user.update.field" (uname, 'SEC_QUESTION', securitySecretQuestion);
+  ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
+  if (not isnull (securitySiocLimit))
+    DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
+
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -1040,6 +1299,105 @@ create procedure ODS.ODS_API."user.get" (
   return '';
 }
 ;
+
+create procedure ODS.ODS_API."user.info" (
+  in name varchar := null,
+  in "short" varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    http_rewrite();
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+  {
+    return ods_auth_failed ();
+  }
+  if (isnull (name))
+    name := uname;
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = name) do
+  {
+    http ('<user>');
+
+    -- Personal
+    ods_xml_item ('uid',       U_ID);
+    ods_xml_item ('name',      U_NAME);
+    ods_xml_item ('mail',      U_E_MAIL);
+    ods_xml_item ('title',     WAUI_TITLE);
+    ods_xml_item ('firstName', WAUI_FIRST_NAME);
+    ods_xml_item ('lastName',  WAUI_LAST_NAME);
+    ods_xml_item ('fullName',  WAUI_FULL_NAME);
+
+    if (not isnull ("short"))
+    {
+      -- Personal
+      ods_xml_item ('gender',                 WAUI_GENDER);
+      if (not isnull (WAUI_BIRTHDAY))
+        ods_xml_item ('birthday',             subseq (datestring (WAUI_BIRTHDAY), 0, 10));
+
+      -- Contact
+      ods_xml_item ('icq',                    WAUI_ICQ);
+      ods_xml_item ('skype',                  WAUI_SKYPE);
+      ods_xml_item ('yahoo',                  WAUI_YAHOO);
+      ods_xml_item ('aim',                    WAUI_AIM);
+      ods_xml_item ('msn',                    WAUI_MSN);
+
+      ods_xml_item ('defaultMapLocation',     WAUI_LATLNG_HBDEF);
+      -- Home
+      ods_xml_item ('homeCountry',            WAUI_HCOUNTRY);
+      ods_xml_item ('homeState',              WAUI_HSTATE);
+      ods_xml_item ('homeCity',               WAUI_HCITY);
+      ods_xml_item ('homeCode',               WAUI_HCODE);
+      ods_xml_item ('homeAddress1',           WAUI_HADDRESS1);
+      ods_xml_item ('homeAddress2',           WAUI_HADDRESS2);
+      ods_xml_item ('homeTimezone',           WAUI_HTZONE);
+      ods_xml_item ('homeLatitude',           WAUI_LAT);
+      ods_xml_item ('homeLongitude',          WAUI_LNG);
+      ods_xml_item ('homePhone',              WAUI_HPHONE);
+      ods_xml_item ('homeMobile',             WAUI_HMOBILE);
+
+      -- Business
+      ods_xml_item ('businessIndustry',       WAUI_BINDUSTRY);
+      ods_xml_item ('businessOrganization',   WAUI_BORG);
+      ods_xml_item ('businessHomePage',       WAUI_BORG_HOMEPAGE);
+      ods_xml_item ('businessJob',            WAUI_BJOB);
+      ods_xml_item ('businessCountry',        WAUI_BCOUNTRY);
+      ods_xml_item ('businessState',          WAUI_BSTATE);
+      ods_xml_item ('businessCity',           WAUI_BCITY);
+      ods_xml_item ('businessCode',           WAUI_BCODE);
+      ods_xml_item ('businessAddress1',       WAUI_BADDRESS1);
+      ods_xml_item ('businessAddress2',       WAUI_BADDRESS2);
+      ods_xml_item ('businessTimezone',       WAUI_BTZONE);
+      ods_xml_item ('businessLatitude',       WAUI_BLAT);
+      ods_xml_item ('businessLongitude',      WAUI_BLNG);
+      ods_xml_item ('businessPhone',          WAUI_BPHONE);
+      ods_xml_item ('businessMobile',         WAUI_BMOBILE);
+      ods_xml_item ('businessRegNo',          WAUI_BREGNO);
+      ods_xml_item ('businessCareer',         WAUI_BCAREER);
+      ods_xml_item ('businessEmployees',      WAUI_BEMPTOTAL);
+      ods_xml_item ('businessVendor',         WAUI_BVENDOR);
+      ods_xml_item ('businessService',        WAUI_BSERVICE);
+      ods_xml_item ('businessOther',          WAUI_BOTHER);
+      ods_xml_item ('businessNetwork',        WAUI_BNETWORK);
+      ods_xml_item ('businessResume',         WAUI_RESUME);
+
+      -- Security
+      ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
+      ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
+      ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
+    }
+    http ('</user>');
+  }
+  return '';
+}
+;
+
 
 create procedure ODS.ODS_API."user.search" (
   in pattern varchar) __soap_http 'text/xml'
@@ -2817,12 +3175,16 @@ grant execute on ODS.ODS_API."address.geoData" to ODS_API;
 
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
+grant execute on ODS.ODS_API."user.login" to ODS_API;
+grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
+grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.enable" to ODS_API;
 grant execute on ODS.ODS_API."user.disable" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
+grant execute on ODS.ODS_API."user.info" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;

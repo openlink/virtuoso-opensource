@@ -7,13 +7,47 @@
     <link rel="stylesheet" type="text/css" href="css/users.css" />
     <script type="text/javascript" src="js/oid_login.js"></script>
     <script type="text/javascript" src="js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
+      // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "tab", "dimmer"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript">
+      // publics
+      var cPopup;
+      function myInit()
+      {
+        // CalendarPopup
+        if ($("cDiv"))
+        {
+          cPopup = new CalendarPopup("cDiv");
+          cPopup.isShowYearNavigation = true;
+        }
+
+        OAT.Preferences.imagePath = "/ods/images/oat/";
+        OAT.Preferences.stylePath = "/ods/oat/styles/";
+        OAT.Preferences.showAjax = false;
+
+        if ($("pf"))
+        {
+          var tab = new OAT.Tab ("content");
+          tab.add ("tab_0", "page_0");
+          tab.add ("tab_1", "page_1");
+          tab.add ("tab_2", "page_2");
+          tab.add ("tab_3", "page_3");
+          tab.add ("tab_4", "page_4");
+          tab.go (0);
+        }
+      }
+      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+    </script>
   </head>
   <body>
+    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+    </div>
     <form name="page_form" method="post">
       <input type="hidden" name="sid" id="sid" value="" />
       <input type="hidden" name="realm" id="realm" value="wa" />
@@ -24,7 +58,7 @@
       <div id="MD">
         <table cellspacing="0">
           <tr>
-            <td>
+            <td valign="top">
               <img style="margin: 60px;" src="/ods/images/odslogo_200.png" /><br />
               <div id="ob_links" style="display: none; margin-left: 60px;">
                 <a id="ob_links_foaf" href="#">
@@ -65,77 +99,12 @@
                       <label for="lf_openID">Login with OpenID</label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" size="40"/>
+                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" style="width: 220px;"/>
                     </td>
                   </tr>
                 </table>
                 <div class="footer">
                   <input type="button" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
-                  <input type="button" name="lf_register" value="Sign Up" id="lf_register" onclick="javascript: return lfRegisterSubmit();"/>
-                </div>
-              </div>
-
-              <div id="rf" class="form" style="display: none">
-                <div class="header">
-                  Enter register data
-                </div>
-                <table class="form" cellspacing="5">
-                  <tr>
-                    <th width="30%">
-                      <label for="rf_openID">Register with OpenID</label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_openID" value="" id="rf_openID" class="openID" size="40"/>
-                      <input type="button" name="rf_authenticate" value="Authenticate" id="rf_authenticate" onclick="javascript: return rfAuthenticateSubmit();"/>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th />
-                    <td nowrap="nowrap">
-                      <input type="checkbox" name="rf_useOpenID" id="rf_useOpenID" onclick="javascript: rfAlternateLogin(this);" value="1" />
-                      <label for="rf_useOpenID">Do not create password, I want to use my OpenID URL to login</label>
-                    </td>
-                  </tr>
-                  <tr id="rf_login_1">
-                    <th>
-                      <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="" id="rf_uid" />
-                    </td>
-                  </tr>
-                  <tr id="rf_login_2">
-                    <th>
-                      <label for="rf_mail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="text" name="rf_mail" value="" id="rf_mail" size="40"/>
-                    </td>
-                  </tr>
-                  <tr id="rf_login_3">
-                    <th>
-                      <label for="rf_pwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="password" name="rf_password" value="" id="rf_password" />
-                    </td>
-                  </tr>
-                  <tr id="rf_login_4">
-                    <th>
-                      <label for="rf_pwd2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-                    </th>
-                    <td nowrap="nowrap">
-                      <input type="password" name="rf_password2" value="" id="rf_password2" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td nowrap="nowrap" colspan="2">
-                      <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
-                    </td>
-                  </tr>
-                </table>
-                <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
 
@@ -233,19 +202,19 @@
                           <label for="pf_firstName">First Name</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_firstName" value="" id="pf_firstName" size="40" />
+                          <input type="text" name="pf_firstName" value="" id="pf_firstName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_lastName">Last Name</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_lastName" value="" id="pf_lastName" size="40" />
+                          <input type="text" name="pf_lastName" value="" id="pf_lastName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_fullName">Full Name</label>
                         </th>
                         <td>
@@ -253,15 +222,15 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_mail">E-mail</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_mail" value="" id="pf_mail" size="40" />
+                          <input type="text" name="pf_mail" value="" id="pf_mail" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_gender">Gender</label>
                         </th>
                         <td>
@@ -273,118 +242,12 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_birthday">Birthday</label>
                         </th>
                         <td>
-                          <select name="pf_birthdayDay" id="pf_birthdayDay">
-                            <option></option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                            <option value="12">12</option>
-                            <option value="13">13</option>
-                            <option value="14">14</option>
-                            <option value="15">15</option>
-                            <option value="16">16</option>
-                            <option value="17">17</option>
-                            <option value="18">18</option>
-                            <option value="19">19</option>
-                            <option value="20">20</option>
-                            <option value="21">21</option>
-                            <option value="22">22</option>
-                            <option value="23">23</option>
-                            <option value="24">24</option>
-                            <option value="25">25</option>
-                            <option value="26">26</option>
-                            <option value="27">27</option>
-                            <option value="28">28</option>
-                            <option value="29">29</option>
-                            <option value="30">30</option>
-                            <option value="31">31</option>
-                          </select>
-        		              -
-                          <select name="pf_birthdayMonth" id="pf_birthdayMonth">
-                            <option></option>
-                            <option value="1">Jan</option>
-                            <option value="2">Feb</option>
-                            <option value="3">Mar</option>
-                            <option value="4">Apr</option>
-                            <option value="5">May</option>
-                            <option value="6">Jun</option>
-                            <option value="7">Jul</option>
-                            <option value="8">Aug</option>
-                            <option value="9">Sep</option>
-                            <option value="10">Oct</option>
-                            <option value="11">Nov</option>
-                            <option value="12">Dec</option>
-                          </select>
-                          -
-                          <select name="pf_birthdayYear" id="pf_birthdayYear">
-                            <option></option>
-                            <option value="1950">1950</option>
-                            <option value="1951">1951</option>
-                            <option value="1952">1952</option>
-                            <option value="1953">1953</option>
-                            <option value="1954">1954</option>
-                            <option value="1955">1955</option>
-                            <option value="1956">1956</option>
-                            <option value="1957">1957</option>
-                            <option value="1958">1958</option>
-                            <option value="1959">1959</option>
-                            <option value="1960">1960</option>
-                            <option value="1961">1961</option>
-                            <option value="1962">1962</option>
-                            <option value="1963">1963</option>
-                            <option value="1964">1964</option>
-                            <option value="1965">1965</option>
-                            <option value="1966">1966</option>
-                            <option value="1967">1967</option>
-                            <option value="1968">1968</option>
-                            <option value="1969">1969</option>
-                            <option value="1970">1970</option>
-                            <option value="1971">1971</option>
-                            <option value="1972">1972</option>
-                            <option value="1973">1973</option>
-                            <option value="1974">1974</option>
-                            <option value="1975">1975</option>
-                            <option value="1976">1976</option>
-                            <option value="1977">1977</option>
-                            <option value="1978">1978</option>
-                            <option value="1979">1979</option>
-                            <option value="1980">1980</option>
-                            <option value="1981">1981</option>
-                            <option value="1982">1982</option>
-                            <option value="1983">1983</option>
-                            <option value="1984">1984</option>
-                            <option value="1985">1985</option>
-                            <option value="1986">1986</option>
-                            <option value="1987">1987</option>
-                            <option value="1988">1988</option>
-                            <option value="1989">1989</option>
-                            <option value="1990">1990</option>
-                            <option value="1991">1991</option>
-                            <option value="1992">1992</option>
-                            <option value="1993">1993</option>
-                            <option value="1994">1994</option>
-                            <option value="1995">1995</option>
-                            <option value="1996">1996</option>
-                            <option value="1997">1997</option>
-                            <option value="1998">1998</option>
-                            <option value="1999">1999</option>
-                            <option value="2000">2000</option>
-                            <option value="2001">2001</option>
-                            <option value="2002">2002</option>
-                            <option value="2003">2003</option>
-                          </select>
+                          <input name="pf_birthday" id="pf_birthday" value="" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
+                          <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
                         </td>
                       </tr>
                     </table>
@@ -397,7 +260,7 @@
                           <label for="pf_icq">ICQ</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_icq" value="" id="pf_icq" size="40" />
+                          <input type="text" name="pf_icq" value="" id="pf_icq" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -405,7 +268,7 @@
                           <label for="pf_skype">Skype</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_skype" value="" id="pf_skype" size="40" />
+                          <input type="text" name="pf_skype" value="" id="pf_skype" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -413,7 +276,7 @@
                           <label for="pf_yahoo">Yahoo</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_yahoo" value="" id="pf_yahoo" size="40" />
+                          <input type="text" name="pf_yahoo" value="" id="pf_yahoo" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -421,7 +284,7 @@
                           <label for="pf_aim">AIM</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_aim" value="" id="pf_aim" size="40" />
+                          <input type="text" name="pf_aim" value="" id="pf_aim" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -429,7 +292,7 @@
                           <label for="pf_msn">MSN</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_msn" value="" id="pf_msn" size="40" />
+                          <input type="text" name="pf_msn" value="" id="pf_msn" style="width: 220px;" />
                         </td>
                       </tr>
                     </table>
@@ -439,58 +302,59 @@
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
-                          <label for="pf_homeCountry">Country</label>
+                          <label for="pf_homecountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_homeCountry" id="pf_homeCountry" onchange="javascript: return updateState('pf_homeCountry', 'pf_homeState');" />
+                          <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeState">State/Province</label>
+                          <label for="pf_homestate">State/Province</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_homeState" id="pf_homeState" />
+                          <span id="span_pf_homestate">
+                          </span>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCity">City/Town</label>
+                          <label for="pf_homecity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCity" value="" id="pf_homeCity" size="40" />
+                          <input type="text" name="pf_homecity" value="" id="pf_homecity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCode">Zip/Postal Code</label>
+                          <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCode" value="" id="pf_homeCode" />
+                          <input type="text" name="pf_homecode" value="" id="pf_homecode" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress1">Address1</label>
+                          <label for="pf_homeaddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress1" value="" id="pf_homeAddress1" size="40" />
+                          <input type="text" name="pf_homeaddress1" value="" id="pf_homeaddress1" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress2">Address2</label>
+                          <label for="pf_homeaddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress2" value="" id="pf_homeAddress2" size="40" />
+                          <input type="text" name="pf_homeaddress2" value="" id="pf_homeaddress2" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeTimeZone">Time-Zone</label>
+                        <th>
+                          <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimeZone" id="pf_homeTimeZone">
+                          <select name="pf_homeTimezone" id="pf_homeTimezone">
                             <option value="-12">GMT -12:00</option>
                             <option value="-11">GMT -11:00</option>
                             <option value="-10">GMT -10:00</option>
@@ -520,26 +384,27 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeLatitude">Latitude</label>
+                        <th>
+                          <label for="pf_homelat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeLatitude" value="" id="pf_homeLatitude" />
-                          <input type="button" name="pf_setHomeLocation" value="Set From Address" onclick="javascript: pfGetLocation('home');" />
+                          <input type="text" name="pf_homelat" value="" id="pf_homelat" />
+                          <label>
                           <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                          <label for="pf_homeDefaultMapLocation">Default Map Location</label>
+                            Default Map Location
+                          </label>
                         <td>
                       <tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_homeLongitude">Longitude</label>
+                        <th>
+                          <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeLongitude" value="" id="pf_homeLongitude" />
+                          <input type="text" name="pf_homelng" value="" id="pf_homelng" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
@@ -547,7 +412,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
@@ -564,7 +429,7 @@
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessIndustry" id="pf_businessIndustry" />
+                          <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -572,7 +437,7 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessOrganization" value="" id="pf_businessOrganization" size="40" />
+                          <input type="text" name="pf_businessOrganization" value="" id="pf_businessOrganization" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -580,7 +445,7 @@
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="" id="pf_businessHomePage" size="40" />
+                          <input type="text" name="pf_businessHomePage" value="" id="pf_businessHomePage" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -588,63 +453,64 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessJob" value="" id="pf_businessJob" size="40" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessCountry">Country</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <select name="pf_businessCountry" id="pf_businessCountry"  onchange="javascript: return updateState('pf_businessCountry', 'pf_businessState');" />
+                          <input type="text" name="pf_businessJob" value="" id="pf_businessJob" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessState">State/Province</label>
+                          <label for="pf_businesscountry">Country</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessState" id="pf_businessState" />
+                          <select name="pf_businesscountry" id="pf_businesscountry"  onchange="javascript: return updateState('pf_businesscountry', 'pf_businessstate');" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessCity">City/Town</label>
+                          <label for="pf_businessstate">State/Province</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCity" value="" id="pf_businessCity" size="40" />
+                          <span id="span_pf_businessstate">
+                          </span>
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessCode">Zip/Postal Code</label>
+                        <th>
+                          <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCode" value="" id="pf_businessCode" />
+                          <input type="text" name="pf_businesscity" value="" id="pf_businesscity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessAddress1">Address1</label>
+                        <th>
+                          <label for="pf_businesscode">Zip/Postal Code</label>
                         </th>
-                        <td>
-                          <input type="text" name="pf_businessAddress1" value="" id="pf_businessAddress1" size="40" />
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businesscode" value="" id="pf_businesscode" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessAddress2">Address2</label>
+                        <th>
+                          <label for="pf_businessaddress1">Address1</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessAddress2" value="" id="pf_businessAddress2" size="40" />
+                          <input type="text" name="pf_businessaddress1" value="" id="pf_businessaddress1"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessTimeZone">Time-Zone</label>
+                        <th>
+                          <label for="pf_businessaddress2">Address2</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimeZone" id="pf_businessTimeZone">
+                          <input type="text" name="pf_businessaddress2" value="" id="pf_businessaddress2"  style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessTimezone">Time-Zone</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessTimezone" id="pf_businessTimezone">
                             <option value="-12">GMT -12:00</option>
                             <option value="-11">GMT -11:00</option>
                             <option value="-10">GMT -10:00</option>
@@ -674,26 +540,27 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessLatitude">Latitude</label>
+                        <th>
+                          <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessLatitude" value="" id="pf_businessLatitude" />
-                          <input type="button" name="pf_setBusinessLocation" value="Set From Address" onclick="javascript: pfGetLocation('business');" />
+                          <input type="text" name="pf_businesslat" value="" id="pf_businesslat" />
+                          <label>
                           <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
-                          <label for="pf_businessDefaultMapLocation">Default Map Location</label>
+                            Default Map Location
+                          </label>
                         <td>
                       <tr>
                       <tr>
-                        <th nowrap="nowrap">
-                          <label for="pf_businessLongitude">Longitude</label>
+                        <th>
+                          <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessLongitude" value="" id="pf_businessLongitude" />
+                          <input type="text" name="pf_businesslng" value="" id="pf_businesslng" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
@@ -701,7 +568,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
@@ -709,19 +576,19 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessRegNo" value="" id="pf_businessRegNo" size="40" />
+                          <input type="text" name="pf_businessRegNo" value="" id="pf_businessRegNo"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessCareer">Career / Organization Status</label>
                         </th>
                         <td>
-                          <select name="pf_businessCareer" id="pf_businessCareer">
+                          <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
                             <option />
                             <option value="Job seeker-Permanent">Job seeker-Permanent</option>
                             <option value="Job seeker-Temporary">Job seeker-Temporary</option>
@@ -734,11 +601,11 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessEmployees">No. of Employees</label>
                         </th>
                         <td>
-                          <select name="pf_businessEmployees" id="pf_businessEmployees">
+                          <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
                             <option />
                             <option value="1-100">1-100</option>
                             <option value="101-250">101-250</option>
@@ -749,11 +616,11 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessVendor">Are you a technology vendor</label>
                         </th>
                         <td>
-                          <select name="pf_businessVendor" id="pf_businessVendor">
+                          <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
                             <option />
                             <option value="Not a Vendor">Not a Vendor</option>
                             <option value="Vendor">Vendor</option>
@@ -763,11 +630,11 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessService">If so, what technology and/or service do you provide?</label>
                         </th>
                         <td>
-                          <select name="pf_businessService" id="pf_businessService">
+                          <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
                             <option />
                             <option value="Enterprise Data Integration">Enterprise Data Integration</option>
                             <option value="Business Process Management">Business Process Management</option>
@@ -776,27 +643,27 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessOther">Other Technology service</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOther" value="" id="pf_businessOther" size="40" />
+                          <input type="text" name="pf_businessOther" value="" id="pf_businessOther"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessNetwork" value="" id="pf_businessNetwork" size="40" />
+                          <input type="text" name="pf_businessNetwork" value="" id="pf_businessNetwork"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_businessResume">Resume</label>
                         </th>
                         <td>
-                          <textarea name="pf_businessResume" id="pf_businessResume" cols="50"></textarea>
+                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 220px;"></textarea>
                         </td>
                       </tr>
                     </table>
@@ -823,7 +690,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -831,7 +698,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_password">Repeat Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -845,12 +712,12 @@
                         </th>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretQuestion" value="" id="pf_securitySecretQuestion" size="40" />
-                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();">
+                          <input type="text" name="pf_securitySecretQuestion" value="" id="pf_securitySecretQuestion"  style="width: 220px;" />
+                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();" style="width: 220px;">
                             <option value="">~pick predefined~</option>
                             <option value="First Car">First Car</option>
                             <option value="Mothers Maiden Name">Mothers Maiden Name</option>
@@ -860,11 +727,11 @@
                         </td>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretAnswer" value="" id="pf_securitySecretAnswer" size="40" />
+                          <input type="text" name="pf_securitySecretAnswer" value="" id="pf_securitySecretAnswer"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -873,7 +740,7 @@
                         </th>
                       </tr>
                       <tr>
-                        <th nowrap="nowrap">
+                        <th>
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
                         <td nowrap="nowrap">

@@ -99,7 +99,6 @@ EXTRA_DIST = \
 	users/*.html \
 	users/js/*.js \
 	users/*.php \
-	users/*.sql \
 	users/*.txt \
 	users/users.jsp \
 	users/users.rb \
