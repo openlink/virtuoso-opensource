@@ -23,31 +23,17 @@
 var tab;
 var setupWin;
 
-function init() {
-  if ($('pf')) {
-    tab = new OAT.Tab ("content");
-    tab.add ("tab_0", "page_0");
-    tab.add ("tab_1", "page_1");
-    tab.add ("tab_2", "page_2");
-    tab.add ("tab_3", "page_3");
-    tab.add ("tab_4", "page_4");
-    tab.go (0);
-  }
-}
-
-function hiddenCreate(objName) {
+function hiddenCreate(objName)
+{
   var hidden = $('objName');
-  if (!hidden) {
+  if (!hidden)
+  {
     hidden = document.createElement("input");
     hidden.setAttribute("type", "hidden");
     hidden.setAttribute("name", objName);
     hidden.setAttribute("id", objName);
     document.forms[0].appendChild(hidden);
   }
-}
-
-function executingEnd() {
-	OAT.Dimmer.hide();
 }
 
 function tagValue(xml, tName)
@@ -66,10 +52,13 @@ function fieldUpdate(xml, tName, fName)
 {
   var obj = $(fName);
   var str = tagValue(xml, tName);
-  if (obj.type == 'select-one') {
+  if (obj.type == 'select-one')
+  {
     var o = obj.options;
-  	for (var i=0; i< o.length; i++) {
-  		if (o[i].value == str) {
+  	for (var i=0; i< o.length; i++)
+  	{
+  		if (o[i].value == str)
+  		{
   		  o[i].selected = true;
   		  o[i].defaultSelected = true;
   		}
@@ -112,63 +101,30 @@ function userUpdate(root)
 function updateList(fName, listName)
 {
   var obj = $(fName);
-  if (obj.options.length == 0) {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_LIST";
-
-    var inputObject = {
-    	ODS_USER_LIST:{
-        pSid:$v('sid'),
-        pRealm:$v('realm'),
-        pList:listName
-    	}
-    }
-		var x = function(xml) {
-		  listCallback(xml, obj);
-		}
-  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
+  if (obj.options.length == 0)
+  {
+    var S = '/ods/api/lookup.list?key='+encodeURIComponent(listName);
+    OAT.AJAX.GET(S, '', function(data){listCallback(data, obj);});
   }
 }
 
 function clearSelect(obj)
 {
-	for (var i=0;i<obj.options.length; i++) {
+	for (var i=0;i<obj.options.length; i++)
+	{
 		obj.options[i] = null;
 	}
   obj.value = '';
 }
 
-function updateState(countryName, stateName, stateValue)
+function listCallback (data, obj, objValue) {
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!hasError(xml))
 {
-  var obj = $(stateName);
-  clearSelect(obj);
-
-  if ($v(countryName) != '') {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_LIST";
-
-    var inputObject = {
-    	ODS_USER_LIST:{
-        pSid:$v('sid'),
-        pRealm:$v('realm'),
-        pList:'Province',
-        pParam:$v(countryName)
-    	}
-    }
-  	var x = function(xml) {
-  	  listCallback(xml, obj, stateValue);
-  	}
-  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
-  }
-}
-
-function listCallback (result, obj, objValue) {
-  var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
     /* options */
-  	var items = root.getElementsByTagName("item");
-  	if (items.length) {
+  	var items = xml.getElementsByTagName("item");
+  	if (items.length)
+  	{
 			obj.options[0] = new Option('', '');
   		for (var i=1; i<=items.length; i++) {
   		  o = new Option(OAT.Xml.textValue(items[i-1]), OAT.Xml.textValue(items[i-1]));
@@ -178,33 +134,30 @@ function listCallback (result, obj, objValue) {
   		  obj.value = objValue;
   	}
 	}
-  // executingEnd();
 }
 
 function copyList(sourceName, targetName)
 {
   var targetObj = $(targetName);
-  if (targetObj.options.length == 0) {
+  if (targetObj.options.length == 0)
+  {
     var sourceObj = $(sourceName);
-		for (var i=0;i<sourceObj.options.length; i++) {
+		for (var i=0;i<sourceObj.options.length; i++)
+		{
 			targetObj.options[i] = sourceObj.options[i];
 		}
   }
 }
 
-function hasError(root) {
-	if (!root) {
-    // executingEnd();
-		alert('No data!');
-		return true;
-	}
-
-	/* error */
-	var error = root.getElementsByTagName('error')[0];
-  if (error) {
+function hasApiError(root)
+{
+	if (root)
+	{
+  	var error = root.getElementsByTagName('failed')[0];
+    if (error)
+    {
+      error = error[0];
 	  var code = error.getElementsByTagName('code')[0];
-    if (OAT.Xml.textValue(code) != 'OK') {
-      if (OAT.Xml.textValue(code) == 'BAD_SESSION') {
         $('sid').value = '';
         $('realm').value = '';
         OAT.Dom.hide("ob_links");
@@ -212,55 +165,56 @@ function hasError(root) {
         OAT.Dom.hide("rf");
         OAT.Dom.hide("uf");
         OAT.Dom.hide("pf");
-      }
-      // executingEnd();
+
 	    var message = error.getElementsByTagName('message')[0];
-      if (message)
         alert (OAT.Xml.textValue(message));
   		return true;
     }
-  }
   return false;
 }
-
-function afterLogin(xml) {
-	var root = xml.documentElement;
-	if (!hasError(root)) {
-  	/* session */
-   	var session = root.getElementsByTagName('session')[0];
-    if (session) {
-      fieldUpdate(session, 'sid', 'sid');
-      fieldUpdate(session, 'realm', 'realm');
+  return true;
     }
+
+function afterLogin(data)
+{
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!xml || !hasApiError(xml))
+	{
+    $('sid').value = data;
+    $('realm').value = 'wa';
    	var T = $('form');
-   	if (T) {
+   	if (T)
+   	{
    	  T.value = 'user';
    	  T.form.submit();
-   	} else {
+   	}
+   	else
+   	{
      	var T = $('ob_left');
-     	if (T) {
+     	if (T)
      	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > View Profile';
-     	}
+
       OAT.Dom.show("ob_right");
       OAT.Dom.hide("ob_links");
       OAT.Dom.hide("lf");
       OAT.Dom.hide("rf");
       OAT.Dom.show("uf");
       OAT.Dom.hide("pf");
-      if (!userUpdate(root))
         selectProfile();
     }
   }
-  // executingEnd();
   return false;
 }
 
-function afterAuthenticate(xml) {
+function afterAuthenticate(xml)
+{
 	var root = xml.documentElement;
-	if (!hasError(root)) {
+	if (!hasError(root))
+	{
   	/* session */
    	var oid = root.getElementsByTagName('oid')[0];
-    if (oid) {
+    if (oid)
+    {
       fieldUpdate(oid, 'uid', 'rf_uid');
       fieldUpdate(oid, 'mail', 'rf_mail');
       hiddenUpdate(oid, 'identity', 'rf_identity');
@@ -273,29 +227,22 @@ function afterAuthenticate(xml) {
       hiddenUpdate(oid, 'tz', 'rf_tz');
     }
   }
-  // executingEnd();
   return false;
 }
 
-function selectProfile() {
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_USER_SELECT";
-
-  var inputObject = {
-  	ODS_USER_SELECT:{
-      pSid:$v('sid'),
-      pRealm:$v('realm')
-  	}
-  }
-	OAT.WS.invoke(wsdl, serviceName, selectProfileCallback, inputObject);
+function selectProfile()
+{
+  var S = '/ods/api/user.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'));
+  OAT.AJAX.GET(S, '', selectProfileCallback);
 }
 
-function selectProfileCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_SELECTResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
+function selectProfileCallback(data)
+{
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!hasError(xml))
+	{
   	/* user data */
-   	var user = root.getElementsByTagName('user')[0];
+   	var user = xml.getElementsByTagName('user')[0];
     if (user) {
       tagUpdate(user, 'name', 'uf_name');
       tagUpdate(user, 'mail', 'uf_mail');
@@ -305,73 +252,50 @@ function selectProfileCallback(obj) {
       tagUpdate(user, 'fullName', 'uf_fullName');
     }
   }
-  // executingEnd();
 }
 
-function selectLinks() {
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_USER_LINKS";
-
-  var inputObject = {
-  	ODS_USER_LINKS:{
-      pSid:$v('sid'),
-      pRealm:$v('realm')
-  	}
-  }
-	OAT.WS.invoke(wsdl, serviceName, selectLinksCallback, inputObject);
-}
-
-function selectLinksCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_LINKSResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
-  	/* links */
-    linkUpdate(root, 'foaf', 'ob_links_foaf');
-  }
-}
-
-function logoutSubmit() {
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_USER_LOGOUT";
-
-  var inputObject = {
-  	ODS_USER_LOGOUT:{
-      pSid:$v('sid'),
-      pRealm:$v('realm')
-  	}
-  }
-	OAT.WS.invoke(wsdl, serviceName, logoutCallback, inputObject);
+function logoutSubmit()
+{
+  var S = '/ods/api/user.logout?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'));
+  OAT.AJAX.GET(S, '', logoutCallback);
   return false;
 }
 
-function logoutCallback(obj) {
+function logoutCallback(obj)
+{
   $('sid').value = '';
   $('realm').value = '';
+
+  $('lf_uid').value = '';
+  $('lf_password').value = '';
+
  	var T = $('ob_left');
- 	if (T) {
+ 	if (T)
  	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Login';
- 	}
+
   OAT.Dom.hide("ob_links");
   OAT.Dom.hide("ob_right");
   OAT.Dom.show("lf");
   OAT.Dom.hide("rf");
   OAT.Dom.hide("pf");
   OAT.Dom.hide("uf");
-  // executingEnd();
 }
 
-function logoutSubmit2() {
+function logoutSubmit2()
+{
   $('sid').value = '';
   $('realm').value = '';
   $('form').value = 'login';
   $('form').form.submit();
 }
 
-function lfLoginSubmit() {
+function lfLoginSubmit()
+{
   $('sid').value = '';
   $('realm').value = '';
 
-  if ($v('lf_openID') != '') {
+  if ($v('lf_openID') != '')
+  {
     var opts = {
       'client_url': $v('lf_openID'),
       'client_action': 'login',
@@ -383,28 +307,19 @@ function lfLoginSubmit() {
       'helper_url': "http://" + location.host + "/ods/users/oid_login.vsp"
     };
     openID_verify(opts);
-  } else {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_LOGIN";
-
-    var inputObject = {
-    	ODS_USER_LOGIN:{
-        pUser:$v('lf_uid'),
-        pPassword:$v('lf_password')
-    	}
     }
-  	OAT.WS.invoke(wsdl, serviceName, lfLoginCallback, inputObject);
+  else
+  {
+    var S = '/ods/api/user.authenticate?user_name='+encodeURIComponent($v('lf_uid'))+'&password_hash='+encodeURIComponent(OAT.Crypto.sha($v('lf_uid')+$v('lf_password')));
+    OAT.AJAX.GET(S, '', function(data){afterLogin(data);});
   }
   $('lf_password').value = '';
 }
 
-function lfLoginCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_LOGINResponse.CallReturn);
-  afterLogin(xml);
-}
-
-function lfLoginSubmit2() {
-  if ($v('lf_openID') != '') {
+function lfLoginSubmit2()
+{
+  if ($v('lf_openID') != '')
+  {
     var opts = {
       'client_url': $v('lf_openID'),
       'client_action': 'login',
@@ -420,8 +335,10 @@ function lfLoginSubmit2() {
   }
 }
 
-function rfAlternateLogin (obj) {
-  if (obj.checked) {
+function rfAlternateLogin (obj)
+{
+  if (obj.checked)
+  {
     OAT.Dom.hide ('rf_login_1');
     OAT.Dom.hide ('rf_login_2');
     OAT.Dom.hide ('rf_login_3');
@@ -436,9 +353,12 @@ function rfAlternateLogin (obj) {
   }
 }
 
-function rfAuthenticateSubmit() {
-  if ($('rf_useOpenID').checked) {
-    if (!$('rf_is_agreed').checked) {
+function rfAuthenticateSubmit()
+{
+  if ($('rf_useOpenID').checked)
+  {
+    if (!$('rf_is_agreed').checked)
+    {
       alert ('You have not agreed to the Terms of Service!');
       return;
     }
@@ -466,110 +386,37 @@ function rfAuthenticateSubmit() {
   openID_verify(opts);
 }
 
-function lfRegisterSubmit(event) {
-  $('sid').value = '';
-  $('realm').value = '';
-
- 	var T = $('ob_left');
- 	if (T) {
- 	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Register';
- 	}
-  OAT.Dom.hide("ob_right");
-  OAT.Dom.hide("ob_links");
-
-  OAT.Dom.hide("lf");
-  OAT.Dom.show("rf");
-  $('rf_openID').value = '';
-  $('rf_useOpenID').checked = false;
-  $('rf_uid').value = '';
-  $('rf_mail').value = '';
-  $('rf_password').value = '';
-  $('rf_password2').value = '';
-  $('rf_is_agreed').checked = false;
-  rfAlternateLogin($('rf_useOpenID'));
-  return false;
-}
-
-function inputParameter (inputField) {
+function inputParameter (inputField)
+{
   var T = $(inputField);
   if (T)
     return T.value;
   return '';
 }
 
-function rfSignupSubmit(event) {
-  if ($v('rf_uid') == '') {
-    alert ('Bad username. Please correct!');
-  } else if ($v('rf_mail') == '') {
-    alert ('Bad mail. Please correct!');
-  } else if ($v('rf_password') == '') {
-    alert ('Bad password. Please correct!');
-  } else if ($v('rf_password') != $v('rf_password2')) {
-    alert ('Bad password. Please retype!');
-  } else if (!$('rf_is_agreed').checked) {
-    alert ('You have not agreed to the Terms of Service!');
-  } else {
-    $('sid').value = '';
-    $('realm').value = '';
-
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_REGISTER";
-
-    var inputObject = {
-    	ODS_USER_REGISTER:{
-        pUser:$v('rf_uid'),
-        pPassword:$v('rf_password') ,
-        pMail:$v('rf_mail'),
-        oid_identity:inputParameter('rf_identity'),
-        oid_fullname:inputParameter('rf_fullname'),
-        oid_birthday:inputParameter('rf_birthday'),
-        oid_gender:inputParameter('rf_gender'),
-        oid_postcode:inputParameter('rf_postcode'),
-        oid_country:inputParameter('rf_country'),
-        oid_tz:inputParameter('rf_tz')
-    	}
-    }
-  	OAT.WS.invoke(wsdl, serviceName, rfSignupCallback, inputObject);
-  }
-  $('rf_password').value = '';
-  $('rf_password2').value = '';
-  return false;
-}
-
-function rfSignupCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_REGISTERResponse.CallReturn);
-  afterLogin(xml);
-}
-
-function ufProfileSubmit() {
-  updateList('pf_homeCountry', 'Country');
-  clearSelect($('pf_homeState'));
-  updateList('pf_businessCountry', 'Country');
-  clearSelect($('pf_businessState'));
+function ufProfileSubmit()
+{
+  updateList('pf_homecountry', 'Country');
+  updateList('pf_businesscountry', 'Country');
   updateList('pf_businessIndustry', 'Industry');
 
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_USER_SELECT";
+ 	var T = $('pf_change_txt');
+ 	if (T)
+ 	  T.innerHTML = '';
 
-  var inputObject = {
-  	ODS_USER_SELECT:{
-      pSid:$v('sid'),
-      pRealm:$v('realm'),
-      pShort: 0
-  	}
-  }
-	OAT.WS.invoke(wsdl, serviceName, ufProfileCallback, inputObject);
+  var S = '/ods/api/user.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&short=0';
+  OAT.AJAX.GET(S, '', ufProfileCallback);
 }
 
-function ufProfileCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_SELECTResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
+function ufProfileCallback(data)
+{
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!hasError(xml))
+	{
   	/* user data */
-   	var user = root.getElementsByTagName('user')[0];
-    if (user) {
-      //copyList('pf_homeCountry', 'pf_businessCountry');
-
+   	var user = xml.getElementsByTagName('user')[0];
+    if (user)
+    {
       // personal
       fieldUpdate(user, 'mail',                   'pf_mail');
       fieldUpdate(user, 'title',                  'pf_title');
@@ -577,9 +424,7 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'lastName',               'pf_lastName');
       fieldUpdate(user, 'fullName',               'pf_fullName');
       fieldUpdate(user, 'gender',                 'pf_gender');
-      fieldUpdate(user, 'birthdayDay',            'pf_birthdayDay');
-      fieldUpdate(user, 'birthdayMonth',          'pf_birthdayMonth');
-      fieldUpdate(user, 'birthdayYear',           'pf_birthdayYear');
+      fieldUpdate(user, 'birthday',               'pf_birthday');
 
       // contact
       fieldUpdate(user, 'icq',                    'pf_icq');
@@ -589,15 +434,15 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'msn',                    'pf_msn');
 
       // home
-      fieldUpdate(user, 'homeCountry',            'pf_homeCountry');
-      updateState('pf_homeCountry',               'pf_homeState', tagValue(user, 'homeState'));
-      fieldUpdate(user, 'homeCity',               'pf_homeCity');
-      fieldUpdate(user, 'homeCode',               'pf_homeCode');
-      fieldUpdate(user, 'homeAddress1',           'pf_homeAddress1');
-      fieldUpdate(user, 'homeAddress2',           'pf_homeAddress2');
-      fieldUpdate(user, 'homeTimeZone',           'pf_homeTimeZone');
-      fieldUpdate(user, 'homeLatitude',           'pf_homeLatitude');
-      fieldUpdate(user, 'homeLongitude',          'pf_homeLongitude');
+      fieldUpdate(user, 'homeCountry',            'pf_homecountry');
+      updateState('pf_homecountry',               'pf_homestate', tagValue(user, 'homeState'));
+      fieldUpdate(user, 'homeCity',               'pf_homecity');
+      fieldUpdate(user, 'homeCode',               'pf_homecode');
+      fieldUpdate(user, 'homeAddress1',           'pf_homeaddress1');
+      fieldUpdate(user, 'homeAddress2',           'pf_homeaddress2');
+      fieldUpdate(user, 'homeTimezone',           'pf_homeTimezone');
+      fieldUpdate(user, 'homeLatitude',           'pf_homelat');
+      fieldUpdate(user, 'homeLongitude',          'pf_homelng');
       fieldUpdate(user, 'defaultMapLocation',     'pf_homeDefaultMapLocation');
       fieldUpdate(user, 'homePhone',              'pf_homePhone');
       fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
@@ -607,15 +452,15 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'businessOrganization',   'pf_businessOrganization');
       fieldUpdate(user, 'businessHomePage',       'pf_businessHomePage');
       fieldUpdate(user, 'businessJob',            'pf_businessJob');
-      fieldUpdate(user, 'businessCountry',        'pf_businessCountry');
-      updateState('pf_businessCountry',           'pf_businessState', tagValue(user, 'businessState'));
-      fieldUpdate(user, 'businessCity',           'pf_businessCity');
-      fieldUpdate(user, 'businessCode',           'pf_businessCode');
-      fieldUpdate(user, 'businessAddress1',       'pf_businessAddress1');
-      fieldUpdate(user, 'businessAddress2',       'pf_businessAddress2');
-      fieldUpdate(user, 'businessTimeZone',       'pf_businessTimeZone');
-      fieldUpdate(user, 'businessLatitude',       'pf_businessLatitude');
-      fieldUpdate(user, 'businessLongitude',      'pf_businessLongitude');
+      fieldUpdate(user, 'businessCountry',        'pf_businesscountry');
+      updateState('pf_businesscountry',           'pf_businessstate', tagValue(user, 'businessState'));
+      fieldUpdate(user, 'businessCity',           'pf_businesscity');
+      fieldUpdate(user, 'businessCode',           'pf_businesscode');
+      fieldUpdate(user, 'businessAddress1',       'pf_businessaddress1');
+      fieldUpdate(user, 'businessAddress2',       'pf_businessaddress2');
+      fieldUpdate(user, 'businessTimezone',       'pf_businessTimezone');
+      fieldUpdate(user, 'businessLatitude',       'pf_businesslat');
+      fieldUpdate(user, 'businessLongitude',      'pf_businesslng');
       fieldUpdate(user, 'defaultMapLocation',     'pf_businessDefaultMapLocation');
       fieldUpdate(user, 'businessPhone',          'pf_businessPhone');
       fieldUpdate(user, 'businessMobile',         'pf_businessMobile');
@@ -634,9 +479,9 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'securitySiocLimit',      'pf_securitySiocLimit');
 
      	var T = $('ob_left');
-     	if (T) {
+     	if (T)
      	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Edit Profile';
-     	}
+
       OAT.Dom.hide("lf");
       OAT.Dom.hide("rf");
       OAT.Dom.hide("uf");
@@ -644,72 +489,64 @@ function ufProfileCallback(obj) {
       tab.go (0);
     }
   }
-  // executingEnd();
 }
 
-function pfUpdateSubmit(event) {
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_USER_UPDATE";
-
-  var inputObject = {
-  	ODS_USER_UPDATE:{
-      pSid:$v('sid'),
-      pRealm:$v('realm'),
-      pMail:$v('pf_mail'),
-      pTitle:$v('pf_title'),
-      pFirstName:$v('pf_firstName'),
-      pLastName:$v('pf_lastName'),
-      pFullName:$v('pf_fullName'),
-      pGender:$v('pf_gender'),
-      pBirthdayDay:$v('pf_birthdayDay'),
-      pBirthdayMonth:$v('pf_birthdayMonth'),
-      pBirthdayYear:$v('pf_birthdayYear'),
-      pIcq:$v('pf_icq'),
-      pSkype:$v('pf_skype'),
-      pYahoo:$v('pf_yahoo'),
-      pAim:$v('pf_aim'),
-      pMsn:$v('pf_msn'),
-      pDefaultMapLocation:$v('pf_homeDefaultMapLocation'),
-      pHomeCountry:$v('pf_homeCountry'),
-      pHomeState:$v('pf_homeState'),
-      pHomeCity:$v('pf_homeCity'),
-      pHomeCode:$v('pf_homeCode'),
-      pHomeAddress1:$v('pf_homeAddress1'),
-      pHomeAddress2:$v('pf_homeAddress2'),
-      pHomeTimeZone:$v('pf_homeTimeZone'),
-      pHomeLatitude:$v('pf_homeLatitude'),
-      pHomeLongitude:$v('pf_homeLongitude'),
-      pHomePhone:$v('pf_homePhone'),
-      pHomeMobile:$v('pf_homeMobile'),
-      pBusinessIndustry:$v('pf_businessIndustry'),
-      pBusinessOrganization:$v('pf_businessOrganization'),
-      pBusinessHomePage:$v('pf_businessHomePage'),
-      pBusinessJob:$v('pf_businessJob'),
-      pBusinessCountry:$v('pf_businessCountry'),
-      pBusinessState:$v('pf_businessState'),
-      pBusinessCity:$v('pf_businessCity'),
-      pBusinessCode:$v('pf_businessCode'),
-      pBusinessAddress1:$v('pf_businessAddress1'),
-      pBusinessAddress2:$v('pf_businessAddress2'),
-      pBusinessTimeZone:$v('pf_businessTimeZone'),
-      pBusinessLatitude:$v('pf_businessLatitude'),
-      pBusinessLongitude:$v('pf_businessLongitude'),
-      pBusinessPhone:$v('pf_businessPhone'),
-      pBusinessMobile:$v('pf_businessMobile'),
-      pBusinessRegNo:$v('pf_businessRegNo'),
-      pBusinessCareer:$v('pf_businessCareer'),
-      pBusinessEmployees:$v('pf_businessEmployees'),
-      pBusinessVendor:$v('pf_businessVendor'),
-      pBusinessService:$v('pf_businessService'),
-      pBusinessOther:$v('pf_businessOther'),
-      pBusinessNetwork:$v('pf_businessNetwork'),
-      pBusinessResume:$v('pf_businessResume'),
-      pSecuritySecretQuestion:$v('pf_securitySecretQuestion'),
-      pSecuritySecretAnswer:$v('pf_securitySecretAnswer'),
-      pSecuritySiocLimit:$v('pf_securitySiocLimit')
-    }
-  }
-	OAT.WS.invoke(wsdl, serviceName, pfUpdateCallback, inputObject);
+function pfUpdateSubmit(event)
+{
+  var S = '/ods/api/user.update.fields' +
+          '?sid=' + encodeURIComponent($v('sid')) +
+          '&realm=' + encodeURIComponent($v('realm')) +
+          '&mail=' + encodeURIComponent($v('pf_mail')) +
+          '&title=' + encodeURIComponent($v('pf_title')) +
+          '&firstName=' + encodeURIComponent($v('pf_firstName')) +
+          '&lastName=' + encodeURIComponent($v('pf_lastName')) +
+          '&fullName=' + encodeURIComponent($v('pf_fullName')) +
+          '&gender=' + encodeURIComponent($v('pf_gender')) +
+          '&birthday=' + encodeURIComponent($v('pf_birthday')) +
+          '&icq=' + encodeURIComponent($v('pf_icq')) +
+          '&skype=' + encodeURIComponent($v('pf_skype')) +
+          '&yahoo=' + encodeURIComponent($v('pf_yahoo')) +
+          '&aim=' + encodeURIComponent($v('pf_aim')) +
+          '&msn=' + encodeURIComponent($v('pf_msn')) +
+          '&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation')) +
+          '&homeCountry=' + encodeURIComponent($v('pf_homecountry')) +
+          '&homeState=' + encodeURIComponent($v('pf_homestate')) +
+          '&homeCity=' + encodeURIComponent($v('pf_homecity')) +
+          '&homeCode=' + encodeURIComponent($v('pf_homecode')) +
+          '&homeAddress1=' + encodeURIComponent($v('pf_homeaddress1')) +
+          '&homeAddress2=' + encodeURIComponent($v('pf_homeaddress2')) +
+          '&homeTimezone=' + encodeURIComponent($v('pf_homeTimezone')) +
+          '&homeLatitude=' + encodeURIComponent($v('pf_homelat')) +
+          '&homeLongitude=' + encodeURIComponent($v('pf_homelng')) +
+          '&homePhone=' + encodeURIComponent($v('pf_homePhone')) +
+          '&homeMobile=' + encodeURIComponent($v('pf_homeMobile')) +
+          '&businessIndustry=' + encodeURIComponent($v('pf_businessIndustry')) +
+          '&businessOrganization=' + encodeURIComponent($v('pf_businessOrganization')) +
+          '&businessHomePage=' + encodeURIComponent($v('pf_businessHomePage')) +
+          '&businessJob=' + encodeURIComponent($v('pf_businessJob')) +
+          '&businessCountry=' + encodeURIComponent($v('pf_businesscountry')) +
+          '&businessState=' + encodeURIComponent($v('pf_businessstate')) +
+          '&businessCity=' + encodeURIComponent($v('pf_businesscity')) +
+          '&businessCode=' + encodeURIComponent($v('pf_businesscode')) +
+          '&businessAddress1=' + encodeURIComponent($v('pf_businessaddress1')) +
+          '&businessAddress2=' + encodeURIComponent($v('pf_businessaddress2')) +
+          '&businessTimezone=' + encodeURIComponent($v('pf_businessTimezone')) +
+          '&businessLatitude=' + encodeURIComponent($v('pf_businesslat')) +
+          '&businessLongitude=' + encodeURIComponent($v('pf_businesslng')) +
+          '&businessPhone=' + encodeURIComponent($v('pf_businessPhone')) +
+          '&businessMobile=' + encodeURIComponent($v('pf_businessMobile')) +
+          '&businessRegNo=' + encodeURIComponent($v('pf_businessRegNo')) +
+          '&businessCareer=' + encodeURIComponent($v('pf_businessCareer')) +
+          '&businessEmployees=' + encodeURIComponent($v('pf_businessEmployees')) +
+          '&businessVendor=' + encodeURIComponent($v('pf_businessVendor')) +
+          '&businessService=' + encodeURIComponent($v('pf_businessService')) +
+          '&businessOther=' + encodeURIComponent($v('pf_businessOther')) +
+          '&businessNetwork=' + encodeURIComponent($v('pf_businessNetwork')) +
+          '&businessResume=' + encodeURIComponent($v('pf_businessResume')) +
+          '&securitySecretQuestion=' + encodeURIComponent($v('pf_securitySecretQuestion')) +
+          '&securitySecretAnswer=' + encodeURIComponent($v('pf_securitySecretAnswer')) +
+          '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));
+  OAT.AJAX.GET(S, '', pfUpdateCallback);
 
   $('pf_oldPassword').value = '';
   $('pf_newPassword').value = '';
@@ -717,35 +554,30 @@ function pfUpdateSubmit(event) {
   return false;
 }
 
-function pfUpdateCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_UPDATEResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
+function pfUpdateCallback(data)
+{
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!hasError(xml))
+	{
     OAT.Dom.hide("lf");
     OAT.Dom.hide("rf");
     OAT.Dom.show("uf");
     OAT.Dom.hide("pf");
     selectProfile();
   }
-  // executingEnd();
 }
 
-function pfChangeSubmit(event) {
-  if ($v('pf_newPassword') != $v('pf_newPassword2')) {
+function pfChangeSubmit(event)
+{
+  if ($v('pf_newPassword') != $v('pf_newPassword2'))
+  {
     alert ('Bad new password. Please retype!');
   } else {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_UPDATE_PASSWORD";
-
-    var inputObject = {
-    	ODS_USER_UPDATE_PASSWORD:{
-        pSid:$v('sid'),
-        pRealm:$v('realm'),
-        pOldPassword:$v('pf_oldPassword'),
-        pNewPassword:$v('pf_newPassword')
-      }
-    }
-  	OAT.WS.invoke(wsdl, serviceName, pfChangeCallback, inputObject);
+    var S = '/ods/api/user.password_change'+
+            '?sid='+encodeURIComponent($v('sid'))+
+            '&realm='+encodeURIComponent($v('realm'))+
+            '&new_password='+encodeURIComponent($v('pf_newPassword'));
+    OAT.AJAX.GET(S, '', pfChangeCallback);
   }
   $('pf_oldPassword').value = '';
   $('pf_newPassword').value = '';
@@ -753,79 +585,36 @@ function pfChangeSubmit(event) {
   return false;
 }
 
-function pfChangeCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_UPDATE_PASSWORDResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root)) {
+function pfChangeCallback(data)
+{
+  var xml = OAT.Xml.createXmlDoc(data);
+	if (!hasError(xml))
+	{
    	var T = $('pf_change_txt');
    	if (T)
    	  T.innerHTML = 'The password was changed successfully.';
 	}
-  // executingEnd();
 }
 
-function pfCancelSubmit() {
+function pfCancelSubmit()
+{
  	var T = $('ob_left');
- 	if (T) {
+ 	if (T)
  	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > View Profile';
- 	}
+
   OAT.Dom.hide("lf");
   OAT.Dom.hide("rf");
   OAT.Dom.show("uf");
   OAT.Dom.hide("pf");
 }
 
-function pfGetLocation(mode) {
-  var wsdl = "/ods_services/services.wsdl";
-  var serviceName = "ODS_GET_LOCATION";
-
-  var inputObject = {
-  	ODS_GET_LOCATION:{
-      pCountry:$v('pf_'+mode+'Country'),
-      pState:$v('pf_'+mode+'State'),
-      pCity:$v('pf_'+mode+'City'),
-      pCode:$v('pf_'+mode+'Code'),
-      pAddress1:$v('pf_'+mode+'Address1'),
-      pAddress2:$v('pf_'+mode+'Address2'),
-    }
-  }
-  if (mode == 'home') {
-	  OAT.WS.invoke(wsdl, serviceName, pfGetLocationHCallback, inputObject);
-	} else {
-	  OAT.WS.invoke(wsdl, serviceName, pfGetLocationBCallback, inputObject);
-	}
-  return false;
-}
-
-function pfGetLocationBCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_GET_LOCATIONResponse.CallReturn);
-	var root = xml.documentElement;
-  if (root) {
- 	  var pLocation = root.getElementsByTagName('location')[0];
-    if (pLocation) {
-      fieldUpdate(pLocation, 'latitude',  'pf_businessLatitude');
-      fieldUpdate(pLocation, 'longitude', 'pf_businessLongitude');
-    }
-	}
-}
-
-function pfGetLocationHCallback(obj) {
-  var xml = OAT.Xml.createXmlDoc(obj.ODS_GET_LOCATIONResponse.CallReturn);
-	var root = xml.documentElement;
-  if (root) {
- 	  var pLocation = root.getElementsByTagName('location')[0];
-    if (pLocation) {
-      fieldUpdate(pLocation, 'latitude',  'pf_homeLatitude');
-      fieldUpdate(pLocation, 'longitude', 'pf_homeLongitude');
-    }
-	}
-}
-
-function setDefaultMapLocation (from, to) {
+function setDefaultMapLocation (from, to)
+{
   $('pf_' + to + 'DefaultMapLocation').checked = $('pf_' + from + 'DefaultMapLocation').checked;
 }
 
-function setSecretQuestion () {
+function setSecretQuestion ()
+{
   var S = $("pf_secretQuestion_select");
   var V = S[S.selectedIndex].value;
 

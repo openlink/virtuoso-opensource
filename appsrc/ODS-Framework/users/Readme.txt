@@ -1,12 +1,11 @@
 ---++ODS Users Administration Implementation Guide
 
-The goal of the project is to port *.vsp user's pages to the following programming languages: AJAX, PHP and JSP.
+The goal of the project is to port *.vsp user's pages to the following programming languages: AJAX, PHP, VSP and JSP.
 
    1. CVS location: The implemented pages are located in folder 'users' of the ODS Framework Application.
    1. Endpoint: The Endpoint is http://[host]:[port]/ods/users/[the name of the corresponding page].
    1. Implementation:
       1. Common files:
-         * users_api.sql: contains ODS Users WEB Services API, which supports login, logout, register, etc..
          * oid_login.vsp: contains OpenID login and registration implementation.
          * css/users.css.
          * js/users.js: contains AJAX and common functions
@@ -24,21 +23,29 @@ The goal of the project is to port *.vsp user's pages to the following programmi
 
 ---+++PHP Implementation
 
-   1. PHP: The supported version of PHP is 5, so you should use Virtuoso php5 executive.
+   1. PHP: The supported version of PHP is 5.2.4, so you should use Virtuoso with php5 plugin.
+
+[Plugins]
+LoadPath = ../hosting
+....
+Load8    = attach, php5ts
+Load9    = Hosting, hosting_php.dll
+....
+
    1. The page name is 'users.php'.
    1. The endpoint URL is http://[host]:[port]/php/users/users.php. The alternate URL is http://[host]:[port]/ods/users/users.php
    1. Configuration:
       1. Start Virtuoso executive
       1. Install the ods_framework_dav.vad package
-      1. After VAD installing new page is created in folder '/DAV/VAD/wa/users' - 'users_dsn.php'. This page contains connection information - host, user, password. If some database parameters are changed this file must be updated:
-         1. Go to http://host:port/conductor
-         1. Login as dba user. The password by default is dba.
-         1. Go to tab WebDAV & HTTP
-         1. Go to path "DAV/VAD/wa/users"
-         1. Update file 'users_dsn.php' file by changing the values of the following PHP variables:
 
-   $_dsn -- this is the ODBC connection name.
-   $_pass -- this is the dba user password
+
+---+++VSP Implementation
+
+   1. The page name is 'users.vsp'.
+   1. The endpoint URL is http://[host]:[port]/vsp/users/users.vsp. The alternate URL is http://[host]:[port]/ods/users/users.vsp
+   1. Configuration:
+      1. Start Virtuoso executive
+      1. Install the ods_framework_dav.vad package
 
 
 ---+++JSP (Java Server Pages) Implementation
@@ -77,15 +84,5 @@ Note: you should have the users.jsp and users_dsn.jsp (created after installatio
             1. For field "Proxy to" enter the value: http://[Tomcat Host]:[Tomcat Port]/users/jsp
             1. For "VSP User" select from the drop-down list: dba
          1. Click the "Save changes" button.
-      1. After VAD installing new page is created in folder '/DAV/VAD/wa/users' - 'users_dsn.jsp'. This page contains connection information - host, user, password.
-      1. Files 'users.jsp' and 'users_dsn.jsp' must downloaded into local file system.
-      1. If some database parameters are changed after installation file 'users_dsn.jsp' must be updated. Go to your physical location of the 'users_dsn.jsp' file and set the correct values for the connection to the database:
-
-<%
-  String $_dsn = "jdbc:virtuoso://[host]:[SQL Server port]";
-  String $_user = "dba";
-  String $_pass = "dba";
-%>
-
       1. Install the ods_framework_dav.vad package.
       1. Go to http://[host]:[port]/jsp/users/users.jsp.

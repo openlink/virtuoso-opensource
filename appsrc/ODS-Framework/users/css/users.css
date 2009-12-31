@@ -56,6 +56,7 @@ table.form th {
   text-align: right;
   padding-right: 3px;
   margin-bottom: 5px;
+  white-space: nowrap;
 }
 
 table.form td {

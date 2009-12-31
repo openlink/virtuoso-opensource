@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2008 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,15 +28,15 @@
     <title>Virtuoso Web Applications</title>
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
-    <script type="text/javascript" src="/ods/users/js/oid_login.js"></script>
-    <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/users.css" />
+    <script type="text/javascript" src="js/oid_login.js"></script>
+    <script type="text/javascript" src="js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "tab", "json", "dimmer", "combolist"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -69,183 +69,262 @@
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>
   </head>
-  <?php
-    function selectList ($list, $param)
+  <?vsp
+    declare vHostUrl, vUrl, vResult, vRequest, vRespond any;
+    declare vSid, vRealm, vError, vForm, vXml, vLists, vList, items any;
+
+    declare exit handler for sqlstate '*' { goto _default; };
+
+    if (is_http_ctx ())
     {
-      $V = Array ();
-      $url = sprintf ("%s/lookup.list?key=%s&param=%s", apiURL(), urlencode ($list), urlencode ($param));
-      $result = file_get_contents ($url);
-      $xml = new SimpleXMLElement ($result);
-      $items = $xml->xpath("/items/item");
-      $N = 1;
-      foreach ($items as $S)
+      vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
+      if (isstring (vHostUrl) and strchr (vHostUrl , ':') is null)
       {
-        if ($S <> "0")
-          $V[$N] = $S;
-        $N++;
+        declare hp varchar;
+        declare hpa any;
+
+        hp := sys_connected_server_address ();
+        hpa := split_and_decode ( hp , 0 , '\0\0:');
+        if (hpa [1] <> '80')
+          vHostUrl := vHostUrl || ':' || hpa [1];
       }
-      return $V;
+      goto _exit;
     }
 
-    function outFormTitle ($form)
+  _default:;
+    vHostUrl := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (vHostUrl is null)
     {
-      if ($form == "login")
-        print "Login";
-      if ($form == "user")
-        print "View Profile";
-      if ($form == "profile")
-        print "Edit Profile";
+      vHostUrl := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+        vHostUrl := vHostUrl || ':' || server_http_port ();
     }
 
-    function apiURL()
+  _exit:;
+    if (vHostUrl not like 'http://%')
+      vHostUrl := 'http://' || vHostUrl;
+
+    vHostUrl := vHostUrl || '/ods/api';
+    vRequest := null;
+    vRespond := null;
+
+    declare exit handler for sqlstate '*'
     {
-      $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
-      $pageURL .= $_SERVER['SERVER_PORT'] != '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
-      return $pageURL.'/ods/api';
-    }
+      dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+      vForm := 'login';
+      goto _end;
+    };
 
-    $_error = "";
-    $_form = "login";
-    if (isset ($_POST['form']))
-      $_form = $_POST['form'];
-    $_sid = $_POST['sid'];
-    $_realm = "wa";
+    vError := '';
+    vForm := get_keyword ('form', params, 'login');
+    vSid := get_keyword ('sid', params);
+    vRealm := 'wa';
 
-      if ($_form == "login")
+    if (vForm = 'login')
+    {
+      if (get_keyword ('lf_login', params, '') <> '')
       {
-        if (isset ($_POST['lf_login']) && ($_POST['lf_login'] <> ""))
+        declare vUser, vPassword any;
+
+        vUser := get_keyword ('lf_uid', params, '');
+        vPassword := get_keyword ('lf_password', params, '');
+        vUrl := sprintf ('%s/user.authenticate?user_name=%s&password_hash=%s', vHostUrl, vUser, ODS.._hex_sha1_digest (vUser || vPassword));
+        commit work;
+        vResult := http_client_ext (
+                     vUrl,
+                     http_method=>'GET',
+                     http_headers=>vRequest,
+                     headers=>vRespond
+                   );
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
         {
-        $_url = sprintf ("%s/user.authenticate?user_name=%s&password_hash=%s", apiURL(), $_POST['lf_uid'], sha1($_POST['lf_uid'].$_POST['lf_password']));
-        $_result = file_get_contents($_url);
-        if (substr_count($_result, "<failed>") <> 0)
+          vError := vRespond[0];
+        }
+        else
         {
-          $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
-        } else {
-          $_sid = $_result;
-            $_form = "user";
+          vSid := vResult;
+          vForm := 'user';
+        }
+      }
+    }
+
+    if (vForm = 'profile')
+    {
+      if (get_keyword ('pf_update', params, '') <> '')
+      {
+        vUrl := vHostUrl ||                   '/user.update.fields' ||
+                '?sid=' ||                    vSid ||
+                '&realm=' ||                  vRealm ||
+                '&mail=' ||                   sprintf ('%U', get_keyword ('pf_mail', params, '')) ||
+                '&title=' ||                  sprintf ('%U', get_keyword ('pf_title', params, '')) ||
+                '&firstName=' ||              sprintf ('%U', get_keyword ('pf_firstName', params, '')) ||
+                '&lastName=' ||               sprintf ('%U', get_keyword ('pf_lastName', params, '')) ||
+                '&fullName=' ||               sprintf ('%U', get_keyword ('pf_fullName', params, '')) ||
+                '&gender=' ||                 sprintf ('%U', get_keyword ('pf_gender', params, '')) ||
+                '&birthday=' ||               sprintf ('%U', get_keyword ('pf_birthday', params, '')) ||
+                '&icq=' ||                    sprintf ('%U', get_keyword ('pf_icq', params, '')) ||
+                '&skype=' ||                  sprintf ('%U', get_keyword ('pf_skype', params, '')) ||
+                '&yahoo=' ||                  sprintf ('%U', get_keyword ('pf_yahoo', params, '')) ||
+                '&aim=' ||                    sprintf ('%U', get_keyword ('pf_aim', params, '')) ||
+                '&msn=' ||                    sprintf ('%U', get_keyword ('pf_msn', params, '')) ||
+                '&homeDefaultMapLocation=' || sprintf ('%U', get_keyword ('pf_homeDefaultMapLocation', params, '')) ||
+                '&homeCountry=' ||            sprintf ('%U', get_keyword ('pf_homecountry', params, '')) ||
+                '&homeState=' ||              sprintf ('%U', get_keyword ('pf_homestate', params, '')) ||
+                '&homeCity=' ||               sprintf ('%U', get_keyword ('pf_homecity', params, '')) ||
+                '&homeCode=' ||               sprintf ('%U', get_keyword ('pf_homecode', params, '')) ||
+                '&homeAddress1=' ||           sprintf ('%U', get_keyword ('pf_homeaddress1', params, '')) ||
+                '&homeAddress2=' ||           sprintf ('%U', get_keyword ('pf_homeaddress2', params, '')) ||
+                '&homeTimezone=' ||           sprintf ('%U', get_keyword ('pf_homeTimezone', params, '')) ||
+                '&homeLatitude=' ||           sprintf ('%U', get_keyword ('pf_homelat', params, '')) ||
+                '&homeLongitude=' ||          sprintf ('%U', get_keyword ('pf_homelng', params, '')) ||
+                '&homePhone=' ||              sprintf ('%U', get_keyword ('pf_homePhone', params, '')) ||
+                '&homeMobile=' ||             sprintf ('%U', get_keyword ('pf_homeMobile', params, '')) ||
+                '&businessIndustry=' ||       sprintf ('%U', get_keyword ('pf_businessIndustry', params, '')) ||
+                '&businessOrganization=' ||   sprintf ('%U', get_keyword ('pf_businessOrganization', params, '')) ||
+                '&businessHomePage=' ||       sprintf ('%U', get_keyword ('pf_businessHomePage', params, '')) ||
+                '&businessJob=' ||            sprintf ('%U', get_keyword ('pf_businessJob', params, '')) ||
+                '&businessCountry=' ||        sprintf ('%U', get_keyword ('pf_businesscountry', params, '')) ||
+                '&businessState=' ||          sprintf ('%U', get_keyword ('pf_businessstate', params, '')) ||
+                '&businessCity=' ||           sprintf ('%U', get_keyword ('pf_businesscity', params, '')) ||
+                '&businessCode=' ||           sprintf ('%U', get_keyword ('pf_businesscode', params, '')) ||
+                '&businessAddress1=' ||       sprintf ('%U', get_keyword ('pf_businessaddress1', params, '')) ||
+                '&businessAddress2=' ||       sprintf ('%U', get_keyword ('pf_businessaddress2', params, '')) ||
+                '&businessTimezone=' ||       sprintf ('%U', get_keyword ('pf_businessTimezone', params, '')) ||
+                '&businessLatitude=' ||       sprintf ('%U', get_keyword ('pf_businesslat', params, '')) ||
+                '&businessLongitude=' ||      sprintf ('%U', get_keyword ('pf_businesslng', params, '')) ||
+                '&businessPhone=' ||          sprintf ('%U', get_keyword ('pf_businessPhone', params, '')) ||
+                '&businessMobile=' ||         sprintf ('%U', get_keyword ('pf_businessMobile', params, '')) ||
+                '&businessRegNo=' ||          sprintf ('%U', get_keyword ('pf_businessRegNo', params, '')) ||
+                '&businessCareer=' ||         sprintf ('%U', get_keyword ('pf_businessCareer', params, '')) ||
+                '&businessEmployees=' ||      sprintf ('%U', get_keyword ('pf_businessEmployees', params, '')) ||
+                '&businessVendor=' ||         sprintf ('%U', get_keyword ('pf_businessVendor', params, '')) ||
+                '&businessService=' ||        sprintf ('%U', get_keyword ('pf_businessService', params, '')) ||
+                '&businessOther=' ||          sprintf ('%U', get_keyword ('pf_businessOther', params, '')) ||
+                '&businessNetwork=' ||        sprintf ('%U', get_keyword ('pf_businessNetwork', params, '')) ||
+                '&businessResume=' ||         sprintf ('%U', get_keyword ('pf_businessResume', params, '')) ||
+                '&securitySecretQuestion=' || sprintf ('%U', get_keyword ('pf_securitySecretQuestion', params, '')) ||
+                '&securitySecretAnswer=' ||   sprintf ('%U', get_keyword ('pf_securitySecretAnswer', params, '')) ||
+                '&securitySiocLimit=' ||      sprintf ('%U', get_keyword ('pf_securitySiocLimit', params, ''));
+        commit work;
+        vResult := http_client_ext (
+                     vUrl,
+                     http_method=>'GET',
+                     http_headers=>vRequest,
+                     headers=>vRespond
+                   );
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            vForm := 'login';
+          } else {
+            vForm := 'user';
           }
         }
       }
+      else if (get_keyword ('pf_cancel', params, '') <> '')
+      {
+        vForm := 'user';
+      }
+    }
 
-      if ($_form == "user")
+    if (vForm = 'user')
+    {
+      if (get_keyword ('uf_profile', params, '') <> '')
+        vForm := 'profile';
+    }
+
+    if ((vForm = 'user') or (vForm = 'profile'))
+    {
+      vUrl := sprintf ('%s/user.info?sid=%s&realm=%s', vHostUrl, vSid, vRealm);
+      if (vForm = 'profile')
+        vUrl := vUrl || '&short=1';
+
+      commit work;
+      vResult := http_client_ext (
+                   vUrl,
+                   http_method=>'GET',
+                   http_headers=>vRequest,
+                   headers=>vRespond
+                 );
+      if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
       {
-        if (isset ($_POST['uf_profile']) && ($_POST['uf_profile'] <> ""))
-          $_form = "profile";
+        vError := vRespond[0];
+        vForm := 'login';
       }
-      if ($_form == "profile")
+      else
       {
-        if (isset ($_POST['pf_update']) && ($_POST['pf_update'] <> ""))
+        vXml := xml_tree_doc (vResult);
+        if (xpath_eval ('/failed/message', vXml))
         {
-        $_url = apiURL().                   "/user.update.fields".
-                "?sid=".                    $_sid.
-                "&realm=".                  $_realm.
-                "&mail=".                   urlencode ($_POST['pf_mail']).
-                "&title=".                  urlencode ($_POST['pf_title']).
-                "&firstName=".              urlencode ($_POST['pf_firstName']).
-                "&lastName=".               urlencode ($_POST['pf_lastName']).
-                "&fullName=".               urlencode ($_POST['pf_fullName']).
-                "&gender=".                 urlencode ($_POST['pf_gender']).
-                "&birthday=".               urlencode ($_POST['pf_birthday']).
-                "&icq=".                    urlencode ($_POST['pf_icq']).
-                "&skype=".                  urlencode ($_POST['pf_skype']).
-                "&yahoo=".                  urlencode ($_POST['pf_yahoo']).
-                "&aim=".                    urlencode ($_POST['pf_aim']).
-                "&msn=".                    urlencode ($_POST['pf_msn']).
-                "&homeDefaultMapLocation=". urlencode ($_POST['pf_homeDefaultMapLocation']).
-                "&homeCountry=".            urlencode ($_POST['pf_homecountry']).
-                "&homeState=".              urlencode ($_POST['pf_homestate']).
-                "&homeCity=".               urlencode ($_POST['pf_homecity']).
-                "&homeCode=".               urlencode ($_POST['pf_homecode']).
-                "&homeAddress1=".           urlencode ($_POST['pf_homeaddress1']).
-                "&homeAddress2=".           urlencode ($_POST['pf_homeaddress2']).
-                "&homeTimezone=".           urlencode ($_POST['pf_homeTimezone']).
-                "&homeLatitude=".           urlencode ($_POST['pf_homelat']).
-                "&homeLongitude=".          urlencode ($_POST['pf_homelng']).
-                "&homePhone=".              urlencode ($_POST['pf_homePhone']).
-                "&homeMobile=".             urlencode ($_POST['pf_homeMobile']).
-                "&businessIndustry=".       urlencode ($_POST['pf_businessIndustry']).
-                "&businessOrganization=".   urlencode ($_POST['pf_businessOrganization']).
-                "&businessHomePage=".       urlencode ($_POST['pf_businessHomePage']).
-                "&businessJob=".            urlencode ($_POST['pf_businessJob']).
-                "&businessCountry=".        urlencode ($_POST['pf_businesscountry']).
-                "&businessState=".          urlencode ($_POST['pf_businessstate']).
-                "&businessCity=".           urlencode ($_POST['pf_businesscity']).
-                "&businessCode=".           urlencode ($_POST['pf_businesscode']).
-                "&businessAddress1=".       urlencode ($_POST['pf_businessaddress1']).
-                "&businessAddress2=".       urlencode ($_POST['pf_businessaddress2']).
-                "&businessTimezone=".       urlencode ($_POST['pf_businessTimezone']).
-                "&businessLatitude=".       urlencode ($_POST['pf_businesslat']).
-                "&businessLongitude=".      urlencode ($_POST['pf_businesslng']).
-                "&businessPhone=".          urlencode ($_POST['pf_businessPhone']).
-                "&businessMobile=".         urlencode ($_POST['pf_businessMobile']).
-                "&businessRegNo=".          urlencode ($_POST['pf_businessRegNo']).
-                "&businessCareer=".         urlencode ($_POST['pf_businessCareer']).
-                "&businessEmployees=".      urlencode ($_POST['pf_businessEmployees']).
-                "&businessVendor=".         urlencode ($_POST['pf_businessVendor']).
-                "&businessService=".        urlencode ($_POST['pf_businessService']).
-                "&businessOther=".          urlencode ($_POST['pf_businessOther']).
-                "&businessNetwork=".        urlencode ($_POST['pf_businessNetwork']).
-                "&businessResume=".         urlencode ($_POST['pf_businessResume']).
-                "&securitySecretQuestion=". urlencode ($_POST['pf_securitySecretQuestion']).
-                "&securitySecretAnswer=".   urlencode ($_POST['pf_securitySecretAnswer']).
-                "&securitySiocLimit=".      urlencode ($_POST['pf_securitySiocLimit']);
-        $_result = file_get_contents($_url);
-        if (substr_count($_result, "<failed>") <> 0)
+          vError := xpath_eval ('string (/failed/message)', vXml);
+          vForm := 'login';
+        }
+        else if (vForm = 'profile')
+        {
+          declare tmp, listItems any;
+
+          items := vector (vector ('Industry', ''),
+                           vector ('Country', '')
+                          );
+          vLists := vector ();
+          foreach (any item in items) do
           {
-          $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
-            $_form = "login";
-        } else {
-          $_form = "user";
-          }
-      }
-      else if (isset ($_POST['pf_cancel']) && ($_POST['pf_cancel'] <> ""))
-          {
-            $_form = "user";
+            vUrl := sprintf ('%s/lookup.list?key=%s&param=%s', vHostUrl, item[0], item[1]);
+            commit work;
+            vResult := http_client_ext (
+                         vUrl,
+                         http_method=>'GET',
+                         http_headers=>vRequest,
+                         headers=>vRespond
+                       );
+            if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+            {
+              vError := vRespond[0];
+              vForm := 'login';
+              goto _end;
+            }
+            vList := vector ();
+            tmp := xml_tree_doc (vResult);
+            listItems := xpath_eval ('/items/item', tmp, 0);
+            foreach (any listItem in listItems) do
+            {
+              vList := vector_concat (vList, vector (cast (listItem as varchar)));
+            }
+            vLists := vector_concat (vLists, vector (vList));
           }
         }
-
-    if (($_form == "user") || ($_form == "profile"))
-        {
-      $_url = sprintf ("%s/user.info?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
-      if ($_form == "profile")
-        $_url = $_url."&short=1";
-      $_result = file_get_contents($_url);
-      $_xml = simplexml_load_string($_result);
-      if ($_xml->failed->message)
-          {
-        $_error = $_xml->failed->message;
-            $_form = "login";
-          }
-      else if ($_form == "profile")
-        {
-        $_industries = selectList ('Industry', '');
-        $_countries = selectList ('Country', '');
-        }
       }
-
-      if ($_form == "login")
-      {
-        $_sid = "";
-        $_realm = "";
-      }
+    }
+  _end:;
+    if (vForm = 'login')
+    {
+      vSid := '';
+      vRealm := '';
+    }
   ?>
   <body>
     <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
     </div>
-    <form name="page_form" method="post" action="users.php">
-      <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
-      <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
-      <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />
+    <form name="page_form" method="post" action="users.vsp">
+      <input type="hidden" name="sid" id="sid" value="<?V vSid ?>" />
+      <input type="hidden" name="realm" id="realm" value="<?V vRealm ?>" />
+      <input type="hidden" name="form" id="form" value="<?V vForm ?>" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<?php print($_sid); ?>&amp;realm=<?php print($_realm); ?>">ODS Home</a> > <?php outFormTitle($_form); ?></div>
-        <?php
-          if ($_form <> 'login')
+        <div id="ob_left"><a href="/ods/?sid=<?V vSid ?>&amp;realm=<?V vRealm ?>">ODS Home</a> > <?V vForm ?></div>
+        <?vsp
+          if (vForm <> 'login')
           {
         ?>
         <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit2();">Logout</a></div>
-        <?php
+        <?vsp
           }
         ?>
       </div>
@@ -261,16 +340,14 @@
               </div>
             </td>
             <td>
-              <?php
-              if ($_form == 'login')
+              <?vsp
+              if (vForm = 'login')
               {
               ?>
               <div id="lf" class="form">
-                <?php
-                  if ($_error <> '')
-                  {
-                    print "<div class=\"error\">".$_error."</div>";
-                  }
+                <?vsp
+                  if (vError <> '')
+                    http ('<div class="error">' || vError || '</div>');
                 ?>
                 <div class="header">
                   Enter your Member ID and Password
@@ -303,7 +380,7 @@
                       <label for="lf_openID">Login with OpenID</label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" style="width: 220px;"/>
+                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" size="40"/>
                     </td>
                   </tr>
                 </table>
@@ -311,13 +388,11 @@
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit2();" />
                 </div>
               </div>
-
-              <?php
+              <?vsp
               }
-              if ($_form == 'user')
+              if (vForm = 'user')
               {
               ?>
-
               <div id="uf" class="form">
                 <div class="header">
                   User profile
@@ -328,7 +403,7 @@
                       Login Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_name"><?php print($_xml->name); ?></span>
+                      <span id="uf_name"><?V xpath_eval ('string (/user/name)', vXml) ?></span>
                     </td>
                   </tr>
                   <tr>
@@ -336,7 +411,7 @@
                       E-mail
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_mail"><?php print($_xml->mail); ?></span>
+                      <span id="uf_mail"><?V xpath_eval ('string (/user/mail)', vXml) ?></span>
                     </td>
                   </tr>
                   <tr>
@@ -344,7 +419,7 @@
                       Title
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_title"><?php print($_xml->title); ?></span>
+                      <span id="uf_title"><?V xpath_eval ('string (/user/title)', vXml) ?></span>
                     </td>
                   </tr>
                   <tr>
@@ -352,7 +427,7 @@
                       First Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_firstName"><?php print($_xml->firstName); ?></span>
+                      <span id="uf_firstName"><?V xpath_eval ('string (/user/firstName)', vXml) ?></span>
                     </td>
                   </tr>
                   <tr>
@@ -360,7 +435,7 @@
                       Last Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_lastName"><?php print($_xml->lastName); ?></span>
+                      <span id="uf_lastName"><?V xpath_eval ('string (/user/lastName)', vXml) ?></span>
                     </td>
                   </tr>
                   <tr>
@@ -368,7 +443,7 @@
                       Full Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_fullName"><?php print($_xml->fullName); ?></span>
+                      <span id="uf_fullName"><?V xpath_eval ('string (/user/fullName)', vXml) ?></span>
                     </td>
                   </tr>
                 </table>
@@ -376,19 +451,15 @@
                   <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
               </div>
-
-              <?php
+              <?vsp
               }
-              if ($_form == 'profile')
+              if (vForm = 'profile')
               {
               ?>
-
               <div id="pf" class="form" style="width: 800px;">
-                <?php
-                  if ($_error <> '')
-                  {
-                    print "<div class=\"error\">".$_error."</div>";
-                  }
+                <?vsp
+                  if (vError <> '')
+                    http ('<div class="error">' || vError || '</div>');
                 ?>
                 <div class="header">
                   Update user profile
@@ -406,16 +477,16 @@
                   <div id="page_0">
                     <table class="form" cellspacing="5">
                       <tr>
-                        <th width="30%" nowrap="nowrap">
+                        <th width="30%">
                           <label for="pf_title">Title</label>
                         </th>
                         <td>
                           <select name="pf_title" id="pf_title">
-                            <option></option>s
-                            <?php
-                              $X = array ("Mr", "Mrs", "Dr", "Ms");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->title) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                            <option></option>
+                            <?vsp
+                              items := vector ('Mr', 'Mrs', 'Dr', 'Ms');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/title)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -425,7 +496,7 @@
                           <label for="pf_firstName">First Name</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_firstName" value="<?php print($_xml->firstName); ?>" id="pf_firstName" style="width: 220px;" />
+                          <input type="text" name="pf_firstName" value="<?V xpath_eval ('string (/user/firstName)', vXml) ?>" id="pf_firstName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -433,7 +504,7 @@
                           <label for="pf_lastName">Last Name</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_lastName" value="<?php print($_xml->lastName); ?>" id="pf_lastName" style="width: 220px;" />
+                          <input type="text" name="pf_lastName" value="<?V xpath_eval ('string (/user/lastName)', vXml) ?>" id="pf_lastName" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -441,7 +512,7 @@
                           <label for="pf_fullName">Full Name</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_fullName" value="<?php print($_xml->fullName); ?>" id="pf_fullName" size="60" />
+                          <input type="text" name="pf_fullName" value="<?V xpath_eval ('string (/user/fullName)', vXml) ?>" id="pf_fullName" size="60" />
                         </td>
                       </tr>
                       <tr>
@@ -449,7 +520,7 @@
                           <label for="pf_mail">E-mail</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_mail" value="<?php print($_xml->mail); ?>" id="pf_mail" style="width: 220px;" />
+                          <input type="text" name="pf_mail" value="<?V xpath_eval ('string (/user/mail)', vXml) ?>" id="pf_mail" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -459,10 +530,10 @@
                         <td>
                           <select name="pf_gender" value="" id="pf_gender">
                             <option></option>
-                            <?php
-                              $X = array ("Male", "Female");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option value=\"%s\" %s>%s</option>", strtolower($X[$N]), ((strcmp(strtolower($X[$N]), $_xml->gender) == 0) ? "selected=\"selected\"": ""), $X[$N]);
+                            <?vsp
+                              items := vector ('Male', 'Female');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/gender)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -472,7 +543,7 @@
                           <label for="pf_birthday">Birthday</label>
                         </th>
                         <td>
-                          <input name="pf_birthday" id="pf_birthday" value="<?php print($_xml->birthday); ?>" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
+                          <input name="pf_birthday" id="pf_birthday" value="<?V xpath_eval ('string (/user/birthday)', vXml) ?>" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
                           <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
                         </td>
                       </tr>
@@ -486,7 +557,7 @@
                           <label for="pf_icq">ICQ</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_icq" value="<?php print($_xml->icq); ?>" id="pf_icq" style="width: 220px;" />
+                          <input type="text" name="pf_icq" value="<?V xpath_eval ('string (/user/icq)', vXml) ?>" id="pf_icq" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -494,7 +565,7 @@
                           <label for="pf_skype">Skype</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_skype" value="<?php print($_xml->skype); ?>" id="pf_skype" style="width: 220px;" />
+                          <input type="text" name="pf_skype" value="<?V xpath_eval ('string (/user/skype)', vXml) ?>" id="pf_skype" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -502,7 +573,7 @@
                           <label for="pf_yahoo">Yahoo</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_yahoo" value="<?php print($_xml->yahoo); ?>" id="pf_yahoo" style="width: 220px;" />
+                          <input type="text" name="pf_yahoo" value="<?V xpath_eval ('string (/user/yahoo)', vXml) ?>" id="pf_yahoo" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -510,7 +581,7 @@
                           <label for="pf_aim">AIM</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_aim" value="<?php print($_xml->aim); ?>" id="pf_aim" style="width: 220px;" />
+                          <input type="text" name="pf_aim" value="<?V xpath_eval ('string (/user/aim)', vXml) ?>" id="pf_aim" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -518,7 +589,7 @@
                           <label for="pf_msn">MSN</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_msn" value="<?php print($_xml->msn); ?>" id="pf_msn" style="width: 220px;" />
+                          <input type="text" name="pf_msn" value="<?V xpath_eval ('string (/user/msn)', vXml) ?>" id="pf_msn" style="width: 220px;" />
                         </td>
                       </tr>
                     </table>
@@ -533,55 +604,56 @@
                         <td nowrap="nowrap">
                           <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_countries); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($_countries[$N], $_xml->homeCountry) == 0) ? "selected=\"selected\"" : ""), $_countries[$N]);
+                            <?vsp
+                              items := vLists[1];
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/homeCountry)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homestate">State/Province</label>
+                          <label for="pf_homeState">State/Province</label>
                         </th>
-                        <td>
+                        <td nowrap="nowrap">
                           <span id="span_pf_homestate">
                             <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_homecountry", "pf_homestate", "<?php print($_xml->homeState); ?>");});
+                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_homecountry", "pf_homestate", "<?V xpath_eval ('string (/user/homeState)', vXml) ?>");});
                             </script>
                           </span>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homecity">City/Town</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_homecity" value="<?php print($_xml->homeCity); ?>" id="pf_homecity" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_homecode">Zip/Postal Code</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_homecode" value="<?php print($_xml->homeCode); ?>" id="pf_homecode" style="width: 220px;"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_homeaddress1">Address1</label>
+                          <label for="pf_homeCity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress1" value="<?php print($_xml->homeAddress1); ?>" id="pf_homeaddress1" style="width: 220px;" />
+                          <input type="text" name="pf_homeCity" value="<?V xpath_eval ('string (/user/homeCity)', vXml) ?>" id="pf_homeCity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeaddress2">Address2</label>
+                          <label for="pf_homeCode">Zip/Postal Code</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_homeCode" value="<?V xpath_eval ('string (/user/homeCode)', vXml) ?>" id="pf_homeCode" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeAddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress2" value="<?php print($_xml->homeAddress2); ?>" id="pf_homeaddress2" style="width: 220px;" />
+                          <input type="text" name="pf_homeAddress1" value="<?V xpath_eval ('string (/user/homeAddress1)', vXml) ?>" id="pf_homeAddress1" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeAddress2">Address2</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeAddress2" value="<?V xpath_eval ('string (/user/homeAddress2)', vXml) ?>" id="pf_homeAddress2" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -590,9 +662,12 @@
                         </th>
                         <td>
                           <select name="pf_homeTimezone" id="pf_homeTimezone">
-                            <?php
-                              for ($N = -12; $N <= 12; $N += 1)
-                                print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->homeTimezone) ? "selected=\"selected\"" : ""), $N);
+                            <?vsp
+                              declare N integer;
+                              for (N := -12; N <= 12; N := N + 1)
+                              {
+                                http (sprintf ('<option value="%d" %s>GMT %d:00</option>', N, case when (cast (N as varchar) = xpath_eval ('string (/user/homeTimezone)', vXml)) then 'selected="selected"' else '' end, N));
+                              }
                             ?>
                           </select>
                         </td>
@@ -602,9 +677,9 @@
                           <label for="pf_homelat">Latitude</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homelat" value="<?php print($_xml->homeLatitude); ?>" id="pf_homelat" />
+                          <input type="text" name="pf_homelat" value="<?V xpath_eval ('string (/user/homeLatitude)', vXml) ?>" id="pf_homelat" />
                           <label>
-                          <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                            <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
                             Default Map Location
                           </label>
                         <td>
@@ -614,7 +689,7 @@
                           <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelng" value="<?php print($_xml->homeLongitude); ?>" id="pf_homelng" />
+                          <input type="text" name="pf_homelng" value="<?V xpath_eval ('string (/user/homeLongitude)', vXml) ?>" id="pf_homelng" />
                         </td>
                       </tr>
                       <tr>
@@ -622,7 +697,7 @@
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="<?php print($_xml->homePhone); ?>" id="pf_homePhone" />
+                          <input type="text" name="pf_homePhone" value="<?V xpath_eval ('string (/user/homePhone)', vXml) ?>" id="pf_homePhone" />
                         </td>
                       </tr>
                       <tr>
@@ -630,7 +705,7 @@
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="<?php print($_xml->homeMobile); ?>" id="pf_homeMobile" />
+                          <input type="text" name="pf_homeMobile" value="<?V xpath_eval ('string (/user/homeMobile)', vXml) ?>" id="pf_homeMobile" />
                         </td>
                       </tr>
                     </table>
@@ -643,11 +718,12 @@
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
                         <td>
-                          <select name="pf_businessIndustry" id="pf_businessIndustry">
+                          <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_industries); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($_industries[$N], $_xml->businessIndustry) == 0) ? "selected=\"selected\"" : ""), $_industries[$N]);
+                            <?vsp
+                              items := vLists[0];
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessIndustry)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -657,7 +733,7 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOrganization" value="<?php print($_xml->businessOrganization); ?>" id="pf_businessOrganization" style="width: 220px;" />
+                          <input type="text" name="pf_businessOrganization" value="<?V xpath_eval ('string (/user/businessOrganization)', vXml) ?>" id="pf_businessOrganization" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -665,7 +741,7 @@
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="<?php print($_xml->businessHomePage); ?>" id="pf_businessNetwork" style="width: 220px;" />
+                          <input type="text" name="pf_businessHomePage" value="<?V xpath_eval ('string (/user/businessHomePage)', vXml) ?>" id="pf_businessNetwork" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -673,7 +749,7 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessJob" value="<?php print($_xml->businessJob); ?>" id="pf_businessJob" style="width: 220px;" />
+                          <input type="text" name="pf_businessJob" value="<?V xpath_eval ('string (/user/businessJob)', vXml) ?>" id="pf_businessJob" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -683,9 +759,10 @@
                         <td>
                           <select name="pf_businesscountry" id="pf_businesscountry" onchange="javascript: return updateState('pf_businesscountry', 'pf_businessstate');" style="width: 220px;">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_countries); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($_countries[$N], $_xml->businessCountry) == 0) ? "selected=\"selected\"" : ""), $_countries[$N]);
+                            <?vsp
+                              items := vLists[1];
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessCountry)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -697,7 +774,7 @@
                         <td>
                           <span id="span_pf_businessstate">
                             <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<?php print($_xml->businessState); ?>");});
+                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<?V xpath_eval ('string (/user/businessState)', vXml) ?>");});
                             </script>
                           </span>
                         </td>
@@ -707,31 +784,31 @@
                           <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesscity" value="<?php print($_xml->businessCity); ?>" id="pf_businesscity" style="width: 220px;" />
+                          <input type="text" name="pf_businesscity" value="<?V xpath_eval ('string (/user/businessCity)', vXml) ?>" id="pf_businesscity" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businesscode">Zip/Postal Code</label>
+                          <label for="pf_businessCode">Zip/Postal Code</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesscode" value="<?php print($_xml->businessCode); ?>" id="pf_businesscode" style="width: 220px;" />
+                          <input type="text" name="pf_businessCode" value="<?V xpath_eval ('string (/user/businessCode)', vXml) ?>" id="pf_businessCode"  style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessaddress1">Address1</label>
+                          <label for="pf_businessAddress1">Address1</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress1" value="<?php print($_xml->businessAddress1); ?>" id="pf_businessaddress1" style="width: 220px;" />
+                          <input type="text" name="pf_businessAddress1" value="<?V xpath_eval ('string (/user/businessAddress1)', vXml) ?>" id="pf_businessAddress1" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessaddress2">Address2</label>
+                          <label for="pf_businessAddress2">Address2</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress2" value="<?php print($_xml->businessAddress2); ?>" id="pf_businessaddress2" style="width: 220px;" />
+                          <input type="text" name="pf_businessAddress2" value="<?V xpath_eval ('string (/user/businessAddress2)', vXml) ?>" id="pf_businessAddress2" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -739,10 +816,11 @@
                           <label for="pf_businessTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimezone" id="pf_businessTimezone" style="width: 220px;">
-                            <?php
-                              for ($N = -12; $N <= 12; $N += 1)
-                                print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->businessTimezone) ? "selected=\"selected\"": ""), $N);
+                          <select name="pf_businessTimezone" id="pf_businessTimezone">
+                            <?vsp
+                              declare N integer;
+                              for (N := -12; N <= 12; N := N + 1)
+                                http (sprintf ('<option value="%d" %s>GMT %d:00</option>', N, case when (N = xpath_eval ('string (/user/businessTimezone)', vXml)) then 'selected="selected"' else '' end, N));
                             ?>
                           </select>
                         </td>
@@ -752,9 +830,9 @@
                           <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslat" value="<?php print($_xml->businessLatitude); ?>" id="pf_businesslat" />
+                          <input type="text" name="pf_businesslat" value="<?V xpath_eval ('string (/user/businessLatitude)', vXml) ?>" id="pf_businesslat" />
                           <label>
-                          <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
+                            <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
                             Default Map Location
                           </label>
                         <td>
@@ -764,7 +842,7 @@
                           <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslng" value="<?php print($_xml->businessLongitude); ?>" id="pf_businesslng" />
+                          <input type="text" name="pf_businesslng" value="<?V xpath_eval ('string (/user/businessLongitude)', vXml) ?>" id="pf_businesslng" />
                         </td>
                       </tr>
                       <tr>
@@ -772,7 +850,7 @@
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessPhone" value="<?php print($_xml->businessPhone); ?>" id="pf_businessPhone" />
+                          <input type="text" name="pf_businessPhone" value="<?V xpath_eval ('string (/user/businessPhone)', vXml) ?>" id="pf_businessPhone" />
                         </td>
                       </tr>
                       <tr>
@@ -780,7 +858,7 @@
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessMobile" value="<?php print($_xml->businessMobile); ?>" id="pf_businessMobile" />
+                          <input type="text" name="pf_businessMobile" value="<?V xpath_eval ('string (/user/businessMobile)', vXml) ?>" id="pf_businessMobile" />
                         </td>
                       </tr>
                       <tr>
@@ -788,7 +866,7 @@
                           <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessRegNo" value="<?php print($_xml->businessRegNo); ?>" id="pf_businessRegNo" style="width: 220px;" />
+                          <input type="text" name="pf_businessRegNo" value="<?V xpath_eval ('string (/user/businessRegNo)', vXml) ?>" id="pf_businessRegNo" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -798,10 +876,10 @@
                         <td>
                           <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
                             <option />
-                            <?php
-                              $X = array ("Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessCareer) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                            <?vsp
+                              items := vector ('Job seeker-Permanent', 'Job seeker-Temporary', 'Job seeker-Temp/perm', 'Employed-Unavailable', 'Employer', 'Agency', 'Resourcing supplier');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessCareer)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -813,10 +891,10 @@
                         <td>
                           <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
                             <option />
-                            <?php
-                              $X = array ("1-100", "101-250", "251-500", "501-1000", ">1000");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessEmployees) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                            <?vsp
+                              items := vector ('1-100', '101-250', '251-500', '501-1000', '>1000');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessEmployees)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -828,10 +906,10 @@
                         <td>
                           <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
                             <option />
-                            <?php
-                              $X = array ("Not a Vendor", "Vendor", "VAR", "Consultancy");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessVendor) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                            <?vsp
+                              items := vector ('Not a Vendor', 'Vendor', 'VAR', 'Consultancy');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessVendor)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -843,10 +921,10 @@
                         <td>
                           <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
                             <option />
-                            <?php
-                              $X = array ("Enterprise Data Integration", "Business Process Management", "Other");
-                              for ($N = 0; $N < count ($X); $N += 1)
-                                print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessService) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                            <?vsp
+                              items := vector ('Enterprise Data Integration', 'Business Process Management', 'Other');
+                              foreach (any item in items) do
+                                http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessService)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
                         </td>
@@ -856,7 +934,7 @@
                           <label for="pf_businessOther">Other Technology service</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOther" value="<?php print($_xml->businessOther); ?>" id="pf_businessOther" style="width: 220px;" />
+                          <input type="text" name="pf_businessOther" value="<?V xpath_eval ('string (/user/businessOther)', vXml) ?>" id="pf_businessOther" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -864,7 +942,7 @@
                           <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessNetwork" value="<?php print($_xml->businessNetwork); ?>" id="pf_businessNetwork" style="width: 220px;" />
+                          <input type="text" name="pf_businessNetwork" value="<?V xpath_eval ('string (/user/businessNetwork)', vXml) ?>" id="pf_businessNetwork" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -872,7 +950,7 @@
                           <label for="pf_businessResume">Resume</label>
                         </th>
                         <td>
-                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 220px;"><?php print($_xml->businessResume); ?></textarea>
+                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 220px;"><?vsp xpath_eval ('string (/user/businessResume)', vXml); ?></textarea>
                         </td>
                       </tr>
                     </table>
@@ -925,8 +1003,8 @@
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretQuestion" value="<?php print($_xml->securitySecretQuestion); ?>" id="pf_securitySecretQuestion" style="width: 220px;" />
-                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();" style="width: 220px;">
+                          <input type="text" name="pf_securitySecretQuestion" value="<?V xpath_eval ('string (/user/securitySecretQuestion)', vXml) ?>" id="pf_securitySecretQuestion" style="width: 220px;" />
+                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();">
                             <option value="">~pick predefined~</option>
                             <option value="First Car">First Car</option>
                             <option value="Mothers Maiden Name">Mothers Maiden Name</option>
@@ -940,7 +1018,7 @@
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretAnswer" value="<?php print($_xml->securitySecretAnswer); ?>" id="pf_securitySecretAnswer" style="width: 220px;" />
+                          <input type="text" name="pf_securitySecretAnswer" value="<?V xpath_eval ('string (/user/securitySecretAnswer)', vXml) ?>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -953,7 +1031,7 @@
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySiocLimit" value="<?php print($_xml->securitySiocLimit); ?>" id="pf_securitySiocLimit" />
+                          <input type="text" name="pf_securitySiocLimit" value="<?V xpath_eval ('string (/user/securitySiocLimit)', vXml) ?>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                     </table>
@@ -965,7 +1043,7 @@
                   <input type="submit" name="pf_cancel" value="Cancel" />
                 </div>
               </div>
-              <?php
+              <?vsp
               }
               ?>
             </td>
@@ -983,6 +1061,6 @@
           Copyright &copy; 1999-2009 OpenLink Software
         </div>
       </div>
-     </div>
+    </div>
   </body>
 </html>

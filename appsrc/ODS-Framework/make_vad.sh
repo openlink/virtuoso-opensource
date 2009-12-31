@@ -397,7 +397,6 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/gdata.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/openid.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ldap.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/users/users_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/facebook.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/nav_framework_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
@@ -414,11 +413,13 @@ sticker_init() {
   echo "      vhost_remove (lpath=>'/php/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/jsp/users');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ruby/users');" >> $STICKER
-  echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
-  echo "      vhost_define (lpath=>'/javascript/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.html');" >> $STICKER
-  echo "      vhost_define (lpath=>'/php/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.php');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/vsp/users');" >> $STICKER
+  echo "      vhost_define (lpath=>'/ods/users', ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba');" >> $STICKER
+  echo "      vhost_define (lpath=>'/javascript/users', ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', def_page=>'users.html');" >> $STICKER
+  echo "      vhost_define (lpath=>'/php/users', ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', def_page=>'users.php');" >> $STICKER
   echo "      vhost_define (lpath=>'/jsp/users', ppath=>'http://localhost:8080/users/jsp', is_dav=>0, vsp_user=>'dba');" >> $STICKER
-  echo "      vhost_define (lpath=>'/ruby/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.rb');" >> $STICKER
+  echo "      vhost_define (lpath=>'/ruby/users', ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', def_page=>'users.rb');" >> $STICKER
+  echo "      vhost_define (lpath=>'/vsp/users', ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', def_page=>'users.vsp');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/scot.sql', 1, 'report', 1);" >> $STICKER
@@ -434,6 +435,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth/oauth.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth/foaf_ssl.sql', 0, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api_users.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_controllers.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'index.vsp');" >> $STICKER

@@ -291,9 +291,10 @@ function hasError(root) {
 function createState(stateName, stateValue)
 {
   var span = $('span_'+stateName);
-  span.innerHTML = "";
+  if (!span) {return false;}
 
-  var s = stateName.substring(0,1);
+  span.innerHTML = "";
+  var s = stateName.replace(/state/, '');
   var f = function (){updateGeodata(s);};
   var fld = new OAT.Combolist([], stateValue, {onchange: f});
   fld.input.name = stateName;
@@ -309,35 +310,15 @@ function createState(stateName, stateValue)
 
 function updateState(countryName, stateName, stateValue)
 {
-  fld = createState(stateName, "");
+  var fld = createState(stateName, stateValue);
+  if (!fld) {return false;}
+
   if ($v(countryName) != '')
-  {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_LIST";
-
-    var inputObject = {
-    	ODS_USER_LIST:{
-        pSid:document.forms[0].elements['sid'].value,
-        pRealm:document.forms[0].elements['realm'].value,
-        pList:'Province',
-        pParam:$v(countryName)
-    	}
-    }
-  	var x = function(xml) {
-  	  listCallback(xml, fld, stateValue);
-  	}
-  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
-  }
-}
-
-function listCallback (result, fld, objValue)
-{
-  var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root))
 	{
-    /* options */
-  	var items = root.getElementsByTagName("item");
+    var S = '/ods/api/lookup.list?key=Province&param='+encodeURIComponent($v(countryName));
+  	var x = function(data) {
+      var xml = OAT.Xml.createXmlDoc(data);
+    	var items = xml.getElementsByTagName("item");
   	if (items.length)
   	{
   		for (var i=1; i<=items.length; i++)
@@ -345,7 +326,9 @@ function listCallback (result, fld, objValue)
         fld.addOption(OAT.Xml.textValue(items[i-1]));
   		}
   	}
-  	updateGeodata(fld.input.id.substring(0,1));
+    	updateGeodata(fld.input.id.replace(/state/, ''));
+  	}
+    OAT.AJAX.GET(S, '', x);
 	}
 }
 
@@ -386,7 +369,7 @@ function updateGeodata(mode)
 {
   var f = function (mode, fld)
   {
-    var x = $(mode+'_'+fld);
+    var x = $(mode+fld);
     if (x)
       return '&' + fld + '=' + encodeURIComponent(x.value);
     return '';
@@ -404,13 +387,13 @@ function updateGeodata(mode)
     {
       if (o.lat)
       {
-        var x = $(mode+'_lat');
+        var x = $(mode+'lat');
         if (x)
           x.value = o.lat;
       }
       if (o.lng)
       {
-        var x = $(mode+'_lng');
+        var x = $(mode+'lng');
         if (x)
           x.value = o.lng;
       }
