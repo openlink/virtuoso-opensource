@@ -1,107 +1,157 @@
-README for the DocBook Stylesheets
+----------------------------------------------------------------------
+              README file for the DocBook XSL Stylesheets
+----------------------------------------------------------------------
+$Id$
 
-These are XSL stylesheets for the DocBk XML DTD. (They would
-also work for the DocBook DTD, modulo certain namecase problems
-and the fact that there aren't (yet) any XSL implementations
-that work with SGML source documents.)
+These are XSL stylesheets for transforming DocBook XML document
+instances into various output formats.
 
-As of version 1.0, most of the elements in DocBook are handled
-in some way or another, usually reasonably, but there's still
-lots of work to be done.
+This README file provides only very minimal documentation on using
+the stylesheets. For more complete information, see Bob Stayton's
+book "DocBook XSL: The Complete Guide", available online at:
 
-Manifest
---------
+  http://www.sagehill.net/docbookxsl/
 
-README    this file
-TODO      planned features not yet implemented (may be incomplete :-)
-BUGS      known problems (may also be incomplete :-)
-VERSION   the current version number (note that this is an XSL stylesheet,
-          included by both fo/docbook.xsl and html/docbook.xsl)
-WhatsNew  changes since the last public release (for a complete list
-          of changes, see the ChangeLog file(s))
-bin/      scripts and other tools that work with the stylesheets
-common/	  contains code common to both stylesheets
-contrib/  stylesheets contributed by others
-dtds/     dtds used by the stylesheets or stylesheet outputs
-fo/       a stylesheet that produces XSL FO result trees
-html/	  a stylesheet that produces HTML/XHTML result trees
-lib/      contains schema-independent functions
-template/ contains templates for building stylesheet customization layers
-test/     test documents
-
-Changes
--------
-
-See the ChangeLog in each directory for additional information
-about the specific changes.
-
-See WhatsNew for changes since the last release.
-
+----------------------------------------------------------------------
 Installation
-------------
+----------------------------------------------------------------------
+See the INSTALL file for information about installing this release.
 
-Unpack the distribution somewhere.
+----------------------------------------------------------------------
+How to use the stylesheets
+----------------------------------------------------------------------
+The base canonical URI for these stylesheets is:
 
-Use
----
+  http://docbook.sourceforge.net/release/xsl/current/
 
-Process your DocBook documents with one of the following stylesheets
-using your favorite XSLT processor:
+You call any of the stylesheets in this distribution by doing one
+of the following:
 
-  xhtml/docbook.xsl produces an XHTML result tree
-  html/docbook.xsl produces an HTML result tree
-  fo/docbook.xsl produces an FO result tree
+  - Use the base canonical URI in combination with one of the
+    pathnames below. For example, for "chunked" HTML, output:
 
-Copyright
----------
+    http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl
 
-Copyright (C) 1999, 2000 Norman Walsh
+    If your system has a working XML Catalog or SGML Catalog setup
+    (most Linux systems do), then that URI will automatically be
+    resolved and replaced with a local pathname on your system.
 
-Ironically, assertion of copyright is done to make it _easier_
-to distribute these stylesheets.  (At least one organization,
-Software in the Public Interest, requires an explicit copyright
-statement in order to redistribute the software.)
+  - Use a "real" local system base path in combination with one of
+    the pathnames below. For example, for "chunked" HTML, output:
 
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the ``Software''), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
+    /usr/share/xml/docbook/stylesheet/nwalsh/html/chunk.xsl
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+To transform documents created with the standard DocBook
+schema/DTD, use one of the following stylesheets:
 
-Except as contained in this notice, the names of individuals
-credited with contribution to this software shall not be used in
-advertising or otherwise to promote the sale, use or other
-dealings in this Software without prior written authorization
-from the individuals in question.
+  fo/docbook.xsl              - for XSL-FO
 
-Any stylesheet derived from this Software that is publically
-distributed will be identified with a different name and the
-version strings in any derived Software will be changed so that
-no possibility of confusion between the derived package and this
-Software will exist.
+  html/docbook.xsl            - for HTML (as a single file)
+  html/chunk.xsl              - for HTML (chunked into multiple files)
+  html/onechunk.xsl           - for HTML (chunked output in single file)
 
-Warranty
---------
+  xhtml/*.xsl                 - for XHTML versions of the above
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT.  IN NO EVENT SHALL NORMAN WALSH OR ANY OTHER
-CONTRIBUTOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+  xhtml-1_1/*.xsl             - for XHTML 1.1 versions of the above
 
-Contacting the Author
----------------------
+  epub/docbook.xsl            - for .epub 
 
-These stylesheets are maintained by Norman Walsh, <ndw@nwalsh.com>.
+  htmlhelp/htmlhelp.xsl       - for HTML Help
+  javahelp/javahelp.xsl       - for JavaHelp
+  eclipse/eclipse.xsl         - for Eclipse Help
 
-The best way to reach norm is by email.  You will find additional
-contact information at http://nwalsh.com/~ndw/
+  manpages/docbook.xsl        - for groff/nroff man pages
+
+  */profile-*                 - single-pass-profiling versions of all above
+
+  roundtrip/*.xsl             - for DocBook to WordML, etc., to DocBook
+
+To transform documents created with the DocBook Slides schema/DTD,
+use one of the following stylesheets:
+
+  slides/html/*.xsl           - for HTML slides of various kinds
+  slides/xhtml/*.xsl          - for XHTML slides of various kinds
+  slides/fo/plain.xsl         - for XSL-FO slides
+  slides/htmlhelp/...         - for HTML Help slides
+
+To transform documents created with the DocBook Website
+schema/DTD, use one of the following stylesheets:
+
+  website/website.xsl         - for non-tabular, non-chunked output
+  website/tabular.xsl         - for tabular, non-chunked output
+  website/chunk-*             - for chunked output
+
+To generate a titlepage customization layer from a titlepage spec:
+
+  template/titlepage.xsl
+
+For details about creating titlepage spec files and generating and
+using titlepage customization layers, see "DocBook XSL: The
+Complete Guide" <http://www.sagehill.net/docbookxsl/>
+
+----------------------------------------------------------------------
+Manifest
+----------------------------------------------------------------------
+AUTHORS       contact information
+BUGS          about known problems
+COPYING       copyright information
+INSTALL       installation instructions
+README        this file
+RELEASE.*     per-release cumulative summaries of user-visible changes
+TODO          about planned features not yet implemented
+VERSION       release metadata, including the current version
+              number (note that the VERSION file is an XSL stylesheet)
+NEWS          changes since the last public release (for a cumulative list of
+              changes, see the ChangeHistory.xml file)
+
+common/       code used among several output formats (HTML, FO, manpages,...)
+docsrc/       documentation sources
+eclipse/      for producing Eclipse Help
+epub/         for producing .epub
+extensions/   DocBook XSL Java extensions
+fo/           for producing XSL-FO
+highlighting  files used for adding source-code syntax highlighting in output
+html/         for producing HTML
+htmlhelp/     for producing HTML Help
+images/       images used in callouts and graphical admonitions
+javahelp/     for producing Java Help
+lib/          utility stylesheets with schema-independent functions
+manpages/     for producing groff/troff man pages
+profiling/    for profiling (omitting/including conditional text)
+roundtrip/    for "round trip" conversion among DocBook and
+              various word-processor formats (WordML, etc.)
+slides/       for producing slides output (from Slides source)
+template/     templates for building stylesheet customization layers
+tools/        assorted supplementary tools
+website/      for producing website output (from Website source)
+xhtml/        for producing XHTML
+xhtml-1_1/    for producing (stricter) XHTML 1.1
+
+----------------------------------------------------------------------
+Changes
+----------------------------------------------------------------------
+See the NEWS file for changes made since the previous release.
+
+See the RELEASE-NOTES.html or RELEASE-NOTES.txt or RELEASE-NOTES.pdf
+files for per-release cumulative summaries of significant
+user-visible changes.
+
+For online access to a hyperlinked view of all changes made over
+the entire history of the codebase, see the following:
+
+  http://docbook.svn.sourceforge.net/viewvc/docbook/trunk/xsl/?view=log
+
+WARNING: That above change history is a very long list and may
+take a long time to load/download.
+
+You can also create an XML-formatted "ChangeHistory.xml" copy of
+the complete change history for the codebase by running the
+following commands:
+
+  svn checkout https://docbook.svn.sf.net/svnroot/docbook/trunk/xsl
+  svn log --xml --verbose xsl > ChangeHistory.xml
+
+----------------------------------------------------------------------
+Copyright information
+----------------------------------------------------------------------
+See the accompanying file named COPYING.

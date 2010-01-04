@@ -8,8 +8,8 @@
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
-     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
-     and other information.
+     See ../README or http://docbook.sf.net/release/xsl/current/ for
+     copyright and other information.
 
      ******************************************************************** -->
 
@@ -24,72 +24,100 @@
   </xsl:choose>
 </xsl:template>
 
-<xsl:template name="admon.graphic.width">
+<xsl:template match="*" mode="admon.graphic.width">
   <xsl:param name="node" select="."/>
-  <xsl:text>25</xsl:text>
+  <xsl:text>36pt</xsl:text>
 </xsl:template>
 
 <xsl:template name="admon.graphic">
   <xsl:param name="node" select="."/>
-  <xsl:value-of select="$admon.graphics.path"/>
+
+  <xsl:variable name="filename">
+    <xsl:value-of select="$admon.graphics.path"/>
+    <xsl:choose>
+      <xsl:when test="local-name($node)='note'">note</xsl:when>
+      <xsl:when test="local-name($node)='warning'">warning</xsl:when>
+      <xsl:when test="local-name($node)='caution'">caution</xsl:when>
+      <xsl:when test="local-name($node)='tip'">tip</xsl:when>
+      <xsl:when test="local-name($node)='important'">important</xsl:when>
+      <xsl:otherwise>note</xsl:otherwise>
+    </xsl:choose>
+    <xsl:value-of select="$admon.graphics.extension"/>
+  </xsl:variable>
+
   <xsl:choose>
-    <xsl:when test="name($node)='note'">note.gif</xsl:when>
-    <xsl:when test="name($node)='warning'">warning.gif</xsl:when>
-    <xsl:when test="name($node)='caution'">caution.gif</xsl:when>
-    <xsl:when test="name($node)='tip'">tip.gif</xsl:when>
-    <xsl:when test="name($node)='important'">important.gif</xsl:when>
-    <xsl:otherwise>note.gif</xsl:otherwise>
+    <xsl:when test="$passivetex.extensions != 0
+                    or $fop.extensions != 0
+                    or $arbortext.extensions != 0">
+      <xsl:value-of select="$filename"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>url(</xsl:text>
+      <xsl:value-of select="$filename"/>
+      <xsl:text>)</xsl:text>
+    </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
 <xsl:template name="graphical.admonition">
-  <fo:block>
-    <fo:table>
-      <fo:table-body>
-        <fo:table-row>
-          <fo:table-cell number-rows-spanned="2">
-            <fo:block>IMAGE</fo:block>
-          </fo:table-cell>
-          <fo:table-cell>
-            <xsl:choose>
-              <xsl:when test="./title">
-                <xsl:apply-templates select="./title" 
-                                     mode="admonition.title.mode"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:call-template name="gentext.element.name"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </fo:table-cell>
-        </fo:table-row>
-        <fo:table-row>
-          <fo:table-cell number-columns-spanned="2">
-            <xsl:apply-templates/>
-          </fo:table-cell>
-        </fo:table-row>
-      </fo:table-body>
-    </fo:table>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
+  <xsl:variable name="graphic.width">
+     <xsl:apply-templates select="." mode="admon.graphic.width"/>
+  </xsl:variable>
+
+  <fo:block id="{$id}"
+            xsl:use-attribute-sets="graphical.admonition.properties">
+    <fo:list-block provisional-distance-between-starts="{$graphic.width} + 18pt"
+                    provisional-label-separation="18pt">
+      <fo:list-item>
+          <fo:list-item-label end-indent="label-end()">
+            <fo:block>
+              <fo:external-graphic width="auto" height="auto"
+                                         content-width="{$graphic.width}" >
+                <xsl:attribute name="src">
+                  <xsl:call-template name="admon.graphic"/>
+                </xsl:attribute>
+              </fo:external-graphic>
+            </fo:block>
+          </fo:list-item-label>
+          <fo:list-item-body start-indent="body-start()">
+            <xsl:if test="$admon.textlabel != 0 or title or info/title">
+              <fo:block xsl:use-attribute-sets="admonition.title.properties">
+                <xsl:apply-templates select="." mode="object.title.markup">
+		  <xsl:with-param name="allow-anchors" select="1"/>
+		</xsl:apply-templates>
+              </fo:block>
+            </xsl:if>
+            <fo:block xsl:use-attribute-sets="admonition.properties">
+              <xsl:apply-templates/>
+            </fo:block>
+          </fo:list-item-body>
+      </fo:list-item>
+    </fo:list-block>
   </fo:block>
 </xsl:template>
 
 <xsl:template name="nongraphical.admonition">
-  <fo:block space-before.minimum="0.8em"
-            space-before.optimum="1em"
-            space-before.maximum="1.2em"
-            start-indent="0.25in"
-            end-indent="0.25in">
-    <xsl:choose>
-      <xsl:when test="./title">
-        <xsl:apply-templates select="./title" mode="admonition.title.mode"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <fo:block font-size="14pt" font-weight="bold" keep-with-next='true'>
-          <xsl:call-template name="gentext.element.name"/>
-        </fo:block>
-      </xsl:otherwise>
-    </xsl:choose>
+  <xsl:variable name="id">
+    <xsl:call-template name="object.id"/>
+  </xsl:variable>
 
-    <xsl:apply-templates/>
+  <fo:block id="{$id}"
+            xsl:use-attribute-sets="nongraphical.admonition.properties">
+    <xsl:if test="$admon.textlabel != 0 or title or info/title">
+      <fo:block keep-with-next.within-column='always'
+                xsl:use-attribute-sets="admonition.title.properties">
+         <xsl:apply-templates select="." mode="object.title.markup">
+	   <xsl:with-param name="allow-anchors" select="1"/>
+	 </xsl:apply-templates>
+      </fo:block>
+    </xsl:if>
+
+    <fo:block xsl:use-attribute-sets="admonition.properties">
+      <xsl:apply-templates/>
+    </fo:block>
   </fo:block>
 </xsl:template>
 
@@ -98,11 +126,5 @@
 <xsl:template match="warning/title"></xsl:template>
 <xsl:template match="caution/title"></xsl:template>
 <xsl:template match="tip/title"></xsl:template>
-
-<xsl:template match="title" mode="admonition.title.mode">
-  <fo:block font-size="14pt" font-weight="bold" keep-with-next='true'>
-    <xsl:apply-templates/>
-  </fo:block>
-</xsl:template>
 
 </xsl:stylesheet>

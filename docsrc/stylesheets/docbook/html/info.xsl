@@ -7,8 +7,8 @@
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
-     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
-     and other information.
+     See ../README or http://docbook.sf.net/release/xsl/current/ for
+     copyright and other information.
 
      ******************************************************************** -->
 
@@ -23,7 +23,17 @@
 <!-- called from named templates in a given mode -->
 
 <xsl:template match="corpauthor">
-  <span class="{name(.)}">
+  <span>
+    <xsl:apply-templates select="." mode="common.html.attributes"/>
+    <xsl:apply-templates/>
+  </span>
+</xsl:template>
+
+<!-- ==================================================================== -->
+
+<xsl:template match="jobtitle">
+  <span>
+    <xsl:apply-templates select="." mode="common.html.attributes"/>
     <xsl:apply-templates/>
   </span>
 </xsl:template>
