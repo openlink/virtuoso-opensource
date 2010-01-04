@@ -902,7 +902,7 @@ sql_code_pldbg.c: $(SQL_FILES_PLDBG) $(SQL_AWK_DEPS) Makefile.am
 
 
 blog_pages.sql: FORCE
-	(cd $(top_srcdir)/binsrc/weblog ; gmake)
+	(cd $(top_srcdir)/binsrc/weblog ; $(MAKE))
 
 #
 # JSON
