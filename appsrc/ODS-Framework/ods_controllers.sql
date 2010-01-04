@@ -803,7 +803,7 @@ create procedure ODS.ODS_API."lookup.list" (
   else if ("key" = 'Province')
   {
     http ('<items>');
-    for (select WP_PROVINCE from DB.DBA.WA_PROVINCE where WP_COUNTRY = param and WP_COUNTRY <> '' order by WP_PROVINCE) do {
+    for (select WP_PROVINCE from DB.DBA.WA_PROVINCE where WP_COUNTRY = "param" and WP_COUNTRY <> '' order by WP_PROVINCE) do {
       http (sprintf ('<item>%s</item>', WP_PROVINCE));
     }
     http ('</items>');
@@ -813,7 +813,7 @@ create procedure ODS.ODS_API."lookup.list" (
     http ('<items>');
     for (select SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) as instance_iri, WAI_NAME
            from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
-          where WAM_INST = WAI_NAME and WAM_USER = param and U_ID = WAM_USER) do
+          where WAM_INST = WAI_NAME and WAM_USER = "param" and U_ID = WAM_USER) do
     {
       http (sprintf ('<item href="%V">%V</item>', instance_iri, WAI_NAME));
     }
@@ -839,7 +839,7 @@ create procedure ODS.ODS_API."lookup.list" (
                    }
              ORDER BY ?title';
 
-    sql := sprintf (sql, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (param)));
+    sql := sprintf (sql, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri ("param")));
     st := '00000';
 
     set_user_id ('dba');
