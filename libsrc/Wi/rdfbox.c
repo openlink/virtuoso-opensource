@@ -665,6 +665,8 @@ rb_serialize (caddr_t x, dk_session_t * ses)
           session_buffered_write_char (flags, ses);
           if (DV_XML_ENTITY == DV_TYPE_OF (rb->rb_box))
             xe_serialize ((xml_entity_t *)(rb->rb_box), ses);
+          else if (!rb->rb_box)
+	    print_int (0, ses);  /* a zero int with should be printed with int tag for partitioning etc */
           else
 	    print_object (rb->rb_box, ses, NULL, NULL);
           if (rb->rb_ro_id)
