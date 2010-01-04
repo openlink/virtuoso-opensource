@@ -7,8 +7,8 @@
      ********************************************************************
 
      This file is part of the XSL DocBook Stylesheet distribution.
-     See ../README or http://nwalsh.com/docbook/xsl/ for copyright
-     and other information.
+     See ../README or http://docbook.sf.net/release/xsl/current/ for
+     copyright and other information.
 
      ******************************************************************** -->
 
@@ -18,11 +18,16 @@
 <!-- ==================================================================== -->
 
 <xsl:template match="keywordset" mode="html.header">
-  <xsl:apply-templates mode="html.header"/>
+  <meta name="keywords">
+    <xsl:attribute name="content">
+      <xsl:apply-templates select="keyword" mode="html.header"/>
+    </xsl:attribute>
+  </meta>
 </xsl:template>
 
 <xsl:template match="keyword" mode="html.header">
-  <meta name="keyword" content="{.}"/>
+  <xsl:apply-templates/>
+  <xsl:if test="following-sibling::keyword">, </xsl:if>
 </xsl:template>
 
 <!-- ==================================================================== -->
