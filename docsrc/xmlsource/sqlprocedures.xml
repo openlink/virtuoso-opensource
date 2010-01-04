@@ -424,7 +424,7 @@ CREATE PROCEDURE CFIBO (IN X INTEGER)
 </screen>
 </sect2>
 		<sect2 id="grantprocstmt">
-			<title>Grand Execute Statement</title>
+			<title>Grant Execute Statement</title>
 <programlisting><![CDATA[
 GRANT EXECUTE ON proceudre_name TO grantee_commalist;
 ]]></programlisting>
