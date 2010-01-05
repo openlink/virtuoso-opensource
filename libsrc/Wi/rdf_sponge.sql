@@ -1266,14 +1266,13 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
     {
       return DB.DBA.RDF_SPONGE_UP_1 (graph_iri, options, uid);
     }
-
+  commit work;
   set_user_id ('dba', 1);
   cookie := connection_get ('__rdf_sponge_sid');
   if (cookie is not null)
     options := vector_concat (options, vector ('rdf_sponge_sid', cookie));
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
-  commit work;
   aq_wait_all (aq);
 
   graph_iri := cast (graph_iri as varchar);
