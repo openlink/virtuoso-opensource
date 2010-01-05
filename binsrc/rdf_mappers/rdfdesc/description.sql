@@ -426,7 +426,7 @@ again:
 	 _label := null;
 
        rdfa := rdfdesc_rel_print (prop, rel, _url, 0, null);
-       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content')
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
 	 {
 	   declare src any;
 	   whenever not found goto usual_iri;

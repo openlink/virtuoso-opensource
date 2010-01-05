@@ -106,7 +106,7 @@
 			<xsl:copy-of select="gphoto:*" />
 			<xsl:copy-of select="georss:*" />
 			<xsl:copy-of select="gml:*" />
-			<xsl:copy-of select="media:*" />
+			<xsl:copy-of select="media:*[local-name() != 'content']" />
 		</rdf:Description>
 	</xsl:template>
 	<xsl:template match="rdf:li">
@@ -146,12 +146,15 @@
 			<xsl:copy-of select="sioc:*" />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="gphoto:*" />
-			<xsl:copy-of select="media:*" />
+			<xsl:copy-of select="media:*[local-name() != 'content']" />
 			<xsl:copy-of select="georss:*" />
 			<xsl:copy-of select="gml:*" />
 			<xsl:if test="wfw:commentRss">
 				<rdfs:seeAlso rdf:resource="{wfw:commentRss}" />
 			</xsl:if>
+			<xsl:for-each select="media:content[@rdf:resource]">
+			    <foaf:img rdf:resource="{@rdf:resource}"/>
+			</xsl:for-each>
 		</rdf:Description>
 	</xsl:template>
 	<xsl:template match="rss:title[. != '']">
@@ -169,11 +172,13 @@
 		<!--xsl:if test="not (../wfw:commentRss)">
 			<rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}" />
 		</xsl:if-->
+	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 		<awol:content>
-		    <awol:Content>
+		    <awol:Content rdf:ID="content{generate-id()}">
 			<awol:src rdf:resource="{string(.)}"/>
 		    </awol:Content>
 		</awol:content>
+	    </xsl:if>
 	</xsl:template>
 	<xsl:template match="dc:date">
 		<dcterms:created rdf:datatype="&xsd;dateTime">
@@ -200,16 +205,20 @@
 			<sioc:links_to rdf:resource="{@href}" />
 		</xsl:for-each>
 	</xsl:template>
-	<xsl:template match="dc:creator">
+	<xsl:template match="dc:creator[normalize-space (.) != '']">
 		<foaf:maker rdf:resource="{vi:proxyIRI ($baseUri, '', .)}" />
 	</xsl:template>
-	<xsl:template match="dc:creator" mode="user">
+	<xsl:template match="dc:creator[normalize-space (.) != '']" mode="user">
 				<xsl:variable name="uname" select="string(.)" />
 				<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', .)}">
+				    <xsl:if test="normalize-space (.) != ''">
 					<foaf:name>
 						<xsl:apply-templates />
 					</foaf:name>
+				    </xsl:if>
+				    <xsl:if test="string (//foaf:mbox/@rdf:resource) != ''">
 			                <foaf:mbox rdf:resource="{//foaf:mbox/@rdf:resource}" />                  
+				    </xsl:if>
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
 						<xsl:variable name="this" select="@rdf:about" />
 						<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">

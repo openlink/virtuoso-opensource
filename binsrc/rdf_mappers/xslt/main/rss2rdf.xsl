@@ -41,6 +41,7 @@
   xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:vifunc="http://www.openlinksw.com/virtuoso/xslt/"
+  xmlns:media="http://search.yahoo.com/mrss/"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -82,6 +83,9 @@
 <xsl:template match="item/itunes:*" />
 <xsl:template match="a:*" />
 
+<xsl:template match="media:content[@url]">
+    <media:content rdf:resource="{@url}"/>
+</xsl:template>
 
 <xsl:template match="text()">
   <xsl:value-of select="normalize-space(.)" />
@@ -121,7 +125,9 @@
 </xsl:template>
 
 <xsl:template match="description|r:description">
+    <xsl:if test="normalize-space (.) != ''">
   <description><xsl:value-of select="." /></description>
+    </xsl:if>
 </xsl:template>
 
 <xsl:template match="language|r:language">
