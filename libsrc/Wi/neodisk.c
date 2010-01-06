@@ -247,8 +247,7 @@ cpt_over (void)
   cp_is_over = get_msec_real_time();
 }
 
-
-
+int32 cpt_remap_recovery = 0;
 
 void
 dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from)
@@ -257,6 +256,11 @@ dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from)
   while (from)
     {
       int inx;
+      if (cpt_remap_recovery && -1 != dk_set_position (dbs->dbs_cp_remap_pages, DP_ADDR2VOID (from)))
+	{
+	  log_error ("duplicate cpt remap page L=%d", from);
+	  return;
+	}
       dk_set_push (&dbs->dbs_cp_remap_pages, DP_ADDR2VOID (from));
       dbs_unfreeable (dbs, from, DPF_CP_REMAP);
       cp_buf->bd_page = from;

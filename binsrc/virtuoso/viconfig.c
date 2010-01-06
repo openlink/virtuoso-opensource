@@ -1210,6 +1210,8 @@ cfg_setup (void)
   section = "AutoRepair";
   if (cfg_getlong (pconfig, section, "BadParentLinks", &c_bad_parent_links) == -1)
     c_bad_parent_links = 0;
+  if (cfg_getlong (pconfig, section, "DuplicateCheckpointRemaps", &cpt_remap_recovery) == -1)
+    cpt_remap_recovery = 0;
 
 
 #if 0/*obsoleted*/

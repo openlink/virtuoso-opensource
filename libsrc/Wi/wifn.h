@@ -1064,6 +1064,7 @@ extern dk_mutex_t * old_roots_mtx;
 extern buffer_desc_t * old_root_images;
 extern int prefix_in_result_col_names;
 extern int is_crash_dump;
+extern int32 cpt_remap_recovery;
 
 extern void (*db_exit_hook) (void);
 extern long last_flush_time;
