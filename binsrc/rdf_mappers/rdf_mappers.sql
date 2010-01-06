@@ -947,7 +947,9 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
     frag := '';
 
   if (length (frag) and frag[0] <> '#'[0])
+    {
     frag := '#' || sprintf ('%U', frag);
+    }
   if (strchr (uri, '#') is not null)
     frag := '';
 
