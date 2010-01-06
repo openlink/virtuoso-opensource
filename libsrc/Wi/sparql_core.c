@@ -2684,6 +2684,8 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
+  if (NULL == log_mode)
+    log_mode = t_NEW_DB_NULL;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     call = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
