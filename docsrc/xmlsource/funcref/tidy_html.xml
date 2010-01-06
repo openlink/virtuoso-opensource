@@ -39,7 +39,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title><para>
+  <refsect1 id="desc_tidy_html"><title>Description</title><para>
 This function improves the given source HTML text, by invoking a
 custom version of HTML Tidy utility.
 To learn more about Tidy see http://www.w3.org/People/Raggett/tidy/ .

@@ -38,6 +38,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_repl_this_server"><title>Description</title>
+    <para>Returns calling servers name.</para>
+  </refsect1>
   <refsect1 id="ret_repl_this_server"><title>Return Types</title>
     <para>
 Returns the calling server's logical name, set by the ServerName entry in the Replication section of

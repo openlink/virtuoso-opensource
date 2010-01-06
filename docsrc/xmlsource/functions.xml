@@ -73,7 +73,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="type">Type Mapping</keyword>
     <keyword id="uddi">UDDI</keyword>
     <keyword id="udt">User Defined Types &amp; The CLR</keyword>
-    <keyword id="ws">Web Server &amp; Internet</keyword>
+    <keyword id="ws">Web &amp; Internet</keyword>
     <keyword id="xml">XML</keyword>
     <keyword id="XPATH">XPATH &amp; XQUERY</keyword>
     <keyword id="misc">Miscellaneous</keyword>

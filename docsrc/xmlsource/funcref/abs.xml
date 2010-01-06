@@ -38,6 +38,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_abs">
+    <title>Description</title>
+    <para><function>abs</function> returns the absolute value of its argument.
+    </para>
+  </refsect1>
   <refsect1 id="params_abs"><title>Parameters</title>
     <refsect2><title>num</title>
       <para><type>Numeric</type> value whose absolute value is to be
@@ -45,11 +50,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_abs"><title>Return Types</title>
-    <para>Same as parameter type.</para></refsect1>
-  <refsect1 id="desc_abs">
-    <title>Description</title>
-    <para><function>abs</function> returns the absolute value of its argument.
-    </para>
+    <para>Same as parameter type.</para>
   </refsect1>
   <refsect1 id="examples_abs"><title>Examples</title>
     <example id="ex_abs"><title>Simple example</title>

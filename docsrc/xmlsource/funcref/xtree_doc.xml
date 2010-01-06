@@ -44,14 +44,10 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-    <para>
-This parses the argument, which is expected to be a well formed XML 
-fragment and returns a parse tree as a special memory-resident object.
-While <link linkend="fn_xper_doc">xper_doc</link>
-creates some disk-resident data structure, xtree_doc() will work
-faster but it may require more memory.
-You may wish to use xtree_doc for small documents (e.g. less than
-5 megabytes and xper_doc for larger documents.
+    <para>This parses the argument, which is expected to be a well formed XML fragment and returns a
+parse tree as a special memory-resident object. While <link linkend="fn_xper_doc">xper_doc</link> creates
+some disk-resident data structure, xtree_doc() will work faster but it may require more memory. You may
+wish to use xtree_doc for small documents (e.g. less than 5 megabytes and xper_doc for larger documents.
 	</para>
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>

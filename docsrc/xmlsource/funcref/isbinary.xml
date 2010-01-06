@@ -39,17 +39,21 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_isbinary"><title>Parameters</title>
-    <refsect2><title>arg</title><para>Some variable to be assessed.</para></refsect2>
-  </refsect1>
   <refsect1 id="desc_isbinary"><title>Description</title>
     <para>isbinary returns one if its argument is of type VARBINARY, zero otherwise.
 </para>
-			<screen>
-isbinary(0x1213)
+  </refsect1>
+  <refsect1 id="params_isbinary"><title>Parameters</title>
+    <refsect2><title>arg</title><para>Some variable to be assessed.</para></refsect2>
+  </refsect1>
+  <refsect1 id="examples_isbinary">
+    <title>Examples</title>
+    <example id="ex_isbinary"><title></title>
+<programlisting><![CDATA[
+SQL>select isbinary(0x1213);
 		-&gt; 1 (Yes it is a VARBINARY)
-</screen>
-
+]]></programlisting>
+    </example>
 	</refsect1>
 </refentry>
 

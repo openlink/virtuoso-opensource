@@ -24,7 +24,7 @@
 <refentry id="fn_atoi">
   <refmeta>
     <refentrytitle>atoi</refentrytitle>
-    <refmiscinfo>string</refmiscinfo>
+    <refmiscinfo>number</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname>atoi</refname>
@@ -38,6 +38,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_atoi">
+    <title>Description</title>
+      <para>atoi returns its argument as an integer.
+      If the string cannot be parsed and converted to a valid
+      integer, a value 0 is returned.</para>
+  </refsect1>
   <refsect1 id="params_atoi"><title>Parameters</title>
     <refsect2><title><parameter>arg</parameter></title>
       <para>A string input parameter</para>
@@ -46,12 +52,6 @@
   <refsect1 id="ret_atoi"><title>Return Types</title>
     <para>The string converted to an integer.  If the string is a number then the absolute value of the
 literal will be returned as an integer.  Otherwise 0 is returned.</para>
-  </refsect1>
-  <refsect1 id="desc_atoi">
-    <title>Description</title>
-      <para>atoi returns its argument as an integer.
-      If the string cannot be parsed and converted to a valid
-      integer, a value 0 is returned.</para>
   </refsect1>
   <refsect1 id="examples_atoi"><title>Examples</title>
     <example id="ex_atoi"><title>Simple examples</title>

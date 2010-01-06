@@ -38,6 +38,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function is used to produce a string from contents of a
+    string output stream. See
+    <link linkend="fn_string_output"><function>string_output</function></link>
+    for more information about string output streams.</para>
+  </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>string_out</title>
       <para>The string output stream</para>
@@ -46,12 +52,6 @@
   <refsect1 id="ret"><title>Return Values</title>
     <para>A <type>varchar</type> with the contents of the string output
     stream.</para>
-  </refsect1>
-  <refsect1 id="desc"><title>Description</title>
-    <para>This function is used to produce a string from contents of a
-    string output stream. See
-    <link linkend="fn_string_output"><function>string_output</function></link>
-    for more information about string output streams.</para>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_string_output_string"><title>Convert string output stream into a string</title>

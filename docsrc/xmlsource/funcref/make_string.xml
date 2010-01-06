@@ -39,6 +39,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>make_string returns a new string of length count, filled with
+    binary zeros.</para>
+    <para>If count is zero, an empty string '' is returned.</para>
+  </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>count</title>
       <para>Length of the string to be generated.</para>
@@ -46,11 +51,6 @@
   </refsect1>
   <refsect1 id="ret"><title>Return Values</title>
     <para>A string with defined length is returned.</para>
-  </refsect1>
-  <refsect1 id="desc"><title>Description</title>
-    <para>make_string returns a new string of length count, filled with
-    binary zeros.</para>
-    <para>If count is zero, an empty string '' is returned.</para>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_">

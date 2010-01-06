@@ -41,6 +41,19 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_exec_next"><title>Description</title>
+    <para>Use <function>exec_next()</function> to
+    iterate over a result set produced by a statement run
+    with <link linkend="fn_exec"><function>exec</function></link>.</para>
+    <simplelist>
+      <member>open a cursor with <link linkend="fn_exec">exec</link>.
+      </member>
+      <member>loop over the results with exec_next</member>
+      <member>if exec_next does not return an error or SQL_NO_DATA_FOUND
+      continue the loop with exec_next, otherwise</member>
+      <member>close the cursor with exec_close</member>
+    </simplelist>
+  </refsect1>
   <refsect1 id="params_rnext"><title>Parameters</title>
     <refsect2><title>cursor_handle</title>
       <para>The <type>long</type> cursor handle as obtained from exec().</para>
@@ -59,19 +72,6 @@
   </refsect1>
   <refsect1 id="ret_exec_next"><title>Return Values</title>
     <para>All data is returned in output parameters.</para>
-  </refsect1>
-  <refsect1 id="desc_exec_next"><title>Description</title>
-    <para>Use <function>exec_next()</function> to
-    iterate over a result set produced by a statement run 
-    with <link linkend="fn_exec"><function>exec</function></link>.</para>
-    <simplelist>
-      <member>open a cursor with <link linkend="fn_exec">exec</link>.
-      </member>
-      <member>loop over the results with exec_next</member>
-      <member>if exec_next does not return an error or SQL_NO_DATA_FOUND 
-      continue the loop with exec_next, otherwise</member>
-      <member>close the cursor with exec_close</member>
-    </simplelist>
   </refsect1>
   <refsect1 id="seealso_exec_next"><title>See Also</title>
     <para><link linkend="fn_exec"><function>exec()</function></link>, 

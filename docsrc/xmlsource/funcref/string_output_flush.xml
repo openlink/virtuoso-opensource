@@ -38,16 +38,16 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params"><title>Parameters</title>
-    <refsect2><title>stream</title>
-    <para>stream to clear, must have been created by the string_output function.</para></refsect2>
-  </refsect1>
   <refsect1 id="desc"><title>Description</title>
     <para>
 This function resets the state of the string output object. 
 The string associated with the string output is dropped and is of 0 characters 
 after this call.
   </para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>stream</title>
+    <para>stream to clear, must have been created by the string_output function.</para></refsect2>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
   <example id="ex_string_output_flush"><title>Flush the String Output Stream</title>

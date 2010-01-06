@@ -38,10 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_http_rewrite"><title>Parameters</title>
-    <refsect2><title>stream</title>
-      <para>Optional stream to clear.  Null or zero (0) implies the default HTTP client stream.</para></refsect2>
-  </refsect1>
   <refsect1 id="desc_http_rewrite"><title>Description</title>
     <para>
 This clears any previous output to the stream. If the stream is omitted or 0 the stream
@@ -51,6 +47,10 @@ is the HTTP client stream of the calling procedure.
 before being sent out.  This is done so as to support the HTTP/1.1 required
 content length and to allow recovery from errors.
 </para>
+  </refsect1>
+  <refsect1 id="params_http_rewrite"><title>Parameters</title>
+    <refsect2><title>stream</title>
+      <para>Optional stream to clear. Null or zero (0) implies the default HTTP client stream.</para></refsect2>
   </refsect1>
   <refsect1 id="examples_http_rewrite"><title>Using http_rewrite()</title>
   <example id="ex_http_rewrite">

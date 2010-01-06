@@ -39,14 +39,6 @@
 	    </funcprototype>
 	</funcsynopsis>
     </refsynopsisdiv>
-    <refsect1 id="params"><title>Parameters</title>
-	<refsect2><title>path</title>
-	    <para><type>varchar</type> relative path.</para>
-	</refsect2>
-	<refsect2><title>new_mod</title>
-	    <para><type>integer</type> new mode for the file.</para>
-	</refsect2>
-    </refsect1>
     <refsect1 id="desc"><title>Description</title>
 	<para><function>os_chmod</function> set the file mode bits
 	    by calling the system function chmod() with the arguments supplied.</para>
@@ -78,6 +70,14 @@
 	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
 	    virtuoso configuration file (virtuoso.ini by default) are used to control
 	    disk access. </para>
+    </refsect1>
+    <refsect1 id="params"><title>Parameters</title>
+	<refsect2><title>path</title>
+	    <para><type>varchar</type> relative path.</para>
+	</refsect2>
+	<refsect2><title>new_mod</title>
+	    <para><type>integer</type> new mode for the file.</para>
+	</refsect2>
     </refsect1>
     <refsect1 id="examples"><title>Examples</title>
 	<example id="ex_os_chmod"><title>Simple example</title>

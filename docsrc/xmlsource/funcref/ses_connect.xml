@@ -40,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_ses_connect">
     <title>Description</title>
-    <para>This function requires dba privileges.</para>
+    <para>Requires dba privileges.</para>
     <para>This function is used to establish a new TCP connection to the target
     host.  It returns a special datatype which represents the session handle.</para>
   </refsect1>
@@ -53,7 +53,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_ses_connect"><title>Return Types</title>
-    <para>This function returns a special internal datatype that
+    <para>Returns a special internal datatype that
     represents the session handle.  This session handle can be used in other
     session functions.  Since this is an internal type it cannot be stored.</para>
   </refsect1>

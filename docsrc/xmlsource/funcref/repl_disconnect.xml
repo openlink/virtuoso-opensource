@@ -39,7 +39,6 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_repl_disconnect"><title>Description</title>
-			<para><emphasis></emphasis> </para>
 			<para>
 This terminates any communication with the publisher. Any
 pending synchronization communication is disconnected and all subscribed publications

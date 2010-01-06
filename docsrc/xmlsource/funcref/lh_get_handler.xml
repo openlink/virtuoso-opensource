@@ -38,6 +38,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_lh_get_handler"><title>Description</title>
+<para>Returns language handler
+</para>
+</refsect1>
   <refsect1 id="params_lh_get_handler"><title>Parameters</title>
     <refsect2><title>language_name</title>
       <para>Name of language handler.</para></refsect2>

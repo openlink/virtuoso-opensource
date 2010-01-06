@@ -39,6 +39,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_composite">
+    <title>Description</title>
+      <para>Create a composite object</para>
+      <para>Returns a composite object containing the serialization of each argument.
+      The total serialized length of the arguments may not exceed 255.</para>
+  </refsect1>
   <refsect1 id="params_composite"><title>Parameters</title>
     <refsect2><title><parameter>x</parameter> ...</title>
       <para>The function takes a variable number of parameters of any type.</para>
@@ -46,12 +52,6 @@
   </refsect1>
   <refsect1 id="ret_composite"><title>Return Values</title>
     <para>A <type>composite</type> object</para>
-  </refsect1>
-  <refsect1 id="desc_composite">
-    <title>Description</title>
-      <para>Create a composite object</para>
-      <para>Returns a composite object containing the serialization of each argument.
-      The total serialized length of the arguments may not exceed 255.</para>
   </refsect1>
   <refsect1 id="errors_composite"><title>Errors</title>
     <table><title>Errors signalled by composite</title>

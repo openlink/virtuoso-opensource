@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>sinv_create_key_mapping</refname>
-    <refpurpose>Creates a key mapping function &amp; table (as described in the doc section <link linkend="sqlinverse">SQL Inverse Functions</link>).</refpurpose>
+    <refpurpose>Creates a key mapping function &amp; table.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_sinv_create_key_mapping">
@@ -40,6 +40,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_sinv_create_key_mapping"><title>Description</title>
+    <para>Creates a key mapping function &amp; table (as described in the doc section
+<link linkend="sqlinverse">SQL Inverse Functions</link>)</para>
+  </refsect1>
   <refsect1 id="params_sinv_create_key_mapping">
     <title>Parameters</title>
     <refsect2><title>map_name</title>

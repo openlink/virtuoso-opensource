@@ -39,16 +39,16 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-<!--  <refsect1 id="desc_vt_drop_ftt"><title>Description</title>
-    <para></para>
-  </refsect1> -->
+  <refsect1 id="desc_vt_drop_ftt"><title>Description</title>
+    <para>Drops free text trigger.</para>
+  </refsect1>
   <refsect1 id="params_vt_drop_ftt"><title>Parameters</title>
     <refsect2><title>DATA_COLUMN</title>
       <para>column where content is stored</para></refsect2>
     <refsect2><title>target_table_name</title>
       <para>the table containing the trigger</para></refsect2>
   </refsect1>
-<!--  <refsect1 id="ret_vt_drop_ftt"><title>Return Types</title><para></para></refsect1> -->
+<!--  <refsect1 id="ret_vt_drop_ftt"><title>Return Types</title><para></para></refsect1>
   <refsect1 id="errors_vt_drop_ftt"><title>Errors</title>
     <table><title>Errors signalled by <function>vt_drop_ftt</function></title>
       <tgroup cols="4">
@@ -64,7 +64,8 @@
       </tgroup>
     </table>
   </refsect1>
-<!--  <refsect1 id="examples_vt_drop_ftt"><title>Examples</title>
+
+  <refsect1 id="examples_vt_drop_ftt"><title>Examples</title>
     <example id="ex_vt_drop_ftt"><title></title>
       <para></para>
       <screen></screen>

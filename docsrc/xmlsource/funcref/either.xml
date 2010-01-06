@@ -40,6 +40,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_either">
+    <title>Description</title>
+      <para>either returns a copy of arg1 if cond is something
+      else than integer 0 (zero). Otherwise, a copy of arg2 is returned.</para>
+  </refsect1>
    <refsect1 id="params_either"><title>Parameters</title>
      <refsect2><title>cond</title>
        <para>Anything</para>
@@ -54,11 +59,6 @@
    <refsect1 id="ret_either"><title>Return values</title>
      <para>A copy of arg1 or arg2, which could be of any type.</para>
    </refsect1>
-  <refsect1 id="desc_either">
-    <title>Description</title>
-      <para>either returns a copy of arg1 if cond is something
-      else than integer 0 (zero). Otherwise, a copy of arg2 is returned.</para>
-  </refsect1>
   <refsect1 id="errors_either"><title>Errors</title>
     <table><title>Errors signalled by <function>either</function> and
       <function>stringdate</function></title>

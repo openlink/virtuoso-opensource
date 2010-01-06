@@ -43,6 +43,9 @@
      </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_smime_sign"><title>Description</title>
+    <para>Converts a MIME message to a signed S/MIME message.</para>
+  </refsect1>
   <refsect1 id="params_smime_sign"><title>Parameters</title>
     <refsect2><title>msg_text</title>
       <para>The text of the message</para></refsect2>

@@ -41,7 +41,8 @@
   </refsynopsisdiv>
   <refsect1 id="desc_sys_stat">
     <title>Description</title>
-    <para>This function returns the statistic related to the requested statistic name give as a parameter to the function.</para>
+    <para>This function returns the statistic related to the requested statistic name
+give as a parameter to the function.</para>
   </refsect1>
   <refsect1 id="params_sys_stat"><title>Parameters</title>
     <refsect2><title>stat_name</title>

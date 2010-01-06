@@ -41,6 +41,15 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_repl_publish"><title>Description</title>
+    <para>
+This function starts a publication and associates a file system file to it.   The file
+will be used to log transaction records associated to the publication.  The server will
+periodically start new files, so that replication log files do not grow indefinitely.
+New files will go to the same directory as the initial one and will have names suffixed with
+the date and time of their creation.
+  </para>
+  </refsect1>
   <refsect1 id="params_repl_publish"><title>Parameters</title>
     <refsect2><title>publication</title>
       <para>Publication name.  It must not contain spaces or special symbols.</para></refsect2>
@@ -51,15 +60,6 @@
       publication is created.</para></refsect2>
     <refsect2><title>sync_user</title>
       <para>Local DB account used to replay replication feeds from subscribers (when publication is updateable).</para></refsect2>
-  </refsect1>
-  <refsect1 id="desc_repl_publish"><title>Description</title>
-    <para>
-This function starts a publication and associates a file system file to it.   The file
-will be used to log transaction records associated to the publication.  The server will
-periodically start new files, so that replication log files do not grow indefinitely.
-New files will go to the same directory as the initial one and will have names suffixed with
-the date and time of their creation.
-  </para>
   </refsect1>
   <!-- 3019
   This function doesn't return value

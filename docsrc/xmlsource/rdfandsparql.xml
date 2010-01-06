@@ -188,6 +188,70 @@ all three forms will do since the arguments are expected to be numbers which are
 selves in O, thus the O column unaltered and uncast will do as an argument of arithmetic or numeric
 comparison with, say, SQL literal constants.</para>
 </sect2>
+<sect2 id="rdfsqlsparqlresolve"><title>Programatically resolving DB.DBA.RDF_QUAD.O to SQL</title>
+<para>This section describes how to resolve programatically the internal representation of DB.DBA.RDF_QUAD.O to its SQL value.</para>
+<para>When operating over RDF_QUAD table directly, in order to transform all values obtained from column
+O to the explicit SQL type in a programmatic way, should be used the following hints depending on the case:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>The SQL value can be extracted as <emphasis>__ro2sq(O)</emphasis>.</listitem>
+  <listitem>The datatype can be extracted as <emphasis>DB.DBA.RDF_DATATYPE_OF_OBJ (O)</emphasis> if IRI_ID of the type is enough or <emphasis>__ro2sq ( DB.DBA.RDF_DATATYPE_OF_OBJ(O))</emphasis></listitem>
+  <listitem>The language can be extracted as <emphasis>DB.DBA.RDF_LANGUAGE_OF_OBJ (O)</emphasis>.</listitem>
+</itemizedlist>
+
+<para>It could be helpful to be created an RDF View for a custom table with formats rdfdf:default or rdfdf:default-nullable
+for columns similar to O, and let SPARQL perform the rest.</para>
+
+<para>To track SPARQL, use the following functions:</para>
+
+<programlisting><![CDATA[
+select sparql_to_sql_text ('query text here without a leading SPARQL keyword and trailing semicolon')
+]]></programlisting>
+<para>or</para>
+<programlisting><![CDATA[
+string_to_file ('filename.sql', sparql_to_sql_text ('query text'), -2);
+]]></programlisting>
+<para>So for example to track the following SPARQL query:</para>
+<programlisting><![CDATA[
+SPARQL define input:storage ""
+select distinct ?graph_rvr_fixed
+from <http://www.openlinksw.com/schemas/virtrdf#>
+where { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed }
+]]></programlisting>
+<para>execute</para>
+<programlisting><![CDATA[
+SQL>select sparql_to_sql_text('define input:storage "" select distinct ?graph_rvr_fixed from <http://www.openlinksw.com/schemas/virtrdf#> where { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed }');
+callret
+VARCHAR
+_______________________________________________________________________________
+
+ SELECT  __ro2sq ("s-1-0_rbc"."graph_rvr_fixed") AS "graph_rvr_fixed" FROM (SELECT DISTINCT __rdf_sqlval_of_obj ( /*retval[*/ "s-1-1-t0"."O" /* graph_
+rvr_fixed */ /*]retval*/ ) AS /*tmpl*/ "graph_rvr_fixed"
+    FROM DB.DBA.RDF_QUAD AS "s-1-1-t0"
+    WHERE /* field equal to URI ref */
+        "s-1-1-t0"."G" = __i2idn ( /* UNAME as sqlval */ __box_flags_tweak ( 'http://www.openlinksw.com/schemas/virtrdf#' , 1))
+        AND  /* field equal to URI ref */
+        "s-1-1-t0"."P" = __i2idn ( /* UNAME as sqlval */ __box_flags_tweak ( 'http://www.openlinksw.com/schemas/virtrdf#qmGraphRange-rvrFixedValue' ,
+1))
+OPTION (QUIETCAST)) AS "s-1-0_rbc"
+
+1 Rows. -- 321 msec.
+]]></programlisting>
+<para>or</para>
+<programlisting><![CDATA[
+SQL>string_to_file ('mytest.sql', sparql_to_sql_text ('define input:storage "" select distinct ?graph_rvr_fixed from <http://www.openlinksw.com/schemas/virtrdf#> where { ?qmv virtrdf:qmGraphRange-rvrFixedValue ?graph_rvr_fixed }'), -2);
+]]></programlisting>
+<para>As result will be created file with the given name, i.e. mytest.sql and its content should be:</para>
+<programlisting><![CDATA[
+ SELECT  __ro2sq ("s-1-0_rbc"."graph_rvr_fixed") AS "graph_rvr_fixed" FROM (SELECT DISTINCT __rdf_sqlval_of_obj ( /*retval[*/ "s-1-1-t0"."O" /* graph_rvr_fixed */ /*]retval*/ ) AS /*tmpl*/ "graph_rvr_fixed"
+    FROM DB.DBA.RDF_QUAD AS "s-1-1-t0"
+    WHERE /* field equal to URI ref */
+        "s-1-1-t0"."G" = __i2idn ( /* UNAME as sqlval */ __box_flags_tweak ( 'http://www.openlinksw.com/schemas/virtrdf#' , 1))
+        AND  /* field equal to URI ref */
+        "s-1-1-t0"."P" = __i2idn ( /* UNAME as sqlval */ __box_flags_tweak ( 'http://www.openlinksw.com/schemas/virtrdf#qmGraphRange-rvrFixedValue' , 1))
+OPTION (QUIETCAST)) AS "s-1-0_rbc"
+]]></programlisting>
+</sect2>
 <sect2 id="rdfxmlschemacompat"><title>Special Cases and XML Schema Compatibility</title>
 <para>We note that since we store numbers as the equivalent SQL binary type, we do not preserve the distinction of byte, boolean etc. These all become integer. If preserving such detail is for some reason important, then storage as a typed string is possible but is not done at present for reasons of compactness and performance.</para>
 </sect2>
@@ -3339,7 +3403,7 @@ Clear <http://mygraph.com> -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting></listitem>
-   <listitem>To load the kidehe.n3 file execute:
+   <listitem>To load the kidehen.n3 file execute:
 <programlisting><![CDATA[
 SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3")
@@ -4211,41 +4275,37 @@ ORDER BY
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
+<para><emphasis>Example for count of physical triples in http://mygraph.com</emphasis></para>
 <programlisting><![CDATA[
 SPARQL
 SELECT COUNT (*)
   FROM <http://mygraph.com>
  WHERE {?s ?p ?o}
-
--- Returns the count of physical triples in http://mygraph.com.
 ]]></programlisting>
-
+<para><emphasis>Example for count of O's for each distinct P</emphasis></para>
 <programlisting><![CDATA[
 SPARQL define input:inference "http://mygraph.com"
 SELECT ?p COUNT (?o)
   FROM <http://mygraph.com>
  WHERE {?s ?p ?o}
-
--- Returns the count of O's for each distinct P.
 ]]></programlisting>
-
+<para><emphasis>Example for count of triples, including inferred triples and the count of
+distinct O values.</emphasis></para>
 <programlisting><![CDATA[
 SPARQL define input:inference "http://mygraph.com"
 SELECT COUNT (?p) COUNT (?o) COUNT (DISTINCT ?o)
  FROM <http://mygraph.com>
 WHERE {?s ?p ?o}
-
--- returns the count of triples, including inferred triples and the count of distinct O values.
 ]]></programlisting>
-
+<para><emphasis>Example for get number of distinct bindings of ?s ?p ?o.</emphasis></para>
 <programlisting><![CDATA[
 SPARQL define input:inference "http://mygraph.com"
 SELECT count distinct ?s ?p ?o
   FROM <http://mygraph.com>
  WHERE {?s ?p ?o}
-
--- Returns the number of distinct bindings of ?s ?p ?o.
 ]]></programlisting>
+<para><emphasis>Example for get counts and total prices of ordered items, grouped by item status.
+</emphasis></para>
 <programlisting><![CDATA[
 SPARQL
 prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
@@ -4256,8 +4316,6 @@ WHERE {
       tpch:lineextendedprice ?extendedprice ;
       tpch:linestatus ?status .
   }
-
--- Get counts and total prices of ordered items, grouped by item status.
 ]]></programlisting>
    <para><emphasis>Example: A dataset of people, some duplicated</emphasis></para>
    <para>Suppose there is a dataset with many people, some of them sharing the same name. To list them we would, ideally, execute the query:
@@ -4323,6 +4381,24 @@ SELECT
            ?person2 foaf:name ?name .
            ?person2 foaf:mbox_sha1sum ?mail2 } }
  }
+]]></programlisting>
+<para><emphasis>Example quering dbpedia</emphasis></para>
+<para>The following example demonstrate how to query dbpedia. Suppose there is local onotlogy,
+which has a datatype property hasLocation with a string containing city names. The query below finds
+which of those cities are in dbpedia:</para>
+<programlisting><![CDATA[
+SPARQL
+PREFIX dbpprop: <http://dbpedia.org/property/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX vocab:<http://myexample.com/localOntology.rdf>
+PREFIX dbpedia: <http://dbpedia.org/>
+PREFIX dbpres: <http://dbpedia.org/resource/>
+SELECT ?city
+WHERE
+  {
+    ?sub :location ?city .
+    FILTER(bif:exists(( ASK { ?subdb a dbo:City . ?subdb dbpprop:officialName ?city })))
+  }
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
@@ -32127,6 +32203,92 @@ with G.</para>
 system. In that case one may wish to declare a separate storage that consists of only RDF Views made
 by that application and define <emphasis>input:storage</emphasis> in appropriate row of
 <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis>.</para>
+</sect2>
+<sect2 id="rdfperfdumpandreloadgraphs"><title>Dump and Reload Graphs</title>
+In order to dump all graphs with extension exclude those graphs of a certain type by using a
+sparql ask query, you may use the following script sequence:
+<programlisting><![CDATA[
+create procedure dump_graphs (in dir varchar := 'dumps', in file_length_limit integer := 1000000000)
+{
+  declare inx int;
+  inx := 1;
+  set isolation = 'uncommitted';
+  for (select * from (sparql define input:storage "" select distinct ?g { graph ?g { ?s ?p ?o } . filter ( ?g != virtrdf: ) } ) as sub option (loop)) do
+    {
+      dump_one_graph ("g", sprintf ('%s/graph%06d_', dir, inx), file_length_limit);
+      inx := inx + 1;
+    }
+}
+;
+
+create procedure dump_one_graph (in srcgraph varchar, in out_file varchar, in file_length_limit integer := 1000000000)
+{
+  declare file_name varchar;
+  declare env, ses any;
+  declare ses_len, max_ses_len, file_len, file_idx integer;
+  set isolation = 'uncommitted';
+  max_ses_len := 10000000;
+  file_len := 0;
+  file_idx := 1;
+  file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+  string_to_file (file_name || '.graph', srcgraph, -2);
+  string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s\n', srcgraph, cast (now() as varchar)), -2);
+  --env := vector (dict_new (16000), 0, '', '', '', 0, 0);
+  env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
+  ses := string_output ();
+  for (select * from (sparql define input:storage "" select ?s ?p ?o { graph `iri(?:srcgraph)` { ?s ?p ?o } } ) as sub option (loop)) do
+    {
+      http_ttl_triple (env, "s", "p", "o", ses);
+      ses_len := length (ses);
+      if (ses_len > max_ses_len)
+        {
+          file_len := file_len + ses_len;
+          if (file_len > file_length_limit)
+            {
+              http (' .\n', ses);
+              string_to_file (file_name, ses, -1);
+              file_len := 0;
+              file_idx := file_idx + 1;
+              file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+              string_to_file (file_name, sprintf ('# Dump of graph <%s>, as of %s (part %d)\n', srcgraph, cast (now() as varchar), file_idx), -2);
+              env := vector (dict_new (16000), 0, '', '', '', 0, 0);
+            }
+          else
+            string_to_file (file_name, ses, -1);
+          ses := string_output ();
+        }
+    }
+  if (length (ses))
+    {
+      http (' .\n', ses);
+      string_to_file (file_name, ses, -1);
+    }
+}
+;
+
+create procedure load_graphs (in dir varchar := 'dumps/')
+{
+  declare arr any;
+  declare g varchar;
+
+  arr := sys_dirlist (dir, 1);
+  log_enable (2, 1);
+  foreach (varchar f in arr) do
+    {
+      if (f like '*.ttl')
+	{
+	  declare continue handler for sqlstate '*'
+	    {
+	      log_message (sprintf ('Error in %s', f));
+	    };
+  	  g := file_to_string (dir || '/' || f || '.graph');
+	  DB.DBA.TTLP_MT (file_open (dir || '/' || f), g, g, 255);
+	}
+    }
+  exec ('checkpoint');
+}
+;
+]]></programlisting>
 </sect2>
 <sect2 id="rdfperfcost"><title>Erroneous Cost Estimates and Explicit Join Order</title>
 

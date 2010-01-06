@@ -41,11 +41,8 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-<para>
-    substring returns  a substring of string str. The start index is 1 based. The substring is sublen characters long.
-
-
-</para>
+<para>Returns a substring of string str. The start index is 1 based.
+The substring is sublen characters long.</para>
 <para>
 This function follows SQL 92.
 </para>

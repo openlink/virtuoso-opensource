@@ -40,7 +40,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title>
+  <refsect1 id="desc_regexp_like"><title>Description</title>
 <para>The source_string supports character datatypes (CHAR, VARCHAR2, CLOB,
 NCHAR, NVARCHAR2, and NCLOB but not LONG).  The pattern parameter is another
 name for the regular expression.  match_parameter allows optional parameters such
@@ -70,7 +70,7 @@ control over case-sensitivity. </para>
   <refsect1 id="ret_regexp_like"><title>Returns</title>
   <para></para>
   </refsect1>
- <refsect1 id="examples"><title>Examples</title>
+ <refsect1 id="examples_regexp_like"><title>Examples</title>
     <example id="ex_regexp_like">
 <title>Examples</title>
 <para>The following SQL query's WHERE clause shows the REGEXP_LIKE operator,

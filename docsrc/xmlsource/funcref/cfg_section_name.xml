@@ -39,6 +39,11 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_section_name"><title>Description</title>
+    <para>Returns the name of section specified by the index
+    (begins from zero). If the index can reference a section, the that
+    section name is returned, otherwise returns zero on error.</para>
+  </refsect1>
   <refsect1 id="params_section_name"><title>Parameters</title>
     <refsect2><title>path</title>
       <para>Name of the INI file.</para>
@@ -49,11 +54,6 @@
   </refsect1>
   <refsect1 id="ret_section_name"><title>Return Values</title>
     <para>An <type>varchar</type> containing the name of section.</para>
-  </refsect1>
-  <refsect1 id="desc_section_name"><title>Description</title>
-    <para>Returns the name of section specified by the index
-    (begins from zero). If the index can reference a section, the that
-    section name is returned, otherwise returns zero on error.</para>
   </refsect1>
   <refsect1 id="examples_section_name"><title>Examples</title>
     <example id="ex_cfg_section_name"><title>Simple examples</title>

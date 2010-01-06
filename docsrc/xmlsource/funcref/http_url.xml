@@ -40,6 +40,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http_url"><title>Description</title>
+    <para>The <function>http_url</function> is used to write to an HTTP
+    client (when in a VSP context) or a specified string output stream.
+    <function>http_url</function> uses URL escapes for special
+    characters.</para>
+  </refsect1>
   <refsect1 id="params_http_url"><title>Parameters</title>
     <refsect2><title>val_expr</title>
       <para>A value expression. May be any scalar expression. If
@@ -66,12 +72,6 @@
   </refsect1>
   <refsect1 id="ret_http_url"><title>Return Values</title>
     <para>None</para>
-  </refsect1>
-  <refsect1 id="desc_http_url"><title>Description</title>
-    <para>The <function>http_url</function> is used to write to an HTTP
-    client (when in a VSP context) or a specified string output stream.
-    <function>http_url</function> uses URL escapes for special
-    characters.</para>
   </refsect1>
    <refsect1 id="errors_http_url"><title>Errors</title>
     <table><title>Errors signalled by <function>http_url</function></title>

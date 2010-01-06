@@ -42,13 +42,11 @@
 </refsynopsisdiv>
 
   <refsect1 id="desc_vsp_calculate_digest"><title>Description</title>
-      <para>
-	  The vsp_calculate_digest() function is used to calculate on server-side a digest
-	  to perform a HTTP digest authentication. 
-	  When the authentication type is 'digest' the function will return a md5 checksum based on 
-	  credentials , user name and password. The checksum calculation will be made as
-	  required for HTTP Digest authentication to compare against 'response' element of
-	  credentials.  If the authentication is basic a NULL will be returned. 
+      <para>The vsp_calculate_digest() function is used to calculate on server-side a digest to perform a
+HTTP digest authentication. When the authentication type is 'digest' the function will return a md5
+checksum based on credentials, user name and password. The checksum calculation will be made as required
+for HTTP Digest authentication to compare against 'response' element of credentials. If the authentication
+is basic a NULL will be returned.
       </para>
   </refsect1>
   

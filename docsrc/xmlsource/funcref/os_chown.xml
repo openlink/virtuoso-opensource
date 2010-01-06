@@ -40,18 +40,7 @@
 	    </funcprototype>
 	</funcsynopsis>
     </refsynopsisdiv>
-    <refsect1 id="params"><title>Parameters</title>
-	<refsect2><title>path</title>
-	    <para><type>varchar</type> relative path.</para>
-	</refsect2>
-	<refsect2><title>username</title>
-	    <para><type>varchar</type> the name of the OS user to own the file.</para>
-	</refsect2>
-	<refsect2><title>groupname</title>
-	    <para><type>varchar</type> the name of the OS group to own the file.</para>
-	</refsect2>
-    </refsect1>
-    <refsect1 id="desc"><title>Description</title>
+    <refsect1 id="desc_os_chown"><title>Description</title>
     <para>This function requires dba privileges.</para>
 	<para><function>os_chown</function> set the owning user/group of an OS file
 	    by calling the system function chown() with the arguments supplied.</para>
@@ -65,6 +54,17 @@
 	<para>The DirsAllowed and DirsDenied lists in Parameters section of the
 	    virtuoso configuration file (virtuoso.ini by default) are used to control
 	    disk access. </para>
+    </refsect1>
+    <refsect1 id="params"><title>Parameters</title>
+	<refsect2><title>path</title>
+	    <para><type>varchar</type> relative path.</para>
+	</refsect2>
+	<refsect2><title>username</title>
+	    <para><type>varchar</type> the name of the OS user to own the file.</para>
+	</refsect2>
+	<refsect2><title>groupname</title>
+	    <para><type>varchar</type> the name of the OS group to own the file.</para>
+	</refsect2>
     </refsect1>
     <refsect1 id="examples"><title>Examples</title>
 	<example id="ex_os_chown"><title>Simple example</title>

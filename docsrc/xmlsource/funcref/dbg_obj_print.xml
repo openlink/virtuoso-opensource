@@ -39,18 +39,18 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_dbg_obj_print"><title>Description</title>
+    <para><function>dbg_obj_print</function> prints a variable number of
+    arguments onto the system console (stdout) of Virtuoso server, each
+    argument in its own native format, on the same line, which is followed
+    by one newline. </para>
+  </refsect1>
   <refsect1 id="params_dbg_obj_print"><title>Parameters</title>
     <para><function>dbg_obj_print</function> takes a variable number of any
     type.</para>
   </refsect1>
   <refsect1 id="ret_dbg_obj_print"><title>Return Values</title>
     <para>None</para>
-  </refsect1>
-  <refsect1 id="desc_dbg_obj_print"><title>Description</title>
-    <para><function>dbg_obj_print</function> prints a variable number of
-    arguments onto the system console (stdout) of Virtuoso server, each
-    argument in its own native format, on the same line, which is followed
-    by one newline. </para>
   </refsect1>
   <refsect1 id="errors_dbg_obj_print"><title>Errors</title>
     <table><title>Errors signalled by</title>

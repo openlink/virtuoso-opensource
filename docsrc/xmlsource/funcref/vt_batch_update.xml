@@ -42,11 +42,11 @@
   </refsynopsisdiv>
   <refsect1 id="desc_vt_batch_update"><title>Description</title>
 	<para>
-This function controls the time of update of a text index.  If flag is ON, changes are accumulated into a change tracking table and applied as a batch.  If flag is OFF, the text index is updated in the same transaction as the indexed data itself. 
-
-The change tracking table is automatically created and is named   VTLOG_&lt;q&gt;_&lt;o&gt;_&lt;table&gt;, in the qualifier and
-owner of the indexed table, where q, o and table are the qualifier, owner
-and name of the table.
+This function controls the time of update of a text index. If flag is ON, changes are accumulated
+into a change tracking table and applied as a batch. If flag is OFF, the text index is updated
+in the same transaction as the indexed data itself. The change tracking table is automatically
+created and is named VTLOG_&lt;q&gt;_&lt;o&gt;_&lt;table&gt;, in the qualifier and owner of
+the indexed table, where q, o and table are the qualifier, owner and name of the table.
 The changes accumulated into that table can be explicitly applied to the
 index using the VT_INC_INDEX_&lt;q&gt;_&lt;o&gt;_&lt;table&gt; function.
 </para>

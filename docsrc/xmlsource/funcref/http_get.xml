@@ -43,6 +43,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http_get"><title>Description</title>
+<para>http_get returns a varchar containing the body of the
+requested target_uri or NULL if the body is not received.</para>
+  </refsect1>
   <refsect1 id="params_http_get"><title>Parameters</title>
     <refsect2><title>target_uri</title>
 <para>HTTP target in form http://&lt;target_host&gt;:&lt;target_port&gt;/&lt;path&gt;
@@ -105,10 +109,6 @@ HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
 	</tbody>
       </tgroup>
     </table>
-  </refsect1>
-  <refsect1 id="desc_http_get"><title>Description</title>
-<para>http_get returns a varchar containing the body of the
-requested target_uri or NULL if the body is not received.</para>
   </refsect1>
   <refsect1 id="examples_http_get"><title>Examples</title>
   <example id="ex_http_get"><title>Using http_get()</title>

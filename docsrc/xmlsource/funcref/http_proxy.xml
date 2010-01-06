@@ -40,6 +40,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http_proxy"><title>Description</title>
+  <para>
+This function is used to retrieve content from a foreign host and send
+the response to the HTTP client of the page calling this.  This is useful for re-routing a request to another server in the middle of a VSP page.
+</para>
+  </refsect1>
   <refsect1 id="params_http_proxy"><title>Parameters</title>
     <refsect2><title>host</title>
 <para>The fully-qualified host name or alias.  If a target port is specified the
@@ -56,12 +62,6 @@ sent to the target server without any conversion.
 In the case of posting of forms this parameter can contain the form data
 as specified in HTML standards.
 </para></refsect2>
-  </refsect1>
-  <refsect1 id="desc_http_proxy"><title>Description</title>
-  <para>
-This function is used to retrieve content from a foreign host and send
-the response to the HTTP client of the page calling this.  This is useful for re-routing a request to another server in the middle of a VSP page.
-</para>
   </refsect1>
   <refsect1 id="examples_http_proxy"><title>Examples</title>
   <example id="ex_http_proxy"><title>Retrieving Current Path of Request</title>

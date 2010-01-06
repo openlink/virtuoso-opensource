@@ -47,7 +47,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_load_rdfxml">
     <title>Description</title>
-    <para></para>
+    <para>Parses the content of RDF/XML text as a sequence of separate RDF triples.</para>
   </refsect1>
   <refsect1 id="params_rdf_load_rdfxml">
     <title>Parameters</title>

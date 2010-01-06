@@ -38,6 +38,13 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http_request_get"><title>Description</title>
+      <para>
+	  This function is used to access the HTTP request line within VSP or VSPX
+	  context. It returns 'CGI' style variables for protocol version, HTTP method
+	  and query string.
+  </para>
+  </refsect1>
   <refsect1 id="params_http_request_get"><title>Parameters</title>
     <refsect2><title>variable_name</title>
 	<para> A string designating what to return.
@@ -55,13 +62,6 @@
 	</tgroup>
     </table>
 </refsect2>
-  </refsect1>
-  <refsect1 id="desc_http_request_get"><title>Description</title>
-      <para>
-	  This function is used to access the HTTP request line within VSP or VSPX 
-	  context. It returns 'CGI' style variables for protocol version, HTTP method 
-	  and query string.
-  </para>
   </refsect1>
 </refentry>
 

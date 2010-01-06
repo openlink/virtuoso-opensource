@@ -45,6 +45,17 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_exec">
+    <title>Description</title>
+    <para>This function provides dynamic SQL capabilities in Virtuoso PL.
+    The first argument is an arbitrary SQL statement, which may contain
+    parameter placeholders. The function returns as output parameters a
+    SQL state, error message, column metadata and result set rows if
+    the statement is a select.</para>
+    <para>A stored procedure can be invoked by exec but a procedure's
+    result set will not be received in the rows output parameter but rather
+    sent to the client.</para>
+  </refsect1>
   <refsect1 id="params_exec"><title>Parameters</title>
     <refsect2><title><parameter>str</parameter></title>
       <para>A <type>varchar</type> containing arbitrary SQL using ?'s for parameter markers.</para>
@@ -135,17 +146,6 @@
     <refsect2><title>cursor_handle</title>
       <para>The cursor handle for use with related functions.</para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="desc_exec">
-    <title>Description</title>
-    <para>This function provides dynamic SQL capabilities in Virtuoso PL.
-    The first argument is an arbitrary SQL statement, which may contain
-    parameter placeholders. The function returns as output parameters a
-    SQL state, error message, column metadata and result set rows if
-    the statement is a select.</para>
-    <para>A stored procedure can be invoked by exec but a procedure's
-    result set will not be received in the rows output parameter but rather
-    sent to the client.</para>
   </refsect1>
   <refsect1 id="examples_exec"><title>Examples</title>
     <example id="ex_exec"><title>Procedure Example</title>

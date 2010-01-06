@@ -40,7 +40,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title>
+  <refsect1 id="desc_regexp_match"><title>Description</title>
 <para>
 The regexp_match function returns a copy of substring of string
 <parameter>str</parameter> which matches the regular expression pattern.</para>
@@ -69,7 +69,7 @@ response.  Otherwise this function operates in narrow mode by default.</para>
   <refsect1 id="ret_regexp_match"><title>Returns</title>
   <para>This function returns the a substring matching the regular expression.</para>
   </refsect1>
- <refsect1 id="examples"><title>Examples</title>
+ <refsect1 id="examples_regexp_like"><title>Examples</title>
     <example id="ex_regexp_match">
 <title>Examples</title>
 <programlisting>

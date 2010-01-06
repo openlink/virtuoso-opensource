@@ -41,6 +41,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_vector">
+    <title>Description</title>
+      <para><function>vector</function> returns a new vector (one-dimensional array) constructed from the given arguments.</para>
+  </refsect1>
   <refsect1 id="params_vector"><title>Parameters</title>
     <refsect2><title><parameter>elem1..n</parameter></title>
       <para>
@@ -52,10 +56,6 @@
   <refsect1 id="ret_vector"><title>Return Values</title>
     <para>A vector (heterogeneous array) of as many elements as there
     were arguments containing copies of the arguments.</para>
-  </refsect1>
-  <refsect1 id="desc_vector">
-    <title>Description</title>
-      <para><function>vector</function> returns a new vector (one-dimensional array) constructed from the given arguments.</para>
   </refsect1>
   <refsect1 id="examples_vector"><title>Examples</title>
     <example id="ex_vector_1"><title>Inspecting a vector with dbg_obj_print</title>

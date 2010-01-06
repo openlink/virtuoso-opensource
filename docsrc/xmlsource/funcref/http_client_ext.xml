@@ -48,6 +48,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http_client_ext"><title>Description</title>
+    <para>This function is used to perform HTTP operations to retrieve
+generic content and/or to perform generic operations over HTTP/HTTPS protocols.
+It also supports HTTP authentication based on username/password credentials.</para>
+    <para>If the URL is https: an no x509 certificate given then it will operate as https client w/o client certificate.</para>
+  </refsect1>
   <refsect1 id="params_http_client_ext"><title>Parameters</title>
     <refsect2><title>url</title>
       <para>target URL (http: or https: are supported)</para></refsect2>
@@ -91,13 +97,6 @@ HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
 ]]></programlisting>
       <para>Exception could be also 127.0.0.* i.e. there could have also wildcard.</para>
     </refsect2>
-
-  </refsect1>
-  <refsect1 id="desc_http_client_ext"><title>Description</title>
-    <para>This function is used to perform HTTP operations to retrieve
-generic content and/or to perform generic operations over HTTP/HTTPS protocols.
-It also supports HTTP authentication based on username/password credentials.</para>
-    <para>If the URL is https: an no x509 certificate given then it will operate as https client w/o client certificate.</para>
   </refsect1>
 </refentry>
 

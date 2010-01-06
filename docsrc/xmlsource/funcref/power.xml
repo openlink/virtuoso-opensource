@@ -40,6 +40,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_power"><title>Description</title>
+    <para><function>power</function> raises x to the yth power and returns
+    the value as a IEEE 64-bit float.</para>
+  </refsect1>
   <refsect1 id="params_power"><title>Parameters</title>
     <refsect2><title>x</title>
       <para><type>double precision</type></para>
@@ -50,10 +54,6 @@
   </refsect1>
   <refsect1 id="ret_power"><title>Return Values</title>
     <para><function>power</function> returns a IEEE 64-bit float.</para>
-  </refsect1>
-  <refsect1 id="desc_power"><title>Description</title>
-    <para><function>power</function> raises x to the yth power and returns
-    the value as a IEEE 64-bit float.</para>
   </refsect1>
   <refsect1 id="examples_power"><title>Examples</title>
     <example id="ex_power"><title>Stored Procedure Example</title>

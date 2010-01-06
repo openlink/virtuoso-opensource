@@ -61,7 +61,6 @@
   </refsect1>
   <refsect1 id="desc_encode_b32_num"><title>Description</title>
       <para>These functions can be used to shorten IDs or other potentially large numbers for human input/output by converting them to base32 encoding using the RFC4648 base32 alphabet. This alphabet uses only upper case characters A-Z and numbers 2-7 (0 and 1 are eliminated so they won't be confused with the characters O and I, respectively.)</para>
-      <
   </refsect1>
   <refsect1 id="examples_encode_b32_num"><title>Examples</title>
     <example id="ex_encode_base32_1"><title>Simple Example</title>

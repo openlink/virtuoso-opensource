@@ -40,8 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_xenc_key_exists">
     <title>Description</title>
-    <para>The function checks if key with given name exists 
-	in the user's keys.</para>
+    <para>The function checks if key with given name exists in the user's keys.</para>
   </refsect1>
   <refsect1 id="params_xenc_key_exists">
     <title>Parameters</title>

@@ -38,7 +38,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title>
+  <refsect1 id="desc_system"><title>Description</title>
 	<para>
 The system function will run a shell command from SQL. The shell command is executed
 in the server's current directory as the user that owns the database server process.

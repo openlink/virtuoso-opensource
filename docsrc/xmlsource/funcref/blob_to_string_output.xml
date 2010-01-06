@@ -38,14 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_blob_to_string_output"><title>Parameters</title>
-    <refsect2><title><parameter>blob</parameter></title>
-      <para><type>blob handle</type> (long varbinary or long varchar), <type>string_output</type> or <type>XPER</type> (persistent XML)</para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_blob_to_string_output"><title>Return types</title>
-    <para><type>string output object</type> contents of <parameter>blob</parameter>.</para>
-  </refsect1>
   <refsect1 id="desc_blob_to_string_output">
     <title>Description</title>
     <para>Although primarily used for converting <type>blobs</type> (<type>long varbinary</type>, 
@@ -53,6 +45,14 @@
 	<function>blob_to_string_output</function> may also be used to convert from 
 	<type>wide string</type>, <type>persistent XML (XPER)</type> and 
 	<type>string_output streams</type>.</para>
+  </refsect1>
+  <refsect1 id="params_blob_to_string_output"><title>Parameters</title>
+    <refsect2><title><parameter>blob</parameter></title>
+      <para><type>blob handle</type> (long varbinary or long varchar), <type>string_output</type> or <type>XPER</type> (persistent XML)</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_blob_to_string_output"><title>Return types</title>
+    <para><type>string output object</type> contents of <parameter>blob</parameter>.</para>
   </refsect1>
   <refsect1 id="errors_blob_to_string_output"><title>Errors</title>
     <table><title>Errors signalled by</title>

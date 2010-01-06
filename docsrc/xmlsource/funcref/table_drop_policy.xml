@@ -39,6 +39,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_table_drop_policy"><title>Description</title>
+	<para>Drops policy function from table.</para>
+  </refsect1>
   <refsect1 id="params_table_drop_policy">
     <title>Parameters</title>
     <refsect2><title>_tb</title>

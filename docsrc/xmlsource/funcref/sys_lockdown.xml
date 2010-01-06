@@ -43,11 +43,10 @@
   <refsect1 id="desc_sys_lockdown">
     <title>Description</title>
     <para>You must have DBA privileges to run that function.</para>
-    <para>Calling this with lock_mode = 1 
-causes  the server not to accept any new client  connections, except ones coming from  localhost (127.0.0.1).
-This will also shut down any other listeners and terminate any possibly pending processing, rolling back all open transactions and disconnecting all clients, except ones from localhost.
-
-Calling thi with lock_mode 0 reverses the effect.
+    <para>Calling this with lock_mode = 1 causes the server not to accept any new client
+connections, except ones coming from localhost (127.0.0.1). This will also shut down any other
+listeners and terminate any possibly pending processing, rolling back all open transactions and
+disconnecting all clients, except ones from localhost. Calling thi with lock_mode 0 reverses the effect.
 </para>
 
   </refsect1>

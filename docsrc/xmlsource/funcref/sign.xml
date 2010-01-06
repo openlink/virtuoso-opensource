@@ -40,8 +40,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-<para>    sign returns either -1, 0 or 1 depending whether its numeric argument is
-    negative, zero or positive.
+<para>sign returns either -1, 0 or 1 depending whether its numeric argument is negative, zero or positive.
 </para>
 <screen>
 sign(-12)			-&gt; -1

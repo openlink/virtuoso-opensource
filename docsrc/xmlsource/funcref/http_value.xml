@@ -41,6 +41,12 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+ <refsect1 id="desc_http_value"><title>Description</title>
+    <para>The <function>http_value</function> is used to write to an HTTP
+    client (when in a VSP context) or a specified string output stream.
+    <function>http_value</function> uses HTML-escapes for characters that
+    should be escaped according to the HTML spec.</para>
+  </refsect1>
   <refsect1 id="params_http_value"><title>Parameters</title>
     <refsect2><title>val_expr</title>
       <para>A value expression. May be any string expression. If
@@ -71,12 +77,6 @@
   </refsect1>
   <refsect1 id="ret_http_value"><title>Return Values</title>
     <para>None</para>
-  </refsect1>
-  <refsect1 id="desc_http_value"><title>Description</title>
-    <para>The <function>http_value</function> is used to write to an HTTP
-    client (when in a VSP context) or a specified string output stream.
-    <function>http_value</function> uses HTML-escapes for characters that
-    should be escaped according to the HTML spec.</para>
   </refsect1>
   <refsect1 id="errors_http_value"><title>Errors</title>
     <table><title>Errors signalled by <function>http_value</function></title>

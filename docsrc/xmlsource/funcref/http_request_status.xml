@@ -38,11 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_http_request_status"><title>Parameters</title>
-    <refsect2><title>status_line</title>
-    <para>String conforming to HTTP/1.1 (see RFC2616).   Examples of possible status lines are: 'HTTP/1.1 200 OK', 'HTTP/1.1 500 Internal Server Error',
-'HTTP/1.1 401 Not found' or 'HTTP/1.1 400 Bad request' etc.</para></refsect2>
-  </refsect1>
   <refsect1 id="desc_http_request_status"><title>Description</title>
     <para>
 This allows a VSP page to control the status sent to the client in the HTTP response.
@@ -52,6 +47,11 @@ The argument will be presented as the first line of the reply instead of the def
     <para>This allows a page to issue redirects, authentication challenges etc.</para>
     <para>Use it with <function>http_headers</function> to control the content of the HTTP reply headers.
   </para>
+  </refsect1>
+  <refsect1 id="params_http_request_status"><title>Parameters</title>
+    <refsect2><title>status_line</title>
+    <para>String conforming to HTTP/1.1 (see RFC2616). Examples of possible status lines are: 'HTTP/1.1 200 OK', 'HTTP/1.1 500 Internal Server Error',
+'HTTP/1.1 401 Not found' or 'HTTP/1.1 400 Bad request' etc.</para></refsect2>
   </refsect1>
 </refentry>
 

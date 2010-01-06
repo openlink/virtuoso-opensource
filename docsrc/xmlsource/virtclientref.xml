@@ -27,10 +27,21 @@
       <title>ADO.Net Data Provider</title>
       <sect2 id="virtclientrefintro">
         <title>Introduction</title>
-        <para>ADO.NET 2.x &amp; 3.x  data providers that provide transparent access to native Virtuoso
-data (SQL, RDF, XML) and 3rd party ODBC and JDBC accessible data sources such as; Oracle (versions
-7.x to 11.x), Microsoft SQL Server (6.x to 2005), IBM DB2 , Sybase (4.2 to 12.x+), IBM Informix
-(5.x to 11.x), Ingres (6.4 to 9.x), Progress (7.x to 10.x), MySQL, PostgreSQL, and Firebird.</para>
+        <para>Virtuoso includes an ADO.NET 2.x &amp; 3.x  data providers compatible with Visual Studio
+2008 and Entity Frameworks, that provides access to native Virtuoso data (SQL, XML, and RDF) in
+addition to any Virtuoso Linked Tables from external <link linkend="vdbengineodbcod">ODBC</link>
+and <link linkend="vdbengineodtjd">JDBC</link> accessible data sources.
+Known-compatible external data sources include <link linkend="vdbenginemc">Oracle (versions 7.x to 11.x)</link>,
+<link linkend="vdbenginemsqls">Microsoft SQL Server (6.x to 2005)</link>,
+<link linkend="vdbenginedb2">IBM DB2</link>, <link linkend="vdbenginesyb">Sybase (4.2 to 15.x)</link>,
+<link linkend="vdbengineinf">IBM Informix (5.x to 11.x)</link>,
+<link linkend="vdbengineing">Ingres (6.4 to 9.x)</link>,
+<link linkend="vdbenginepr">Progress (7.x to 10.x)</link>,
+<link linkend="vdbenginemsql">MySQL</link>,
+<link linkend="vdbenginepsql">PostgreSQL</link> and <link linkend="vdbenginefirebd">Firebird</link>.</para>
+        <para><emphasis>Benefits</emphasis></para>
+        <para>This provider equips Microsoft .NET based applications, development environments,
+and programming languages with conceptual entity-based access to native and heterogeneous data sources.</para>
         <para><emphasis>Features</emphasis></para>
         <itemizedlist mark="bullet">
           <listitem>ADO.NET 3.5 compliance</listitem>
@@ -42,16 +53,20 @@ data (SQL, RDF, XML) and 3rd party ODBC and JDBC accessible data sources such as
           <listitem>High Security</listitem>
           <listitem>Support for Native and 3rd party ODBC and JDBC accessible RDBMS engines and Web Services</listitem>
           <listitem>Tested against all major .NET applications and development environments</listitem>
+          <listitem>Support for Microsoft Siliverlight versions 2 and 3</listitem>
+          <listitem>Support for .Net RIA Services</listitem>
         </itemizedlist>
       </sect2>
       <sect2 id="virtclientrefinstallandconfig">
         <title>Installation &amp; Configuration</title>
         <para>There are two installation types to consider:</para>
         <itemizedlist mark="bullet">
-          <listitem>Installation of the ADO.Net Provider Client only on Windows.</listitem>
-          <listitem>Installation of the ADO.Net Provider Client and Virtuoso Universal Server on Windows.</listitem>
+          <listitem>If you have an existing Virtuoso instance, or will install Virtuoso on a different
+host, you only need to install of the <link linkend="virtclientrefinstallandconfigonwin">ADO.Net Provider Client</link> on the Visual Studio host.</listitem>
+          <listitem>If you have no existing Virtuoso instance, you can
+<link linkend="virtclientrefinstallandconfigvirt">install both the ADO.Net Provider Client and the Virtuoso Universal Server</link> on the Visual Studio host.</listitem>
         </itemizedlist>
-        <sect3 id="virtclientrefinstallandconfigonwin"><title>Installation of the ADO.Net Provider Client only on Windows</title>
+        <sect3 id="virtclientrefinstallandconfigonwin"><title>Installation of the ADO.Net Provider Client on Windows</title>
           <para>The Virtuoso ADO.Net Provider is part of the Virtuoso Client Connectivity Kit installer,
 and if the target Virtuoso Server installation  already exists on the network this is the only component
 that needs to be installed.
@@ -271,6 +286,12 @@ to the remote database schema objects.</para>
   <listitem><link linkend="installvsgrid">Using Visual Studio 2008 to Build a Data Grid Form Application</link></listitem>
   <listitem><link linkend="installvsent">Using Visual Studio 2008 to Build an Entity Frameworks based Windows Form Application</link></listitem>
   <listitem><link linkend="installusado">Using Visual Studio 2008 to Build an ADO.NET Data Services based Application</link></listitem>
+  <listitem><link linkend="installwfas">Windows Form Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</link></listitem>
+  <listitem><link linkend="installcrweb">Web Data Service Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</link></listitem>
+  <listitem><link linkend="installsilver">Creating a Silverlight Application to consume the service</link></listitem>
+  <listitem><link linkend="installnetriadd">Creating A Simple .NET RIA Services Application to Display Data from Virtuoso</link></listitem>
+  <listitem><link linkend="installnetriavd">Creating a .Net RIA Services Application that will Update Virtuoso Data</link></listitem>
+
 </itemizedlist>
         </sect3>
         <sect3 id="virtclientrefprogrammersguideentfr"><title>Using Entity Frameworks, ADO.NET, the Virtuoso Virtual Database Engine</title>

@@ -38,6 +38,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para><function>sqrt</function> calculates the square root of its
+    argument and returns it as a IEEE 64-bit float.</para>
+  </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>x</title>
       <para><type>double precision</type></para>
@@ -45,10 +49,6 @@
   </refsect1>
   <refsect1 id="ret"><title>Return Values</title>
     <para><function>sqrt</function> returns a IEEE 64-bit float.</para>
-  </refsect1>
-  <refsect1 id="desc"><title>Description</title>
-    <para><function>sqrt</function> calculates the square root of its
-    argument and returns it as a IEEE 64-bit float.</para>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_sqrt"><title>Stored Procedure Example</title>

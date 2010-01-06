@@ -41,6 +41,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_vhost_remove"><title>Description</title>
+    <para><function>vhost_remove</function> is used to remove virtual hosts and virtual paths on the Virtuoso HTTP server. Effectively this procedure deletes a row in the table <computeroutput>DB.DBA.HTTP_PATH</computeroutput>.
+Virtuoso supports both flavours of virtual hosting: IP-based and name-based.</para>
+  </refsect1>
   <refsect1 id="params_vhost_remove"><title>Parameters</title>
     <refsect2><title><parameter>vhost</parameter></title>
       <para>A <type>string</type> containing the virtual host name that the
@@ -62,9 +66,6 @@ compilations of VSP files in this domain.  Default value is 0.</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_vhost_remove"><title>Return Types</title><para>The return is VOID.</para></refsect1>
-  <refsect1 id="desc_vhost_remove"><title>Description</title>
-    <para><function>vhost_remove</function> is used to remove virtual hosts and virtual paths on the Virtuoso HTTP server.  Effectively this procedure deletes a row in the table <computeroutput>DB.DBA.HTTP_PATH</computeroutput>.
-Virtuoso supports both flavours of virtual hosting: IP-based and name-based.</para></refsect1>
 <!--
   <refsect1 id="errors_vhost_remove"><title>Errors</title>
     <table><title>Errors signalled by</title>

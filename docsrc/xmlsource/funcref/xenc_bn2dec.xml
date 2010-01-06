@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>xenc_bn2dec</refname>
-    <refpurpose>Prints as a string a big number serialized as binary using base64 encoding</refpurpose>
+    <refpurpose>Prints as a string a big number serialized as binary using base64 encoding.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xenc_bn2dec">
@@ -40,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_xenc_bn2dec">
     <title>Description</title>
-    <para></para>
+    <para>Prints as a string a big number serialized as binary using base64 encoding</para>
   </refsect1>
   <refsect1 id="params_xenc_bn2dec">
     <title>Parameters</title>

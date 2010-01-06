@@ -41,15 +41,10 @@
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
 			<para>    ltrim returns a copy of subsequence of string str with all the characters
-    present in trimchars trimmed off from the beginning. If the second
-    argument is omitted, it is a space ' ' by default.
-</para>
-			<para>
-    rtrim is similar except that it trims from the right.
-</para>
-			<para>
-    trim trims from both ends.
-</para>
+present in trimchars trimmed off from the beginning. If the second argument is omitted, it is a
+space ' ' by default.</para>
+   <para>rtrim is similar except that it trims from the right.</para>
+   <para>trim trims from both ends.</para>
 			<screen>concat('*',trim('   SIMURG   '),'*') -&gt; '*SIMURG*'
 ltrim('AbracadabrA','bAr')  -&gt; 'acadabrA'
 rtrim('AbracadabrA','bAr')  -&gt; 'Abracada'

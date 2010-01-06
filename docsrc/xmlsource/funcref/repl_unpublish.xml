@@ -38,10 +38,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_repl_unpublish"><title>Parameters</title>
-    <refsect2><title>publication</title><para>publication account name.</para></refsect2>
-  </refsect1>
-
   <refsect1 id="desc_repl_pub_add"><title>Description</title>
     <para>
     This function is used to remove from current replication set an existing publication.
@@ -51,6 +47,9 @@
     description entry for that publication will be removed explicitly.
     Any existing grants to the publication being dropped will be revoked.
 </para>
+  </refsect1>
+  <refsect1 id="params_repl_unpublish"><title>Parameters</title>
+    <refsect2><title>publication</title><para>publication account name.</para></refsect2>
   </refsect1>
   <!-- 3019
 

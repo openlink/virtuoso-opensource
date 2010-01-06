@@ -39,6 +39,19 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_http"><title>Description</title>
+    <para><function>http</function> writes <parameter>val_expr</parameter>
+    to HTTP client or, if parameter <parameter>stream</parameter> is given,
+    to the given string output stream.</para>
+    <para><parameter>val_expr</parameter> may be any scalar object, i.e.
+    <type>string</type>, <type>date</type> or <type>number</type> and will
+    automatically be cast to <type>varchar</type> before further processing.
+    http will print out the string without escapes.
+    <link linkend="fn_http_value"><function>http_value</function></link>
+    uses HTML escapes and
+    <link linkend="fn_http_url"><function>http_url</function></link> URL
+    escapes.</para>
+  </refsect1>
   <refsect1 id="params_http"><title>Parameters</title>
     <refsect2><title>val_expr</title>
       <para>A value expression. May be any scalar expression.</para>
@@ -53,19 +66,6 @@
       <link linkend="fn_string_output"><function>string_output</function>
       </link></para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="desc_http"><title>Description</title>
-    <para><function>http</function> writes <parameter>val_expr</parameter>
-    to HTTP client or, if parameter <parameter>stream</parameter> is given,
-    to the given string output stream.</para>
-    <para><parameter>val_expr</parameter> may be any scalar object, i.e.
-    <type>string</type>, <type>date</type> or <type>number</type> and will
-    automatically be cast to <type>varchar</type> before further processing.
-    http will print out the string without escapes.
-    <link linkend="fn_http_value"><function>http_value</function></link>
-    uses HTML escapes and
-    <link linkend="fn_http_url"><function>http_url</function></link> URL
-    escapes.</para>
   </refsect1>
   <refsect1 id="errors_http"><title>Errors</title>
     <table><title>Errors signalled by <function>http</function></title>

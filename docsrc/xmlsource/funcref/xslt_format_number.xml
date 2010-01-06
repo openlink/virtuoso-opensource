@@ -39,6 +39,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>xslt_format_number is an function wrapper for the format-number() XSLT function.</para>
+    <para>It always uses the default formatting parameters described in the XSLT standard.</para>
+  </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title><parameter>number</parameter></title>
       <para>
@@ -51,11 +55,6 @@
   </refsect1>
   <refsect1 id="ret"><title>Return Values</title>
     <para>An <type>string</type> representation of the numeric value of <parameter>number</parameter> converted according to the format <parameter>format_string</parameter>.</para>
-  </refsect1>
-  <refsect1 id="desc"><title>Description</title>
-    <para>xslt_format_number is an function wrapper for the format-number() XSLT function.</para>
-    <para>It always uses the default formatting parameters described in the XSLT standard.</para>
-
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_fn_xslt_format_number_1"><title>Simple examples</title>

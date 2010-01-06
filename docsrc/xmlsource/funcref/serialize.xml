@@ -47,16 +47,13 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-			<para>
-These functions will convert any heterogeneous
+  <para>These functions will convert any heterogeneous
 array or tree of arrays into a binary string and back.  The format
-is platform independent.
-	</para>
+is platform independent.</para>
 			<programlisting>
 deserialize (serialize (x))
 </programlisting>
-			<para>
-is the identity function.
+<para>is the identity function.
 	</para>
 			<para>
 These functions are useful for persisting heterogeneous arrays.

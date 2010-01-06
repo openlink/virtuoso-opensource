@@ -157,7 +157,8 @@
 		engines concurrently.</para>
 		</sect2>
 		<sect2 id="omaildelresrv"><title>Mail Delivery &amp; Retrieval Services</title>
-		<para>Virtuoso can act as an <emphasis>SMTP</emphasis>, <emphasis>POP3</emphasis>, and <emphasis>IMAP4</emphasis> proxy to any email
+		<para>Virtuoso can act as an <emphasis>SMTP</emphasis>, <emphasis>POP3</emphasis>, and
+                <emphasis>IMAP4</emphasis> proxy to any email
 		client. This enables the development and deployment of sophisticated
 		database driven email solutions.</para>
 		</sect2>
@@ -172,5 +173,537 @@
 		enabling creation of new Internet and Intranet News Forums to leverage the
 		global knowledgebase into eBusiness Intelligence.</para>
 		</sect2>
+	</sect1>
+        <sect1 id="virtuosofaq">
+          <title>Virtuoso 6 FAQ</title>
+<para>We have received various inquiries on high-end metadata stores. We will here go through some salient
+questions. The requested features include:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Scaling to trillions of triples</listitem>
+  <listitem>Running on clusters of commodity servers</listitem>
+  <listitem>Running in federated environments, possibly over wide-area networks</listitem>
+  <listitem>Built-in inference</listitem>
+  <listitem>Transactions</listitem>
+  <listitem>Security</listitem>
+  <listitem>Support for extra triple level metadata, such as security attributes</listitem>
+</itemizedlist>
+    <para><emphasis>Questions:</emphasis></para>
+           <sect2 id="virtuosofaq1"><title>What is the storage cost per triple?</title>
+<para>This depends on the index scheme. If indexed 2 ways, assuming that the graph will
+always be stated in queries, this is 31 bytes.</para>
+<para>With 4 indices, supporting queries where the graph can be left unspecified (i.e., triples from
+any graph will be considered in query evaluation), this is 39 bytes. The numbers are measured with
+the LUBM validation data set of 121K triples, with no full-text index on literals.</para>
+<para>With 4 indices and a full text index on all literals, the Billion Triples Challenge data set,
+1115M triples, is about 120 GB of database pages. The database file size is larger due to space in
+reserve and other factors. 120 GB is the number to use when assessing RAM-to-disk ratio, i.e., how
+much RAM the system ought to have in order to provide good response. This data set is a heterogeneous
+collection including social network data, conversations harvested from the Web, DBpedia, Freebase,
+etc., with relatively numerous and long text literals.</para>
+<para>The numbers do not involve any database page stream compression such as gzip. Using such
+compression does not save in terms of RAM because cached pages must be kept uncompressed but
+will cut the disk usage to about half.</para>
+	   </sect2>
+           <sect2 id="virtuosofaq2"><title>What is the cost to insert a triple (for the insertion
+itself, as well as for updating any indices)?</title>
+<para>The more triples are inserted at a time, the faster this goes. Also, the more concurrent
+triple insertions are going on, the better the throughput. When loading data such as the US Census,
+a cluster of 2 commodity servers can insert up to 100,000 triples per second.</para>
+<para>A single 4-core machine can load 1 billion triples of LUBM data at an average rate
+of 36K triples per second. This is limited by disk.</para>
+	   </sect2>
+           <sect2 id="virtuosofaq3"><title>What is the cost to delete a triple (for the deletion
+itself, as well as for updating any indices)?</title>
+<para>
+The delete cost is similar to insert cost.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq4"><title>What is the cost to search on a given property?</title>
+<para>If we are looking for equality matches, a single 2GHz core can do about 250,000 single triple
+random lookups per second as long as disk reads are not involved. If each triple requires a disk
+seek the number is naturally lower.
+</para>
+<para>Parallelism depends on the query. With a query like counting all x and y such that x knows
+y and y knows x, we get up to 3.4 million single-triple lookups-per-second on a cluster of 2 8-core
+Xeon servers. With complex nested sub-queries the parallelism may be less.
+</para>
+<para>Lookups involving ranges of values, such as ranges of geographical coordinates or dates use
+an index, since quads are indexed in a manner that collates in the natural order of the data type.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq5"><title>What data types are supported?</title>
+<para>Virtuoso supports all RDF data types, including language-tagged and XML schema typed strings
+as native data types. Thus there is no overhead converting between RDF data types and types
+supported by the underlying DBMS.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq6"><title>What inferencing is supported?</title>
+<para>Subclass, subproperty, identity by inverse-functional properties, and owl:sameAs are
+processed at run time if an inference context option is specified in the query.
+</para>
+<para>There is a general-purpose transitivity feature that can be used for a
+wide variety of graph algorithms. For example:
+</para>
+<programlisting><![CDATA[
+SELECT ?friend
+WHERE
+  {
+    <alice> foaf:knows ?friend option (transitive)
+  }
+]]></programlisting>
+<para>would return all the people directly or indirectly known by &lt;alice&gt;.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq7"><title>Is the inferencing dynamic, or is an extra
+step required before inferencing can be used?</title>
+<para>The mentioned types of inferencing are enabled by a switch in the query and are done at
+run-time, with no step for materialization of entailed triples needed. The pattern:
+</para>
+<programlisting><![CDATA[
+{?s a <type>}
+]]></programlisting>
+<para>would iterate over all the RDFS subclasses of &lt;type&gt; and look for subjects with this type.
+</para>
+<para>The pattern:
+</para>
+<programlisting><![CDATA[
+{<thing> a ?class}
+]]></programlisting>
+<para>will, if the match of ?class has superclasses, also return the superclasses even though the
+superclass membership is not physically stored for each superclass.
+</para>
+<para>Of course, one can always materialize entailed triples by running SPARQL/SPARUL statements
+to explicitly add any implied information.
+</para>
+<para>If two subjects have the same inverse functional property with the same value, they will be
+considered the same. For example, if two people have the same email address, they will be
+considered the same.
+</para>
+<para>If two subjects are declared to be owl:sameAs, either directly or through a chain of x owl:sameAs
+y, y owl:sameAs z, and so on, they will be considered the same.
+</para>
+<para>These features can be individually enabled and disabled. They all have some run time cost, hence
+they are optional. The advantage is that no preprocessing of the data itself is needed before querying,
+and the data does not get bigger. This is important, especially if the database is very large and
+queries touch only small parts of it. In such cases, materializing implied triples can be very costly.
+See discussion at <ulink url="http://www.openlinksw.com/weblog/oerling/?id=1498">E Pluribus Unum</ulink>
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq8"><title>Do you support full-text search?</title>
+<para>Virtuoso has an optional full-text index on RDF literals. Searching for text matches using
+the SPARQL regex feature is very inefficient in the best of cases. This is why Virtuoso offers a special
+<emphasis>bif:contains</emphasis> predicate similar to the SQL <emphasis>contains</emphasis> predicate
+of many relational databases. This supports a full-text query language with proximity, and/or/and-not,
+wildcards, etc.
+</para>
+<para>While the full-text index is a general-purpose SQL feature in Virtuoso, there is extra RDF-specific
+intelligence built into it. One can, for example, specify which properties are indexed, and within which
+graphs this applies.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq9"><title>What programming interfaces are supported? Do you
+support standard SPARQL protocol?</title>
+<para>Virtuoso supports the standard SPARQL protocol.
+</para>
+<para>Virtuoso offers drivers for the Jena, Sesame, and Redland frameworks. These allow using
+Virtuoso's store and SPARQL implementation as the back end of Jena, Sesame, or Redland applications.
+Virtuoso will then do the query optimization and execution. Jena and Sesame drivers come standard;
+contact us about Redland.
+</para>
+<para>Virtuoso SPARQL can be used through any SQL call level interface (CLI) supported by Virtuoso
+(i.e., ODBC, JDBC, OLE-DB, ADO.NET, XMLA). All have suitable extensions for RDF specific data types
+such as IRIs and typed literals. In this way, one can write, for example, PHP web pages with SPARQL
+queries embedded, just using the SQL tools. Prefixing a SQL query with the keyword "sparql" will
+invoke SPARQL instead of SQL, through any SQL client API.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq10"><title>How can data be partitioned across multiple servers?</title>
+<para>
+Virtuoso Cluster partitions each index of all tables containing RDF data separately. The partitioning is by
+hash. The result is that the data is evenly distributed over the selected number of servers. Immediately
+consecutive triples are generally in the same partition, since the low bits of IDs do not enter in into
+the partition hash. This means that key compression works well.
+</para>
+<para>
+Since RDF tables are in the end just SQL tables, SQL can be used for specifying a non-standard
+partitioning scheme. For example, one could dedicate one set of servers for one index, and
+another set for another index. Special cases might justify doing this.
+</para>
+<para>
+With very large deployments, using a degree of application-specific data structures may be advisable.
+See "Does Virtuoso support property tables".
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq11"><title>How many triples can a single server handle?</title>
+<para>
+With free-form data and text indexing enabled, 500M triples per 16G RAM can be a ballpark guideline.
+If the triples are very short and repetitive, like the LUBM test data, then 16G per one billion
+triples is a possibility. Much depends on the expected query load. If queries are simple lookups,
+then less memory per billion triples is needed. If queries will be complex (analytics, join sequences,
+and aggregations all over the data set), then relatively more RAM is necessary for good performance.
+</para>
+<para>
+The count of quads has little impact on performance as long as the working set fits in memory. If
+the working set is in memory, there may be 15-20% difference between a million and a billion triples.
+If the database must frequently go to disk, this degrades performance since one can easily do 2000
+random accesses in memory in the time it takes to do one random access from disk. But working-set
+characteristics depend entirely on the application.
+</para>
+<para>
+Whether the quads in a store all belong to one graph or any number of graphs makes no difference.
+There are Virtuoso instances in regular online use with hundreds of millions of triples, such as
+DBpedia and the <ulink url="http://neurocommons.org/page/Main_Page">Neurocommons</ulink> databases.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq12"><title>What is the performance impact of going from the
+billion to the trillion triples?</title>
+<para>
+Performance dynamics change when going from a single server to a cluster. If each partition is around a
+billion triples in size, then the single triple lookup takes the same time, but there is cluster
+interconnect latency added to the mix.
+</para>
+<para>
+On the other hand, queries that touch multiple partitions or multiple triples in a partition will do
+this in parallel and usually with a single message per partition. Thus throughput is higher.
+</para>
+<para>
+In general terms, operations on a single triple at a time from a single thread are penalized and
+operations on hundreds or more triples at a time win. Multiuser throughput is generally better
+due to more cores and more memory, and latency is absorbed by having large numbers of concurrent requests.
+</para>
+<para>
+See <ulink url="http://www.openlinksw.com/weblog/oerling/?id=1487">a sample of SPARQL scalability</ulink>.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq13"><title>Do you support additional metadata for triples,
+such as time-stamps, security tags etc?</title>
+<para>
+Since quads (triple plus graph) are stored in a regular SQL table with special data types, changing the
+table layout to add a column is possible. This column would not however be visible to SPARQL without
+some extra tuning. For coarse grain provenance and security information, we recommend doing this at
+the graph level, where triples that belong together are tagged with the same provenance or security
+are in the same graph. The graph can then have the relevant metadata as its properties.
+</para>
+<para>
+If tagging at the single triple level is needed, this will most often not be needed for all triples.
+Hence altering the table for all triples may not be the best choice. Making a special table that
+has the graph, subject, predicate and object of the tagged triple as a key and the tag data as a
+dependent part may be more efficient. Also, this table could be more easily accessed from SPARQL.
+</para>
+<para>
+Using the RDF reification vocabulary is not recommended as a first choice but is possible without
+any alterations.
+</para>
+<para>
+Alterations of this nature are possible but we recommend contacting us for specifics. We can
+provide consultancy on the best way to do this for each application. Altering the storage layout
+without some extra support from us is not recommended.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq14"><title>Should we use RDF for our large metadata store?
+What are the alternatives?</title>
+<para>
+If the application has high heterogeneity of schema and frequent need for adaptation, then RDF is
+recommended. The alternative is making a relational database.
+</para>
+<para>
+Making a custom non-RDF object-attribute-value representation on Virtuoso or some other RDBMS is
+possible but not recommended.
+</para>
+<para>
+The reason for this is that this would miss many of the optimizations made specifically for RDF,
+use of the SPARQL language, inference, compatibility with diverse browsers and front end tools,
+etc. Not to mention interoperability and joinability with the body of linked data. Even if the
+application is strictly private, using entity names and ontologies from the open world can still
+have advantages.
+</para>
+<para>
+If some customization to the quad (triple plus graph layout) is needed, we can provide consultancy
+on how to do this while staying within the general RDF framework and retaining all the interoperability
+benefits.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq15"><title>How multithreaded is Virtuoso?</title>
+<para>
+All server and client components are multithreaded, using pthreads on Unix/Linux, Windows native on
+Windows. Multithread/multicore scalability is good; see
+<ulink url="http://www.openlinksw.com/weblog/oerling/?id=1409">BSBM</ulink>
+</para>
+<para>
+In the case of Virtuoso Cluster, in order to have the maximum number of threads on a single query,
+we recommend that each server on the cluster be running one Virtuoso process per 1.2 cores.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq16"><title>Can multiple servers run off a single shared disk
+database?</title>
+<para>This might be possible with some customization but this is not our preferred way. Instead, we can
+store selected indices in duplicate or more copies inside a clustered database. In this way, all
+servers can have their own disk. Each key of each index will belong to one partition but each
+partition will have more than one physical copy, each on a different server. The cluster query
+logic will perform the load balancing. On the update side, the cluster will automatically do a
+distributed transaction with two phase commit to keep the duplicates in sync.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq17"><title>Can Virtuoso run on a SAN?</title>
+<para>
+Yes. Unlike Oracle RAC, for example, Virtuoso Cluster does not require a SAN. Each server has its
+own database files and is solely responsible for these. In this way, having shared disk among all
+servers is not required. Running on a SAN may still be desirable for administration reasons. If
+using a SAN, the connection to the SAN should be high performance, such as Infiniband.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq18"><title>How does Virtuoso join across partitions?</title>
+<para>
+Partitioning is entirely transparent to the application. Virtuoso has a highly optimized
+message-flow between cluster nodes that combines operations into large batches and evaluates
+conditions close to the data. See a sample of RDF scaling.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq19"><title>Does Virtuoso support federated triple stores? If
+there are multiple SPARQL end points, can Virtuoso be used to do queries joining between these?</title>
+<para>
+This is a planned extension. The logic for optimizing message flow between multiple end-points on
+a wide-area network is similar to the logic for message-optimization on a cluster. This will
+allow submitting a query with a list of end-points. The query will then consider triples from
+each of the end points, as if the content of all the end points were in a single store.
+</para>
+<para>
+End-point meta information, such as voiD descriptions of the graphs in the end-points, may be
+used to avoid sending queries to end points that are known not to have a certain type of data.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq20"><title>How many servers can a cluster contain?</title>
+<para>
+There is no fixed limit. If you have a large cluster installed, you can try Virtuoso there.
+Having an even point-to-point latency is desirable.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq21"><title>How do I reconfigure a cluster, adding and
+removing machines, etc?</title>
+<para>
+We are working on a system whereby servers can be added and removed from a cluster during
+operation and no repartitioning of the data is needed.
+</para>
+<para>
+In the first release, the number of server processes that make up the cluster is set when
+creating the database. These processes with their database files can then be moved between
+machines but this requires stopping the cluster and updating configuration files.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq22"><title>How will Virtuoso handle regional clusters?</title>
+<para>
+Performance of a cluster depends on the latency and bandwidth of the interconnect. At least dual
+1Gbit ethernet is recommended for each node. Thus a cluster should be on a single local or system
+area network.
+</para>
+<para>
+If regional copies are needed, we would replicate between clusters by asynchronous log shipping.
+This requires some custom engineering.
+</para>
+<para>
+When a transaction is committed at one site, it is logged and sent to the subscribing sites if
+they are online. If there is no connection, the subscribing sites will get the data from the log.
+This scheme now works between single Virtuoso servers, and needs some custom development to be
+adapted to clusters.
+</para>
+<para>
+If replicating all the data of one site to another site is not possible, then application logic
+should be involved. Also, if consolidated queries should be made against large,
+geographically-separated clusters, then it is best to query them separately and merge the
+results in the application. All depends on the application level rules on where data resides.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq23"><title>Is there a mechanism for terminating long running queries?</title>
+<para>
+Virtuoso SPARQL and SQL offer an "anytime" option that will return partial results after a configurable
+timeout.
+</para>
+<para>
+In this way, queries will return in a predictable time and indicate whether the results are complete
+or not, as well as give a summary of resource utilization.
+</para>
+<para>
+This is especially useful for publishing a SPARQL endpoint where a single long running query could
+impact the performance of the whole system. This timeout significantly reduces the risk of denial
+of service.
+</para>
+<para>
+This is also more user-friendly than simply timing-out a query after a set period and returning
+an error. With the anytime option, the user gets a feel for what data may exist, including whether
+any data exists at all. This feature works with arbitrarily complex queries, including aggregation,
+GROUP BY, ORDER BY, transitivity, etc.
+</para>
+<para>
+Since the Virtuoso SPARQL endpoint supports open authentication (OAuth), the authentication can be
+used for setting timeouts, so as to give different service to different users.
+</para>
+<para>
+It is also possible to set a timeout that will simply abort a query or an update transaction if it
+fails to terminate in a set time.
+</para>
+<para>
+Disconnecting the client from the server will also terminate any processing on behalf of that client,
+regardless of timeout settings.
+</para>
+<para>
+The SQL client call-level interfaces (ODBC, JDBC, OLE-DB, ADO.NET, XMLA) each support a cancel call
+that can terminate a long running query from the application, without needing to disconnect.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq24"><title>Can the user be asynchronously notified when a
+long running query terminates?</title>
+<para>
+There is no off-the-shelf API for this but making an adaptation of the SPARQL endpoint that
+could proceed after the client disconnected and, for example, could send results by email is
+trivial. Since SOAP and REST Web services can be programmed directly in Virtuoso's stored
+procedure language, implementing and exposing this type of application logic is easy.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq25"><title>How many concurrent queries can Virtuoso handle?</title>
+<para>
+There is no set limit. As with any DBMS, response times get longer if there is severe congestion.
+</para>
+<para>
+For example, having 2 or 3 concurrent queries per core is a good performance point which will keep
+all parts of the system busy. Having more than this is possible but will not increase overall throughput.
+</para>
+<para>
+With a cluster, each server has both HTTP and SQL listeners, so clients can be evenly spread across
+all nodes. In a heavy traffic Web application, it is best to have a load balancer in front of the
+HTTP endpoints to divide the connections among the servers and to keep some cap on the number of
+concurrently running requests, enforcing a maximum request-rate per client IP address, etc.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq26"><title>What is the relative performance of SPARQL queries
+vs native relational queries?</title>
+<para>
+This is application dependent. In Virtuoso, SPARQL and SQL share the same query execution engine,
+query optimizer, and cost model. If data is highly regular (i.e., a good fit for relational
+representation), and if queries typically access most of the row, then SQL will be more efficient.
+If queries are unpredictable, data is ragged, schema changes frequent, or inference is needed,
+then RDF will do relatively better.
+</para>
+<para>
+The recent Berlin SPARQL Benchmark shows some figures comparing Virtuoso SQL and SPARQL and SPARQL
+in front of relational representation. However, the test workload is heavily biased in favor of
+relational. See also BSBM: MySQL vs Virtuoso.
+</para>
+<para>
+With the TPC-H workload, relationally stored data, and SPARQL mapped to SQL, we find that with about
+half the queries there is no significant cost to SPARQL. With some queries there is additional
+overhead because the mapping does not produce a SQL query identical to that specified in the benchmark.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq27"><title>Does Virtuoso Support Property Tables?</title>
+<para>
+For large applications, we would recommend RDF whenever there is significant variability of schema, but
+would still use an application-specific, relational style representation for those parts of the data
+that are regular in format. This is possible without loss of flexibility for the variable-schema part.
+However, this will introduce relational-style restrictions on the regular data; for example, a person
+could only have a single date-of-birth by design. In many cases, such restrictions are quite acceptable.
+Querying will still take place in SPARQL, and the representation will be transparent.
+</para>
+<para>
+A relational table where the primary key is the RDF subject and where columns represent single-valued
+properties is usually called a property table. These can be defined in a manner similar to defining RDF
+mappings of relational tables.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq28"><title>What performance metrics does Virtuoso offer?</title>
+<para>There is an extensive array of performance metrics. This includes:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Cluster status summary with thread counts, CPU utilization, interconnect traffic, clean and
+dirty cache pages, virtual memory swapping warning, etc. This is either a cluster total or a total with
+breakdown per cluster node.</listitem>
+  <listitem>Disk access, lock contention, general concurrency, and access count per index </listitem>
+  <listitem>Statistics on memory usage for disk caching index-by-index, cache replacement statistics, disk
+random and sequential read times</listitem>
+  <listitem>Count of random, sequential index access, disk access, lock contention, cluster interconnect
+traffic per query/client </listitem>
+  <listitem>Detailed query-execution plans are available through the
+<link linkend=""><function>explain</function></link> function</listitem>
+</itemizedlist>
+	   </sect2>
+           <sect2 id="virtuosofaq29"><title>What support do you provide for concurrent/multithreaded
+operation? Is your interface thread-safe?</title>
+<para>
+All client interfaces and server-side processes are multithreaded. As usual, each thread of an application
+should use a different connection to the database.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq30"><title>What level of ACID properties is supported?</title>
+<para>
+Virtuoso supports all 4 isolation levels from dirty read to serializable, for both relational and RDF data.
+</para>
+<para>
+The recommended default isolation is read-committed, which offers a clean historical read of data that has
+uncommitted updates. This mode is similar to the Oracle default isolation and guarantees that no uncommitted
+data is seen, and that no read will block waiting for a lock held by another client.
+</para>
+<para>
+There is transaction logging and roll forward recovery, with two phase commit used in Virtuoso Cluster
+if an update transaction modifies more than one server.
+</para>
+<para>
+For RDF workloads which typically are not transactional and have large bulk loads, we recommend running
+in a "row autocommit" mode without transaction logging. This virtually eliminates log contention but
+still guarantees consistent results of multithreaded bulk loads.
+</para>
+<para>
+Setting this up requires some consultancy and custom development but is well worthwhile for large projects.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq31"><title>Do you provide the ability to atomically add a set of
+triples, where either all are added or none are added?</title>
+<para>
+Yes. Doing this with millions of triples per transaction may run out of rollback space. Also,
+there is risk of deadlock if multiple such inserts run at the same time. For good concurrency,
+the inserts should be of moderate size. As usual, deadlocks are resolved by aborting one of the
+conflicting transactions.
+</para>
+	   </sect2>
+          <sect2 id="virtuosofaq32"><title>Do you provide the ability to add a set of triples,
+respecting the isolation property (so concurrent accessors either see none of the triple values,
+or all of them)?</title>
+<para>Yes. The reading client should specify serializable isolation and the inserting client should
+perform the insert as a transaction, no row autocommit mode.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq33"><title>What is the time to start a database, create/open a graph?</title>
+<para>
+Starting a Virtuoso server process takes a few seconds. Making a new graph takes no time beyond the
+time to insert the triples into it. Once the server process(es) are running, all the data is online.
+</para>
+<para>
+With high-traffic applications, reaching cruising speed may sometimes take a long time, specially if
+the load is random-access intensive. Filling gigabytes of RAM with cached disk pages takes a long
+time if done a page at a time. To alleviate this, Virtuoso pre-reads 2MB-sized extents instead of
+single pages if there is repeated access to the same extent within a short time. Thus cache warm-up
+times are shortened.
+</para>
+	   </sect2>
+           <sect2 id="virtuosofaq33"><title>What sort of security features are built into Virtuoso?</title>
+<para>
+For SQL, we have the standard role-based security and an Oracle-style row-level security (policy) feature.
+</para>
+<para>
+For SPARQL, users may have read or update roles at the level of the quad store.
+</para>
+<para>
+With RDF, a graph may be owned by a user. The user may specify read and write privileges on the graph.
+These are then enforced for SPARUL (the SPARQL update language) and SPARQL.
+</para>
+<para>
+When an RDF graph is based on relationally stored data in Virtuoso or another RDBMS through Virtuoso's
+SQL federation feature (i.e., if the graph is an RDF View of underlying SQL data), then all relational
+security controls apply.
+</para>
+<para>
+Further, due to the dual-nature of Virtuoso, sophisticated ontology-based security models are feasible.
+Such models are not currently used by default, but they are achievable with our consultancy.
+</para>
+	   </sect2>
 	</sect1>
 </chapter>

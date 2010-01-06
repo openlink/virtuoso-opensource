@@ -41,6 +41,20 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_rnext"><title>Description</title>
+    <para>Use <function>rnext</function> in combination with
+    <link linkend="fn_rmoreresults"><function>rmoreresults</function></link> to
+    iterate over a result set produced by a statement run in a remote data source
+    with <link linkend="fn_rexecute"><function>rexecute</function></link>.</para>
+    <simplelist>
+      <member>open a cursor with <link linkend="fn_rexecute">rexecute</link>.
+      </member>
+      <member>loop over the results with rnext</member>
+      <member>if rmoreresults does not return an error or SQL_NO_DATA_FOUND
+      continue the loop with rnext, otherwise</member>
+      <member>close the cursor with rclose</member>
+    </simplelist>
+  </refsect1>
   <refsect1 id="params_rnext"><title>Parameters</title>
     <refsect2><title>cursor_handle</title>
       <para>The <type>long</type> cursor handle as obtained from rexecute.</para>
@@ -59,20 +73,6 @@
   </refsect1>
   <refsect1 id="ret_rnext"><title>Return Values</title>
     <para>All data is returned in output parameters.</para>
-  </refsect1>
-  <refsect1 id="desc_rnext"><title>Description</title>
-    <para>Use <function>rnext</function> in combination with
-    <link linkend="fn_rmoreresults"><function>rmoreresults</function></link> to
-    iterate over a result set produced by a statement run in a remote data source
-    with <link linkend="fn_rexecute"><function>rexecute</function></link>.</para>
-    <simplelist>
-      <member>open a cursor with <link linkend="fn_rexecute">rexecute</link>.
-      </member>
-      <member>loop over the results with rnext</member>
-      <member>if rmoreresults does not return an error or SQL_NO_DATA_FOUND
-      continue the loop with rnext, otherwise</member>
-      <member>close the cursor with rclose</member>
-    </simplelist>
   </refsect1>
   <refsect1 id="seealso_rnext"><title>See Also</title>
     <para><link linkend="fn_rexecute"><function>rexecute</function></link>,

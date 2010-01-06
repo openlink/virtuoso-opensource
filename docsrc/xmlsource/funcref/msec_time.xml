@@ -38,6 +38,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_msec_time"><title>Description</title>
+    <para><function>msec_time</function> returns the number of milliseconds since system epoch. It is useful for benchmarking purposes, timing operations, etc.</para>
+  </refsect1>
   <refsect1 id="params_msec_time"><title>Parameters</title>
     <refsect2><title>No parameters</title>
       <para>The function does not take parameters.</para>
@@ -45,9 +48,6 @@
   </refsect1>
   <refsect1 id="ret_msec_time"><title>Return Values</title>
     <para>A 32-bit <type>integer</type> no. of milliseconds since system epoch.</para>
-  </refsect1>
-  <refsect1 id="desc_msec_time"><title>Description</title>
-    <para><function>msec_time</function> returns the number of milliseconds since system epoch. It is useful for benchmarking purposes, timing operations, etc.</para>
   </refsect1>
   <refsect1 id="examples_msec_time"><title>Examples</title>
     <example id="ex_msec_time_1"><title>Simple example</title>

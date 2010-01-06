@@ -38,6 +38,10 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
+  <refsect1 id="desc_log10"><title>Description</title>
+    <para><function>log10</function> calculates the 10-based logarithm of its
+    argument and returns it as a IEEE 64-bit float.</para>
+  </refsect1>
   <refsect1 id="params_log10"><title>Parameters</title>
     <refsect2><title>x</title>
       <para><type>double precision</type></para>
@@ -45,10 +49,6 @@
   </refsect1>
   <refsect1 id="ret_log10"><title>Return Values</title>
     <para>Double precision.</para>
-  </refsect1>
-  <refsect1 id="desc_log10"><title>Description</title>
-    <para><function>log10</function> calculates the 10-based logarithm of its
-    argument and returns it as a IEEE 64-bit float.</para>
   </refsect1>
   <refsect1 id="examples_log10"><title>Examples</title>
     <example id="ex_log10"><title>Simple Examples</title>

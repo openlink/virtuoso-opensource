@@ -79,16 +79,6 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="params_equ"><title>Parameters</title>
-    <refsect2>
-      <title><parameter>arg1</parameter>, <parameter>arg2</parameter></title>
-      <para><type>integer</type>, <type>float</type>, <type>double
-      precision</type>, <type>varchar</type> or <type>NULL</type>.</para>
-    </refsect2>
-  </refsect1>
-  <refsect1 id="ret_equ"><title>Return Values</title>
-    <para>An <type>integer</type> value of 1 or 0 is returned.</para>
-  </refsect1>
   <refsect1 id="desc_equ"><title>Description</title>
     <para>These functions return 1 if their first argument is less than (lt),
     less than or equivalent (lte), greater than (gt), greater than or
@@ -101,6 +91,16 @@
     allow these operators to be used on the left side of
     <function>FROM</function> keyword in a <function>SELECT</function>
     statement.</para>
+  </refsect1>
+  <refsect1 id="params_equ"><title>Parameters</title>
+    <refsect2>
+      <title><parameter>arg1</parameter>, <parameter>arg2</parameter></title>
+      <para><type>integer</type>, <type>float</type>, <type>double
+      precision</type>, <type>varchar</type> or <type>NULL</type>.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_equ"><title>Return Values</title>
+    <para>An <type>integer</type> value of 1 or 0 is returned.</para>
   </refsect1>
   <refsect1 id="examples_equ"><title>Examples</title>
     <example id="ex_equ"><title>Simple Example</title>
