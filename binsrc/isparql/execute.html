@@ -50,6 +50,7 @@ function init() {
   if ("query" in opts) { p.query = opts.query; }
 //  if ("limit" in opts) { p.limit = opts.limit; }
   if ("defaultGraph" in opts) { p.defaultGraph = opts.defaultGraph; }
+  if ("default-graph-uri" in opts) { p.defaultGraph = opts["default-graph-uri"] }
   if ("endpoint" in opts) { p.endpoint = opts.endpoint; }
   if ("maxrows" in opts) { p.maxrows = opts.maxrows; }
   if ("resultview") { p.resultView = opts.resultview; }
