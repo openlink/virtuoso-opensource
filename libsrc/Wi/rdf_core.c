@@ -88,7 +88,7 @@ uriqa_iri_is_local (query_instance_t *qi, const char *iri)
 /*                   01234567 */
   if (strncmp (iri, "http://", 7))
     return 0;
-  if (NULL != qi->qi_client->cli_http_ses)
+  if (qi && NULL != qi->qi_client->cli_http_ses)
     {
       ws_connection_t *ws = qi->qi_client->cli_ws;
       const char *host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
