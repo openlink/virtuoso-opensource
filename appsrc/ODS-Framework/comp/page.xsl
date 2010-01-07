@@ -144,7 +144,7 @@
 
 <xsl:template match="vm:popup_page_wrapper">
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  <div id="copyright_ctr">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:login-top-button">

@@ -204,7 +204,7 @@
     </a>
    </div>
     <a target="_blank" href="http://www.openlinksw.com"><img src="./images/web_24.png" border="0" alt="OpenLink Home" title="OpenLink Home" /> OpenLink Home</a> | <a target="_blank" href="http://www.openlinksw.com/virtuoso"><img src="./images/web_24.png" border="0" alt="Virtuoso Home" title="Virtuoso Home" /> Virtuoso Home</a> | <a target="_blank" href="mailto:support@openlinksw.com"><img src="./images/mail_24.png" border="0" alt="Technical Support" title="Technical Support" /> Technical Support</a> | <a target="_blank" href="http://www.openlinksw.com/main/contactu.html"><img src="./images/mail_24.png" border="0" alt="Contact Us" title="Contact Us" /> Contact Us</a>
-    <p class="copyright">Copyright &copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</p>
+    <p class="copyright">Copyright &copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</p>
   </div>
   </body>
 </html>

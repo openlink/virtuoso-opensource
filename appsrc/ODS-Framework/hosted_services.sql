@@ -1900,12 +1900,12 @@ create procedure INIT_SERVER_SETTINGS ()
 	     'Enter your Member ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 2000-2009 OpenLink Software',
+	     'Copyright &copy; 1998-2010 OpenLink Software',
 	     '',
 	     sys_stat ('st_host_name')
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 2000-2009 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2010 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =

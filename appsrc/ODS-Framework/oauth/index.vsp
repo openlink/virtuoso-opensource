@@ -28,7 +28,7 @@
 	</a>
     </div>
 	<div id="FT_RC">
-	  <div id="copyright_ctr">Copyright &copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+	  <div id="copyright_ctr">Copyright &copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
         </div> <!-- FT_R -->
 </div>
 	</body>

@@ -92,7 +92,7 @@
     </xsl:choose>
   </xsl:element>
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  <div id="copyright_ctr">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:pagewrapper">
@@ -274,7 +274,7 @@
       <tr>
 	<td id="copyright_ctr" colspan="2">
 	  <!-- Virtuoso Universal Server <?V sys_stat ('st_dbms_ver') ?> -->
-	  Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
+	  Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
 	  &#160;
 	</td>
       </tr>
@@ -416,7 +416,7 @@
         </div>
       </div> <!-- RB -->
       <div id="copyright_ctr">
-        Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software
+        Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software
       </div>
     </div> <!-- RC -->
 </xsl:template>

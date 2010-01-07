@@ -26,7 +26,7 @@
         <a class="m_e" href="http://www.openlinksw.com/main/contactu.htm">Contact Us</a> |
 	<a class="m_e" href="http://virtuoso.openlinksw.com/interop/index.htm#">Privacy</a>
       </div>
-      <div class="copyright">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
+      <div class="copyright">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
 </xsl:template>
 <!--=========================================================================-->
 <xsl:template name="layout-header">
