@@ -371,6 +371,9 @@
        where WAUI_U_ID = U_ID
          and U_NAME = self.u_name;
 
+      if (length (self.wpage) = 0)
+        self.wpage := SIOC..person_iri (SIOC..user_obj_iri (self.u_name), '');
+
       declare tmp any;
 
       tmp := WA_USER_VISIBILITY(self.u_name);

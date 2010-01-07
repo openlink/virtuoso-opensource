@@ -1597,8 +1597,6 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (
   declare uname varchar;
   declare rc integer;
   declare aps_id, apc_id, id, _u_id, ord int;
-  declare msg varchar;
-
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -1606,25 +1604,22 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
-  msg := '';
   rc := -1;
   rulelist_name := trim (rulelist_name);
   if (length (rulelist_name) = 0)
-    {
-      msg := 'The ruleset name cannot be empty';
-      goto ret;
-    }
+    signal ('22023', 'The ruleset name cannot be empty');
 
-  aps_id := ANN_GETID ('S');
-  apc_id := coalesce ((select top 1 APC_ID from DB.DBA.SYS_ANN_PHRASE_CLASS where APC_OWNER_UID = _u_id), ANN_GETID ('C'));
+  rules := json_parse (rules);
+  if (not isarray (rules))
+    signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
+  aps_id := DB.DBA.ANN_GETID ('S');
+  apc_id := coalesce ((select top 1 APC_ID from DB.DBA.SYS_ANN_PHRASE_CLASS where APC_OWNER_UID = _u_id), DB.DBA.ANN_GETID ('C'));
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
   declare exit handler for sqlstate '23000'
     {
-      rollback work;
-      msg := 'The ruleset name is already used, please enter unique rule name';
-      rc := -1;
-      goto ret;
+    signal ('22023', 'The ruleset name is already used, please enter unique rule name');
     };
 
   insert into DB.DBA.tag_rule_set (trs_name, trs_owner, trs_is_public, trs_apc_id, trs_aps_id)
@@ -1640,14 +1635,16 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (
   delete from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = aps_id;
 
   insert soft DB.DBA.SYS_ANN_PHRASE_CLASS (APC_ID, APC_NAME, APC_OWNER_UID, APC_READER_GID, APC_CALLBACK, APC_APP_ENV)
-      values (apc_id, uname || '\'s Tagging Rule Class', _u_id, http_nogroup_gid (), null, null);
+    values (apc_id, uname || '''s Tagging Rule Class', _u_id, http_nogroup_gid (), null, null);
 
-  insert soft DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID,
-				APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
-      values (aps_id, uname || '\'s ' || rulelist_name, _u_id, http_nogroup_gid (), apc_id, 'x-any', null, 10000, 1);
+  insert soft DB.DBA.SYS_ANN_PHRASE_SET (APS_ID, APS_NAME, APS_OWNER_UID, APS_READER_GID, APS_APC_ID, APS_LANG_NAME, APS_APP_ENV, APS_SIZE, APS_LOAD_AT_BOOT)
+    values (aps_id, uname || '''s ' || rulelist_name, _u_id, http_nogroup_gid (), apc_id, 'x-any', null, 10000, 1);
 
   foreach (any r in rules) do
     {
+    if (not isarray (r) or (length (r) <> 3))
+      signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
       insert into DB.DBA.tag_rules (rs_trs, rs_query, rs_tag, rs_is_phrase)
 	  values (id, r[0], r[1], r[2]);
       if (r[2] = 1)
@@ -1659,8 +1656,8 @@ create procedure ODS.ODS_API."user.tagging_rules.add" (
 	  DB.DBA.tt_query_tag_content (r[0], _u_id, '', '', serialize (vector (id, r[1], r[2])));
 	}
     }
-ret:
-  return ods_serialize_int_res (rc, msg);
+
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -1670,8 +1667,6 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (
   declare uname varchar;
   declare rc integer;
   declare _aps_id, _apc_id, id, _u_id int;
-  declare msg varchar;
-
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -1679,24 +1674,12 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
-  msg := '';
   rc := -1;
   rulelist_name := trim (rulelist_name);
   if (length (rulelist_name) = 0)
-    {
-      msg := 'The ruleset name cannot be empty';
-      goto ret;
-    }
+    signal ('22023', 'The ruleset name cannot be empty');
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
-  declare exit handler for sqlstate '23000'
-    {
-      rollback work;
-      msg := 'The ruleset name is already used, please enter unique rule name';
-      rc := -1;
-      goto ret;
-    };
 
   select trs_id, trs_apc_id, trs_aps_id
     into id, _apc_id, _aps_id
@@ -1709,9 +1692,9 @@ create procedure ODS.ODS_API."user.tagging_rules.delete" (
   delete from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = _aps_id;
   delete from DB.DBA.SYS_ANN_PHRASE_CLASS  where APC_ID = _apc_id and APC_OWNER_UID = _u_id;
   delete from DB.DBA.SYS_ANN_PHRASE_SET where APS_ID = _aps_id and APS_OWNER_UID = _u_id;
+
   rc := row_count ();
-ret:
-  return ods_serialize_int_res (rc, msg);
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -1722,8 +1705,6 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (
   declare uname varchar;
   declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
-  declare msg varchar;
-
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -1731,24 +1712,16 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
-  rulelist_name := trim (rulelist_name);
-  msg := '';
   rc := -1;
+  rulelist_name := trim (rulelist_name);
   if (length (rulelist_name) = 0)
-    {
-      msg := 'The ruleset name cannot be empty';
-      goto ret;
-    }
+    signal ('22023', 'The ruleset name cannot be empty');
+
+  rules := json_parse (rules);
+  if (not isarray (rules))
+    signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
-  declare exit handler for sqlstate '23000'
-    {
-      rollback work;
-      msg := 'The ruleset name is already used, please enter unique rule name';
-      rc := -1;
-      goto ret;
-    };
 
   select trs_id, trs_apc_id, trs_aps_id
     into id, apc_id, aps_id
@@ -1763,6 +1736,9 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (
 
   foreach (any r in rules) do
     {
+    if (not isarray (r) or (length (r) <> 3))
+      signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
       insert into DB.DBA.tag_rules (rs_trs, rs_query, rs_tag, rs_is_phrase)
 	  values (id, r[0], r[1], r[2]);
       if (r[2] = 1)
@@ -1775,7 +1751,7 @@ create procedure ODS.ODS_API."user.tagging_rules.update" (
 	}
     }
 ret:
-  return ods_serialize_int_res (rc, msg);
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -1784,10 +1760,8 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.add" (
   in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
-  declare msg varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1796,26 +1770,30 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.add" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
-  msg := '';
-  rc := -1;
+  rules := json_parse (rules);
+  if (not isarray (rules))
+    signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   ap_name := sprintf ('Hyperlinking-%d', _u_id);
   aps_id := (select APS_ID from DB.DBA.SYS_ANN_PHRASE_SET where APS_OWNER_UID = _u_id and APS_NAME = ap_name);
   if (aps_id is null)
     {
       declare c_id, s_id int;
-      c_id := ANN_GETID ('C');
-      s_id := ANN_GETID ('S');
+    c_id := DB.DBA.ANN_GETID ('C');
+    s_id := DB.DBA.ANN_GETID ('S');
       DB.DBA.ANN_PHRASE_CLASS_ADD_INT (c_id, ap_name, _u_id, http_nogroup_gid (), null, null);
       DB.DBA.ANN_PHRASE_SET_ADD_INT (s_id, ap_name, _u_id, http_nogroup_gid (), c_id, 'x-any', null, 100000, 1);
       aps_id := s_id;
     }
-  foreach (any elm in rules) do
+  foreach (any r in rules) do
     {
-      ap_add_phrases (aps_id, vector (vector (elm[0], elm[1])));
+    if (not isarray (r) or (length (r) <> 2))
+      signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
+    ap_add_phrases (aps_id, vector (vector (r[0], r[1])));
     }
-  rc := 1;
-  return ods_serialize_int_res (rc, msg);
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -1828,7 +1806,6 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.update" (in rules any) __s
 create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc integer;
   declare aps_id, apc_id, id, _u_id int;
   declare ap_name varchar;
   declare exit handler for sqlstate '*'
@@ -1839,15 +1816,21 @@ create procedure ODS.ODS_API."user.hyperlinking_rules.delete" (in rules any) __s
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  rules := json_parse (rules);
+  if (not isarray (rules))
+    signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   ap_name := sprintf ('Hyperlinking-%d', _u_id);
   aps_id := (select APS_ID from DB.DBA.SYS_ANN_PHRASE_SET where APS_OWNER_UID = _u_id and APS_NAME = ap_name);
-  foreach (any elm in rules) do
+  foreach (any r in rules) do
     {
-      delete from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = aps_id and AP_TEXT = elm[0] and AP_CHKSUM = elm[1];
+    if (not isarray (r) or (length (r) <> 2))
+      signal ('22023', 'Bad rules parameter - must be valid JSON array of arrays');
+
+    delete from DB.DBA.SYS_ANN_PHRASE where AP_APS_ID = aps_id and AP_TEXT = r[0] and AP_CHKSUM = r[1];
     }
-  rc := 1;
-  return ods_serialize_int_res (rc);
+  return ods_serialize_int_res (1);
 }
 ;
 
