@@ -50,7 +50,7 @@
 
 <xsl:template match="vm:popup_page_wrapper">
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div class="copyright">Virtuoso Universal Server <?V sys_stat('st_dbms_ver') ?>. Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
+  <div class="copyright">Virtuoso Universal Server <?V sys_stat('st_dbms_ver') ?>. Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:pagewrapper">
@@ -143,7 +143,7 @@
         <a href="http://www.openlinksw.com/main/contactu.htm">Contact Us</a> |
 	<a href="http://virtuoso.openlinksw.com/interop/index.htm#">Privacy</a>
       </div>
-      <div class="copyright">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
+      <div class="copyright">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
       <xsl:processing-instruction name="vsp">
 		declare ht_stat varchar;
 		ht_stat := http_request_status_get ();

@@ -85,7 +85,7 @@
       </tr>
     </tbody>
   </table>
-  <div class="copyright">Copyright &amp;copy; 1999-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
+  <div class="copyright">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:pagebody">
