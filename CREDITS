@@ -143,6 +143,14 @@ SHA1 Javascript
     <http://pajhome.org.uk/crypt/md5>
 
 
+DocBook stylesheets
+<http://sourceforge.net/projects/docbook/>
+
+    Virtuoso uses the DocBook stylesheets to generate HTML based documentation.
+
+    DocBook is distributable under the terms of the MIT/X Consortium License.
+
+
 Optional functionality
 ======================
 
