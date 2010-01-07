@@ -2093,26 +2093,9 @@
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
                             <span id="span_ab_hState">
-                              <![CDATA[
                                 <script type="text/javascript">
-                                  function categoryCombo ()
-                                  {
-                                    var cc = new OAT.Combolist([], "<?V self.v_hState ?>");
-                                    cc.input.name = "ab_hState";
-                                    cc.input.id = "ab_hState";
-                                    cc.input.size = "60";
-                                    $("span_ab_hState").appendChild(cc.div);
-                                    cc.addOption("");
-                                    <?vsp
-                                      for (select * from WA_PROVINCE where WP_COUNTRY = self.ab_hCountry.ufl_value) do
-                                      {
-                                        http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
-                                      }
-                                    ?>
-                                  }
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("ab_hCountry", "ab_hState", "<?V self.v_hState ?>", true);});
                                  </script>
-                              ]]>
                             </span>
                         </vm:if>
                           <?vsp self.viewField (self.v_hState, 'region', null); ?>
@@ -2135,7 +2118,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_hCode" value="--self.v_hCode" xhtml_size="20" />
+                            <v:text name="ab_hCode" value="--self.v_hCode" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hCode, 'postal-code', null); ?>
                       </td>
@@ -2193,30 +2176,7 @@
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
-			                  <v:text name="ab_hLat" value="--case when self.v_hLat is not null then sprintf ('%.6f', coalesce (self.v_hLat, 0.00)) else '' end" xhtml_size="20" />
-                            <v:button name="SetFromAddress" action="simple" value="Set from address">
-                  			  <v:on-post>
-                  			    <![CDATA[
-                  			      declare lat, lng double precision;
-
-                                  self.saveData();
-                  			      if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS (
-                            		        trim (coalesce (self.ab_hAddress1.ufl_value, '')),
-                            		        trim (coalesce (self.ab_hAddress2.ufl_value, '')),
-                            		        trim (coalesce (self.ab_hCity.ufl_value, '')),
-                                            trim (self.v_hState),
-                            		        trim (coalesce (self.ab_hCode.ufl_value, '')),
-                            		        trim (coalesce (self.ab_hCountry.ufl_value, '')),
-                            		        lat,
-                            		        lng)
-                  			        )
-                  			      {
-                  			        self.ab_hLat.ufl_value := lat;
-                  			        self.ab_hLng.ufl_value := lng;
-                  			      }
-                  			    ]]>
-           		            </v:on-post>
-			                  </v:button>
+                            <v:text name="ab_hLat" xhtml_id="ab_hLat" value="--case when self.v_hLat is not null then sprintf ('%.6f', coalesce (self.v_hLat, 0.00)) else '' end" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (cast (self.v_hLat as varchar), '', null); ?>
 		                  </td>
@@ -2227,7 +2187,7 @@
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
-			                  <v:text name="ab_hLng" value="--case when self.v_hLng is not null then sprintf ('%.6f', coalesce (self.v_hLng, 0.00)) else '' end" xhtml_size="20" />
+                            <v:text name="ab_hLng" xhtml_id="ab_hLng" value="--case when self.v_hLng is not null then sprintf ('%.6f', coalesce (self.v_hLng, 0.00)) else '' end" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (cast (self.v_hLng as varchar), '', null); ?>
 		                  </td>
@@ -2310,26 +2270,9 @@
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
                             <span id="span_ab_bState">
-                              <![CDATA[
                                 <script type="text/javascript">
-                                  function categoryCombo ()
-                                  {
-                                    var cc = new OAT.Combolist([], "<?V self.v_bState ?>");
-                                    cc.input.name = "ab_bState";
-                                    cc.input.id = "ab_bState";
-                                    cc.input.size = "60";
-                                    $("span_ab_bState").appendChild(cc.div);
-                                    cc.addOption("");
-                                    <?vsp
-                                      for (select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value) do
-                                      {
-                                        http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
-                                      }
-                                    ?>
-                                  }
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("ab_bCountry", "ab_bState", "<?V self.v_bState ?>", true);});
                                  </script>
-                              ]]>
                             </span>
                         </vm:if>
                           <?vsp self.viewField (self.v_bState, 'region', null); ?>
@@ -2352,7 +2295,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_bCode" value="--self.v_bCode" />
+                            <v:text name="ab_bCode" value="--self.v_bCode" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bCode, 'postal-code', null); ?>
                       </td>
@@ -2410,32 +2353,7 @@
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
-			                  <v:text name="ab_bLat" value="--case when self.v_bLat is not null then sprintf ('%.6f', coalesce (self.v_bLat, 0.00)) else '' end" xhtml_size="20" />
-                            <v:button name="SetFromAddress2" action="simple" value="Set from address">
-                  			  <v:on-post>
-                  			    <![CDATA[
-                  			      declare lat, lng double precision;
-
-                                  self.saveData();
-                  			      if (0 <> DB.DBA.WA_MAPS_ADDR_TO_COORDS
-                  			               (
-                            		         trim (coalesce (self.ab_bAddress1.ufl_value, '')),
-                            		         trim (coalesce (self.ab_bAddress2.ufl_value, '')),
-                            		         trim (coalesce (self.ab_bCity.ufl_value, '')),
-                                             trim (self.v_bState),
-                            		         trim (coalesce (self.ab_bCode.ufl_value, '')),
-                            		         trim (coalesce (self.ab_bCountry.ufl_value, '')),
-                            		         lat,
-                            		         lng
-                            		       )
-                  			        )
-                  			      {
-                  			        self.ab_bLat.ufl_value := lat;
-                  			        self.ab_bLng.ufl_value := lng;
-                  			      }
-                  			    ]]>
-           		            </v:on-post>
-			                  </v:button>
+                            <v:text name="ab_bLat" xhtml_id="ab_bLat" value="--case when self.v_bLat is not null then sprintf ('%.6f', coalesce (self.v_bLat, 0.00)) else '' end" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (cast (self.v_bLat as varchar), '', null); ?>
 		                  </td>
@@ -2446,7 +2364,7 @@
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
-			                  <v:text name="ab_bLng" value="--case when self.v_bLng is not null then sprintf ('%.6f', coalesce (self.v_bLng, 0.00)) else '' end" xhtml_size="20" />
+                            <v:text name="ab_bLng" xhtml_id="ab_bLng" value="--case when self.v_bLng is not null then sprintf ('%.6f', coalesce (self.v_bLng, 0.00)) else '' end" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (cast (self.v_bLng as varchar), '', null); ?>
 		                  </td>
