@@ -597,56 +597,88 @@ function hasError(root) {
 }
 
 // ---------------------------------------------------------------------------
-function updateState(countryName, stateName, stateValue)
+function createState(stateName, stateValue)
 {
   var span = $('span_'+stateName);
+  if (!span) {return false;}
+
   span.innerHTML = "";
+  var s = stateName.replace(/State/, '');
+  var f = function(){updateGeodata(s);};
+  var fld = new OAT.Combolist([], stateValue, {onchange: f});
+  fld.input.name = stateName;
+  fld.input.id = stateName;
+  fld.input.size = "60";
+  fld.addOption("");
 
-  var cc = new OAT.Combolist([], "");
-  cc.input.name = stateName;
-  cc.input.id = stateName;
-  cc.input.size = "60";
-  cc.addOption("");
+  span.appendChild(fld.div);
+  OAT.Event.attach(fld.input, "change", f);
 
-  span.appendChild(cc.div);
-
-  if ($v(countryName) != '')
-  {
-    var wsdl = "/ods_services/services.wsdl";
-    var serviceName = "ODS_USER_LIST";
-
-    var inputObject = {
-    	ODS_USER_LIST:{
-        pSid:document.forms['F1'].elements['sid'].value,
-        pRealm:document.forms['F1'].elements['realm'].value,
-        pList:'Province',
-        pParam:$v(countryName)
-    	}
-    }
-  	var x = function(xml) {
-  	  listCallback(xml, cc, stateValue);
-  	}
-  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
-  }
+  return fld;
 }
 
 // ---------------------------------------------------------------------------
-function listCallback (result, cc, objValue)
-{
-  var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
-	var root = xml.documentElement;
-	if (!hasError(root))
-	{
-    /* options */
-  	var items = root.getElementsByTagName("item");
-  	if (items.length)
+function updateState(countryName, stateName, stateValue, hasGeodata)
+  {
+  var fld = createState(stateName, stateValue);
+  if (!fld) {return false;}
+
+  if ($v(countryName) != '')
+  {
+    var S = '/ods/api/lookup.list?key=Province&param='+encodeURIComponent($v(countryName));
+  	var x = function(data)
   	{
-  		for (var i=1; i<=items.length; i++)
+      var xml = OAT.Xml.createXmlDoc(data);
+    	var items = xml.getElementsByTagName("item");
+    	if (items.length)
+    	{
+    		for (var i=1; i<=items.length; i++)
+    		{
+          fld.addOption(OAT.Xml.textValue(items[i-1]));
+    	}
+    }
+    	if (!hasGeodata)
+    	  updateGeodata(fld.input.id.replace(/State/, ''));
+  	}
+    OAT.AJAX.GET(S, '', x);
+  }
+}
+
+function updateGeodata(mode)
+{
+  var f = function (mode, fld)
+	{
+    var x = $(mode+fld);
+    if (x)
+      return '&' + fld.toLowerCase() + '=' + encodeURIComponent(x.value);
+    return '';
+  }
+  var S = '/ods/api/address.geoData?'+f(mode,'Address1')+f(mode,'Address2')+f(mode,'City')+f(mode,'Code')+f(mode,'State')+f(mode,'Country');
+  var cb = function(data, mode)
+  	{
+    var o = null;
+    try {
+      o = OAT.JSON.parse(data);
+    } catch (e) {
+      o = null;
+    }
+    if (o)
+    {
+      if (o.lat)
+      {
+        var x = $(mode+'Lat');
+        if (x)
+          x.value = o.lat;
+      }
+      if (o.lng)
   		{
-        cc.addOption(OAT.Xml.textValue(items[i-1]));
+        var x = $(mode+'Lng');
+        if (x)
+          x.value = o.lng;
   		}
   	}
 	}
+  OAT.AJAX.GET(S, '', function(arg){cb(arg, mode);}, {});
 }
 
 // ---------------------------------------------------------------------------
