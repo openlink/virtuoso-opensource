@@ -1048,6 +1048,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   in fullName varchar := null,
   in gender varchar := null,
   in birthday varchar := null,
+  in homepage varchar := null,
   in icq varchar := null,
   in skype varchar := null,
   in yahoo varchar := null,
@@ -1118,6 +1119,7 @@ create procedure ODS.ODS_API."user.update.fields" (
     ODS.ODS_API."user.update.field" (uname, 'WAUI_BIRTHDAY', dt);
   _skip:;
 	}
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_WEBPAGE', homepage);
 
   -- Contact
   ODS.ODS_API."user.update.field" (uname, 'WAUI_ICQ', icq);
@@ -1328,11 +1330,13 @@ create procedure ODS.ODS_API."user.info" (
     -- Personal
     ods_xml_item ('uid',       U_ID);
     ods_xml_item ('name',      U_NAME);
+    ods_xml_item ('iri',       SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
     ods_xml_item ('mail',      U_E_MAIL);
     ods_xml_item ('title',     WAUI_TITLE);
     ods_xml_item ('firstName', WAUI_FIRST_NAME);
     ods_xml_item ('lastName',  WAUI_LAST_NAME);
     ods_xml_item ('fullName',  WAUI_FULL_NAME);
+    ods_xml_item ('homepage',  WAUI_WEBPAGE);
 
     if (not isnull ("short"))
     {
@@ -1340,6 +1344,9 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('gender',                 WAUI_GENDER);
       if (not isnull (WAUI_BIRTHDAY))
         ods_xml_item ('birthday',             subseq (datestring (WAUI_BIRTHDAY), 0, 10));
+      ods_xml_item ('webIDs',                 WAUI_FOAF);
+      ods_xml_item ('interests',              WAUI_INTERESTS);
+      ods_xml_item ('topicInterests',         WAUI_INTEREST_TOPICS);
 
       -- Contact
       ods_xml_item ('icq',                    WAUI_ICQ);
@@ -1347,6 +1354,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('yahoo',                  WAUI_YAHOO);
       ods_xml_item ('aim',                    WAUI_AIM);
       ods_xml_item ('msn',                    WAUI_MSN);
+      ods_xml_item ('messaging',              WAUI_MESSAGING);
 
       ods_xml_item ('defaultMapLocation',     WAUI_LATLNG_HBDEF);
       -- Home

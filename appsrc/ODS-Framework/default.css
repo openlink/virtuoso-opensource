@@ -841,6 +841,7 @@ tr.listing_header_row
 
 tr.listing_header_row th
 {
+  text-align: left;
   white-space: nowrap
 }
 

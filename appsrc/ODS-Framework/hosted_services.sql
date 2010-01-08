@@ -3096,7 +3096,7 @@ wa_exec_no_error_log(
     WAUI_FULL_NAME VARCHAR(100),   -- 3
     WAUI_GENDER VARCHAR(10),       -- 5
     WAUI_BIRTHDAY DATETIME,        -- 6
-    WAUI_WEBPAGE VARCHAR(50),      -- 7
+    WAUI_WEBPAGE VARCHAR(255),     -- 7
     WAUI_FOAF VARCHAR(50),         -- 8 colum type changed below
     WAUI_MSIGNATURE VARCHAR(255),  -- 9
     WAUI_ICQ VARCHAR(50),          -- 10
@@ -3181,6 +3181,7 @@ wa_exec_no_error_log(
 ;
 
 wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_VISIBLE VARCHAR(70)');
+wa_exec_no_error ('alter table DB.DBA.WA_USER_INFO modify WAUI_WEBPAGE VARCHAR(255)');
 
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_TEMPLATE', 'VARCHAR(20)');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_PHOTO_URL', 'LONG VARCHAR');

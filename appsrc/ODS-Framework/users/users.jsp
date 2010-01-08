@@ -46,9 +46,10 @@
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="/ods/users/js/oid_login.js"></script>
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
@@ -56,12 +57,13 @@
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "map", "ymaps", "timeline", "tagcloud", "anchor", "dock"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
       // publics
       var cPopup;
+      var cRDF;
       function myInit()
       {
         // CalendarPopup
@@ -75,6 +77,18 @@
         OAT.Preferences.stylePath = "/ods/oat/styles/";
         OAT.Preferences.showAjax = false;
 
+        if ($("uf_rdf_content"))
+          cRDF = new OAT.RDFMini($("uf_rdf_content"), {showSearch:false});
+        if ($("uf"))
+        {
+          var ufTab = new OAT.Tab ("uf_content");
+          ufTab.add ("uf_tab_0", "uf_page_0");
+          ufTab.add ("uf_tab_1", "uf_page_1");
+          ufTab.add ("uf_tab_2", "uf_page_2");
+          ufTab.add ("uf_tab_3", "uf_page_3");
+          ufTab.add ("uf_tab_4", "uf_page_4");
+          ufTab.go (0);
+        }
         if ($("pf"))
         {
           var tab = new OAT.Tab ("content");
@@ -311,6 +325,7 @@
                      httpParam ("&", "fullName"              , request.getParameter("pf_fullName")) +
                      httpParam ("&", "gender"                , request.getParameter("pf_gender")) +
                      httpParam ("&", "birthday"              , request.getParameter("pf_birthday")) +
+                     httpParam ("&", "homepage"              , request.getParameter("pf_homepage")) +
                      httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
                      httpParam ("&", "skype"                 , request.getParameter("pf_skype")) +
                      httpParam ("&", "yahoo"                 , request.getParameter("pf_yahoo")) +
@@ -494,56 +509,41 @@
                 <div class="header">
                   User profile
                 </div>
-                <table class="form" cellspacing="5">
-                  <tr>
-                    <th width="30%">
-                      Login Name
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_name"><% out.print(xpathEvaluate($_document, "/user/name")); %></span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      E-mail
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_mail"><% out.print(xpathEvaluate($_document, "/user/mail")); %></span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      Title
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_title"><% out.print(xpathEvaluate($_document, "/user/title")); %></span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      First Name
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_firstName"><% out.print(xpathEvaluate($_document, "/user/firstName")); %></span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      Last Name
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_lastName"><% out.print(xpathEvaluate($_document, "/user/lastName")); %></span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      Full Name
-                    </th>
-                    <td nowrap="nowrap">
-                      <span id="uf_fullName"><% out.print(xpathEvaluate($_document, "/user/fullName")); %></span>
-                    </td>
-                  </tr>
+                <ul id="uf_tabs" class="tabs">
+                  <li id="uf_tab_0" title="Personal">Personal</li>
+                  <li id="uf_tab_1" title="Messaging Services">Messaging Services</li>
+                  <li id="uf_tab_2" title="Home">Home</li>
+                  <li id="uf_tab_3" title="Business">Business</li>
+                  <li id="uf_tab_4" title="Data Explorer">Data Explorer</li>
+                </ul>
+                <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="uf_content"></div>
+                  <div id="uf_page_0" class="tabContent" >
+                    <table id="uf_table_0" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                  <div id="uf_page_1" class="tabContent" >
+                    <table id="uf_table_1" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                  <div id="uf_page_2" class="tabContent" >
+                    <table id="uf_table_2" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                  <div id="uf_page_3" class="tabContent" >
+                    <table id="uf_table_3" class="form" cellspacing="5">
                 </table>
+                  </div>
+                  <div id="uf_page_4" class="tabContent" >
+                    <div id="uf_rdf_content">
+                      &nbsp;
+                    </div>
+                  </div>
+                  <script type="text/javascript">
+                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){selectProfile();});
+                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){cRDF.open("<% out.print(xpathEvaluate($_document, "/user/iri")); %>");});
+                  </script>
+                </div>
                 <div class="footer">
                   <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
@@ -563,9 +563,9 @@
                 <div class="header">
                   Update user profile
                 </div>
-                <ul id="tabs">
+                <ul id="tabs" class="tabs">
                   <li id="tab_0" title="Personal">Personal</li>
-                  <li id="tab_1" title="Contact">Contact</li>
+                  <li id="tab_1" title="Messaging Services">Messaging Services</li>
                   <li id="tab_2" title="Home">Home</li>
                   <li id="tab_3" title="Business">Business</li>
                   <li id="tab_4" title="Security">Security</li>
@@ -651,6 +651,14 @@
                         <td>
                           <input name="pf_birthday" id="pf_birthday" value="<% out.print(xpathEvaluate($_document, "/user/birthday")); %>" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
                           <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homepage">Personal Webpage</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_homepage" value="<% out.print(xpathEvaluate($_document, "/user/homepage")); %>" id="pf_homepage" style="width: 220px;" />
                         </td>
                       </tr>
                     </table>
@@ -1178,7 +1186,7 @@
       <div id="FT_R">
         <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
         <div>
-          Copyright &copy; 1998-2010 OpenLink Software
+          Copyright &copy; 1999-2010 OpenLink Software
         </div>
       </div>
      </div>

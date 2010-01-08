@@ -64,13 +64,13 @@ table.form td {
   margin-bottom: 5px;
 }
 
-#tabs {
+.tabs {
 	margin-top: 24px;
 	list-style-type: none;
 	padding-bottom: 1px;
 }
 
-#tabs li {
+.tabs li {
 	display: inline;
 	padding: 1px 3px;
 	margin-left: 0.5em;
@@ -82,15 +82,15 @@ table.form td {
 	z-index: 10;
 }
 
-#tabs li.tab_selected {
+.tabs li.tab_selected {
 	background-color: #FFF;
 }
 
-#tabs li.tab:hover {
+.tabs li.tab:hover {
 	background-color: #FFF;
 }
 
-#tabs.tab_signal {
+.tabs.tab_signal {
   background-color: #999;
 }
 
