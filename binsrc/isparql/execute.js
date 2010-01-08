@@ -491,6 +491,7 @@ var QueryExec = function(optObj) {
 		self.miniplnk.innerHTML = "Permalink";
 		self.mRDFCtr = OAT.Dom.create ("div");
 		self.mRDFCtr.id = "mini_rdf_ctr";
+	        OAT.Dom.clear (self.dom.result);
 		OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
 		    self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,
 							      showSearch:false});
