@@ -55,12 +55,6 @@
   <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
   <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
   <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-  <!-- For testing with standalone XSLT processor -->
-  <!--
-  <xsl:variable name="resourceURL" select="$baseUri"/>
-  <xsl:variable  name="docIRI" select="$baseUri"/>
-  <xsl:variable  name="docproxyIRI" select="$baseUri"/>
-  -->
 
   <xsl:variable name="error" select="/cnet:CNETResponse/cnet:Error/@code" />
 
@@ -75,25 +69,18 @@
 			<xsl:otherwise>
 				<rdf:Description rdf:about="{$docproxyIRI}">
 					<rdf:type rdf:resource="&bibo;Document"/>
-					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-					<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<sioc:container_of rdf:resource="{$resourceURL}"/>
+					<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
-					<foaf:topic rdf:resource="{$resourceURL}"/>
-					<!--
-					<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Vendor')}"/>
-					<foaf:topic rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
-					 -->
-					<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}"/>
+					<dcterms:subject rdf:resource="{$resourceURL}"/>
 				</rdf:Description>
 
 	               		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
-				<!--
-	               		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Vendor')}">
-		 		-->
 		  			<rdfs:comment>The legal agent making the offering</rdfs:comment>
 		       			<rdfs:label>CBS Interactive</rdfs:label>
 		       			<gr:legalName>CBS Interactive</gr:legalName>
-		       			<gr:offers rdf:resource="{$resourceURL}"/>
+		       			<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}"/>
 		 			<foaf:homepage rdf:resource="http://www.cnet.com" />
 					<!--
 					 owl:sameAs provides an exit route to the original data space.
@@ -107,7 +94,7 @@
 		  			<rdfs:seeAlso rdf:resource="http://download.cnet.com"/>
 	               		</gr:BusinessEntity>
 
-				<gr:Offering rdf:about="{$resourceURL}">
+				<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
 			    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			                <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
@@ -120,19 +107,13 @@
   </xsl:template>
 
   <xsl:template match="cnet:SoftwareProduct" mode="offering">
- 	<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-	<!--
-	<gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
-	-->
+ 	<gr:includes rdf:resource="{$resourceURL}"/>
 	<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeDirectDownload"/>
 	<xsl:apply-templates mode="offering" />
   </xsl:template>
 
   <xsl:template match="cnet:TechProduct" mode="offering">
- 	<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-	<!--
-	<gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
-	-->
+ 	<gr:includes rdf:resource="{$resourceURL}"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
 		<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
@@ -140,17 +121,11 @@
   </xsl:template>
 
   <xsl:template match="cnet:SoftwareProduct">
-	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
-	<!--
-	<rdf:Description rdf:about="{concat ($baseUri, '#', 'Product')}">
-	-->
+	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;SoftwareProduct" />
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
-			<!--
-	       		<rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
-			-->
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	               		<rdf:type rdf:resource="&oplcn;SoftwareProduct"/>
 				<xsl:apply-templates mode="manufacturer" />
@@ -164,17 +139,11 @@
   </xsl:template>
 
   <xsl:template match="cnet:TechProduct">
-	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
-	<!--
-	<rdf:Description rdf:about="{concat ($baseUri, '#', 'Product')}">
-	-->
+	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
-			<!--
-	       		<rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
-			-->
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	               		<rdf:type rdf:resource="&oplcn;TechProduct"/>
 				<xsl:apply-templates mode="manufacturer" />
@@ -213,9 +182,6 @@
   <xsl:template match="cnet:Manufacturer/cnet:Name" mode="manufacturer">
 	<gr:hasManufacturer>
 		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
-		<!--
-		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'Manufacturer')}">
-		-->
 			<rdfs:label><xsl:value-of select="."/></rdfs:label>
 			<gr:legalName><xsl:value-of select="."/></gr:legalName>
 		</gr:BusinessEntity>
@@ -254,9 +220,6 @@
   <xsl:template match="cnet:LowPrice" mode="offering">
 	<gr:hasPriceSpecification>
 	    	<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'UnitPriceSpecification')}">
-	    	<!--
-		<gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'UnitPriceSpecification')}">
-	    	-->
 			<rdfs:label>sale price</rdfs:label>
 			<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 			<gr:hasCurrency rdf:datatype="&xsd;string">USD</gr:hasCurrency>
@@ -286,9 +249,6 @@
   <xsl:template match="cnet:Publisher" mode="manufacturer">
 	<gr:hasManufacturer>
 		<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'publisher')}">
-		<!--
-		<gr:BusinessEntity rdf:about="{concat ($baseUri, '#', 'publisher')}">
-		-->
 			<rdfs:label><xsl:value-of select="cnet:Name"/></rdfs:label>
 			<gr:legalName><xsl:value-of select="cnet:Name"/></gr:legalName>
 			<oplcn:publisherSite><xsl:value-of select="cnet:LinkURL"/></oplcn:publisherSite>
@@ -299,9 +259,6 @@
   <xsl:template match="cnet:Price">
 	<gr:hasPriceSpecification>
 	    <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-	    <!--
-	    <gr:UnitPriceSpecification rdf:about="{concat ($baseUri, '#', 'price')}">
-	    -->
 		<rdfs:label>sale price</rdfs:label>
 		<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
 		<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="translate (., '$', '')"/></gr:hasCurrencyValue>
