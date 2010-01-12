@@ -533,9 +533,36 @@ ws_read_post (dk_session_t * ses, int max,
 	      int code = char_hex_digit(ch2 = session_buffered_read_char (ses)) * 16
 		+ char_hex_digit (ch3 = session_buffered_read_char (ses));
 	      bytes_read += 2;
-	      session_buffered_write_char (code, str);
-	      session_buffered_write_char (ch2, cont);
-	      session_buffered_write_char (ch3, cont);
+	      if (ch2 != 'u')
+		{
+		  session_buffered_write_char (code, str);
+		  session_buffered_write_char (ch2, cont);
+		  session_buffered_write_char (ch3, cont);
+		}
+	      else /* unicode escape sequence */
+		{
+		  char uc [5] = {0,0,0,0,0};
+		  wchar_t wc;
+		  unsigned char mbs[VIRT_MB_CUR_MAX];
+		  virt_mbstate_t state;
+		  size_t utf8_len;
+
+		  /* check boundary */
+		  if (max && bytes_read + 3 > max)
+		    break;
+
+		  uc[0] = ch3;
+		  session_buffered_read (ses, &uc[1], 3);
+		  bytes_read += 3;
+		  if (1 == sscanf (uc, "%4X", &wc))
+		    {
+		      memset (&state, 0, sizeof (virt_mbstate_t));
+		      if (-1 != (utf8_len = virt_wcrtomb (mbs, wc, &state)))
+			session_buffered_write (str, mbs, utf8_len);
+		    }
+		  session_buffered_write_char (ch2, cont);
+		  session_buffered_write (cont, uc, 4);
+		}
 	      if (max && bytes_read >= max)
 		break;
 	    }
