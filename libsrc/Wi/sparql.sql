@@ -108,7 +108,9 @@ alter index RDF_LANGUAGE on RDF_LANGUAGE  partition cluster replicated
 alter index DB_DBA_RDF_LANGUAGE_UNQC_RL_TWOBYTE on RDF_LANGUAGE  partition cluster replicated
 ;
 
-
+create table DB.DBA.RDF_LABEL (RL_O any primary key, RL_RO_ID bigint, RL_TEXT varchar, RL_LANG int)
+alter index RDF_LABEL on RDF_LABEL partition (RL_O varchar (-1, 0hexffff))
+;
 
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key,
@@ -2353,6 +2355,8 @@ create procedure DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION (in strg varchar, in 
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION () requires a valid IRI as a base argument if graph is not specified');
     }
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return DB.DBA.RDF_LOAD_RDFA_WITH_IRI_TRANSLATION_CL (strg, base, graph, xml_parse_mode, iri_xlate_cbk, iri_xlate_env);
   app_env := vector (null, null, __max (length (strg) / 100, 100000), iri_xlate_cbk, iri_xlate_env);
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)),
     graph,

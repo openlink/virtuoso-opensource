@@ -56,6 +56,7 @@ extern caddr_t DBG_NAME (box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size
 #ifdef MALLOC_DEBUG
 #define box_wide_as_utf8_char(w,l,d) dbg_box_wide_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
 #endif
+extern caddr_t mp_box_wide_as_utf8_char (mem_pool_t * mp, ccaddr_t _wide, size_t wide_len, dtp_t dtp);
 wchar_t CHAR_TO_WCHAR (unsigned char uchar, wcharset_t *charset);
 unsigned char WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset);
 

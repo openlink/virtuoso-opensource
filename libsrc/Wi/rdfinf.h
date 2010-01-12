@@ -20,6 +20,8 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+#ifndef _RDFINF_H
+#define _RDFINF_H
 
 typedef struct rdf_sub_s
 {
@@ -213,3 +215,4 @@ ri_iterator_t * ri_iterator (rdf_sub_t * rs, int mode, int distinct);
 void sas_ensure ();
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
+#endif

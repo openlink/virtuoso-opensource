@@ -22,6 +22,23 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+create table DB.DBA.RDF_VOID_GRAPH (
+  RVG_IID IRI_ID not null primary key,
+  RVG_IRI varchar not null,
+  RVG_COMMENT varchar
+  )
+alter index RDF_VOID_GRAPH on DB.DBA.RDF_VOID_GRAPH partition cluster replicated
+create index RDF_VOID_GRAPH_IRI on DB.DBA.RDF_VOID_GRAPH (RVG_IRI) partition cluster replicated
+;
+
+create table DB.DBA.RDF_VOID_GRAPH_MEMBER (
+  RVGM_GROUP_IID IRI_ID not null,
+  RVGM_MEMBER_IID IRI_ID not null,
+  primary key (RVGM_GROUP_IID, RVGM_MEMBER_IID)
+  )
+alter index RDF_VOID_GRAPH_MEMBER on DB.DBA.RDF_VOID_GRAPH_MEMBER partition cluster replicated
+;
+
 
 create procedure RDF_VOID_INIT ()
 {
@@ -98,26 +115,23 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
   http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, target_graph), ses); -- put NS prefix here
   http (sprintf ('ns%d:Dataset a void:Dataset ; \n', ns_ctr), ses);
   http (sprintf (' void:sparqlEndpoint <http://%s/sparql> . \n', host), ses);
-  for select RGG_IID, RGG_IRI, RGG_COMMENT from RDF_GRAPH_GROUP where
-    RGG_IRI like target_graph || '%'
-    and
-    exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID) do
+  for select RVG_IID, RVG_IRI, RVG_COMMENT from RDF_VOID_GRAPH where RVG_IRI like target_graph || '%' do
     {
        -- add subset for group to all here
        declare gr_pref_ctr, grp_cnt int;
        ns_ctr := ns_ctr + 1;
        grp_cnt := 0;
-       RGG_IRI := rtrim (RGG_IRI, '/#') || '/';
-       http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, RGG_IRI), ses); -- put NS prefix here
+       RVG_IRI := rtrim (RVG_IRI, '/#') || '/';
+       http (sprintf ('@prefix ns%d: <%s> .\n', ns_ctr, RVG_IRI), ses); -- put NS prefix here
        http (sprintf ('ns%d:Dataset a void:Dataset . \n', ns_ctr), ses);
        http (sprintf ('ns1:Dataset void:subset ns%d:Dataset . \n', ns_ctr), ses);
        gr_pref_ctr := ns_ctr;
-       for select RGGM_MEMBER_IID from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = RGG_IID do
+       for select RVGM_MEMBER_IID from RDF_VOID_GRAPH_MEMBER where RVGM_GROUP_IID = RVG_IID do
          {
 	   -- add subset for graph to group here
 	   ns_ctr := ns_ctr + 1;
-	   RDF_VOID_GEN_1 (id_to_iri (RGGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
-	       target_graph || rtrim (id_to_iri (RGGM_MEMBER_IID), '/#') || '/',
+	   RDF_VOID_GEN_1 (id_to_iri (RVGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
+	       target_graph || rtrim (id_to_iri (RVGM_MEMBER_IID), '/#') || '/',
 	       ses, grp_cnt, 1, details);
 	   http (sprintf ('ns%d:Dataset void:subset ns%d:Dataset . \n', gr_pref_ctr, ns_ctr), ses);
          }
