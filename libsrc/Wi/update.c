@@ -1229,6 +1229,7 @@ itc_replace_row (it_cursor_t * main_itc, buffer_desc_t * main_buf, row_delta_t *
 	itc_free (del_itc);
       }
   }
+  rd_free (&old_rd);
   itc_row_insert (main_itc, rd, UNQ_ALLOW_DUPLICATES, 1, this_key_only);
   return REPLACE_OK;
 }
