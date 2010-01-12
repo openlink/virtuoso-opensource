@@ -272,6 +272,12 @@
 		</gr:hasManufacturer>
     </xsl:template>
 
+    <xsl:template match="amz:ItemAttributes/amz:Publisher">
+		<dcterms:publisher>
+                        <xsl:value-of select="."/>
+		</dcterms:publisher>
+    </xsl:template>
+
     <xsl:template match="amz:Item/amz:ASIN">
 		<oplamz:ASIN><xsl:value-of select="."/></oplamz:ASIN>
     </xsl:template>
