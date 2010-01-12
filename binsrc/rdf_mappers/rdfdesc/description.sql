@@ -54,6 +54,7 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 foaf:maker rdfs:subClassOf dc:creator .
 <http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
 <http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
+<http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
