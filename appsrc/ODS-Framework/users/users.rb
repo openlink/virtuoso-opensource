@@ -31,8 +31,17 @@ def login_form()
     <div id="lf" class="form">
       #{display_error()}
       <div class="header">
-        Enter your Member ID and Password
+        User login
       </div>
+      <ul id="lf_tabs" class="tabs">
+        <li id="lf_tab_0" title="ODS">ODS</li>
+        <li id="lf_tab_1" title="OpenID">OpenID</li>
+        <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+        <li id="lf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+      </ul>
+      <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+        <div id="lf_content"></div>
+        <div id="lf_page_0" class="tabContent" >
       <table class="form" cellspacing="5">
         <tr>
           <th width="30%">
@@ -50,94 +59,41 @@ def login_form()
             <input type="password" name="lf_password" value="" id="lf_password" />
           </td>
         </tr>
-        <tr>
-          <th>
-            or
-          </th>
-          <td nowrap="nowrap" />
-        </tr>
-        <tr>
-          <th>
-            <label for="lf_openID">Login with OpenID</label>
-          </th>
-          <td nowrap="nowrap">
-            <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" size="40"/>
-          </td>
-        </tr>
       </table>
-      <div class="footer">
-        <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit2();" />
-        <input type="submit" name="lf_register" value="Sign Up" id="lf_register" />
       </div>
-    </div>
-END_OF_STRING
-end
-
-# Define function display register data.
-def register_form()
-  return <<END_OF_STRING
-    <div id="rf" class="form">
-      #{display_error()}
-      <div class="header">
-        Enter register data
-      </div>
+        <div id="lf_page_1" class="tabContent" style="display: none">
       <table class="form" cellspacing="5">
         <tr>
           <th width="30%">
-            <label for="rf_openID">Register with OpenID</label>
+                <label for="lf_openId">OpenID URL</label>
           </th>
           <td nowrap="nowrap">
-            <input type="text" name="rf_openID" value="#{$_form['rf_openID']}" id="rf_openID" class="openID" size="40"/>
-            <input type="button" name="rf_authenticate" value="Authenticate" id="rf_authenticate" onclick="javascript: return rfAuthenticateSubmit();"/>
+                <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
           </td>
         </tr>
+          </table>
+        </div>
+        <div id="lf_page_2" class="tabContent" style="display: none">
+          <table class="form" cellspacing="5">
         <tr>
-          <th />
-          <td nowrap="nowrap">
-            <input type="checkbox" name="rf_useOpenID" id="rf_useOpenID" onclick="javascript: rfAlternateLogin(this);" value="1" />
-            <label for="rf_useOpenID">Do not create password, I want to use my OpenID URL to login</label>
-          </td>
-        </tr>
-        <tr id="rf_login_1">
-          <th>
-            <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+              <th width="30%">
           </th>
           <td nowrap="nowrap">
-            <input type="text" name="rf_uid" value="#{$_form['rf_uid']}" id="rf_uid" />
-          </td>
-        </tr>
-        <tr id="rf_login_2">
-          <th>
-            <label for="rf_mail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-          </th>
-          <td nowrap="nowrap">
-            <input type="text" name="rf_mail" value="#{$_form['rf_mail']}" id="rf_mail" size="40"/>
-          </td>
-        </tr>
-        <tr id="rf_login_3">
-          <th>
-            <label for="rf_pwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-          </th>
-          <td nowrap="nowrap">
-            <input type="password" name="rf_password" value="" id="rf_password" />
-          </td>
-        </tr>
-        <tr id="rf_login_4">
-          <th>
-            <label for="rf_pwd2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
-          </th>
-          <td nowrap="nowrap">
-            <input type="password" name="rf_password2" value="" id="rf_password2" />
-          </td>
-        </tr>
-        <tr>
-          <td nowrap="nowrap" colspan="2">
-            <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
+                <span id="lf_facebookData" style="min-height: 20px;"></span>
+                <br />
+                <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                <fb:login-button autologoutlink="true"></fb:login-button>
           </td>
         </tr>
       </table>
-      <div class="footer" id="rf_login_5">
-        <input type="submit" name="rf_signup" value="Sign Up" />
+        </div>
+        <div id="lf_page_3" class="tabContent" style="display: none">
+          <table id="lf_table_3" class="form" cellspacing="5">
+          </table>
+        </div>
+      </div>
+      <div class="footer">
+        <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
       </div>
     </div>
 END_OF_STRING
@@ -150,56 +106,41 @@ def user_form()
       <div class="header">
         User profile
       </div>
-      <table class="form" cellspacing="5">
-        <tr>
-          <th width="30%">
-            Login Name
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_name">#{$_user['uf_name']}</span>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            E-mail
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_mail">#{$_user['uf_mail']}</span>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            Title
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_title">#{$_user['uf_title']}</span>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            First Name
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_firstName">#{$_user['uf_firstName']}</span>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            Last Name
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_lastName">#{$_user['uf_lastName']}</span>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            Full Name
-          </th>
-          <td nowrap="nowrap">
-            <span id="uf_fullName">#{$_user['uf_fullName']}</span>
-          </td>
-        </tr>
+      <ul id="uf_tabs" class="tabs">
+        <li id="uf_tab_0" title="Personal">Personal</li>
+        <li id="uf_tab_1" title="Messaging Services">Messaging Services</li>
+        <li id="uf_tab_2" title="Home">Home</li>
+        <li id="uf_tab_3" title="Business">Business</li>
+        <li id="uf_tab_4" title="Data Explorer">Data Explorer</li>
+      </ul>
+      <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+        <div id="uf_content"></div>
+        <div id="uf_page_0" class="tabContent" >
+          <table id="uf_table_0" class="form" cellspacing="5">
+          </table>
+        </div>
+        <div id="uf_page_1" class="tabContent" >
+          <table id="uf_table_1" class="form" cellspacing="5">
+          </table>
+        </div>
+        <div id="uf_page_2" class="tabContent" >
+          <table id="uf_table_2" class="form" cellspacing="5">
+          </table>
+        </div>
+        <div id="uf_page_3" class="tabContent" >
+          <table id="uf_table_3" class="form" cellspacing="5">
       </table>
+        </div>
+        <div id="uf_page_4" class="tabContent" >
+          <div id="uf_rdf_content">
+            &nbsp;
+          </div>
+        </div>
+        <script type="text/javascript">
+          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){selectProfile();});
+          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){cRDF.open("<?V xpath_eval ('string (/user/iri)', vXml) ?>");});
+        </script>
+      </div>
       <div class="footer">
         <input type="submit" name="uf_profile" value="Edit Profile" />
       </div>
@@ -838,47 +779,6 @@ def main()
       $_formName = "register"
     end
   end
-  if ($_formName == "register")
-    if ($_form.has_key?('rf_signup'))
-      if ($_form['rf_uid'].length == 0)
-        $_error = "Bad username. Please correct!";
-      elsif ($_form['rf_mail'].length == 0)
-        $_error = "Bad mail. Please correct!";
-      elsif ($_form['rf_password'].length == 0)
-        $_error = "Bad password. Please correct!";
-      elsif ($_form['rf_password'] != $_form['rf_password2'])
-        $_error = "Bad password. Please retype!";
-      elsif (!$_form.has_key?('rf_is_agreed'))
-        $_error = "You have not agreed to the Terms of Service!";
-      else
-        sth = odbc.prepare("select ODS_USER_REGISTER(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        sth.execute($_form['rf_uid'],        \
-                    $_form['rf_password'],   \
-                    $_form['rf_mail'],       \
-                    $_form['rf_identity'],   \
-                    $_form['rf_fullname'],   \
-                    $_form['rf_birthday'],   \
-                    $_form['rf_gender'],     \
-                    $_form['rf_postcode'],   \
-                    $_form['rf_country'],    \
-                    $_form['rf_tz']);
-
-        while row=sth.fetch do
-          xmlResult = REXML::Document.new(row[0])
-          if (xpathResult(xmlResult.root, '//error/code') != 'OK')
-            $_error = xpathResult(xmlResult.root, '//error/message')
-          else
-            $_sid = xpathResult(xmlResult.root, '//session/sid')
-            $_realm = xpathResult(xmlResult.root, '//session/realm')
-            $_formName = "user"
-          end
-        end
-
-        # Close the statement handle when done
-        sth.finish
-      end
-    end
-  end
   if ($_formName == 'user')
     if ($_form.has_key?('uf_profile'))
       $_formName = 'profile';
@@ -1061,16 +961,22 @@ def main()
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
+    <link rel="stylesheet" type="text/css" href="css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="css/users.css" />
-    <script type="text/javascript" src="js/oid_login.js"></script>
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
+      // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "tab", "dimmer"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "map", "ymaps", "timeline", "tagcloud", "anchor", "dock"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript">
+      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+    </script>
   </head>
   <body>
     <form name="page_form" method="post">

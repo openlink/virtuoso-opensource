@@ -50,7 +50,6 @@
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="/ods/users/js/oid_login.js"></script>
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
@@ -61,45 +60,6 @@
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
-      // publics
-      var cPopup;
-      var cRDF;
-      function myInit()
-      {
-        // CalendarPopup
-        if ($("cDiv"))
-        {
-          cPopup = new CalendarPopup("cDiv");
-          cPopup.isShowYearNavigation = true;
-        }
-
-        OAT.Preferences.imagePath = "/ods/images/oat/";
-        OAT.Preferences.stylePath = "/ods/oat/styles/";
-        OAT.Preferences.showAjax = false;
-
-        if ($("uf_rdf_content"))
-          cRDF = new OAT.RDFMini($("uf_rdf_content"), {showSearch:false});
-        if ($("uf"))
-        {
-          var ufTab = new OAT.Tab ("uf_content");
-          ufTab.add ("uf_tab_0", "uf_page_0");
-          ufTab.add ("uf_tab_1", "uf_page_1");
-          ufTab.add ("uf_tab_2", "uf_page_2");
-          ufTab.add ("uf_tab_3", "uf_page_3");
-          ufTab.add ("uf_tab_4", "uf_page_4");
-          ufTab.go (0);
-        }
-        if ($("pf"))
-        {
-          var tab = new OAT.Tab ("content");
-          tab.add ("tab_0", "page_0");
-          tab.add ("tab_1", "page_1");
-          tab.add ("tab_2", "page_2");
-          tab.add ("tab_3", "page_3");
-          tab.add ("tab_4", "page_4");
-          tab.go (0);
-        }
-      }
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>
   </head>
@@ -433,7 +393,7 @@
           if ($_form != "login")
           {
         %>
-        <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit2();">Logout</a></div>
+        <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
         <%
           }
         %>
@@ -462,8 +422,17 @@
                   }
                 %>
                 <div class="header">
-                  Enter your Member ID and Password
+                  User login
                 </div>
+                <ul id="lf_tabs" class="tabs">
+                  <li id="lf_tab_0" title="ODS">ODS</li>
+                  <li id="lf_tab_1" title="OpenID">OpenID</li>
+                  <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                  <li id="lf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                </ul>
+                <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="lf_content"></div>
+                  <div id="lf_page_0" class="tabContent" >
                 <table class="form" cellspacing="5">
                   <tr>
                     <th width="30%">
@@ -481,23 +450,41 @@
                       <input type="password" name="lf_password" value="" id="lf_password" />
                     </td>
                   </tr>
+                    </table>
+                  </div>
+                  <div id="lf_page_1" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
                   <tr>
-                    <th>
-                      or
+                        <th width="30%">
+                          <label for="lf_openId">OpenID URL</label>
                     </th>
-                    <td nowrap="nowrap" />
+                        <td nowrap="nowrap">
+                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
+                        </td>
                   </tr>
+                    </table>
+                  </div>
+                  <div id="lf_page_2" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
                   <tr>
-                    <th>
-                      <label for="lf_openID">Login with OpenID</label>
+                        <th width="30%">
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" size="40"/>
+                          <span id="lf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
                     </td>
                   </tr>
                 </table>
+                  </div>
+                  <div id="lf_page_3" class="tabContent" style="display: none">
+                    <table id="lf_table_3" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                </div>
                 <div class="footer">
-                  <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit2();" />
+                  <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
                 </div>
               </div>
               <%
