@@ -6,10 +6,8 @@ The goal of the project is to port *.vsp user's pages to the following programmi
    1. Endpoint: The Endpoint is http://[host]:[port]/ods/users/[the name of the corresponding page].
    1. Implementation:
       1. Common files:
-         * oid_login.vsp: contains OpenID login and registration implementation.
          * css/users.css.
          * js/users.js: contains AJAX and common functions
-         * js/oid_login.js: contains functions for OpenID login and registration
    1. After VAD installing new ODBC connection is created with name 'LocalVirtuosoDemo'.
 
 ---+++AJAX Implementation
