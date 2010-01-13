@@ -6357,3 +6357,20 @@ create procedure Y_SQL_ESC_NAME (in fn varchar)
   return sprintf ('"%I"."%I"."%I"', q, o, n);
 }
 ;
+
+create procedure
+y_trunc_uri (in s varchar, in maxlen int := 80)
+{
+  declare _s varchar;
+  declare _h int; 
+
+  _s := trim(s);
+
+  if (length(_s) <= maxlen) return _s;
+  _h := floor ((maxlen-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
+}
+;
+

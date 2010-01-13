@@ -1428,7 +1428,7 @@
                           {
                             self.mod_grant_list := vector_concat(self.mod_grant_list,vector(_params[inx + 1]));
                             self.ensure_soapuser();
-			                      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+			    exec (sprintf ('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
                           }
                         }
                         inx := inx + 2;
