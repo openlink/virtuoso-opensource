@@ -558,10 +558,10 @@ ws_read_post (dk_session_t * ses, int max,
 		    {
 		      memset (&state, 0, sizeof (virt_mbstate_t));
 		      if (-1 != (utf8_len = virt_wcrtomb (mbs, wc, &state)))
-			session_buffered_write (str, mbs, utf8_len);
+			session_buffered_write (str, (char *) mbs, utf8_len);
 		    }
 		  session_buffered_write_char (ch2, cont);
-		  session_buffered_write (cont, uc, 4);
+		  session_buffered_write (cont, (char *) uc, 4);
 		}
 	      if (max && bytes_read >= max)
 		break;
