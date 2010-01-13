@@ -621,45 +621,13 @@ nf_img:
 
 create procedure WS.WS.MAKE_URL (in _host varchar, in _url varchar)
 {
-  declare _res, _new_url, _old_url varchar;
-  declare _htag, _sltag, inx integer;
-  declare ss any;
-
-  if (_host is null or _host = '')
-    _host := 'localhost';
-  if (_url is null or _url = '')
-    _url := '';
-  _htag := strcasestr (_host, 'http://');
-  _sltag := strstr (_url, '/');
-  if (_htag is not null)
-    _res := _host;
-  else
-    _res := concat ('http://', _host);
-
-   if (aref (_res, length (_res) - 1) = ascii ('/'))
-     _res := substring (_res, 1, length (_res) - 1) ;
-
-  _old_url := _url;
-  _new_url := split_and_decode (_old_url, 0, '%');
-  inx := 0;
-  while (_old_url <> _new_url)
-    {
-      _old_url := _new_url;
-      _new_url := split_and_decode (_old_url, 0, '%');
-      inx := inx + 1;
-      if (inx > 10)
-	goto done_trf;
-    }
-  done_trf:
-  ss := string_output ();
-  http_dav_url (_new_url, null, ss);
-  _url := string_output_string (ss);
-
-  if (_sltag is not null and _sltag = 0)
-    _res := concat (_res, _url);
-  else
-    _res := concat (_res, '/', _url);
-
+  declare hf, _res any;
+  hf := WS.WS.PARSE_URI (_url);
+  if (hf[0] = '')
+    hf[0] := 'http';
+  if (hf[1] = '')
+    hf[1] := _host;
+  _res := WS.WS.VFS_URI_COMPOSE (hf);  
   return _res;
 }
 ;
