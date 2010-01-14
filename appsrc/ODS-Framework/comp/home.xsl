@@ -615,7 +615,7 @@
                   <script type="text/javascript">
                     <![CDATA[
                       var graphIRI = "<?V WA_LINK (1, WA_USER_DATASPACE(self.fname)) ?>";
-                      var fList = ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
+                      var fList = ["rdfmini","dimmer","grid","graphsvg","map","timeline","tagcloud","anchor","dock"];
 				ODSInitArray.push ( function () { OAT.Loader.loadFeatures(fList, RDFMInit); } );
                     ]]>
                   </script>

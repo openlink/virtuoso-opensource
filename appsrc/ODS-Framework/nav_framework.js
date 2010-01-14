@@ -4760,7 +4760,6 @@ ODS.Nav = function (navOptions)
 		     "grid",
 		     "graphsvg",
 		     "map",
-		     "ymaps",
 		     "timeline",
 		     "tagcloud",
 		     "anchor",
