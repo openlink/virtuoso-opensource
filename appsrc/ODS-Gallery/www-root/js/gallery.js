@@ -129,14 +129,14 @@ gallery.init = function (path){
 
   }
 
-  OAT.Dom.attach("SlideShow_back",'click',SlideShow_back);
-  OAT.Dom.attach("SlideShow_stop",'click',SlideShow_stop);
-  OAT.Dom.attach("SlideShow_next",'click',SlideShow_next);
-  OAT.Dom.attach("images_import_flickr",'click',gallery.ajax.flickr_login_link);
-  OAT.Dom.attach("images_import_flickr_list",'click',gallery.ajax.flickr_get_photos_list);
-  OAT.Dom.attach("images_import_flickr_save",'click',gallery.ajax.flickr_save_photos);
-  OAT.Dom.attach("images_export_flickr",'click',gallery.ajax.flickr_login_link);
-  OAT.Dom.attach("images_export_flickr_send",'click',gallery.ajax.flickr_send_photos);
+  OAT.Event.attach("SlideShow_back",'click',SlideShow_back);
+  OAT.Event.attach("SlideShow_stop",'click',SlideShow_stop);
+  OAT.Event.attach("SlideShow_next",'click',SlideShow_next);
+  OAT.Event.attach("images_import_flickr",'click',gallery.ajax.flickr_login_link);
+  OAT.Event.attach("images_import_flickr_list",'click',gallery.ajax.flickr_get_photos_list);
+  OAT.Event.attach("images_import_flickr_save",'click',gallery.ajax.flickr_save_photos);
+  OAT.Event.attach("images_export_flickr",'click',gallery.ajax.flickr_login_link);
+  OAT.Event.attach("images_export_flickr_send",'click',gallery.ajax.flickr_send_photos);
 
 
 
@@ -813,7 +813,7 @@ gallery.addComment = function(comment)
 	del_img.setAttribute("src",base_path+ 'i/del_10.png');
 	del_img.setAttribute("alt",'Delete');
 	del_img.setAttribute("title",'Delete');
-  OAT.Dom.attach(del_img,'click',gallery.delete_comment_icon_click);
+  OAT.Event.attach(del_img,'click',gallery.delete_comment_icon_click);
 
 
   var edit_img = OAT.Dom.create("img");
@@ -822,7 +822,7 @@ gallery.addComment = function(comment)
 	edit_img.setAttribute("src",base_path+ 'i/edit_10.png');
 	edit_img.setAttribute("alt",'Edit');
 	edit_img.setAttribute("title",'Edit');
-  OAT.Dom.attach(edit_img,'click',gallery.edit_comment_icon_click);
+  OAT.Event.attach(edit_img,'click',gallery.edit_comment_icon_click);
   
     edit.appendChild(document.createTextNode(' '));
   edit.appendChild(del_img);
@@ -945,7 +945,7 @@ gallery.addTag = function(tag, first)
   edit.appendChild(img);
   }
   //txt.appendChild(document.createTextNode(tag));
-  OAT.Dom.attach(edit,'click',gallery.delete_tag_click)
+  OAT.Event.attach(edit,'click',gallery.delete_tag_click)
   }
 
 //------------------------------------------------------------------------------
@@ -1477,7 +1477,7 @@ function preview_collection_4_map(album,i){
   
   thumb = makeImg(src);
   thumb.setAttribute('id','album_map_preview_th_'+i);
-  OAT.Dom.attach(thumb,"click",function(){
+  OAT.Event.attach(thumb,"click",function(){
                                        OAT.Dom.hide('timeline');
                                        OAT.Dom.hide('map');
                                        current_id = i;
@@ -1496,7 +1496,7 @@ function preview_collection_4_map(album,i){
   if(album.name){
     a.innerHTML = OAT.Xml.escape(album.name.substring(0,12))+" ("+sdate2obj(album.start_date).year +'/'+sdate2obj(album.start_date).month+")";
     a.href = "#/"+album.name+'/';
-    OAT.Dom.attach(a,"click",function(){
+    OAT.Event.attach(a,"click",function(){
                                          OAT.Dom.hide('timeline');
                                          OAT.Dom.hide('map');
                                          current_id = i;
@@ -1559,7 +1559,7 @@ function preview_image(i,mode){
   //div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(src,'','','img',alt)))
   image_html = makeImg(src,'','','img',alt);
   imageDiv.appendChild(image_html);
-  OAT.Dom.attach(image_html,'click',function(){
+  OAT.Event.attach(image_html,'click',function(){
     gallery.showImage(i);
   })
   imageDiv.current_image = current_image;

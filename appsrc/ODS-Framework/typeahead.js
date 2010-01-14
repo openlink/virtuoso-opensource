@@ -53,7 +53,7 @@ function TypeAhead(pInputId,pKey,pDepend)
 				self.suggestionDropDown = $("THDropDown-" + self.inputId);
 				if(!self.suggestionDropDown)
 				{
-					var pos = OAT.Dom.position(self.inputElement);
+					var pos = OAT.Event.position(self.inputElement);
 					self.suggestionDropDown = document.createElement('DIV');
 					self.suggestionDropDown.id = "THDropDown-" + self.inputId;
 					self.suggestionDropDown.className = "THHideDropDown";

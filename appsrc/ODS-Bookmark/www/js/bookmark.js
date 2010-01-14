@@ -1316,7 +1316,7 @@ BMK.nodeAction = function()
 BMK.updateTree = function(data, node, nodePath, nodeFunction)
 {
   function attach(node, path) {
-    OAT.Dom.attach(node._gdElm, 'click', function() {BMK.selectNode(path, node);});
+    OAT.Event.attach(node._gdElm, 'click', function() {BMK.selectNode(path, node);});
   }
   var o = OAT.JSON.parse(data);
   for (var i = 0; i < o.length; i++)

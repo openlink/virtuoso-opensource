@@ -5443,11 +5443,11 @@
                         </table>
                         <script type="text/javascript">
                           <![CDATA[
-                        		OAT.Dom.attach("color_NOT_STARTED_div", "click", function (){CAL.colorRef('color_NOT_STARTED');});
-                        		OAT.Dom.attach("color_IN_PROGRESS_div", "click", function (){CAL.colorRef('color_IN_PROGRESS');});
-                        		OAT.Dom.attach("color_COMPLETED_div", "click", function (){CAL.colorRef('color_COMPLETED');});
-                        		OAT.Dom.attach("color_WAITING_div", "click", function (){CAL.colorRef('color_WAITING');});
-                        		OAT.Dom.attach("color_DEFERRED_div", "click", function (){CAL.colorRef('color_DEFERRED');});
+                        		OAT.Event.attach("color_NOT_STARTED_div", "click", function (){CAL.colorRef('color_NOT_STARTED');});
+                        		OAT.Event.attach("color_IN_PROGRESS_div", "click", function (){CAL.colorRef('color_IN_PROGRESS');});
+                        		OAT.Event.attach("color_COMPLETED_div", "click", function (){CAL.colorRef('color_COMPLETED');});
+                        		OAT.Event.attach("color_WAITING_div", "click", function (){CAL.colorRef('color_WAITING');});
+                        		OAT.Event.attach("color_DEFERRED_div", "click", function (){CAL.colorRef('color_DEFERRED');});
                           ]]>
                         </script>
                       </div>
@@ -6516,7 +6516,7 @@
                     </table>
                     <script type="text/javascript">
                       <![CDATA[
-                     		OAT.Dom.attach("ss_color_div", "click", function (){CAL.colorRef('ss_color');});
+                     		OAT.Event.attach("ss_color_div", "click", function (){CAL.colorRef('ss_color');});
                       ]]>
                     </script>
                   </div>

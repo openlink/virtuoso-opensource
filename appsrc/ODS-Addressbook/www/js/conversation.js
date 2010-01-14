@@ -44,7 +44,7 @@ CNV.fromMenu = function (obj)
 			ch.id = "cb_" + i;
 			ch.type = "checkbox";
 			var cbAction = function (){CNV.fromAction(this);};
-			OAT.Dom.attach(ch, "click", cbAction);
+			OAT.Event.attach(ch, "click", cbAction);
 			label.appendChild(ch);
 			label.appendChild(OAT.Dom.text(CNV.fromLabels[i]));
 			item.appendChild(label);
@@ -54,7 +54,7 @@ CNV.fromMenu = function (obj)
   }
   if (CNV.fm.style.display == "none")
   {
-		var coords = OAT.Dom.position(obj);
+		var coords = OAT.Event.position(obj);
 		var dims = OAT.Dom.getWH(obj);
 		CNV.fm.style.left = (coords[0]) +"px";
 		CNV.fm.style.top = (coords[1]+dims[1]+5)+"px";

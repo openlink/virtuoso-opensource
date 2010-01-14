@@ -53,9 +53,9 @@ function generateAPPAnchor(options, app)
       a.target = appTarget;
       if (appOnclick)
       {
-	      OAT.Dom.attach(a, "click", function(e) {OAT.AnchorData.window.close(); appOnclick(e);});
+	      OAT.Event.attach(a, "click", function(e) {OAT.AnchorData.window.close(); appOnclick(e);});
       } else {
-	      OAT.Dom.attach(a, "click", function(e) {OAT.AnchorData.window.close();});
+	      OAT.Event.attach(a, "click", function(e) {OAT.AnchorData.window.close();});
       }
 
       var elm = OAT.Dom.create("div");
@@ -75,7 +75,7 @@ function generateAPPAnchor(options, app)
       a.appendChild(OAT.Dom.text(" Data Link (RDF)"));
       a.href = $v('sparqlUrl').replace('_RDF_', appIRI);
       a.target = appTarget;
-      OAT.Dom.attach(a, "click", function() {OAT.AnchorData.window.close();});
+      OAT.Event.attach(a, "click", function() {OAT.AnchorData.window.close();});
       var elm = OAT.Dom.create("div");
       elm.appendChild(a);
       ul.appendChild(elm);

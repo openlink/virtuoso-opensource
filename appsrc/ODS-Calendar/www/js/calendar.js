@@ -977,7 +977,7 @@ CAL.colorRef = function(fldName)
 	  $(fldName+"_div").style.backgroundColor = color;
 	}
   var c = new OAT.Color();
-	var coords = OAT.Dom.position(fldName+"_div");
+	var coords = OAT.Event.position(fldName+"_div");
 	c.pick(coords[0],coords[1],callback);
 }
                         		

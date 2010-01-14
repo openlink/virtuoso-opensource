@@ -42,13 +42,13 @@ var TL = {
 			}
 		},
 		attach:function(elm,album) {
-			OAT.Dom.attach(elm,"mouseover",function() {
+			OAT.Event.attach(elm,"mouseover",function() {
 //				for (var i=0;i<album.parts.length;i++) {
 //					var part = album.parts[i];
 //					if (part.marker) { part.marker.setImage("http://ondras.praha12.net/marker_green.png"); }
 //				}
 			});
-			OAT.Dom.attach(elm,"mouseout",function() { 
+			OAT.Event.attach(elm,"mouseout",function() { 
 //				for (var i=0;i<album.parts.length;i++) {
 //					var part = album.parts[i];
 //					if (part.marker) { part.marker.setImage("http://www.google.com/intl/en_ALL/mapfiles/marker.png"); }
@@ -97,11 +97,11 @@ var TL = {
             var el = (e.target) ? e.target : e.srcElement
             OAT.Dom.removeClass((ds_albums.list[album_idx]).event.elm,"event_active"); 
         }
-        OAT.Dom.attach(a,'click',tlAlbumClick); 
+        OAT.Event.attach(a,'click',tlAlbumClick); 
         if(album.geolocation[2]=='true')
         {
-          OAT.Dom.attach(a,'mouseover',tlAlbumOnMouseOver); 
-          OAT.Dom.attach(a,'mouseout',tlAlbumOnMouseOut); 
+          OAT.Event.attach(a,'mouseover',tlAlbumOnMouseOver); 
+          OAT.Event.attach(a,'mouseout',tlAlbumOnMouseOut); 
         }
 
 				OAT.Dom.append([d, ball, a]);

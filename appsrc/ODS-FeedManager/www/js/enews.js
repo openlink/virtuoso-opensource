@@ -395,7 +395,7 @@ Feeds.loadTree = function(nodePath, node, nodeFunction)
 Feeds.updateTree = function(data, node, nodePath, nodeFunction)
 {
   function attach(node, path) {
-    OAT.Dom.attach(node._gdElm, 'click', function() {Feeds.selectNode(path, node);});
+    OAT.Event.attach(node._gdElm, 'click', function() {Feeds.selectNode(path, node);});
   }
   var o = OAT.JSON.parse(data);
   for (var i = 0; i < o.length; i++)

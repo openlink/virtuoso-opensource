@@ -50,7 +50,7 @@
 
            function showCalendar()
            {
-           var anchorTopLeft=OAT.Dom.position('cal_anchor');
+           var anchorTopLeft=OAT.Event.position('cal_anchor');
 
              
            if (OAT.Dom.isIE() == false)

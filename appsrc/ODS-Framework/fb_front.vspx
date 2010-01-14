@@ -1014,7 +1014,7 @@ function createSyncstatusDock(dockWinObj)
   _syncBtn.type='button';
   _syncBtn.value='Synchronize All';
   _syncBtn.id=dockWinObj.id+'_syncallbtn';
-  OAT.Dom.attach(_syncBtn,"click",function(){UpdateAll(<?Vself.syncdata_arr[5]?>,dockWinObj);});
+  OAT.Event.attach(_syncBtn,"click",function(){UpdateAll(<?Vself.syncdata_arr[5]?>,dockWinObj);});
 
   var _progressBar=OAT.Dom.create('div',{height:'20px',width:'0px',padding:'0px',backgroundColor : "#0F0"});
   _progressBar.id=dockWinObj.id+'_progress';
@@ -1051,7 +1051,7 @@ function createMappingDock(dockWinObj)
   var _close=OAT.Dom.create("input",{width:'60px'});
   _close.type='button';
   _close.value="Set";
-  OAT.Dom.attach(_close,"click",function(){win_mapping.state=0;win_mapping.actualizeState();});
+  OAT.Event.attach(_close,"click",function(){win_mapping.state=0;win_mapping.actualizeState();});
 
 
 
@@ -1106,7 +1106,7 @@ for (var i=0;i<inputCtrls.length;i++)
   var toggleSelect=OAT.Dom.create('div');
   var toggleSelectCB=OAT.Dom.create('input');
   toggleSelectCB.type='checkbox';
-  OAT.Dom.attach(toggleSelectCB,"click",function(){inverseSelected($('validationFieldsTbl'));});
+  OAT.Event.attach(toggleSelectCB,"click",function(){inverseSelected($('validationFieldsTbl'));});
 
   OAT.Dom.append([toggleSelect,toggleSelectCB,OAT.Dom.text(' Toggle select')]);
 
@@ -1114,7 +1114,7 @@ for (var i=0;i<inputCtrls.length;i++)
   var _close=OAT.Dom.create("input",{width:'60px'});
   _close.type='button';
   _close.value="Set";
-  OAT.Dom.attach(_close,"click",function(){win_validation.state=0;win_validation.actualizeState();});
+  OAT.Event.attach(_close,"click",function(){win_validation.state=0;win_validation.actualizeState();});
 
 
   OAT.Dom.append([_parent_div,toggleSelect,_table,_close]);
@@ -1216,7 +1216,7 @@ function fbInit()
   var _close=OAT.Dom.create("input",{width:'60px'});
   _close.type='button';
   _close.value="Set";
-  OAT.Dom.attach(_close,"click",function(){OAT.Dom.hide($('mappingDiv'));});
+  OAT.Event.attach(_close,"click",function(){OAT.Dom.hide($('mappingDiv'));});
 
   OAT.Dom.append([mappingWin.content,_table,_close]);
 
@@ -1274,7 +1274,7 @@ function fbInit()
   _close.value="Ok";
   _close.c_ods_cid=0;
   _close.id='manualMappingOK';
-  OAT.Dom.attach(_close,"click",function(e){
+  OAT.Event.attach(_close,"click",function(e){
     OAT.Dom.hide($('manualMappingDiv'));
                                            if(OAT.Browser.isIE)
                                               var _elm=e.srcElement;
@@ -1308,7 +1308,7 @@ function createImportObjDock(_syncData)
    OAT.Dom.append([_parent_div,_radio]);
    _radio.value=_syncData.ods_contacts[ii].ods_cid;
 
-    OAT.Dom.attach(_radio,"click",function(e){
+    OAT.Event.attach(_radio,"click",function(e){
       if (OAT.Browser.isIE)
                                                 var _objval=e.srcElement.value;
                                              else
@@ -1375,7 +1375,7 @@ function createImportObjDock(_syncData)
 //   _def_button.id=_dock_obj.id+'_defsyncbtn';
 //   _def_button.c_ods_cid=d_ods_cid;
 //
-//   OAT.Dom.attach(_def_button,"click",function(e){if(OAT.Browser.isIE)
+//   OAT.Event.attach(_def_button,"click",function(e){if(OAT.Browser.isIE)
 //                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
 //                                                  else
 //                                                     var _c_ods_cid = this.c_ods_cid;
@@ -1392,7 +1392,7 @@ function createImportObjDock(_syncData)
 //   _button.id=_dock_obj.id+'_syncbtn';
 //   _button.c_ods_cid=d_ods_cid;
 //
-//   OAT.Dom.attach(_button,"click",function(e){if(OAT.Browser.isIE)
+//   OAT.Event.attach(_button,"click",function(e){if(OAT.Browser.isIE)
 //                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
 //                                                  else
 //                                                     var _c_ods_cid = this.c_ods_cid;
@@ -1414,7 +1414,7 @@ function createImportObjDock(_syncData)
 
 //   _cancel.id=_dock_obj.id+'_cancelbtn';
 
-//   OAT.Dom.attach(_cancel,"click",function(){_dock_obj.dock.removeObject(_dock_obj);});
+//   OAT.Event.attach(_cancel,"click",function(){_dock_obj.dock.removeObject(_dock_obj);});
 
 //  _btnDiv.appendChild(_cancel);
 //  _parent_div.appendChild(_btnDiv);
