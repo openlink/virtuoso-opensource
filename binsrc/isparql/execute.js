@@ -137,25 +137,25 @@ var QueryExec = function(optObj) {
 		self.dom.next.title = "Forward";
 		self.dom.last.title = "Last";
 		OAT.Dom.append([self.dom.ul,self.dom.first,self.dom.prev,self.dom.next,self.dom.last]);
-		OAT.Dom.attach(self.dom.first,"click",function(){
+		OAT.Event.attach(self.dom.first,"click",function(){
 			if (self.cacheIndex > 0) {
 				self.cacheIndex = 0;
 				self.draw()
 			}
 		});
-		OAT.Dom.attach(self.dom.prev,"click",function(){
+		OAT.Event.attach(self.dom.prev,"click",function(){
 			if (self.cacheIndex > 0) {
 				self.cacheIndex--;
 				self.draw();
 			}
 		});
-		OAT.Dom.attach(self.dom.next,"click",function(){
+		OAT.Event.attach(self.dom.next,"click",function(){
 			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
 				self.cacheIndex++;
 				self.draw();
 			}
 		});
-		OAT.Dom.attach(self.dom.last,"click",function(){
+		OAT.Event.attach(self.dom.last,"click",function(){
 			if (self.cacheIndex > -1 && self.cacheIndex < self.cache.length-1) {
 				self.cacheIndex = self.cache.length-1;
 				self.draw();
@@ -531,7 +531,7 @@ var QueryExec = function(optObj) {
 
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function(event) {
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 
 			var cache = self.cache[self.cacheIndex];
 
@@ -554,7 +554,7 @@ var QueryExec = function(optObj) {
  	};
 
 		var selectRef = function(event) {
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -576,7 +576,7 @@ var QueryExec = function(optObj) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Get Data Items";
 			a.href = href;
-			OAT.Dom.attach(a,"click",selectRef);
+			OAT.Event.attach(a,"click",selectRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
 
@@ -584,7 +584,7 @@ var QueryExec = function(optObj) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Describe Data Source";
 			a.href = href;
-			OAT.Dom.attach(a,"click",dereferenceRef);
+			OAT.Event.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
 
@@ -612,7 +612,7 @@ var QueryExec = function(optObj) {
 //	var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
 //	img1.title = "Describe Data Source";
 //	img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
-//	OAT.Dom.attach(img1,"click",dereferenceRef);
+//	OAT.Event.attach(img1,"click",dereferenceRef);
 
 //	var a = OAT.Dom.create("a",{paddingLeft:"3px"});
 //	var img2 = OAT.Dom.create("img",{border:"none"});
