@@ -81,7 +81,7 @@ function init() {
 		    window.close();
 		}
 	    }
-	    OAT.Dom.attach("return_btn","click",returnRef);
+	    OAT.Event.attach("return_btn","click",returnRef);
 	} else OAT.Dom.hide("return_btn");
 
 	if (!iSPARQL.Common.checkAuth(goptions.username,goptions.password) == true)
@@ -1097,14 +1097,14 @@ iSPARQL.AuthUI = function (connection) {
     this.connection = {};
 
     this._init = function (conn) {
-	OAT.Dom.attach(self.loginB, 'click', self.loginCB);
-	OAT.Dom.attach(self.cancelB, 'click', self.cancelCB);
+	OAT.Event.attach(self.loginB, 'click', self.loginCB);
+	OAT.Event.attach(self.cancelB, 'click', self.cancelCB);
 
 	if (typeof connection != undefined)
 	    self.connection = conn;
 
 	OAT.Observer.add (self.connection.observers, self, self.connChanged);
-	OAT.Dom.attach (self.loginIndicatorB, 'click', self.dlg.show);
+	OAT.Event.attach (self.loginIndicatorB, 'click', self.dlg.show);
 	self.resetIndicator();
     }
 
@@ -1349,12 +1349,12 @@ iSPARQL.Common = {
 	iSPARQL.dialogs = {};
 
 	iSPARQL.dialogs.about = new OAT.Dialog("About iSPARQL","about_dlg",{width:400,modal:0,buttons:0});
-	OAT.Dom.attach ("about_dlg_b_ok", "click", iSPARQL.dialogs.about.hide);
+	OAT.Event.attach ("about_dlg_b_ok", "click", iSPARQL.dialogs.about.hide);
 
 	/* help XXX should just have OK/Dismiss button */
 
 	iSPARQL.dialogs.help = new OAT.Dialog("iSPARQL Help", "help_dlg", {width:400, modal:0, buttons:0});
-	OAT.Dom.attach ("help_dlg_b_ok", "click", iSPARQL.dialogs.help.hide);
+	OAT.Event.attach ("help_dlg_b_ok", "click", iSPARQL.dialogs.help.hide);
 
 	iSPARQL.dialogs.prefs = new OAT.Dialog("iSPARQL Preferences", "prefs_dlg", {width:400, modal:1});
 	iSPARQL.dialogs.prefs.ok = iSPARQL.dialogs.prefs.hide;
@@ -1441,14 +1441,14 @@ iSPARQL.Common = {
 
 	// Click event to get file name for save
 
-	OAT.Dom.attach ("browse_btn", "click", iSPARQL.Common.fileRef);
+	OAT.Event.attach ("browse_btn", "click", iSPARQL.Common.fileRef);
 
 	var loadToQBE = OAT.Dom.create("li",{},"nav");
 	loadToQBE.title = 'Load query into QBE';
 	var img = OAT.Dom.create("img");
 	img.src = "images/arrange.png";
 
-	OAT.Dom.attach(loadToQBE,
+	OAT.Event.attach(loadToQBE,
 		       'click',
 		       function() { /* load to QBE */
 			   tab.go(tab_qbe);
@@ -1465,7 +1465,7 @@ iSPARQL.Common = {
 	var img = OAT.Dom.create("img");
 	img.src = "images/cr22-action-edit.png";
 
-	OAT.Dom.attach(loadToAdvanced,'click',function(){
+	OAT.Event.attach(loadToAdvanced,'click',function(){
 			   tab.go(tab_query);
 			   var cache = qe.cache[qe.cacheIndex];
 			   $('query').value = cache.opts.query;
@@ -1504,29 +1504,29 @@ iSPARQL.Common = {
 	$("query_resizer_area").style.backgroundImage = 'url("'+OAT.Preferences.imagePath+"resize.gif"+'")';
 	$("query_resizer_area").style.cursor = "nw-resize";
 
-	OAT.Dom.attach ("query",
+	OAT.Event.attach ("query",
 			"keyup",
 			function () { iSPARQL.Common.setQuery ($v("query")); });
 
-	OAT.Dom.attach ("default-graph-uri",
+	OAT.Event.attach ("default-graph-uri",
 			"keyup",
 			function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
 
-	OAT.Dom.attach ("query",
+	OAT.Event.attach ("query",
 		       "change",
 		       function() { iSPARQL.Common.setQuery($v("query")); });
 
-	OAT.Dom.attach ("default-graph-uri",
+	OAT.Event.attach ("default-graph-uri",
 		       "change",
 		       function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
 
 	/* get content even after user pasted something (via menu/middlemouse), which wont trigger the events above */
 
-	OAT.Dom.attach ("query",
+	OAT.Event.attach ("query",
 		       "mouseout",
 		       function() { iSPARQL.Common.setQuery($v("query")); });
 
-	OAT.Dom.attach("default-graph-uri",
+	OAT.Event.attach("default-graph-uri",
 		       "mouseout",
 		       function() { iSPARQL.Common.setDefaultGraph($v("default-graph-uri")); });
 
@@ -1541,7 +1541,7 @@ iSPARQL.Common = {
 	$('query').value = iSPARQL.defaults.query;
 
 	$('maxrows').value = iSPARQL.dataObj.maxrows;
-	OAT.Dom.attach ('maxrows', 'change',
+	OAT.Event.attach ('maxrows', 'change',
 					function () {
 						var n = parseInt($v('maxrows'));
 						iSPARQL.dataObj.maxrows = isNaN(n) ? 0 : n;
@@ -1590,7 +1590,7 @@ iSPARQL.Common = {
 	    OAT.Dom.hide (elem_id);
     },
     enableFileOps: function () {
-	OAT.Dom.attach ("menu_b_load",
+	OAT.Event.attach ("menu_b_load",
 			"click",
 			function() {
 			    if (tab.tabs.find (tab_qbe) == tab.selectedIndex) qbe.func_load();
@@ -1598,7 +1598,7 @@ iSPARQL.Common = {
 			});
 	OAT.Dom.removeClass ("menu_b_load", "disabled")
 
-	OAT.Dom.attach("menu_b_save",
+	OAT.Event.attach("menu_b_save",
 		       "click",
 		       function() {
 			   if (tab.tabs.find(tab_qbe) == tab.selectedIndex) qbe.func_save();
@@ -1606,7 +1606,7 @@ iSPARQL.Common = {
 		       });
 	OAT.Dom.removeClass ("menu_b_save", "disabled")
 
-	OAT.Dom.attach ("menu_b_saveas",
+	OAT.Event.attach ("menu_b_saveas",
 			"click",
 			function() {
 			    if (tab.tabs.find(tab_qbe) == tab.selectedIndex) qbe.func_saveas();
@@ -1615,7 +1615,7 @@ iSPARQL.Common = {
 	OAT.Dom.removeClass ("menu_b_saveas", "disabled")
     },
     disableFileOps: function () {
-	OAT.Dom.detach ("menu_b_load",
+	OAT.Event.detach ("menu_b_load",
 			"click",
 			function() {
 			    if (tab.tabs.find (tab_qbe) == tab.selectedIndex) qbe.func_load();
@@ -1623,7 +1623,7 @@ iSPARQL.Common = {
 			});
 	OAT.Dom.addClass ("menu_b_load", "disabled");
 
-	OAT.Dom.detach("menu_b_save",
+	OAT.Event.detach("menu_b_save",
 		       "click",
 		       function() {
 			   if (tab.tabs.find(tab_qbe) == tab.selectedIndex) qbe.func_save();
@@ -1631,7 +1631,7 @@ iSPARQL.Common = {
 		       });
 	OAT.Dom.addClass ("menu_b_save", "disabled");
 
-	OAT.Dom.detach ("menu_b_saveas",
+	OAT.Event.detach ("menu_b_saveas",
 			"click",
 			function() {
 			    if (tab.tabs.find(tab_qbe) == tab.selectedIndex) qbe.func_saveas();
@@ -1652,32 +1652,32 @@ iSPARQL.Common = {
 	m.createFromUL("menu");
 
 	// Attach events
-	OAT.Dom.attach ("menu_b_reset",
+	OAT.Event.attach ("menu_b_reset",
 			"click",
 			function() {
 			    if (tab.tabs.find (tab_qbe) == tab.selectedIndex) qbe.func_clear();
 			    if (tab.tabs.find (tab_query) == tab.selectedIndex) adv.func_reset();
 			});
 
-	OAT.Dom.attach ("menu_b_run",
+	OAT.Event.attach ("menu_b_run",
 			"click",
 			function() {
 			    if (tab.tabs.find(tab_qbe) == tab.selectedIndex) qbe.func_run();
 			    if (tab.tabs.find(tab_query) == tab.selectedIndex) adv.func_run();
 			});
 
-	OAT.Dom.attach ("menu_b_help", "click", iSPARQL.dialogs.help.show);
+	OAT.Event.attach ("menu_b_help", "click", iSPARQL.dialogs.help.show);
 
-	OAT.Dom.attach("menu_b_qbe", "click", function (){
+	OAT.Event.attach("menu_b_qbe", "click", function (){
 			   tab.go (tab_qbe);
 		       });
 
-	OAT.Dom.attach("menu_b_adv", "click", function (){
+	OAT.Event.attach("menu_b_adv", "click", function (){
 			   tab.go (tab_query);
 		       });
 
-	OAT.Dom.attach("menu_b_about", "click", iSPARQL.dialogs.about.show);
-	OAT.Dom.attach("menu_b_prefs", "click", iSPARQL.dialogs.prefs.show);
+	OAT.Event.attach("menu_b_about", "click", iSPARQL.dialogs.about.show);
+	OAT.Event.attach("menu_b_prefs", "click", iSPARQL.dialogs.prefs.show);
 
 	OAT.Observer.add (iSPARQL.serverConn.observers, this, this.serverConnectObserver);
 	if (iSPARQL.serverConn.connected) this.enableFileOps();
@@ -2100,14 +2100,14 @@ function add_named_graph(graph) {
 
     OAT.Dom.append([delCell,delButton],[boxCell,boxCheck],[row,boxCell,graphCell,delCell],[table.tBodies[0],row]);
 
-    OAT.Dom.attach(delButton,"click",function() {
+    OAT.Event.attach(delButton,"click",function() {
 		       OAT.Dom.unlink(row);
 		       $('named_graphs_cnt').innerHTML--;
 		       if (!table.tBodies[0].rows.length) OAT.Dom.unlink(table.tBodies[0]);
 		       iSPARQL.Common.removeNamedGraph(named_graph);
 		   });
 
-    OAT.Dom.attach(boxCheck,"click",function() {
+    OAT.Event.attach(boxCheck,"click",function() {
 		       if (iSPARQL.dataObj.namedGraphs.find(named_graph) == -1) {
 			   iSPARQL.Common.addNamedGraph(named_graph);
 		       } else {

@@ -532,10 +532,10 @@ iSPARQL.QBE = function (def_obj) {
 			 self.Schemas.Unbound.expand();
 			 self.Schemas.Refresh()
 			     });
-    OAT.Dom.attach("schema_import","click",function() {
+    OAT.Event.attach("schema_import","click",function() {
 		       self.Schemas.Import($v('schema').trim());
 		   });
-    OAT.Dom.attach("schema_remove","click",function() {
+    OAT.Event.attach("schema_remove","click",function() {
 		       self.Schemas.Remove($v('schema').trim());
 		   });
 
@@ -621,14 +621,14 @@ iSPARQL.QBE = function (def_obj) {
 	    var val = self.putPrefix('<' + treeNode.uri + '>');
 	    if (target == iSPARQL.qbe.svgsparql) {
 		if (treeNode.uritype == 'class') {
-		    var pos = OAT.Dom.position(target.parent);
+		    var pos = OAT.Event.position(target.parent);
 		    var x = x_ - pos[0];
 		    var y = y_ - pos[1];
 		    var node = target.addNode(x,y,"",0);
 		    node.setValueByDrop(val,treeNode.uritype,x,y);
 		}
 	    } else if (target.svgsparql) {
-		var pos = OAT.Dom.position(target.svgsparql.parent);
+		var pos = OAT.Event.position(target.svgsparql.parent);
 		var x = x_ - pos[0];
 		var y = y_ - pos[1];
 		target.setValueByDrop(val,treeNode.uritype,x,y);
@@ -709,7 +709,7 @@ iSPARQL.QBE = function (def_obj) {
 	    leaf._gdElm.node = leaf;
 
 	    self.svgsparql.ghostdrag.addSource(leaf._gdElm,self.Schemas.NodeDragProcess,self.Schemas.NodeDragDrop);
-	    OAT.Dom.attach(leaf._gdElm,"dblclick",self.Schemas.NodeDblClick);
+	    OAT.Event.attach(leaf._gdElm,"dblclick",self.Schemas.NodeDblClick);
 
 	    if (type == 'class') {
 		leaf.setImage('concept-icon-16');
@@ -983,9 +983,9 @@ iSPARQL.QBE = function (def_obj) {
     }
 
     this.disableFileOps = function () {
-	OAT.Dom.detach("menu_qbe_load",  "click",  self.func_load);
-	OAT.Dom.detach("menu_qbe_save",  "click",  self.func_save);
-	OAT.Dom.detach("menu_qbe_saveas","click",  self.func_saveas);
+	OAT.Event.detach("menu_qbe_load",  "click",  self.func_load);
+	OAT.Event.detach("menu_qbe_save",  "click",  self.func_save);
+	OAT.Event.detach("menu_qbe_saveas","click",  self.func_saveas);
 
 	OAT.Dom.addClass("menu_qbe_load",   "disabled");
 	OAT.Dom.addClass("menu_qbe_save",   "disabled");
@@ -993,9 +993,9 @@ iSPARQL.QBE = function (def_obj) {
     }
 
     this.enableFileOpts = function () {
-	OAT.Dom.attach("menu_qbe_load",  "click",  self.func_load);
-	OAT.Dom.attach("menu_qbe_save",  "click",  self.func_save);
-	OAT.Dom.attach("menu_qbe_saveas","click",  self.func_saveas);
+	OAT.Event.attach("menu_qbe_load",  "click",  self.func_load);
+	OAT.Event.attach("menu_qbe_save",  "click",  self.func_save);
+	OAT.Event.attach("menu_qbe_saveas","click",  self.func_saveas);
 
 	OAT.Dom.removeClass("menu_qbe_load",   "disabled");
 	OAT.Dom.removeClass("menu_qbe_save",   "disabled");
@@ -1011,7 +1011,7 @@ iSPARQL.QBE = function (def_obj) {
     var t = new OAT.Toolbar("qbe_toolbar");
 
     icon_clear = t.addIcon(0,"images/new.png","Clear Pane",self.func_clear);
-    OAT.Dom.attach("menu_qbe_clear","click",self.func_clear);
+    OAT.Event.attach("menu_qbe_clear","click",self.func_clear);
 
     icon_load =   t.addIcon(0,"images/open_h.png",   "Open",       self.func_load);
     icon_save =   t.addIcon(0,"images/save_h.png",   "Save",       self.func_save);
@@ -1034,7 +1034,7 @@ iSPARQL.QBE = function (def_obj) {
     var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
     var drop = function(target,x_,y_) {
 	if (target == qbe.svgsparql) {
-	    var pos = OAT.Dom.position(target.parent);
+	    var pos = OAT.Event.position(target.parent);
 	    var x = x_ - pos[0];
 	    var y = y_ - pos[1];
 	    node = target.addNode(x,y,"",0);
@@ -1064,7 +1064,7 @@ iSPARQL.QBE = function (def_obj) {
     }
     var drop = function(target,x_,y_) {
 	if (target != qbe.svgsparql && !target.node2) {
-	    var pos = OAT.Dom.position(target.svgsparql.parent);
+	    var pos = OAT.Event.position(target.svgsparql.parent);
 	    var x = x_ - pos[0];
 	    var y = y_ - pos[1];
 	    qbe.svgsparql.startDrawing(target,x,y,'?');
@@ -1154,20 +1154,20 @@ iSPARQL.QBE = function (def_obj) {
     }
 
     icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run);
-    OAT.Dom.attach("menu_qbe_run","click",self.func_run);
+    OAT.Event.attach("menu_qbe_run","click",self.func_run);
 
     t.addSeparator();
 
     icon_generate = t.addIcon(0,"images/cr22-action-exec.png","Generate",self.func_generate);
-    OAT.Dom.attach("menu_qbe_generate","click",self.func_generate);
+    OAT.Event.attach("menu_qbe_generate","click",self.func_generate);
 
     icon_get_from_adv = t.addIcon(0,"images/compfile.png","Get from Advanced",self.func_get_from_adv);
-    OAT.Dom.attach("menu_qbe_get_from_adv","click",self.func_get_from_adv);
+    OAT.Event.attach("menu_qbe_get_from_adv","click",self.func_get_from_adv);
 
     t.addSeparator();
 
     icon_arrange = t.addIcon(0,"images/make_kdevelop.png","Auto Arrange",self.func_arrange);
-    OAT.Dom.attach("menu_qbe_arrange","click",self.func_arrange);
+    OAT.Event.attach("menu_qbe_arrange","click",self.func_arrange);
 
     t.addSeparator();
 
@@ -1197,7 +1197,7 @@ iSPARQL.QBE = function (def_obj) {
 	qbe_graph_input.style.width = w - 680 + 'px';
     }
     calc_width();
-    OAT.Dom.attach(window,"resize",calc_width);
+    OAT.Event.attach(window,"resize",calc_width);
 
     var qbe_graph_label = OAT.Dom.create("label");
     qbe_graph_label["htmlFor"] = "qbe_graph";
@@ -1212,7 +1212,7 @@ iSPARQL.QBE = function (def_obj) {
     OAT.Dom.append([t.div,qbe_datasource_cnt,qbe_graph_label,qbe_graph_input]);
 
     icon_graph_add = t.addIcon(0,"images/edit_add.png","add",ds_graph_add)
-    //OAT.Dom.attach("qbe_datasource_graph_add","click",ds_graph_add);
+    //OAT.Event.attach("qbe_datasource_graph_add","click",ds_graph_add);
     icon_graph_add.style.marginTop = '6px';
 
     this.dataset_win = new OAT.Window({title:"Dataset", close:1, min:0, max:0, width:page_w - 400, height:200, x:200,y:160});
@@ -1258,14 +1258,14 @@ iSPARQL.QBE = function (def_obj) {
 	rem_btn.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
 	cell_rm.appendChild(rem_btn);
 
-	OAT.Dom.attach(rem_btn,"click",function(){
+	OAT.Event.attach(rem_btn,"click",function(){
 				   OAT.Dom.unlink(row);
 				   if (!table.tBodies[0].rows.length) { OAT.Dom.unlink(table.tBodies[0]); }
 				   $('qbe_datasource_cnt').innerHTML--;
 				   self.Schemas.Refresh();
 		       });
 
-	OAT.Dom.attach($('ds_'+self.dataSourceNum),"change",function(){
+	OAT.Event.attach($('ds_'+self.dataSourceNum),"change",function(){
 			   self.Schemas.Refresh();
 		       });
 
@@ -1274,7 +1274,7 @@ iSPARQL.QBE = function (def_obj) {
 
 	return true;
     }
-    OAT.Dom.attach("qbe_dataset_add_btn","click",function() {
+    OAT.Event.attach("qbe_dataset_add_btn","click",function() {
 		       self.addDataSource($v('qbe_dataset_add'));
 		       $('qbe_dataset_add').value = '';
 		       self.Schemas.Refresh();
@@ -1303,11 +1303,11 @@ iSPARQL.QBE = function (def_obj) {
     }
 
     OAT.Keyboard.add('return',self.func_run,null,null,null,$('qbe_graph'));
-    OAT.Dom.attach($('qbe_graph'),"change",self.Schemas.Refresh);
+    OAT.Event.attach($('qbe_graph'),"change",self.Schemas.Refresh);
 
     icon_drag.toggleState(1);
     /* input field for value editing */
-    OAT.Dom.attach("qbe_node_id","keyup",function() {
+    OAT.Event.attach("qbe_node_id","keyup",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedNode)
 			   {
@@ -1320,7 +1320,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* input fields for value editing */
-    OAT.Dom.attach("qbe_node_res_type","keyup",function() {
+    OAT.Event.attach("qbe_node_res_type","keyup",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedNode)
 			   {
@@ -1333,7 +1333,7 @@ iSPARQL.QBE = function (def_obj) {
 				   }
 			   }
 		   });
-    OAT.Dom.attach("qbe_edge_value","keyup",function() {
+    OAT.Event.attach("qbe_edge_value","keyup",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedEdge)
 			   {
@@ -1346,7 +1346,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* input field for value editing */
-    OAT.Dom.attach("qbe_group_id","keyup",function() {
+    OAT.Event.attach("qbe_group_id","keyup",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedGroup)
 			   {
@@ -1359,7 +1359,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* input field for node type switching */
-    OAT.Dom.attach("qbe_node_type","change",function() {
+    OAT.Event.attach("qbe_node_type","change",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedNode) {
 			   obj = self.svgsparql.selectedNode;
@@ -1369,7 +1369,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* input field for group type switching */
-    OAT.Dom.attach("qbe_group_type","change",function() {
+    OAT.Event.attach("qbe_group_type","change",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedGroup)
 			   {
@@ -1388,7 +1388,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* input field for node type switching */
-    OAT.Dom.attach("qbe_edge_type","change",function() {
+    OAT.Event.attach("qbe_edge_type","change",function() {
 		       var obj = false;
 		       if (self.svgsparql.selectedEdge)
 			   {
@@ -1401,7 +1401,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* obj 'visibility' */
-    OAT.Dom.attach("qbe_visible","change",function() {
+    OAT.Event.attach("qbe_visible","change",function() {
 		       for(var i = 0;i < self.svgsparql.selectedNodes.length;i++)
 			   self.svgsparql.selectedNodes[i].setVisible($("qbe_visible").checked);
 		       for(var i = 0;i < self.svgsparql.selectedEdges.length;i++)
@@ -1411,7 +1411,7 @@ iSPARQL.QBE = function (def_obj) {
 		   });
 
     /* obj 'orderby' */
-    OAT.Dom.attach("qbe_orderby","change",function() {
+    OAT.Event.attach("qbe_orderby","change",function() {
 		       if ($("qbe_orderby").checked)
 			   {
 			       for(var i = 0;i < self.svgsparql.selectedGroups.length;i++)
@@ -1443,7 +1443,7 @@ iSPARQL.QBE = function (def_obj) {
 	if (name.slice(name.length-ext.length - 1).toLowerCase() != "." + ext) { name += "." + ext; }
 	$("qbe_save_name").value = name;
     }
-    OAT.Dom.attach("qbe_browse_btn","click",fileRef);
+    OAT.Event.attach("qbe_browse_btn","click",fileRef);
 
     this.RunQuery = function() {
 	var p = {
@@ -2104,7 +2104,7 @@ iSPARQL.QBE = function (def_obj) {
 		window.__inherited.callback(self.QueryGenerate());
 		window.close();
 	    }
-	    OAT.Dom.attach("qbe_return_btn", "click", returnRef);
+	    OAT.Event.attach("qbe_return_btn", "click", returnRef);
 	} else { OAT.Dom.hide("qbe_return_btn");}
 
     } else {
