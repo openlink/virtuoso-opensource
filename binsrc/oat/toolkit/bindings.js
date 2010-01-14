@@ -20,21 +20,21 @@ OAT.Bindings = {
 		var callback = function(event) {
 			object[property] = $v(input); 
 		}
-		OAT.Dom.attach(input,"keyup",callback);
+		OAT.Event.attach(input,"keyup",callback);
 	},
 
 	bindBool:function(input,object,property) {
 		var callback = function(event) {
 			object[property] = (input.checked ? "1" : "0"); 
 		}
-		OAT.Dom.attach(input,"change",callback);
+		OAT.Event.attach(input,"change",callback);
 	},
 
 	bindSelect:function(input,object,property) {
 		var callback = function(event) {
 			object[property] = $v(input); 
 		}
-		OAT.Dom.attach(input,"change",callback);
+		OAT.Event.attach(input,"change",callback);
 	},
 	
 	bindCombo:function(input,object,property) {
@@ -51,7 +51,7 @@ OAT.Bindings = {
 			var coords = OAT.Dom.position(input);
 			c.pick(coords[0]-150,coords[1],colorRef);
 		}
-		OAT.Dom.attach(input,"click",callback);
+		OAT.Event.attach(input,"click",callback);
 	}
 }
 OAT.Loader.featureLoaded("bindings");

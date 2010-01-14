@@ -21,7 +21,7 @@ OAT.TabData = {
 	move:function(event) {
 		if (!OAT.TabData.obj && !OAT.TabData.win) { return; }
 		var o = OAT.TabData.obj || OAT.TabData.win;
-		var pos = OAT.Dom.eventPos(event);
+		var pos = OAT.Event.position(event);
 		var parent = o.parent.options.dockElement;
 		var is_in = OAT.TabData.inParent(pos,parent);
 		is_in ? OAT.Dom.addClass(parent,"tab_signal") : OAT.Dom.removeClass(parent,"tab_signal");
@@ -57,7 +57,7 @@ OAT.TabData = {
 		if (!OAT.TabData.win) { return; }
 		var o = OAT.TabData.win;
 		OAT.TabData.win = false;
-		var pos = OAT.Dom.eventPos(event);
+		var pos = OAT.Event.position(event);
 		var parent = o.parent.options.dockElement;
 		var is_in = OAT.TabData.inParent(pos,parent);
 		if (is_in) { o.dock(); }
@@ -163,7 +163,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		OAT.Dom.unlink(self.key);
 		
 		/* create window */
-		var pos = OAT.Dom.eventPos(event);
+		var pos = OAT.Event.position(event);
 		var w = self.parent.options.dockWindowWidth;
 		var h = self.parent.options.dockWindowHeight;
 		var x = Math.max(0,pos[0]-w/2);
@@ -173,7 +173,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		self.window.onclose = self.dock;
 		OAT.Dom.show(self.value);
 		document.body.appendChild(self.window.div);
-		OAT.Dom.attach(self.window.move,"mousedown",function() { OAT.TabData.win = self; });
+		OAT.Event.attach(self.window.move,"mousedown",function() { OAT.TabData.win = self; });
 		OAT.Drag.initiate(event,self.window.move);
 		OAT.TabData.win = self;
 		
@@ -194,12 +194,12 @@ OAT.TabPart = function(clicker, mover, parent) {
 	}
 	
 	OAT.Dom.addClass(self.key,"tab");
-	OAT.Dom.attach(self.key,"click",function(){ parent.go(self); });
+	OAT.Event.attach(self.key,"click",function(){ parent.go(self); });
 	
 	if (parent.options.dockMode) {
-		OAT.Dom.attach(self.key,"mousedown",self.initDrag);
-		OAT.Dom.attach(self.key,"mousemove",self.startDrag);
-		OAT.Dom.attach(self.key,"mouseup",function(){self.dragStatus = 0;});
+		OAT.Event.attach(self.key,"mousedown",self.initDrag);
+		OAT.Event.attach(self.key,"mousemove",self.startDrag);
+		OAT.Event.attach(self.key,"mouseup",function(){self.dragStatus = 0;});
 	}
 }
 
@@ -282,9 +282,9 @@ OAT.Tab = function(elm,optObj) {
 	
 	if (self.options.dockMode) {
 		self.layers = new OAT.Layers(100);
-		OAT.Dom.attach(document,"mousemove",OAT.TabData.move);
-		OAT.Dom.attach(document,"mouseup",OAT.TabData.up);
-		OAT.Dom.attach(document,"mouseup",OAT.TabData.checkWin);
+		OAT.Event.attach(document,"mousemove",OAT.TabData.move);
+		OAT.Event.attach(document,"mouseup",OAT.TabData.up);
+		OAT.Event.attach(document,"mouseup",OAT.TabData.checkWin);
 	}
 }
 OAT.Loader.featureLoaded("tab");

@@ -45,10 +45,10 @@ OAT.ComboButton = function() {
 	
 	this.addOption = function(imagePath,textValue,callback) {
 		var opt = OAT.Dom.create("div",{},"combo_button_option");
-		OAT.Dom.attach(opt,"mousedown",function(){
+		OAT.Event.attach(opt,"mousedown",function(){
 			OAT.Dom.addClass(opt,"combo_button_option_down");
 		});
-		OAT.Dom.attach(opt,"mouseup",function(){
+		OAT.Event.attach(opt,"mouseup",function(){
 			OAT.Dom.removeClass(opt,"combo_button_option_down");
 		});
 		if (imagePath) { /* if image specified, add it to option */
@@ -64,7 +64,7 @@ OAT.ComboButton = function() {
 		self.optList.appendChild(opt);
 		var index = self.options.length - 1;
 		var clickRef = function() {	self.select(index,true); }
-		OAT.Dom.attach(opt,"click",clickRef); /* what to do after clicking */
+		OAT.Event.attach(opt,"click",clickRef); /* what to do after clicking */
 		if (self.options.length == 1) { this.select(0,false); } /* first option is automatically selected */
 	}
 	

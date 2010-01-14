@@ -776,10 +776,10 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 
 	this.lassoStart = function(event) { /* selecting multiple nodes */
 		self.lasso = OAT.Dom.create("div",{position:"absolute",border:"2px dotted #0f0",width:"0px",height:"0px",zIndex:10});
-		OAT.Dom.attach(self.lasso,"mouseup",self.lassoStop);
-		OAT.Dom.attach(self.lasso,"mousemove",self.lassoProcess);
+		OAT.Event.attach(self.lasso,"mouseup",self.lassoStop);
+		OAT.Event.attach(self.lasso,"mousemove",self.lassoProcess);
 		var coords = OAT.Dom.position(self.parent);
-		var exact = OAT.Dom.eventPos(event);
+		var exact = OAT.Event.position(event);
 		var x = exact[0] - coords[0];
 		var y = exact[1] - coords[1];
 		self.lasso.style.left = x + "px";
@@ -791,7 +791,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	this.lassoProcess = function(event) {
 		if (!self.lasso) { return; }
 		if (!self.lasso.parentNode) { self.parent.appendChild(self.lasso); }
-		var exact = OAT.Dom.eventPos(event);
+		var exact = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
 		var end_x = exact[0] - pos[0];
 		var end_y = exact[1] - pos[1];
@@ -906,7 +906,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 				return;
 			}
 			if (self.fakeEdge) { /* drawing an edge */
-				var epos = OAT.Dom.eventPos(event);
+				var epos = OAT.Event.position(event);
 				var pos = OAT.Dom.position(self.parent);
 				var x = epos[0] - pos[0];
 				var y = epos[1] - pos[1];
@@ -942,7 +942,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 				var l1 = self.fakeEdge.l1.textContent;
 				var l2 = self.fakeEdge.l2.textContent;
 				self.fakeEdge.unlink();
-				var epos = OAT.Dom.eventPos(event);
+				var epos = OAT.Event.position(event);
 				var pos = OAT.Dom.position(self.parent);
 				var x = epos[0] - pos[0];
 				var y = epos[1] - pos[1];
@@ -1546,7 +1546,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	var downRef = function(event) { /* start dragging or moving */		
 		self.timeStamp = event.timeStamp;
 		if (self.dragging.obj) { return; }
-		var epos = OAT.Dom.eventPos(event);
+		var epos = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
 		var x = epos[0] - pos[0];
 		var y = epos[1] - pos[1];
@@ -1573,12 +1573,12 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	}
 	
 	var clickRef = function(event) { /* add new node */
-		var epos = OAT.Dom.eventPos(event);
+		var epos = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
 		var x = epos[0] - pos[0];
 		var y = epos[1] - pos[1];
 		if (self.mode == OAT.SVGSparqlData.MODE_ADD) {
-			var ep = OAT.Dom.eventPos(event);
+			var ep = OAT.Event.position(event);
 			var coords = OAT.Dom.position(self.parent);
 			self.addNode(ep[0]-coords[0],ep[1]-coords[1],self.options.defaultNodeValue);
 		}
@@ -1600,7 +1600,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			return;
 		}
 		
-		var epos = OAT.Dom.eventPos(event);
+		var epos = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
 		var x = epos[0] - pos[0];
 		var y = epos[1] - pos[1];
@@ -1616,12 +1616,12 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		active.signalStart();
 	}
 
-	OAT.Dom.attach(self.svg,"mousedown",downRef); /* start drag or draw */
-	OAT.Dom.attach(self.svg,"click",clickRef);
-	OAT.Dom.attach(document,"mousemove",moveRef);
+	OAT.Event.attach(self.svg,"mousedown",downRef); /* start drag or draw */
+	OAT.Event.attach(self.svg,"click",clickRef);
+	OAT.Event.attach(document,"mousemove",moveRef);
 	
-	OAT.Dom.attach(self.svg,"mousemove",self.dragging.move);
-	OAT.Dom.attach(self.svg,"mouseup",self.dragging.up);
+	OAT.Event.attach(self.svg,"mousemove",self.dragging.move);
+	OAT.Event.attach(self.svg,"mouseup",self.dragging.up);
 	
 	self.clear();
 	self.prepareSphere();

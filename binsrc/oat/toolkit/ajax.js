@@ -158,7 +158,7 @@ OAT.Ajax = {
 	setCancel:function(element) {
 		var elm = $(element);
 		OAT.Ajax.cancel = elm;
-		OAT.Dom.attach(elm,"click",OAT.Ajax.cancelAll);
+		OAT.Event.attach(elm,"click",OAT.Ajax.cancelAll);
 	},
 
 	cancelAll:function() {
@@ -189,7 +189,7 @@ OAT.XMLHTTP = function() {
 	}
 	this.setResponse = function(callback) {
 		if (this.iframe) {
-			OAT.Dom.attach(this.ifr,"load",callback);
+			OAT.Event.attach(this.ifr,"load",callback);
 		} else {
 			this.obj.onreadystatechange = callback;
 		}

@@ -104,7 +104,7 @@ OAT.Calendar = function(optObj) {
 			self.callback(self.date);
 			self.createDays();
 		}
-		OAT.Dom.attach(td,"click",callback);
+		OAT.Event.attach(td,"click",callback);
 	}
 	
 	this.setYear = function() {
@@ -224,21 +224,21 @@ OAT.Calendar = function(optObj) {
 		var div = OAT.Dom.create("div",{position:"absolute",left:"2px",cursor:"pointer"});
 		div.innerHTML = " &laquo; ";
 		divYear.appendChild(div);
-		OAT.Dom.attach(div,"click",self.yearB);
+		OAT.Event.attach(div,"click",self.yearB);
 		var div = OAT.Dom.create("div",{position:"absolute",right:"2px",cursor:"pointer"});
 		div.innerHTML = " &raquo; ";
 		divYear.appendChild(div);
-		OAT.Dom.attach(div,"click",self.yearF);
+		OAT.Event.attach(div,"click",self.yearF);
 		divYear.appendChild(self.textYear);
 		
 		var div = OAT.Dom.create("div",{position:"absolute",left:"2px",cursor:"pointer"});
 		div.innerHTML = " &laquo; ";
 		divMonth.appendChild(div);
-		OAT.Dom.attach(div,"click",self.monthB);
+		OAT.Event.attach(div,"click",self.monthB);
 		var div = OAT.Dom.create("div",{position:"absolute",right:"2px",cursor:"pointer"});
 		div.innerHTML = " &raquo; ";
 		divMonth.appendChild(div);
-		OAT.Dom.attach(div,"click",self.monthF);
+		OAT.Event.attach(div,"click",self.monthF);
 		divMonth.appendChild(self.textMonth);
 
 		self.div.appendChild(divYear);
@@ -261,12 +261,12 @@ OAT.Calendar = function(optObj) {
 	if (self.options.popup) {
 		var clickRef = function(event) {
 			if (!self.visible) { return; }
-			var target = OAT.Dom.source(event);
+			var target = OAT.Event.source(event);
 			if (OAT.Dom.isChild(target,self.div)) { return; }
 			self.visible = false;
 			OAT.Dom.hide(self.div);
 		}
-		OAT.Dom.attach(document,"click",clickRef);
+		OAT.Event.attach(document,"click",clickRef);
 	}
 }
 OAT.Loader.featureLoaded("calendar");

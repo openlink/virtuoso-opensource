@@ -47,8 +47,8 @@ OAT.Keyboard = {
 		var index = OAT.Keyboard.objects.find(o);
 		if (index == -1) {
 			OAT.Keyboard.objects.push(o);
-			OAT.Dom.attach(o,"keydown",function(event){OAT.Keyboard.check(event,o);});
-			OAT.Dom.attach(o,"keyup",function(event){OAT.Keyboard.check(event,o);});
+			OAT.Event.attach(o,"keydown",function(event){OAT.Keyboard.check(event,o);});
+			OAT.Event.attach(o,"keyup",function(event){OAT.Keyboard.check(event,o);});
 		}
 		if (!(g in OAT.Keyboard.groups)) { OAT.Keyboard.groups[g] = []; }
 		

@@ -207,15 +207,15 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		switch (self.options.onClick) {
 			case "select":
 				if (!self.options.poorMode) {
-					OAT.Dom.detach(self._label,"click",self.toggleSelect);
-					OAT.Dom.detach(self._icon,"click",self.toggleSelect);
+					OAT.Event.detach(self._label,"click",self.toggleSelect);
+					OAT.Event.detach(self._icon,"click",self.toggleSelect);
 				}
 			break;
 			
 			case "toggle":
 				if (self.ul) {
-					OAT.Dom.detach(self._label,"click",self.toggleState);
-					OAT.Dom.detach(self._icon,"click",self.toggleState);
+					OAT.Event.detach(self._label,"click",self.toggleState);
+					OAT.Event.detach(self._icon,"click",self.toggleState);
 				}
 			break;
 		}
@@ -223,24 +223,24 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		switch (self.options.onClick) {
 			case "select":
 				if (!self.options.poorMode) {
-					OAT.Dom.detach(self._label,"dblclick",self.toggleSelect);
-					OAT.Dom.detach(self._icon,"dblclick",self.toggleSelect);
+					OAT.Event.detach(self._label,"dblclick",self.toggleSelect);
+					OAT.Event.detach(self._icon,"dblclick",self.toggleSelect);
 				}
 			break;
 			
 			case "toggle":
 				if (self.ul) {
-					OAT.Dom.detach(self._label,"dblclick",self.toggleState);
-					OAT.Dom.detach(self._icon,"dblclick",self.toggleState);
+					OAT.Event.detach(self._label,"dblclick",self.toggleState);
+					OAT.Event.detach(self._icon,"dblclick",self.toggleState);
 				}
 			break;
 		}
 		
 		if (self.options.poorMode) { return; }
 
-		if (self.ul) { OAT.Dom.detach(self._sign,"click",self.toggleState); } /* +- sign */
+		if (self.ul) { OAT.Event.detach(self._sign,"click",self.toggleState); } /* +- sign */
 		
-		if (self.options.checkboxMode) { OAT.Dom.detach(self.checkbox,"change",self.toggleCheck); }
+		if (self.options.checkboxMode) { OAT.Event.detach(self.checkbox,"change",self.toggleCheck); }
 		
 		if (self.options.allowDrag) {
 			self.root.gd.delTarget(self._gdElm);
@@ -255,15 +255,15 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		switch (self.options.onClick) {
 			case "select":
 				if (!self.options.poorMode) {
-					OAT.Dom.attach(self._label,"click",self.toggleSelect);
-					OAT.Dom.attach(self._icon,"click",self.toggleSelect);
+					OAT.Event.attach(self._label,"click",self.toggleSelect);
+					OAT.Event.attach(self._icon,"click",self.toggleSelect);
 				}
 			break;
 			
 			case "toggle":
 				if (self.ul) {
-					OAT.Dom.attach(self._label,"click",self.toggleState);
-					OAT.Dom.attach(self._icon,"click",self.toggleState);
+					OAT.Event.attach(self._label,"click",self.toggleState);
+					OAT.Event.attach(self._icon,"click",self.toggleState);
 				}
 			break;
 		}
@@ -271,25 +271,25 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		switch (self.options.onDblClick) {
 			case "select":
 				if (!self.options.poorMode) {
-					OAT.Dom.attach(self._label,"dblclick",self.toggleSelect);
-					OAT.Dom.attach(self._icon,"dblclick",self.toggleSelect);
+					OAT.Event.attach(self._label,"dblclick",self.toggleSelect);
+					OAT.Event.attach(self._icon,"dblclick",self.toggleSelect);
 				}
 			break;
 			
 			case "toggle":
 				if (self.ul) {
-					OAT.Dom.attach(self._label,"dblclick",self.toggleState);
-					OAT.Dom.attach(self._icon,"dblclick",self.toggleState);
+					OAT.Event.attach(self._label,"dblclick",self.toggleState);
+					OAT.Event.attach(self._icon,"dblclick",self.toggleState);
 				}
 			break;
 		}
 
 		if (self.options.poorMode) { return; }
 
-		if (self.ul) { OAT.Dom.attach(self._sign,"click",self.toggleState); } /* +- sign */
+		if (self.ul) { OAT.Event.attach(self._sign,"click",self.toggleState); } /* +- sign */
 		
 		/* if checkbox mode is used */
-		if (self.options.checkboxMode) { OAT.Dom.attach(self.checkbox,"change",self.toggleCheck); }
+		if (self.options.checkboxMode) { OAT.Event.attach(self.checkbox,"change",self.toggleCheck); }
 		
 		if (!self.options.allowDrag) { return; }
 		
@@ -555,7 +555,7 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		var e = self.root.gdEvent;
 		var pos = OAT.Dom.position(self._div);
 		var dims = OAT.Dom.getWH(self._div);
-		var epos = OAT.Dom.eventPos(e);
+		var epos = OAT.Event.position(e);
 		
 		var hit = 0;
 		
@@ -653,7 +653,7 @@ OAT.Tree = function(optObj) {
 			OAT.MSG.attach(self.gd,OAT.MSG.GD_START,self.gdStart);
 			OAT.MSG.attach(self.gd,OAT.MSG.GD_END,self.gdEnd);
 			OAT.MSG.attach(self.gd,OAT.MSG.GD_ABORT,self.gdEnd);
-			OAT.Dom.attach(document,"mousemove",self.gdMove);
+			OAT.Event.attach(document,"mousemove",self.gdMove);
 		}
 		
 		/* get a mirror of existing structure */

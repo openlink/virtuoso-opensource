@@ -143,7 +143,7 @@ OAT.Validation = {
 				elm.value = OAT.Validation.printDate(paramsObj.defDate);
 			break;
 		}
-		OAT.Dom.attach(elm,"keyup",function(event){OAT.Validation.validate(elm,event,type,paramsObj);});
+		OAT.Event.attach(elm,"keyup",function(event){OAT.Validation.validate(elm,event,type,paramsObj);});
 	}
 }
 OAT.Loader.featureLoaded("validation");

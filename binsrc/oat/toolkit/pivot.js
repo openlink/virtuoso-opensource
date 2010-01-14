@@ -94,9 +94,9 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			rowDiv:c2,
 			colDiv:c3
 		}
-		OAT.Dom.attach(l1,"click",function(){self.options.showChart = (self.options.showChart+1) % 2; self.go();});
-		OAT.Dom.attach(l2,"click",function(){self.options.showRowChart = (self.options.showRowChart+1) % 2; self.go();});
-		OAT.Dom.attach(l3,"click",function(){self.options.showColChart = (self.options.showColChart+1) % 2; self.go();});
+		OAT.Event.attach(l1,"click",function(){self.options.showChart = (self.options.showChart+1) % 2; self.go();});
+		OAT.Event.attach(l2,"click",function(){self.options.showRowChart = (self.options.showRowChart+1) % 2; self.go();});
+		OAT.Event.attach(l3,"click",function(){self.options.showColChart = (self.options.showColChart+1) % 2; self.go();});
 	}
 
 	this.headerRow = headerRow; /* store data */
@@ -189,7 +189,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		elm.style.backgroundColor = "#888";
 		elm.style.padding = "2px";
 		elm.style.cursor = "pointer";
-		OAT.Dom.attach(elm,"mouseup",function(e) { self.lightOff(); });
+		OAT.Event.attach(elm,"mouseup",function(e) { self.lightOff(); });
 	}
 	
 	this.filterOK = function(row) { /* does row pass filters? */
@@ -336,27 +336,27 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			self.go();
 		}
 		return function(event) {
-			var coords = OAT.Dom.eventPos(event);
+			var coords = OAT.Event.position(event);
 			self.propPage.style.left = coords[0] + "px";
 			self.propPage.style.top = coords[1] + "px";
 			OAT.Dom.clear(self.propPage);
 			/* contents */
 			var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
 			close.innerHTML = "X";
-			OAT.Dom.attach(close,"click",refresh);
+			OAT.Event.attach(close,"click",refresh);
 			
 			var asc = OAT.Dom.radio("order");
 			asc.id="pivot_order_asc";
-			OAT.Dom.attach(asc,"change",function(){cond.sort=1;self.sort(cond);self.go();});
-			OAT.Dom.attach(asc,"click",function(){cond.sort=1;self.sort(cond);self.go();});
+			OAT.Event.attach(asc,"change",function(){cond.sort=1;self.sort(cond);self.go();});
+			OAT.Event.attach(asc,"click",function(){cond.sort=1;self.sort(cond);self.go();});
 			var alabel = OAT.Dom.create("label");
 			alabel.htmlFor = "pivot_order_asc";
 			alabel.innerHTML = "Ascending";
 
 			var desc = OAT.Dom.radio("order"); 
 			desc.id="pivot_order_desc";
-			OAT.Dom.attach(desc,"change",function(){cond.sort=-1;self.sort(cond);self.go();});
-			OAT.Dom.attach(desc,"click",function(){cond.sort=-1;self.sort(cond);self.go();});
+			OAT.Event.attach(desc,"change",function(){cond.sort=-1;self.sort(cond);self.go();});
+			OAT.Event.attach(desc,"click",function(){cond.sort=-1;self.sort(cond);self.go();});
 			var dlabel = OAT.Dom.create("label");
 			dlabel.htmlFor = "pivot_order_desc";
 			dlabel.innerHTML = "Descending";
@@ -370,8 +370,8 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			sch.type = "checkbox";
 			sch.checked = (cond.subtotals ? true : false);
 			sch.__checked = (sch.checked ? "1" : "0");
-			OAT.Dom.attach(sch,"change",function(){cond.subtotals = (sch.checked ? true : false);self.go();});
-			OAT.Dom.attach(sch,"click",function(){cond.subtotals = (sch.checked ? true : false);self.go();});
+			OAT.Event.attach(sch,"change",function(){cond.subtotals = (sch.checked ? true : false);self.go();});
+			OAT.Event.attach(sch,"click",function(){cond.subtotals = (sch.checked ? true : false);self.go();});
 			var sl = OAT.Dom.create("label");
 			sl.innerHTML = "Subtotals";
 			sl.htmlFor = "pivot_checkbox_subtotals";
@@ -454,13 +454,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var d = OAT.Dom.create("div");
 		
 		var all = OAT.Dom.button("All");
-		OAT.Dom.attach(all,"click",allRef);
+		OAT.Event.attach(all,"click",allRef);
 		
 		var none = OAT.Dom.button("None");
-		OAT.Dom.attach(none,"click",noneRef);
+		OAT.Event.attach(none,"click",noneRef);
 
 		var reverse = OAT.Dom.button("Reverse");
-		OAT.Dom.attach(reverse,"click",reverseRef);
+		OAT.Event.attach(reverse,"click",reverseRef);
 
 		OAT.Dom.append([d,all,none,reverse],[div,d]);
 		for (var i=0;i<cond.distinctValues.length;i++) {
@@ -469,8 +469,8 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			div.appendChild(pair[0]);
 			pair[1].checked = (cond.blackList.find(value) == -1);
 			pair[1].__checked = (pair[1].checked ? "1" : "0");
-			OAT.Dom.attach(pair[1],"change",getRef(pair[1],value));
-			OAT.Dom.attach(pair[1],"click",getRef(pair[1],value));
+			OAT.Event.attach(pair[1],"change",getRef(pair[1],value));
+			OAT.Event.attach(pair[1],"click",getRef(pair[1],value));
 		}
 	}
 	
@@ -498,7 +498,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			for (var j=0;j<savedValues.length;j++) {
 				if (savedValues[j][0] == index) { s.selectedIndex = savedValues[j][1]; }
 			}
-			OAT.Dom.attach(s,"change",self.go);
+			OAT.Event.attach(s,"change",self.go);
 			div.selects.push(s);
 			var d = OAT.Dom.create("div");
 			d.innerHTML = self.headerRow[index]+": ";
@@ -508,7 +508,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			close.style.cursor = "pointer";
 			close.innerHTML = " X";
 			var ref = self.getDelFilterReference(index);
-			OAT.Dom.attach(close,"click",ref)
+			OAT.Event.attach(close,"click",ref)
 
 			OAT.Dom.append([self.filterDiv,d],[d,s,close]);
 		}
@@ -713,7 +713,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	} /* Pivot::count() */
 	
 	this.numericalType = function(event) {
-		var coords = OAT.Dom.eventPos(event);
+		var coords = OAT.Event.position(event);
 		self.propPage.style.left = coords[0] + "px";
 		self.propPage.style.top = coords[1] + "px";
 		OAT.Dom.clear(self.propPage);
@@ -730,7 +730,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var o = OAT.Dom.option(t[1],t[0],select);
 			if (self.options.type == t[0]) { o.selected = true; }
 		}
-		OAT.Dom.attach(select,"change",function(){self.options.type=parseInt($v(select));refresh();});
+		OAT.Event.attach(select,"change",function(){self.options.type=parseInt($v(select));refresh();});
 			
 		var showNulls = OAT.Dom.create("div");
 		var ch = OAT.Dom.create("input");
@@ -743,8 +743,8 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		l.htmlFor = "pivot_checkbox_empty";
 		l.innerHTML = "Show empty items";
 		showNulls.appendChild(l);
-		OAT.Dom.attach(ch,"change",function(){self.options.showEmpty = ch.checked;refresh();});
-		OAT.Dom.attach(ch,"click",function(){self.options.showEmpty = ch.checked;refresh();});
+		OAT.Event.attach(ch,"change",function(){self.options.showEmpty = ch.checked;refresh();});
+		OAT.Event.attach(ch,"click",function(){self.options.showEmpty = ch.checked;refresh();});
 		
 		OAT.Dom.append([self.propPage,select,showNulls]);
 		self.propPage._Instant_show();
@@ -819,7 +819,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		th.style.cursor = "pointer";
 		th.className = "h1";
 		if (target) { self.gd.addTarget(th); }
-		OAT.Dom.attach(th,"click",self.numericalType);
+		OAT.Event.attach(th,"click",self.numericalType);
 	}
 	
 	this._drawRowConditionsHeadings = function(tbody) {
@@ -831,7 +831,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var div = OAT.Dom.create("div");
 			div.innerHTML = self.headerRow[self.rowConditions[j]];
 			var ref = self.getClickReference(cond);
-			OAT.Dom.attach(th,"click",ref);
+			OAT.Event.attach(th,"click",ref);
 			var callback = self.getOrderReference(self.rowConditions[j]);
 			self.gd.addSource(div,self.process,callback);
 			self.gd.addTarget(th);
@@ -858,7 +858,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var div = OAT.Dom.create("div");
 		div.innerHTML = self.headerRow[self.colConditions[i]];
 		var ref = self.getClickReference(cond);
-		OAT.Dom.attach(th,"click",ref);
+		OAT.Event.attach(th,"click",ref);
 		var callback = self.getOrderReference(self.colConditions[i]);
 		self.gd.addSource(div,self.process,callback);
 		self.gd.addTarget(th);

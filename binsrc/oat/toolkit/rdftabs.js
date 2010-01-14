@@ -201,7 +201,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			var h = OAT.Dom.create("h3",{borderBottom:"1px solid #888",cursor:"pointer"});
 			h.innerHTML = label;
 			OAT.Dom.append([self.dataDiv,h,groupDiv]);
-			OAT.Dom.attach(h,"click",toggleRef(groupDiv));
+			OAT.Event.attach(h,"click",toggleRef(groupDiv));
 		}
 		
 		var groupValue = false;
@@ -260,8 +260,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
 			a.setAttribute("href","#");
-			OAT.Dom.attach(a,"click",function(event) {
-				OAT.Dom.prevent(event);
+			OAT.Event.attach(a,"click",function(event) {
+				OAT.Event.prevent(event);
 				self.currentPage = page;
 				self.redraw();
 			});
@@ -276,7 +276,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			l.innerHTML = "Grouping";
 			l.htmlFor = "rdf_group_cb";
 			OAT.Dom.append([gd,cb,l]);
-			OAT.Dom.attach(cb,"change",function() {
+			OAT.Event.attach(cb,"change",function() {
 				self.groupMode = !self.groupMode;
 				self.redraw();
 			});
@@ -321,8 +321,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		} /* for all data */
 		
 		var attach = function(elm,val) {
-			OAT.Dom.attach(elm,"click",function(event) {
-				OAT.Dom.prevent(event);
+			OAT.Event.attach(elm,"click",function(event) {
+				OAT.Event.prevent(event);
 				self.sortTerm = val;
 				self.sort(val);
 			});
@@ -425,11 +425,11 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				if (arrow) elm.removeChild(arrow);
 				arrow = null;
 			}, 30000);
-		OAT.Dom.attach(elm,"click",function(event) {
+		OAT.Event.attach(elm,"click",function(event) {
 			if (arrow) elm.removeChild(arrow);
 			arrow = null;
 			/* disable default onclick event for anchor */
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 			self.history.splice(self.historyIndex+1,self.history.length-self.history.index+1); /* clear forward history */
 			self.history.push(item);
 			self.navigate(self.history.length-1);
@@ -439,7 +439,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.dattach = function(elm,uri) { /* attach dereference to link */
 		OAT.Event.attach(elm,"click",function(event) {
 			/* disable default onclick event for anchor */
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 			self.waiting = true;
 			var img = OAT.Dom.create("img");
 			img.src = self.parent.options.imagePath + "Dav_throbber.gif";
@@ -741,19 +741,19 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		self.nav.next.title = "Forward";
 		self.nav.last.title = "Last";
 		OAT.Dom.append([self.topDiv,self.nav.help,self.nav.first,self.nav.prev,self.nav.next,self.nav.last]);
-		OAT.Dom.attach(self.nav.first,"click",function(){
+		OAT.Event.attach(self.nav.first,"click",function(){
 			if (self.historyIndex > 0) { self.navigate(0); }
 		});
-		OAT.Dom.attach(self.nav.prev,"click",function(){
+		OAT.Event.attach(self.nav.prev,"click",function(){
 			if (self.historyIndex > 0) { self.navigate(self.historyIndex-1); }
 		});
-		OAT.Dom.attach(self.nav.next,"click",function(){
+		OAT.Event.attach(self.nav.next,"click",function(){
 			if (self.historyIndex > -1 && self.historyIndex < self.history.length-1) { self.navigate(self.historyIndex+1); }
 		});
-		OAT.Dom.attach(self.nav.last,"click",function(){
+		OAT.Event.attach(self.nav.last,"click",function(){
 			if (self.historyIndex > -1 && self.historyIndex < self.history.length-1) { self.navigate(self.history.length-1); }
 		});
-		OAT.Dom.attach(self.nav.help,"click",function(){
+		OAT.Event.attach(self.nav.help,"click",function(){
 			if (self.historyIndex != -1) { 
 				self.historyIndex = -1;
 				self.history = [];
@@ -828,8 +828,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
 			a.setAttribute("href","#");
-			OAT.Dom.attach(a,"click",function(event) {
-				OAT.Dom.prevent(event);
+			OAT.Event.attach(a,"click",function(event) {
+				OAT.Event.prevent(event);
 				self.currentPage = page;
 				self.redraw();
 			});
@@ -1473,14 +1473,14 @@ OAT.RDFTabs.images = function(parent,optObj) {
 				OAT.Dimmer.hide();
 				self.dimmer = false;
 			}
-			OAT.Dom.attach(self.close,"click",closeRef);
-			OAT.Dom.attach(self.prev,"click",function(){ self.showBig(self.index-1); });
-			OAT.Dom.attach(self.next,"click",function(){ self.showBig(self.index+1); });
+			OAT.Event.attach(self.close,"click",closeRef);
+			OAT.Event.attach(self.prev,"click",function(){ self.showBig(self.index-1); });
+			OAT.Event.attach(self.next,"click",function(){ self.showBig(self.index+1); });
 		}
 		self.index = index;
 		var img = OAT.Dom.create("img",{border:"2px solid #000"});
 		OAT.Dom.clear(self.container);
-		OAT.Dom.attach(img,"load",function() {
+		OAT.Event.attach(img,"load",function() {
 			var port = OAT.Dom.getViewport();
 			var dim = Math.max(img.width,img.height);
 			var limit = Math.min(self.options.size,port[0]-20,port[1]-20);
@@ -1536,7 +1536,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		var item = self.images[index][1];
 		var img = OAT.Dom.create("img",{},"rdf_image")
 		td.appendChild(img);
-		OAT.Dom.attach(img,"load",function() {
+		OAT.Event.attach(img,"load",function() {
 			var max = Math.max(img.width,img.height);
 			if (max <= size) { return; }
 			var coef = size / max;
@@ -1547,7 +1547,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		});
 		img.src = uri;
 		img.title = self.parent.getTitle(item);
-		OAT.Dom.attach(img,"click",function() { self.showBig(index); });
+		OAT.Event.attach(img,"click",function() { self.showBig(index); });
 	}
 	
 	this.addUriItem = function(uri,item) {

@@ -25,7 +25,7 @@ OAT.QuickEdit = {
 		var ref = function() {
 			OAT.QuickEdit.edit(elm);
 		}
-		OAT.Dom.attach(elm,"click",ref);
+		OAT.Event.attach(elm,"click",ref);
 	},
 	
 	edit:function(elm) {

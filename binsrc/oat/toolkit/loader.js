@@ -839,6 +839,8 @@ OAT.Event = { /* Event helper */
 		event.returnValue = false;
 	}
 }
+
+/* Backward compatibility */
 OAT.Dom.attach = OAT.Event.attach;
 OAT.Dom.detach = OAT.Event.detach;
 OAT.Dom.source = OAT.Event.source;

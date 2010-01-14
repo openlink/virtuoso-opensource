@@ -184,8 +184,8 @@ OAT.Anchor = {
 			if (opts.activation == "hover") { opts.startClose(); }
 		}
 		OAT.Dom.addClass(win.dom.container,"oat_anchor");
-		OAT.Dom.attach(win.dom.container,"mouseover",checkOver);
-		OAT.Dom.attach(win.dom.container,"mouseout",checkOut);
+		OAT.Event.attach(win.dom.container,"mouseover",checkOver);
+		OAT.Event.attach(win.dom.container,"mouseout",checkOut);
 		var arrow = OAT.Dom.create("div",{});
 		OAT.Dom.append([win.dom.container,arrow]);
 		options.arrow = arrow;
@@ -200,14 +200,14 @@ OAT.Anchor = {
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 
 		options.displayRef = function(event,preload) {
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 			var win = options.window;
 			win.hide(); /* close existing window */
 			OAT.AnchorData.active = options;
-			var pos = OAT.Dom.eventPos(event);
+			var pos = OAT.Event.position(event);
 			OAT.AnchorData.window = win; /* assign last opened window */
 
-			OAT.Dom.attach(win.dom.container,"click",function(event) { OAT.Event.cancel(event); });
+			OAT.Event.attach(win.dom.container,"click",function(event) { OAT.Event.cancel(event); });
 
 			OAT.Event.cancel(event);
 
@@ -279,18 +279,18 @@ OAT.Anchor = {
 
 		switch (options.activation) {
 			case "hover":
-				OAT.Dom.attach(elm,"mouseover",options.displayRef);
-				OAT.Dom.attach(elm,"mouseout",options.startClose);
+				OAT.Event.attach(elm,"mouseover",options.displayRef);
+				OAT.Event.attach(elm,"mouseout",options.startClose);
 			break;
 			case "click":
-				OAT.Dom.attach(elm,"click",options.displayRef);
+				OAT.Event.attach(elm,"click",options.displayRef);
 			break;
 			case "dblclick":
-				OAT.Dom.attach(elm,"dblclick",options.displayRef);			
+				OAT.Event.attach(elm,"dblclick",options.displayRef);			
 			break;
 			case "focus":
-				OAT.Dom.attach(elm,"focus",options.displayRef);
-				OAT.Dom.attach(elm,"blur",options.close);
+				OAT.Event.attach(elm,"focus",options.displayRef);
+				OAT.Event.attach(elm,"blur",options.close);
 			break;
 			
 		}
@@ -310,7 +310,7 @@ OAT.Anchor = {
 
 /* if clicked on the document outside a++ windows, close all of them */
 OAT.Anchor.closeOnBlur = function() {
-	OAT.Dom.attach(document.getElementsByTagName('html')[0], "click", function(event) {
+	OAT.Event.attach(document.getElementsByTagName('html')[0], "click", function(event) {
 	if (!OAT.AnchorData.closeOnBlur) return;
 	var checkIfClickedOutside = function(elem) {
 		if (!elem)

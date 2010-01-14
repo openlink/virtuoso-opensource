@@ -58,7 +58,7 @@ OAT.Toolbar = function(div,optObj) {
 			div.toggleState(nstate);
 		}
 		
-		OAT.Dom.attach(div,"click",div.toggle);
+		OAT.Event.attach(div,"click",div.toggle);
 		OAT.Dom.append([div,img],[self.div,div]);
 		
 		if (self.options.labels) {

@@ -265,9 +265,9 @@ OAT.FormObject = {
 				OAT.Resize.create(fo.resizeXY,fo.elm,OAT.Resize.TYPE_XY);
 				
 				var cancelFunc = function(event) { event.cancelBubble = true; }
-				OAT.Dom.attach(fo.resizeX,"mousedown",cancelFunc);
-				OAT.Dom.attach(fo.resizeY,"mousedown",cancelFunc);
-				OAT.Dom.attach(fo.resizeXY,"mousedown",cancelFunc);
+				OAT.Event.attach(fo.resizeX,"mousedown",cancelFunc);
+				OAT.Event.attach(fo.resizeY,"mousedown",cancelFunc);
+				OAT.Event.attach(fo.resizeXY,"mousedown",cancelFunc);
 			}
 		} /* FormObject::select() */
 
@@ -403,7 +403,7 @@ OAT.FormObject = {
 		fo.elm.style.left = x+"px";
 		fo.elm.style.top = y+"px";
 		var actFunc = function(event) { fo.actualizeResizers(); }
-		OAT.Dom.attach(document.body,"mousemove",actFunc);
+		OAT.Event.attach(document.body,"mousemove",actFunc);
 	},
 	
 	label:function(x,y,designMode) {
@@ -499,8 +499,8 @@ OAT.FormObject = {
 		self.elm.appendChild(self.button);
 		self.changeCallback = function() {}
 		if (!designMode) {
-			OAT.Dom.attach(self.button,"click",function(){self.changeCallback();});
-			OAT.Dom.attach(self.input,"keyup",function(event) {
+			OAT.Event.attach(self.button,"click",function(){self.changeCallback();});
+			OAT.Event.attach(self.input,"keyup",function(event) {
 				if (event.keyCode == 13) { self.changeCallback(); }
 			});
 		}
@@ -1148,7 +1148,7 @@ OAT.FormObject = {
 				self.pivot.options.agg = parseInt($v(pivot_agg));
 				self.pivot.go();
 			}
-			OAT.Dom.attach(pivot_agg,"change",aggRef);
+			OAT.Event.attach(pivot_agg,"change",aggRef);
 		
 			self.filterDiv = OAT.Dom.create("div"); 
 			self.pivotDiv = OAT.Dom.create("div"); 
@@ -1190,9 +1190,9 @@ OAT.FormObject = {
 				} 
 			} /* for all DSs */
 
-			OAT.Dom.attach(self.content,"scroll",function(event){event.cancelBubble = true;});
-			OAT.Dom.attach(self.content,"mousewheel",function(event){event.cancelBubble = true;});
-			OAT.Dom.attach(self.content,"DOMMouseScroll",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.content,"scroll",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.content,"mousewheel",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.content,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 			
 		} /* init() */
 
@@ -1293,9 +1293,9 @@ OAT.FormObject = {
 				}
 				self.grid.createHeader(data); 
 			}
-			OAT.Dom.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
-			OAT.Dom.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
-			OAT.Dom.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
+			OAT.Event.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 		}
 		
 		self.bindHeaderCallback = function(header) {
@@ -1694,8 +1694,8 @@ OAT.FormObject = {
 				self.setValue(self.lastValueTabular);
 			}
 			self.elm.appendChild(toggler);
-			OAT.Dom.attach(s,"click",sRef);
-			OAT.Dom.attach(t,"click",tRef);
+			OAT.Event.attach(s,"click",sRef);
+			OAT.Event.attach(t,"click",tRef);
 			self.container = OAT.Dom.create("div",{position:"relative",width:"100%",height:"100%"});
 			self.container.style.overflow = "auto";
 			self.elm.appendChild(self.container);
@@ -1796,9 +1796,9 @@ OAT.FormObject = {
 					}
 					self.grid.createHeader(data);
 					
-					OAT.Dom.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
-					OAT.Dom.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
-					OAT.Dom.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
+					OAT.Event.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
+					OAT.Event.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
+					OAT.Event.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 				break;
 			} /* switch */
 		} /* FormObject::init() */
@@ -2094,7 +2094,7 @@ OAT.FormObject = {
 
 		self.openWindow = function(x,y,event) {
 			OAT.Dom.show(self.window.div);
-			var pos = OAT.Dom.eventPos(event);
+			var pos = OAT.Event.position(event);
 			self.window.anchorTo(pos[0],pos[1]);
 			self.window.div.style.left = x+"px";
 			self.window.div.style.top = y+"px";
@@ -2106,7 +2106,7 @@ OAT.FormObject = {
 		
 		self.clickRef = function(dsIndex,index) {
 			return function(event) {
-				var coords = OAT.Dom.eventPos(event);
+				var coords = OAT.Event.position(event);
 				if (self.form) {
 					self.form.datasources[0].oneShotCallback = function() {
 						self.window.content.appendChild(self.form.elm);
@@ -2174,7 +2174,7 @@ OAT.FormObject = {
 				div.appendChild(ball);
 				div.appendChild(t);
 				var e = self.timeline.addEvent(band,time,false,div,"#abf");
-				OAT.Dom.attach(e.elm,"click",self.clickRef(dsIndex,index));
+				OAT.Event.attach(e.elm,"click",self.clickRef(dsIndex,index));
 			}
 			self.timeline.draw();
 			self.timeline.slider.slideTo(0,1);

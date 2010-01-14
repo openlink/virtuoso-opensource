@@ -80,13 +80,13 @@ OAT.Slider = function(something,optObj) {
 		OAT.SliderData.initPos = parseInt(self.elm.style[self.options.cssProperty]);
 	}
 	
-	OAT.Dom.attach(self.elm,"mousedown",startRef);
+	OAT.Event.attach(self.elm,"mousedown",startRef);
 	
 	this.init = function() {
 		self.slideTo(self.options.initValue,true);
 	}
 }
 
-OAT.Dom.attach(document,"mousemove",OAT.SliderData.move);
-OAT.Dom.attach(document,"mouseup",OAT.SliderData.up);
+OAT.Event.attach(document,"mousemove",OAT.SliderData.move);
+OAT.Event.attach(document,"mouseup",OAT.SliderData.up);
 OAT.Loader.featureLoaded("slider");

@@ -59,7 +59,7 @@ OAT.DockWindow = function(content,options,dock) {
 	}
 	
 	
-	OAT.Dom.attach(self.toggle,"click",toggleRef);	
+	OAT.Event.attach(self.toggle,"click",toggleRef);	
 
 	self.actualizeState();
 }
@@ -155,7 +155,7 @@ OAT.Dock = function(div,numColumns) {
 	
 	this.getOverElm = function(event) {
 		/* returns coordinates, dimensions */
-		var exact = OAT.Dom.eventPos(event);
+		var exact = OAT.Event.position(event);
 		var abs_x = exact[0]; /* here is the cursor */
 		var abs_y = exact[1];
 		var s_coords, s_dims;
@@ -227,6 +227,6 @@ OAT.Dock = function(div,numColumns) {
 		self.gd.delTarget(win.div);
 	}
 
-	OAT.Dom.attach(document,"mousemove",self.check);
+	OAT.Event.attach(document,"mousemove",self.check);
 }
 OAT.Loader.featureLoaded("dock");

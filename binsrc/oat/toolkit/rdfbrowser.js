@@ -96,7 +96,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 		redraw:function() {
 			var removeRef = function(a,index) {
-				OAT.Dom.attach(a,"click",function(){self.bookmarks.remove(index);});
+				OAT.Event.attach(a,"click",function(){self.bookmarks.remove(index);});
 			}
 
 			OAT.Dom.clear(self.bookmarkDiv);
@@ -142,14 +142,14 @@ OAT.RDFBrowser = function(div,optObj) {
 		OAT.Dom.clear(self.store.div);
 		var total = 0;
 		var removeRef = function(a,url) {
-			OAT.Dom.attach(a,"click",function(event){ OAT.Dom.prevent(event); self.store.remove(url);});
+			OAT.Event.attach(a,"click",function(event){ OAT.Event.prevent(event); self.store.remove(url);});
 		}
 		var checkRef = function(ch,url) {
 			var f = function() {
 				if (ch.checked) { self.store.enable(url);} else { self.store.disable(url); }
 			}
-			OAT.Dom.attach(ch,"click",f);
-			OAT.Dom.attach(ch,"change",f);
+			OAT.Event.attach(ch,"click",f);
+			OAT.Event.attach(ch,"change",f);
 		}
 
 		var tperm = OAT.Dom.create("a");
@@ -238,10 +238,10 @@ OAT.RDFBrowser = function(div,optObj) {
 		h.innerHTML = "Data Source (URL):";
 		h.title = "RDF Data Source (URL):";
 		OAT.Dom.append([self.cacheDiv,h,url,btn1,OAT.Dom.text(" "),self.store.div]);
-		OAT.Dom.attach(url,"keypress",function(event) {
+		OAT.Event.attach(url,"keypress",function(event) {
 			if (event.keyCode == 13) { self.store.loadFromInput(); }
 		});
-		OAT.Dom.attach(btn1,"click",self.store.loadFromInput);
+		OAT.Event.attach(btn1,"click",self.store.loadFromInput);
 		
 		/* querystring url */
 		var obj = OAT.Dom.uriParams();
@@ -310,9 +310,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			a.innerHTML = "Data Link";
 			a.href = href;
 			var start1 = self.throbberReplace(a);
-			OAT.Dom.attach(a,"click",function(event) {
+			OAT.Event.attach(a,"click",function(event) {
 				/* dereference link - add */
-				OAT.Dom.prevent(event);
+				OAT.Event.prevent(event);
 				self.store.addURL(href,{ajaxOpts:{onstart:start1}});
 			});
 			list.push(a);
@@ -323,9 +323,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			a.innerHTML = "Data Link - replace storage";
 			a.href = href;
 			var start2 = self.throbberReplace(a);
-			OAT.Dom.attach(a,"click",function(event) {
+			OAT.Event.attach(a,"click",function(event) {
 				/* dereference link - replace */
-				OAT.Dom.prevent(event);
+				OAT.Event.prevent(event);
 				var ref = function() {
 					self.store.clear();
 					start2();
@@ -348,9 +348,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Relationships";
 			a.href = href;
-			OAT.Dom.attach(a,"click",function(event) {
+			OAT.Event.attach(a,"click",function(event) {
 				/* dereference link */
-				OAT.Dom.prevent(event);
+				OAT.Event.prevent(event);
 				OAT.AnchorData.window.close();
 				self.store.addFilter(OAT.RDFStoreData.FILTER_URI,href);
 			});
@@ -361,8 +361,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			var aa = OAT.Dom.create("a");
 			aa.innerHTML = "Bookmark";
 			aa.href = href;
-			OAT.Dom.attach(aa,"click",function(event) {
-				OAT.Dom.prevent(event);
+			OAT.Event.attach(aa,"click",function(event) {
+				OAT.Event.prevent(event);
 				var label = prompt("Please name your bookmark:",href);
 				self.bookmarks.add(href,label);
 				OAT.AnchorData.window.close();
@@ -387,7 +387,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			img1.title = "Data Link";
 			img1.src = self.options.imagePath + "RDF_rdf.png";
 			var start = self.throbberReplace(img1,true);
-			OAT.Dom.attach(img1,"click",function() {
+			OAT.Event.attach(img1,"click",function() {
 				/* dereference link - add */
 				self.store.addURL(href,{ajaxOpts:{onstart:start}});
 			});
@@ -453,7 +453,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			var ref = function() {
 				self.store.addFilter(OAT.RDFStoreData.FILTER_PROPERTY,p,o);
 			}
-			OAT.Dom.attach(node,"click",ref);
+			OAT.Event.attach(node,"click",ref);
 		}
 		
 		var ul = OAT.Dom.create("ul");
@@ -511,7 +511,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				var f = self.store.filtersProperty[index];
 				self.store.removeFilter(OAT.RDFStoreData.FILTER_PROPERTY,f[0],f[1]);
 			}
-			OAT.Dom.attach(link,"click",ref);
+			OAT.Event.attach(link,"click",ref);
 		}
 		
 		function assignU(link,index) {
@@ -519,7 +519,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				var f = self.store.filtersURI[index];
 				self.store.removeFilter(OAT.RDFStoreData.FILTER_URI,f);
 			}
-			OAT.Dom.attach(link,"click",ref);
+			OAT.Event.attach(link,"click",ref);
 		}
 
 		for (var i=0;i<self.store.filtersProperty.length;i++) {
@@ -567,7 +567,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			remove.setAttribute("href","javascript:void(0)");
 			remove.setAttribute("title","Remove all filters");
 			remove.innerHTML = "remove all filters";
-			OAT.Dom.attach(remove,"click",self.store.removeAllFilters);
+			OAT.Event.attach(remove,"click",self.store.removeAllFilters);
 			div.appendChild(remove);
 			self.filterDiv.appendChild(div);
 		}

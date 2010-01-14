@@ -67,25 +67,25 @@ OAT.Slidebar = function (div, optionsObj) {
 
 	this.close = function () {
 		clearTimeout (self.sb_to);
-		OAT.Dom.detach (self.handle_div, "click", self.close);
+		OAT.Event.detach (self.handle_div, "click", self.close);
 		OAT.Style.apply (self.content_div, {overflow : "hidden"});
 		self.a_close.start ();
 	}
 
 	this.open = function () {
 		clearTimeout (self.sb_to);
-		OAT.Dom.detach (self.handle_div, "click", self.open);
+		OAT.Event.detach (self.handle_div, "click", self.open);
 		self.a_open.start ();
 	}
 
 	this.opened = function (source, message, event) {
 
 		if (self.options.autoClose) {
-			OAT.Dom.attach (self.content_div, "mouseover", self.activate);
-			OAT.Dom.attach (self.div, "mouseout", self.deactivate);
+			OAT.Event.attach (self.content_div, "mouseover", self.activate);
+			OAT.Event.attach (self.div, "mouseout", self.deactivate);
 		}
 
-		OAT.Dom.attach (self.handle_div, "click", self.close);
+		OAT.Event.attach (self.handle_div, "click", self.close);
 		OAT.Style.apply (self.content_div, {overflow : "auto"});
 		self.handle_close();
 		OAT.MSG.send (self, OAT.MSG.SLB_OPENED, self)
@@ -96,11 +96,11 @@ OAT.Slidebar = function (div, optionsObj) {
 // console.log ("sb_closed handler called.");
 
 		if (self.options.autoClose) {
-			OAT.Dom.detach (self.content_div, "mouseover", self.activate);
-			OAT.Dom.detach (self.div, "mouseout", self.deactivate);
+			OAT.Event.detach (self.content_div, "mouseover", self.activate);
+			OAT.Event.detach (self.div, "mouseout", self.deactivate);
 		}
 		
-		OAT.Dom.attach (self.handle_div, "click", self.open);
+		OAT.Event.attach (self.handle_div, "click", self.open);
 		self.handle_open();
 		OAT.MSG.send(self, OAT.MSG.SLB_CLOSED, self)
 	}
@@ -164,14 +164,14 @@ OAT.Slidebar = function (div, optionsObj) {
 
 	this.handle_img.src = this.options.imgPrefix+this.options.handleOpenImg;
 
-	OAT.Dom.attach (this.handle_div, "click", this.open);
+	OAT.Event.attach (this.handle_div, "click", this.open);
 	
 	OAT.MSG.attach (this.a_open.animation, OAT.MSG.ANIMATION_STOP, this.opened);
 	OAT.MSG.attach (this.a_close.animation, OAT.MSG.ANIMATION_STOP, this.closed);
 
 	this.center_handle_img ();
 
-	OAT.Dom.attach (window, "resize", this.center_handle_img);
+	OAT.Event.attach (window, "resize", this.center_handle_img);
 	OAT.Style.apply (this.content_div, {overflow : "hidden"});
 
 

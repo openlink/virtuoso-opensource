@@ -68,13 +68,13 @@ OAT.MenuItem = function(menu,parent,li,ul) {
 		}
 		var clickRef = function(event) {
 			/*
-			 * var src = OAT.Dom.source(event);
+			 * var src = OAT.Event.source(event);
 			 * if (src != self.li) { return; }
 			 */
 			if (self.state) { self.close(); } else { self.open(); }
 		}
-		OAT.Dom.attach(self.li,"mouseover",overRef);
-		OAT.Dom.attach(self.li,"click",clickRef);
+		OAT.Event.attach(self.li,"mouseover",overRef);
+		OAT.Event.attach(self.li,"click",clickRef);
 		
 	} else {
 		var overRef = function(event) {
@@ -83,15 +83,15 @@ OAT.MenuItem = function(menu,parent,li,ul) {
 		var clickRef = function(event) {
 			OAT.Event.cancel(event);
 			/*
-			var src = OAT.Dom.source(event);
+			var src = OAT.Event.source(event);
 			if (src != self.li) { return; }
 			*/
 			if (OAT.Dom.isClass(self.li,menu.closeFilter) && !OAT.Dom.isClass(self.li,menu.noCloseFilter)) {
 				menu.root.close();
 			}
 		}
-		OAT.Dom.attach(self.li,"mouseover",overRef);
-		OAT.Dom.attach(self.li,"click",clickRef);
+		OAT.Event.attach(self.li,"mouseover",overRef);
+		OAT.Event.attach(self.li,"click",clickRef);
 	}
 }
 
@@ -102,11 +102,11 @@ OAT.Menu = function() {
 	this.noCloseFilter = ""; /* by default, there are no 'deaf' elements (separators) */
 	
 	var downRef = function(event) {
-		var src = OAT.Dom.source(event);
+		var src = OAT.Event.source(event);
 		/* close if clicked element is not child of any top level li's */
 		if (!OAT.Dom.isChild(src,self.root.ul)) { self.root.close(); }
 	}
-	OAT.Dom.attach(document,"mousedown",downRef);
+	OAT.Event.attach(document,"mousedown",downRef);
 	
 	this.createFromUL = function(elm) { /* manage whole ul tree */
 		var ul = $(elm);

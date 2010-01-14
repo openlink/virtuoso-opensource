@@ -26,7 +26,7 @@ OAT.Drag = {
 		OAT.Dom.removeSelection();
 		var vp = OAT.Dom.getViewport();
 		var pos = OAT.Dom.position(OAT.Drag.elm);
-		var cpos = OAT.Dom.eventPos(event);
+		var cpos = OAT.Event.position(event);
 		var dims = OAT.Dom.getWH(OAT.Drag.elm);
 
 		/* stop when mouse leaves viewport */
@@ -125,7 +125,7 @@ OAT.Drag = {
 			OAT.Drag.initiate(event,elm);
 		}
 		if (!elm._Drag_movers) { 
-			OAT.Dom.attach(elm,"mousedown",ref);		
+			OAT.Event.attach(elm,"mousedown",ref);		
 			elm._Drag_movers = [];
 			elm._Drag_cursor = elm.style.cursor;
 		}
@@ -204,10 +204,10 @@ OAT.Drag = {
 			drag._Drag_pending = 1;
 			setTimeout(check,3000);
 		}
-		OAT.Dom.attach(elm,"mouseover",show);
-		OAT.Dom.attach(elm,"mouseout",hide);
+		OAT.Event.attach(elm,"mouseover",show);
+		OAT.Event.attach(elm,"mouseout",hide);
 	}
 }
-OAT.Dom.attach(document,"mousemove",OAT.Drag.move);
-OAT.Dom.attach(document,"mouseup",OAT.Drag.up);
+OAT.Event.attach(document,"mousemove",OAT.Drag.move);
+OAT.Event.attach(document,"mouseup",OAT.Drag.up);
 OAT.Loader.featureLoaded("drag");

@@ -525,7 +525,7 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 		mover.style.backgroundImage = "url("+self.grid.options.imagePath+"Grid_none.gif)";
 		self.container.appendChild(mover);
 		var callback = function (event) { /* start resizing */
-			var pos = OAT.Dom.eventPos(event);
+			var pos = OAT.Event.position(event);
 			var dims_grid = OAT.Dom.getWH(self.grid.html);
 			var dims_container = OAT.Dom.getWH(self.container);
 			var dims_value = OAT.Dom.getWH(self.value);

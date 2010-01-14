@@ -68,7 +68,7 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	if (options.modal) {
 		this.show = function() {
 			OAT.Dimmer.show(win.dom.container,{});
-			OAT.Dom.attach(win.dom.buttons.c, "click", self.cancel);
+			OAT.Event.attach(win.dom.buttons.c, "click", self.cancel);
 			OAT.Dom.center(win.dom.container,1,1);
 			options.onshow(); }
 		this.hide = function() {
@@ -93,14 +93,14 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 	this.cancel = function(){};
 	this.okBtn = ok;
 	this.cancelBtn = cancel;
-	OAT.Dom.attach(ok,"click",function(){self.ok();});
-	OAT.Dom.attach(cancel,"click",function(){self.cancel();});
+	OAT.Event.attach(ok,"click",function(){self.ok();});
+	OAT.Event.attach(cancel,"click",function(){self.cancel();});
 	
 	var keyPress = function(event) {
 		if (self.okBtn.getAttribute("disabled") == "disabled") { return; }
 		if (event.keyCode == 13) { self.ok(); }
 		if (event.keyCode == 27) { self.cancel(); }
 	}
-	if (options.autoEnter) { OAT.Dom.attach(win.dom.container,"keypress",keyPress); }
+	if (options.autoEnter) { OAT.Event.attach(win.dom.container,"keypress",keyPress); }
 }
 OAT.Loader.featureLoaded("dialog");

@@ -85,7 +85,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 			if (index == self.selectedIndex) { return; }
 			self.go(index, self.noanim);
 		}
-		OAT.Dom.attach(clicker_elm,"click",callback);
+		OAT.Event.attach(clicker_elm,"click",callback);
 		this.panels.push([clicker_elm,content_elm]);
 		this.div.appendChild(clicker_elm);
 		this.div.appendChild(content_elm);

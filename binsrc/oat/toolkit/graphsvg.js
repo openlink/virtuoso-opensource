@@ -92,8 +92,8 @@ OAT.GraphSVGData = {
 		return [vertices,edges];
 	}
 }
-OAT.Dom.attach(document,"mousemove",OAT.GraphSVGData.move);
-OAT.Dom.attach(document,"mouseup",OAT.GraphSVGData.up);
+OAT.Event.attach(document,"mousemove",OAT.GraphSVGData.move);
+OAT.Event.attach(document,"mouseup",OAT.GraphSVGData.up);
 
 OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	/* 
@@ -420,7 +420,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	this.createSVG = function() { /* create elements */
 		/* mousedown handler */
 		function assign(node,index) {
-			OAT.Dom.attach(node.svg,"mousedown",function(event){
+			OAT.Event.attach(node.svg,"mousedown",function(event){
 				node._mousedown = 1;
 				setTimeout(function(){node._mousedown=0;},150);
 				OAT.GraphSVGData.graph = self;
@@ -428,7 +428,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				OAT.GraphSVGData.mouse_x = event.clientX;
 				OAT.GraphSVGData.mouse_y = event.clientY;
 			});
-			OAT.Dom.attach(node.svg,"click",function() {
+			OAT.Event.attach(node.svg,"click",function() {
 				if (!node._mousedown) { return; }
 				if (self.selectedNode) { self.selectedNode.svg.setAttribute("stroke","none"); }
 				self.selectNode(node);
@@ -532,7 +532,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			var st = OAT.Dom.create("input");
 			st.type = "button";
 			self.control.appendChild(st);
-			OAT.Dom.attach(st,"click",self.sidebar.toggle);
+			OAT.Event.attach(st,"click",self.sidebar.toggle);
 			self.options.sidebarShown = !self.options.sidebarShown;
 			self.sidebar.create(st);
 			self.sidebar.toggle();
@@ -549,7 +549,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			self.selects.type = s;
 			OAT.Dom.option("All nodes at once","0",s);
 			OAT.Dom.option("Equal distances","1",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(2)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(2)});
 			self.control.appendChild(s);
 			self.control.appendChild(OAT.Dom.text(" "));
 			s.selectedIndex = self.options.type;
@@ -560,7 +560,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			self.selects.placement = s;
 			OAT.Dom.option("Random","0",s);
 			OAT.Dom.option("Circle","1",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(2)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(2)});
 			self.control.appendChild(s);
 			self.control.appendChild(OAT.Dom.text(" "));
 			s.selectedIndex = self.options.placement;
@@ -572,7 +572,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			OAT.Dom.option("Close distance","0",s);
 			OAT.Dom.option("Medium distance","1",s);
 			OAT.Dom.option("Far distance","2",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(2)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(2)});
 			self.control.appendChild(s);
 			self.control.appendChild(OAT.Dom.text(" "));
 			s.selectedIndex = self.options.distance;
@@ -583,7 +583,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			self.selects.projection = s;
 			OAT.Dom.option("Planar","0",s);
 			OAT.Dom.option("Pseudo-spherical","1",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(2)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(2)});
 			self.control.appendChild(s);
 			s.selectedIndex = self.options.projection;
 		}
@@ -597,7 +597,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			OAT.Dom.option("Up to distance 3","3",s);
 			OAT.Dom.option("Up to distance 4","4",s);
 			OAT.Dom.option("Labels on all elements","-1",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(1)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(1)});
 			self.control.appendChild(s);
 			s.selectedIndex = self.options.labels;
 		}
@@ -610,7 +610,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			OAT.Dom.option("Selected up to distance 2","2",s);
 			OAT.Dom.option("Selected up to distance 3","3",s);
 			OAT.Dom.option("Selected up to distance 4","4",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(1)});
+			OAT.Event.attach(s,"change",function(){self.selectChange(1)});
 			self.control.appendChild(s);
 			s.selectedIndex = self.options.show;
 		}
@@ -654,7 +654,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	} /* mouseover */
 	
 	this.assignLabelEvents = function(obj,type) { /* hook events for displaying of labels */
-		OAT.Dom.attach(obj.svg,"mouseover",function(){
+		OAT.Event.attach(obj.svg,"mouseover",function(){
 			self.callMouseover(obj,type);
 		});
 	}
@@ -821,7 +821,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.svg = OAT.SVG.element("g");
 		self.svgc.appendChild(self.svg);
 		self.div.appendChild(self.svgc);
-		OAT.Dom.attach(self.svgc,"mousedown",function(event){
+		OAT.Event.attach(self.svgc,"mousedown",function(event){
 			OAT.GraphSVGData.graph = self;
 			OAT.GraphSVGData.mouse_x = event.clientX;
 			OAT.GraphSVGData.mouse_y = event.clientY;

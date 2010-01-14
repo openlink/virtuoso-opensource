@@ -88,16 +88,16 @@ OAT.Window = function(optObj,type) {
 	this.onclose = function(){};
 	this.onmax = function(){};
 	this.onmin = function(){};
-	if (this.closeBtn) { OAT.Dom.attach(this.closeBtn,"click",function(){self.onclose();}); }
-	if (this.minBtn) { OAT.Dom.attach(this.minBtn,"click",function(){self.onmin();}); }
-	if (this.maxBtn) { OAT.Dom.attach(this.maxBtn,"click",function(){self.onmax();}); }
+	if (this.closeBtn) { OAT.Event.attach(this.closeBtn,"click",function(){self.onclose();}); }
+	if (this.minBtn) { OAT.Event.attach(this.minBtn,"click",function(){self.onmin();}); }
+	if (this.maxBtn) { OAT.Event.attach(this.maxBtn,"click",function(){self.onmax();}); }
 	
 	/* trick for easy stacking? need to be thoroughly tested.. */
 	var upRef = function(event) {
 		if (!obj.div.parentNode) { return; }
 		obj.div.parentNode.appendChild(obj.div);
 	}
-//	OAT.Dom.attach(obj.div,"click",upRef);
+//	OAT.Event.attach(obj.div,"click",upRef);
 }
 
 OAT.WindowParent = function(obj,options) { /* abstract parent for all window implementations */

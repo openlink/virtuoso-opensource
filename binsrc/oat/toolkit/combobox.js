@@ -51,7 +51,7 @@ OAT.ComboBox = function(defaultValue) {
 		self.options.push([elm,textValue]);
 		self.optList.appendChild(elm);
 		var clickRef = function() {	self.select(textValue); }
-		OAT.Dom.attach(elm,"click",clickRef); /* what to do after clicking */
+		OAT.Event.attach(elm,"click",clickRef); /* what to do after clicking */
 	}
 	
 	self.instant.createHandle(this.image);
