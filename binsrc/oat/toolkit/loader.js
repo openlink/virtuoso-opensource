@@ -458,7 +458,7 @@ OAT.Dom = { /* DOM common object */
 		var elm = $(something);
 		var parent = elm.offsetParent;
 		if (elm == document.body || elm == document || !parent) { return OAT.Dom.getLT(elm); }
-		var parent_coords = OAT.Dom.position(parent);
+		var parent_coords = OAT.Event.position(parent);
 		var c = OAT.Dom.getLT(elm);
 		/*
 		var x = elm.offsetLeft - elm.scrollLeft + parent_coords[0];
@@ -839,10 +839,13 @@ OAT.Event = { /* Event helper */
 		event.returnValue = false;
 	}
 }
+
+/* Backward compatibility */
 OAT.Dom.attach = OAT.Event.attach;
 OAT.Dom.detach = OAT.Event.detach;
 OAT.Dom.source = OAT.Event.source;
 OAT.Dom.eventPos = OAT.Event.position;
+OAT.Dom.position = OAT.Event.position;
 OAT.Dom.prevent = OAT.Event.prevent;
 
 OAT.Loader = { /* first part of loader object */

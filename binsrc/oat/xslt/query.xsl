@@ -68,12 +68,12 @@
 				ds.bindPage(grid.bindPageCallback);
 				ds.bindHeader(grid.bindHeaderCallback);
 				
-				OAT.Dom.attach(nav.first,"click",function() { ds.advanceRecord(0); });
-				OAT.Dom.attach(nav.prevp,"click",function() { ds.advanceRecord(ds.recordIndex - ds.pageSize); });
-				OAT.Dom.attach(nav.prev,"click",function() { ds.advanceRecord("-1"); });
-				OAT.Dom.attach(nav.next,"click",function() { ds.advanceRecord("+1"); });
-				OAT.Dom.attach(nav.nextp,"click",function() { ds.advanceRecord(ds.recordIndex + ds.pageSize); });
-				OAT.Dom.attach(nav.current,"keyup",function(event) { 
+				OAT.Event.attach(nav.first,"click",function() { ds.advanceRecord(0); });
+				OAT.Event.attach(nav.prevp,"click",function() { ds.advanceRecord(ds.recordIndex - ds.pageSize); });
+				OAT.Event.attach(nav.prev,"click",function() { ds.advanceRecord("-1"); });
+				OAT.Event.attach(nav.next,"click",function() { ds.advanceRecord("+1"); });
+				OAT.Event.attach(nav.nextp,"click",function() { ds.advanceRecord(ds.recordIndex + ds.pageSize); });
+				OAT.Event.attach(nav.current,"keyup",function(event) { 
 					if (event.keyCode != 13) { return; }
 					var value = parseInt($v(nav.current));
 					ds.advanceRecord(value-1); 

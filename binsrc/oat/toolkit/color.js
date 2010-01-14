@@ -23,7 +23,7 @@ OAT.Color = function() {
 	var help = OAT.Dom.create("div",{borderBottom:"1px solid #000"});
 	help.innerHTML = "&nbsp;";
 	close.innerHTML = 'X';
-	OAT.Dom.attach(close,"click",function(){OAT.Dom.unlink(self.div);});
+	OAT.Event.attach(close,"click",function(){OAT.Dom.unlink(self.div);});
 	this.div.appendChild(close);
 	this.div.appendChild(help);
 	
@@ -31,8 +31,8 @@ OAT.Color = function() {
 	var prepare = function(elm,color) {
 		var overRef = function(event) { help.innerHTML = color; }
 		var clickRef = function(event) { OAT.Dom.unlink(self.div); self.callback(color); }
-		OAT.Dom.attach(elm,"mouseover",overRef);
-		OAT.Dom.attach(elm,"click",clickRef);
+		OAT.Event.attach(elm,"mouseover",overRef);
+		OAT.Event.attach(elm,"click",clickRef);
 	}
 	
 	function dec2hex(dec) {

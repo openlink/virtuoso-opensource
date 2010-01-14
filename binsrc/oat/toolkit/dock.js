@@ -59,7 +59,7 @@ OAT.DockWindow = function(content,options,dock) {
 	}
 	
 	
-	OAT.Dom.attach(self.toggle,"click",toggleRef);	
+	OAT.Event.attach(self.toggle,"click",toggleRef);	
 
 	self.actualizeState();
 }
@@ -155,13 +155,13 @@ OAT.Dock = function(div,numColumns) {
 	
 	this.getOverElm = function(event) {
 		/* returns coordinates, dimensions */
-		var exact = OAT.Dom.eventPos(event);
+		var exact = OAT.Event.position(event);
 		var abs_x = exact[0]; /* here is the cursor */
 		var abs_y = exact[1];
 		var s_coords, s_dims;
 		var index = -1;
 		for (var i=0;i<self.windows.length;i++) {
-			var coords = OAT.Dom.position(self.windows[i].div);
+			var coords = OAT.Event.position(self.windows[i].div);
 			var dims = OAT.Dom.getWH(self.windows[i].div);
 			if (abs_x >= coords[0] && abs_x <= coords[0]+dims[0] &&
 				abs_y >= coords[1] && abs_y <= coords[1]+dims[1]) {
@@ -171,7 +171,7 @@ OAT.Dock = function(div,numColumns) {
 			}
 		}
 		if (index == -1) for (var i=0;i<self.dummies.length;i++) {
-			var coords = OAT.Dom.position(self.dummies[i]);
+			var coords = OAT.Event.position(self.dummies[i]);
 			var dims = OAT.Dom.getWH(self.dummies[i]);
 			if (abs_x >= coords[0] && abs_x <= coords[0]+dims[0] &&
 				abs_y >= coords[1] && abs_y <= coords[1]+dims[1]) {
@@ -227,6 +227,6 @@ OAT.Dock = function(div,numColumns) {
 		self.gd.delTarget(win.div);
 	}
 
-	OAT.Dom.attach(document,"mousemove",self.check);
+	OAT.Event.attach(document,"mousemove",self.check);
 }
 OAT.Loader.featureLoaded("dock");

@@ -82,8 +82,8 @@ OAT.RDFMini = function(div,optObj) {
 		btn.src = self.options.imagePath+"RDF_search.gif";
 		btn.title = "Search";
 		if (self.options.showSearch) { OAT.Dom.append([s,inp,btn],[self.parent,s]); }
-		OAT.Dom.attach(btn,"click",self.search);
-		OAT.Dom.attach(inp,"keypress",function(e) { if (e.keyCode == 13) { self.search(); } });
+		OAT.Event.attach(btn,"click",self.search);
+		OAT.Event.attach(inp,"keypress",function(e) { if (e.keyCode == 13) { self.search(); } });
 		self.searchInput = inp;
 		
 		if (!self.options.tabs.length) {
@@ -100,7 +100,7 @@ OAT.RDFMini = function(div,optObj) {
 				self.tabs.push(obj);
 				OAT.Dom.option(t[1],t[1],s);
 			}
-			OAT.Dom.attach(s,"change",self.redraw);
+			OAT.Event.attach(s,"change",self.redraw);
 			self.select = s;
 			OAT.Dom.append([self.parent,OAT.Dom.text("Visualization: "),s]);
 		} else {

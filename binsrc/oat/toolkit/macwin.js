@@ -79,22 +79,22 @@ OAT.MacWin = function(optObj) {
 	if (self.options.close) {
 		this.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close.gif)";
 		this.closeBtn.style.cursor = "pointer";
-		OAT.Dom.attach(this.closeBtn,"mouseover",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close_hover.gif)";});
-		OAT.Dom.attach(this.closeBtn,"mouseout",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close.gif)";});
+		OAT.Event.attach(this.closeBtn,"mouseover",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close_hover.gif)";});
+		OAT.Event.attach(this.closeBtn,"mouseout",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close.gif)";});
 	} else { this.closeBtn = false; }
 	
 	if (self.options.min) {
 		this.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize.gif)";
 		this.minBtn.style.cursor = "pointer";
-		OAT.Dom.attach(this.minBtn,"mouseover",function(){self.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize_hover.gif)";});
-		OAT.Dom.attach(this.minBtn,"mouseout",function(){self.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize.gif)";});
+		OAT.Event.attach(this.minBtn,"mouseover",function(){self.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize_hover.gif)";});
+		OAT.Event.attach(this.minBtn,"mouseout",function(){self.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize.gif)";});
 	} else { this.minBtn = false; }
 
 	if (self.options.max) {
 		this.maxBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_maximize.gif)";
 		this.maxBtn.style.cursor = "pointer";
-		OAT.Dom.attach(this.maxBtn,"mouseover",function(){self.maxBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_maximize_hover.gif)";});
-		OAT.Dom.attach(this.maxBtn,"mouseout",function(){self.maxBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_maximize.gif)";});
+		OAT.Event.attach(this.maxBtn,"mouseover",function(){self.maxBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_maximize_hover.gif)";});
+		OAT.Event.attach(this.maxBtn,"mouseout",function(){self.maxBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_maximize.gif)";});
 	} else { this.maxBtn = false; }
 
 	if (self.options.resize) {

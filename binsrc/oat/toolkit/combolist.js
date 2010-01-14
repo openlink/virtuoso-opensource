@@ -40,7 +40,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	this.input.defaultValue = self.value;
 
 	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:1001},"combo_list_list");
-	OAT.Dom.attach(this.input,"keyup",function(){
+	OAT.Event.attach(this.input,"keyup",function(){
 		self.value = self.input.value; 
 		self.options.onchange(self);
 	});
@@ -68,7 +68,7 @@ OAT.Combolist = function(optList,value,optObj) {
 			self.options.onchange(self);
 			self.instant.hide();
 		}
-		OAT.Dom.attach(option,"click",ref);
+		OAT.Event.attach(option,"click",ref);
 	}
 
 	if (optList) {	
@@ -80,7 +80,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);
 	
 	self.instant.options.showCallback = function() {
-		var coords = OAT.Dom.position(self.input);
+		var coords = OAT.Event.position(self.input);
 		var dims = OAT.Dom.getWH(self.input);
 		self.list.style.left = (coords[0]+2) +"px";
 		self.list.style.top = (coords[1]+dims[1]+5)+"px";

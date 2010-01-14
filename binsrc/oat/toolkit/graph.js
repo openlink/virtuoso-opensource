@@ -48,8 +48,8 @@ OAT.Graph = function(c) {
 				obj.mouseY = event.clientY;
 			}
 			var callback_up = function(event) { self.Nodes.moving = false; }
-			OAT.Dom.attach(this.div,"mousedown",callback_down);
-			OAT.Dom.attach(this.div,"mouseup",callback_up);
+			OAT.Event.attach(this.div,"mousedown",callback_down);
+			OAT.Event.attach(this.div,"mouseup",callback_up);
 			self.canvas.elm.parentNode.appendChild(this.div);
 			return this;
 		},

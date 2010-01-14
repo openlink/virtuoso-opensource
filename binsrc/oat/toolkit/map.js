@@ -376,7 +376,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				var ovr = new GTrafficOverlay(); 
 				var btn = OAT.Dom.button("Toggle traffic");
 				OAT.Style.apply(btn,{position:"absolute",top:"27px",right:"7px"});
-				OAT.Dom.attach(btn,"click",function() {
+				OAT.Event.attach(btn,"click",function() {
 					trafficState = (trafficState + 1) % 2;
 					if (trafficState) { self.obj.addOverlay(ovr); } else { self.obj.removeOverlay(ovr); }
 				});
@@ -534,11 +534,11 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				for (var i=0;i<self.markerArr.length;i++) { self.markerArr[i].closeInfoWindow(); }
 				var win = new OAT.Window({move:0,close:1,resize:1,width:300,title:"Lookup window"},OAT.WindowData.TYPE_RECT);
 
-				OAT.Dom.attach(win.div,"mousedown",function(event){event.cancelBubble = true;});
-				OAT.Dom.attach(win.div,"dblclick",function(event){event.cancelBubble = true;});
-				OAT.Dom.attach(win.div,"mousewheel",function(event){event.cancelBubble = true;});
-				OAT.Dom.attach(win.div,"scroll",function(event){event.cancelBubble = true;});
-				OAT.Dom.attach(win.div,"DOMMouseScroll",function(event){event.cancelBubble = true;});
+				OAT.Event.attach(win.div,"mousedown",function(event){event.cancelBubble = true;});
+				OAT.Event.attach(win.div,"dblclick",function(event){event.cancelBubble = true;});
+				OAT.Event.attach(win.div,"mousewheel",function(event){event.cancelBubble = true;});
+				OAT.Event.attach(win.div,"scroll",function(event){event.cancelBubble = true;});
+				OAT.Event.attach(win.div,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 				
 				marker.__win = win;
 				win.content.appendChild(elm);
@@ -549,7 +549,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				win.onclose = marker.closeInfoWindow;
 				
 				$(marker.__id).appendChild(marker.__win.div);
-				var pos = OAT.Dom.eventPos(event);
+				var pos = OAT.Event.position(event);
 				win.anchorTo(0,0);
 
 				/* MSVE doesnt support repositioning markers

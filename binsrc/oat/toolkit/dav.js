@@ -535,7 +535,7 @@ OAT.WebDav = {
 
 		OAT.Dom.clear(this.dom.content);
 		function attachClick(elm,item,arr) {
-			OAT.Dom.attach(elm,"click",function() {
+			OAT.Event.attach(elm,"click",function() {
 				OAT.WebDav.dom.file.value = item.name;
 				if (!arr) { return; }
 				for (var i=0;i<arr.length;i++) {
@@ -546,7 +546,7 @@ OAT.WebDav = {
 			});
 		}
 		function attachDblClick(elm,item) {
-			OAT.Dom.attach(elm,"dblclick",function() {
+			OAT.Event.attach(elm,"dblclick",function() {
 				if (item.dir) { /* xxx */
 					var treeNode = OAT.WebDav.treeGetNode(item.fullName);
 					OAT.WebDav.openDirectory(OAT.WebDav.options.path+item.name,false,treeNode);
@@ -672,7 +672,7 @@ OAT.WebDav = {
 		var currentPath = "/";
 
 		function attach(node,path) {
-			OAT.Dom.attach(node._gdElm,"click",function(){
+			OAT.Event.attach(node._gdElm,"click",function(){
 				OAT.WebDav.openDirectory(path,false,node);
 			});
 		}
@@ -773,24 +773,24 @@ OAT.WebDav = {
 			}
 			OAT.WebDav.useFile();
 		}
-		OAT.Dom.attach(this.dom.path,"keypress",function(event) {
+		OAT.Event.attach(this.dom.path,"keypress",function(event) {
 			if (event.keyCode != 13) { return; }
 			var p = OAT.WebDav.dom.path.value;
 			OAT.WebDav.openDirectory(p);
 		});
-		OAT.Dom.attach(this.dom.go,"click",function(event) {
+		OAT.Event.attach(this.dom.go,"click",function(event) {
 			var p = OAT.WebDav.dom.path.value;
 			OAT.WebDav.openDirectory(p);
 		});
-		OAT.Dom.attach(this.dom.file,"keypress",function(event) {
+		OAT.Event.attach(this.dom.file,"keypress",function(event) {
 			if (event.keyCode != 13) { return; }
 			useRef();
 		});
-		OAT.Dom.attach(this.dom.ok,"click",useRef);
-		OAT.Dom.attach(this.dom.cancel,"click",function(event) {
+		OAT.Event.attach(this.dom.ok,"click",useRef);
+		OAT.Event.attach(this.dom.cancel,"click",function(event) {
 			OAT.WebDav.window.hide();
 		});
-		OAT.Dom.attach(this.dom.ext,"change",function(event) {
+		OAT.Event.attach(this.dom.ext,"change",function(event) {
 			var ext = OAT.WebDav.options.extensionFilters[OAT.WebDav.dom.ext.selectedIndex];
 			var val = OAT.WebDav.dom.file.value;
 			var idx = val.lastIndexOf(".");

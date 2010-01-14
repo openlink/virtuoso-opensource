@@ -91,7 +91,7 @@ OAT.Resize = {
 			event.cancelBubble = true; // don't drag when resizing
 		}
 		if (!elm._Resize_movers) { 
-			OAT.Dom.attach(elm,"mousedown",ref);		
+			OAT.Event.attach(elm,"mousedown",ref);		
 			elm._Resize_movers = [];
 		}
 		elm._Resize_movers.push([win,type,rf,ef]);
@@ -134,11 +134,11 @@ OAT.Resize = {
 			resize._Resize_pending = 1;
 			setTimeout(check,2000);
 		}
-		OAT.Dom.attach(parent,"mouseover",show);
-		OAT.Dom.attach(parent,"mouseout",hide);
+		OAT.Event.attach(parent,"mouseover",show);
+		OAT.Event.attach(parent,"mouseout",hide);
 	}
 
 }
-OAT.Dom.attach(document,"mousemove",OAT.Resize.move);
-OAT.Dom.attach(document,"mouseup",OAT.Resize.up);
+OAT.Event.attach(document,"mousemove",OAT.Resize.move);
+OAT.Event.attach(document,"mouseup",OAT.Resize.up);
 OAT.Loader.featureLoaded("resize");

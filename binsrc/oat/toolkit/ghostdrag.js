@@ -30,7 +30,7 @@ OAT.GhostDragData = {
 			return;
 		}
 		OAT.GhostDragData.lock = false;
-		var exact = OAT.Dom.eventPos(event);
+		var exact = OAT.Event.position(event);
 		var x = exact[0];
 		var y = exact[1];
 		var ok = 0;
@@ -50,7 +50,7 @@ OAT.GhostDragData = {
 			/* mouseup at wrong place - let's animate it back */
 			OAT.MSG.send(obj,OAT.MSG.GD_ABORT,elm);
 			obj.onFail();
-			var coords = OAT.Dom.position(obj.originalElement);
+			var coords = OAT.Event.position(obj.originalElement);
 			var x = coords[0];
 			var y = coords[1];
 			var sf = function() { OAT.Dom.unlink(elm); }
@@ -62,7 +62,7 @@ OAT.GhostDragData = {
 
 	move:function(event) {
 		if (!OAT.GhostDragData.lock) return;
-		OAT.Dom.prevent(event);
+		OAT.Event.prevent(event);
 		var elm = OAT.GhostDragData.lock;
 		var obj = elm.object;
 		if (obj.pending) {
@@ -93,7 +93,7 @@ OAT.GhostDragData = {
 		/* is [x_,y_] inside elm ? */
 		if (!elm) return 0;
 		if (elm.style.display.toLowerCase() == "none") return 0;
-		var coords = OAT.Dom.position(elm);
+		var coords = OAT.Event.position(elm);
 		var x = coords[0]-2;
 		var y = coords[1]-2;
 		var w = parseInt(elm.offsetWidth)+2;
@@ -118,14 +118,14 @@ OAT.GhostDrag = function() {
 		self.callbacks.push(callback);
 		var cica = true;
 		var ref = function(event) {
-			OAT.Dom.prevent(event);
+			OAT.Event.prevent(event);
 			var index = self.sources.find(elm);
 			if (index == -1) return;
 			var x = event.clientX;
 			var y = event.clientY;
 			self.startDrag(self.sources[index],self.processes[index],self.callbacks[index],x,y);
 		}
-		OAT.Dom.attach(elm,"mousedown",ref);
+		OAT.Event.attach(elm,"mousedown",ref);
 	}
 	
 	this.delSource = function(node) {
@@ -175,7 +175,7 @@ OAT.GhostDrag = function() {
 		self.callback = callback;
 		var obj = OAT.Dom.create("div",{position:"absolute"});
 		self.process = process;
-		var coords = OAT.Dom.position(elm);
+		var coords = OAT.Event.position(elm);
 		obj.style.left = coords[0]+"px";
 		obj.style.top = coords[1]+"px";
 		OAT.Style.opacity(obj,0.5);
@@ -187,6 +187,6 @@ OAT.GhostDrag = function() {
 	}
 }
 
-OAT.Dom.attach(document,"mousemove",OAT.GhostDragData.move);
-OAT.Dom.attach(document,"mouseup",OAT.GhostDragData.up);
+OAT.Event.attach(document,"mousemove",OAT.GhostDragData.move);
+OAT.Event.attach(document,"mouseup",OAT.GhostDragData.up);
 OAT.Loader.featureLoaded("ghostdrag");

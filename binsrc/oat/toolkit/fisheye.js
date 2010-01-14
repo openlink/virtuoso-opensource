@@ -57,7 +57,7 @@ OAT.FishEye = function(div,optObj) {
 				var size = options.smallSize;
 			} else {
 				var idims = OAT.Dom.getWH(img);
-				var ipos = OAT.Dom.position(img);
+				var ipos = OAT.Event.position(img);
 				var center = Math.round(ipos[0] + idims[0]/2);
 				var dist = Math.abs(event_x - center);
 				dists.push(dist);
@@ -80,7 +80,7 @@ OAT.FishEye = function(div,optObj) {
 	self.recount = recount;
 	
 	var move = function(event) {
-		var pos = OAT.Dom.eventPos(event);
+		var pos = OAT.Event.position(event);
 		recount(pos[0]);
 	}
 	
@@ -92,8 +92,8 @@ OAT.FishEye = function(div,optObj) {
 		recount(-1);
 	}
 	
-	OAT.Dom.attach(self.div,"mouseover",over);
-	OAT.Dom.attach(self.div,"mouseout",out);
-	OAT.Dom.attach(self.div,"mousemove",move);
+	OAT.Event.attach(self.div,"mouseover",over);
+	OAT.Event.attach(self.div,"mouseout",out);
+	OAT.Event.attach(self.div,"mousemove",move);
 }
 OAT.Loader.featureLoaded("fisheye");

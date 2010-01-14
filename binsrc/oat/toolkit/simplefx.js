@@ -286,7 +286,7 @@ OAT.SimpleFX = {
 			a1.start();
 			a2.start();
 		}
-		OAT.Dom.attach(elm1,"click",function(){
+		OAT.Event.attach(elm1,"click",function(){
 			for (var i=0;i<elm2.length;i++) {
 				var elm = elm2[i];
 				ref(elm);

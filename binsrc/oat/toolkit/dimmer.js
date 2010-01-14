@@ -52,7 +52,7 @@ OAT.Dimmer = {
 			OAT.Dimmer.win = new OAT.Win({type:options.type,stackGroupBase:false,status:options.status,title:options.title,outerWidth:'auto',y:options.top,x:options.left,outerWidth:options.width});
  			OAT.Dimmer.win.dom.content.innerHTML = elm.innerHTML;
 			elm.innerHTML = '';
-			OAT.Dom.attach(OAT.Dimmer.win.dom.buttons.c,'click',OAT.Dimmer.hide);
+			OAT.Event.attach(OAT.Dimmer.win.dom.buttons.c,'click',OAT.Dimmer.hide);
 			OAT.Dimmer.win.dom.container.setAttribute('id',elm.getAttribute('id'));
 			elm.setAttribute('id','');
 			elm = OAT.Dimmer.win.dom.container;
@@ -73,7 +73,7 @@ OAT.Dimmer = {
 		elm.style.position = 'absolute';
 		document.body.appendChild(elm);
 		OAT.Dom.show(elm);
-		if (options.popup) { OAT.Dom.attach(OAT.Dimmer.root,"click",OAT.Dimmer.hide); }
+		if (options.popup) { OAT.Event.attach(OAT.Dimmer.root,"click",OAT.Dimmer.hide); }
 		
 		if (options.delay && OAT.Loader.loadedLibs.find("animation") != -1) {
 			var a = new OAT.AnimationOpacity(OAT.Dimmer.root,{opacity:options.opacity,delay:options.delay,speed:0.1});
@@ -103,7 +103,7 @@ OAT.Dimmer = {
 	} /* hide */
 }
 if (OAT.Browser.isIE6) { 
-	OAT.Dom.attach(window,'resize',OAT.Dimmer.update); 
-	OAT.Dom.attach(window,'scroll',OAT.Dimmer.update); 
+	OAT.Event.attach(window,'resize',OAT.Dimmer.update); 
+	OAT.Event.attach(window,'scroll',OAT.Dimmer.update); 
 }
 OAT.Loader.featureLoaded("dimmer");

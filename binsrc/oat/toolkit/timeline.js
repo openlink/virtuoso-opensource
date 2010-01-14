@@ -113,7 +113,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 	this.slider = new OAT.Slider(this.sliderBtn,{});
 	
 	/* dragging */
-	OAT.Dom.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
+	OAT.Event.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
 	
 	this.reorderEvents = function() {
 		function s(a,b) { /* compare by start times */
@@ -284,7 +284,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			elm.txt.title = value;
 		}
 	}
-	OAT.Dom.attach(self.formatSelect,"change",self.drawDateLabels);
+	OAT.Event.attach(self.formatSelect,"change",self.drawDateLabels);
 	
 	this.positionEvents = function() { /* main thing */
 		var lastPlottedIndex = -1;
@@ -486,6 +486,6 @@ OAT.Timeline = function(contentElm,paramsObj) {
 	this.slider.onchange = self.scrollTo;
 
 }
-OAT.Dom.attach(document,"mouseup",OAT.TimelineData.up);
-OAT.Dom.attach(document,"mousemove",OAT.TimelineData.move);
+OAT.Event.attach(document,"mouseup",OAT.TimelineData.up);
+OAT.Event.attach(document,"mousemove",OAT.TimelineData.move);
 OAT.Loader.featureLoaded("timeline");

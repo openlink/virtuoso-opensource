@@ -102,7 +102,7 @@ OAT.Win = function(optObj) {
                 } else { // maximize
 			self.minimize(false);
 			var dim = OAT.Dom.getWH(self.dom.container);
-			var pos = OAT.Dom.position(self.dom.container);
+			var pos = OAT.Event.position(self.dom.container);
 			self.options.outerWidth = dim[0];
 			self.options.outerHeight = dim[1];
 			self.options.x = pos[0];
@@ -137,16 +137,16 @@ OAT.Win = function(optObj) {
 
 	/* assign events */
 	if (self.options.enabledButtons.indexOf("m") != -1 && self.dom.buttons.m) {
-		OAT.Dom.attach(self.dom.buttons.m,"click",self.minimize);
+		OAT.Event.attach(self.dom.buttons.m,"click",self.minimize);
 	}
 	if (self.options.enabledButtons.indexOf("M") != -1 && self.dom.buttons.M) {
-		OAT.Dom.attach(self.dom.buttons.M,"click",self.maximize);;
+		OAT.Event.attach(self.dom.buttons.M,"click",self.maximize);;
 	}
 	if (self.options.enabledButtons.indexOf("c") != -1 && self.dom.buttons.c) {
-		OAT.Dom.attach(self.dom.buttons.c,"click",self.hide);
+		OAT.Event.attach(self.dom.buttons.c,"click",self.hide);
 	}
 	if (self.options.enabledButtons.indexOf("f") != -1 && self.dom.buttons.f) {
-		OAT.Dom.attach(self.dom.buttons.f,"click",self.flip);
+		OAT.Event.attach(self.dom.buttons.f,"click",self.flip);
 	}
 	if (self.options.enabledButtons.indexOf("r") != -1 && self.dom.buttons.r) {
 		OAT.Resize.create(self.dom.buttons.r,self.dom.resizeContainer,OAT.Resize.TYPE_XY);

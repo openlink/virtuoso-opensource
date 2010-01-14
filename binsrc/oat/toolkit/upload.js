@@ -40,7 +40,7 @@ OAT.Upload = function(method,action,target,inputName) {
 		input.name = inputName + "_" + self.divs.length;
 		del.setAttribute("type","button");
 		del.value = "Remove";
-		OAT.Dom.attach(del,"click",function(){self.remove(div);});
+		OAT.Event.attach(del,"click",function(){self.remove(div);});
 		div.appendChild(input);
 		div.appendChild(OAT.Dom.text(" "));
 		div.appendChild(del);
@@ -52,7 +52,7 @@ OAT.Upload = function(method,action,target,inputName) {
 	this.addBtn.setAttribute("type","button");
 	this.addBtn.className = "upload_add";
 	this.addBtn.value = "Add file";
-	OAT.Dom.attach(this.addBtn,"click",function(){self.add();});
+	OAT.Event.attach(this.addBtn,"click",function(){self.add();});
 	
 	this.submitBtn = OAT.Dom.create("input");
 	this.submitBtn.setAttribute("type","submit");

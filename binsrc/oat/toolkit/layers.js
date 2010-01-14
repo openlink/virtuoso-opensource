@@ -38,7 +38,7 @@ OAT.Layers = function(baseOffset) {
 		elm.style.zIndex = self.currentIndex;
 		self.layers.push(elm);
 		var event = (activationEvent ? activationEvent : "mousedown");
-		OAT.Dom.attach(elm,event,function(){self.raise(elm);});
+		OAT.Event.attach(elm,event,function(){self.raise(elm);});
 	}
 	
 	this.removeLayer = function(something) {

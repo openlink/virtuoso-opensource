@@ -70,7 +70,7 @@ OAT.Instant = function(element, optObj) {
 	self.elm._Instant_show = self.show;
 	self.elm._Instant_hide = self.hide;
 	self.hide();
-	OAT.Dom.attach(document,"mousedown",self.check);
+	OAT.Event.attach(document,"mousedown",self.check);
 	
 }
 
