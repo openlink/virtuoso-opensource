@@ -22,6 +22,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
+#  
 
 LOGFILE=tlubm.output
 export LOGFILE
@@ -54,7 +55,7 @@ BANNER "LUBM with union"
 RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < lubm.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: lubm-load.sql"
+    LOG "***ABORTED: lubm.sql"
     exit 3
 fi
 
@@ -62,32 +63,32 @@ BANNER "LUBM with inference"
 RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < lubm-inf.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: lubm-load.sql"
+    LOG "***ABORTED: lubm-inf.sql"
     exit 3
 fi
 
-
-BANNER "RDF range conds and full text"
-RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < trdfrng.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: lubm-load.sql"
-    exit 3
-fi
+# NO RUN ON v5
+#BANNER "RDF range conds and full text"
+#RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < trdfrng.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: lubm-load.sql"
+#    exit 3
+#fi
 
 
 BANNER "LUBM with materialized data"
 RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < lubm-cp.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: lubm-load.sql"
+    LOG "***ABORTED: lubm-cp.sql"
     exit 3
 fi
 
 RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < lubm-phys.sql
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: lubm-load.sql"
+    LOG "***ABORTED: lubm-phys.sql"
     exit 3
 fi
 
