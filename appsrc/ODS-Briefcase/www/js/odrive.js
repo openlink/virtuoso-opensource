@@ -45,7 +45,7 @@ function toolbarPost(fld_value)
 
 function dateFormat(date, format) {
 	function long(d) {
-		return ((d < 9) ? "0" : "") + d;
+		return ((d < 10) ? "0" : "") + d;
 	}
 	var result = "";
 	var chr;
@@ -84,8 +84,7 @@ function dateParse(dateString, format) {
 	if (dateString.match(pattern)) {
 		dateString = dateString.replace(/\//g, '-');
 		result = dateString.split('-');
-		result = [ parseInt(result[0]), parseInt(result[1]),
-				parseInt(result[2]) ];
+		result = [ parseInt(result[0], 10), parseInt(result[1], 10), parseInt(result[2], 10) ];
 	}
 	return result;
 }

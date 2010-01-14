@@ -52,16 +52,12 @@
         var toolkitPath="/ods/oat";
         var imagePath = "/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "dialog", "dav", "color"];
+        var featureList=["ajax2", "anchor", "dialog", "dav", "color", "calendar"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/calendar.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
   	<script type="text/javascript">
-        // CalendarPopup
-        var cPopup;
-        
         // publics
       	var deleteDialog;
       	var deleteDialog2;
@@ -69,12 +65,7 @@
       	
         function myInit()
         {
-          // CalendarPopup
-          if ($('cDiv'))
-          {
-            cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup('cDiv');
-            cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
-          }
+          CAL.weekStartDay = '<?V self.cWeekStarts ?>';
           CAL.dateFormat = '<?V self.cDateFormat ?>';
 
           OAT.Preferences.imagePath = '/ods/images/oat/';
