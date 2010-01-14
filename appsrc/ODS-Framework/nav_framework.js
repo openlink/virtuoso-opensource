@@ -2740,7 +2740,6 @@ ODS.Nav = function (navOptions)
 
 		for (var i = 0; i < gems.length; i++)
 		    {
-			// ????			OAT.Event.attach ()
 			OAT.Event.attach (gems[i], "click",
 					function (e) {
 					    var t = eTarget (e);
@@ -5324,7 +5323,7 @@ ODS.Nav = function (navOptions)
 	    OAT.Dom.clear (msgWin.content);
 	    OAT.Dom.append ([msgWin.content,div]);
 
-	    var pos = OAT.Event.position (anchorObj);
+	    var pos = OAT.Dom.position (anchorObj);
 	    var size = OAT.Dom.getWH (anchorObj);
 	    if (isNaN (size[0])) size[0] = 0;
 
