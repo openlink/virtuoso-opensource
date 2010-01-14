@@ -19,6 +19,8 @@
 #
 
 EXTRA_DIST = \
+	$(srcdir)/LICENSE \
+	$(srcdir)/COPYING \
 	$(srcdir)/images/*.gif \
 	$(srcdir)/images/*.png \
 	$(srcdir)/images/markers/*.png \
