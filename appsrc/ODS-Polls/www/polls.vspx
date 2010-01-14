@@ -1003,8 +1003,8 @@
                         http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_1" value="1" %s />', POLLS.WA.checkedAttribute (self.v_date_start_mode)));
                       ?>
                       <vm:label for="p_date_start_mode_1" value="--' Automatically at '" />
-                      <v:text name="p_date_start" xhtml_id="p_date_start" null-value="--''" value="--self.v_date_start" xhtml_onclick="javascript: cPopup.select ($(\'p_date_start\'), \'p_date_start_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
-                      <a href="#" name="p_date_start_select" id="p_date_start_select" onclick="cPopup.select ($('p_date_start'), 'p_date_start_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <v:text name="p_date_start" xhtml_id="p_date_start" null-value="--''" value="--self.v_date_start" xhtml_onclick="javascript: datePopup (\'p_date_start\');" xhtml_size="10" />
+                      <a href="#" name="p_date_start_select" id="p_date_start_select" onclick="datePopup ('p_date_start'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                     </td>
@@ -1027,8 +1027,8 @@
                         http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_1" value="1" %s />', POLLS.WA.checkedAttribute (self.v_date_end_mode)));
                       ?>
                       <vm:label for="p_date_end_mode_1" value="--' Automatically at '" />
-                      <v:text name="p_date_end" xhtml_id="p_date_end" null-value="--''" value="--self.v_date_end" xhtml_onclick="javascript: cPopup.select ($(\'p_date_end\'), \'p_date_end_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
-                      <a href="#" name="p_date_end_select" id="p_date_end_select" onclick="cPopup.select ($('p_date_end'), 'p_date_end_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <v:text name="p_date_end" xhtml_id="p_date_end" null-value="--''" value="--self.v_date_end" xhtml_onclick="javascript: datePopup (\'p_date_end\');" xhtml_size="10" />
+                      <a href="#" name="p_date_end_select" id="p_date_end_select" onclick="datePopup ('p_date_end'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                     </td>

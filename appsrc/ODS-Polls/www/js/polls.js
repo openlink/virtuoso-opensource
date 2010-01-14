@@ -19,23 +19,17 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
-// ---------------------------------------------------------------------------
-function myPost(frm_name, fld_name, fld_value)
-{
+function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
 
-// ---------------------------------------------------------------------------
-function myTags(fld_value)
-{
+function myTags(fld_value) {
   createHidden('F1', 'tag', fld_value);
   doPost ('F1', 'pt_tags');
 }
 
-// ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
-{
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   if (fName)
   createHidden('F1', fName, fValue);
   if (f2Name)
@@ -45,23 +39,82 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   doPost ('F1', fButton);
 }
 
-// ---------------------------------------------------------------------------
-function toolbarPost(fValue)
-{
+function toolbarPost(fValue) {
   vspxPost('command', 'select', fValue)
 }
 
-// ---------------------------------------------------------------------------
-function checkNotEnter(e)
-{
+function dateFormat(date, format) {
+	function long(d) {
+		return ((d < 10) ? "0" : "") + d;
+	}
+	var result = "";
+	var chr;
+	var token;
+	var i = 0;
+	while (i < format.length) {
+		chr = format.charAt(i);
+		token = "";
+		while ((format.charAt(i) == chr) && (i < format.length)) {
+			token += format.charAt(i++);
+		}
+		if (token == "y")
+			result += "" + date[0];
+		else if (token == "yy")
+			result += date[0].substring(2, 4);
+		else if (token == "yyyy")
+			result += date[0];
+		else if (token == "M")
+			result += date[1];
+		else if (token == "MM")
+			result += long(date[1]);
+		else if (token == "d")
+			result += date[2];
+		else if (token == "dd")
+			result += long(date[2]);
+		else
+			result += token;
+	}
+	return result;
+}
+
+function dateParse(dateString, format) {
+	var result = null;
+	var pattern = new RegExp(
+			'^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+	if (dateString.match(pattern)) {
+		dateString = dateString.replace(/\//g, '-');
+		result = dateString.split('-');
+		result = [ parseInt(result[0], 10), parseInt(result[1], 10), parseInt(result[2], 10) ];
+	}
+	return result;
+}
+
+function datePopup(objName, format) {
+	if (!format) {
+		format = 'yyyy-MM-dd';
+	}
+	var obj = $(objName);
+	var d = dateParse(obj.value, format);
+	var c = new OAT.Calendar( {
+		popup : true
+	});
+	var coords = OAT.Dom.position(obj);
+	if (isNaN(coords[0])) {
+		coords = [ 0, 0 ];
+	}
+	var x = function(date) {
+		obj.value = dateFormat(date, format);
+	}
+	c.show(coords[0], coords[1] + 30, x, d);
+}
+
+function checkNotEnter(e) {
   var key;
 
-  if (window.event)
-  {
+	if (window.event) {
     key = window.event.keyCode;
   } else {
-    if (e)
-    {
+		if (e) {
       key = e.which;
     } else {
       return true;
@@ -72,13 +125,11 @@ function checkNotEnter(e)
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
     keycode = window.event.keyCode;
-  else
-    if (e)
+	else if (e)
       keycode = e.which;
     else
       return true;
@@ -92,54 +143,43 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
-function getObject(id)
-{
+function getObject(id) {
   if (document.all)
     return document.all[id];
   return document.getElementById(id);
 }
 
-// ---------------------------------------------------------------------------
-function getParent (obj, tag)
-{
+function getParent(obj, tag) {
   var obj = obj.parentNode;
   if (obj.tagName.toLowerCase() == tag)
     return obj;
   return getParent(obj, tag);
 }
 
-// ---------------------------------------------------------------------------
-function confirmAction(confirmMsq, form, txt, selectionMsq)
-{
+function confirmAction(confirmMsq, form, txt, selectionMsq) {
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
 }
 
-// ---------------------------------------------------------------------------
-function selectCheck (obj, prefix)
-{
+function selectCheck(obj, prefix) {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
   enableToolbars(obj.form, prefix);
 }
 
-// ---------------------------------------------------------------------------
-function enableToolbars (objForm, prefix)
-{
+function enableToolbars(objForm, prefix) {
   var oCount = 0;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
-    if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked)
+		if (o != null && o.type == 'checkbox' && !o.disabled
+				&& o.name.indexOf(prefix) != -1 && o.checked)
       oCount += 1;
   }
   enableElement('tbTag', 'tbTag_gray', oCount>0);
   enableElement('tbDelete', 'tbDelete_gray', oCount>0);
 }
 
-// ---------------------------------------------------------------------------
-function enableElement (id, id_gray, idFlag)
-{
+function enableElement(id, id_gray, idFlag) {
   var mode = 'block';
   var element = document.getElementById(id);
   if (element != null) {
@@ -156,28 +196,24 @@ function enableElement (id, id_gray, idFlag)
     element.style.display = mode;
 }
 
-// ---------------------------------------------------------------------------
-function showCell (cell)
-{
+function showCell(cell) {
   var c = getObject (cell);
   if ((c) && (c.style.display == "none"))
     c.style.display = "";
 }
 
-// ---------------------------------------------------------------------------
-function hideCell(cell)
-{
+function hideCell(cell) {
   var c = getObject(cell);
   if ((c) && (c.style.display != "none"))
     c.style.display = "none";
 }
 
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+		if (o != null && o.type == "checkbox" && !o.disabled
+				&& o.name.indexOf(prefix) != -1) {
       if (obj.value == 'Select All')
         o.checked = true;
       else
@@ -193,12 +229,12 @@ function selectAllCheckboxes (obj, prefix) {
   obj.focus();
 }
 
-// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name.indexOf (txt) != -1 && obj.checked)
+			if (obj != null && obj.type == "checkbox"
+					&& obj.name.indexOf(txt) != -1 && obj.checked)
         return true;
     }
     if (selectionMsq != null)
@@ -208,30 +244,26 @@ function anySelected (form, txt, selectionMsq) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function coloriseTable(id) {
   if (document.getElementsByTagName) {
     var table = document.getElementById(id);
     if (table != null) {
       var rows = table.getElementsByTagName("tr");
       for (i = 0; i < rows.length; i++) {
-        rows[i].className = rows[i].className + " tr_" + (i % 2);;
+				rows[i].className = rows[i].className + " tr_" + (i % 2);
+				;
       }
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-function coloriseRow(obj, checked)
-{
+function coloriseRow(obj, checked) {
   obj.className = (obj.className).replace('tr_select', '');
   if (checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-// ---------------------------------------------------------------------------
-function myTrim(sString, sChar)
-{
+function myTrim(sString, sChar) {
   if (sChar == null)
     sChar = ' ';
 
@@ -244,42 +276,41 @@ function myTrim(sString, sChar)
   return sString;
 }
 
-// ---------------------------------------------------------------------------
-function showTag(tag)
-{
+function showTag(tag) {
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
 }
 
-// ---------------------------------------------------------------------------
 //
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
 //
-// ---------------------------------------------------------------------------
 function sortSelect(box) {
   var o = new Array();
   for (var i=0; i<box.options.length; i++)
-    o[o.length] = new Option( box.options[i].text, box.options[i].value, box.options[i].defaultSelected, box.options[i].selected) ;
+		o[o.length] = new Option(box.options[i].text, box.options[i].value,
+				box.options[i].defaultSelected, box.options[i].selected);
 
   if (o.length==0)
     return;
 
   o = o.sort(function(a,b) {
-                            if ((a.text+"") < (b.text+"")) { return -1; }
-                            if ((a.text+"") > (b.text+"")) { return 1; }
-                            return 0;
+		if ((a.text + "") < (b.text + "")) {
+			return -1;
                            }
-            );
+		if ((a.text + "") > (b.text + "")) {
+			return 1;
+		}
+		return 0;
+	});
 
   for (var i=0; i<o.length; i++)
-    box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
+		box.options[i] = new Option(o[i].text, o[i].value,
+				o[i].defaultSelected, o[i].selected);
 }
 
-// ---------------------------------------------------------------------------
-function showTab(tabs, tabsCount, tabNo)
-{
+function showTab(tabs, tabsCount, tabNo) {
   if ($(tabs)) {
     for (var i = 0; i < tabsCount; i++) {
       var l = $(tabs+'_tab_'+i);      // tab labels
@@ -302,21 +333,19 @@ function showTab(tabs, tabsCount, tabNo)
   }
 }
 
-// ---------------------------------------------------------------------------
-function windowShow(sPage, width, height)
-{
+function windowShow(sPage, width, height) {
   if (width == null)
     width = 500;
   if (height == null)
     height = 420;
-  sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
-  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
+			+ '&realm=' + document.forms[0].elements['realm'].value;
+	win = window.open(sPage, null, "width=" + width + ",height=" + height
+			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
   win.window.focus();
 }
 
-// ---------------------------------------------------------------------------
-function rowSelect(obj)
-{
+function rowSelect(obj) {
   var submitMode = false;
   if (window.document.F1.elements['src'])
     if (window.document.F1.elements['src'].value.indexOf('s') != -1)
@@ -349,10 +378,16 @@ function rowSelect(obj)
         if (window.opener.document.F1.elements[myArray[1]]) {
           if (myArray[2] == 's1')
             if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+							rowSelectValue(
+									window.opener.document.F1.elements[myArray[1]],
+									window.document.F1.elements[s1],
+									singleMode, submitMode);
           if (myArray[2] == 's2')
             if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+							rowSelectValue(
+									window.opener.document.F1.elements[myArray[1]],
+									window.document.F1.elements[s2],
+									singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;
@@ -366,9 +401,7 @@ function rowSelect(obj)
     window.close();
 }
 
-// ---------------------------------------------------------------------------
-function rowSelectValue(dstField, srcField, singleMode)
-{
+function rowSelectValue(dstField, srcField, singleMode) {
   if (singleMode) {
     dstField.value = srcField.value;
   } else {
@@ -385,18 +418,13 @@ function rowSelectValue(dstField, srcField, singleMode)
   }
 }
 
-// ---------------------------------------------------------------------------
-//
 // Hidden functions
-//
-// ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value) {
   var hidden;
 
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
-// ---------------------------------------------------------------------------
 function createHidden2(doc, frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -413,16 +441,13 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
     obj.value = (obj.value).replace(from, to);
 }
 
-// ---------------------------------------------------------------------------
-function updateChecked (obj, objName)
-{
+function updateChecked(obj, objName) {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
   objForm.s1.value = myTrim(objForm.s1.value);
@@ -436,16 +461,15 @@ function updateChecked (obj, objName)
         if (objForm.s1.value.indexOf(obj.value+',') == -1)
           objForm.s1.value = objForm.s1.value + obj.value+',';
       } else {
-        objForm.s1.value = (objForm.s1.value).replace(obj.value+',', '');
+				objForm.s1.value = (objForm.s1.value).replace(obj.value + ',',
+						'');
       }
     }
   }
   objForm.s1.value = myTrim(objForm.s1.value, ',');
 }
 
-// ---------------------------------------------------------------------------
-function addChecked (form, txt, selectionMsq)
-{
+function addChecked(form, txt, selectionMsq) {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
     return;
 
@@ -477,10 +501,16 @@ function addChecked (form, txt, selectionMsq)
         if (window.opener.document.F1.elements[myArray[1]]) {
           if (myArray[2] == 's1')
             if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+							rowSelectValue(
+									window.opener.document.F1.elements[myArray[1]],
+									window.document.F1.elements[s1],
+									singleMode, submitMode);
           if (myArray[2] == 's2')
             if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+							rowSelectValue(
+									window.opener.document.F1.elements[myArray[1]],
+									window.document.F1.elements[s2],
+									singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;
@@ -491,9 +521,7 @@ function addChecked (form, txt, selectionMsq)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
-function addTag(tag, objName)
-{
+function addTag(tag, objName) {
   var obj = document.F1.elements[objName];
   obj.value = myTrim(obj.value);
   obj.value = myTrim(obj.value, ',');
@@ -509,9 +537,7 @@ function addTag(tag, objName)
   obj.value = myTrim(obj.value, ',');
 }
 
-// ---------------------------------------------------------------------------
-function addCheckedTags (openerName, checkName)
-{
+function addCheckedTags(openerName, checkName) {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value]) {
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
@@ -527,7 +553,8 @@ function addCheckedTags (openerName, checkName)
           if (objOpener.value.indexOf(obj.value+',') == -1)
             objOpener.value = objOpener.value + obj.value+',';
         } else {
-          objOpener.value = (objOpener.value).replace(obj.value+',', '');
+					objOpener.value = (objOpener.value).replace(
+							obj.value + ',', '');
         }
       }
     }
@@ -536,9 +563,7 @@ function addCheckedTags (openerName, checkName)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
-function changeQuestionType (obj)
-{
+function changeQuestionType(obj) {
   var qType = obj.form['pq_type'];
   if (qType.value == 'M') {
     showCell ('tr_question_choices');
@@ -565,9 +590,7 @@ function changeQuestionType (obj)
   }
 }
 
-// ---------------------------------------------------------------------------
-function changeAnswerChoices (obj)
-{
+function changeAnswerChoices(obj) {
   var qType = obj.form['pq_type'];
   if (qType.value != 'M')
     return;
@@ -589,9 +612,7 @@ function changeAnswerChoices (obj)
   }
 }
 
-// ---------------------------------------------------------------------------
-function checkChoices (obj)
-{
+function checkChoices(obj) {
   if (!obj.checked)
     return;
   var objName = obj.name;
@@ -621,9 +642,7 @@ function checkChoices (obj)
   return true;
 }
 
-// ---------------------------------------------------------------------------
-function checkRange (obj)
-{
+function checkRange(obj) {
   var objName = obj.name;
   var N = objName.lastIndexOf('_');
   var qID = objName.substr(N+1);
@@ -649,9 +668,7 @@ function checkRange (obj)
   return true;
 }
 
-// ---------------------------------------------------------------------------
-function checkVote (obj)
-{
+function checkVote(obj) {
   var objForm = obj.form;
   var oName;
   var N;
@@ -692,46 +709,54 @@ function checkVote (obj)
 
 var POLLS = new Object();
 
-POLLS.trim = function (sString, sChar)
-{
+POLLS.trim = function(sString, sChar) {
 
-  if (sString)
-  {
-    if (sChar == null)
-    {
+	if (sString) {
+		if (sChar == null) {
       sChar = ' ';
     }
-    while (sString.substring(0,1) == sChar)
-    {
+		while (sString.substring(0, 1) == sChar) {
       sString = sString.substring(1, sString.length);
     }
-    while (sString.substring(sString.length-1, sString.length) == sChar)
-    {
+		while (sString.substring(sString.length - 1, sString.length) == sChar) {
       sString = sString.substring(0,sString.length-1);
     }
   }
   return sString;
 }
 
-POLLS.aboutDialog = function ()
-{
+POLLS.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
+	if (aboutDiv) {
+		OAT.Dom.unlink(aboutDiv);
+	}
+	aboutDiv = OAT.Dom.create('div', {
+		width : '430px',
+		height : '150px'
+	});
   aboutDiv.id = 'aboutDiv';
-  aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width:430, buttons: 0, resize:0, modal:1});
+	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {
+		width : 430,
+		buttons : 0,
+		resize : 0,
+		modal : 1
+	});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {
-    if (txt != "")
-    {
+		if (txt != "") {
       var aboutDiv = $("aboutDiv");
-      if (aboutDiv)
-      {
+			if (aboutDiv) {
         aboutDiv.innerHTML = txt;
         aboutDialog.show ();
       }
     }
   }
-  OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
+		type : OAT.AJAX.TYPE_TEXT,
+		onstart : function() {
+		},
+		onerror : function() {
+		}
+	});
 }

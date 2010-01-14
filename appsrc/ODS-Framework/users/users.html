@@ -2,17 +2,16 @@
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="js/users.js"></script>
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "map", "ymaps", "timeline", "tagcloud", "anchor", "dock"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -228,8 +227,7 @@
                           <label for="pf_birthday">Birthday</label>
                         </th>
                         <td>
-                          <input name="pf_birthday" id="pf_birthday" value="" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
-                          <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
+                          <input name="pf_birthday" id="pf_birthday" value="" onclick="datePopup('pf_birthday');"/>
                         </td>
                       </tr>
                       <tr>

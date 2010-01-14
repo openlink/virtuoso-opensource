@@ -62,7 +62,6 @@
       </head>
       <body>
         <xsl:value-of select="//ods/bar" disable-output-escaping="yes" />
-          <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <div id="app_area">
         <xsl:call-template name="header"/>
         <xsl:call-template name="nav_2"/>
@@ -160,7 +159,6 @@
         <xsl:call-template name="javaScript"/>
       </head>
       <body style="margin: 5px; font-size: 9pt;">
-        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <div style="padding: 0 0 0.5em 0;">
           <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
           <hr/>
@@ -191,7 +189,6 @@
         <xsl:call-template name="javaScript"/>
       </head>
       <body topmargin="0" leftmargin="6" marginwidth="6" marginheight="0">
-        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
         <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
           <tr>
             <td class="left">
@@ -247,20 +244,15 @@
   <!-- ========================================================================== -->
   <xsl:template name="javaScript">
     <script type="text/javascript" src="/oMail/i/js/script.js"></script>
-    <script type="text/javascript" src="/oMail/i/js/CalendarPopup.js"></script>
     <script type="text/javascript">
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog"];
+      var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
-      // CalendarPopup
-      var cPopup = new CalendarPopup('cDiv');
-      cPopup.isShowYearNavigation = true;
-
       function myInit() {
         OAT.Preferences.imagePath = '/ods/images/oat/';
         OAT.Preferences.stylePath = '/ods/oat/styles/';

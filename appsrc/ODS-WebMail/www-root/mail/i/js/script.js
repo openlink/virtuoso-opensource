@@ -20,7 +20,6 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-// ---------------------------------------------------------------------------
 function AddAdr(obj,addr)
 {
 	fld = eval('document.f1.'+ obj.name);
@@ -38,17 +37,14 @@ function AddAdr(obj,addr)
 	}
 }
 
-// ---------------------------------------------------------------------------
 function ClearFld(obj,fvalue)
 {
 	if (obj.value.indexOf(fvalue) != -1)
 		obj.value = '';
 }
 
-// ---------------------------------------------------------------------------
 showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
 
-// ---------------------------------------------------------------------------
 function getParent (obj, tag)
 {
   var obj = obj.parentNode;
@@ -57,13 +53,11 @@ function getParent (obj, tag)
   return getParent(obj, tag);
 }
 
-// ---------------------------------------------------------------------------
 function selectCheck (obj)
 {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
 }
 
-// ---------------------------------------------------------------------------
 function toggleTab(obj, noValue)
 {
   if (obj.checked == true)
@@ -79,7 +73,6 @@ function toggleTab(obj, noValue)
     toggleValue(obj);
 }
 
-// ---------------------------------------------------------------------------
 function initTab(obj)
 {
   initValue(obj);
@@ -87,7 +80,6 @@ function initTab(obj)
   returnValue(obj);
 }
 
-// ---------------------------------------------------------------------------
 function toggleValue(obj)
 {
   if (obj.checked == true)
@@ -101,7 +93,6 @@ function toggleValue(obj)
   }
 }
 
-// ---------------------------------------------------------------------------
 function initValue (obj)
 {
   var value = document.forms['f1'].elements['message'].value;
@@ -113,7 +104,6 @@ function initValue (obj)
   }
 }
 
-// ---------------------------------------------------------------------------
 function returnValue(obj)
 {
   var value;
@@ -127,7 +117,6 @@ function returnValue(obj)
   document.forms['f1'].elements['message'].value = value;
 }
 
-// ---------------------------------------------------------------------------
 function initEditor(rte)
 {
   if (document.all)
@@ -143,7 +132,6 @@ function initEditor(rte)
 	}
 }
 
-// ---------------------------------------------------------------------------
 function clearRte(value) {
   var re;
   re = new RegExp('\r\n', 'gi');
@@ -153,7 +141,6 @@ function clearRte(value) {
   return value;
 }
 
-// ---------------------------------------------------------------------------
 function initRte(value) {
   var re;
   re = new RegExp('\r\n', 'gi');
@@ -165,7 +152,6 @@ function initRte(value) {
   return value;
 }
 
-// ---------------------------------------------------------------------------
 function text2rte(value) {
   var re;
   re = new RegExp('[ ][ ]', 'gi');
@@ -177,7 +163,6 @@ function text2rte(value) {
   return value;
 }
 
-// ---------------------------------------------------------------------------
 function rte2text(value) {
   var re;
   re = new RegExp('&nbsp;', 'gi');
@@ -195,7 +180,6 @@ function rte2text(value) {
   return value;
 }
 
-// ---------------------------------------------------------------------------
 function createHidden(aDocument, name, value) {
   var hidden;
 
@@ -210,7 +194,71 @@ function createHidden(aDocument, name, value) {
   hidden.value = value;
 }
 
-// ---------------------------------------------------------------------------
+function dateFormat(date, format) {
+	function long(d) {
+		return ((d < 10) ? "0" : "") + d;
+	}
+	var result = "";
+	var chr;
+	var token;
+	var i = 0;
+	while (i < format.length) {
+		chr = format.charAt(i);
+		token = "";
+		while ((format.charAt(i) == chr) && (i < format.length)) {
+			token += format.charAt(i++);
+		}
+		if (token == "y")
+			result += "" + date[0];
+		else if (token == "yy")
+			result += date[0].substring(2, 4);
+		else if (token == "yyyy")
+			result += date[0];
+		else if (token == "M")
+			result += date[1];
+		else if (token == "MM")
+			result += long(date[1]);
+		else if (token == "d")
+			result += date[2];
+		else if (token == "dd")
+			result += long(date[2]);
+		else
+			result += token;
+	}
+	return result;
+}
+
+function dateParse(dateString, format) {
+	var result = null;
+	var pattern = new RegExp(
+			'^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+	if (dateString.match(pattern)) {
+		dateString = dateString.replace(/\//g, '-');
+		result = dateString.split('-');
+		result = [ parseInt(result[0], 10), parseInt(result[1], 10), parseInt(result[2], 10) ];
+	}
+	return result;
+}
+
+function datePopup(objName, format) {
+	if (!format) {
+		format = 'yyyy-MM-dd';
+	}
+	var obj = $(objName);
+	var d = dateParse(obj.value, format);
+	var c = new OAT.Calendar( {
+		popup : true
+	});
+	var coords = OAT.Dom.position(obj);
+	if (isNaN(coords[0])) {
+		coords = [ 0, 0 ];
+	}
+	var x = function(date) {
+		obj.value = dateFormat(date, format);
+	}
+	c.show(coords[0], coords[1] + 30, x, d);
+}
+
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -225,7 +273,6 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function boxSubmit(value)
 {
   createHidden (document, 'bp', value);
@@ -233,28 +280,24 @@ function boxSubmit(value)
   document.f1.submit ();
 }
 
-// ---------------------------------------------------------------------------
 function attachSubmit(value)
 {
   createHidden (document, 'fa_attach.x', '1');
   document.f1.submit ();
 }
 
-// ---------------------------------------------------------------------------
 function groupSubmit (obj)
 {
   createHidden (document, 'fa_group.x', obj.value);
   document.f1.submit ();
 }
 
-// ---------------------------------------------------------------------------
 function formSubmit(myField, myValue)
 {
   createHidden (document, myField, myValue);
   document.f1.submit ();
 }
 
-// ---------------------------------------------------------------------------
 function confirmAction (confirmMsq, form, txt, selectionMsq)
 {
   if (anySelected (form, txt, selectionMsq))
@@ -262,7 +305,6 @@ function confirmAction (confirmMsq, form, txt, selectionMsq)
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (obj, prefix)
 {
   var objForm = obj.form;
@@ -284,7 +326,6 @@ function selectAllCheckboxes (obj, prefix)
   obj.focus();
 }
 
-// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq)
 {
   if ((form != null) && (txt != null)) {
@@ -300,14 +341,12 @@ function anySelected (form, txt, selectionMsq)
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function coloriseRow(obj, checked) {
   obj.className = (obj.className).replace('tr_select', '');
   if (checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-// ---------------------------------------------------------------------------
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -319,7 +358,6 @@ function windowShow(sPage, width, height)
   win.window.focus();
 }
 
-// ---------------------------------------------------------------------------
 function showTab2(tab, tabs)
 {
   for (var i = 1; i <= tabs; i++) {
@@ -345,7 +383,6 @@ function showTab2(tab, tabs)
   }
 }
 
-// ---------------------------------------------------------------------------
 function initTab2(tabs, defaultNo)
 {
   var divNo = document.getElementById('tabNo');
@@ -359,7 +396,6 @@ function initTab2(tabs, defaultNo)
   showTab2(tab, tabs);
 }
 
-// ---------------------------------------------------------------------------
 function addChecked (objForm, objName, selectionMsq)
 {
   if (!anySelected (objForm, objName, selectionMsq, 'confirm'))
@@ -393,7 +429,6 @@ function addChecked (objForm, objName, selectionMsq)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
 function davBrowse (fld)
 {
   var options = { mode: 'browser',
@@ -402,7 +437,6 @@ function davBrowse (fld)
   OAT.WebDav.open(options);
 }
 
-// ---------------------------------------------------------------------------
 var OMAIL = new Object();
 
 OMAIL.forms = new Object();

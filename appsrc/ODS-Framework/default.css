@@ -991,7 +991,6 @@ div.contents {
 }
 
 /* ComboList */
-/* ComboList */
 .combo_list {
   display: inline;
 }
@@ -1010,60 +1009,39 @@ div.contents {
 }
 
 /* Popup Calendar */
-.cpYearNavigation,.cpMonthNavigation
-{
- background-color: #C0C0C0;
- color: #000000;
- font-weight: bold;
- text-align: center;
- text-decoration: none;
- vertical-align: middle;
+.calendar {
+	border: 1px solid #000;
+	background-color: #FFF;
+  z-index: 101;
 }
 
-.cpDayColumnHeader, .cpYearNavigation,.cpMonthNavigation,.cpCurrentMonthDate,.cpCurrentMonthDateDisabled,.cpOtherMonthDate,.cpOtherMonthDateDisabled,.cpCurrentDate,.cpCurrentDateDisabled,.cpTodayText,.cpTodayTextDisabled,.cpText
-{
- font-family: arial;
- font-size: 8pt;
+.calendar_year, .calendar_month {
+	text-align: center;
+	border-bottom: 1px solid #aaa;
+	padding: 2px 0px;
 }
 
-td.cpTodayText, td.cpTodayTextDisabled {
-  border-color:#C0C0C0;
-  border-style:solid;
-  border-width:1px 0 0;
+.calendar table {
+	margin-top: 2px;
 }
 
-td.cpCurrentDate {
-  background-color:#C0C0C0;
-  border:thin solid #800000;
-  color:white;
+.calendar thead {
+	font-weight: bold;
 }
 
-td.cpDayColumnHeader
-{
- border: solid thin #C0C0C0;
- border-width: 0px 0px 1px 0px;
- text-align: right;
+.calendar thead td {
+	padding: 0px 2px;
 }
 
-.cpCurrentMonthDate, .cpOtherMonthDate, .cpCurrentDate
-{
- text-align: right;
- text-decoration: none;
+.calendar td {
+	font-size: 75%;
+	text-align: center;
 }
 
-.cpCurrentMonthDateDisabled, .cpOtherMonthDateDisabled, .cpCurrentDateDisabled
-{
- color: #D0D0D0;
- text-align: right;
- text-decoration: line-through;
+td.calendar_selected {
+	background-color: #faa;
 }
 
-.cpCurrentMonthDate, .cpCurrentDate
-{
- color: #000000;
-}
-
-.cpOtherMonthDate
-{
- color: #808080;
+.calendar_special {
+	color: #c55;
 }

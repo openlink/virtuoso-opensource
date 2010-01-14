@@ -171,10 +171,9 @@
      if(typeof(nntpCal.div)!='undefined')
         calendarH=nntpCal.div.scrollHeight;
 
-
       var myDiv=$('tags_div');
       myDiv.curr_a_elm=curr_a_elm;
-      var anchorTopLeft=OAT.Dom.position('cal_anchor');
+          var anchorTopLeft=OAT.Dom.position('cal_anchor');
 
            if (OAT.Dom.isIE() == false)
            {

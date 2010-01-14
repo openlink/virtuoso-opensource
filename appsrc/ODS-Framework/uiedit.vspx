@@ -74,14 +74,8 @@
             self.is_org := coalesce ((select WAUI_IS_ORG from WA_USER_INFO where WAUI_U_ID = self.u_id), 0);
           ]]>
         </v:before-data-bind>
-        <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
-        </div>
         <script type="text/javascript">
           <![CDATA[
-            // CalendarPopup
-            var cPopup = new CalendarPopup('cDiv');
-            cPopup.isShowYearNavigation = true;
-
 function getFileName(form, from, to)
 {
   var S = from.value;
@@ -207,7 +201,7 @@ function checkRest (form, sel)
               }
             }
             ODSInitArray.push ( function () {
-              OAT.Loader.loadFeatures(["json", "ws", "combolist"], function(){});
+              OAT.Loader.loadFeatures(["json", "ws", "calendar", "combolist"], function(){});
             });
             ODSInitArray.push ( function () {
               (<?V self.is_org ?>)? swPersHide(): swPersShow();

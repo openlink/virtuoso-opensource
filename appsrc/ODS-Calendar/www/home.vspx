@@ -2387,8 +2387,8 @@
                             From
                     </td>
                     <td>
-                                <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'e_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_eventStartDate_select" onclick="calendarPopup('e_eventStartDate'); return false;" class="noapp">
+                                <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'e_eventStartDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_eventStartDate_select" onclick="datePopup('e_eventStartDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                                 <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime">
@@ -2430,8 +2430,8 @@
                             To
                     </td>
                     <td>
-                                <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'e_eventEndDate\', \'e_eventStartDate\', \'e_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_eventEndDate_select" onclick="calendarPopup('e_eventEndDate', 'e_eventStartDate', 'e_eventStartDate'); return false;" class="noapp">
+                                <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'e_eventEndDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_eventEndDate_select" onclick="datePopup('e_eventEndDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                                 <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime">
@@ -2983,8 +2983,8 @@
                 <xsl:call-template name="nbsp"/>
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
                 <xsl:call-template name="nbsp"/>
-                            <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_repeatUntil, \'e_repeatUntil_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_repeatUntil_select" onclick="cPopup.select(document.forms[0].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('datePopup(\'e_repeatUntil\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_repeatUntil_select" onclick="datePopup('e_repeatUntil', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3391,8 +3391,8 @@
                 <v:label for="t_eventEndDate" value="Start Date"/>
               </th>
               <td>
-                          <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_eventStartDate_select" onclick="calendarPopup('t_eventStartDate'); return false;" class="noapp">
+                          <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventStartDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" id="t_eventStartDate_select" onclick="datePopup('t_eventStartDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3402,8 +3402,8 @@
                 <v:label for="t_eventEndDate" value="Due Date"/>
               </th>
               <td>
-                          <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_eventEndDate\', \'t_eventStartDate\', \'t_eventStartDate\');" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_eventEndDate_select" onclick="calendarPopup('t_eventEndDate', 't_eventStartDate', 't_eventStartDate'); return false;" class="noapp">
+                          <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventEndDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" id="t_eventEndDate_select" onclick="datePopup('t_eventEndDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3475,8 +3475,8 @@
                           <v:label for="t_completed" value="Completed" />
                         </th>
                         <td>
-                          <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="javascript: calendarPopup(\'t_completed\', \'t_eventEndDate\', \'t_eventStartDate\'); changeComplete(this);" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
-                          <a href="#" id="t_completed_select" onclick="calendarPopup('t_completed', 't_eventEndDate', 't_eventStartDate'); changeComplete('t_completed'); return false;" class="noapp">
+                          <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_completed\', \'%s\'); changeComplete(this);', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
+                          <a href="#" id="t_completed_select" onclick="datePopup('t_completed', '<?V self.cDateFormat ?>'); changeComplete('t_completed'); return false;" class="noapp">
                             <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                           </a>
                         </td>
@@ -4197,8 +4197,8 @@
                       Period - from
                     </th>
                     <td>
-                      <v:text name="ex_periodFrom" xhtml_id="ex_periodFrom" value="--self.exPeriodFrom" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].ex_periodFrom, \'ex_periodFrom_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" id="ex_periodFrom_select" onclick="cPopup.select(document.forms[0].ex_periodFrom, 'ex_periodFrom_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                      <v:text name="ex_periodFrom" xhtml_id="ex_periodFrom" value="--self.exPeriodFrom" xhtml_onclick="--sprintf ('datePopup(\'ex_periodFrom\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" id="ex_periodFrom_select" onclick="datePopup('ex_periodFrom', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                     </td>
@@ -4208,8 +4208,8 @@
                       - to
                     </th>
                     <td>
-                      <v:text name="ex_periodTo" xhtml_id="ex_periodTo" value="--self.exPeriodTo" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].ex_periodTo, \'ex_periodTo_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" id="ex_periodTo_select" onclick="cPopup.select(document.forms[0].ex_periodTo, 'ex_periodTo_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                      <v:text name="ex_periodTo" xhtml_id="ex_periodTo" value="--self.exPeriodTo" xhtml_onclick="--sprintf ('datePopup(\'ex_periodTo\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" id="ex_periodTo_select" onclick="datePopup('ex_periodTo', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                     </td>
@@ -5443,11 +5443,11 @@
                         </table>
                         <script type="text/javascript">
                           <![CDATA[
-                        		OAT.Dom.attach("color_NOT_STARTED_div", "click", function (){CAL.colorRef('color_NOT_STARTED');});
-                        		OAT.Dom.attach("color_IN_PROGRESS_div", "click", function (){CAL.colorRef('color_IN_PROGRESS');});
-                        		OAT.Dom.attach("color_COMPLETED_div", "click", function (){CAL.colorRef('color_COMPLETED');});
-                        		OAT.Dom.attach("color_WAITING_div", "click", function (){CAL.colorRef('color_WAITING');});
-                        		OAT.Dom.attach("color_DEFERRED_div", "click", function (){CAL.colorRef('color_DEFERRED');});
+                        		OAT.Event.attach("color_NOT_STARTED_div", "click", function (){CAL.colorRef('color_NOT_STARTED');});
+                        		OAT.Event.attach("color_IN_PROGRESS_div", "click", function (){CAL.colorRef('color_IN_PROGRESS');});
+                        		OAT.Event.attach("color_COMPLETED_div", "click", function (){CAL.colorRef('color_COMPLETED');});
+                        		OAT.Event.attach("color_WAITING_div", "click", function (){CAL.colorRef('color_WAITING');});
+                        		OAT.Event.attach("color_DEFERRED_div", "click", function (){CAL.colorRef('color_DEFERRED');});
                           ]]>
                         </script>
                       </div>
@@ -6516,7 +6516,7 @@
                     </table>
                     <script type="text/javascript">
                       <![CDATA[
-                     		OAT.Dom.attach("ss_color_div", "click", function (){CAL.colorRef('ss_color');});
+                     		OAT.Event.attach("ss_color_div", "click", function (){CAL.colorRef('ss_color');});
                       ]]>
                     </script>
                   </div>
@@ -6621,10 +6621,6 @@
                     calendarsHelp();
                   ]]>
                 </script>
-      </vm:if>
-      
-              <vm:if test="(self.cAction in ('create', 'edit', 'view', 'export'))">
-                <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">&nbsp;</div>
       </vm:if>
       
       <div id="reminderDiv" style="display: none;">

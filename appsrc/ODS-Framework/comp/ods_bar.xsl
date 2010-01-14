@@ -736,7 +736,7 @@ function ods_bar_state_set (state)
         OAT.Dom.hide('ods_bar_second_lvl');
         OAT.Dom.hide('ods_bar_toggle_min_spacer');
         OAT.Dom.show('ods_bar_top');
-//        OAT.Dom.detach ($('ods_bar'),'click', ods_bar_state_toggle);
+//        OAT.Event.detach ($('ods_bar'),'click', ods_bar_state_toggle);
         create_cookie ('odsbar_state', 'half', 7);
         return;
       }
@@ -749,7 +749,7 @@ function ods_bar_state_set (state)
         OAT.Dom.hide('ods_bar_toggle_min_spacer');
         OAT.Dom.show('ods_bar_second_lvl');
         OAT.Dom.show('ods_bar_bot');
-//        OAT.Dom.detach ($('ods_bar'),'click', ods_bar_state_toggle);
+//        OAT.Event.detach ($('ods_bar'),'click', ods_bar_state_toggle);
         create_cookie ('odsbar_state', 'full', 7);
         return;
       }
@@ -778,7 +778,7 @@ function ods_bar_state_set (state)
         OAT.Dom.hide('ods_bar_mid');
         OAT.Dom.hide('ods_bar_r');
         OAT.Dom.hide('ods_bar_bot');
-//        OAT.Dom.attach ($('ods_bar'),'click', ods_bar_state_toggle);
+//        OAT.Event.attach ($('ods_bar'),'click', ods_bar_state_toggle);
         create_cookie ('odsbar_state', 'min', 7);
 
         return;

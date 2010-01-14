@@ -25,7 +25,6 @@ var lfTab;
 var ufTab;
 var pfTab;
 var setupWin;
-var cPopup;
 var cRDF;
 
 var sslData;
@@ -34,11 +33,6 @@ var facebookData;
 // init
 function myInit() {
 	// CalendarPopup
-	if ($("cDiv")) {
-		cPopup = new CalendarPopup("cDiv");
-		cPopup.isShowYearNavigation = true;
-	}
-
 	OAT.Preferences.imagePath = "/ods/images/oat/";
 	OAT.Preferences.stylePath = "/ods/oat/styles/";
 	OAT.Preferences.showAjax = false;

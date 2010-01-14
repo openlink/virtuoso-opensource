@@ -2740,8 +2740,7 @@ ODS.Nav = function (navOptions)
 
 		for (var i = 0; i < gems.length; i++)
 		    {
-			// ????			OAT.Dom.attach ()
-			OAT.Dom.attach (gems[i], "click",
+			OAT.Event.attach (gems[i], "click",
 					function (e) {
 					    var t = eTarget (e);
 					    var gemUrl = gemHref (t.rel);
@@ -2832,7 +2831,7 @@ ODS.Nav = function (navOptions)
 					    aElms[k].uid = aElms[k].rel.split ('#')[1];
 					    aElms[k].fullName = aElms[k].rel.split ('#')[2];
 
-					    OAT.Dom.attach (aElms[k], "click",
+					    OAT.Event.attach (aElms[k], "click",
 							    function (e)
 							    {
 								var t = eTarget (e);
@@ -3416,7 +3415,7 @@ ODS.Nav = function (navOptions)
 		var elm = div.getElementsByTagName ("img")[0];
 		elm.uid = conn.uid;
 
-		OAT.Dom.attach (elm, "click",
+		OAT.Event.attach (elm, "click",
 				function (e) {
 				    var t = eTarget(e);
 				    self.profile.show = true;
@@ -3427,7 +3426,7 @@ ODS.Nav = function (navOptions)
 		var elm = div.getElementsByTagName ("span")[0];
 		elm.uid = conn.uid;
 
-		OAT.Dom.attach (elm, "dblclick",
+		OAT.Event.attach (elm, "dblclick",
 				function (e) {
 				    var t = eTarget (e);
 				    self.profile.show = true;
@@ -3495,7 +3494,7 @@ ODS.Nav = function (navOptions)
 			    {
 				elm.innerHTML = 'Disconnect';
 
-				OAT.Dom.attach (elm, "click",
+				OAT.Event.attach (elm, "click",
 						function (e) {
 						    var t = eTarget (e);
 						    self.connectionSet (t.uid, 0,
@@ -3518,7 +3517,7 @@ ODS.Nav = function (navOptions)
 				{
 				    elm.innerHTML = 'Withdraw invitation';
 
-				    OAT.Dom.attach (elm, "click",
+				    OAT.Event.attach (elm, "click",
 						    function (e) {
 							var t = eTarget (e);
 							self.connectionSet (t.uid, 4,
@@ -3536,7 +3535,7 @@ ODS.Nav = function (navOptions)
 			    else
 				if (self.session.userId != conn.uid) {
 				    elm.innerHTML = 'Connect';
-				    OAT.Dom.attach (elm, "click",
+				    OAT.Event.attach (elm, "click",
 						    function (e) {
 							var t = eTarget (e);
 							self.connectionSet (t.uid, 1,
@@ -3557,7 +3556,7 @@ ODS.Nav = function (navOptions)
 		else
 		    {
 			elm.innerHTML = 'Connect';
-			OAT.Dom.attach (elm, "click",
+			OAT.Event.attach (elm, "click",
 					function (e) {
 					    var t = eTarget (e);
 					    self.defaultAction =
@@ -3819,10 +3818,10 @@ ODS.Nav = function (navOptions)
       dd ('showConnectBox');
       var conn_a = $('profileConnAction');
       conn_a.innerHTML = 'Connect';
-      OAT.Dom.attach (conn_a, 'click', this.connect_users);
+      OAT.Event.attach (conn_a, 'click', this.connect_users);
       var cb = tpl_elem_repl ($('connect_box_tpl'), $('connect_box'));
       var conn_btn = $('connect_box_connect')
-      OAT.Dom.attach (conn_btn, 'click', this.connect_users);
+      OAT.Event.attach (conn_btn, 'click', this.connect_users);
       this.processConnectBoxTemplate (cb);
       OAT.Dom.show (cb);
     };
@@ -3833,7 +3832,7 @@ ODS.Nav = function (navOptions)
       dd ('showDisconnectBox');
       var conn_a = $('profileConnAction');
       conn_a.innerHTML = 'Disconnect';
-      OAT.Dom.attach (conn_a, 'click', this.disconnect_users);
+      OAT.Event.attach (conn_a, 'click', this.disconnect_users);
       OAT.Dom.hide ($('connect_box'));
     };
 
@@ -3879,10 +3878,10 @@ ODS.Nav = function (navOptions)
       dd ('showWithdrawBox');
       var conn_a = $('profileConnAction')
       conn_a.innerHTML = 'Withdraw invitation';
-      OAT.Dom.attach (conn_a, "click", this.withdraw_connection);
+      OAT.Event.attach (conn_a, "click", this.withdraw_connection);
       var cb = tpl_elem_repl ($('connect_pending_tpl'), $('connect_box'));
       var wd_btn = $('connect_box_withdraw');
-      OAT.Dom.attach (wd_btn, 'click', this.withdraw_connection);
+      OAT.Event.attach (wd_btn, 'click', this.withdraw_connection);
       replaceTemplateClass (cb, 'u_full_name', self.profile.userName);
       OAT.Dom.show (cb);
     };
@@ -3938,7 +3937,7 @@ ODS.Nav = function (navOptions)
 	box_tpl = $('disconnect_box_tpl');
 
       OAD.Dom.show (box_tpl);
-      OAT.Dom.attach (getConnectBoxButton (box_tpl), "click", this.initiateConnection)
+      OAT.Event.attach (getConnectBoxButton (box_tpl), "click", this.initiateConnection)
     }
 
     function renderProfileUserActions ()
@@ -3952,7 +3951,7 @@ ODS.Nav = function (navOptions)
       else       
 	{
 	  OAT.Dom.show (msgA);
-	  OAT.Dom.attach (msgA, "click", 
+	  OAT.Event.attach (msgA, "click", 
 											function() {
 			    self.ui.newMsgWin (msgA, self.profile.userId);
 								});
@@ -3998,7 +3997,7 @@ ODS.Nav = function (navOptions)
 
 	    function attachClick (elm, connId)
 	    {
-		OAT.Dom.attach (elm, "dblclick",
+		OAT.Event.attach (elm, "dblclick",
 			       function () {
 				   self.profile.show = true;
 				   self.profile.set (connId);
@@ -4008,7 +4007,7 @@ ODS.Nav = function (navOptions)
 
 	    function attachDblClick (elm, url)
 	    {
-		OAT.Dom.attach (elm, "dblclick",
+		OAT.Event.attach (elm, "dblclick",
 				function() {
 				    document.location.href=url;
 				});
@@ -4262,7 +4261,7 @@ ODS.Nav = function (navOptions)
 
 	  var appUri = actDiv.childNodes[4].href;
 	  actDiv.childNodes[4].onclick = function () {return false;};
-	  OAT.Dom.attach (actDiv.childNodes[4], "click",
+	  OAT.Event.attach (actDiv.childNodes[4], "click",
 			  function () 
 			  {
 			    self.loadVspx (appUri);
@@ -4760,7 +4759,6 @@ ODS.Nav = function (navOptions)
 		     "grid",
 		     "graphsvg",
 		     "map",
-		     "ymaps",
 		     "timeline",
 		     "tagcloud",
 		     "anchor",
@@ -4948,7 +4946,7 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.center (div, 1, 1);
 
 	if (typeof (callback) == "function")
-	    OAT.Dom.attach (OAT.Dimmer.root, "click", callback);
+	    OAT.Event.attach (OAT.Dimmer.root, "click", callback);
     };
 
     var ajaxOptions = { auth: OAT.AJAX.AUTH_BASIC,
@@ -5354,7 +5352,7 @@ ODS.Nav = function (navOptions)
 		    }
 	    };
 
-	    OAT.Dom.attach (win.div, "keypress", keyPress);
+	    OAT.Event.attach (win.div, "keypress", keyPress);
 	    OAT.Dom.append ([parent, win.div]);
 	    return win;
 	},
@@ -5495,7 +5493,7 @@ ODS.Nav = function (navOptions)
 		links[0].href = self.odsLink (connObj.dataspace);
 
 	    if (document.location.href == self.odsLink (connObj.dataspace))
-		OAT.Dom.attach (links[0], "click",
+		OAT.Event.attach (links[0], "click",
 				function (e) {
 				    var t = eTarget (e);
 				    OAT.Anchor.close (t);
@@ -5503,7 +5501,7 @@ ODS.Nav = function (navOptions)
 				    self.initProfile ();
 				});
 
-//        OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+//        OAT.Event.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
 
 	    if (typeof (links[1]) != 'undefined')
 		{
@@ -5515,7 +5513,7 @@ ODS.Nav = function (navOptions)
 				typeof (connObj.invited) == 'undefined')
 				{
 				    links[1].innerHTML = 'Disconnect';
-				    OAT.Dom.attach(links[1], "click",
+				    OAT.Event.attach(links[1], "click",
 						   function (e) {
 						       var t = eTarget (e);
 						       OAT.Anchor.close (t);
@@ -5534,7 +5532,7 @@ ODS.Nav = function (navOptions)
 				    connObj.invited == 1)
 				    {
 					links[1].innerHTML = 'Withdraw invitation';
-					OAT.Dom.attach (links[1], "click",
+					OAT.Event.attach (links[1], "click",
 							function (e) {
                                                             var t = eTarget (e);
                                                             OAT.Anchor.close (t);
@@ -5550,7 +5548,7 @@ ODS.Nav = function (navOptions)
 				    if (self.session.userId != connObj.uid)
 					{
 					    links[1].innerHTML = 'Connect';
-					    OAT.Dom.attach (links[1], "click",
+					    OAT.Event.attach (links[1], "click",
 							    function (e) {
 								var t = eTarget (e);
 								self.connectionSet (t.uid,
@@ -5565,7 +5563,7 @@ ODS.Nav = function (navOptions)
 			if (!self.session.sid && self.session.userId != connObj.uid)
 			    {
 				links[1].innerHTML='Connect';
-				OAT.Dom.attach (links[1],"click",
+				OAT.Event.attach (links[1],"click",
 						function (e) {
 						    var t = eTarget (e);
 						    OAT.Anchor.close (t);
@@ -5602,7 +5600,7 @@ ODS.Nav = function (navOptions)
 		}
 
 
-//          OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+//          OAT.Event.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
 //         }
 	    if (typeof (links[2]) != 'undefined')
 		{

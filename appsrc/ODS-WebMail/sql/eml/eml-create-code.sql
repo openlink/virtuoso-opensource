@@ -9550,7 +9550,7 @@ create procedure OMAIL.WA.dc_predicateMetas (inout anArray any)
     'to'          , vector (1, 'To',          'address',  'varchar',  vector ()),
     'cc'          , vector (1, 'CC',          'address',  'varchar',  vector ()),
     'return-path' , vector (1, 'Return-path', 'address',  'varchar',  vector ()),
-    'rcv_date'    , vector (1, 'Date',        'datetime', 'datetime', vector ('size', '10', 'onclick', 'cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select(\$(\'-FIELD-\'), \'-FIELD-_select\', \'yyyy-MM-dd\');" />')),
+    'rcv_date'    , vector (1, 'Date',        'datetime', 'datetime', vector ('size', '10', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
     'priority'    , vector (1, 'Priority',    'priority', 'integer',  vector ()),
     'status'      , vector (0, 'Status',      'varchar',  'varchar',  vector ()),
     'dsize'       , vector (1, 'Size',        'integer',  'integer',  vector ())

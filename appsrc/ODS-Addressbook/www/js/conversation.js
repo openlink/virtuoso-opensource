@@ -44,7 +44,7 @@ CNV.fromMenu = function (obj)
 			ch.id = "cb_" + i;
 			ch.type = "checkbox";
 			var cbAction = function (){CNV.fromAction(this);};
-			OAT.Dom.attach(ch, "click", cbAction);
+			OAT.Event.attach(ch, "click", cbAction);
 			label.appendChild(ch);
 			label.appendChild(OAT.Dom.text(CNV.fromLabels[i]));
 			item.appendChild(label);

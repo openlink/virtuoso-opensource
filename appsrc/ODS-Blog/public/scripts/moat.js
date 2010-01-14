@@ -67,7 +67,7 @@ function assign_cl (a, div)
   var ref = function() {
     toggleTag (a, div);
   }
-  OAT.Dom.attach(a, "click", ref);
+  OAT.Event.attach(a, "click", ref);
 }
 
 function moat_get_meanings (tag, par)

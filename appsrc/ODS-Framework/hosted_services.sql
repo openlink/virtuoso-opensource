@@ -6917,10 +6917,30 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods',
       ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'index.html', sec=>_sec, auth_opts=>_opts);
 
-  -- new interface
+  -- new users interface
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users',
-      ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/javascript/users',
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/php/users',
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/jsp/users',
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ruby/users',
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users',
+      ppath=>'/vad/vsp/wa/users', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
 
   -- RDF folder
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');
