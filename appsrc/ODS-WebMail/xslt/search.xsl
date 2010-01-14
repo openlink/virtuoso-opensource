@@ -198,7 +198,7 @@
                       <xsl:attribute name="value"><xsl:value-of select="query/q_after"/></xsl:attribute>
                     </input>
                     <span>
-                      <img id="q_after_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_after'), 'q_after_select', 'yyyy-MM-dd');" border="0" />
+                      <img id="q_after_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup('q_after');" border="0" />
                     </span>
                   </td>
                 </tr>
@@ -219,7 +219,7 @@
                       <xsl:attribute name="value"><xsl:value-of select="query/q_before"/></xsl:attribute>
                     </input>
                     <span>
-                      <img id="q_before_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: cPopup.select($('q_before'), 'q_before_select', 'yyyy-MM-dd');" border="0" />
+                      <img id="q_before_select" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup('q_before');" border="0" />
                     </span>
                   </td>
                 </tr>

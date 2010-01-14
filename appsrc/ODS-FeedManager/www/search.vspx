@@ -645,8 +645,8 @@
                     <v:label for="f_after" value="Date after"/>
                   </th>
                   <td>
-                    <v:text name="f_after" xhtml_id="f_after" null-value="--''" value="--self.v_after" xhtml_onclick="javascript: cPopup.select ($(\'f_after\'), \'f_after_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
-                    <a href="#" name="f_after_select" id="f_after_select" onclick="cPopup.select ($('f_after'), 'f_after_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <v:text name="f_after" xhtml_id="f_after" null-value="--''" value="--self.v_after" xhtml_onclick="javascript: datePopup (\'f_after\');" xhtml_size="10" />
+                    <a href="#" name="f_after_select" id="f_after_select" onclick="datePopup ('f_after'); return false;" class="noapp">
                       <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                     </a>
                   </td>
@@ -656,8 +656,8 @@
                     <v:label for="f_before" value="Date before"/>
                   </th>
                   <td>
-                    <v:text name="f_before" xhtml_id="f_before" null-value="--''" value="--self.v_before" xhtml_onclick="javascript: cPopup.select ($(\'f_before\'), \'f_before_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
-                    <a href="#" name="f_before_select" id="f_before_select" onclick="cPopup.select ($('f_before'), 'f_before_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <v:text name="f_before" xhtml_id="f_before" null-value="--''" value="--self.v_before" xhtml_onclick="javascript: datePopup (\'f_before\');" xhtml_size="10" />
+                    <a href="#" name="f_before_select" id="f_before_select" onclick="datePopup ('f_before'); return false;" class="noapp">
                       <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                     </a>
                   </td>

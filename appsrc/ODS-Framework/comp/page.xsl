@@ -295,7 +295,6 @@
       <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
     </xsl:if>
     <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
-    <![CDATA[<script type="text/javascript" src="CalendarPopup.js"></script>]]>
     <v:form name="page_form"
             type="simple"
             method="POST"

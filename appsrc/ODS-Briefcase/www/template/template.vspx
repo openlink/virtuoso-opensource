@@ -42,17 +42,13 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog"];
+        var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/odrive.js"></script>
       <script type="text/javascript">
-        // CalendarPopup
-        var cPopup = new CalendarPopup('cDiv');
-        cPopup.isShowYearNavigation = true;
-
         function myInit()
         {
           OAT.Preferences.imagePath = '/ods/images/oat/';
@@ -92,8 +88,6 @@
     <title />
   </head>
   <body>
-    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
-    </div>
     <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
       <v:variable persist="0" name="owner_id" type="integer" default="-1"/>

@@ -20,21 +20,18 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-// ---------------------------------------------------------------------------
 function myPost(frm_name, fld_name, fld_value)
 {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
 
-// ---------------------------------------------------------------------------
 function myTags(fld_value)
 {
   createHidden('F1', 'tag', fld_value);
   doPost ('F1', 'pt_tags');
 }
 
-// ---------------------------------------------------------------------------
 function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
   if (fName)
@@ -46,14 +43,78 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   doPost ('F1', fButton);
 }
 
-// ---------------------------------------------------------------------------
 function toolbarPost(value)
 {
   document.F1.tbHidden.value = value;
   doPost ('F1', 'toolbar');
 }
 
-// ---------------------------------------------------------------------------
+function dateFormat(date, format) {
+	function long(d) {
+		return ((d < 9) ? "0" : "") + d;
+	}
+	var result = "";
+	var chr;
+	var token;
+	var i = 0;
+	while (i < format.length) {
+		chr = format.charAt(i);
+		token = "";
+		while ((format.charAt(i) == chr) && (i < format.length)) {
+			token += format.charAt(i++);
+		}
+		if (token == "y")
+			result += "" + date[0];
+		else if (token == "yy")
+			result += date[0].substring(2, 4);
+		else if (token == "yyyy")
+			result += date[0];
+		else if (token == "M")
+			result += date[1];
+		else if (token == "MM")
+			result += long(date[1]);
+		else if (token == "d")
+			result += date[2];
+		else if (token == "dd")
+			result += long(date[2]);
+		else
+			result += token;
+	}
+	return result;
+}
+
+function dateParse(dateString, format) {
+	var result = null;
+	var pattern = new RegExp(
+			'^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+	if (dateString.match(pattern)) {
+		dateString = dateString.replace(/\//g, '-');
+		result = dateString.split('-');
+		result = [ parseInt(result[0]), parseInt(result[1]),
+				parseInt(result[2]) ];
+	}
+	return result;
+}
+
+function datePopup(objName, format) {
+	if (!format) {
+		format = 'yyyy-MM-dd';
+	}
+	var obj = $(objName);
+	var d = dateParse(obj.value, format);
+	var c = new OAT.Calendar( {
+		popup : true
+	});
+	var coords = OAT.Dom.position(obj);
+	if (isNaN(coords[0])) {
+		coords = [ 0, 0 ];
+	}
+	var x = function(date) {
+		obj.value = dateFormat(date, format);
+	}
+	c.show(coords[0], coords[1] + 30, x, d);
+}
+
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -73,7 +134,6 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function checkNotEnter(e)
 {
   var key;
@@ -94,14 +154,12 @@ function checkNotEnter(e)
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function getObject(id, doc)
 {
   if (!doc) {doc = document;}
   return doc.getElementById(id);
 }
 
-// ---------------------------------------------------------------------------
 function confirmAction(confirmMsq, form, txt, selectionMsq)
 {
   if (anySelected (form, txt, selectionMsq))
@@ -109,14 +167,12 @@ function confirmAction(confirmMsq, form, txt, selectionMsq)
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function selectCheck (obj, prefix)
 {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
   enableToolbars(obj.form, prefix, parent.document);
 }
 
-// ---------------------------------------------------------------------------
 function enableToolbars (objForm, prefix, doc)
 {
   var oCount = 0;
@@ -142,7 +198,6 @@ function enableToolbars (objForm, prefix, doc)
   enableElement('tbDelete', 'tbDelete_gray', oCount>0, doc);
 }
 
-// ---------------------------------------------------------------------------
 function getParent (o, tag)
 {
   var o = o.parentNode;
@@ -151,7 +206,6 @@ function getParent (o, tag)
   return getParent(o, tag);
 }
 
-// ---------------------------------------------------------------------------
 function enableElement (id, id_gray, flag, doc)
 {
   if (!doc) {doc = document;}
@@ -173,7 +227,6 @@ function enableElement (id, id_gray, flag, doc)
     o.style.display = mode;
 }
 
-// ---------------------------------------------------------------------------
 function showCell (cell)
 {
   var c = getObject (cell);
@@ -181,7 +234,6 @@ function showCell (cell)
     c.style.display = "";
 }
 
-// ---------------------------------------------------------------------------
 function hideCell(cell)
 {
   var c = getObject(cell);
@@ -189,7 +241,6 @@ function hideCell(cell)
     c.style.display = "none";
 }
 
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
@@ -205,7 +256,6 @@ function selectAllCheckboxes (obj, prefix) {
   obj.focus();
 }
 
-// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
@@ -220,7 +270,6 @@ function anySelected (form, txt, selectionMsq) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function changeState (obj, fld_name) {
   if (obj) {
     if (obj.type == "checkbox" && obj.checked) {
@@ -233,7 +282,6 @@ function changeState (obj, fld_name) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function updateGrants(objName)
 {
   var frm = document.forms['F1'];
@@ -250,7 +298,6 @@ function updateGrants(objName)
   }
 }
 
-// ---------------------------------------------------------------------------
 function coloriseTable(id) {
   if (document.getElementsByTagName) {
     var table = document.getElementById(id);
@@ -263,14 +310,12 @@ function coloriseTable(id) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function coloriseRow(obj, checked) {
   obj.className = (obj.className).replace('tr_select', '');
   if (checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-// ---------------------------------------------------------------------------
 function clickNode(obj) {
   var nodes = obj.parentNode.childNodes;
   for (var i=0; i<nodes.length; i++) {
@@ -285,7 +330,6 @@ function clickNode(obj) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function clickNode2(obj) {
   var nodes = obj.parentNode.childNodes;
   for (var i=0; i<nodes.length; i++) {
@@ -296,7 +340,6 @@ function clickNode2(obj) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function addOption (form, text_name, box_name) {
   var box = form.elements[box_name];
   if (box) {
@@ -315,14 +358,12 @@ function addOption (form, text_name, box_name) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 function deleteOption (form, box_name) {
   var box = form.elements[box_name];
   if (box)
 	  box.options[box.selectedIndex] = null;
 }
 
-// ---------------------------------------------------------------------------
 function composeOptions (form, box_name, text_name) {
   var box = form.elements[box_name];
   if (box) {
@@ -338,17 +379,14 @@ function composeOptions (form, box_name, text_name) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 function showTag(tag) {
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
 }
 
-// ---------------------------------------------------------------------------
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
-// ---------------------------------------------------------------------------
 function sortSelect(box) {
 	var o = new Array();
 	for (var i=0; i<box.options.length; i++)
@@ -368,7 +406,6 @@ function sortSelect(box) {
 		box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 }
 
-// ---------------------------------------------------------------------------
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs))
@@ -395,7 +432,6 @@ function showTab(tabs, tabsCount, tabNo)
   }
 }
 
-// ---------------------------------------------------------------------------
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -407,7 +443,6 @@ function windowShow(sPage, width, height)
   win.window.focus();
 }
 
-// ---------------------------------------------------------------------------
 function rowSelect(obj)
 {
   var submitMode = false;
@@ -459,7 +494,6 @@ function rowSelect(obj)
     window.close();
 }
 
-// ---------------------------------------------------------------------------
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode)
@@ -481,16 +515,13 @@ function rowSelectValue(dstField, srcField, singleMode)
   }
 }
 
-// ---------------------------------------------------------------------------
 // Hiddens functions
-// ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value) {
   var hidden;
 
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
-// ---------------------------------------------------------------------------
 function createHidden2(doc, frm_name, fld_name, fld_value) {
   var hidden;
 
@@ -507,14 +538,12 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
   }
 }
 
-// ---------------------------------------------------------------------------
 function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
     obj.value = (obj.value).replace(from, to);
 }
 
-// ---------------------------------------------------------------------------
 function updateChecked (obj, objName)
 {
   var objForm = obj.form;
@@ -540,7 +569,6 @@ function updateChecked (obj, objName)
   objForm.s1.value = BMK.trim(objForm.s1.value, ',');
 }
 
-// ---------------------------------------------------------------------------
 function addChecked (form, txt, selectionMsq)
 {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
@@ -588,7 +616,6 @@ function addChecked (form, txt, selectionMsq)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
@@ -606,7 +633,6 @@ function addTag(tag, objName)
   obj.value = BMK.trim(obj.value, ',');
 }
 
-// ---------------------------------------------------------------------------
 function addCheckedTags (openerName, checkName)
 {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value])
@@ -637,7 +663,6 @@ function addCheckedTags (openerName, checkName)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
 function openBookmark (id)
 {
   var c = $('bookmark_'+id);
@@ -649,7 +674,6 @@ function openBookmark (id)
   readBookmark (id);
 }
 
-// ---------------------------------------------------------------------------
 function openIFrame (id, accountID, uri)
 {
   if (accountID > 0)
@@ -665,7 +689,6 @@ function openIFrame (id, accountID, uri)
   document.getElementById('pane_right_bottom').innerHTML = '<iframe src="'+uri+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
-// ---------------------------------------------------------------------------
 function urlParam (fldName)
 {
   var S = '';
@@ -675,7 +698,6 @@ function urlParam (fldName)
   return S;
 }
 
-// ---------------------------------------------------------------------------
 function showObject(id)
 {
   var o = document.getElementById(id);
@@ -686,7 +708,6 @@ function showObject(id)
   }
 }
 
-// ---------------------------------------------------------------------------
 function hideObject(id)
 {
   var o = document.getElementById(id);
@@ -697,7 +718,6 @@ function hideObject(id)
   }
 }
 
-// ---------------------------------------------------------------------------
 function initRequest ()
 {
   var xmlhttp = null;
@@ -718,7 +738,6 @@ function initRequest ()
   return xmlhttp;
 }
 
-// ---------------------------------------------------------------------------
 var timer = null;
 var progressID = null;
 var progressMax = null;
@@ -736,7 +755,6 @@ function resetState()
   } catch (e) { }
 }
 
-// ---------------------------------------------------------------------------
 function stopState()
 {
   timer = null;
@@ -748,7 +766,6 @@ function stopState()
   xmlhttp.send(null);
 }
 
-// ---------------------------------------------------------------------------
 function initState ()
 {
   // reset state first
@@ -768,7 +785,6 @@ function initState ()
   document.forms['F1'].action = 'bookmarks.vspx';
 }
 
-// ---------------------------------------------------------------------------
 function checkState()
 {
   var xmlhttp = initRequest();
@@ -801,7 +817,6 @@ function checkState()
 var size = 40;
 var increment = 100 / size;
 
-// ---------------------------------------------------------------------------
 // create the progress bar
 function createProgressBar()
 {
@@ -826,7 +841,6 @@ function createProgressBar()
   centerCell = window.document.getElementById(centerCellName);
 }
 
-// ---------------------------------------------------------------------------
 // show the current percentage
 function showProgress (progressIndex)
 {
@@ -862,7 +876,6 @@ function showProgress (progressIndex)
   }
 }
 
-// ---------------------------------------------------------------------------
 function readBookmark (id)
 {
   var sid = '';
@@ -874,7 +887,6 @@ function readBookmark (id)
   OAT.AJAX.POST ("ajax.vsp", "sid="+sid+"&realm="+realm+"&id="+id+"&a=visited", function(){}, {onstart:function(){}, onerror:function(){}});
 }
 
-// ---------------------------------------------------------------------------
 function davBrowse (fld)
 {
   var options = { mode: 'browser',
@@ -883,7 +895,6 @@ function davBrowse (fld)
   OAT.WebDav.open(options);
 }
 
-// ---------------------------------------------------------------------------
 function destinationChange(obj, actions)
 {
   if (!obj.checked)
@@ -919,7 +930,6 @@ function destinationChange(obj, actions)
   }
 }
 
-// ---------------------------------------------------------------------------
 var BMK = new Object();
 
 BMK.trim = function (sString, sChar)
@@ -1761,7 +1771,8 @@ BMK.updateRowCombo2 = function (elm, fldName, fldOptions)
   cc.id = fldName;
 	BMK.updateRowComboOption2(cc, fldOptions.value, "Person URI", "URI");
   BMK.updateRowComboOption2(cc, fldOptions.value, "Relationship Property", "Property");
-	// BMK.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL Expression");
+	// BMK.updateRowComboOption2(cc, fldOptions.value, "SPARQL", "SPARQL
+	// Expression");
 
   var elm = $(elm);
   elm.appendChild(cc);

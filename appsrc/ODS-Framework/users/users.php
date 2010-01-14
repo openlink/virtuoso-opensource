@@ -30,14 +30,12 @@
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "map", "timeline", "tagcloud", "anchor", "dock"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -208,8 +206,6 @@
       }
   ?>
   <body>
-    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
-    </div>
     <form name="page_form" method="post" action="users.php">
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
       <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
@@ -460,8 +456,7 @@
                           <label for="pf_birthday">Birthday</label>
                         </th>
                         <td>
-                          <input name="pf_birthday" id="pf_birthday" value="<?php print($_xml->birthday); ?>" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd');"/>
-                          <a href="#" name="pf_birthday_select" id="pf_birthday_select" onclick="cPopup.select ($('pf_birthday'), 'pf_birthday_select', 'yyyy-MM-dd'); return false;"> </a>
+                          <input name="pf_birthday" id="pf_birthday" value="<?php print($_xml->birthday); ?>" onclick="datePopup('pf_birthday');"/>
                         </td>
                       </tr>
                       <tr>

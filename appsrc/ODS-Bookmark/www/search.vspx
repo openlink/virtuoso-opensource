@@ -606,8 +606,8 @@
                     <vm:label for="f_updatedAfter" value="Updated After" />
                   </th>
                   <td>
-                    <v:text name="f_updatedAfter" xhtml_id="f_updatedAfter" null-value="--''" value="--self.v_updatedAfter" xhtml_onclick="javascript: cPopup.select ($(\'f_updatedAfter\'), \'f_updatedAfter_select\', \'yyyy-MM-dd\');" xhtml_class="textbox" xhtml_size="10" />
-                    <a href="#" name="f_updatedAfter_select" id="f_updatedAfter_select" onclick="cPopup.select ($('f_updatedAfter'), 'f_updatedAfter_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <v:text name="f_updatedAfter" xhtml_id="f_updatedAfter" null-value="--''" value="--self.v_updatedAfter" xhtml_onclick="javascript: datePopup (\'f_updatedAfter\');" xhtml_class="textbox" xhtml_size="10" />
+                    <a href="#" name="f_updatedAfter_select" id="f_updatedAfter_select" onclick="datePopup ('f_updatedAfter'); return false;" class="noapp">
                       <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                     </a>
                   </td>
@@ -617,8 +617,8 @@
                     <vm:label for="f_updatedBefore" value="Updated Before" />
                   </th>
                   <td>
-                    <v:text name="f_updatedBefore" xhtml_id="f_updatedBefore" null-value="--''" value="--self.v_updatedBefore" xhtml_onclick="javascript: cPopup.select ($(\'f_updatedBefore\'), \'f_updatedBefore_select\', \'yyyy-MM-dd\');" xhtml_class="textbox" xhtml_size="10" />
-                    <a href="#" name="f_updatedBefore_select" id="f_updatedBefore_select" onclick="cPopup.select ($('f_updatedBefore'), 'f_updatedBefore_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <v:text name="f_updatedBefore" xhtml_id="f_updatedBefore" null-value="--''" value="--self.v_updatedBefore" xhtml_onclick="javascript: datePopup (\'f_updatedBefore\');" xhtml_class="textbox" xhtml_size="10" />
+                    <a href="#" name="f_updatedBefore_select" id="f_updatedBefore_select" onclick="datePopup ('f_updatedBefore'); return false;" class="noapp">
                       <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                     </a>
                   </td>

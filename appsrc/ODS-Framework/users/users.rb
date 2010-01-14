@@ -221,21 +221,19 @@ def profile_form()
               </td>
             </tr>
             <tr>
-              <th nowrap="nowrap">
+              <th>
                 <label for="pf_birthday">Birthday</label>
               </th>
               <td>
-                <select name="pf_birthdayDay" id="pf_birthdayDay">
-                  <option></option>
-                </select>
-                -
-                <select name="pf_birthdayMonth" id="pf_birthdayMonth">
-                  <option></option>
-                </select>
-                -
-                <select name="pf_birthdayYear" id="pf_birthdayYear">
-                  <option></option>
-                </select>
+                <input name="pf_birthday" id="pf_birthday" value="#{$_user['pf_birthday']}" onclick="datePopup('pf_birthday');"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label for="pf_homepage">Personal Webpage</label>
+              </th>
+              <td>
+                <input type="text" name="pf_homepage" value="#{$_user['pf_homepage']}" id="pf_homepage" style="width: 220px;" />
               </td>
             </tr>
           </table>
@@ -877,9 +875,8 @@ def main()
           $_user['pf_lastName']               = xpathResult(xmlResult.root, '//user/lastName')
           $_user['pf_fullName']               = xpathResult(xmlResult.root, '//user/fullName')
           $_user['pf_gender']                 = xpathResult(xmlResult.root, '//user/gender')
-          $_user['pf_birthdayDay']            = xpathResult(xmlResult.root, '//user/birthdayDay')
-          $_user['pf_birthdayMonth']          = xpathResult(xmlResult.root, '//user/birthdayMonth')
-          $_user['pf_birthdayYear']           = xpathResult(xmlResult.root, '//user/birthdayYear')
+          $_user['pf_birthday']               = xpathResult(xmlResult.root, '//user/birthday')
+          $_user['pf_homepage']               = xpathResult(xmlResult.root, '//user/homepage')
           $_user['pf_icq']                    = xpathResult(xmlResult.root, '//user/icq')
           $_user['pf_skype']                  = xpathResult(xmlResult.root, '//user/skype')
           $_user['pf_yahoo']                  = xpathResult(xmlResult.root, '//user/yahoo')
@@ -961,17 +958,16 @@ def main()
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="js/users.js"></script>
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/CalendarPopup.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "map", "timeline", "tagcloud", "anchor", "dock"];
+      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">

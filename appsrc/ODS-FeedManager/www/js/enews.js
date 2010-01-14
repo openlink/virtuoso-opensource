@@ -20,8 +20,6 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
-// ---------------------------------------------------------------------------
 var Feeds = new Object();
 
 // Drag Object
@@ -614,21 +612,18 @@ Feeds.aboutDialog = function ()
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }
 
-// ---------------------------------------------------------------------------
 function myPost(frm_name, fld_name, fld_value)
 {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
 }
 
-// ---------------------------------------------------------------------------
 function myTags(fld_value)
 {
   createHidden('F1', 'tag', fld_value);
   doPost ('F1', 'pt_tags');
 }
 
-// ---------------------------------------------------------------------------
 function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
   if (fName)
@@ -640,7 +635,72 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
   doPost ('F1', fButton);
 }
 
-// ---------------------------------------------------------------------------
+function dateFormat(date, format) {
+	function long(d) {
+		return ((d < 9) ? "0" : "") + d;
+	}
+	var result = "";
+	var chr;
+	var token;
+	var i = 0;
+	while (i < format.length) {
+		chr = format.charAt(i);
+		token = "";
+		while ((format.charAt(i) == chr) && (i < format.length)) {
+			token += format.charAt(i++);
+		}
+		if (token == "y")
+			result += "" + date[0];
+		else if (token == "yy")
+			result += date[0].substring(2, 4);
+		else if (token == "yyyy")
+			result += date[0];
+		else if (token == "M")
+			result += date[1];
+		else if (token == "MM")
+			result += long(date[1]);
+		else if (token == "d")
+			result += date[2];
+		else if (token == "dd")
+			result += long(date[2]);
+		else
+			result += token;
+	}
+	return result;
+}
+
+function dateParse(dateString, format) {
+	var result = null;
+	var pattern = new RegExp(
+			'^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+	if (dateString.match(pattern)) {
+		dateString = dateString.replace(/\//g, '-');
+		result = dateString.split('-');
+		result = [ parseInt(result[0]), parseInt(result[1]),
+				parseInt(result[2]) ];
+	}
+	return result;
+}
+
+function datePopup(objName, format) {
+	if (!format) {
+		format = 'yyyy-MM-dd';
+	}
+	var obj = $(objName);
+	var d = dateParse(obj.value, format);
+	var c = new OAT.Calendar( {
+		popup : true
+	});
+	var coords = OAT.Dom.position(obj);
+	if (isNaN(coords[0])) {
+		coords = [ 0, 0 ];
+	}
+	var x = function(date) {
+		obj.value = dateFormat(date, format);
+	}
+	c.show(coords[0], coords[1] + 30, x, d);
+}
+
 function checkNotEnter(e)
 {
   var key;
@@ -661,7 +721,6 @@ function checkNotEnter(e)
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -681,14 +740,12 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function getObject(id, doc)
 {
   if (!doc) {doc = document;}
   return doc.getElementById(id);
 }
 
-// ---------------------------------------------------------------------------
 function confirmAction(confirmMsq, form, txt, selectionMsq)
 {
   if (anySelected (form, txt, selectionMsq))
@@ -696,7 +753,6 @@ function confirmAction(confirmMsq, form, txt, selectionMsq)
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (form, btn, txt)
 {
   for (var i = 0; i < form.elements.length; i++)
@@ -717,7 +773,6 @@ function selectAllCheckboxes (form, btn, txt)
   btn.focus();
 }
 
-// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq)
 {
   if ((form != null) && (txt != null))
@@ -735,7 +790,6 @@ function anySelected (form, txt, selectionMsq)
   return true;
 }
 
-// ---------------------------------------------------------------------------
 function coloriseTable(id)
 {
   if (document.getElementsByTagName)
@@ -752,7 +806,6 @@ function coloriseTable(id)
   }
 }
 
-// ---------------------------------------------------------------------------
 function clickNode(obj)
 {
   var nodes = obj.parentNode.childNodes;
@@ -769,7 +822,6 @@ function clickNode(obj)
   }
 }
 
-// ---------------------------------------------------------------------------
 function clickNode2(obj)
 {
   var nodes = obj.parentNode.childNodes;
@@ -781,7 +833,6 @@ function clickNode2(obj)
   }
 }
 
-// ---------------------------------------------------------------------------
 function loadIFrame(id, mode)
 {
   var doc = document.ownerDocument;
@@ -795,14 +846,12 @@ function loadIFrame(id, mode)
   getObject('pane_right_bottom', doc).innerHTML = '<iframe id="feed_item" src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
-// ---------------------------------------------------------------------------
 function loadIFrameURL(URL)
 {
   var doc = parent.document;
   getObject('pane_right_bottom', doc).innerHTML = '<iframe src="http://feedvalidator.org/check.cgi?url='+encodeURIComponent(URL)+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
-// ---------------------------------------------------------------------------
 function loadFromIFrame(id, flag, mode)
 {
   var doc = parent.document;
@@ -816,7 +865,6 @@ function loadFromIFrame(id, flag, mode)
   getObject('pane_right_bottom', doc).innerHTML = '<iframe src="'+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="no" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
 }
 
-// ---------------------------------------------------------------------------
 function readObject(id, flag, doc)
 {
   var c = $(id);
@@ -835,7 +883,6 @@ function readObject(id, flag, doc)
   }
 }
 
-// ---------------------------------------------------------------------------
 function flagObject(id, flag, doc)
 {
   var c = $(id);
@@ -852,7 +899,6 @@ function flagObject(id, flag, doc)
   }
 }
 
-// ---------------------------------------------------------------------------
 function addOption (form, text_name, box_name)
 {
   var box = form.elements[box_name];
@@ -874,7 +920,6 @@ function addOption (form, text_name, box_name)
 	}
 }
 
-// ---------------------------------------------------------------------------
 function deleteOption (form, box_name)
 {
   var box = form.elements[box_name];
@@ -882,7 +927,6 @@ function deleteOption (form, box_name)
 	  box.options[box.selectedIndex] = null;
 }
 
-// ---------------------------------------------------------------------------
 function composeOptions (form, box_name, text_name)
 {
   var box = form.elements[box_name];
@@ -901,17 +945,14 @@ function composeOptions (form, box_name, text_name)
 	}
 }
 
-// ---------------------------------------------------------------------------
 function showTag(tag)
 {
   parent.Feeds.selectTag(tag);
 }
 
-// ---------------------------------------------------------------------------
 // sortSelect(select_object)
 //   Pass this function a SELECT object and the options will be sorted
 //   by their text (display) values
-// ---------------------------------------------------------------------------
 function sortSelect(box)
 {
 	var o = new Array();
@@ -932,7 +973,6 @@ function sortSelect(box)
 		box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 }
 
-// ---------------------------------------------------------------------------
 function showTab(tabs, tabsCount, tabNo)
 {
   if ($(tabs))
@@ -964,7 +1004,6 @@ function showTab(tabs, tabsCount, tabNo)
   }
 }
 
-// ---------------------------------------------------------------------------
 function windowShow(sPage, width, height)
 {
   if (width == null)
@@ -976,7 +1015,6 @@ function windowShow(sPage, width, height)
   win.window.focus();
 }
 
-// ---------------------------------------------------------------------------
 function rowSelect(obj)
 {
   var submitMode = false;
@@ -1028,7 +1066,6 @@ function rowSelect(obj)
     window.close();
 }
 
-// ---------------------------------------------------------------------------
 function rowSelectValue(dstField, srcField, singleMode)
 {
   if (singleMode)
@@ -1047,15 +1084,12 @@ function rowSelectValue(dstField, srcField, singleMode)
   }
 }
 
-// ---------------------------------------------------------------------------
 // Hidden functions
-// ---------------------------------------------------------------------------
 function createHidden(frm_name, fld_name, fld_value)
 {
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
-// ---------------------------------------------------------------------------
 function createHidden2(doc, frm_name, fld_name, fld_value)
 {
   var hidden;
@@ -1075,9 +1109,7 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
   }
 }
 
-// ---------------------------------------------------------------------------
 // Menu functions
-// ---------------------------------------------------------------------------
 function menuMouseIn(a, b)
 {
   if (b != undefined)
@@ -1092,7 +1124,6 @@ function menuMouseIn(a, b)
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function menuMouseOut(event)
 {
   var current, related;
@@ -1110,7 +1141,6 @@ function menuMouseOut(event)
     current.style.visibility = "hidden";
 }
 
-// ---------------------------------------------------------------------------
 function menuPopup(button, menuID)
 {
   if (document.getElementsByTagName && !document.all)
@@ -1143,7 +1173,6 @@ function menuPopup(button, menuID)
   return false;
 }
 
-// ---------------------------------------------------------------------------
 function urlParams(mask)
 {
   var S = '';
@@ -1158,7 +1187,6 @@ function urlParams(mask)
   return S;
 }
 
-// ---------------------------------------------------------------------------
 function showObject(id)
 {
   var obj = document.getElementById(id);
@@ -1169,7 +1197,6 @@ function showObject(id)
   }
 }
 
-// ---------------------------------------------------------------------------
 function hideObject(id)
 {
   var obj = document.getElementById(id);
@@ -1180,7 +1207,6 @@ function hideObject(id)
   }
 }
 
-// ---------------------------------------------------------------------------
 function initRequest()
 {
 	var xmlhttp = null;
@@ -1202,7 +1228,6 @@ function initRequest()
   return xmlhttp;
 }
 
-// ---------------------------------------------------------------------------
 var timer = null;
 var progressID = null;
 var progressMax = null;
@@ -1218,7 +1243,6 @@ function resetState()
   } catch (e) { }
 }
 
-// ---------------------------------------------------------------------------
 function stopState()
 {
   timer = null;
@@ -1231,7 +1255,6 @@ function stopState()
   doPost ('F1', 'btn_Background');
 }
 
-// ---------------------------------------------------------------------------
 function initState()
 {
   hideObject('btn_Back');
@@ -1265,7 +1288,6 @@ function initState()
      obj.innerHTML = '';
 }
 
-// ---------------------------------------------------------------------------
 function checkState()
 {
 	var xmlhttp = initRequest();
@@ -1297,7 +1319,6 @@ function checkState()
 	xmlhttp.send("");
 }
 
-// ---------------------------------------------------------------------------
 function progressText(txt)
 {
   getObject('progressText').innerHTML = txt;
@@ -1315,9 +1336,7 @@ function progressText(txt)
 var size = 40;
 var increment = 100 / size;
 
-// ---------------------------------------------------------------------------
 // create the progress bar
-// ---------------------------------------------------------------------------
 function createProgressBar()
 {
   progressMax = getObject('progressMax').innerHTML;
@@ -1348,9 +1367,7 @@ function createProgressBar()
   centerCell = window.document.getElementById(centerCellName);
 }
 
-// ---------------------------------------------------------------------------
 // show the current percentage
-// ---------------------------------------------------------------------------
 function showProgress(progressIndex)
 {
   if (progressIndex == null)
@@ -1373,7 +1390,6 @@ function showProgress(progressIndex)
 }
 }
 
-// ---------------------------------------------------------------------------
 function davBrowse (fld)
 {
   var options = { mode: 'browser',
@@ -1382,7 +1398,6 @@ function davBrowse (fld)
   OAT.WebDav.open(options);
 }
 
-// ---------------------------------------------------------------------------
 function getParent (obj, tag)
 {
   var obj = obj.parentNode;
@@ -1391,7 +1406,6 @@ function getParent (obj, tag)
   return getParent(obj, tag);
 }
 
-// ---------------------------------------------------------------------------
 function coloriseRow(obj, checked)
 {
   obj.className = (obj.className).replace('tr_select', '');
@@ -1399,7 +1413,6 @@ function coloriseRow(obj, checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
-// ---------------------------------------------------------------------------
 function updateChecked (obj, objName)
 {
   var objForm = obj.form;
@@ -1427,7 +1440,6 @@ function updateChecked (obj, objName)
   objForm.s1.value = Feeds.trim(objForm.s1.value, ',');
 }
 
-// ---------------------------------------------------------------------------
 function addChecked (form, txt, selectionMsq)
 {
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
@@ -1475,7 +1487,6 @@ function addChecked (form, txt, selectionMsq)
   window.close();
 }
 
-// ---------------------------------------------------------------------------
 var TBL = new Object();
 
 TBL.createRow = function (prefix, No, optionObject)

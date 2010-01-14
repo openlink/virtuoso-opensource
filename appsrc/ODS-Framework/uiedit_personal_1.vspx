@@ -534,8 +534,7 @@
         <tr id="pers_5" class="initial_hidden">
           <th><label for="regbday">Birthday</label></th>
           <td class="listing_col" nowrap="1">
-            <v:text name="regbdate" xhtml_id="regbdate" value="--case when isnull (self.bdate) then '' else left (datestring (self.bdate), 10) end" xhtml_size="10" xhtml_onclick="javascript: cPopup.select ($(\'regbdate\'), \'regbdate_select\', \'yyyy-MM-dd\');"/>
-            <a href="#" name="regbdate_select" id="regbdate_select" onclick="cPopup.select ($('regbdate'), 'regbdate_select', 'yyyy-MM-dd'); return false;"> </a>
+            <v:text name="regbdate" xhtml_id="regbdate" value="--case when isnull (self.bdate) then '' else left (datestring (self.bdate), 10) end" xhtml_size="10" xhtml_onclick="javascript: datePopup(\'regbdate\');"/>
             <vm:u-prop-select name="sel_6" value="self.sav6" />
           </td>
         </tr>

@@ -51,6 +51,69 @@ function setSelectLists (val, form, pref)
     }
 }
 
+function dateFormat(date, format)
+{
+  function long(d) {
+    return ( ( d < 9 )? "0" : "" ) + d;
+  }
+	var result="";
+	var chr;
+	var token;
+	var i=0;
+	while (i < format.length)
+	{
+		chr = format.charAt(i);
+		token = "";
+		while ((format.charAt(i) == chr) && (i < format.length))
+		{
+			token += format.charAt(i++);
+		}
+		if (token == "y")
+		  result += ""+date[0];
+		else if (token == "yy")
+		  result += date[0].substring(2,4);
+		else if (token == "yyyy")
+		  result += date[0];
+		else if (token == "M")
+		  result += date[1];
+		else if (token == "MM")
+		  result += long(date[1]);
+		else if (token == "d")
+		  result += date[2];
+		else if (token == "dd")
+		  result += long(date[2]);
+		else
+		  result += token;
+	}
+	return result;
+}
+
+function dateParse(dateString, format)
+{
+  var result = null;
+  var pattern = new RegExp('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+  if (dateString.match(pattern))
+  {
+    dateString = dateString.replace(/\//g, '-');
+    result = dateString.split('-');
+    result = [parseInt(result[0]), parseInt(result[1]), parseInt(result[2])];
+  }
+  return result;
+}
+
+function datePopup(objName, format) {
+  if (!format) {format = 'yyyy-MM-dd';}
+	var obj = $(objName);
+	var d = dateParse(obj.value, format);
+  var c = new OAT.Calendar({popup: true});
+	var coords = OAT.Dom.position(obj);
+	if (isNaN(coords[0])) {coords = [0, 0];}
+	var x = function(date) {
+	  obj.value = dateFormat(date, format);
+	}
+	c.show(coords[0], coords[1] + 30, x, d);
+}
+
 function submitenter(fld, btn, e)
 {
   var keycode;
