@@ -25,7 +25,7 @@ OAT.Drag = {
 		if (!OAT.Drag.elm) return;
 		OAT.Dom.removeSelection();
 		var vp = OAT.Dom.getViewport();
-		var pos = OAT.Event.position(OAT.Drag.elm);
+		var pos = OAT.Dom.position(OAT.Drag.elm);
 		var cpos = OAT.Event.position(event);
 		var dims = OAT.Dom.getWH(OAT.Drag.elm);
 
@@ -56,12 +56,12 @@ OAT.Drag = {
 			var element = movers[i][0];
 			var options = movers[i][1];
 			var ndims = OAT.Dom.getWH(element);
-			var npos = OAT.Event.position(element);
+			var npos = OAT.Dom.position(element);
 			var nx = npos[0]+dx;
 			var ny = npos[1]+dy;
 			for (var j=0;j<options.magnetsH.length;j++) {
 				var m = $(options.magnetsH[j]);
-				var mpos = OAT.Event.position(m);
+				var mpos = OAT.Dom.position(m);
 				var mdims = OAT.Dom.getWH(m);
 				if (check(nx,mpos[0])) { element.style.left = mpos[0]+"px"; magnetOK = false; break; }
 				if (check(nx+ndims[0],mpos[0])) { element.style.left = (mpos[0]-ndims[0])+"px"; magnetOK = false; break; }
@@ -70,7 +70,7 @@ OAT.Drag = {
 			}
 			for (var j=0;j<options.magnetsV.length;j++) {
 				var m = $(options.magnetsV[j]);
-				var mpos = OAT.Event.position(m);
+				var mpos = OAT.Dom.position(m);
 				var mdims = OAT.Dom.getWH(m);
 				if (check(ny,mpos[1])) { element.style.top = mpos[1]+"px"; magnetOK = false; break; }
 				if (check(ny+ndims[1],mpos[1])) { element.style.top = (mpos[1]-ndims[1])+"px"; magnetOK = false; break; }

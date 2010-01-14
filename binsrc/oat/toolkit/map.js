@@ -164,7 +164,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 				//OAT.Loader.loadFeatures("ymaps",cb);
 			break;
 			case OAT.MapData.TYPE_MS:
-				self.elm.innerHTML = "Yahoo Map service currently disabled or not available.";
+				self.elm.innerHTML = "Microsoft Map service currently disabled or not available.";
 				//if(OAT.Browser.isIE) {
 				//	OAT.Loader.loadFeatures("msapi",cb);
 				//} else {

@@ -80,7 +80,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);
 	
 	self.instant.options.showCallback = function() {
-		var coords = OAT.Event.position(self.input);
+		var coords = OAT.Dom.position(self.input);
 		var dims = OAT.Dom.getWH(self.input);
 		self.list.style.left = (coords[0]+2) +"px";
 		self.list.style.top = (coords[1]+dims[1]+5)+"px";

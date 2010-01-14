@@ -50,7 +50,7 @@ OAT.GhostDragData = {
 			/* mouseup at wrong place - let's animate it back */
 			OAT.MSG.send(obj,OAT.MSG.GD_ABORT,elm);
 			obj.onFail();
-			var coords = OAT.Event.position(obj.originalElement);
+			var coords = OAT.Dom.position(obj.originalElement);
 			var x = coords[0];
 			var y = coords[1];
 			var sf = function() { OAT.Dom.unlink(elm); }
@@ -93,7 +93,7 @@ OAT.GhostDragData = {
 		/* is [x_,y_] inside elm ? */
 		if (!elm) return 0;
 		if (elm.style.display.toLowerCase() == "none") return 0;
-		var coords = OAT.Event.position(elm);
+		var coords = OAT.Dom.position(elm);
 		var x = coords[0]-2;
 		var y = coords[1]-2;
 		var w = parseInt(elm.offsetWidth)+2;
@@ -175,7 +175,7 @@ OAT.GhostDrag = function() {
 		self.callback = callback;
 		var obj = OAT.Dom.create("div",{position:"absolute"});
 		self.process = process;
-		var coords = OAT.Event.position(elm);
+		var coords = OAT.Dom.position(elm);
 		obj.style.left = coords[0]+"px";
 		obj.style.top = coords[1]+"px";
 		OAT.Style.opacity(obj,0.5);

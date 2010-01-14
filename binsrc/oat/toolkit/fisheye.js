@@ -57,7 +57,7 @@ OAT.FishEye = function(div,optObj) {
 				var size = options.smallSize;
 			} else {
 				var idims = OAT.Dom.getWH(img);
-				var ipos = OAT.Event.position(img);
+				var ipos = OAT.Dom.position(img);
 				var center = Math.round(ipos[0] + idims[0]/2);
 				var dist = Math.abs(event_x - center);
 				dists.push(dist);

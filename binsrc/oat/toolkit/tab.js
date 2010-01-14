@@ -64,7 +64,7 @@ OAT.TabData = {
 	},
 	
 	inParent:function(coords,parent) { /* is cursor in parent's rectangle? */
-		var pos = OAT.Event.position(parent);
+		var pos = OAT.Dom.position(parent);
 		var dims = OAT.Dom.getWH(parent);
 		return (coords[0] >= pos[0] && coords[0] <= pos[0]+dims[0] && coords[1] >= pos[1] && coords[1] <= pos[1]+dims[1]);
 	}
@@ -113,7 +113,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		OAT.Style.opacity(self.ghost,0.5);
 		self.ghost.appendChild(self.key.cloneNode(true));
 		/* create right position */
-		var pos = OAT.Event.position(self.key);
+		var pos = OAT.Dom.position(self.key);
 		var dx = event.clientX - self.eventPos[0];
 		var dy = event.clientY - self.eventPos[1];
 		self.ghost.style.left = (pos[0]+dx)+"px";

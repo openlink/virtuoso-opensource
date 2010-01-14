@@ -227,7 +227,7 @@ OAT.FormObject = {
 		
 		fo.actualizeResizers = function() {
 			if (!fo.resizeXY) { return; }
-			var coords = OAT.Event.position(fo.elm);
+			var coords = OAT.Dom.position(fo.elm);
 			var w = fo.elm.offsetWidth;
 			var h = fo.elm.offsetHeight;
 			var x = coords[0];

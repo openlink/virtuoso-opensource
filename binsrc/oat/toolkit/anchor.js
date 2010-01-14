@@ -219,7 +219,7 @@ OAT.Anchor = {
             
 			if (!preload) {
 			    if (options.activation=="focus") {
-				pos = OAT.Event.position(elm);
+				pos = OAT.Dom.position(elm);
 			    }
 			    options.anchorTo(pos[0],pos[1]);
 			    win.show();

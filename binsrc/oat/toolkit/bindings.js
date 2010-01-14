@@ -48,7 +48,7 @@ OAT.Bindings = {
 		var c = new OAT.Color();
 		var callback = function(event) {
 			var colorRef = function(color) { object[property] = color; input.style.backgroundColor = color;}
-			var coords = OAT.Event.position(input);
+			var coords = OAT.Dom.position(input);
 			c.pick(coords[0]-150,coords[1],colorRef);
 		}
 		OAT.Event.attach(input,"click",callback);

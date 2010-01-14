@@ -36,7 +36,7 @@ OAT.ComboButton = function() {
 	}
 	
 	self.instant.options.showCallback = function() { /* open listbox */
-		var coords = OAT.Event.position(self.div); /* calculate the place */
+		var coords = OAT.Dom.position(self.div); /* calculate the place */
 		var dims = OAT.Dom.getWH(self.div); /* calculate the place */
 		self.optList.style.left = coords[0]+"px";
 		self.optList.style.top = (coords[1]+dims[1])+"px";

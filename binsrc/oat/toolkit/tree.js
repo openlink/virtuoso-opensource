@@ -553,7 +553,7 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 	
 	this.checkSignal = function() {
 		var e = self.root.gdEvent;
-		var pos = OAT.Event.position(self._div);
+		var pos = OAT.Dom.position(self._div);
 		var dims = OAT.Dom.getWH(self._div);
 		var epos = OAT.Event.position(e);
 		
@@ -570,7 +570,7 @@ OAT.TreeNode = function(li,ul,parent,root,value) {
 		}
 
 		/* check for gdElm over */
-		var pos = OAT.Event.position(self._gdElm);
+		var pos = OAT.Dom.position(self._gdElm);
 		var dims = OAT.Dom.getWH(self._gdElm);
 		if (epos[0] > pos[0] && epos[0] < pos[0]+dims[0] &&
 			epos[1] > pos[1] && epos[1] < pos[1]+dims[1]) {

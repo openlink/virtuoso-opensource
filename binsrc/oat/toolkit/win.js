@@ -102,7 +102,7 @@ OAT.Win = function(optObj) {
                 } else { // maximize
 			self.minimize(false);
 			var dim = OAT.Dom.getWH(self.dom.container);
-			var pos = OAT.Event.position(self.dom.container);
+			var pos = OAT.Dom.position(self.dom.container);
 			self.options.outerWidth = dim[0];
 			self.options.outerHeight = dim[1];
 			self.options.x = pos[0];

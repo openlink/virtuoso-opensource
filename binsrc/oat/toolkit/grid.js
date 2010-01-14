@@ -155,11 +155,11 @@ OAT.GridData = {
 			var sig = -1;
 			for (var i=0;i<grid.header.cells.length;i++) {
 				var cell = grid.header.cells[i];
-				var coords = OAT.Event.position(cell.container);
+				var coords = OAT.Dom.position(cell.container);
 				var dims = OAT.Dom.getWH(cell.container)
 				var x = coords[0];
 				/* IE7 has a *wrong* value of offsetLeft, so we have to do a small hack here */
-				if (OAT.Browser.isIE7) { x -= OAT.Event.position(cell.container.offsetParent)[0]; }
+				if (OAT.Browser.isIE7) { x -= OAT.Dom.position(cell.container.offsetParent)[0]; }
 				if (pos[0] >= x && pos[0] <= x+dims[0]) { /* inside this header */
 					if (cell.signal) { return; } /* already in */
 					for (var i=0;i<grid.header.cells.length;i++) { if (grid.header.cells[i].signal) grid.header.cells[i].signalEnd(); }
