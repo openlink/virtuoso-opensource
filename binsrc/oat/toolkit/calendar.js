@@ -81,8 +81,8 @@ OAT.Calendar = function(optObj) {
 			self.date[2] = day;
 
 			var now = new Date();
-			var today = new Date(now.getYear()+1900, now.getMonth() , now.getDay()+1 ); /* today's 00:00:00 hrs */
-			var selected = new Date(self.date[0], self.date[1]-1, self.date[2]);
+			var today = new Date(now.getFullYear(), now.getMonth()+1 , now.getDate() ); /* today's 00:00:00 hrs */
+			var selected = new Date(self.date[0], self.date[1], self.date[2]);
 
 			var notAllowed = function(msg) {
 				var notify = new OAT.Notify;
