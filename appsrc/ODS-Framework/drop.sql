@@ -23,6 +23,11 @@
 vhost_remove (lpath=>'/wa');
 vhost_remove (lpath=>'/ods');
 vhost_remove (lpath=>'/ods/users');
+vhost_remove (lpath=>'/javascript/users');
+vhost_remove (lpath=>'/php/users');
+vhost_remove (lpath=>'/jsp/users');
+vhost_remove (lpath=>'/ruby/users');
+vhost_remove (lpath=>'/vsp/users');
 
 drop procedure WA_GET_EMAIL_TEMPLATE;
 drop procedure WA_SET_EMAIL_TEMPLATE;

@@ -947,8 +947,11 @@ create procedure ODS.ODS_API."user.register" (
 --! Authenticate ODS account using name & password hash
 --! Will estabilish a session in VSPX_SESSION table
 create procedure ODS.ODS_API."user.authenticate" (
-    	in user_name varchar,
-	in password_hash varchar) __soap_http 'text/plain'
+  in user_name varchar := null,
+	in password_hash varchar := null,
+	in facebookUID integer := null,
+	in openIdUrl varchar := null,
+	in openIdIdentity varchar := null) __soap_http 'text/plain'
 {
   declare uname varchar;
   declare sid varchar;
@@ -957,8 +960,31 @@ create procedure ODS.ODS_API."user.authenticate" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   if (not ods_check_auth (uname))
+  {
+    if (not isnull (facebookUID))
+    {
+      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+      if (not isnull (uname))
+        goto _valid;
+    }
+    if (not isnull (openIdUrl))
+    {
+      declare vResult any;
+
+      commit work;
+      vResult := http_client (openIdUrl);
+      if (vResult not like '%is_valid:%true\n%')
+        signal ('22023', 'OpenID Authentication Failed');
+
+      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity);
+      if (not isnull (uname))
+        goto _valid;
+    }
     return ods_auth_failed ();
+  }
+_valid:;
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, 'wa', uname, now ());
   return sid;
@@ -2461,9 +2487,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
-      {
       goto _exit;
-  }
   }
   if (sslLoginCheck)
   {
