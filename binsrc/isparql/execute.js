@@ -83,8 +83,8 @@ var QueryExec = function(optObj) {
 	this.tab = false;
 	this.store = new OAT.RDFStore(false);
 	this.mini = false;
-    this.miniplnk = false;
-    this.mRDFCtr = false;
+    	this.miniplnk = false;
+    	this.mRDFCtr = false;
 
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
@@ -92,8 +92,8 @@ var QueryExec = function(optObj) {
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
 		this.dom.select = OAT.Dom.create("select");
-		OAT.Dom.option("Human readable","0",this.dom.select);
-		OAT.Dom.option("Machine readable","1",this.dom.select);
+		OAT.Dom.option("Machine-readable","1",this.dom.select);
+		OAT.Dom.option("Human-readable","0",this.dom.select);
 
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
@@ -317,7 +317,7 @@ var QueryExec = function(optObj) {
 		execURIa.innerHTML = "Execute Permalink";
 	var nloca = document.location;
 
-	        var xparm = "?" + request + "&endpoint="  + opts.endpoint;
+		var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 
@@ -535,10 +535,11 @@ var QueryExec = function(optObj) {
 
 			var cache = self.cache[self.cacheIndex];
 
-			var q = 'define get:soft "replacing" \n'+
+/*	    var q = 'define get:soft "replacing" \n'+
 					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
-					'DESCRIBE <'+href+'>';
+		'DESCRIBE <'+href+'> FROM <' + href + '>';*/
+	    var q  = 'DESCRIBE <'+href+'>';
 			var bq = 'DESCRIBE <'+href+'>';
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -582,7 +583,7 @@ var QueryExec = function(optObj) {
 
 			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Describe Data Source";
+	    		a.innerHTML = "Describe Entity";
 			a.href = href;
 			OAT.Event.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
