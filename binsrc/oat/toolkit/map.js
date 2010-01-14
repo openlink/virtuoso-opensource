@@ -156,17 +156,20 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 		}
 		switch (provider) {
 			case OAT.MapData.TYPE_G:
-				OAT.Loader.loadFeatures("gmaps",cb);
+				self.elm.innerHTML = "Google Map service currently disabled or not available.";
+				//OAT.Loader.loadFeatures("gmaps",cb);
 			break;
 			case OAT.MapData.TYPE_Y:
-				OAT.Loader.loadFeatures("ymaps",cb);
+				self.elm.innerHTML = "Yahoo Map service currently disabled or not available.";
+				//OAT.Loader.loadFeatures("ymaps",cb);
 			break;
 			case OAT.MapData.TYPE_MS:
-				if(OAT.Browser.isIE) {
-					OAT.Loader.loadFeatures("msapi",cb);
-				} else {
-					OAT.Loader.loadFeatures("atlascompat",function() {OAT.Loader.loadFeatures("msapi",cb);});
-				}
+				self.elm.innerHTML = "Yahoo Map service currently disabled or not available.";
+				//if(OAT.Browser.isIE) {
+				//	OAT.Loader.loadFeatures("msapi",cb);
+				//} else {
+					//OAT.Loader.loadFeatures("atlascompat",function() {OAT.Loader.loadFeatures("msapi",cb);});
+				//}
 			break;
 			case OAT.MapData.TYPE_OL:
 				OAT.Loader.loadFeatures("openlayers",cb);

@@ -68,8 +68,6 @@ OAT.Loader.Dependencies = { /* dependency tree */
 }
 
 OAT.Loader.Files = { /* only those whose names differ */
-	gmaps:"customGoogleLoader.js",
-	ymaps:"customYahooLoader.js",
 	openlayers:"OpenLayers.js"
 }
 
