@@ -103,7 +103,7 @@ class XATransaction
     }
 
     void checkNewStatus(int nstatus, boolean onePhase) throws XAException {
-      if (status == ACTIVE && nstatus != IDLE) {
+      if (status == ACTIVE && nstatus != IDLE && nstatus != ACTIVE) {
           throw createException(nstatus);
       } else if (status == IDLE && (nstatus != PREPARED && !(nstatus == COMMITTED && onePhase))) {
           throw createException(nstatus);
@@ -115,8 +115,8 @@ class XATransaction
     }
 
 
-    private String getName(int status) {
-      switch(status) {
+    private String getName(int _status) {
+      switch(_status) {
         case ACTIVE:     return "ACTIVE";
         case IDLE:       return "IDLE";
         case PREPARED:   return "PREPARED";
