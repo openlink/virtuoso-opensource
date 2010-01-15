@@ -91,7 +91,7 @@ void rdf_ds_load_all (void)
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" 'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
-  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
+  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" ^{tree}^");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
