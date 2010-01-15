@@ -934,11 +934,9 @@ sr_report_future_error (dk_session_t * ses, const char *service_name, const char
 */
 }
 
-
 #define is_string_type(type)\
   ((DV_SHORT_STRING == (type)) || (DV_LONG_STRING == (type)) || (DV_C_STRING == (type)))
-#define is_array_of_long(type)\
-  ((DV_ARRAY_OF_LONG == (type)) || (DV_ARRAY_OF_LONG_PACKED == (type)))
+
 static int
 sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argcount, caddr_t * arg_array)
 {

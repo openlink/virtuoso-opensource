@@ -843,5 +843,7 @@ extern void dkbox_terminate_module (void);
 double buf_to_double (char *buf);
 float buf_to_float (char *buf);
 void double_to_buf (double d, char *buf);
+#define is_array_of_long(type)\
+  ((DV_ARRAY_OF_LONG == (type)) || (DV_ARRAY_OF_LONG_PACKED == (type)))
 
 #endif
