@@ -118,7 +118,8 @@ public class ConnectionWrapper implements java.sql.Connection {
     close_objs();
     pconn = null;
     reset_XA();
-    rconn.close();
+    if (rconn != null)
+      rconn.close();
     rconn = null;
   }
 
