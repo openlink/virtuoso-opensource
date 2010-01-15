@@ -3111,7 +3111,7 @@ qr_exec (client_connection_t * cli, query_t * qr,
     {
       qi->qi_trx->lt_timeout =
 	  opts ?
-	  (box_tag ((caddr_t) opts) == DV_ARRAY_OF_LONG_PACKED
+	  (is_array_of_long (box_tag ((caddr_t) opts))
 	  ? (long) opts->so_timeout : (long) unbox ((caddr_t) opts->so_timeout))
 	  : 100000;
       last_exec_time = qi->qi_trx->lt_started = approx_msec_real_time ();
@@ -3331,7 +3331,7 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
     {
       qi->qi_trx->lt_timeout =
 	opts ?
-	(box_tag ((caddr_t) opts) == DV_ARRAY_OF_LONG_PACKED
+	(is_array_of_long (box_tag ((caddr_t) opts))
 	 ? (long) opts->so_timeout : (long) unbox ((caddr_t) opts->so_timeout))
 	: 100000;
       last_exec_time = qi->qi_trx->lt_started = approx_msec_real_time ();
