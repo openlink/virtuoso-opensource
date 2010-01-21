@@ -596,7 +596,7 @@
                     </tr>
                   </table>
                 </fieldset>
-                <vm:if test="not isnull (server_https_port ())">
+                <vm:if test='not isnull (ODS.ODS_API."server.getInfo"(&apos;sslPort&apos;))'>
                 <fieldset>
                   <legend><b>FOAF+SSL users</b></legend>
                   <table>
