@@ -50,7 +50,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_YELP', null, 'Yelp');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('http://www.google.com/base/feeds/snippets/.*', 
+	values ('http://www.google.com/base/feeds/snippets.*', 
 	'URL', 'DB.DBA.RDF_LOAD_GOOGLEBASE', null, 'Google Base');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)

@@ -40,6 +40,7 @@
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY xsl "http://www.w3.org/1999/XSL/Transform">
+<!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 <!--
 <!ENTITY vi "xalan://openlink.virtuoso.XalanExtensions.Sponger">
@@ -64,6 +65,7 @@
     xmlns:rss="&rss;"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:vcard="&vcard;"
     xmlns:vi="&vi;"
     xmlns:virtrdf="&virtrdf;"
     xmlns:wgs84="&wgs84;"
@@ -77,9 +79,12 @@
     <xsl:param name="baseUri"/>
     <xsl:param name="currentDateTime"/>
 
-    <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri, '')"/>
+	<!--
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+	-->
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+    <xsl:variable  name="numEntries" select="count(a:entry)"/>
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
@@ -95,19 +100,23 @@
 	</rdf:RDF>
     </xsl:template>
 
-	<!-- 
-	It's assumed that the sponged URL only contains *one* item.
-	i.e. It's an item URL, not a query URL.
-	If there's more than one item, we cannot use $resourceURL to identify it.
-	-->
     <xsl:template match="a:entry" mode="container">
+   		<xsl:variable name="entryID" select="substring-after(a:id, 'snippets/')"/>
+   		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
+
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 	    	<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
-			<rdfs:label><xsl:value-of select="concat('Google Base: ', g:item_type, ' Snippet ', substring-after(a:id, 'snippets/'))"/></rdfs:label>
+		<xsl:if test="$numEntries = 1">
+			<!-- Only if baseUri identified a single item directly and isn't a query returning many items -->
+			<rdfs:label><xsl:value-of select="concat('Google Base: ', g:item_type, ' Snippet ', $entryID)"/></rdfs:label>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="a:entry" >
+   		<xsl:variable name="entryID" select="substring-after(a:id, 'snippets/')"/>
+   		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
+
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			<rdf:type rdf:resource="&oplgb;{g:item_type}" /> <!-- OpenLink GoogleBase schema should declare a class for each supported item type -->
@@ -143,11 +152,14 @@
     <xsl:template match="a:category"/>
 
     <xsl:template match="g:price" mode="offering">
+   		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
+   		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
+
 		<rdf:Description rdf:about="{$docproxyIRI}">
-			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', 'Offer')}"/>
+			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Offer_', $entryID))}"/>
 		</rdf:Description>
 
-		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', concat('Offer_', $entryID))}">
 			<xsl:choose>
 				<xsl:when test="contains(../g:listing_type, 'for rent')">
 		    		<gr:hasBusinessFunction rdf:resource="&gr;LeaseOut"/>
@@ -160,7 +172,7 @@
 		    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="../g:expiration_date"/></gr:validThrough>
 
 			<gr:hasPriceSpecification>
-		  		<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'Price')}">
+		  		<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price_', $entryID))}">
 					<xsl:choose>
 						<xsl:when test="contains(../g:listing_type, 'for rent')">
 							<rdfs:label>Rent (per month)</rdfs:label>
@@ -179,12 +191,14 @@
     </xsl:template>
 
     <xsl:template match="a:entry//a:author" mode="offering">
+   		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
+
 		<rdf:Description rdf:about="{$docproxyIRI}">
-			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', 'Vendor')}"/>
+			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}"/>
 		</rdf:Description>
 
-		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', 'Vendor')}">
-      		<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offer')}"/>
+		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}"> <!-- TO DO : Risks multiple URIs for same vendor -->
+      		<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer_', $entryID))}"/>
 			<rdfs:comment>The legal agent making the offering</rdfs:comment>
 		    <rdfs:label><xsl:value-of select="a:name"/></rdfs:label>
 		    <gr:legalName><xsl:value-of select="a:name"/></gr:legalName>
@@ -196,10 +210,8 @@
     </xsl:template>
 
     <xsl:template match="g:location">
-		<!--
-		<wgs84:lat><xsl:value-of select="g:latitude"/></wgs84:lat>
-		<wgs84:long><xsl:value-of select="g:longitude"/></wgs84:long>
-		-->
+   		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
+
 		<xsl:element name="{local-name(.)}" namespace="&oplgb;">
 			<xsl:choose>
 				<xsl:when test="g:latitude"> 
@@ -211,6 +223,38 @@
 				</xsl:otherwise>
 			</xsl:choose>
 		</xsl:element>
+
+		<!-- Latitude/longitude information may already be present if original query string included parameter 'content=geocodes' -->
+		<xsl:if test="not (g:latitude)">
+			<!-- Transform address into vCard format, so geocoder metacartridge can determine latitude & longitude -->
+			<xsl:variable name="pt1" select="substring-before(., ',')"/>
+			<xsl:variable name="pt1a" select="substring-after(., ',')"/>
+			<xsl:variable name="pt2" select="substring-before($pt1a, ',')"/>
+			<xsl:variable name="pt2a" select="substring-after($pt1a, ',')"/>
+			<xsl:variable name="pt3" select="substring-before($pt2a, ',')"/> 
+			<xsl:variable name="pt3a" select="substring-after($pt2a, ',')"/>
+			<xsl:variable name="pt4" select="substring-before($pt3a, ',')"/>
+			<xsl:variable name="pt5" select="substring-after($pt3a, ',')"/>
+
+			<!--
+			<sioc:container_of>
+			<vcard:VCard rdf:about="{vi:proxyIRI($baseUri, '', concat('VCard_', $entryID))}">
+			-->
+				<vcard:adr>
+					<vcard:Address rdf:about="{vi:proxyIRI($baseUri, '', concat('VCardAddress_', $entryID))}">
+						<vcard:street-address><xsl:value-of select="$pt1"/></vcard:street-address>
+						<vcard:locality><xsl:value-of select="$pt2"/></vcard:locality>
+						<vcard:region><xsl:value-of select="$pt3"/></vcard:region>
+						<vcard:postal-code><xsl:value-of select="$pt4"/></vcard:postal-code>
+						<vcard:country-name><xsl:value-of select="$pt5"/></vcard:country-name>
+					</vcard:Address>
+				</vcard:adr>
+			<!--
+			</vcard:VCard>
+			</sioc:container_of>
+			-->
+		</xsl:if>
+
 	   	<xsl:apply-templates />
     </xsl:template>
 
