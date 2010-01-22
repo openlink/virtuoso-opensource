@@ -30,7 +30,7 @@
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/">
 
-  <v:method name="saveBusiness" arglist="">
+  <v:method name="saveBusiness_1" arglist="">
     <![CDATA[
       declare blat, blng any;
       declare params any;
@@ -324,14 +324,14 @@
         <v:button name="user_s_business_1" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
           <v:on-post>
             <![CDATA[
-              self.saveBusiness();
+              self.saveBusiness_1();
             ]]>
           </v:on-post>
         </v:button>
         <v:button name="user_sn_business_1" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
           <v:on-post>
             <![CDATA[
-              self.saveBusiness();
+              self.saveBusiness_1();
               if (self.vc_is_valid)
    		          self.vc_redirect ('uiedit.vspx?page=2&tabNo=2');
             ]]>

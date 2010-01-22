@@ -951,7 +951,7 @@ create procedure ODS.ODS_API."user.authenticate" (
 	in password_hash varchar := null,
 	in facebookUID integer := null,
 	in openIdUrl varchar := null,
-	in openIdIdentity varchar := null) __soap_http 'text/plain'
+	in openIdIdentity varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare sid varchar;
@@ -986,8 +986,9 @@ create procedure ODS.ODS_API."user.authenticate" (
   }
 _valid:;
   sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, 'wa', uname, now ());
-  return sid;
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
+    values (sid, 'wa', uname, now ());
+  return '<sid>' || sid  || '</sid>';
 }
 ;
 
@@ -1067,6 +1068,7 @@ create procedure ODS.ODS_API."user.update.field" (
 ;
 
 create procedure ODS.ODS_API."user.update.fields" (
+  in nickName varchar := null,
   in mail varchar := null,
   in title varchar := null,
   in firstName varchar := null,
@@ -1075,11 +1077,19 @@ create procedure ODS.ODS_API."user.update.fields" (
   in gender varchar := null,
   in birthday varchar := null,
   in homepage varchar := null,
+  in mailSignature varchar := null,
+  in sumary varchar := null,
+  in webIDs varchar := null,
+  in interests varchar := null,
+  in topicInterests varchar := null,
+
   in icq varchar := null,
   in skype varchar := null,
   in yahoo varchar := null,
   in aim varchar := null,
   in msn varchar := null,
+  in messaging varchar := null,
+
   in defaultMapLocation varchar := null,
   in homeCountry varchar := null,
   in homeState varchar := null,
@@ -1096,6 +1106,15 @@ create procedure ODS.ODS_API."user.update.fields" (
   in businessOrganization varchar := null,
   in businessHomePage varchar := null,
   in businessJob varchar := null,
+  in businessRegNo varchar := null,
+  in businessCareer varchar := null,
+  in businessEmployees varchar := null,
+  in businessVendor varchar := null,
+  in businessService varchar := null,
+  in businessOther varchar := null,
+  in businessNetwork varchar := null,
+  in businessResume varchar := null,
+
   in businessCountry varchar := null,
   in businessState varchar := null,
   in businessCity varchar := null,
@@ -1107,14 +1126,18 @@ create procedure ODS.ODS_API."user.update.fields" (
   in businessLongitude varchar := null,
   in businessPhone varchar := null,
   in businessMobile varchar := null,
-  in businessRegNo varchar := null,
-  in businessCareer varchar := null,
-  in businessEmployees varchar := null,
-  in businessVendor varchar := null,
-  in businessService varchar := null,
-  in businessOther varchar := null,
-  in businessNetwork varchar := null,
-  in businessResume varchar := null,
+
+  in businessIcq varchar := null,
+  in businessSkype varchar := null,
+  in businessYahoo varchar := null,
+  in businessAim varchar := null,
+  in businessMsn varchar := null,
+  in businessMessaging varchar := null,
+
+  in securityOpenID varchar := null,
+
+  in securityFacebookID varchar := null,
+
   in securitySecretQuestion varchar := null,
   in securitySecretAnswer varchar := null,
   in securitySiocLimit varchar := null) __soap_http 'text/xml'
@@ -1129,6 +1152,7 @@ create procedure ODS.ODS_API."user.update.fields" (
     return ods_auth_failed ();
 
   -- Personal
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_NICK', nickName);
   ODS.ODS_API."user.update.field" (uname, 'E_MAIL', mail);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_TITLE', title);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FIRST_NAME', firstName);
@@ -1146,6 +1170,11 @@ create procedure ODS.ODS_API."user.update.fields" (
   _skip:;
 	}
   ODS.ODS_API."user.update.field" (uname, 'WAUI_WEBPAGE', homepage);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_MSIGNATURE', mailSignature);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SUMMARY', sumary);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FOAF', webIDs);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_INTERESTS', interests);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_INTEREST_TOPICS', topicInterests);
 
   -- Contact
   ODS.ODS_API."user.update.field" (uname, 'WAUI_ICQ', icq);
@@ -1153,6 +1182,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_AIM', yahoo);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_YAHOO', aim);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSN', msn);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_MESSAGING', messaging);
 
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LATLNG_HBDEF', defaultMapLocation);
   -- Home
@@ -1193,7 +1223,18 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BNETWORK', businessNetwork);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_RESUME', businessResume);
 
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BICQ', businessIcq);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BSKYPE', businessSkype);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BAIM', businessYahoo);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BYAHOO', businessAim);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BMSN', businessMsn);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BMESSAGING', businessMessaging);
+
   -- Security
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_OPENID_URL', securityOpenID);
+
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_LOGIN_ID', securityFacebookID);
+
   ODS.ODS_API."user.update.field" (uname, 'SEC_QUESTION', securitySecretQuestion);
   ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
   if (not isnull (securitySiocLimit))
@@ -1356,6 +1397,7 @@ create procedure ODS.ODS_API."user.info" (
     -- Personal
     ods_xml_item ('uid',       U_ID);
     ods_xml_item ('name',      U_NAME);
+    ods_xml_item ('nickName',  WAUI_NICK);
     ods_xml_item ('iri',       SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
     ods_xml_item ('mail',      U_E_MAIL);
     ods_xml_item ('title',     WAUI_TITLE);
@@ -1391,8 +1433,8 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('homeAddress1',           WAUI_HADDRESS1);
       ods_xml_item ('homeAddress2',           WAUI_HADDRESS2);
       ods_xml_item ('homeTimezone',           WAUI_HTZONE);
-      ods_xml_item ('homeLatitude',           WAUI_LAT);
-      ods_xml_item ('homeLongitude',          WAUI_LNG);
+      ods_xml_item ('homeLatitude',           case when isnull (WAUI_LAT) then '' else sprintf ('%.6f', coalesce (WAUI_LAT, 0.00)) end);
+      ods_xml_item ('homeLongitude',          case when isnull (WAUI_LNG) then '' else sprintf ('%.6f', coalesce (WAUI_LNG, 0.00)) end);
       ods_xml_item ('homePhone',              WAUI_HPHONE);
       ods_xml_item ('homeMobile',             WAUI_HMOBILE);
 
@@ -1408,8 +1450,8 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('businessAddress1',       WAUI_BADDRESS1);
       ods_xml_item ('businessAddress2',       WAUI_BADDRESS2);
       ods_xml_item ('businessTimezone',       WAUI_BTZONE);
-      ods_xml_item ('businessLatitude',       WAUI_BLAT);
-      ods_xml_item ('businessLongitude',      WAUI_BLNG);
+      ods_xml_item ('businessLatitude',       case when isnull (WAUI_BLAT) then '' else sprintf ('%.6f', coalesce (WAUI_BLAT, 0.00)) end);
+      ods_xml_item ('businessLongitude',      case when isnull (WAUI_BLNG) then '' else sprintf ('%.6f', coalesce (WAUI_BLNG, 0.00)) end);
       ods_xml_item ('businessPhone',          WAUI_BPHONE);
       ods_xml_item ('businessMobile',         WAUI_BMOBILE);
       ods_xml_item ('businessRegNo',          WAUI_BREGNO);
@@ -1421,7 +1463,16 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('businessNetwork',        WAUI_BNETWORK);
       ods_xml_item ('businessResume',         WAUI_RESUME);
 
+      ods_xml_item ('businessIcq',            WAUI_BICQ);
+      ods_xml_item ('businessSkype',          WAUI_BSKYPE);
+      ods_xml_item ('businessYahoo',          WAUI_BYAHOO);
+      ods_xml_item ('businessAim',            WAUI_BAIM);
+      ods_xml_item ('businessMsn',            WAUI_BMSN);
+      ods_xml_item ('businessMessaging',      WAUI_BMESSAGING);
+
       -- Security
+      ods_xml_item ('securityOpenID',         WAUI_OPENID_URL);
+      ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_LOGIN_ID);
       ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
@@ -2051,20 +2102,125 @@ create procedure ODS.ODS_API."user.annotation.delete" (
      and WUR_LABEL = claimValue
      and WUR_SEEALSO_IRI = claimIri
      and WUR_P_IRI = claimRelation;
-  rc := 1;
+
+  rc := row_count ();
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."user.bioevent.new" (
-  in bioEvent varchar,
-  in bioDate varchar := null,
-  in bioPlace varchar := null) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.onlineAccounts.list" (
+  in "type" varchar) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUO_ID, WUO_NAME, WUO_URL from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = "type" and WUO_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL)));
+  }
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.onlineAccounts.new" (
+  in name varchar,
+  in url varchar,
+  in "type" varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
 
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
+    values (_u_id, "type", name, url);
+  rc := (select max (WUO_ID) from DB.DBA.WA_USER_OL_ACCOUNTS);
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.onlineAccounts.delete" (
+  in id integer := null,
+  in name varchar := null,
+  in url varchar := null,
+  in "type" varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (isnull (id))
+  {
+    delete
+      from DB.DBA.WA_USER_OL_ACCOUNTS
+     where WUO_U_ID = _u_id
+       and WUO_TYPE = "type"
+       and (name is null or WUO_NAME = name)
+       and (url  is null or WUO_URL = url);
+  } else {
+    delete
+      from DB.DBA.WA_USER_OL_ACCOUNTS
+     where WUO_U_ID = _u_id
+       and WUO_ID   = id;
+  }
+  rc := row_count ();
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.bioEvents.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select * from DB.DBA.WA_USER_BIOEVENTS where WUB_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE)));
+  }
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.bioEvents.new" (
+  in event varchar,
+  in "date" varchar := null,
+  in place varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2075,17 +2231,17 @@ create procedure ODS.ODS_API."user.bioevent.new" (
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
   insert into DB.DBA.WA_USER_BIOEVENTS (WUB_U_ID, WUB_EVENT, WUB_DATE, WUB_PLACE)
-    values (_u_id, bioEvent, bioDate, bioPlace);
+    values (_u_id, event, "date", place);
   rc := (select max (WUB_ID) from DB.DBA.WA_USER_BIOEVENTS);
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."user.bioevent.delete" (
-  in bioID varchar := null,
-  in bioEvent varchar := null,
-  in bioDate varchar := null,
-  in bioPlace varchar := null) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.bioEvents.delete" (
+  in id varchar := null,
+  in event varchar := null,
+  in "date" varchar := null,
+  in place varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -2099,22 +2255,58 @@ create procedure ODS.ODS_API."user.bioevent.delete" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  if (isnill (bioID))
+  if (isnull (id))
   {
     delete
       from DB.DBA.WA_USER_BIOEVENTS
      where WUB_U_ID = _u_id
-       and (bioEvent is null or WUB_EVENT = bioEvent)
-       and (bioDate is null or WUB_DATE = bioDate)
-       and (bioPlace is null or WUB_PLACE = bioPlace);
+       and (event  is null or WUB_EVENT = event)
+       and ("date" is null or WUB_DATE  = "date")
+       and (place  is null or WUB_PLACE = place);
   } else {
     delete
       from DB.DBA.WA_USER_BIOEVENTS
      where WUB_U_ID = _u_id
-       and WUB_ID = bioID;
+       and WUB_ID   = id;
   }
-  rc := 1;
+  rc := row_count ();
   return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare fID, fOntology, fItems any;
+  declare fItemTypes any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  fID := 0;
+  fOntology := '';
+  fItemTypes := vector ();
+  fItems := vector ();
+  for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id order by WUF_TYPE) do
+  {
+    if (fOntology <> WUF_TYPE)
+    {
+      if (fOntology <> '')
+        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
+      fID := fID + 1;
+      fOntology := WUF_TYPE;
+      fItems := vector ();
+    }
+    fItems := vector_concat (fItems, vector (vector_concat (jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+  }
+  if (length (fItems))
+    fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
+  return obj2json (fItemTypes, 10);
 }
 ;
 
@@ -2291,7 +2483,7 @@ create procedure ODS.ODS_API."user.wish.delete" (
     from DB.DBA.WA_USER_WISHLIST
    where WUWL_U_ID = _u_id
      and WUWL_BARTER = wishName;
-  rc := 1;
+  rc := row_count ();
   return ods_serialize_int_res (rc);
 }
 ;
@@ -3218,8 +3410,13 @@ grant execute on ODS.ODS_API."user.thingOfInterest.new" to ODS_API;
 grant execute on ODS.ODS_API."user.thingOfInterest.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.bioevent.new" to ODS_API;
-grant execute on ODS.ODS_API."user.bioevent.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.onlineAccounts.list" to ODS_API;
+grant execute on ODS.ODS_API."user.onlineAccounts.new" to ODS_API;
+grant execute on ODS.ODS_API."user.onlineAccounts.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.bioEvents.list" to ODS_API;
+grant execute on ODS.ODS_API."user.bioEvents.new" to ODS_API;
+grant execute on ODS.ODS_API."user.bioEvents.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.list" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.new" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.property.new" to ODS_API;

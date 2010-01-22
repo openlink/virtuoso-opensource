@@ -32,7 +32,6 @@
 
   <v:method name="saveBusiness_2" arglist="">
     <![CDATA[
-      declare blat, blng any;
       declare params any;
 
       params := self.vc_page.vc_event.ve_params;

@@ -336,18 +336,14 @@ function hasError(root) {
 	}
 
 	/* error */
-	var error = root.getElementsByTagName('error')[0];
+	var error = root.getElementsByTagName('failed')[0];
   if (error)
   {
-	  var code = error.getElementsByTagName('code')[0];
-    if (OAT.Xml.textValue(code) != 'OK')
-    {
 	    var message = error.getElementsByTagName('message')[0];
       if (message)
         alert (OAT.Xml.textValue(message));
   		return true;
     }
-  }
   return false;
 }
 
@@ -389,6 +385,7 @@ function updateState(countryName, stateName, stateValue)
         fld.addOption(OAT.Xml.textValue(items[i-1]));
   		}
   	}
+    	if (stateValue && (stateValue != ''))
     	updateGeodata(fld.input.id.replace(/state/, ''));
   	}
     OAT.AJAX.GET(S, '', x);
@@ -497,7 +494,17 @@ function updateRow (prefix, No, optionObject)
       for (var p in optionObject) {options[p] = optionObject[p]; }
 
       No = optionObject.No;
-      if (!No) {No = $v(prefix+'_no');}
+      if (!No) {
+        if (!$(prefix+'_no')) {
+        	var fld = OAT.Dom.create("input");
+          fld.type = 'hidden';
+          fld.name = prefix+'_no';
+          fld.id = fld.name;
+          fld.value = '0';
+          tbl.appendChild(fld);
+        }
+        No = $v(prefix+'_no');
+      }
       No = parseInt(No)
 
       OAT.Dom.hide (prefix+'_tr_no');
@@ -512,10 +519,19 @@ function updateRow (prefix, No, optionObject)
         if (fld.indexOf('fld') == 0)
       {
           var fldOptions = options[fld];
+          if (fld == 'fld_0') {
+          	var elm = OAT.Dom.create("input");
+            elm.type = 'hidden';
+            elm.name = prefix+'_' + fld + '_' + No;
+            elm.id = elm.name;
+            elm.value = fldOptions.value;
+            tr.appendChild(elm);
+          } else {
         var td = OAT.Dom.create('td');
           td.id = prefix+'_td_'+ No+'_'+fld.replace(/fld_/, '');
         tr.appendChild(td);
           updateCell (td, prefix, fld, No, fldOptions)
+      }
       }
       }
 
@@ -805,7 +821,7 @@ function updateField5 (elm, fldName, prefix, No, fldOptions)
 
 function updateField6 (elm, fldName, prefix, No, fldOptions)
 {
-  var fld = OAT.Dom.image("images/icons/orderdown_16.png");
+  var fld = OAT.Dom.image("/ods/images/icons/orderdown_16.png");
   fld.id = fldName;
   fld.mode = 'show';
   fld.title = 'Show Properties';
@@ -957,7 +973,7 @@ function updateField12 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
 
-  var fld = OAT.Dom.image("images/throbber.gif");
+  var fld = OAT.Dom.image("/ods/images/throbber.gif");
   fld.id = fldName;
   fld.mode = 'show';
   fld.title = 'Show Items';
@@ -997,7 +1013,7 @@ function updateField21 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
 
-  var fld = OAT.Dom.image("images/throbber.gif");
+  var fld = OAT.Dom.image("/ods/images/throbber.gif");
   fld.id = fldName;
   fld.mode = 'show';
   fld.title = 'Show Properties';
@@ -1143,7 +1159,7 @@ function updateButton1 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton2 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/close_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/close_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){
@@ -1174,7 +1190,7 @@ function updateButton2 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton3 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/add_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){GR.addProduct(prefix, No);};
@@ -1185,7 +1201,7 @@ function updateButton3 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton4 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/close_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/close_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){updateRow(prefix, No);};
@@ -1196,7 +1212,7 @@ function updateButton4 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton5 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/close_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/close_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function (){
@@ -1221,7 +1237,7 @@ function updateButton5 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton6 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/add_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function(){RDF.addItemType(prefix, No);};
@@ -1232,7 +1248,7 @@ function updateButton6 (elm, prefix, No, btnName, btnOptions)
 
 function updateButton7 (elm, prefix, No, btnName, btnOptions)
 {
-  var btn = OAT.Dom.image("images/icons/add_16.png");
+  var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
   btn.id = btnName;
   btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
   btn.onclick = function(){RDF.addItem(prefix, No);};
@@ -1619,7 +1635,7 @@ GR.showProperties = function (obj, prefix, No)
   {
     obj.mode = 'hide';
     obj.title = 'Hide Properties';
-    obj.src = 'images/icons/orderup_16.png';
+    obj.src = '/ods/images/icons/orderup_16.png';
     if (!trProperties)
     {
       //
@@ -1658,7 +1674,7 @@ GR.showProperties = function (obj, prefix, No)
   } else {
     obj.mode = 'show';
     obj.title = 'Show Properties';
-    obj.src = 'images/icons/orderdown_16.png';
+    obj.src = '/ods/images/icons/orderdown_16.png';
     OAT.Dom.hide(trProperties);
   }
 }
@@ -1678,7 +1694,7 @@ GR.showPropertiesTable = function (product)
     {
       var prefixProp = 'prop_'+No;
 
-      var btn = OAT.Dom.image("images/icons/add_16.png");
+      var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
       btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
       btn.onclick = function (){updateRow(prefixProp, null, {fld_1: {mode: 10, product: product}, fld_2: {mode: 11}, btn_1: {mode: 4}});};
       TDs[3].appendChild(btn);
@@ -2035,7 +2051,7 @@ RDF.showItems = function (obj, prefix, No)
   {
     obj.mode = 'hide';
     obj.title = 'Hide Items';
-    obj.src = 'images/icons/orderup_16.png';
+    obj.src = '/ods/images/icons/orderup_16.png';
     if (!trItems)
     {
       //
@@ -2068,7 +2084,7 @@ RDF.showItems = function (obj, prefix, No)
   } else {
     obj.mode = 'show';
     obj.title = 'Show Items';
-    obj.src = 'images/icons/orderdown_16.png';
+    obj.src = '/ods/images/icons/orderdown_16.png';
     OAT.Dom.hide(trItems);
   }
 }
@@ -2088,7 +2104,7 @@ RDF.showItemsTable = function(itemType)
   {
     var prefixItem = prefix + '_item_' + No;
 
-    var btn = OAT.Dom.image("images/icons/add_16.png");
+    var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
     btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
     btn.onclick = function(){updateRow(prefixItem, null, {fld_1: {mode: 21, cssText: 'display: none;'}, fld_2: {mode: 20, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 4, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 7, cssText: 'margin-left: 2px; margin-right: 2px;'}});};
     TDs[2].appendChild(btn);
@@ -2282,7 +2298,7 @@ RDF.showProperties = function(obj, prefix, No)
   {
     obj.mode = 'hide';
     obj.title = 'Hide Properties';
-    obj.src = 'images/icons/orderup_16.png';
+    obj.src = '/ods/images/icons/orderup_16.png';
     if (!trProperties)
     {
       //
@@ -2314,7 +2330,7 @@ RDF.showProperties = function(obj, prefix, No)
   } else {
     obj.mode = 'show';
     obj.title = 'Show Properties';
-    obj.src = 'images/icons/orderdown_16.png';
+    obj.src = '/ods/images/icons/orderdown_16.png';
     OAT.Dom.hide(trProperties);
   }
 }
@@ -2337,7 +2353,7 @@ RDF.showPropertiesTable = function(item)
     {
       var prefixProp = prefix + '_prop_' + No;
 
-      var btn = OAT.Dom.image("images/icons/add_16.png");
+      var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
       btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
       btn.onclick = function(){updateRow(prefixProp, null, {fld_1: {mode: 30, item: item}, fld_2: {mode: 31, item: item}, btn_1: {mode: 4}});};
       TDs[2].appendChild(btn);

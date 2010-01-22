@@ -442,10 +442,13 @@ CmdUtils.CreateCommand({
       addParameter(args, "object", "user's name", params, "user_name", true);
       addParameter(args, "instrument", "user's password", params, "password_hash", true);
       params["password_hash"] = Utils.computeCryptoHash ('SHA1', params["user_name"] + params["password_hash"]);
-      var sid = odsExecute("user.authenticate", params, "", false, true);
-    ODS.setSid(sid);
+      var result = odsExecute("user.authenticate", params, "", false, true);
+      if (sid)
+      {
+        ODS.setSid(result.sid);
     ODS.setMode('sid');
       displayMessage("You were authenticated. Your ODS session ID has been set to " + ODS.getSid());
+      }
     } catch (ex) {
       odsDisplayMessage(ex);
     }
@@ -754,10 +757,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", null, params, "bioEvent", true);
-      addParameter(args, "on", null, params, "bioDate", true);
-      addParameter(args, "in", null, params, "bioPlace");
-      odsExecute("user.bioevent.new", params);
+      addParameter(args, "object", null, params, "event", true);
+      addParameter(args, "on", null, params, "date", true);
+      addParameter(args, "in", null, params, "place");
+      odsExecute("user.bioEvents.new", params);
     } catch (ex) {
       odsDisplayMessage(ex);
     }
@@ -776,10 +779,10 @@ CmdUtils.CreateCommand({
   execute: function (args) {
     try {
       var params = {};
-      addParameter(args, "object", null, params, "bioEvent", true);
-      addParameter(args, "on", null, params, "bioDate");
-      addParameter(args, "in", null, params, "bioPlace");
-      odsExecute("user.bioevent.delete", params);
+      addParameter(args, "object", null, params, "event", true);
+      addParameter(args, "on", null, params, "date");
+      addParameter(args, "in", null, params, "place");
+      odsExecute("user.bioEvents.delete", params);
     } catch (ex) {
       odsDisplayMessage(ex);
     }

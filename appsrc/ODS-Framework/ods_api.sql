@@ -87,7 +87,7 @@ create procedure tag_meanings (
 {
   declare cnt, url, ses, str, vec, uid, trs any;
   declare arr, srv any;
---  dbg_obj_print (tag, inst, post);
+
   arr := get_tag_meanings_from_moat (tag);
   ses := string_output ();
   str := '';
