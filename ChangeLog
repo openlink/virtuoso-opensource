@@ -1,3 +1,150 @@
+2010-01-21 23:00  source
+
+	* Added configuration setting AsyncQueueMaxThreads in Parameters
+
+2010-01-21 19:39  source
+
+	* Fixed SSH check
+
+2010-01-21 19:39  source
+
+	* Fixed copyright
+
+2010-01-21 01:03  source
+
+	* Fixed Googlebase query results with multiple entries
+	* Fixed Googlebase location info
+
+2010-01-21 00:59  source
+
+	* Fixed compilation of ORDER BY column_idz clause in iterator of sponge
+	  with loop
+
+2010-01-19 17:56  source
+
+	* Fixed UNION of SELECTs and for multiple OPTIONALs at one level with
+	  "good" and "bad" equalities
+
+2010-01-19 00:13  source
+
+	* Fixed issue with uClassify
+
+2010-01-16 18:25  source
+
+	* Added support for Google Base
+
+2010-01-15 13:47  source
+
+	* Fixed crash when timeout was sent using dv_array_of_long
+
+2010-01-15 12:35  source
+
+	* Fixed whitespace
+
+2010-01-15 12:16  source
+
+	* Rebuild driver
+
+2010-01-15 12:15  source
+
+	* Fixed issue with disconnect
+	* Fixed issue with XA exception
+
+2010-01-14 16:21  source
+
+	* Fixed bug calculating todays date
+
+2010-01-14 15:54  source
+
+	* Fixed JS popup calendar
+
+2010-01-14 14:30  source
+
+	* Added new popup calendar based on OAT
+
+2010-01-14 14:28  source
+
+	* Fixed bad rename
+
+2010-01-14 11:49  source
+
+	* Fixed bad API rename
+
+2010-01-14 10:16  source
+
+	* Fixed error reporting
+
+2010-01-14 02:19  source
+
+	* Fixed UI login pages
+
+2010-01-14 02:18  source
+
+	* Removed explicit reference to ymaps, gmaps
+
+2010-01-14 01:49  source
+
+	* Added LICENSE and COPYING from OAT project
+
+2010-01-14 01:48  source
+
+	* Removed custom map loaders
+
+2010-01-14 01:44  source
+
+	* Fixed use current OAT API function names instead of backward compat
+
+2010-01-14 01:37  source
+
+	* Fixed bug in query execute permalink encoding
+	* Temp fix for DESCRIBE popup query. Default view type is now
+	  "machine-readable" i.e. full URIs are shown
+
+2010-01-14 01:33  source
+
+	* Fixed use current OAT API function names
+
+2010-01-14 01:32  source
+
+	* Removed explicit reference to ymaps
+
+2010-01-13 21:45  source
+
+	* Fixed shortened long URLs in the crawlers view to avoid ui breakage
+
+2010-01-13 15:05  source
+
+	* Fixed non-rfc method to make URL
+
+2010-01-13 08:47  source
+
+	* Fixed user UI login pages
+
+2010-01-12 11:06  source
+
+	* Added doap:name for labeling
+
+2010-01-11 16:02  source
+
+	* Fixed primary topic from Offering to Product
+
+2010-01-11 16:01  source
+
+	* Added additional checks
+
+2010-01-11 14:19  source
+
+	* Fixed missing dcterms:publisher
+
+2010-01-08 16:55  source
+
+	* Fixed users home page field size
+	* Fixed user UI pages
+
+2010-01-08 16:48  source
+
+	* Fixed cache paging when dereferenceing an URI in results view
+
 2010-01-07 16:46  source
 
 	* Fixed API bug with tag rules
