@@ -84,6 +84,7 @@ DEMO_DEPS=\
 	EMP7 \
 	EMP8 \
 	EMP9 \
+	thalia_test/*.owl \
 	thalia_test/*.rq \
 	thalia_test/*.sql \
 	tpc-h/*.sql \
