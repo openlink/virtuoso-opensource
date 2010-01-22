@@ -307,12 +307,8 @@ ODS.paginator = function (iSet, containerTop, containerBottom, callback, customI
 
     if (typeof (customItemsPerPage) == 'number')
 	this.itemsPerPage = customItemsPerPage;
-    else
-	if (typeof (customItemsPerPage) != 'undefined' &&
-	    !isNaN (parseInt (customItemsPerPage, 10)))
-	    {
+  else if (typeof (customItemsPerPage) != 'undefined' && !isNaN (parseInt (customItemsPerPage, 10)))
 		this.itemsPerPage = parseInt (customItemsPerPage, 10);
-	    }
 
     this.first = function ()
     {
@@ -354,8 +350,7 @@ ODS.paginator = function (iSet, containerTop, containerBottom, callback, customI
 		self.startIndex   = false;
 		self.endIndex     = false;
 	    }
-	else
-	    if (self.totalItems <= self.itemsPerPage)
+  else if (self.totalItems <= self.itemsPerPage)
 		{
 		    self.pages        = 1;
 		    self.currentPage  = 1;
@@ -4261,11 +4256,7 @@ ODS.Nav = function (navOptions)
 
 	  var appUri = actDiv.childNodes[4].href;
 	  actDiv.childNodes[4].onclick = function () {return false;};
-	  OAT.Event.attach (actDiv.childNodes[4], "click",
-			  function () 
-			  {
-			    self.loadVspx (appUri);
-			  });
+    OAT.Event.attach (actDiv.childNodes[4], "click", (function(href){return function(){self.loadVspx(href)}})(actDiv.childNodes[4].href));
 
 		    var actDate = entry.updated.substring (0, 10);
 
