@@ -1,30 +1,26 @@
 /*
- *  CLIsql3_win32.cpp
- *
  *  $Id$
  *
  *  Win32 specific version of CLIsql3
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2010 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ */
 
 #define UNICODE
 #define _UNICODE
@@ -307,7 +303,7 @@ virtodbc_connect (
       bResolveRV = (_tcschr (szHost, ':') == NULL && _tcschr (szHost, ',') == NULL);
     }
 
-#ifdef _RENDEZVOUS 
+#ifdef _RENDEZVOUS
   /* Now attempt to resolve the rendezvous name */
   if (bResolveRV)
     {
@@ -322,7 +318,7 @@ virtodbc_connect (
       DNSNetworkAddressToString (&p->address, szHost);
       p->Unref ();
     }
-#endif  
+#endif
 
   mutex_enter (con->con_environment->env_mtx);
 
