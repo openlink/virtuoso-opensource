@@ -1,23 +1,23 @@
-//  
+//
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
-//  
-//  Copyright (C) 1998-2006 OpenLink Software
-//  
+//
+//  Copyright (C) 1998-2010 OpenLink Software
+//
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
 //  Free Software Foundation; only version 2 of the License, dated June 1991.
-//  
+//
 //  This program is distributed in the hope that it will be useful, but
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 //  General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License along
 //  with this program; if not, write to the Free Software Foundation, Inc.,
 //  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-//  
-//  
+//
+//
 using System;
 using System.Runtime.Remoting;
 using System.Collections;
@@ -69,10 +69,10 @@ public class VInvoke
       String method, Object[] vparams, IntPtr [] oparams)
     {
       Object [] ret = new Object[2];
-#if !MONO  
+#if !MONO
       try
 	{
-#endif	  
+#endif
 	  Type type = get_type (asem_type, assem, atype);
 
 	  vparams = change_ptr (vparams, oparams);
@@ -93,13 +93,13 @@ public class VInvoke
 		{
 		  if (m.Name == method && CheckArgs (m, vparams))
 		    {
-#if !MONO  
+#if !MONO
 		      if (sec_unrestricted == 0)
 			{
 			  ZoneIdentityPermission zip = new ZoneIdentityPermission(SecurityZone.NoZone);
 			  zip.PermitOnly();
 			}
-#endif		      
+#endif
 		      return res_to_ptr (m.Invoke (null, vparams));
 		    }
 		}
@@ -110,7 +110,7 @@ public class VInvoke
 	    }
 
 	  throw new Exception ("No method " + method + " called");
-#if !MONO  
+#if !MONO
 	}
       catch (Exception e)
 	{
@@ -118,7 +118,7 @@ public class VInvoke
 	  ret[1] = e.Message;
 	  return ret;
 	}
-#endif      
+#endif
     }
 
 
@@ -168,7 +168,7 @@ public class VInvoke
     }
 
 
-  
+
   public Object[] obj_deserialize (byte [] in_bytes, Int32 asem_type, String assem, String atype)
     {
       IFormatter fmt;
@@ -214,7 +214,7 @@ public class VInvoke
     }
 
 
-  public Object[] call_ins (IntPtr instance, Int32 sec_unrestricted, String method, 
+  public Object[] call_ins (IntPtr instance, Int32 sec_unrestricted, String method,
       			    Object[] vparams, IntPtr [] oparams)
     {
       Object new_instance;
@@ -222,10 +222,10 @@ public class VInvoke
       String assem_name;
       Object [] ret = new Object[2];
 
-#if !MONO  
+#if !MONO
       try
 	{
-#endif	  
+#endif
 	  new_instance = get_inst (instance);
 	  instance_type = new_instance.GetType();
 	  assem_name = instance_type.Assembly.FullName.ToString();
@@ -248,13 +248,13 @@ public class VInvoke
 		    {
 		      if (CheckArgs(m, vparams))
 			{
-#if !MONO  
+#if !MONO
 			  if (sec_unrestricted == 0)
 			    {
 			      ZoneIdentityPermission zip = new ZoneIdentityPermission(SecurityZone.NoZone);
 			      zip.PermitOnly();
 			    }
-#endif			  
+#endif
 			  /* ->  Ready  <- */
 			  return res_to_ptr (m.Invoke(new_instance, vparams));
 			}
@@ -269,7 +269,7 @@ public class VInvoke
 	    }
 
 	  throw new Exception ("Method " + method + " not found in call_ins");
-#if !MONO  
+#if !MONO
 	}
       catch (Exception e)
 	{
@@ -277,11 +277,11 @@ public class VInvoke
 	  ret[1] = e.Message;
 	  return ret;
 	}
-#endif			  
+#endif
     }
 
 
-  
+
   public Object[] get_prop (IntPtr instance, String prop_name)
     {
       Object [] ret = new Object[2];
@@ -548,26 +548,26 @@ public class VInvoke
     return ((GCHandle) (instance)).Target.GetType().FullName;
   }
 
-/*  
-#if !MONO  
+/*
+#if !MONO
   public Object[] remove_instance_from_hash (String instance)
   {
     Object[] ret = new Object[1];
-    
+
 //    assem_perm_list.Remove (instance);
     instances.Remove (instance);
 
-    ret[0]=(Boolean) true; 
+    ret[0]=(Boolean) true;
     return ret;
   }
 
   public Object[] add_assem_to_sec_hash (String assem_name)
   {
     Object[] ret = new Object[1];
-    
+
 //    assem_perm_list [assem_name] = 1;
 
-    ret[0]=(Boolean) true; 
+    ret[0]=(Boolean) true;
     return ret;
   }
 #endif
@@ -625,7 +625,7 @@ public class VInvoke
 
     mem_strim.Seek(0, SeekOrigin.Begin);
     Object org_obj = bf.Deserialize(mem_strim);
-    
+
     if (!(type.IsInstanceOfType (org_obj) || (org_obj != null && type == org_obj.GetType())))
       throw new Exception ("The deserialized object is not an instance of " + type.FullName);
 
@@ -656,7 +656,7 @@ public class VInvoke
     {
       Object [] ret = new Object[2];
 
-      
+
       if (obj == null)
 	{
 	  ret[0]=1;
@@ -778,7 +778,7 @@ public class VInvoke
       Assembly assembly;
 #if MONO
       hndlr = new ResolveEventHandler (MyResolveEventHandler);
-#endif      
+#endif
    try
     {
       AppDomain.CurrentDomain.AssemblyResolve -= this.hndlr;
@@ -799,18 +799,18 @@ public class VInvoke
   #endregion
 
 
-  static Hashtable instances; 
+  static Hashtable instances;
 
   private static Hashtable get_domain_hashtable ()
     {
 	AppDomain currentDomain = AppDomain.CurrentDomain;
 	String dataName = "instances";
 	Hashtable ret;
-	
+
 	ret = (Hashtable) currentDomain.GetData(dataName);
 
 	if (ret == null)
-	  {	  
+	  {
 	    ret = new Hashtable ();
 	    currentDomain.SetData(dataName, ret);
 	  }
@@ -836,14 +836,14 @@ public class VInvoke
 	try
 	  {
 #if MONO
-	    ret = LoadAssemblyFromVirtuoso (my_name); 
+	    ret = LoadAssemblyFromVirtuoso (my_name);
 	    instances [my_name] = ret;
-#else	    
+#else
 	    int currp = GetModuleHandle (null);
 	    int proc_addr = GetProcAddress (currp, "dotnet_unmanaged_call");
 	    IntPtr str1 = Marshal.StringToCoTaskMemAnsi (my_name);
 	    byte_size_ptr_t arg = new byte_size_ptr_t ();
-	    arg.size = 0; 
+	    arg.size = 0;
 	    arg.data = IntPtr.Zero;
 	    arg.name = str1;
 	    int thr_id = CreateThread (0, 0, proc_addr, ref arg, 0, 0);
@@ -862,9 +862,9 @@ public class VInvoke
 	      }
 	    else
 	      return null;
-#endif	    
+#endif
 	  }
-	catch 
+	catch
 	  {
 	    return null;
 	  }
@@ -879,8 +879,8 @@ public class VInvoke
 #if MONO
     if (assemblies == null)
 	    assemblies = new StringCollection();
-#endif	    
-	  
+#endif
+
     assemblies.Add (assembly_ref);
     return res_to_ptr(0);
   }
@@ -908,7 +908,7 @@ public class VInvoke
 	  {
 	    errstr += "Line: " + CompErr.Line +
 		", ErrorNumber: " + CompErr.ErrorNumber +
-		", '" + CompErr.ErrorText + "'" + 
+		", '" + CompErr.ErrorText + "'" +
 		Environment.NewLine;
 	  }
 	ret[0] = errstr;
@@ -917,11 +917,11 @@ public class VInvoke
       ret[0] = "OK";
     return res_to_ptr (ret);
   }
-    
-#if !MONO  
+
+#if !MONO
   #region bytesize_ptr def
   [ StructLayout( LayoutKind.Sequential, CharSet=CharSet.Ansi ) ]
-    private struct byte_size_ptr_t 
+    private struct byte_size_ptr_t
   {
     public IntPtr name;
     public int size;
