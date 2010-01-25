@@ -1,25 +1,26 @@
 /*
- *  
+ *  $Id$
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2010 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *
+ */
+
 #define C_BEGIN() extern "C" {
 #define C_END()   }
 
@@ -124,23 +125,23 @@ dk_set_t list_obj_id = NULL;
 #define DP_CREATE(n) \
   HRESULT hr; \
   DISPPARAMS dispparams; \
-  dispparams.rgvarg = new VARIANTARG[n] 
+  dispparams.rgvarg = new VARIANTARG[n]
 
 #define DP_ARRAY(n, name) \
   dispparams.rgvarg[n].vt = VT_ARRAY; \
-  dispparams.rgvarg[n].parray = name 
+  dispparams.rgvarg[n].parray = name
 
 #define DP_BSTR(n, name) \
   dispparams.rgvarg[n].vt = VT_BSTR; \
-  dispparams.rgvarg[n].bstrVal = ::SysAllocString((CComBSTR)name) 
+  dispparams.rgvarg[n].bstrVal = ::SysAllocString((CComBSTR)name)
 
 #define DP_INT(n, name) \
   dispparams.rgvarg[n].vt = VT_I4; \
-  dispparams.rgvarg[n].intVal = name 
+  dispparams.rgvarg[n].intVal = name
 
 #define DP_INTPTR(n, name) \
   dispparams.rgvarg[n].vt = VT_INT; \
-  dispparams.rgvarg[n].intVal = name 
+  dispparams.rgvarg[n].intVal = name
 
 #define DP_LEN(n) \
   dispparams.cArgs = n; \
@@ -158,8 +159,8 @@ dk_set_t list_obj_id = NULL;
       else \
         virt_com_error (hr, err_no, proc_name, &Excepinfo)   /* FIXME FIXME FIXME FIXME FIXME FIXME FIXME */ \
 
-#define CHECK_ERR(n) if (FAILED(hr)) return startup_com_error (n)	
-  
+#define CHECK_ERR(n) if (FAILED(hr)) return startup_com_error (n)
+
 #define DP_ARRAYS(n) \
   dispparams.rgvarg[n].vt = VT_ARRAY; \
   dispparams.rgvarg[n].parray = oArray; \
@@ -168,8 +169,8 @@ dk_set_t list_obj_id = NULL;
 
 #define CALL(name) \
   hr = virtclr_inst->Invoke (name, IID_NULL, LOCALE_SYSTEM_DEFAULT, DISPATCH_METHOD, \
-			     &dispparams, &vRet, &Excepinfo,&uArgErr) 
-  
+			     &dispparams, &vRet, &Excepinfo,&uArgErr)
+
 #define box_length(box) ((uint32)(0x00ffffff & ((uint32 *)(box))[-1]))
 
 using namespace mscorlib;
@@ -443,7 +444,7 @@ int sa_to_dk (SAFEARRAY *in, dk_set_t *ret, int mode, void *udt)
 
   SafeArrayUnaccessData(in);
   SafeArrayUnlock (in);
-  
+
   return 0;
 }
 ;
@@ -593,7 +594,7 @@ int clr_serialize (int gc_in, dk_session_t * ses)
   LONG ret_type;
   BSTR* pbstr;
   VARIANT varVals;
- 
+
   DP_CREATE(1);
   DP_INTPTR(0, gc_in);
   DP_LEN(1);
@@ -685,9 +686,9 @@ clr_deserialize (dk_session_t * ses, long mode, caddr_t asm_name, caddr_t type, 
   DP_LEN(4);
 
   CALL(dispid_obj_deserialize);
-  
+
   DP_ERR(NULL, NULL);
-  
+
   SAFEARRAY * ret = vRet.parray;
 
   sa_to_dk (ret, &ret_vec, 0, udt);
@@ -874,7 +875,7 @@ dotnet_call (caddr_t *type_vec, int n_args, int asm_type, caddr_t asm_name,
   DP_LEN(7);
 
   CALL(dispid_call_method_asm);
-  
+
   DP_ERR("CLR25", "dotnet_call");
 
   ret = vRet.parray;
@@ -909,13 +910,13 @@ create_instance (caddr_t * type_vec, int n_args, long mode, caddr_t asm_name,
   DP_LEN(5);
 
   CALL(dispid_create_ins_asm);
-  
+
   DP_ERR("CLR27", "dotnet_create_instance");
 
   ret = vRet.parray;
 
   proc_ret = sa_to_dk (ret, &ret_vec, 1, udt);
-  
+
   COM_END;
 
   return proc_ret;
@@ -924,7 +925,7 @@ create_instance (caddr_t * type_vec, int n_args, long mode, caddr_t asm_name,
 caddr_t clr_compile (caddr_t source, caddr_t outfile)
 {
   dk_set_t ret_vec = NULL;
- 
+
   DP_CREATE(2);
   DP_BSTR(0, source);
   DP_BSTR(1, outfile);
@@ -947,7 +948,7 @@ caddr_t clr_compile (caddr_t source, caddr_t outfile)
 caddr_t clr_add_comp_reference (caddr_t assembly)
 {
   dk_set_t ret_vec = NULL;
- 
+
   DP_CREATE(1);
   DP_BSTR(0, assembly);
   DP_LEN(1);
@@ -984,7 +985,7 @@ static int remove_cache_dirs ()
   *p1 = 0;
 
   sprintf (pid_dir, "%s%s\\*.*\0", server_executable_dir, CLR_DISK_CACHE);
-  
+
   ZeroMemory (&sfo, sizeof (SHFILEOPSTRUCT));
 
   sfo.wFunc = FO_DELETE;
@@ -1004,11 +1005,11 @@ static int remove_cache_dirs ()
 
 void virt_com_exit ()
 {
-  spRuntimeHost->UnloadDomain((IUnknown *)spDefAppDomain); 
+  spRuntimeHost->UnloadDomain((IUnknown *)spDefAppDomain);
   spRuntimeHost->Stop();
-  
+
   remove_cache_dirs ();
-  
+
   if (old_hook)
      (*old_hook) ();
 }
@@ -1021,7 +1022,7 @@ int virt_com_init ()
 {
   HRESULT hr;
   wchar_t framework_ver[16];
-  
+
   CComVariant				VntUnwrapped;
   CComPtr<IUnknown>			pUnk;
   CComPtr<_ObjectHandle>		spObjectHandle;
@@ -1044,18 +1045,18 @@ int virt_com_init ()
 
   if (!remove_cache_dirs ()) /* Always return true */
     log_info ("Removing cache dirs fails.");
- 
+
   set_cache_dirs_to_tmp ();
-  
+
   sprintf (pid_dir, "%s%s\\", server_executable_dir, CLR_DISK_CACHE);
   _mkdir (pid_dir);
 
   sprintf (pid_dir, "%s%s\\%i\\", server_executable_dir, CLR_DISK_CACHE, getpid());
   _mkdir (pid_dir);
-  
+
 
   swprintf (framework_ver, sizeof (framework_ver), L"v%d.%d.%d", CLR_MAJOR_VERSION, CLR_MINOR_VERSION, CLR_BUILD_VERSION);
-  
+
   /* Retrieve a pointer to the ICorRuntimeHost interface */
   hr = CorBindToRuntimeEx((LPCWSTR)framework_ver,   /* Retrieve latest version by default */
   			  L"wks", /* Request a WorkStation build of the CLR */
@@ -1064,100 +1065,100 @@ int virt_com_init ()
 			  IID_ICorRuntimeHost,
   			  (void**)&spRuntimeHost);
 
-  CHECK_ERR(1); 
+  CHECK_ERR(1);
 
   hr = spRuntimeHost->Start();
-  CHECK_ERR(2); 
+  CHECK_ERR(2);
 
   hr = spRuntimeHost->GetDefaultDomain(&pUnk);
-  CHECK_ERR(3); 
+  CHECK_ERR(3);
 
   hr = pUnk->QueryInterface(&spDefAppDomain.p);
-  CHECK_ERR(4); 
+  CHECK_ERR(4);
 
   hr = spDefAppDomain->AppendPrivatePath (_bstr_t(pid_dir));
-  CHECK_ERR(99); 
-  
+  CHECK_ERR(99);
+
   hr = spDefAppDomain->SetData (_bstr_t ("OpenLink.Virtuoso.InProcessPort"), _variant_t (_bstr_t (virtuoso_odbc_port())));
-  CHECK_ERR(99); 
+  CHECK_ERR(99);
 
   /* Creates an instance of the type specified in the Assembly */
   hr = spDefAppDomain->CreateInstance(_bstr_t("virtclr"),
                                       _bstr_t("VInvoke"),
                                       &spObjectHandle);
 
-  CHECK_ERR(5); 
+  CHECK_ERR(5);
 
   hr = spObjectHandle->Unwrap(&VntUnwrapped);
-  CHECK_ERR(6); 
+  CHECK_ERR(6);
 
   /* We know our .NET component exposes IDispatch */
   virtclr_inst = VntUnwrapped.pdispVal;
 
   /* Retrieve the DISPID's */
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_call_method_asm, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_call_method_asm, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_call_method_asm);
   CHECK_ERR(7);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_call_ins, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_call_ins, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_call_ins);
   CHECK_ERR(8);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_dispid_get_isinstance_of, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_dispid_get_isinstance_of, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_get_isinstance_of);
   CHECK_ERR(9);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_free_ins, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_free_ins, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_free_ins);
   CHECK_ERR(10);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_prop, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_prop, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_get_prop);
   CHECK_ERR(11);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_copy, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_copy, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_get_copy);
   CHECK_ERR(12);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_obj_serialize, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_obj_serialize, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_obj_serialize);
   CHECK_ERR(13);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_create_ins_asm, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_create_ins_asm, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_create_ins_asm);
   CHECK_ERR(14);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_obj_deserialize, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_obj_deserialize, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_obj_deserialize);
   CHECK_ERR(15);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_set_prop, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_set_prop, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_set_prop);
   CHECK_ERR(16);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_stat_prop, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_get_stat_prop, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_get_stat_prop);
   CHECK_ERR(17);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_compile_source, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_compile_source, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_compile_source);
   CHECK_ERR(18);
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_add_comp_reference, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_add_comp_reference, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_add_comp_ref);
   CHECK_ERR(19);
 
 /*
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_remove_instance_from_hash, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_remove_instance_from_hash, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_remove_instance_from_hash);
   CHECK_ERR(18);
 
-  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_add_assem_to_sec_hash, 1, 
+  hr = virtclr_inst->GetIDsOfNames (IID_NULL, &sz_add_assem_to_sec_hash, 1,
       				    LOCALE_SYSTEM_DEFAULT, &dispid_add_assem_to_sec_hash);
   CHECK_ERR(19);
 */
   old_hook = VirtuosoServerSetExitHook (virt_com_exit);
-  
- return 1; 
+
+ return 1;
 }
 
 

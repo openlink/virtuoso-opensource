@@ -1,23 +1,23 @@
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
-#  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
+#  Copyright (C) 1998-2010 OpenLink Software
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 TOP=@TOP@
 
@@ -33,8 +33,8 @@ VIRT_IODBC_CLR=virtclr.dll
 virtuoso_iodbc_mono_cli_t_PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 endif
 
-if HAVE_MONO 
-bin_PROGRAMS = $(VIRT_MONO) $(VIRT_IODBC_MONO) 
+if HAVE_MONO
+bin_PROGRAMS = $(VIRT_MONO) $(VIRT_IODBC_MONO)
 bin_SCRIPTS  = $(VIRT_CLR) $(VIRT_IODBC_CLR)
 endif
 
@@ -55,7 +55,7 @@ dist_virtuoso_iodbc_mono_cli_t_SOURCES = \
 
 virtuoso_mono_cli_t_SOURCES = \
 	mono.c \
-	basec.c 
+	basec.c
 
 dist_virtuoso_mono_cli_t_SOURCES = \
 	sql_code_clr.c \
@@ -63,17 +63,17 @@ dist_virtuoso_mono_cli_t_SOURCES = \
 
 base_cflags  = @VIRT_AM_CFLAGS@
 base_cflags  += -I$(top_srcdir)/libsrc
-base_cflags  += -I$(top_srcdir)/libsrc/Dk 
-base_cflags  += -I$(top_srcdir)/libsrc/Wi 
-base_cflags  += -I$(top_srcdir)/libsrc/plugin 
-base_cflags  += -I$(top_srcdir)/libsrc/langfunc 
-base_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include 
+base_cflags  += -I$(top_srcdir)/libsrc/Dk
+base_cflags  += -I$(top_srcdir)/libsrc/Wi
+base_cflags  += -I$(top_srcdir)/libsrc/plugin
+base_cflags  += -I$(top_srcdir)/libsrc/langfunc
+base_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include
 base_cflags  += -I$(top_srcdir)/mono/include
 
 virtuoso_iodbc_mono_cli_t_CFLAGS  = $(base_cflags)
-virtuoso_iodbc_mono_cli_t_CFLAGS  += -D_REENTRANT -pthread 
+virtuoso_iodbc_mono_cli_t_CFLAGS  += -D_REENTRANT -pthread
 virtuoso_iodbc_mono_cli_t_CFLAGS  += $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
-virtuoso_iodbc_mono_cli_t_CFLAGS  += -D_VIRTMONO -DMONO -DUSE_INCLUDED_LIBGC=1 -DNO_UDBC_SDK "-D_MONO_VERSION_=\"1.1.7\""  
+virtuoso_iodbc_mono_cli_t_CFLAGS  += -D_VIRTMONO -DMONO -DUSE_INCLUDED_LIBGC=1 -DNO_UDBC_SDK "-D_MONO_VERSION_=\"1.1.7\""
 
 virtuoso_iodbc_mono_cli_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
 virtuoso_iodbc_mono_cli_t_LDFLAGS  += -Wl, -L$(top_srcdir)/mono/lib -lmono -lm $(GLIB_LIBS) $(GMODULE_LIBS)
@@ -83,12 +83,12 @@ virtuoso_iodbc_mono_cli_t_LDADD = \
 	@LIBS@
 
 virtuoso_mono_cli_t_CFLAGS  = $(base_cflags)
-virtuoso_mono_cli_t_CFLAGS  += -D_REENTRANT 
-virtuoso_mono_cli_t_CFLAGS  += $(GLIB_CFLAGS) $(GMODULE_CFLAGS) 
-virtuoso_mono_cli_t_CFLAGS  += -D_VIRTMONO -DMONO -DUSE_INCLUDED_LIBGC=1 -DNO_UDBC_SDK "-D_MONO_VERSION_=\"1.1.7\""  
+virtuoso_mono_cli_t_CFLAGS  += -D_REENTRANT
+virtuoso_mono_cli_t_CFLAGS  += $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
+virtuoso_mono_cli_t_CFLAGS  += -D_VIRTMONO -DMONO -DUSE_INCLUDED_LIBGC=1 -DNO_UDBC_SDK "-D_MONO_VERSION_=\"1.1.7\""
 
 virtuoso_mono_cli_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
-virtuoso_mono_cli_t_LDFLAGS  += -Wl, -L$(top_srcdir)/mono/lib -lmono -lm $(GLIB_LIBS) $(GMODULE_LIBS) 
+virtuoso_mono_cli_t_LDFLAGS  += -Wl, -L$(top_srcdir)/mono/lib -lmono -lm $(GLIB_LIBS) $(GMODULE_LIBS)
 
 virtuoso_mono_cli_t_LDADD = \
         ../../virtuoso/libvirtuoso-gc-t.la \
@@ -121,7 +121,7 @@ virt_http.dll: virt_http.cs
 
 .PHONY: test
 test:
-	cd tests; make	
+	cd tests; make
 
 clean-local:
 	rm -rf sql_code_clr.c

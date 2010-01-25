@@ -1,23 +1,23 @@
-//  
+//
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
-//  
-//  Copyright (C) 1998-2006 OpenLink Software
-//  
+//
+//  Copyright (C) 1998-2010 OpenLink Software
+//
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
 //  Free Software Foundation; only version 2 of the License, dated June 1991.
-//  
+//
 //  This program is distributed in the hope that it will be useful, but
 //  WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 //  General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License along
 //  with this program; if not, write to the Free Software Foundation, Inc.,
 //  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-//  
-//  
+//
+//
 using System;
 using System.IO;
 using System.Web;
@@ -54,7 +54,7 @@ namespace Virt_aspx
 
       public static bool RunningOnMono ()
 	{
-	  try 
+	  try
 	    {
 	      Assembly ass = Assembly.Load ("mscorlib");
 	      if (null != ass.GetType ("Mono.Runtime", true))
@@ -109,7 +109,7 @@ namespace Virt_aspx
 	}
 
       public static String [] Call_aspx2 (String page, String physicalDir, String virtualDir,
-	  String headers, String client_ip, String server_port, String localhost_name, 
+	  String headers, String client_ip, String server_port, String localhost_name,
 	  String post, String parameters, String http_root, String runtime_name)
 	{
           // XXX
@@ -126,7 +126,7 @@ namespace Virt_aspx
 	  //Console.WriteLine ("http_root = [{0}]", http_root);
 	  //Console.WriteLine ("runtime_name = [{0}]", runtime_name);
 	  //Console.WriteLine ("====================================");
-          
+
 	  VirtHost my_host;
 	  String [] ret;
 	  physicalDir = physicalDir.Replace ('/', Path.DirectorySeparatorChar);
@@ -148,7 +148,7 @@ namespace Virt_aspx
 	  //Console.WriteLine ("====================================");
 
 	  ret = my_host.ProcessRequest_int(page, post, parameters, headers, client_ip,
-	      server_port, localhost_name, virtualDir, physicalDir, 
+	      server_port, localhost_name, virtualDir, physicalDir,
 	      AppDomain.CurrentDomain.GetData ("OpenLink.Virtuoso.InProcessPort"));
 	  return ret;
 	}
@@ -156,7 +156,7 @@ namespace Virt_aspx
 
       private static VirtHost GetHost (String virtualDir, String physicalDir)
 	{
-	
+
 	  VirtHost ret;
 
 	  ret = (Virt_aspx.VirtHost) hosts [virtualDir];
@@ -169,11 +169,11 @@ namespace Virt_aspx
 #if WINDOWS
 	      ILease serverLease;
 	      serverLease = (ILease)RemotingServices.GetLifetimeService((MarshalByRefObject)ret);
-#endif	  
+#endif
 
 	      hosts [virtualDir] = ret;
 	    }
-	  return ret;	  
+	  return ret;
 	}
     }
 
@@ -206,13 +206,13 @@ namespace Virt_aspx
 	      lastDot = page.LastIndexOf('.');
 	      lastSlh = page.LastIndexOf('/');
 
-	      if (lastDot >= 0 && lastSlh >= 0 && lastDot < lastSlh) 
+	      if (lastDot >= 0 && lastSlh >= 0 && lastDot < lastSlh)
 		{
 		  int ipi = page.IndexOf('/', lastDot);
 		  gl_fpath = page.Substring(0, ipi);
 		  gl_pathInfo = page.Substring(ipi);
 		}
-	      else 
+	      else
 		{
 		  gl_fpath = page;
 		  gl_pathInfo = String.Empty;
@@ -277,22 +277,22 @@ namespace Virt_aspx
 		  headers = headers.Remove (0, pos + 2);
 
 		  all_headers[headers_len] = new String[2];
-		  all_headers[headers_len][0] = hd_name.Trim(); 
-		  all_headers[headers_len][1] = hd_value.Trim(); 
+		  all_headers[headers_len][0] = hd_name.Trim();
+		  all_headers[headers_len][1] = hd_value.Trim();
 		  headers_len ++;
 		}
-	      
+
 	      // copy to array unknown headers
-	      
+
 	      gl_unknownRequestHeaders = new String[headers_len][];
 
-	      for (i = 0; i < headers_len; i++) 
+	      for (i = 0; i < headers_len; i++)
 		{
 		  gl_unknownRequestHeaders[i] = new String[2];
 		  gl_unknownRequestHeaders[i][0] = all_headers[i][0];
 		  gl_unknownRequestHeaders[i][1] = all_headers[i][1];
 		}
-	      	      
+
 	      GetRequestLine (post);
 	    }
       public override void EndOfRequest ()
@@ -301,18 +301,18 @@ namespace Virt_aspx
 	  if (VirtHost.RunningOnMono ())
 	    mtx.Set ();
 	}
-      public override String GetUriPath() 
+      public override String GetUriPath()
 	{
 //	    Console.WriteLine ("GetUriPath _path = " + gl_fpath);
 	    return gl_fpath;
 	}
 
-    public override String GetPathInfo() 
+    public override String GetPathInfo()
 	{
 //	    Console.WriteLine ("GetPathInfo gl_pathInfo = " + gl_pathInfo);
 	    return gl_pathInfo;
 	}
-      
+
       public override byte [] GetPreloadedEntityBody ()
         {
 //	   Console.WriteLine ("In GetPreloadedEntityBody");
@@ -342,14 +342,14 @@ namespace Virt_aspx
 //	   Console.WriteLine ("In GetFilePath " + gl_fpath);
 	   return gl_fpath;
 	}
-//#if !MONO     
-      /* MONO KIT 0717 */ 
+//#if !MONO
+      /* MONO KIT 0717 */
       public override string GetFilePathTranslated ()
         {
 	   //Console.WriteLine ("In GetFilePathTranslated");
 	   return gl_fpath_trans;
 	}
-//#endif      
+//#endif
       public String out_headers_get()
 	{
 	  String all_headers = "";
@@ -390,8 +390,8 @@ namespace Virt_aspx
 
       public override String GetKnownRequestHeader(int x)
 	{
-	  //Console.WriteLine (String.Format ("In GetKnownRequestHeader x={0}[{2}] ret=[{1}]", x, 
-	  //	known_headers[x] == null ? "<NULL>" : known_headers[x], 
+	  //Console.WriteLine (String.Format ("In GetKnownRequestHeader x={0}[{2}] ret=[{1}]", x,
+	  //	known_headers[x] == null ? "<NULL>" : known_headers[x],
 	  //	HttpWorkerRequest.GetKnownRequestHeaderName(x)));
 	  return known_headers[x];
 	}
@@ -457,9 +457,9 @@ namespace Virt_aspx
 	  if (ret != null)
 	    ret = ret.Replace ('/', Path.DirectorySeparatorChar);
 
-          if (ret != null && root != null && h1 != null && ret.IndexOf (root) < 0) 
+          if (ret != null && root != null && h1 != null && ret.IndexOf (root) < 0)
 	    ret = ret.Replace (h1, root);
-	  
+
 	  if (ret == null)
 	    ret = base.MapPath (gl_virtualDir + path);
 
@@ -524,8 +524,8 @@ namespace Virt_aspx
 	  return _queryString;
 	}
 
-      
-      public override String[][] GetUnknownRequestHeaders() 
+
+      public override String[][] GetUnknownRequestHeaders()
 	{
 //	    Console.WriteLine ("GetUnknownRequestHeaders is called.");
 	    return gl_unknownRequestHeaders;
