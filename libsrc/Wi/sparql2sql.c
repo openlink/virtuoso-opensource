@@ -5616,7 +5616,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
   sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
-  sparp_of_seed->sparp_expr->_.req_top.limit = t_box_num (SPARP_MAXLIMIT);
+  sparp_of_seed->sparp_expr->_.req_top.limit = (SPART *)t_box_num (SPARP_MAXLIMIT);
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
   sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
@@ -5671,7 +5671,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
     sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */
-    t_box_copy (sparp->sparp_expr->_.req_top.limit),	/* #7 */
+    sparp_tree_full_copy (sparp, sparp->sparp_expr->_.req_top.limit, NULL),	/* #7 */
     ((NULL == rgc->rgc_consts) ? NULL :
       spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ), /* #8 */
     ((NULL == sa_graphs) ? NULL :

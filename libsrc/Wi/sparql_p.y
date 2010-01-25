@@ -308,10 +308,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_order_conditions
 %type <tree> spar_order_condition
 %type <token_type> spar_asc_or_desc_opt
-%type <box> spar_limit_clause_opt
-%type <box> spar_limit_clause
-%type <box> spar_offset_clause_opt
-%type <box> spar_offset_clause
+%type <tree> spar_limit_clause_opt
+%type <tree> spar_limit_clause
+%type <tree> spar_offset_clause_opt
+%type <tree> spar_offset_clause
 %type <tree> spar_group_gp
 %type <nothing> spar_gp
 %type <nothing> spar_gp_not_triples
@@ -785,8 +785,8 @@ spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
 	| spar_limit_clause
 	;
 
-spar_limit_clause	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
-	: LIMIT_L SPARQL_INTEGER { $$ = $2; }
+spar_limit_clause	/* [17*]	LimitClause	 ::=  'LIMIT' PrecodeExpn	*/
+	: LIMIT_L spar_precode_expn { $$ = $2; }
 	;
 
 spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
@@ -794,8 +794,8 @@ spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
 	| spar_offset_clause
 	;
 
-spar_offset_clause	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
-	: OFFSET_L SPARQL_INTEGER { $$ = $2; }
+spar_offset_clause	/* [18*]	OffsetClause	 ::=  'OFFSET' PrecodeExpn	*/
+	: OFFSET_L spar_precode_expn { $$ = $2; }
 	;
 
 spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery | ServiceReq ) '}'	*/

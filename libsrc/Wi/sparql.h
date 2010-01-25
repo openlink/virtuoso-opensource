@@ -333,14 +333,14 @@ extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in
 #define SPART_TRIPLE_FIELDS_COUNT 4
 
 /* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
-#define SPART_GRAPH_FROM		0x80
-#define SPART_GRAPH_GROUP_BIT		0x02
-#define SPART_GRAPH_GROUP		0x82	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NAMED		0x84
-#define SPART_GRAPH_MIN_NEGATION	0x90
-#define SPART_GRAPH_NOT_FROM		0x91
-#define SPART_GRAPH_NOT_GROUP		0x93	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x95
+#define SPART_GRAPH_FROM		0x100
+#define SPART_GRAPH_GROUP_BIT		0x001
+#define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NAMED		0x110
+#define SPART_GRAPH_MIN_NEGATION	0x17F
+#define SPART_GRAPH_NOT_FROM		0x180
+#define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NOT_NAMED		0x190
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
 
@@ -477,8 +477,8 @@ typedef struct spar_tree_s
         SPART **groupings;
         SPART *having;
         SPART **order;
-        caddr_t limit;
-        caddr_t offset;
+        SPART *limit;
+        SPART *offset;
         sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
       } req_top;
     struct {
@@ -547,8 +547,8 @@ typedef struct spar_tree_s
         SPART **groupings;	/*!< Array of groupings */
         SPART *having;		/*!< Expression of HAVING clause, or NULL */
         SPART **obys;		/*!< Array of ORDER BY criteria */
-        caddr_t lim;		/*!< Boxed LIMIT value */
-        caddr_t ofs;		/*!< Boxed OFFSET value */
+        SPART *lim;		/*!< Boxed LIMIT value or an expression tree */
+        SPART *ofs;		/*!< Boxed OFFSET value or an expression tree */
       } wm;
     struct {
         /* define SPAR_SERVICE_INV	(ptrlong)1020 */
@@ -683,13 +683,13 @@ extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *g
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
-extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
+extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit, SPART *offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
-extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
+extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);

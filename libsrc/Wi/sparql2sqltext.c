@@ -7374,6 +7374,30 @@ ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
   ssg_prin_id (ssg, rbc_selid);
 }
 
+void ssg_print_limofs_expn (spar_sqlgen_t *ssg)
+{
+  SPART *lim = ssg->ssg_tree->_.req_top.limit;
+  SPART *ofs = ssg->ssg_tree->_.req_top.offset;
+  if ((DV_LONG_INT == DV_TYPE_OF (lim)) && (DV_LONG_INT == DV_TYPE_OF (ofs)))
+    {
+      char limofs_strg [50];
+      if (0 != unbox ((caddr_t)(ofs)))
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", (long)unbox ((caddr_t)(ofs)), (long)unbox ((caddr_t)(lim)));
+      else
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld", (long)unbox ((caddr_t)(lim)));
+      ssg_puts (limofs_strg);
+      return;
+    }
+  ssg_puts (" TOP (");
+  if ((DV_LONG_INT != DV_TYPE_OF (ofs)) || (0 != unbox ((caddr_t)(ofs))))
+    {
+      ssg_print_scalar_expn (ssg, ofs, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (", ");
+    }
+   ssg_print_scalar_expn (ssg, lim, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+   ssg_puts (")");
+}
+
 void
 ssg_print_tail_query_options (spar_sqlgen_t *ssg)
 {
@@ -7390,9 +7414,7 @@ void
 ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
   int gby_ctr, oby_ctr;
-  long lim, ofs;
-  int has_limofs = 0;
-  char limofs_strg[40] = "";
+  int has_limofs = 0;	/* 0 = no limit/offset clause in the output, 1 = it is in limofs_strg, 2 = should be printed in place */
   caddr_t limofs_alias = NULL;
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
@@ -7424,16 +7446,15 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if (((NULL != formatter) || (NULL != agg_formatter)) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
-  lim = unbox (tree->_.req_top.limit);
-  ofs = unbox (tree->_.req_top.offset);
-  if ((SPARP_MAXLIMIT != lim) || (0 != ofs))
+  if ((DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.limit)) && (DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.offset)))
     {
+      long lim = unbox ((caddr_t)(tree->_.req_top.limit));
+      long ofs = unbox ((caddr_t)(tree->_.req_top.offset));
+      if ((SPARP_MAXLIMIT != lim) || (0 != ofs))
       has_limofs = 1;
-      if (0 != ofs)
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", ofs, lim);
-      else
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld", lim);
     }
+  else
+    has_limofs = 2;
   switch (subtype)
     {
     case SELECT_L:
@@ -7499,7 +7520,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       if ((COUNT_DISTINCT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype))
         ssg_puts (" DISTINCT");
       if (has_limofs)
-        ssg_puts (limofs_strg);
+        ssg_print_limofs_expn (ssg);
       if ((NULL != ssg->ssg_wrapping_gp) && (NULL != ssg->ssg_wrapping_gp->_.gp.options))
         ssg_print_t_options_of_select (ssg);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
@@ -7585,7 +7606,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         {
           ssg_newline (0);
           ssg_puts ("FROM (SELECT");
-          ssg_puts (limofs_strg);
+          ssg_print_limofs_expn (ssg);
           ssg_print_retval_list (ssg, tree->_.req_top.pattern,
             retvals + 1, BOX_ELEMENTS (retvals) - 1,
             top_retval_flags | SSG_RETVAL_USES_ALIAS, NULL, retvalmode );

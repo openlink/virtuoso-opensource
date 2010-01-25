@@ -1667,7 +1667,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
 }
 
 SPART **
-spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset)
+spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SPART *offset_expn)
 {
   int retval_ctr;
   dk_set_t vars = NULL;
@@ -1680,7 +1680,11 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   SPART **opts;
   caddr_t limofs_name;
   const char *descr_name;
-  int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
+  int need_limofs_trick = (
+    (DV_LONG_INT != DV_TYPE_OF (limit_expn)) ||
+    (DV_LONG_INT != DV_TYPE_OF (offset_expn)) ||
+    (SPARP_MAXLIMIT != unbox ((caddr_t)(limit_expn))) ||
+    (0 != unbox ((caddr_t)(offset_expn)) ) );
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
   for (retval_ctr = BOX_ELEMENTS_INT (retvals); retval_ctr--; /* no step */)
     {
@@ -1775,10 +1779,14 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
 }
 
 SPART *
-spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
+spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
 {
   if ((NULL != having) && (NULL == groupings))
     spar_error (sparp, "HAVING clause should be preceeded by a GROUP BY clause");
+  if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (limit)) && (SPAR_LIT == limit->type) && (DV_LONG_INT == DV_TYPE_OF (limit->_.lit.val)))
+    limit = (SPART *)(limit->_.lit.val);
+  if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (offset)) && (SPAR_LIT == offset->type) && (DV_LONG_INT == DV_TYPE_OF (offset->_.lit.val)))
+    offset = (SPART *)(offset->_.lit.val);
   return spartlist (sparp, 7, SPAR_WHERE_MODIFS, pattern, groupings, having, order, limit, offset);
 }
 
@@ -1812,8 +1820,8 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   SPART **groupings = wm->_.wm.groupings;
   SPART *having = wm->_.wm.having;
   SPART **order = wm->_.wm.obys;
-  caddr_t limit = wm->_.wm.lim;
-  caddr_t offset = wm->_.wm.ofs;
+  SPART *limit = wm->_.wm.lim;
+  SPART *offset = wm->_.wm.ofs;
 #ifndef NDEBUG
   if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
     spar_internal_error (sparp, "Ill wm");
@@ -1916,7 +1924,7 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
 
 SPART *
 spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
 {
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
@@ -2388,7 +2396,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
   dk_set_t *set_ptr;
   int *is_locked_ptr = NULL;
   SPART *dupe_found = NULL;
-  caddr_t **group_members_ptr;
+  caddr_t **group_members_ptr = NULL;
   SPART *precode;
   switch (subtype)
     {
@@ -2735,6 +2743,8 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
   spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
+  if (NULL == log_mode)
+    log_mode = t_NEW_DB_NULL;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     call = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
@@ -2941,7 +2951,7 @@ spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms)
   caddr_t boxed_uid;
   id_hash_t *dflt_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
   id_hash_t *dflt_other_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
-  caddr_t *hit, *potential_hit;
+  caddr_t *hit = NULL, *potential_hit;
   int res = 0, potential_res = 0, potential_res_is_user_specific = 0;
   int graph_is_private = 0;
   query_t *query_with_deps = NULL;

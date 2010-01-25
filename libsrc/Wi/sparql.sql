@@ -1828,10 +1828,10 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
 {
   if ((__tag (v) = 217) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
     {
-  if ("LEFT" (v, 9) <> 'nodeID://')
-    return 0;
-  return 1;
-}
+      if ("LEFT" (v, 9) <> 'nodeID://')
+        return 0;
+      return 1;
+    }
   if (__tag (v) = 243)
     {
       if (v < min_bnode_iri_id)
@@ -1855,7 +1855,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
     {
       if (v < min_bnode_iri_id)
         return 1;
-    return 0;
+      return 0;
     }
   return 0;
 }
