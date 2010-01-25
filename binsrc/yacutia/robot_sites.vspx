@@ -131,7 +131,7 @@
         ?>
               <td class="listing_col"><?V VS_DESCR ?></td>
               <td class="listing_col"><?V VS_HOST ?></td>
-              <td class="listing_col"><?V VS_URL ?></td>
+              <td class="listing_col"><?V y_trunc_uri (VS_URL) ?></td>
               <td class="listing_col"><?V VS_ROOT ?></td>
               <td class="listing_col_num"><?V cast(_count as varchar) ?></td>
               <td class="listing_col_action">

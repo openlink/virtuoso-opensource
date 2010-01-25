@@ -88,7 +88,7 @@
 		  declare grants, tree any;
                   stat := '00000';
                   commit work;
-                  if( length(self.crproc_textfield.ufl_value)=0)
+                  if (length (self.crproc_textfield.ufl_value) = 0)
                     return;
 		  {
 		     declare exit handler for sqlstate '*' {
