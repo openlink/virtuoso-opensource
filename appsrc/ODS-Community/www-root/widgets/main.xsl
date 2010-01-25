@@ -847,7 +847,7 @@ c.length);
         
         select top 1 WS_COPYRIGHT into _copyright from WA_SETTINGS;
 
-        http(coalesce(_copyright,'Copyright © 1999-'||LEFT(datestring (now()), 4)||' OpenLink Software'));
+        http(coalesce(_copyright,'Copyright © 1998-'||LEFT(datestring (now()), 4)||' OpenLink Software'));
       ?>
     <xsl:value-of select="."/>
   </xsl:template>
