@@ -26,17 +26,6 @@
 --  
 --  
 
---  (C)Copyright 2005 OpenLink Software.
---  All Rights Reserved.
---
---  The copyright above and this notice must be preserved in all
---  copies of this source code.  The copyright above does not
---  evidence any actual or intended publication of this source code.
---
---  This is unpublished proprietary trade secret of OpenLink Software.
---  This source code may not be copied, disclosed, distributed, demonstrated
---  or licensed except as authorized by OpenLink Software.
---
 create procedure p (in i int) {return i;};
 set autocommit manual;
 update t1 set fi2 = 222 where row_no = 1000;
