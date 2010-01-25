@@ -1,23 +1,23 @@
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
-#  Copyright (C) 1998-2006 OpenLink Software
-#  
+#
+#  Copyright (C) 1998-2010 OpenLink Software
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 MAKEVER	= $(top_srcdir)/bin/makever
 
@@ -38,7 +38,7 @@ CLEANFILES	= virt_mail_vers.c odbc_mail_vers.c
 LIBS 		+= @ZLIB_LIB@
 
 virt_mail_CFLAGS  = @VIRT_AM_CFLAGS@
-virt_mail_CFLAGS += -DUDBC 
+virt_mail_CFLAGS += -DUDBC
 virt_mail_CFLAGS += -I$(top_srcdir)/libsrc
 virt_mail_CFLAGS += -I$(top_srcdir)/libsrc/Dk
 virt_mail_CFLAGS += -I$(top_srcdir)/libsrc/Wi
@@ -72,7 +72,7 @@ odbc_mail_LDADD = \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
-	@iodbc_LDFLAGS@ 
+	@iodbc_LDFLAGS@
 
 odbc_mail_vers.c: $(LIBDEPS) $(MAKEVER)
 	$(MAKEVER) -o odbc_mail_vers.c \
