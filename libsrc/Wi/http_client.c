@@ -949,8 +949,11 @@ http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
   char * tail = hdr + len - 1;
   while (*tail == 0x0A || *tail == 0x0D)
     *(tail--) = 0;
-  SES_PRINT (ctx->hcctx_pub_req_hdrs, hdr);
-  SES_PRINT (ctx->hcctx_pub_req_hdrs, "\r\n");
+  if (strlen (hdr) > 0)
+    {
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, hdr);
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, "\r\n");
+    }
   dk_free_box (hdr);
   return (HC_RET_OK);
 }
@@ -1180,6 +1183,7 @@ http_cli_get_resp_headers (http_cli_ctx * ctx)
 {
   dk_set_t hdrs = NULL;
   caddr_t * head;
+  dk_set_push (&hdrs, box_dv_short_string (ctx->hcctx_response));
   DO_SET (caddr_t, line, &(ctx->hcctx_resp_hdrs))
     {
       dk_set_push (&hdrs, box_dv_short_string (line));
@@ -2372,7 +2376,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int meth = HC_METHOD_GET;
   int inx, len;
   caddr_t * ents = NULL;
-  caddr_t http_hdr = NULL;
+  caddr_t * http_hdr_arr = NULL;
   dk_session_t * ses = NULL;
   caddr_t host = NULL;
 
@@ -2393,7 +2397,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
   if (BOX_ELEMENTS (args) > 2)
-    http_hdr = bif_string_or_null_arg (qst, args, 2, me);
+    http_hdr_arr = (caddr_t *) bif_array_or_null_arg (qst, args, 2, me);
   if (BOX_ELEMENTS (args) > 3)
     {
       ents = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, me);
@@ -2409,6 +2413,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_cli_ctx * ctx;
       caddr_t url = ARRAYP (urls) ? urls[inx] : (caddr_t) urls;
+      caddr_t http_hdr = ARRAYP (http_hdr_arr) ? http_hdr_arr[inx] : (caddr_t) http_hdr_arr;
 
       if (!DV_STRINGP (url))
 	{
@@ -2416,10 +2421,16 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  goto error_ret;
 	}
 
+      if (!DV_STRINGP (http_hdr) && DV_DB_NULL != DV_TYPE_OF (http_hdr))
+	{
+	  *err_ret = srv_make_new_error ("22023", "HTC03", "Headers must be array of strings or single string");
+	  goto error_ret;
+	}
+
       ctx = http_cli_std_init (url, qst);
       http_cli_set_ua_id (ctx, http_client_id_string);
       http_cli_set_method (ctx, meth);
-      if (http_hdr)
+      if (DV_STRINGP (http_hdr) && box_length (http_hdr) > 1)
 	http_cli_add_req_hdr (ctx, http_hdr);
 
       if (ents && ARRAYP(ents))
