@@ -621,14 +621,14 @@ iSPARQL.QBE = function (def_obj) {
 	    var val = self.putPrefix('<' + treeNode.uri + '>');
 	    if (target == iSPARQL.qbe.svgsparql) {
 		if (treeNode.uritype == 'class') {
-		    var pos = OAT.Event.position(target.parent);
+		    var pos = OAT.Dom.position(target.parent);
 		    var x = x_ - pos[0];
 		    var y = y_ - pos[1];
 		    var node = target.addNode(x,y,"",0);
 		    node.setValueByDrop(val,treeNode.uritype,x,y);
 		}
 	    } else if (target.svgsparql) {
-		var pos = OAT.Event.position(target.svgsparql.parent);
+		var pos = OAT.Dom.position(target.svgsparql.parent);
 		var x = x_ - pos[0];
 		var y = y_ - pos[1];
 		target.setValueByDrop(val,treeNode.uritype,x,y);
@@ -1034,7 +1034,7 @@ iSPARQL.QBE = function (def_obj) {
     var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
     var drop = function(target,x_,y_) {
 	if (target == qbe.svgsparql) {
-	    var pos = OAT.Event.position(target.parent);
+	    var pos = OAT.Dom.position(target.parent);
 	    var x = x_ - pos[0];
 	    var y = y_ - pos[1];
 	    node = target.addNode(x,y,"",0);
@@ -1064,7 +1064,7 @@ iSPARQL.QBE = function (def_obj) {
     }
     var drop = function(target,x_,y_) {
 	if (target != qbe.svgsparql && !target.node2) {
-	    var pos = OAT.Event.position(target.svgsparql.parent);
+	    var pos = OAT.Dom.position(target.svgsparql.parent);
 	    var x = x_ - pos[0];
 	    var y = y_ - pos[1];
 	    qbe.svgsparql.startDrawing(target,x,y,'?');
