@@ -80,9 +80,6 @@
     <xsl:param name="currentDateTime"/>
 
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri, '')"/>
-	<!--
-    <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
-	-->
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
     <xsl:variable  name="numEntries" select="count(a:entry)"/>
 
@@ -105,7 +102,14 @@
    		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
 
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<xsl:choose>
+			<xsl:when test="$numEntries = 1">
 	    	<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+			</xsl:when>
+			<xsl:otherwise>
+    			<foaf:topic rdf:resource="{$resourceURL}"/>
+			</xsl:otherwise>
+		</xsl:choose>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<xsl:if test="$numEntries = 1">
 			<!-- Only if baseUri identified a single item directly and isn't a query returning many items -->
@@ -268,6 +272,24 @@
 
     <xsl:template match="g:price" /> <!-- Already handled by "offering" mode -->
     <xsl:template match="a:author" /> <!-- Already handled by "offering" mode -->
+
+	<!-- UPCs should be 12 characters, not all Google Base entries conform -->
+    <xsl:template match="g:upc"> 
+		<xsl:choose>
+			<xsl:when test="string-length(.)=12">
+				<gr:hasEAN_UCC-13><xsl:value-of select="concat('0', .)"/></gr:hasEAN_UCC-13>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:element name="{local-name(.)}" namespace="&oplgb;">
+  					<xsl:value-of select="."/>
+				</xsl:element>
+			</xsl:otherwise>
+		</xsl:choose>
+    </xsl:template>
+
+	<!-- Not of use to end-user -->
+    <xsl:template match="g:googleaffiliatenetworkpublish" />
+    <xsl:template match="g:product_ad_extension_trademark_cleared" /> 
 
     <xsl:template match="g:*">
 		<xsl:element name="{local-name(.)}" namespace="&oplgb;">

@@ -3188,7 +3188,7 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
     else
       return 0;
     xd := xml_tree_doc(SOAP_CLIENT (
-      url=>'http://www.lansley.com/TescoAPI/TescoAPI.svc',
+      url=>'http://www.techfortesco.com/TescoAPI/TescoAPI.svc',
       operation=>'Login',
       soap_action=>'http://tesco.cloudapp.net/IAccount/Login',
       parameters=>vector ('email', email_, 'password', password_, 'developerKey', developer_key_, 'applicationKey', application_key_),
@@ -3199,7 +3199,7 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
     tmp := replace(tmp, 'http://tesco.cloudapp.net', 'http://www.tesco.com');
     ses := xtree_doc (tmp);
     xd := xml_tree_doc(SOAP_CLIENT (
-	url=>'http://www.lansley.com/TescoAPI/TescoAPI.svc',
+	url=>'http://www.techfortesco.com/TescoAPI/TescoAPI.svc',
 	operation=>'ProductSearch',
 	soap_action=>'http://www.tesco.com/IGrocery/ProductSearch',
 	parameters=>vector ('session', ses, 'searchString', id, 'getRatings', soap_boolean(0)),

@@ -1,0 +1,935 @@
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2010 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+ 
+  An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
+  to handle item descriptions from the Google Base Web Service.
+ 
+  Not all item types supported by Google Base are mapped to OWL here. Only those which are amenable
+  to mapping to GoodRelations are included. Essentially this subset includes only those item types 
+  which have associated price information.  i.e. housing, local products, products, services, 
+  travel packages, vacation rentals and vehicles.
+
+  A list of available item types and their attributes is available from:
+  http://www.google.com/base/feeds/itemtypes/en_US
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/google-base#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplgb="http://www.openlinksw.com/schemas/google-base#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/google-base">
+        <creator xmlns="http://purl.org/dc/elements/1.1/"
+            rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#Housing">
+        <rdfs:comment>Google Base item of type 'housing'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>Housing</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#ItemType">
+        <rdfs:comment>Base class for all types of Google Base items</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>ItemType</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#LocalProducts">
+        <rdfs:comment>Google Base item of type 'local products'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>LocalProducts</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#PricedItemType">
+        <rdfs:comment>An instance of PricedItemType represents both a Google Base item type which has a price and a GoodRelations product or service.</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>PricedItemType</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#Products">
+        <rdfs:comment>Google Base item of type 'products'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>Products</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#Services">
+        <rdfs:comment>Google Base item of type 'services'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>Services</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#TravelPackages">
+        <rdfs:comment>Google Base item of type 'travel packages'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>TravelPackages</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#VacationRentals">
+        <rdfs:comment>Google Base item of type 'vacation rentals'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>VacationRentals</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#Vehicles">
+        <rdfs:comment>Google Base item of type 'vehicles'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>VacationRentals</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#agent">
+        <rdfs:comment>agent</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>agent</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#agent_email">
+        <rdfs:comment>Agent's email address</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>agent email</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#agent_phone">
+        <rdfs:comment>Agent's phone no.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>agent phone</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#area">
+        <rdfs:comment>area</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>area</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#area_contiguous">
+        <rdfs:comment>Contiguous area</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>area (contiguous)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#area_min">
+        <rdfs:comment>Minimum area</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>min. area</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#author">
+        <rdfs:comment>Author</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>author</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#bathrooms">
+        <rdfs:comment>No. of bathrooms</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>bathrooms</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#bedrooms">
+        <rdfs:comment>No. of bedrooms</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>bedrooms</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#brand">
+        <rdfs:comment>Brand</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>brand</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#broker">
+        <rdfs:comment>Broker</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>broker</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#color">
+        <rdfs:comment>Color</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>color</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#condition">
+        <rdfs:comment>Condition</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>condition</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#customer_id">
+        <rdfs:comment>Identifier of the customer this item belongs to.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>customer id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#expiration_date">
+        <rdfs:comment>Date the item will expire.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>expiration date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#feature">
+        <rdfs:comment>Feature</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>feature</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#financials">
+        <rdfs:comment>Financials</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>financials</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#floor_number">
+        <rdfs:comment>Floor number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>floor number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#from_location">
+        <rdfs:comment>From location</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#TravelPackages"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>from location</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#group">
+        <rdfs:comment>Group</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>group</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#gtin">
+        <rdfs:comment>Global trade item number (GTIN)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>GTIN</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#height">
+        <rdfs:comment>Height</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>height</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#hoa_dues">
+        <rdfs:comment>HOA (Home Owners Association) dues</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>HOA dues</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#id">
+        <rdfs:comment>ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#image_link">
+        <rdfs:comment>Date the item will expire.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>expiration date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#isbn">
+        <rdfs:comment>ISBN</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>ISBN</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#item_language">
+        <rdfs:comment>Language the item description is written in. (ISO-639-1 two-letter code)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>item language</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#item_type">
+        <rdfs:comment>Type of the item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>item type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#itemid">
+        <rdfs:comment>Item ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>itemid</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#latitude">
+        <rdfs:comment>Latitude</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>latitude</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#lease_type">
+        <rdfs:comment>Lease type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>lease type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#length">
+        <rdfs:comment>Length</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>length</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#listing_status">
+        <rdfs:comment>Listing status</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>listing status</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#listing_type">
+        <rdfs:comment>Listing type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>listing type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#location">
+        <rdfs:comment>Location</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>location</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#longitude">
+        <rdfs:comment>Longitude</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>longitude</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#lot_size">
+        <rdfs:comment>Lot size</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>lot size</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#make">
+        <rdfs:comment>Make</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Vehicles"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>make</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#mileage">
+        <rdfs:comment>Mileage</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Vehicles"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>mileage</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#mls_listing_id">
+        <rdfs:comment>Multiple listing services (MLS) id</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>mls listing id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#mls_name">
+        <rdfs:comment>Multiple listing service (MLS) name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>MLS name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#model">
+        <rdfs:comment>Model</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>model</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#model_number">
+        <rdfs:comment>Model number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>model number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#mpn">
+        <rdfs:comment>Manufacturer part number (MPN)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>MPN</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#online_only">
+        <rdfs:comment>Only available online?</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>online only</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#open_house_date_range">
+        <rdfs:comment>open house date range</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>open house date range</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#parking">
+        <rdfs:comment>No. of parking spaces</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>parking</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#payment">
+        <rdfs:comment>Payment</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>payment</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#payment_notes">
+        <rdfs:comment>Payment notes</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>payment notes</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#price">
+        <rdfs:comment>Price</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#PricedItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>price</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#price_effective_date">
+        <rdfs:comment>Price effective date</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>price effective date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#price_frequency">
+        <rdfs:comment>Price frequency</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>price frequency</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#price_min">
+        <rdfs:comment>Minimum price</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>min. price</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#price_type">
+        <rdfs:comment>Price type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>price type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#product_review_average">
+        <rdfs:comment>Product review average</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>product review average</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#product_review_count">
+        <rdfs:comment>Product review count</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>product review count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#product_type">
+        <rdfs:comment>Product type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>product type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#promotional_text">
+        <rdfs:comment>Promotional text</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>promotional text</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#property_taxes">
+        <rdfs:comment>Property taxes</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>property taxes</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#property_type">
+        <rdfs:comment>Property type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#VacationRentals"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>property type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#provider_class">
+        <rdfs:comment>Provider class</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>provider class</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#provider_name">
+        <rdfs:comment>Provider name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#VacationRentals"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>provider name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#provider_telephone_number">
+        <rdfs:comment>Provider telephone number</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#VacationRentals"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>provider telephone number</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#publisher">
+        <rdfs:comment>Publisher</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>publisher</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#quantity">
+        <rdfs:comment>Quantity</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>quantity</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#retailstoreid">
+        <rdfs:comment>Retail store ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>retailstoreid</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#sale_price">
+        <rdfs:comment>Sale price</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>sale price</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#sale_price_effective_date">
+        <rdfs:comment>Sale price effective date (range)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>sale price effective date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#school">
+        <rdfs:comment>School</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>school</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#school_district">
+        <rdfs:comment>School district</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>school district</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#service_type">
+        <rdfs:comment>Service type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Services"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>service type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#shipping">
+        <rdfs:comment>Shipping cost</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>shipping cost</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#size">
+        <rdfs:comment>Size</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>size</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#sleeps">
+        <rdfs:comment>No. of people the accommodation can sleep</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#VacationRentals"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>sleeps</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#square_feet">
+        <rdfs:comment>Square feet</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>square feet</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#style">
+        <rdfs:comment>Style</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>style</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#subgroup">
+        <rdfs:comment>Subgroup</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>subgroup</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#target_country">
+        <rdfs:comment>Country for which the item is intended. Default is US, which means that the item will appear on google.com, and not on google.co.uk for example. (ISO 3166-1-alpha-2 two-letter code).</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>target country</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#tax_percent">
+        <rdfs:comment>Tax (percent)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>tax percent</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#tax_region">
+        <rdfs:comment>Tax region</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>tax region</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#to_location">
+        <rdfs:comment>To location</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#TravelPackages"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>to location</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#travel_date_range">
+        <rdfs:comment>Travel date range</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#TravelPackages"/>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#VacationRentals"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>travel date range</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#upc">
+        <rdfs:comment>Universal product code (UPC)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Products"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>UPC</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#vehicle_type">
+        <rdfs:comment>Vehicle type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Vehicles"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>vehicle type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#video_link">
+        <rdfs:comment>Video link</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>video link</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#vin">
+        <rdfs:comment>Vehicle identification no. (VIN)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Vehicles"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>vin</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#webitemid">
+        <rdfs:comment>Web item id</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#LocalProducts"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>webitemid</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#weight">
+        <rdfs:comment>Weight</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>weight</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#width">
+        <rdfs:comment>Width</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>width</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#year">
+        <rdfs:comment>Year</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>year</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#int"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/google-base#zoning">
+        <rdfs:comment>Zoning</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/google-base#Housing"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>zoning</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
