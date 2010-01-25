@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS = . biftest suite dotnet tpcrun oledb oracle_tpcc rdf wb lubm bsbm
+SUBDIRS = . biftest suite dotnet tpcrun oledb rdf wb lubm bsbm
 
 MAKEVER = $(SHELL) $(top_srcdir)/bin/makever
 
