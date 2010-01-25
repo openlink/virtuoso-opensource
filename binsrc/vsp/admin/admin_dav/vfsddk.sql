@@ -52,9 +52,8 @@ create table WS.WS.VFS_QUEUE (
     VQ_OTHER	varchar,
     VQ_ERROR	long varchar,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
-create index VQ_HOST_ROOT_STAT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT)
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
-create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_TS)
+create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS)
 create index VQ_TS on WS.WS.VFS_QUEUE (VQ_TS)
 ;
 
