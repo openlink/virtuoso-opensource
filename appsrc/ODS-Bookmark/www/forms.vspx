@@ -207,7 +207,8 @@
             if (length (tmp))
               self.bNode := tmp [length(tmp)-1];
           }
-          connection_set ('vspx_user', BMK.WA.account_name (self.account_id));
+          if (isnull (connection_get ('vspx_user')))
+            connection_set ('vspx_user', (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.VSPX_SESSION where U_NAME = VS_UID and VS_SID = self.sid));
         ]]>
       </v:before-data-bind>
       <?vsp

@@ -384,9 +384,8 @@
             self.sid := get_keyword ('sid', params);
             self.realm := get_keyword ('realm', params);
             if (isnull (connection_get ('vspx_user')))
-            {
-              connection_set ('vspx_user', ODRIVE.WA.account_name (self.account_id));
-            }
+              connection_set ('vspx_user', (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.VSPX_SESSION where U_NAME = VS_UID and VS_SID = self.sid));
+
             if (self.v_step = '')
             {
               declare i integer;
