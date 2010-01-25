@@ -28,25 +28,22 @@
 use WS
 ;
 
-
-create procedure WS.WS.COPY_PAGE (in _host varchar, in _url varchar, in _root varchar,
-    in _upd integer, in _dbg integer)
+create procedure WS.WS.COPY_PAGE (in _host varchar, in _urls any, in _root varchar, in _upd integer, in _dbg integer)
 {
+    
   declare exit handler for sqlstate '*', not found 
     {
       rollback work;
       __SQL_STATE := cast (__SQL_STATE as varchar);
       if (__SQL_STATE <> '40001')
 	{
-	  update VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE
-	      where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+	  update VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL in (_urls);
 	  commit work;
-	  ERR_MAIL_SEND (_host, _url, _root, __SQL_STATE, __SQL_MESSAGE);
+	  ERR_MAIL_SEND (_host, _urls, _root, __SQL_STATE, __SQL_MESSAGE);
 	}
       else
 	{
-	  update VFS_QUEUE set VQ_STAT = 'waiting' 
-	      where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root;
+	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_URL in (_urls) and VQ_ROOT = _root;
 	  commit work;
 	}
       if (__SQL_STATE <> '40001' and __SQL_STATE <> '2E000' and __SQL_STATE not like '0800_' and __SQL_STATE <> 'HTCLI')
@@ -55,86 +52,115 @@ create procedure WS.WS.COPY_PAGE (in _host varchar, in _url varchar, in _root va
 	}
       return null;
     };
-  return WS.WS.COPY_PAGE_1 (_host, _url, _root, _upd, _dbg); 
+  return WS.WS.COPY_PAGE_1 (_host, _urls, _root, _upd, _dbg); 
 }
 ;
 
-create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _url varchar, in _root varchar,
+create procedure WS.WS.VFS_HTTP_RESP_CODE (inout _resp any)
+{
+  declare _tmp varchar;
+  _tmp := WS.WS.FIND_KEYWORD (_resp, 'HTTP/1.');
+  _tmp := subseq (_tmp, strchr (_tmp, ' ') + 1, length (_tmp));
+  _tmp := subseq (_tmp, 0, strchr (_tmp, ' '));
+  return _tmp;
+}
+;
+
+create procedure WS.WS.VFS_ENSURE_NEW_SITE (in _host varchar, in _root varchar, in _new_host varchar, in _new_url varchar)
+{
+  if (not exists (select 1 from VFS_SITE where VS_HOST = _new_host and VS_ROOT = _new_host))
+    {
+      insert into VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR)
+      select _new_host, _new_host, _new_url, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, _new_host 
+	  from VFS_SITE where VS_HOST = _new_host and VS_ROOT = _new_host;
+    }
+}
+;
+
+create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root varchar,
     in _upd integer, in _dbg integer)
 {
-  declare _content, _resp , _method, _header, _etag, _tmp, _start_url, _dav_opts varchar;
-  declare _idx, _del, _stat, _msg, _desc, _t_url, _opts, _c_type varchar;
-  declare _resp_w, _dav_method, _d_imgs, _opage, _url_to_update varchar;
-  declare _dav_enabled, _auth varchar;
-  declare dt, redirs, redir_flag, store_flag, try_to_get_rdf integer;
+  declare _header, _etag, _http_resp_code, _start_url varchar;
+  declare _del, _desc, _t_urls, _opts, _c_type varchar;
+  declare _dav_method, _d_imgs, _opage varchar;
+  declare _dav_enabled, _other varchar;
+  declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
-  declare _udata, ext_hook, store_hook any;
+  declare _udata, ext_hook, store_hook, _header_arr, _resps any;
+  declare n_urls int;
 
-  _url_to_update := _url;
+  n_urls := position (0, _urls) - 1;
+  if (n_urls < 0)
+    n_urls := length (_urls);
 
   whenever not found goto nf_opt;
-  select VS_NEWER, VS_OPTIONS, VS_METHOD, VS_URL, VS_SRC, VS_OPAGE,
-         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN
-      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, redir_flag, store_flag, try_to_get_rdf, _udata, ext_hook, store_hook
+  select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
+         coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
+	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, '')
+      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
+      	 redir_flag, store_flag, try_to_get_rdf, 
+	 _udata, ext_hook, store_hook, _del, _other
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
-  select VU_ETAG into _etag from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
 nf_opt:
 
-  commit work;
-  dt := msec_time ();
-
+  _header := '';
   if (isstring (_opts) and strchr (_opts, ':') is not null)
-    _auth := sprintf ('Authorization: Basic %s', encode_base64(_opts));
-  else
-    _auth := '';
+    _header := sprintf ('Authorization: Basic %s\r\n', encode_base64(_opts));
 
-  if (_opage is null)
-    _opage := '';
+  if (_upd = 1 and _since is not null)
+    _header := concat (_header, 'If-Modified-Since: ', soap_print_box (_since, '', 1), '\r\n');
+
+  if (try_to_get_rdf)
+    _header := _header || 'Accept: application/rdf+xml, text/rdf+n3, */*\r\n';
+
+  if (_upd = 1)  
+    {
+      _header_arr := make_array (n_urls, 'any');
+      for (declare i int, i := 0; i < n_urls; i := i + 1)
+        {
+	  declare _url, _hdr varchar;
+	  _url := _urls[i];
+	  _etag := (select VU_ETAG from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root);
+	  if (_etag is not null and isstring (_etag))
+	    _hdr := concat (_header,'If-None-Match: ', _etag, '\r\n');
+  else
+	    _hdr := _header;
+	  _header_arr[i] := _hdr;  
+	}
+    }
+  else  
+    _header_arr := _header;
+
+  commit work;
 
   if (_dav_method = 'checked' and _upd = 0 and _opage <> 'checked')
     {
-      declare dav_urls any;
-
+      declare dav_urls, _dav_opts, _url any;
+      if (length (_urls) <> 1)
+        signal ('22023', 'When using WebDAV methods batch size cannot be greater than 1', 'CRAWL');
+      _url := _urls[0]; 
+      dt := msec_time ();
       http_get (WS.WS.MAKE_URL (_host, _url), _dav_opts, 'OPTIONS');
-      _dav_enabled := WS.WS.FIND_KEYWORD (_dav_opts, 'DAV:');
-      if (_dav_enabled = '')
+      prof_sample ('web robot GET', msec_time () - dt, 1);
+      _dav_enabled := http_request_header (_dav_opts, 'DAV', null, null);
+      if (0 = length (_dav_enabled))
 	{
           update VFS_SITE set VS_METHOD = null where VS_HOST = _host and VS_ROOT = _root;
           _dav_method := null;
           goto html_mode;
 	}
-      dav_urls := WS.WS.DAV_PROP (WS.WS.MAKE_URL (_host, _url), _d_imgs, _auth);
+      dav_urls := WS.WS.DAV_PROP (WS.WS.MAKE_URL (_host, _url), _d_imgs, _header);
       WS.WS.GET_URLS (_host, _url, _root, dav_urls);
     }
 
 html_mode:
-  --dbg_obj_print ('GET URL: ', _url);
-  _msg := '';
-  _tmp := '';
-  _stat := '00000';
-  _t_url := WS.WS.MAKE_URL (_host, _url);
-  _header := '';
-  if (_upd = 1)
+  _t_urls := make_array (n_urls, 'any');
+ for (declare i int, i := 0; i < n_urls; i := i + 1)
     {
-      if (_since is not null)
-        _header := concat ('If-Modified-Since: ', soap_print_box (_since, '', 1));
-      if (_etag is not null and isstring (_etag))
-        {
-	  if (length (_header) > 1)
-            _header := concat (_header,'\nIf-None-Match: ', _etag);
-          else
-           _header := concat ('If-None-Match: ', _etag);
+     _t_urls[i] := WS.WS.MAKE_URL (_host, _urls[i]);
         }
-    }
 
-  if (_header = '' and _auth <> '')
-    _header := _auth;
-  else if (_header <> '' and _auth <> '')
-    _header := concat (_header, '\n', _auth);
-
- if (try_to_get_rdf)
-   _header := 'Accept: application/rdf+xml, text/rdf+n3, */*\n' || _header;
-
+  dt := msec_time ();
   {
      declare retr integer;
      retr := 4;
@@ -160,65 +186,68 @@ html_mode:
 get_again:
   retr := retr - 1;
 
-  _method := 'GET';
-  if (_header = '')
-    _content := http_get (_t_url, _resp, _method);
+    if (n_urls = 1)
+      {
+	declare _resp, _content any;
+        _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end);
+	_resps := vector (vector (_content, _resp));
+      }
   else
-    _content := http_get (_t_url, _resp, _method, _header);
+      _resps := http_pipeline (_t_urls, 'GET', _header_arr);
+  }
+  prof_sample ('web robot GET', msec_time () - dt, 1);
 
-  redirs := 0;
+ if (length (_resps) <> n_urls)
+   signal ('2E000', 'Different length of requests and responces'); 
 
-check_redir:
+ for (declare i int, i := 0; i < n_urls; i := i + 1)
+   {
+      declare _url varchar;
+      declare _resp, _content any;
 
+      _url := _urls[i];
+      _resp := _resps[i][1];
+      _content := _resps[i][0];
   if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
     {
       signal ('2E000', 'Bad header received');
     }
-  if (redir_flag and isarray(_resp) and length (_resp) and
-      (aref (_resp, 0) like 'HTTP/1._ 302%' or aref (_resp, 0) like 'HTTP/1._ 301%'))
-    {
-      declare new_loc varchar;
-      new_loc :=  WS.WS.FIND_KEYWORD (_resp, 'Location:');
-     -- dbg_obj_print (new_loc);
-      if (new_loc not like 'http://%')
-        {
-          new_loc := WS.WS.EXPAND_URL (_t_url, new_loc);
-          --_url := rfc1808_parse_uri (new_loc)[2];
-        }
 
-      if (new_loc like '%/' and _url not like '%/')
-	_url := concat (_url, '/');
-      redirs := redirs + 1;
-      _content := http_get (new_loc, _resp, _method, _header);
-
-      if (redirs < 15)
-        goto check_redir;
+      _http_resp_code := WS.WS.VFS_HTTP_RESP_CODE (_resp);
+      if (redir_flag and _http_resp_code in ('301', '302', '303'))
+	{
+	  declare new_loc, new_url, new_host varchar;
+	  declare ht any;
+	  new_loc :=  http_request_header (_resp, 'Location', null, null);
+	  new_loc := WS.WS.EXPAND_URL (_t_urls[i], new_loc);
+	  ht := WS.WS.PARSE_URI (new_loc);
+	  new_host := ht[1];
+	  ht[0] := ''; ht[1] := ''; 
+	  new_url := VFS_URI_COMPOSE (ht);
+	  if (_host = new_host)
+	    {
+	      insert soft VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS) 
+		  values (_host, _root, new_url, 'waiting', now ());
+	    }
+	  else if (_other = 'checked')
+	    {
+	      WS.WS.VFS_ENSURE_NEW_SITE (_host, _root, new_host, new_url);
+	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER)
+		  values (new_host, now (), new_url, 'waiting', new_host, 'other');
     }
-
+	  goto end_crawl;
   }
 
-  prof_sample ('web robot GET', msec_time () - dt, 1);
-  _tmp := WS.WS.FIND_KEYWORD (_resp, 'HTTP/1.');
-  _tmp := subseq (_tmp, strchr (_tmp, ' ') + 1, length (_tmp));
-  _resp_w := _tmp;
-  _tmp := subseq (_tmp, 0, strchr (_tmp, ' '));
   _c_type := coalesce (http_request_header (_resp, 'Content-Type'), '');
+      _etag := http_request_header (_resp, 'ETag', null, '');
 
-  if (_tmp = '200' and (isstring (_content) or __tag (_content) = 185))
+      if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
     {
       if (ext_hook is not null and __proc_exists (ext_hook))
 	call (ext_hook) (_host, _url, _root, _content);
-      else if (_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%')
-	{
-	  if (_dav_method is null or _dav_method <> 'checked')
-	    {
-	      if (_opage is NULL or _opage <> 'checked')
-		{
+	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%') and _dav_method <> 'checked' and _opage <> 'checked')
 		  WS.WS.GET_URLS (_host, _url, _root, _content);
-		}
-	    }
-	}
-      _etag := WS.WS.FIND_KEYWORD (_resp, 'ETag:');
+
       if (store_hook is not null and __proc_exists (store_hook))
 	call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata);
       else 
@@ -228,47 +257,44 @@ check_redir:
         WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp);
     }
     }
-  else if (_tmp = '401')
+      else if (_http_resp_code = '401')
     {
       signal ('22023', 'This site requires authentication credentials which are not supplied or incorrect.');
     }
-  else if (_tmp = '404')
+      else if (_http_resp_code = '404' and _upd = 1 and _del = 'checked')
     {
       -- delete on remote detected
-      if (_upd = 1)
-        WS.WS.DELETE_LOCAL (_host, _url_to_update, _root);
+	  WS.WS.DELETE_LOCAL_COPY (_host, _url, _root);
     }
-  if (_tmp like '2__' or _tmp like '3__' or _tmp like '4__' or _tmp like '5__')
-    update VFS_QUEUE set VQ_STAT = 'retrieved' where VQ_HOST = _host and VQ_URL = _url_to_update and VQ_ROOT = _root;
+    end_crawl: 
+      if (_http_resp_code like '2__' or _http_resp_code like '3__' or _http_resp_code like '4__' or _http_resp_code like '5__')
+	update VFS_QUEUE set VQ_STAT = 'retrieved'
+	    where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root and VQ_STAT = 'pending';
+   }
+  commit work;
+  return;
 }
 ;
 
 
-create procedure WS.WS.DELETE_LOCAL (in _host varchar, in _url varchar, in _root varchar)
+create procedure WS.WS.DELETE_LOCAL_COPY (in _host varchar, in _url varchar, in _root varchar)
 {
-  declare _del varchar;
-  whenever not found goto nf_del;
-  select VS_DEL into _del from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
-nf_del:
-  if (_del = 'checked')
-    {
       delete from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
       delete from SYS_DAV_RES where RES_FULL_PATH = concat ('/DAV/', _root, _url);
-    }
 }
 ;
 
 
 -- /* top level procedure for processing queues */
 create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := 1)
+    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := 1, in batch_size int := 1)
 {
   declare _msg, _stat, oq varchar;
 do_again:
   _stat := '00000';
   _msg := '';
-  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
-      vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads));
+  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+      vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads, batch_size));
   if (_stat = '40001')
     {
       rollback work;
@@ -283,8 +309,8 @@ do_again1:
     {
       _stat := '00000';
       _msg := '';
-      exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
-	  vector (elm[0], elm[1], _upd, _dbg, _fn, _clnt_data, threads));
+      exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+	  vector (elm[0], elm[1], _upd, _dbg, _fn, _clnt_data, threads, batch_size));
       if (_stat = '40001')
 	{
 	  rollback work;
@@ -302,17 +328,20 @@ do_again1:
 -- _upd 0:init, 1:update site; _dbg 0:normal, 1:retrieve only one entry and stop, 2:retrieve options
 --                                  3:send retrieved status to http client
 create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := 1)
+    in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := 1, in batch_size int := 1)
 {
+  declare _total, active_thread integer;
+  declare _rc integer;
   declare _host, _url varchar;
-  declare _total integer;
   declare _tgt_url varchar;
   declare url_fn varchar;
   declare _last_shut integer;
   declare _tgt, _root varchar;
   declare _next_url varchar;
-  declare _rc integer;
-  declare urllist, aq any;
+  declare _dav_method varchar;
+  declare aq_list, aq, url_batch any;
+  declare err any;
+  declare pid int;
 
   _total := 0;
   _tgt := __tgt;
@@ -325,7 +354,7 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
   commit work;
 
   whenever not found goto n_site;
-  select VS_URL into _tgt_url from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root;
+  select VS_URL, VS_METHOD into _tgt_url, _dav_method from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root;
   -- if it is update 
   if (_upd = 1)
     {
@@ -340,6 +369,8 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 	  commit work;
 	}
     }
+  if (_dav_method = 'checked')
+    batch_size := 1;
 
    -- if url function not specified then call default
    if (WS.WS.ISEMPTY (_fn))
@@ -347,48 +378,72 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
    else
      url_fn := _fn;
 
-    urllist := make_array (nthreads, 'any'); 
+    aq_list := make_array (nthreads, 'any'); 
+    for (declare i int, i := 0; i < nthreads; i := i + 1)
+      aq_list [i] := 'n';
+    url_batch := make_array (batch_size, 'any');
     aq := async_queue (nthreads);
+    active_thread := 0;
     -- process the queue
     while (1)
       {
 	declare found_one, ndone int;
 	declare exit handler for sqlstate '*' 
 	  {
+	    ERR_MAIL_SEND (_host, vector (), _root, __SQL_STATE, __SQL_MESSAGE);
 	    rollback work;
 	    goto fn_end;
 	  };
 	found_one := 0; ndone := 0;
-	for (declare i int, i := 0; i < nthreads; i := i + 1)
+	for (declare i int, i := 0; i < batch_size; i := i + 1)
 	      {
 	     _rc := call (url_fn) (_tgt, _root, _next_url, _clnt_data);
 	     if (_rc > 0 and isstring (_next_url))
 		  {
 	         found_one := 1;
-		 urllist [i] := _next_url;
+		 url_batch [i] := _next_url;
+		 ndone := ndone + 1;
 	  }
 	else
-	       urllist [i] := 0;
+	       url_batch [i] := 0;
       }
 	commit work;
         if (0 = found_one)
           goto fn_end;
-
-	foreach (any elm in urllist) do
+        active_thread := position ('n', aq_list) - 1;
+	if (active_thread < 0)
 	  {
-	    if (elm <> 0)
+	    pid := null;
+--	    dbg_obj_print ('pids', aq_list);
+	    for (declare i int, i := 0; i < nthreads; i := i + 1)
+	  {
+		 if (pid is null or pid > aq_list[i])
 	      {
-	        aq_request (aq, 'WS.WS.COPY_PAGE', vector (_tgt, elm, _root, _upd, _dbg));
-		ndone := ndone + 1;
+		     pid := aq_list[i];
+		     active_thread := i;
 	      }
 	  }
 	commit work;
+--	    dbg_obj_print ('waiting for', pid);
+	    aq_wait (aq, pid, 1, err);
+--	    dbg_obj_print ('got free thread', err);
+	  }
+	if (active_thread < 0)
+	  signal ('42000', 'Cannot get free thread', 'CRAWL');
+	aq_list [active_thread] := aq_request (aq, 'WS.WS.COPY_PAGE', vector (_tgt, url_batch, _root, _upd, _dbg));
+	if (ndone < batch_size or not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'waiting'))
+	  {
+	    commit work;
 	aq_wait_all (aq);
+	    aq_list [active_thread] := 'n';
+	  }
 	_total := _total + ndone;
       }
 fn_end:;
+  commit work;
+  aq_wait_all (aq);
 
-  delete from VFS_QUEUE where VQ_STAT = 'retrieved' and VQ_URL <> _tgt_url and VQ_HOST = _tgt and VQ_ROOT = _root;
+  --delete from VFS_QUEUE where VQ_STAT = 'retrieved' and VQ_URL <> _tgt_url and VQ_HOST = _tgt and VQ_ROOT = _root;
   if (_dbg = 3)
     http (concat ('<strong>Total links visited: ', cast (_total as varchar), '</strong>\n'));
 
@@ -397,16 +452,23 @@ n_site:;
 }
 ;
 
-create procedure ERR_MAIL_SEND (in _tgt varchar, in _next_url varchar, in _root varchar, in  _stat varchar, in _msg varchar)
+create procedure ERR_MAIL_SEND (in _tgt varchar, in _urls varchar, in _root varchar, in  _stat varchar, in _msg varchar)
 {
-  DB.DBA.NEW_MAIL ('dav', sprintf (
-  'Subject: Error importing http://%s%s\r\n\r\n'||
-  '(This is automatically generated message from Web Robot)\r\n'||
-  'The following URL can''t be imported:\r\nhttp://%s%s -> %s\r\n'||
-  'Code: %s Message: %s\r\n.\r\n',
-  _tgt, _next_url, 
-  _tgt, _next_url, _root, 
-  _stat, _msg));
+  declare n_urls int;
+  declare msg varchar;
+
+  n_urls := position (0, _urls) - 1;
+  if (n_urls < 0)
+    n_urls := length (_urls);
+
+  msg :=  sprintf (
+  'Subject: Error importing http://%s\r\n\r\n'||
+  '(This is automatically generated message from Web Crawler)\r\n'||
+  'Code: %s Message: %s\r\n.\r\n' || 
+  'The following URL can''t be imported:\r\n', _tgt, _stat, _msg);
+  for (declare i int, i := 0; i < n_urls; i := i + 1)
+     msg := msg || sprintf ('http://%s%s -> %s\r\n', _tgt, _urls[i], _root); 
+  DB.DBA.NEW_MAIL ('dav', msg);
 }
 ;
 
@@ -590,27 +652,13 @@ nf_img:
 	      else if (WS.WS.FOLLOW (_host, _root, _tmp_url) and _tmp_host <> _host and _other = 'checked')
 		{
 		  --dbg_obj_print ('ADD OTHER: ',_tmp_host, _tmp_url);
-		  select count (*) into _count from VFS_SITE
-		      where VS_HOST = _tmp_host and VS_ROOT = _tmp_host for update;
-		  if (_count is null or _count = 0)
-		    insert into VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW,
-			VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR)
-			values (_tmp_host, _tmp_host, _tmp_url, _d_imgs, _own, _delete, _newer, _flw,
-			    _nflw, _method, 'checked' , _tmp_host);
+		  WS.WS.VFS_ENSURE_NEW_SITE (_host, _root, _tmp_host, _tmp_url);
 		  -- If VS_OTHER is set to checked then will begin master download
-		  select count (*) into _count from VFS_URL where
-		      VU_HOST = _tmp_host and VU_URL = _tmp_url and VU_ROOT = _tmp_host for update;
-		  if (_count is null or _count = 0)
-		    {
-		      select count (*) into _count from VFS_QUEUE where
-			  VQ_HOST = _tmp_host and VQ_URL = _tmp_url and VQ_ROOT = _tmp_host for update;
-		      if (_count is null or _count = 0)
-			  insert into VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER)
+		  insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER)
 			      values (_tmp_host, now (), _tmp_url, 'waiting', _tmp_host, 'other');
 		    }
 		}
 	    }
-	}
       _inx := _inx + 1;
     }
   return;
