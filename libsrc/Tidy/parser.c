@@ -1,23 +1,52 @@
 /*
-  parser.c - HTML Parser
-
-  (c) 1998-2000 (W3C) MIT, INRIA, Keio University
-  See tidy.c for the copyright notice.
+ *  $Id$
  *
- * $Id$
+ *  parser.c - HTML Parser
  *
- *  Changes are (C)Copyright 2001 OpenLink Software.
+ *  Copyright (c) 1998-2000 World Wide Web Consortium
+ *  (Massachusetts Institute of Technology, Institut National de
+ *  Recherche en Informatique et en Automatique, Keio University).
  *  All Rights Reserved.
  *
- *  The copyright above and this notice must be preserved in all
- *  copies of this source code.  The copyright above does not
- *  evidence any actual or intended publication of this source code.
+ *  Contributing Author(s):
  *
- *  This is unpublished proprietary trade secret of OpenLink Software.
- *  This source code may not be copied, disclosed, distributed, demonstrated
- *  or licensed except as authorized by OpenLink Software.
+ *  Dave Raggett <dsr@w3.org>
  *
-*/
+ *  The contributing author(s) would like to thank all those who
+ *  helped with testing, bug fixes, and patience.  This wouldn't
+ *  have been possible without all of you.
+ *
+ *  COPYRIGHT NOTICE:
+ *
+ *  This software and documentation is provided "as is," and
+ *  the copyright holders and contributing author(s) make no
+ *  representations or warranties, express or implied, including
+ *  but not limited to, warranties of merchantability or fitness
+ *  for any particular purpose or that the use of the software or
+ *  documentation will not infringe any third party patents,
+ *  copyrights, trademarks or other rights.
+ *
+ *  The copyright holders and contributing author(s) will not be
+ *  liable for any direct, indirect, special or consequential damages
+ *  arising out of any use of the software or documentation, even if
+ *  advised of the possibility of such damage.
+ *
+ *  Permission is hereby granted to use, copy, modify, and distribute
+ *  this source code, or portions hereof, documentation and executables,
+ *  for any purpose, without fee, subject to the following restrictions:
+ *
+ *  1. The origin of this source code must not be misrepresented.
+ *  2. Altered versions must be plainly marked as such and must
+ *     not be misrepresented as being the original source.
+ *  3. This Copyright notice may not be removed or altered from any
+ *     source or altered source distribution.
+ *
+ *  The copyright holders and contributing author(s) specifically
+ *  permit, without fee, and encourage the use of this source code
+ *  as a component for supporting the Hypertext Markup Language in
+ *  commercial products. If you use this source code in a product,
+ *  acknowledgment is not required but would be appreciated.
+ */
 
 #include "platform.h"   /* platform independent stuff */
 #include "html.h"       /* to pull in definition of nodes */
@@ -170,7 +199,7 @@ static void InsertNodeAsParent(Node *element, Node *node)
     node->last = element;
     node->parent = element->parent;
     element->parent = node;
-    
+
     if (node->parent->content == element)
         node->parent->content = node;
 
@@ -281,7 +310,7 @@ static void TrimEmptyElement(Lexer *lexer, Node *element)
 }
 
 /*
-  This maps 
+  This maps
        <em>hello </em><strong>world</strong>
   to
        <em>hello</em> <strong>world</strong>
@@ -323,7 +352,7 @@ static void TrimTrailingSpace(Lexer *lexer, Node *element, Node *last)
 }
 
 /*
-  This maps 
+  This maps
        <p>hello<em> world</em>
   to
        <p>hello <em>world</em>
@@ -373,7 +402,7 @@ static void TrimInitialSpace(Lexer *lexer, Node *element, Node *text)
     }
 }
 
-/* 
+/*
   Move initial and trailing space out.
   This routine maps:
 
@@ -598,7 +627,7 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
             }
             else
             {
-                /* 
+                /*
                   if this is the end tag for an ancestor element
                   then infer end tag for this element
                 */
@@ -880,7 +909,7 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
                 TrimSpaces(lexer, element);
 
             InsertNodeAtEnd(element, node);
-            
+
             if (node->implicit)
                 ReportWarning(lexer, element, node, INSERTING_TAG);
 
@@ -1307,7 +1336,7 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
         }
 
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -1387,7 +1416,7 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
             /* trim white space before <br> */
             if (node->tag == tag_br)
                 TrimSpaces(lexer, element);
-            
+
             InsertNodeAtEnd(element, node);
             ParseTag(lexer, node, mode);
             continue;
@@ -1441,7 +1470,7 @@ void ParseDefList(Lexer *lexer, Node *list, uint mode)
             continue;
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -1515,7 +1544,7 @@ void ParseDefList(Lexer *lexer, Node *list, uint mode)
             ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
             continue;
         }
-        
+
         /* node should be <DT> or <DD>*/
         InsertNodeAtEnd(list, node);
         ParseTag(lexer, node, IgnoreWhitespace);
@@ -1559,7 +1588,7 @@ void ParseList(Lexer *lexer, Node *list, uint mode)
             continue;
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -1650,7 +1679,7 @@ static void MoveBeforeTable(Node *row, Node *node)
             node->next = table;
             table->prev = node;
             node->parent = table->parent;
-        
+
             if (node->prev)
                 node->prev->next = node;
 
@@ -1701,7 +1730,7 @@ void ParseRow(Lexer *lexer, Node *row, uint mode)
             return;
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -1807,7 +1836,7 @@ void ParseRow(Lexer *lexer, Node *row, uint mode)
             FreeNode(node);
             continue;
         }
-        
+
         /* node should be <TD> or <TH> */
         InsertNodeAtEnd(row, node);
         exclude_state = lexer->excludeBlocks;
@@ -1902,7 +1931,7 @@ void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
             }
         }
 
-        /* 
+        /*
           if this is the end tag for ancestor element
           then infer end tag for this element
         */
@@ -1952,7 +1981,7 @@ void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
             ReportWarning(lexer, rowgroup, node, DISCARDING_UNEXPECTED);
             continue;
         }
-        
+
         if (!(node->tag == tag_tr))
         {
             node = InferredTag(lexer, "tr");
@@ -1984,7 +2013,7 @@ void ParseColGroup(Lexer *lexer, Node *colgroup, uint mode)
             return;
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -2038,7 +2067,7 @@ void ParseColGroup(Lexer *lexer, Node *colgroup, uint mode)
             ReportWarning(lexer, colgroup, node, DISCARDING_UNEXPECTED);
             continue;
         }
-        
+
         /* node should be <COL> */
         InsertNodeAtEnd(colgroup, node);
         ParseTag(lexer, node, IgnoreWhitespace);
@@ -2053,7 +2082,7 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
     DeferDup(lexer);
     istackbase = lexer->istackbase;
     lexer->istackbase = lexer->istacksize;
-    
+
     while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
     {
         if (node->tag == table->tag && node->type == EndTag)
@@ -2081,7 +2110,7 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
 
         if (node->type != EndTag)
         {
-            if (node->tag == tag_td || 
+            if (node->tag == tag_td ||
                 node->tag == tag_th ||
                 node->tag == tag_table)
             {
@@ -2109,7 +2138,7 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
             }
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -2240,7 +2269,7 @@ void ParsePre(Lexer *lexer, Node *pre, uint mode)
 
                 /* trim white space before <p> in <pre>*/
                 TrimSpaces(lexer, pre);
-            
+
                 /* coerce both <p> and </p> to <br> */
                 CoerceNode(lexer, node, tag_br);
                 InsertNodeAtEnd(pre, node);
@@ -2259,7 +2288,7 @@ void ParsePre(Lexer *lexer, Node *pre, uint mode)
             continue;
         }
 
-        /* 
+        /*
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
@@ -2295,7 +2324,7 @@ void ParsePre(Lexer *lexer, Node *pre, uint mode)
                 ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
                 continue;
             }
- 
+
             ReportWarning(lexer, pre, node, MISSING_ENDTAG_BEFORE);
             lexer->excludeBlocks = yes;
 
@@ -2337,7 +2366,7 @@ void ParsePre(Lexer *lexer, Node *pre, uint mode)
             /* trim white space before <br> */
             if (node->tag == tag_br)
                 TrimSpaces(lexer, pre);
-            
+
             InsertNodeAtEnd(pre, node);
             ParseTag(lexer, node, Preformatted);
             continue;
@@ -2372,7 +2401,7 @@ void ParseOptGroup(Lexer *lexer, Node *field, uint mode)
         if (InsertMisc(field, node))
             continue;
 
-        if (node->type == StartTag && 
+        if (node->type == StartTag &&
              (node->tag == tag_option || node->tag == tag_optgroup))
         {
             if (node->tag == tag_optgroup)
@@ -2410,7 +2439,7 @@ void ParseSelect(Lexer *lexer, Node *field, uint mode)
         if (InsertMisc(field, node))
             continue;
 
-        if (node->type == StartTag && 
+        if (node->type == StartTag &&
              (node->tag == tag_option ||
                node->tag == tag_optgroup ||
                node->tag == tag_script))
@@ -2614,7 +2643,7 @@ void ParseHead(Lexer *lexer, Node *head, uint mode)
             FreeNode(node);
             continue;
         }
-        
+
         if (!(node->tag->model & CM_HEAD))
         {
             UngetToken(lexer);
@@ -2649,7 +2678,7 @@ void ParseHead(Lexer *lexer, Node *head, uint mode)
         ReportWarning(lexer, head, node, DISCARDING_UNEXPECTED);
         FreeNode(node);
     }
-  
+
     if (HasTitle == 0)
     {
         ReportWarning(lexer, head, null, MISSING_TITLE_ELEMENT);
@@ -2705,7 +2734,7 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
             UngetToken(lexer);
             break;
         }
-        
+
         if (node->tag == tag_html)
         {
             if (node->type == StartTag || node->type == StartEndTag)
@@ -2744,7 +2773,7 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
             if (EncloseBodyText && !iswhitenode)
             {
                 Node *para;
-                
+
                 UngetToken(lexer);
                 para = InferredTag(lexer, "p");
                 InsertNodeAtEnd(body, para);
@@ -2789,7 +2818,7 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
           to match Netscape's observed behaviour.
         */
         lexer->excludeBlocks = no;
-        
+
         if (!(node->tag->model & CM_BLOCK) &&
             !(node->tag->model & CM_INLINE))
         {
@@ -2800,7 +2829,7 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
             if (node->tag->model & CM_HTML)
             {
                 /* copy body attributes if current body was inferred */
-                if (node->tag == tag_body && body->implicit 
+                if (node->tag == tag_body && body->implicit
                                     && body->attributes == null)
                 {
                     body->attributes = node->attributes;
@@ -2997,7 +3026,7 @@ void ParseFrameSet(Lexer *lexer, Node *frameset, uint mode)
         {
             ReportWarning(lexer, frameset, node, DISCARDING_UNEXPECTED);
             FreeNode(node);
-            continue; 
+            continue;
         }
 
         if (node->type == StartTag || node->type == StartEndTag)

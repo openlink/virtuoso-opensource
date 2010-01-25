@@ -1,22 +1,54 @@
-/* tags.c -- recognize HTML tags
-
-  (c) 1998-2000 (W3C) MIT, INRIA, Keio University
-  See tidy.c for the copyright notice.
+/*
+ *  $Id$
  *
- * $Id$
+ *  tags.c -- recognize HTML tags
  *
- *  Changes are (C)Copyright 2001 OpenLink Software.
+ *  Copyright (c) 1998-2000 World Wide Web Consortium
+ *  (Massachusetts Institute of Technology, Institut National de
+ *  Recherche en Informatique et en Automatique, Keio University).
  *  All Rights Reserved.
  *
- *  The copyright above and this notice must be preserved in all
- *  copies of this source code.  The copyright above does not
- *  evidence any actual or intended publication of this source code.
+ *  Contributing Author(s):
  *
- *  This is unpublished proprietary trade secret of OpenLink Software.
- *  This source code may not be copied, disclosed, distributed, demonstrated
- *  or licensed except as authorized by OpenLink Software.
+ *  Dave Raggett <dsr@w3.org>
  *
+ *  The contributing author(s) would like to thank all those who
+ *  helped with testing, bug fixes, and patience.  This wouldn't
+ *  have been possible without all of you.
+ *
+ *  COPYRIGHT NOTICE:
+ *
+ *  This software and documentation is provided "as is," and
+ *  the copyright holders and contributing author(s) make no
+ *  representations or warranties, express or implied, including
+ *  but not limited to, warranties of merchantability or fitness
+ *  for any particular purpose or that the use of the software or
+ *  documentation will not infringe any third party patents,
+ *  copyrights, trademarks or other rights.
+ *
+ *  The copyright holders and contributing author(s) will not be
+ *  liable for any direct, indirect, special or consequential damages
+ *  arising out of any use of the software or documentation, even if
+ *  advised of the possibility of such damage.
+ *
+ *  Permission is hereby granted to use, copy, modify, and distribute
+ *  this source code, or portions hereof, documentation and executables,
+ *  for any purpose, without fee, subject to the following restrictions:
+ *
+ *  1. The origin of this source code must not be misrepresented.
+ *  2. Altered versions must be plainly marked as such and must
+ *     not be misrepresented as being the original source.
+ *  3. This Copyright notice may not be removed or altered from any
+ *     source or altered source distribution.
+ *
+ *  The copyright holders and contributing author(s) specifically
+ *  permit, without fee, and encourage the use of this source code
+ *  as a component for supporting the Hypertext Markup Language in
+ *  commercial products. If you use this source code in a product,
+ *  acknowledgment is not required but would be appreciated.
+ */
 
+/*
   The HTML tags are stored as 8 bit ASCII strings.
   Use lookupw() to find a tag given a wide char string.
 */
@@ -273,7 +305,7 @@ static Dict *lookup(char *s)
     return null;
 }
 
-static Dict *install(char *name, uint versions, uint model, 
+static Dict *install(char *name, uint versions, uint model,
                      Parser *parser, CheckAttribs *chkattrs)
 {
     Dict *np;
@@ -354,7 +386,7 @@ void DefinePreTag(char *name)
 void InitTags(void)
 {
     struct tag *tp;
-    
+
     for(tp = tags; tp->name != null; ++tp)
         install(tp->name, tp->versions, tp->model, tp->parser, tp->chkattrs);
 
