@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 45;
+   protected static final int minor = 46;
 
    // Some variables
    private String host = "localhost";
@@ -329,124 +329,149 @@ public class Driver implements java.sql.Driver
     */
    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws VirtuosoException
    {
+      Vector pinfo = new Vector();
+      DriverPropertyInfo pr;
       // First check the URL
       if(acceptsURL(url))
       {
-         DriverPropertyInfo[] pinfo = new DriverPropertyInfo[7];
          if(info.get("user") == null)
          {
-            pinfo[0] = new DriverPropertyInfo("user",null);
-            pinfo[0].required = true;
+            pr = new DriverPropertyInfo("user",null);
+            pr.required = true;
+            pinfo.add(pr);
          }
          if(info.get("password") == null)
          {
-            pinfo[1] = new DriverPropertyInfo("password",null);
-            pinfo[1].required = true;
+            pr = new DriverPropertyInfo("password",null);
+            pr.required = true;
+            pinfo.add(pr);
          }
          if(info.get("database") == null)
          {
-            pinfo[2] = new DriverPropertyInfo("database",null);
-            pinfo[2].required = false;
+            pr = new DriverPropertyInfo("database",null);
+            pr.required = false;
+            pinfo.add(pr);
          }
 #ifdef SSL
          if(info.get("certificate") == null)
          {
-            pinfo[3] = new DriverPropertyInfo("certificate",null);
-            pinfo[3].required = false;
+            pr = new DriverPropertyInfo("certificate",null);
+            pr.required = false;
+            pinfo.add(pr);
          }
          if(info.get("keystorepass") == null)
          {
-            pinfo[4] = new DriverPropertyInfo("keystorepass",null);
-            pinfo[4].required = false;
+            pr = new DriverPropertyInfo("keystorepass",null);
+            pr.required = false;
+            pinfo.add(pr);
          }
          if(info.get("keystorepath") == null)
          {
-            pinfo[5] = new DriverPropertyInfo("keystorepath",null);
-            pinfo[5].required = false;
+            pr = new DriverPropertyInfo("keystorepath",null);
+            pr.required = false;
+            pinfo.add(pr);
          }
          if(info.get("provider") == null)
          {
-            pinfo[6] = new DriverPropertyInfo("provider",null);
-            pinfo[6].required = false;
+            pr = new DriverPropertyInfo("provider",null);
+            pr.required = false;
+            pinfo.add(pr);
          }
 #endif
-         return pinfo;
+         DriverPropertyInfo drv_info[] = new DriverPropertyInfo[pinfo.size()];
+         pinfo.copyInto(drv_info);
+         return drv_info;
       }
-      DriverPropertyInfo[] pinfo = new DriverPropertyInfo[8];
-      pinfo[0] = new DriverPropertyInfo("url",url);
-      pinfo[0].required = true;
+
+      pr = new DriverPropertyInfo("url",url);
+      pr.required = true;
+      pinfo.add(pr);
       if(info.get("user") == null)
       {
-         pinfo[1] = new DriverPropertyInfo("user",null);
-         pinfo[1].required = true;
+         pr = new DriverPropertyInfo("user",null);
+         pr.required = true;
+         pinfo.add(pr);
       }
       if(info.get("password") == null)
       {
-         pinfo[2] = new DriverPropertyInfo("password",null);
-         pinfo[2].required = true;
+         pr = new DriverPropertyInfo("password",null);
+         pr.required = true;
+         pinfo.add(pr);
       }
       if(info.get("database") == null)
       {
-         pinfo[3] = new DriverPropertyInfo("database",null);
-         pinfo[3].required = false;
+         pr = new DriverPropertyInfo("database",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("fbs") == null)
+      {
+         pr = new DriverPropertyInfo("fbs",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("sendbs") == null)
+      {
+         pr = new DriverPropertyInfo("sendbs",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("recvbs") == null)
+      {
+         pr = new DriverPropertyInfo("recvbs",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("roundrobin") == null)
+      {
+         pr = new DriverPropertyInfo("roundrobin",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
 #ifdef SSL
       if(info.get("certificate") == null)
       {
-         pinfo[4] = new DriverPropertyInfo("certificate",null);
-         pinfo[4].required = false;
+         pr = new DriverPropertyInfo("certificate",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
       if(info.get("keystorepass") == null)
       {
-         pinfo[5] = new DriverPropertyInfo("keystorepass",null);
-         pinfo[5].required = false;
+         pr = new DriverPropertyInfo("keystorepass",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
       if(info.get("keystorepath") == null)
       {
-         pinfo[6] = new DriverPropertyInfo("keystorepath",null);
-         pinfo[6].required = false;
+         pr = new DriverPropertyInfo("keystorepath",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
       if(info.get("provider") == null)
       {
-         pinfo[7] = new DriverPropertyInfo("provider",null);
-         pinfo[7].required = false;
+         pr = new DriverPropertyInfo("provider",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
 #endif
-      if(info.get("fbs") == null)
-      {
-         pinfo[3] = new DriverPropertyInfo("fbs",null);
-         pinfo[3].required = false;
-      }
-      if(info.get("sendbs") == null)
-      {
-         pinfo[3] = new DriverPropertyInfo("sendbs",null);
-         pinfo[3].required = false;
-      }
-      if(info.get("recvbs") == null)
-      {
-         pinfo[3] = new DriverPropertyInfo("recvbs",null);
-         pinfo[3].required = false;
-      }
-      if(info.get("roundrobin") == null)
-      {
-         pinfo[3] = new DriverPropertyInfo("roundrobin",null);
-         pinfo[3].required = false;
-      }
 
 #if JDK_VER >= 16
       if(info.get("usepstmtpool") == null)
       {
-         pinfo[3] = new DriverPropertyInfo("usepstmtpool",null);
-         pinfo[3].required = false;
+         pr = new DriverPropertyInfo("usepstmtpool",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
       if(info.get("pstmtpoolsize") == null)
       {
-         pinfo[3] = new DriverPropertyInfo("pstmtpoolsize",null);
-         pinfo[3].required = false;
+         pr = new DriverPropertyInfo("pstmtpoolsize",null);
+         pr.required = false;
+         pinfo.add(pr);
       }
 #endif
-
-      return pinfo;
+      DriverPropertyInfo drv_info[] = new DriverPropertyInfo[pinfo.size()];
+      pinfo.copyInto(drv_info);
+      return drv_info;
    }
 
    /**

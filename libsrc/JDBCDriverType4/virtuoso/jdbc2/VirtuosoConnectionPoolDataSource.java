@@ -53,12 +53,12 @@ public class VirtuosoConnectionPoolDataSource
     protected final static String n_propertyCycle = "propertyCycle";
     protected final static String n_maxStatements = "maxStatements";
 
-    private int minPoolSize = 0;
-    private int maxPoolSize = 0;
-    private int initialPoolSize = 0;
-    private int maxIdleTime = 0;
-    private int propertyCycle = 0;
-    private int maxStatements = 0;
+    public int minPoolSize = 0;
+    public int maxPoolSize = 0;
+    public int initialPoolSize = 0;
+    public int maxIdleTime = 0;
+    public int propertyCycle = 0;
+    public int maxStatements = 0;
 
     private ConnCache connPool;
     private boolean isInitialized = false;
@@ -365,7 +365,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMinPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_minPoolSize);
+      Field fld = getClass().getField(n_minPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -398,7 +398,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxPoolSize);
+      Field fld = getClass().getField(n_maxPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -429,7 +429,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setInitialPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_initialPoolSize);
+      Field fld = getClass().getField(n_initialPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -461,7 +461,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxIdleTime(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxIdleTime);
+      Field fld = getClass().getField(n_maxIdleTime);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -515,7 +515,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxStatements(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxStatements);
+      Field fld = getClass().getField(n_maxStatements);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
