@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
   $Id$
-  (C)Copyright 2005 OpenLink Software
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2010 OpenLink Software
+  
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+  
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <chapter label="tpcc.xml" id="tpcc">
 	<title>TPC C Benchmark Kit</title>
@@ -589,6 +606,33 @@ read in the client (SQL_CONCURRENCY option).
 <title>DDL Statements</title>
 
 <programlisting>
+--
+--  tpccddk.sql
+--
+--  Implementation of the TPC C Benchmark transactions as stored procedures.
+--
+--  These are for use with the tpcc test driver (tpcc) in the Virtuoso sample
+--  directory.  See TPCC.DOC in the virtuoso documentation bundle for comments
+--  and instructions.
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2010 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
 CREATE TABLE WAREHOUSE (
     W_ID		INTEGER,
     W_NAME		CHARACTER (10),
@@ -737,17 +781,24 @@ CREATE TABLE STOCK (
 --  directory.  See TPCC.DOC in the virtuoso documentation bundle for comments
 --  and instructions.
 --
---  (C)Copyright 1998 OpenLink Software.
---  All Rights Reserved.
---
---  The copyright above and this notice must be preserved in all
---  copies of this source code.  The copyright above does not
---  evidence any actual or intended publication of this source code.
---
---  This is unpublished proprietary trade secret of OpenLink Software.
---  This source code may not be copied, disclosed, distributed, demonstrated
---  or licensed except as authorized by OpenLink Software.
---
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2010 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
 
 
 --  slevel - The transaction procedure for the Stock Level transaction.
