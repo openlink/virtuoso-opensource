@@ -143,63 +143,6 @@ function checkRest (form, sel)
                 obj.value = 'Select All';
               obj.focus();
 }
-            function addProductLine(No, obj)
-            {
-              var tr = $('tr_X');
-              if (tr)
-              {
-                var S = tr.innerHTML;
-                if (!No)
-                  No = parseInt($('no_X').value)+1;
-                S = S.replace('<b>Product</b>', '<b>Product #'+No+'</b>');
-                var suffix = '_'+No;
-                var tr = OAT.Dom.create('tr');
-                tr.id = 'tr' + suffix;
-                tr.innerHTML = S.replace(/_X/g, suffix);
-                $('tbl_X').appendChild(tr);
-                $('no_X').value = No;
-                if (No != 1)
-                  OAT.Dom.show ('remove_X');
-                $('description'+suffix).value = '';
-                if (obj)
-                {
-                  $('description'+suffix).value = obj.description;
-                  $('offerURI'+suffix).value = obj.offerURI;
-                  $('sell'+suffix).checked = obj.sell;
-                  $('repair'+suffix).checked = obj.repair;
-                  $('maintain'+suffix).checked = obj.maintain;
-                  $('lease'+suffix).checked = obj.lease;
-                  $('disposal'+suffix).checked = obj.disposal;
-                  $('buy'+suffix).checked = obj.buy;
-                  $('service'+suffix).checked = obj.service;
-                }
-              }
-            }
-            function removeProductLine()
-            {
-              var No = parseInt($('no_X').value);
-              var suffix = '_'+No;
-              OAT.Dom.unlink('tr'+suffix);
-              No -= 1;
-              if (No == 1)
-                OAT.Dom.hide ('remove_X');
-              $('no_X').value = No;
-            }
-            function importActivate(mode)
-            {
-              if (mode)
-              {
-                OAT.Dom.show('user_i_personal');
-                OAT.Dom.hide('user_s_personal');
-                OAT.Dom.hide('user_sn_personal');
-                OAT.Dom.hide('used_access_personal');
-              } else {
-                OAT.Dom.hide('user_i_personal');
-                OAT.Dom.show('user_s_personal');
-                OAT.Dom.show('user_sn_personal');
-                OAT.Dom.show('used_access_personal');
-              }
-            }
             ODSInitArray.push ( function () {
               OAT.Loader.loadFeatures(["json", "ws", "calendar", "combolist"], function(){});
             });

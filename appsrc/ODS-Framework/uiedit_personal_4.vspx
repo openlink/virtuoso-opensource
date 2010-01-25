@@ -155,7 +155,7 @@
               <?vsp
                   N := N + 1;
                 }
-                http (sprintf ('<tr id="d_tr_no" style="display: %s"><td colspan="3"><b>No Biographical Events</b></td></tr>', case when N = 0 then '' else 'none' end));
+                http (sprintf ('<tr id="d_tr_no" style="display: %s"><td colspan="4"><b>No Biographical Events</b></td></tr>', case when N = 0 then '' else 'none' end));
               ?>
             </table>
             <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />

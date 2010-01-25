@@ -48,10 +48,12 @@
     <title>Virtuoso Web Applications</title>
     <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
@@ -232,6 +234,12 @@
     String $_form = request.getParameter("form");
     if ($_form == null)
       $_form = "login";
+    int $_formTab = 0;
+    if (request.getParameter("formTab") != null)
+      $_formTab = Integer.parseInt(request.getParameter("formTab"));
+    int $_formSubtab = 0;
+    if (request.getParameter("formSubtab") != null)
+      $_formSubtab = Integer.parseInt(request.getParameter("formSubtab"));
     String $_sid = request.getParameter("sid");
     String $_realm = "wa";
     String $_error = "";
@@ -255,7 +263,8 @@
     		      $_document = createDocument($_retValue);
               throw new Exception(xpathEvaluate($_document, "/failed/message"));
               }
-            $_sid = $_retValue;
+		        $_document = createDocument($_retValue);
+            $_sid = xpathEvaluate($_document, "/sid");
                 $_form = "user";
               }
             catch (Exception e)
@@ -265,18 +274,95 @@
           }
         }
 
-      if ($_form.equals("user"))
-      {
-        if (request.getParameter("uf_profile") != null)
-          $_form = "profile";
-      }
       if ($_form.equals("profile"))
       {
-        if (request.getParameter("pf_update") != null)
+        if (
+            (request.getParameter("pf_update") != null) ||
+            (request.getParameter("pf_next") != null)
+           )
         {
+          String tmp = "";
+          String prefix = "";
+          String suffix = "";
+          Enumeration keys;
           try {
+            if ((($_formTab == 0) && ($_formSubtab == 2)) || (($_formTab == 1) && ($_formSubtab == 2)))
+            {
+              String accountType = "P";
+              prefix = "x4";
+              if (($_formTab == 1) && ($_formSubtab == 2))
+              {
+                accountType = "B";
+                prefix = "y1";
+      }
+              params = httpParam("", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam ("&", "type", accountType);
+              $_retValue = httpRequest ("POST", "user.onlineAccounts.delete", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
+              keys = request.getParameterNames();
+      		    while (keys.hasMoreElements() )
+      {
+      		      String key = (String)keys.nextElement();
+                if (key.indexOf(prefix+"_fld_1_") == 0)
+        {
+                  suffix = key.replace(prefix+"_fld_1_", "");
+                  params = httpParam( "", "sid", $_sid) +
+                           httpParam("&", "realm", $_realm) +
+                           httpParam("&", "type", accountType) +
+                           httpParam("&", "name", request.getParameter(key)) +
+                           httpParam("&", "url", request.getParameter(prefix+"_fld_2_"+suffix));
+                  $_retValue = httpRequest ("POST", "user.onlineAccounts.new", params);
+                  if ($_retValue.indexOf("<failed>") == 0)
+                  {
+        		        $_document = createDocument($_retValue);
+                    throw new Exception(xpathEvaluate($_document, "/failed/message"));
+                  }
+                }
+      		    }
+            }
+            else if (($_formTab == 0) && ($_formSubtab == 3))
+            {
+              prefix = "x5";
+              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
+              $_retValue = httpRequest ("POST", "user.bioEvents.delete", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
+              keys = request.getParameterNames();
+      		    while (keys.hasMoreElements() )
+      		    {
+      		      String key = (String)keys.nextElement();
+                if (key.indexOf(prefix+"_fld_1_") == 0)
+                {
+                  suffix = key.replace(prefix+"_fld_1_", "");
             params = httpParam ( "", "sid"                   , $_sid) +
                      httpParam ("&", "realm"                 , $_realm) +
+                           httpParam("&", "event", request.getParameter(key)) +
+                           httpParam("&", "date", request.getParameter(prefix+"_fld_2_"+suffix)) +
+                           httpParam("&", "place", request.getParameter(prefix+"_fld_3_"+suffix));
+                  $_retValue = httpRequest ("POST", "user.bioEvents.new", params);
+                  if ($_retValue.indexOf("<failed>") == 0)
+                  {
+        		        $_document = createDocument($_retValue);
+                    throw new Exception(xpathEvaluate($_document, "/failed/message"));
+                  }
+                }
+      		    }
+            }
+            else
+            {
+              params = httpParam ( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
+              if ($_formTab == 0)
+              {
+                if ($_formSubtab == 0)
+                {
+                  params +=
+                       httpParam ("&", "nickName"              , request.getParameter("pf_nickName")) +
                      httpParam ("&", "mail"                  , request.getParameter("pf_mail")) +
                      httpParam ("&", "title"                 , request.getParameter("pf_title")) +
                      httpParam ("&", "firstName"             , request.getParameter("pf_firstName")) +
@@ -285,11 +371,46 @@
                      httpParam ("&", "gender"                , request.getParameter("pf_gender")) +
                      httpParam ("&", "birthday"              , request.getParameter("pf_birthday")) +
                      httpParam ("&", "homepage"              , request.getParameter("pf_homepage")) +
-                     httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
-                     httpParam ("&", "skype"                 , request.getParameter("pf_skype")) +
-                     httpParam ("&", "yahoo"                 , request.getParameter("pf_yahoo")) +
-                     httpParam ("&", "aim"                   , request.getParameter("pf_aim")) +
-                     httpParam ("&", "msn"                   , request.getParameter("pf_msn")) +
+                       httpParam ("&", "mailSignature"         , request.getParameter("pf_mailSignature")) +
+                       httpParam ("&", "sumary"                , request.getParameter("pf_sumary"));
+
+                  tmp = "";
+                  keys = request.getParameterNames();
+          		    while (keys.hasMoreElements() )
+          		    {
+          		      String key = (String)keys.nextElement();
+                    if (key.indexOf("x1_fld_1_") == 0)
+                      tmp += request.getParameter(key) + "\n";
+          		    }
+                  params += httpParam ("&", "webIDs", tmp);
+                  keys = request.getParameterNames();
+                  tmp = "";
+          		    while (keys.hasMoreElements() )
+          		    {
+          		      String key = (String)keys.nextElement();
+                    if (key.indexOf("x2_fld_1_") == 0)
+                    {
+                      suffix = key.replace("x2_fld_1_", "");
+                      tmp += request.getParameter(key) + ";" + request.getParameter("x2_fld_2_"+suffix) + "\n";
+                    }
+          		    }
+                  params += httpParam ("&", "interests", tmp);
+                  keys = request.getParameterNames();
+                  tmp = "";
+          		    while (keys.hasMoreElements() )
+          		    {
+          		      String key = (String)keys.nextElement();
+                    if (key.indexOf("x3_fld_1_") == 0)
+                    {
+                      suffix = key.replace("x3_fld_1_", "");
+                      tmp += request.getParameter(key) + ";" + request.getParameter("x3_fld_2_"+suffix) + "\n";
+                    }
+          		    }
+                  params += httpParam ("&", "topicInterests", tmp);
+                }
+                if ($_formSubtab == 1)
+                {
+                  params +=
                      httpParam ("&", "homeDefaultMapLocation", request.getParameter("pf_homeDefaultMapLocation")) +
                      httpParam ("&", "homeCountry"           , request.getParameter("pf_homecountry")) +
                      httpParam ("&", "homeState"             , request.getParameter("pf_homestate")) +
@@ -301,11 +422,51 @@
                      httpParam ("&", "homeLatitude"          , request.getParameter("pf_homelat")) +
                      httpParam ("&", "homeLongitude"         , request.getParameter("pf_homelng")) +
                      httpParam ("&", "homePhone"             , request.getParameter("pf_homePhone")) +
-                     httpParam ("&", "homeMobile"            , request.getParameter("pf_homeMobile")) +
+                       httpParam ("&", "homeMobile"            , request.getParameter("pf_homeMobile"));
+                }
+                if ($_formSubtab == 4)
+                {
+                  params +=
+                       httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
+                       httpParam ("&", "skype"                 , request.getParameter("pf_skype")) +
+                       httpParam ("&", "yahoo"                 , request.getParameter("pf_yahoo")) +
+                       httpParam ("&", "aim"                   , request.getParameter("pf_aim")) +
+                       httpParam ("&", "msn"                   , request.getParameter("pf_msn"));
+                  keys = request.getParameterNames();
+                  tmp = "";
+          		    while (keys.hasMoreElements() )
+          		    {
+          		      String key = (String)keys.nextElement();
+                    if (key.indexOf("x6_fld_1_") == 0)
+                    {
+                      suffix = key.replace("x6_fld_1_", "");
+                      tmp += request.getParameter(key) + ";" + request.getParameter("x6_fld_2_"+suffix) + "\n";
+                    }
+          		    }
+                  params += httpParam ("&", "messaging", tmp);
+                }
+              }
+              if ($_formTab == 0)
+              {
+                if ($_formSubtab == 0)
+                {
+                  params +=
                      httpParam ("&", "businessIndustry"      , request.getParameter("pf_businessIndustry")) +
                      httpParam ("&", "businessOrganization"  , request.getParameter("pf_businessOrganization")) +
                      httpParam ("&", "businessHomePage"      , request.getParameter("pf_businessHomePage")) +
                      httpParam ("&", "businessJob"           , request.getParameter("pf_businessJob")) +
+                       httpParam ("&", "businessRegNo"         , request.getParameter("pf_businessRegNo")) +
+                       httpParam ("&", "businessCareer"        , request.getParameter("pf_businessCareer")) +
+                       httpParam ("&", "businessEmployees"     , request.getParameter("pf_businessEmployees")) +
+                       httpParam ("&", "businessVendor"        , request.getParameter("pf_businessVendor")) +
+                       httpParam ("&", "businessService"       , request.getParameter("pf_businessService")) +
+                       httpParam ("&", "businessOther"         , request.getParameter("pf_businessOther")) +
+                       httpParam ("&", "businessNetwork"       , request.getParameter("pf_businessNetwork")) +
+                       httpParam ("&", "businessResume"        , request.getParameter("pf_businessResume"));
+                }
+                if ($_formSubtab == 1)
+                {
+                  params +=
                      httpParam ("&", "businessCountry"       , request.getParameter("pf_businesscountry")) +
                      httpParam ("&", "businessState"         , request.getParameter("pf_businessstate")) +
                      httpParam ("&", "businessCity"          , request.getParameter("pf_businesscity")) +
@@ -316,26 +477,69 @@
                      httpParam ("&", "businessLatitude"      , request.getParameter("pf_businesslat")) +
                      httpParam ("&", "businessLongitude"     , request.getParameter("pf_businesslng")) +
                      httpParam ("&", "businessPhone"         , request.getParameter("pf_businessPhone")) +
-                     httpParam ("&", "businessMobile"        , request.getParameter("pf_businessMobile")) +
-                     httpParam ("&", "businessRegNo"         , request.getParameter("pf_businessRegNo")) +
-                     httpParam ("&", "businessCareer"        , request.getParameter("pf_businessCareer")) +
-                     httpParam ("&", "businessEmployees"     , request.getParameter("pf_businessEmployees")) +
-                     httpParam ("&", "businessVendor"        , request.getParameter("pf_businessVendor")) +
-                     httpParam ("&", "businessService"       , request.getParameter("pf_businessService")) +
-                     httpParam ("&", "businessOther"         , request.getParameter("pf_businessOther")) +
-                     httpParam ("&", "businessNetwork"       , request.getParameter("pf_businessNetwork")) +
-                     httpParam ("&", "businessResume"        , request.getParameter("pf_businessResume")) +
-                     httpParam ("&", "securitySecretQuestion", request.getParameter("pf_securitySecretQuestion")) +
-                     httpParam ("&", "securitySecretAnswer"  , request.getParameter("pf_securitySecretAnswer")) +
-                     httpParam ("&", "securitySiocLimit"     , request.getParameter("pf_securitySiocLimit"));
+                       httpParam ("&", "businessMobile"        , request.getParameter("pf_businessMobile"));
+                }
+                if ($_formSubtab == 3)
+                {
+                  params +=
+                       httpParam ("&", "businessIcq="          , request.getParameter("pf_businessIcq")) +
+                       httpParam ("&", "businessSkype="        , request.getParameter("pf_businessSkype")) +
+                       httpParam ("&", "businessYahoo="        , request.getParameter("pf_businessYahoo")) +
+                       httpParam ("&", "businessAim="          , request.getParameter("pf_businessAim")) +
+                       httpParam ("&", "businessMsn="          , request.getParameter("pf_businessMsn"));
+                  keys = request.getParameterNames();
+                  tmp = "";
+          		    while (keys.hasMoreElements() )
+          		    {
+          		      String key = (String)keys.nextElement();
+                    if (key.indexOf("y2_fld_1_") == 0)
+                    {
+                      suffix = key.replace("y2_fld_1_", "");
+                      tmp += request.getParameter(key) + ";" + request.getParameter("y2_fld_2_"+suffix) + "\n";
+                    }
+          		    }
+                  params += httpParam ("&", "businessMessaging", tmp);
+                }
+              }
+              if ($_formTab == 2)
+              {
+                String securityNo = request.getParameter("securityNo");
+                if (securityNo == null)
+                  securityNo = "";
 
+                if (securityNo == "1")
+                  params +=
+                       httpParam ("&", "securityOpenID"     , request.getParameter("pf_securityOpenID"));
+
+                if (securityNo == "2")
+                  params +=
+                     httpParam ("&", "securitySecretQuestion", request.getParameter("pf_securitySecretQuestion")) +
+                       httpParam ("&", "securitySecretAnswer"  , request.getParameter("pf_securitySecretAnswer"));
+
+                if (securityNo == "3")
+                  params +=
+                       httpParam ("&", "securitySiocLimit"     , request.getParameter("pf_securitySiocLimit"));
+              }
             $_retValue = httpRequest ("POST", "user.update.fields", params);
             if ($_retValue.indexOf("<failed>") == 0)
           {
   		        $_document = createDocument($_retValue);
               throw new Exception(xpathEvaluate($_document, "/failed/message"));
           }
-            $_form = "user";
+            }
+            if (request.getParameter("pf_next") != null)
+            {
+              $_formSubtab += 1;
+              if (
+                  (($_formTab == 0) && ($_formSubtab > 5)) ||
+                  (($_formTab == 1) && ($_formSubtab > 3)) ||
+                  ($_formTab > 1)
+                 )
+              {
+                $_formTab += 1;
+                $_formSubtab = 0;
+              }
+            }
           }
           catch (Exception e)
           {
@@ -346,6 +550,16 @@
         else if (request.getParameter("pf_cancel") != null)
         {
           $_form = "user";
+        }
+      }
+
+      if ($_form.equals("user"))
+      {
+        if (request.getParameter("uf_profile") != null)
+        {
+          $_form = "profile";
+          $_formTab = 0;
+          $_formSubtab = 0;
         }
       }
 
@@ -380,10 +594,13 @@
     }
   %>
   <body>
-    <form name="page_form" method="post">
+    <form name="page_form" method="post" action="users.jsp">
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
       <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
+      <input type="hidden" name="formTab" id="formTab" value="<% out.print($_formTab); %>" />
+      <input type="hidden" name="formSubtab" id="formSubtab" value="<% out.print($_formSubtab); %>" />
+      <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&amp;realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
         <%
@@ -547,20 +764,42 @@
                 <div class="header">
                   Update user profile
                 </div>
-                <ul id="tabs" class="tabs">
-                  <li id="tab_0" title="Personal">Personal</li>
-                  <li id="tab_1" title="Messaging Services">Messaging Services</li>
-                  <li id="tab_2" title="Home">Home</li>
-                  <li id="tab_3" title="Business">Business</li>
-                  <li id="tab_4" title="Security">Security</li>
+                <ul id="pf_tabs" class="tabs">
+                  <li id="pf_tab_0" title="Personal">Personal</li>
+                  <li id="pf_tab_1" title="Business">Business</li>
+                  <li id="pf_tab_2" title="Security">Security</li>
                 </ul>
-                <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                  <div id="content"></div>
-
-                  <div id="page_0">
+                <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="pf_page_0" class="tabContent" style="display:none;">
+                    <ul id="pf_tabs_0" class="tabs">
+                      <li id="pf_tab_0_0" title="Main">Main</li>
+                      <li id="pf_tab_0_1" title="Address">Address</li>
+                      <li id="pf_tab_0_2" title="Online Accounts">Online Accounts</li>
+                      <li id="pf_tab_0_3" title="Biographical Events">Biographical Events</li>
+                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_5" title="Favorite Things">Favorite Things</li>
+                    </ul>
+                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th>
+                              <label for="pf_loginName">Login Name</label>
+                            </th>
+                            <td>
+                              <% out.print(xpathEvaluate($_document, "/user/name")); %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_nickName">Nick Name</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_nickName" value="<% out.print(xpathEvaluate($_document, "/user/nickName")); %>" id="pf_nickName" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
                           <label for="pf_title">Title</label>
                         </th>
                         <td nowrap="nowrap">
@@ -644,55 +883,128 @@
                           <input type="text" name="pf_homepage" value="<% out.print(xpathEvaluate($_document, "/user/homepage")); %>" id="pf_homepage" style="width: 220px;" />
                         </td>
                       </tr>
+                      <tr>
+                            <th>
+                              <label for="pf_foaf">Other Personal URIs (Web IDs)</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <table>
+                                <tr>
+                                  <td width="600px" style="padding: 0px;">
+                                    <table id="x1_tbl" class="listing">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            URI
+                                          </th>
+                                          <th width="80px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
+                                      <script type="text/javascript">
+                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});});});
+                                      </script>
+                                    </table>
+                                  </td>
+                                  <td valign="top" nowrap="nowrap">
+                                    <input type="button" value="Add" onclick="javascript: updateRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                                  </td>
+                                </tr>
+                              </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_mailSignature">Mail Signature</label>
+                        </th>
+                            <td>
+                              <textarea name="pf_mailSignature" id="pf_mailSignature" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/mailSignature")); %></textarea>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_summary">Summary</label>
+                        </th>
+                            <td>
+                              <textarea name="pf_summary" id="pf_summary" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/summary")); %></textarea>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_foaf">Web page URL indicating a topic of interest</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <table>
+                                <tr>
+                                  <td width="600px" style="padding: 0px;">
+                                    <table id="x2_tbl" class="listing">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            URL
+                                          </th>
+                                          <th>
+                                            Label
+                                          </th>
+                                          <th width="80px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
+                                      <script type="text/javascript">
+                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x2", '<% out.print(xpathEvaluate($_document, "/user/interests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                      </script>
+                                    </table>
+                                  </td>
+                                  <td valign="top" nowrap="nowrap">
+                                    <input type="button" value="Add" onclick="javascript: updateRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                  </td>
+                                </tr>
+                              </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_foaf">Resource URI indicating thing of interest</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <table>
+                                <tr>
+                                  <td width="600px" style="padding: 0px;">
+                                    <table id="x3_tbl" class="listing">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            URL
+                                          </th>
+                                          <th>
+                                            Label
+                                          </th>
+                                          <th width="80px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
+                                      <script type="text/javascript">
+                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x3", '<% out.print(xpathEvaluate($_document, "/user/topicInterests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                      </script>
+                                    </table>
+                                  </td>
+                                  <td valign="top" nowrap="nowrap">
+                                    <input type="button" value="Add" onclick="javascript: updateRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                  </td>
+                                </tr>
+                              </table>
+                        </td>
+                      </tr>
                     </table>
                   </div>
 
-                  <div id="page_1" style="display:none;">
-                    <table class="form" cellspacing="5">
-                      <tr>
-                        <th width="30%">
-                          <label for="pf_icq">ICQ</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/user/icq")); %>" id="pf_icq" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_skype">Skype</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/user/skype")); %>" id="pf_skype" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_yahoo">Yahoo</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/user/yahoo")); %>" id="pf_yahoo" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_aim">AIM</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/user/aim")); %>" id="pf_aim" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_msn">MSN</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/user/msn")); %>" id="pf_msn" style="width: 220px;" />
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <div id="page_2" style="display:none;">
+                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
@@ -809,155 +1121,208 @@
                     </table>
                   </div>
 
-                  <div id="page_3" style="display:none;">
+                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
-                          <label for="pf_businessIndustry">Industry</label>
+                            <td width="600px">
+                              <table id="x4_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th>
+                                      Select from Service List ot Type New One
+                        </th>
+                                    <th>
+                                      Member Home Page URL
+                                    </th>
+                                    <th width="80px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 1, value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                </script>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="1">
+                              <input type="button" value="Add" onclick="javascript: updateRow('x4', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <td width="600px">
+                              <table id="x5_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th width="15%">
+                                      Event
+                                    </th>
+                                    <th width="15%">
+                                      Date
+                                    </th>
+                        <th>
+                                      Place
+                        </th>
+                                    <th width="80px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 4, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
+                                </script>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="1">
+                              <input type="button" value="Add" onclick="javascript: updateRow('x5', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
+                        <table id="x6_tbl" class="form" cellspacing="5">
+                      <tr>
+                            <th width="30%">
+                              <label for="pf_icq">ICQ</label>
                         </th>
                         <td nowrap="nowrap">
-                          <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
-                            <option></option>
+                              <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/user/icq")); %>" id="pf_icq" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_skype">Skype</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/user/skype")); %>" id="pf_skype" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                            <th>
+                              <label for="pf_yahoo">Yahoo</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/user/yahoo")); %>" id="pf_yahoo" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_aim">AIM</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/user/aim")); %>" id="pf_aim" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                              <label for="pf_msn">MSN</label>
+                        </th>
+                        <td nowrap="nowrap">
+                              <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/user/msn")); %>" id="pf_msn" style="width: 220px;" />
+                        </td>
+                            <td width="40%">
+                        </td>
+                      </tr>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x6", '<% out.print(xpathEvaluate($_document, "/user/messaging").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                          </script>
+                        </table>
+                        <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
+                      </div>
+
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <td width="600px">
+                              <table id="r_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                        <th>
+                                      <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                        </th>
+                                    <th width="100%">
+                                      Favorite Type
+                        </th>
+                                    <th width="80px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody id="r_tbody">
+                                  <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
+                                  <script type="text/javascript">
+                                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowFavorites();});
+                                  </script>
+                                </tbody>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="nowrap">
+                              <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+
+                      <div class="footer">
+                        <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="pf_page_1" class="tabContent" style="display:none;">
+                    <ul id="pf_tabs_1" class="tabs">
+                      <li id="pf_tab_1_0" title="Main">Main</li>
+                      <li id="pf_tab_1_1" title="Address">Address</li>
+                      <li id="pf_tab_1_2" title="Online Accounts">Online Accounts</li>
+                      <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
+                    </ul>
+                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <div id="pf_page_1_0" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <th width="30%">
+                              <label for="pf_businessIndustry">Industry</label>
+                        </th>
+                            <td nowrap="nowrap">
+                              <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
+                                <option></option>
                             <%
-                              outSelectOptions (out, xpathEvaluate($_document, "/user/businessIndustry"), "Industry");
+                                  outSelectOptions (out, xpathEvaluate($_document, "/user/businessIndustry"), "Industry");
                             %>
                           </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessOrganization">Organization</label>
+                              <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/user/businessOrganization")); %>" id="pf_businessOrganization" style="width: 220px;" />
+                              <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/user/businessOrganization")); %>" id="pf_businessOrganization" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessHomePage">Organization Home Page</label>
+                              <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/user/businessHomePage")); %>" id="pf_businessNetwork" style="width: 220px;" />
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/user/businessHomePage")); %>" id="pf_businessNetwork" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessJob">Job Title</label>
+                              <label for="pf_businessJob">Job Title</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/user/businessJob")); %>" id="pf_businessJob" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th width="30%">
-                          <label for="pf_businesscountry">Country</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <select name="pf_businesscountry" id="pf_businesscountry" onchange="javascript: return updateState('pf_businesscountry', 'pf_businessState');" style="width: 220px;">
-                            <option></option>
-                            <%
-                              outSelectOptions (out, xpathEvaluate($_document, "/user/businessCountry"), "Country");
-                            %>
-                          </select>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessstate">State/Province</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <span id="span_pf_businessstate">
-                            <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
-                            </script>
-                          </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businesscity">City/Town</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businesscity" value="<% out.print(xpathEvaluate($_document, "/user/businessCity")); %>" id="pf_businesscity" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businesscode">Zip/Postal Code</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businesscode" value="<% out.print(xpathEvaluate($_document, "/user/businessCode")); %>" id="pf_businesscode" style="width: 220px;"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessaddress1">Address1</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessaddress1" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress1")); %>" id="pf_businessaddress1" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessaddress2">Address2</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessaddress2" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress2")); %>" id="pf_businessaddress2" style="width: 220px;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessTimezone">Time-Zone</label>
-                        </th>
-                        <td>
-                          <select name="pf_businessTimezone" id="pf_businessTimezone">
-                            <%
-                              {
-                                String S = xpathEvaluate($_document, "/user/businessTimezone");
-                                String NS;
-                                for (int N = -12; N <= 12; N++) {
-                                  NS = Integer.toString(N);
-                                  out.print("<option value=\"" + NS + "\"" +((NS.equals(S)) ? (" selected=\"selected\""): ("")) + ">GMT " + NS + ":00</option>");
-                                }
-                              }
-                            %>
-                          </select>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businesslat">Latitude</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businesslat" value="<% out.print(xpathEvaluate($_document, "/user/businessLatitude")); %>" id="pf_businesslat" />
-                          <label>
-                          <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'business');" />
-                            Default Map Location
-                          </label>
-                        <td>
-                      <tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businesslng">Longitude</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_businesslng" value="<% out.print(xpathEvaluate($_document, "/user/businessLongitude")); %>" id="pf_businesslng" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessPhone">Phone</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/user/businessPhone")); %>" id="pf_businessPhone" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_businessMobile">Mobile</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/user/businessMobile")); %>" id="pf_businessMobile" />
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/user/businessJob")); %>" id="pf_businessJob" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1061,13 +1426,219 @@
                           <label for="pf_businessResume">Resume</label>
                         </th>
                         <td>
-                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 220px;"><% out.print(xpathEvaluate($_document, "/user/businessResume")); %></textarea>
+                          <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/businessResume")); %></textarea>
                         </td>
                       </tr>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_1_1" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                          <tr>
+                            <th width="30%">
+                              <label for="pf_businesscountry">Country</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <select name="pf_businesscountry" id="pf_businesscountry" onchange="javascript: return updateState('pf_businesscountry', 'pf_businessState');" style="width: 220px;">
+                                <option></option>
+                                <%
+                                  outSelectOptions (out, xpathEvaluate($_document, "/user/businessCountry"), "Country");
+                                %>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessstate">State/Province</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <span id="span_pf_businessstate">
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
+                                </script>
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businesscity">City/Town</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businesscity" value="<% out.print(xpathEvaluate($_document, "/user/businessCity")); %>" id="pf_businesscity" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businesscode">Zip/Postal Code</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businesscode" value="<% out.print(xpathEvaluate($_document, "/user/businessCode")); %>" id="pf_businesscode" style="width: 220px;"/>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessaddress1">Address1</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businessaddress1" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress1")); %>" id="pf_businessaddress1" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessaddress2">Address2</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businessaddress2" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress2")); %>" id="pf_businessaddress2" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessTimezone">Time-Zone</label>
+                            </th>
+                            <td>
+                              <select name="pf_businessTimezone" id="pf_businessTimezone">
+                                <%
+                                  {
+                                    String S = xpathEvaluate($_document, "/user/businessTimezone");
+                                    String NS;
+                                    for (int N = -12; N <= 12; N++) {
+                                      NS = Integer.toString(N);
+                                      out.print("<option value=\"" + NS + "\"" +((NS.equals(S)) ? (" selected=\"selected\""): ("")) + ">GMT " + NS + ":00</option>");
+                                    }
+                                  }
+                                %>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businesslat">Latitude</label>
+                            </th>
+                            <td nowrap="nowrap">
+                              <input type="text" name="pf_businesslat" value="<% out.print(xpathEvaluate($_document, "/user/businessLatitude")); %>" id="pf_businesslat" />
+                              <label>
+                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'business');" />
+                                Default Map Location
+                              </label>
+                            <td>
+                          <tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businesslng">Longitude</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_businesslng" value="<% out.print(xpathEvaluate($_document, "/user/businessLongitude")); %>" id="pf_businesslng" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessPhone">Phone</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/user/businessPhone")); %>" id="pf_businessPhone" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessMobile">Mobile</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/user/businessMobile")); %>" id="pf_businessMobile" />
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_1_2" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                          <tr>
+                            <td width="600px">
+                              <table id="y1_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th>
+                                      Select from Service List ot Type New One
+                                    </th>
+                                    <th>
+                                      Member Home Page URL
+                                    </th>
+                                    <th width="80px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tr id="y1_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 1, value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                </script>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="1">
+                              <input type="button" value="Add" onclick="javascript: updateRow('y1', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <div id="pf_page_1_3" class="tabContent" style="display:none;">
+                        <table id="y2_tbl" class="form" cellspacing="5">
+                          <tr>
+                            <th width="30%">
+                              <label for="pf_businessIcq">ICQ</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_businessIcq" value="<% out.print(xpathEvaluate($_document, "/user/businessIcq")); %>" id="pf_icq" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessSkype">Skype</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_businessSkype" value="<% out.print(xpathEvaluate($_document, "/user/businessSkype")); %>" id="pf_businessSkype" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessYahoo">Yahoo</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_businessYahoo" value="<% out.print(xpathEvaluate($_document, "/user/businessYahoo")); %>" id="pf_businessYahoo" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessAim">AIM</label>
+                            </th>
+                            <td colspan="2">
+                              <input type="text" name="pf_businessAim" value="<% out.print(xpathEvaluate($_document, "/user/businessAim")); %>" id="pf_businessAim" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_businessMsn">MSN</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_businessMsn" value="<% out.print(xpathEvaluate($_document, "/user/businessMsn")); %>" id="pf_businessMsn" style="width: 220px;" />
+                            </td>
+                            <td width="40%">
+                        </td>
+                      </tr>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("y2", '<% out.print(xpathEvaluate($_document, "/user/businessMessaging").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                          </script>
                     </table>
+                        <input type="button" value="Add" onclick="javascript: updateRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                   </div>
 
-                  <div id="page_4" style="display:none;">
+                      <div class="footer">
+                        <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="pf_page_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <td align="center" colspan="2">
@@ -1101,7 +1672,33 @@
                         </th>
                         <td nowrap="nowrap">
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
                           <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          OpenID
+                        </th>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_securityOpenID">OpenID URL</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_securityOpenID" value="<% out.print(xpathEvaluate($_document, "/user/securityOpenID")); %>" id="pf_securityOpenID" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
                       <tr>
@@ -1113,15 +1710,23 @@
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_securitySecretQuestion" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretQuestion")); %>" id="pf_securitySecretQuestion" style="width: 220px;" />
-                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();" style="width: 220px;">
-                            <option value="">~pick predefined~</option>
-                            <option value="First Car">First Car</option>
-                            <option value="Mothers Maiden Name">Mothers Maiden Name</option>
-                            <option value="Favorite Pet">Favorite Pet</option>
-                            <option value="Favorite Sports Team">Favorite Sports Team</option>
-                          </select>
+                        <td id="td_securitySecretQuestion" nowrap="nowrap">
+                          <script type="text/javascript">
+                            function categoryCombo ()
+                            {
+                              var cc = new OAT.Combolist([], "<% out.print(xpathEvaluate($_document, "/user/securitySecretQuestion")); %>");
+                              cc.input.name = "pf_securitySecretQuestion";
+                              cc.input.id = "pf_securitySecretQuestion";
+                              cc.input.style.cssText = "width: 220px;";
+                              $("td_securitySecretQuestion").appendChild(cc.div);
+                              cc.addOption("");
+                              cc.addOption("First Car");
+                              cc.addOption("Mothers Maiden Name");
+                              cc.addOption("Favorite Pet");
+                              cc.addOption("Favorite Sports Team");
+                            }
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                          </script>
                         </td>
                       </tr>
                       <tr>
@@ -1130,6 +1735,13 @@
                         </th>
                         <td nowrap="nowrap">
                           <input type="text" name="pf_securitySecretAnswer" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretAnswer")); %>" id="pf_securitySecretAnswer" style="width: 220px;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;" />
                         </td>
                       </tr>
                       <tr>
@@ -1145,13 +1757,18 @@
                           <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
+                        </td>
+                      </tr>
                     </table>
+                    <div class="footer">
+                      <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                   </div>
-
                 </div>
-                <div class="footer">
-                  <input type="submit" name="pf_update" value="Update" />
-                  <input type="submit" name="pf_cancel" value="Cancel" />
                 </div>
               </div>
               <%
