@@ -1273,6 +1273,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
     options := vector_concat (options, vector ('rdf_sponge_sid', cookie));
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
+  commit work;
   aq_wait_all (aq);
 
   graph_iri := cast (graph_iri as varchar);
