@@ -53,7 +53,7 @@
     <para>A string with defined length is returned.</para>
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>
-    <example id="ex_">
+    <example id="ex_make_string">
       <title>Using <function>make_string</function> and
       <function>aref</function></title>
       <para>Make a string and fill it with character sequence
