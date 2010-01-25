@@ -4,32 +4,27 @@
  *  $Id$
  *
  *  Zero Config Browser (rendezvous)
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2010 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ */
 
 /*
-
-
- *
  *  Implementation notes:
  *
  *  The locking mechanism used here was implemented because there can
@@ -170,7 +165,7 @@ TZCBrowser::AddZCDomain (const char *szDomain)
       kDNSBrowserFlagAutoResolve,
       OUR_RENDEZVOUS_TYPE,
       szDomain);
-#endif  
+#endif
 }
 
 
@@ -256,7 +251,7 @@ TZCBrowser::AddZCPublication (TZCPublication *pItem)
       delete pItem;
       return;
     }
-#ifdef _RENDEZVOUS  
+#ifdef _RENDEZVOUS
   if (pItem->eventType == kDNSBrowserEventTypeResolved &&
       (!pItem->szDomain || !pItem->szText))
     goto skip_it;
@@ -289,7 +284,7 @@ TZCBrowser::AddZCPublication (TZCPublication *pItem)
   pItem->next = m_pItems;
   m_pItems = pItem;
   Unlock ();
-#endif  
+#endif
 }
 
 #ifdef _RENDEZVOUS
@@ -333,11 +328,11 @@ BrowserCallBack (
       pItem->szName = safe_dup (inEvent->data.resolved->name);
       pItem->szType = safe_dup (inEvent->data.resolved->type);
       pItem->szDomain = safe_dup (inEvent->data.resolved->domain);
-#ifdef _RENDEZVOUS      
+#ifdef _RENDEZVOUS
       pItem->eventType = inEvent->type;
       pItem->address = inEvent->data.resolved->address;
       pItem->interfaceAddr = inEvent->data.resolved->interfaceAddr;
-#endif      
+#endif
       pItem->szText = safe_dup (inEvent->data.resolved->textRecord);
       pBrowser->AddZCPublication (pItem);
       pBrowser->DoNotify ();
@@ -354,10 +349,10 @@ BrowserCallBack (
       pItem->szName = safe_dup (inEvent->data.addService.name);
       pItem->szType = safe_dup (inEvent->data.addService.type);
       pItem->szDomain = safe_dup (inEvent->data.addService.domain);
-#ifdef _RENDEZVOUS      
+#ifdef _RENDEZVOUS
       pItem->eventType = inEvent->type;
       pItem->interfaceAddr = inEvent->data.addService.interfaceAddr;
-#endif      
+#endif
       pBrowser->AddZCPublication (pItem);
       break;
     }
@@ -380,14 +375,14 @@ TZCBrowser::~TZCBrowser ()
 {
   if (m_bInitDone)
     {
-#ifdef _RENDEZVOUS      
+#ifdef _RENDEZVOUS
       StopBrowse ();
-#endif      
+#endif
       FreeItems ();
-#ifdef _RENDEZVOUS      
+#ifdef _RENDEZVOUS
       DNSBrowserRelease (m_DNS, 0);
       DNSServicesFinalize ();
-#endif      
+#endif
     }
   DeleteCriticalSection (&m_csLock);
 }
@@ -459,7 +454,7 @@ TZCBrowser::Resolve (LPCTSTR szServer, DWORD dwTimeout)
 {
   TZCPublication *p, *pResolved;
   HANDLE hEvent;
-  
+
   if (dwTimeout)
     {
       if ((hEvent = CreateEvent (NULL, FALSE, FALSE, NULL)) == NULL)
@@ -470,7 +465,7 @@ TZCBrowser::Resolve (LPCTSTR szServer, DWORD dwTimeout)
     hEvent = NULL;
 
   pResolved = NULL;
-#ifdef _RENDEZVOUS  
+#ifdef _RENDEZVOUS
   StartBrowse ();
   for (;;)
     {

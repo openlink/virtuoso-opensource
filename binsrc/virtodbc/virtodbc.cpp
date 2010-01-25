@@ -4,27 +4,25 @@
  *  $Id$
  *
  *  Common includes for win32 utilties
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2010 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ */
 
 #include "w32util.h"
 #include "waitcursor.h"
@@ -1369,7 +1367,7 @@ ConfigDSNW (
 	       props.Undefine (_T("PWD"));
 	       SQLWriteDSNToIni (szNewDSN, lpszDriver);
 	       props.WriteODBCIni (szNewDSN, _virtuoso_tags);
-              
+
 	       /* If the DSN has changed, delete the old one */
 	       if (fRequest == ODBC_CONFIG_DSN && _tcsicmp (szDSN, szNewDSN))
 	          SQLRemoveDSNFromIni (szDSN);
@@ -1406,8 +1404,8 @@ DllRegisterServer()
 
   if (0 == GetModuleFileName(g_hInstance, module_file_name, sizeof module_file_name / sizeof (TCHAR)))
     return E_FAIL;
-  
-  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\Virtuoso (Open Source)"), 0, NULL, 
+
+  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\Virtuoso (Open Source)"), 0, NULL,
       REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, &disposition);
 
   if (stat != ERROR_SUCCESS)
@@ -1424,7 +1422,7 @@ DllRegisterServer()
   if (stat != ERROR_SUCCESS)
     return E_FAIL;
 
-  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\ODBC Drivers"), 0, NULL, 
+  stat = RegCreateKeyEx(HKEY_LOCAL_MACHINE, TEXT ("SOFTWARE\\ODBC\\ODBCINST.INI\\ODBC Drivers"), 0, NULL,
       REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hkey, &disposition);
   if (stat != ERROR_SUCCESS)
     return E_FAIL;
@@ -1435,7 +1433,7 @@ DllRegisterServer()
   RegCloseKey(hkey);
   if (stat != ERROR_SUCCESS)
     return E_FAIL;
-  
+
   return S_OK;
 }
 
@@ -1454,7 +1452,7 @@ DllUnregisterServer()
   stat = RegDeleteValue (hkey, TEXT ("Virtuoso (Open Source)"));
   if (stat != ERROR_SUCCESS)
     return E_FAIL;
-  
+
   return S_OK;
 }
 #else
