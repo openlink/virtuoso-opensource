@@ -68,8 +68,6 @@
 #if defined (HAVE_FLOCK_IN_SYS_FILE)
 #include <sys/file.h>
 #endif
-extern int aq_max_threads;
-
 
 extern PCONFIG pconfig;     /* configuration file */
 
@@ -177,6 +175,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int aq_max_threads;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
