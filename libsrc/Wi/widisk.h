@@ -493,5 +493,6 @@ void db_dbg_account_add_page (dp_addr_t start);
 void db_dbg_account_check_page_in_hash (dp_addr_t start);
 void db_dbg_account_init_hash ();
 #endif
+extern int32 malloc_bufs;
 
 #endif /* _WIDISK_H */

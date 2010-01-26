@@ -1274,6 +1274,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
   return 1;
 }
 
+int32 malloc_bufs = 0;
 
 buffer_pool_t *
 bp_make_buffer_list (int n)
