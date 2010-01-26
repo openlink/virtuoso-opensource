@@ -885,6 +885,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
     c_aq_max_threads = 10;
 
+  if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
+    malloc_bufs = 0;
+
   {
     int nbdirs;
     dk_set_t bd = NULL;
