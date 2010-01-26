@@ -1670,7 +1670,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
               -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after WS.WS.GET_DAV_AUTH (', a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms, ')');
               if (is_https_ctx () and what = 'R' and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
                 {
-                  declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
+                  declare graph, waGraph, foafIRI, foafGraph, loadIRI, localIRI any;
                   declare S, V, info, st, msg, data, meta any;
 
                   foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
@@ -1715,12 +1715,14 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                                         localIRI);
                           exec (S, st, msg, vector (), 0, meta, data);
                           -- dbg_obj_princ ('1: ', st, msg);
-                          if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and 
+                          if (__proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is not null and
+                              __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
 			      st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
                             {
                               declare resMode varchar;
 
                               graph := SIOC.DBA.dav_res_iri (resPath);
+                              waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
                               --dbg_obj_print ('graph', graph);
                               resMode := '';
                               if (req[2] = ascii ('1'))
@@ -1737,6 +1739,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                                             ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
                                             ' select * \n' ||
                                             '   from <%s> \n' ||
+                                            '   from <%s> \n' ||
                                             '  where { \n' ||
                                             '          { \n' ||
                                             '            ?rule rdf:type acl:Authorization ; \n' ||
@@ -1751,13 +1754,26 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                                             '            acl:mode acl:%s ; \n' ||
                                             '            acl:agentClass foaf:Agent. \n' ||
                                             '          } \n' ||
+                                            '          union \n' ||
+                                            '          { \n' ||
+                                            '            ?rule rdf:type acl:Authorization ; \n' ||
+                                            '              acl:accessTo <%s> ; \n' ||
+                                            '              acl:mode acl:%s ; \n' ||
+                                            '              acl:agentClass ?group. \n' ||
+                                            '            ?group rdf:type foaf:Group ; \n' ||
+                                            '              foaf:member <%s>. \n' ||
+                                            '          } \n' ||
                                             '        }\n',
                                             graph,
+                                            waGraph,
                                             graph,
                                             resMode,
                                             foafIRI,
                                             graph,
-                                            resMode);
+                                            resMode,
+                                            graph,
+                                            resMode,
+                                            foafIRI);
                               commit work;
                               exec (S, st, msg, vector (), 0, meta, data);
                               -- dbg_obj_princ ('2: ', S);
