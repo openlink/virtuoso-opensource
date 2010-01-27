@@ -1873,7 +1873,8 @@
                           ?>
                           <table id="aciProperties" class="form-list" style="width: 100%;"  cellspacing="0">
                             <tr>
-                              <th align="center" nowrap="nowrap">User's WebID</th>
+                              <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
+                              <th align="center" nowrap="nowrap">WebID</th>
                               <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
                               <th width="1%" >Action</th>
                             </tr>
@@ -1886,7 +1887,7 @@
                                   aciEnable := case when self.dav_enable then 'true' else 'false' end;
                                   for (N := 0; N < length (aci_values); N := N + 1)
                                   {
-                                    aciValues := sprintf ('{user: \'%s\', r_grant: %d, w_grant: %d, x_grant: %d}', aci_values[N][1], aci_values[N][2], aci_values[N][3], aci_values[N][4]);
+                                    aciValues := sprintf ('{user: \'%s\', access: \'%s\', r_grant: %d, w_grant: %d, x_grant: %d}', aci_values[N][1], aci_values[N][2], aci_values[N][3], aci_values[N][4], aci_values[N][5]);
                                     http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciRowCreate(%s, %s);});', aciEnable, aciValues));
                                   }
                         		    ?>
