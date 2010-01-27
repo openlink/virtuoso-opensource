@@ -1781,11 +1781,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
-	  log_info ("Checkpoint made, log reused");
+	  log_info ("Checkpoint finished, log reused");
 	}
       else
 	{
-	  log_info ("Checkpoint made, log off");
+	  log_info ("Checkpoint finished, log off");
 	}
     }
   else
@@ -1818,7 +1818,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  log_set_byte_order_check (1);
 	  log_set_server_version_check (1);
 	}
-      log_info ("Checkpoint made, new log is %s", new_log);
+      log_info ("Checkpoint finished, new log is %s", new_log);
     }
 #ifdef VIRTTP
   DO_SET (lock_trx_t *, lt, &all_trxs)

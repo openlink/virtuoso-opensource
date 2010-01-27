@@ -1481,6 +1481,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
   END_DO_SET();
 
   dbs_backup_check (dbs);
+  log_info ("Checkpoint started");
   WITHOUT_SIGNALS
     {
       checkpoint_flag_fd = fopen(CHECKPOINT_IN_PROGRESS_FILE, "a");
@@ -1602,7 +1603,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
       mcp_itc->itc_itm1 = NULL;
       itc_free (mcp_itc);
       mcp_itc = NULL;
-      uc_printf (("Checkpoint made. %d delta pages.\n", mcp_delta_count));
+      uc_printf (("Checkpoint finished. %d delta pages.\n", mcp_delta_count));
 
       dk_free ((caddr_t) mcp_remaps, mcp_batch * sizeof (remap_t));
       dk_free ((caddr_t) mcp_remap_ptrs, mcp_batch * sizeof (caddr_t));
