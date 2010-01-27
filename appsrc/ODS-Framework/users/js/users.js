@@ -157,6 +157,13 @@ function myInit() {
 	}
 }
 
+function myBeforeSubmit ()
+{
+  needToConfirm = false;
+  if ($v('formTab') == '0' && $v('formSubtab') == '5' && $('favorites'))
+    $('favorites').value = prepareFavorites();
+}
+
 var needToConfirm = true;
 function myCheckLeave (form)
 {
@@ -165,6 +172,10 @@ function myCheckLeave (form)
   var div = $(pfPages[formTab][formSubtab]);
   var dirty = false;
   var retValue = true;
+
+  if (formTab == 0 && formSubtab == 5 && $('favorites'))
+    $('favorites').value = prepareFavorites();
+
   if (needToConfirm && (formTab < 2))
   {
     for (var i = 0; i < form.elements.length; i++)
@@ -214,8 +225,10 @@ function myCheckLeave (form)
       retValue = confirm('You are about to leave the page, but there is changed data which is not saved.\r\nDo you wish to save changes ?');
       if ($('form'))
       {
-        if (retValue)
+        if (retValue) {
+          hiddenCreate('pf_update', null, 'x');
           form.submit();
+        }
       } else {
         retValue = !retValue;
       }
@@ -514,7 +527,7 @@ function afterLogin(data) {
     $('realm').value = 'wa';
    	var T = $('form');
 		if (T) {
-   	  T.value = 'user';
+			T.value = 'profile';
    	  T.form.submit();
 		} else {
      	var T = $('ob_left');
@@ -828,10 +841,12 @@ function ufCleanTablesData(prefix) {
   var tbl = $(prefix+"_tbl");
   if (!tbl) {return;}
 
-  TRs = tbl.getElementsByTagName('tr');
-  if (TRs.length) {
-	  for (var i = 0; i < TRs.length; i++) {
-	    if ((TRs[i].id.indexOf(prefix+"_") == 0) && (TRs[i].id != prefix+"_tr_no"))
+  var TRs = tbl.getElementsByTagName('tr');
+  for (var i = TRs.length-1; i >= 0; i--) {
+    if (TRs[i].id == prefix+"_tr_no") {
+      OAT.Dom.show(TRs[i]);
+    } else {
+      if (TRs[i].id.indexOf(prefix+"_tr_") == 0)
 	      OAT.Dom.unlink(TRs[i]);
 		}
 	}
@@ -853,14 +868,14 @@ function ufProfileLoad() {
   ufCleanTablesData("x4");
   ufCleanTablesData("x5");
   ufCleanTablesData("x6");
+  ufCleanTablesData("r");
   ufCleanTablesData("y1");
   ufCleanTablesData("y2");
 
  	var T = $('pf_change_txt');
 	if (T) {T.innerHTML = '';}
 
-	var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid'))
-			+ '&realm=' + encodeURIComponent($v('realm')) + '&short=0';
+	var S = '/ods/api/user.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&short=0';
   OAT.AJAX.GET(S, '', ufProfileCallback);
 }
 
@@ -1059,8 +1074,73 @@ function updateBioEvents(prefix)
 	  OAT.AJAX.GET(S,null,null,{async:false});
   }
 }
+
+function prepareFavorites() {
+  var ontologies = [];
+  var form = document.forms[0];
+  for (var N = 0; N < form.elements.length; N++)
+  {
+    if (!form.elements[N])
+      continue;
+
+    var ctrl = form.elements[N];
+    if (typeof(ctrl.type) == 'undefined')
+      continue;
+
+    if (ctrl.name.indexOf("r_fld_2_") != 0)
+      continue;
+
+    var ontologyNo = ctrl.name.replace("r_fld_2_", "");
+    var ontologyName = ctrl.value;
+    var ontologyItems = [];
+    for (var M = 0; M < form.elements.length; M++)
+    {
+      if (!form.elements[M])
+        continue;
+
+      var ctrl = form.elements[M];
+      if (typeof(ctrl.type) == 'undefined')
+        continue;
+
+      if (ctrl.name.indexOf("r_item_"+ontologyNo+"_fld_2_") != 0)
+        continue;
+
+      var itemID = $v("r_item_"+ontologyNo+"_fld_1_"+itemNo);
+      var itemNo = ctrl.name.replace("r_item_"+ontologyNo+"_fld_2_", "");
+      var itemName = ctrl.value;
+      var itemProperties = [];
+      for (var L = 0; L < form.elements.length; L++)
+      {
+        if (!form.elements[L])
+          continue;
+
+        var ctrl = form.elements[L];
+        if (typeof(ctrl.type) == 'undefined')
+          continue;
+
+        if (ctrl.name.indexOf("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_") != 0)
+          continue;
+
+        var propertyNo = ctrl.name.replace("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_", "");
+        var propertyName = ctrl.value;
+        var propertyValue = $v("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
+        var propertyType = $v("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+        itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType});
+      }
+      ontologyItems.push(["id", itemID, "className", itemName, "properties", itemProperties]);
+    }
+    ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
+  }
+  return OAT.JSON.stringify(ontologies, 10);
+}
+
 function updateFavorites(prefix)
 {
+	var S = '/ods/api/user.favorites.delete?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
+	OAT.AJAX.GET(S,null,null,{async:false});
+
+  S = '/ods/api/user.favorites.new?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&favorites=' + encodeURIComponent(prepareFavorites());
+  OAT.AJAX.GET(S,null,null,{async:false});
 }
 
 function pfUpdateSubmit(No) {
