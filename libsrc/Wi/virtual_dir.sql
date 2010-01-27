@@ -1161,6 +1161,8 @@ end_loop:;
       body := rtrim (body, '&');
     else
       body := null;
+    if (body is null and meth = 'POST')
+      meth := 'GET';
     if (req_hdr is null)
       {
 	req_hdr := '';
