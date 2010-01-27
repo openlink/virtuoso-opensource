@@ -55,8 +55,8 @@ long lock_leaves = 0;
 
 dk_set_t all_trxs = NULL;
 
-uint32 lt_counter; /* 32 bits exact, lower half of trx no 64 bit id, must wrap around */
-uint32 lt_w_counter; /* 32 bits exact, lower half lt_w_id no 64 bit id, must wrap around */
+uint32 lt_counter = 0; /* 32 bits exact, lower half of trx no 64 bit id, must wrap around */
+uint32 lt_w_counter = 0; /* 32 bits exact, lower half lt_w_id no 64 bit id, must wrap around */
 void
 lt_new_w_id (lock_trx_t * lt)
 {
