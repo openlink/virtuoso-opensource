@@ -1410,7 +1410,7 @@ ecm_delete_nth (ptrlong idx, void *objs, ptrlong *obj_no, size_t size_of_obj)
   memmove (
     (char *)(objs)+(idx * size_of_obj),
     (char *)(objs)+((idx+1) * size_of_obj),
-    (obj_no[0] - idx)*size_of_obj );
+    (obj_no[0] - idx - 1)*size_of_obj );
   obj_no[0] --;
   return 1;
 }
