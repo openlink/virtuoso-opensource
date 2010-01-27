@@ -332,7 +332,6 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 {
   declare _total, active_thread integer;
   declare _rc integer;
-  declare _host, _url varchar;
   declare _tgt_url varchar;
   declare url_fn varchar;
   declare _last_shut integer;
@@ -355,7 +354,7 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 
   whenever not found goto n_site;
   select VS_URL, VS_METHOD into _tgt_url, _dav_method from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root;
-  -- if it is update 
+  -- if it is an update 
   if (_upd = 1)
     {
       if (not exists (select 1 from VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL <> _tgt_url))
@@ -366,8 +365,12 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 		  values (_tgt, _root, VU_URL, 'waiting', now ());
 	    }
 	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _tgt_url;
-	  commit work;
 	}
+      else if (not exists (select 1 from VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_STAT = 'waiting'))
+	{
+	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root;
+	}
+      commit work;
     }
   if (_dav_method = 'checked')
     batch_size := 1;
@@ -390,7 +393,7 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 	declare found_one, ndone int;
 	declare exit handler for sqlstate '*' 
 	  {
-	    ERR_MAIL_SEND (_host, vector (), _root, __SQL_STATE, __SQL_MESSAGE);
+	    ERR_MAIL_SEND (_tgt, vector (), _root, __SQL_STATE, __SQL_MESSAGE);
 	    rollback work;
 	    goto fn_end;
 	  };
@@ -431,7 +434,7 @@ create procedure WS.WS.SERV_QUEUE (in __tgt varchar, in __root varchar, in _upd 
 	if (active_thread < 0)
 	  signal ('42000', 'Cannot get free thread', 'CRAWL');
 	aq_list [active_thread] := aq_request (aq, 'WS.WS.COPY_PAGE', vector (_tgt, url_batch, _root, _upd, _dbg));
-	if (ndone < batch_size or not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'waiting'))
+	if (ndone < batch_size or not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_STAT = 'waiting'))
 	  {
 	    commit work;
 	aq_wait_all (aq);
