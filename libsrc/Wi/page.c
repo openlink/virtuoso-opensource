@@ -1413,6 +1413,7 @@ page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_cursor_
   else
     {
       key = rd->rd_key = buf->bd_tree->it_key->key_versions[kv];
+      rd->rd_leaf = 0;
     }
   rd->rd_copy_of_deleted = IE_ISSET (row, IEF_DELETE);
   if (rd->rd_copy_of_deleted && !kv) GPF_T1 ("suspect to have a leaf ptr with deld flag");
