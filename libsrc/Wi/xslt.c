@@ -4291,7 +4291,7 @@ bif_rowvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 box_dict_iterator_serialize (xml_entity_t * xe, dk_session_t * ses)
 {
-  session_buffered_write_char (DV_SHORT_STRING, ses);
+  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
   session_buffered_write_char ((char) 24, ses);
 /*                              0         1         2     */
 /*                              0123456789012345678901234 */
