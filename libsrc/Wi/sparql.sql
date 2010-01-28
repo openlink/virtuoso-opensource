@@ -10326,12 +10326,15 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
 
 create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
+  declare ver varchar;
+  declare inx int;
+  ver := '2009-11-20 0001';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2009-09-24 0001'
+                virtrdf:version ?:ver
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -10361,6 +10364,7 @@ virtrdf:DefaultQuadStorage-UserMaps
       lst1 := dict_list_keys (dict1, 1);
       lst2 := dict_list_keys (dict2, 1);
       sum_lst := vector_concat (lst1, lst2);
+      inx := 0;
       foreach (any triple in sum_lst) do
         {
           if ((triple[1] = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')) and
@@ -10371,6 +10375,19 @@ virtrdf:DefaultQuadStorage-UserMaps
             }
           else
             delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
+ 	  if (
+ 	      triple[0] = iri_to_id ('http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl')
+ 	      and
+ 	      triple[1] = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#version')
+ 	      and
+ 	      triple[2] <> ver
+ 	      )
+ 	    {
+ 	      log_message (sprintf ('RDF metadata version: %s', ver));
+ 	      triple[2] := ver;
+	      sum_lst [inx] := triple;
+ 	    }
+	  inx := inx + 1;
         }
       DB.DBA.RDF_INSERT_TRIPLES (jso_sys_g_iid, sum_lst);
       commit work;
