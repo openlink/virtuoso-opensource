@@ -67,7 +67,6 @@
 #include <sys/file.h>
 #endif
 
-
 extern PCONFIG pconfig;     /* configuration file */
 
 /* Globals for libwi */
@@ -174,6 +173,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern int aq_max_threads;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -228,6 +228,7 @@ int32 c_disable_listen_on_unix_sock;
 int32 c_disable_listen_on_tcp_sock;
 int32 c_default_txn_isolation;
 int32 c_c_use_aio;
+int32 c_aq_max_threads;
 
 extern int disable_listen_on_unix_sock;
 extern int disable_listen_on_tcp_sock;
@@ -878,6 +879,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
+
+  if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
+    c_aq_max_threads = 10;
+
+  if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
+    malloc_bufs = 0;
 
   {
     int nbdirs;
@@ -1620,6 +1627,11 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   java_classpath = c_java_classpath;
   default_txn_isolation = c_default_txn_isolation;
   c_use_aio = c_c_use_aio; 
+  aq_max_threads = c_aq_max_threads;
+  if (aq_max_threads > 100)
+    aq_max_threads = 100;
+  if (aq_max_threads < 10)
+    aq_max_threads = 10;
 #ifdef _SSL
   https_port = c_https_port;
   https_cert = c_https_cert;
