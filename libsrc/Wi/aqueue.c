@@ -120,11 +120,12 @@ aq_thread_func (aq_thread_t * aqt)
 
 
 aq_thread_t *
-aqt_allocate ()
+aqt_allocate (lock_trx_t * lt)
 {
   if (aq_n_threads >= aq_max_threads)
     return NULL;
   aq_n_threads++;
+  vdb_enter_lt (lt);
   {
     dk_thread_t *thr;
     dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
@@ -136,6 +137,7 @@ aqt_allocate ()
     IN_TXN;
     cli_set_new_trx (cli);
     LEAVE_TXN;
+    vdb_leave_lt (lt, NULL);
     thr = PrpcThreadAllocate ((init_func) aq_thread_func, http_thread_sz, (void *) aqt);
     if (!thr)
       {
@@ -154,8 +156,10 @@ aqt_allocate ()
 
 
 int
-aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
+aq_request (async_queue_t * aq, aq_func_t f, caddr_t args, lock_trx_t * lt)
 {
+  int rc;
+  client_connection_t * cli = NULL;
   aq_thread_t *aqt;
   NEW_VARZ (aq_request_t, aqr);
   mutex_enter (aq->aq_mtx);
@@ -172,14 +176,26 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
     }
   aqt = (aq_thread_t *) resource_get (aq_threads);
   if (!aqt)
-    aqt = aqt_allocate ();
+    {
+      aqt = aqt_allocate (lt);
+    }
   if (!aqt)
     {
       mutex_leave (aq->aq_mtx);
+      cli = GET_IMMEDIATE_CLIENT_OR_NULL;
       dbg_printf (("aq execution on requesting thread\n"));
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       aqr->aqr_args = NULL;
       aqr->aqr_state = AQR_DONE;
+      IN_TXN;
+      rc = lt_commit (cli->cli_trx, TRX_CONT);
+      LEAVE_TXN;
+      if (rc != LTE_OK)
+	{
+	  caddr_t err;
+	  MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
+	  sqlr_resignal (err);
+	}
       return aqr->aqr_req_no;
     }
   aqt->aqt_aq = aq;
@@ -429,7 +445,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (!cli || !cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
       dk_free_tree ((caddr_t) params);
@@ -476,7 +492,7 @@ bif_aq_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   f_args = box_copy_tree (f_args);
   box_make_tree_mt_safe (f_args);
   aq_args = list (2, box_copy (f), f_args);
-  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args));
+  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args, ((query_instance_t*)qst)->qi_trx));
 }
 
 
@@ -508,7 +524,7 @@ bif_aq_request_zap_args (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       box_make_tree_mt_safe (f_args[aq_argctr]);
     }
   aq_args = list (2, box_copy (f), f_args);
-  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args));
+  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args, ((query_instance_t*)qst)->qi_trx));
 }
 
 
