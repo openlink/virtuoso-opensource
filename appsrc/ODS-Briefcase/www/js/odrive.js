@@ -1475,6 +1475,19 @@ ODRIVE.aciRowCreate = function (aciEnable, values)
 
     // column 0
     var td = OAT.Dom.create('td');
+    td.style.width = '1%';
+    tr.appendChild(td);
+		var field = OAT.Dom.create('select');
+    field.id = 'aci_mode_' + seqNo;
+    field.name = field.id;
+    OAT.Dom.option('Personal', 'person', field);
+    OAT.Dom.option('Group', 'group', field);
+    OAT.Dom.option('Public', 'public', field);
+    field.value = values.access;
+    td.appendChild(field);
+
+    // column 1
+    var td = OAT.Dom.create('td');
     tr.appendChild(td);
     td.style['whiteSpace'] = 'nowrap';
 		var field = OAT.Dom.create("input");
@@ -1488,7 +1501,7 @@ ODRIVE.aciRowCreate = function (aciEnable, values)
       field.disabled = true;
     td.appendChild(field);
 
-    // column 1
+    // column 2
     var td = OAT.Dom.create('td');
     td.style.width = '1%';
     td.style.textAlign = 'center';
@@ -1524,7 +1537,7 @@ ODRIVE.aciRowCreate = function (aciEnable, values)
       field.disabled = true;
     td.appendChild(field);
 
-    // column 2
+    // column 3
     var td = OAT.Dom.create('td');
     td.style.width = '1%';
     tr.appendChild(td);
@@ -2029,4 +2042,160 @@ ODRIVE.validateInputs = function (fld)
     }
   }
   return retValue;
+}
+
+var TBL = new Object();
+TBL.createRow = function (prefix, No, optionObject)
+{
+  if (No != null)
+  {
+    OAT.Dom.unlink(prefix+'_tr_'+No);
+    var No = parseInt($(prefix+'_no').value);
+    for (var N = 0; N < No; N++)
+    {
+      if ($(prefix+'_tr_'+N))
+        return;
+    }
+    OAT.Dom.show (prefix+'_tr_no');
+  }
+  else
+  {
+    var tbl = $(prefix+'_tbl');
+    if (tbl)
+    {
+      options = {btn_1: {mode: 1}};
+      for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      No = optionObject.No;
+      if (!No) {
+        if (!$(prefix+'_no')) {
+        	var fld = OAT.Dom.create("input");
+          fld.type = 'hidden';
+          fld.name = prefix+'_no';
+          fld.id = fld.name;
+          fld.value = '0';
+          tbl.appendChild(fld);
+        }
+        No = $v(prefix+'_no');
+      }
+      No = parseInt(No)
+
+      OAT.Dom.hide (prefix+'_tr_no');
+
+      var tr = OAT.Dom.create('tr');
+      tr.id = prefix+'_tr_' + No;
+      tbl.appendChild(tr);
+
+      // fields
+      for (var fld in options)
+      {
+        if (fld.indexOf('fld') == 0)
+        {
+          var fldOptions = options[fld];
+          var td = OAT.Dom.create('td');
+          td.id = prefix+'_td_'+ No+'_'+fld.replace(/fld_/, '');
+          tr.appendChild(td);
+          TBL.createCell (td, prefix, fld, No, fldOptions)
+        }
+      }
+
+      // actions
+      var td = OAT.Dom.create('td');
+      td.id = prefix+'_td_'+ No+'_btn';
+      td.style.whiteSpace = 'nowrap';
+      tr.appendChild(td);
+      for (var btn in options)
+      {
+        if (btn.indexOf('btn') == 0)
+        {
+          var btnOptions = options[btn];
+          TBL.createButton(td, prefix, btn, No, btnOptions)
+        }
+      }
+      $(prefix+'_no').value = No + 1;
+    }
+  }
+}
+
+TBL.createCell = function (td, prefix, fldName, No, fldOptions)
+{
+  fldName = prefix + '_' + fldName + '_' + No;
+  if (fldOptions.tdCssText)
+    td.style.cssText = fldOptions.tdCssText;
+  var fn = TBL["createCell"+fldOptions.mode];
+  if (fn)
+	  fn(td, prefix, fldName, No, fldOptions);
+}
+
+TBL.createCell0 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create('input');
+  fld.type = (fldOptions.type)? (fldOptions.type): 'text';
+  fld.id = fldName;
+  fld.name = fld.id;
+  if (fldOptions.value)
+  {
+    fld.value = fldOptions.value;
+    fld.defaultValue = fld.value;
+  }
+  if (fldOptions.className)
+    fld.className = fldOptions.className;
+  if (fldOptions.onblur)
+    fld.onblur = fldOptions.onblur;
+  fld.style.width = '95%';
+  if (fldOptions.cssText)
+    fld.style.cssText = fldOptions.cssText;
+  var elm = $(elm);
+  td.appendChild(fld);
+}
+
+TBL.createCell1 = function (td, prefix, fldName, No, fldOptions)
+{
+  TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  td.appendChild(OAT.Dom.text(' '));
+  var img = OAT.Dom.image('image/select.gif');
+  img.className = "pointer";
+  img.onclick = function (){windowShow('users_select.vspx?dst=m&params='+fldName+':s1;',520)};
+  td.appendChild(img);
+
+}
+
+TBL.createButton = function (td, prefix, fldName, No, fldOptions)
+{
+  fldName = prefix + '_' + fldName + '_' + No;
+  if (fldOptions.tdCssText)
+    td.style.cssText = fldOptions.tdCssText;
+  var fn = TBL["createButton"+fldOptions.mode];
+  if (fn)
+  {
+	  var btn = fn(td, prefix, fldName, No, fldOptions);
+    if (btn)
+    { if (fldOptions.cssText)
+        btn.style.cssText = fldOptions.cssText;
+      if (fldOptions.className)
+        btn.className = fldOptions.className;
+    }
+  }
+}
+
+TBL.createButton1 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create("input");
+  fld.id = fldName;
+  fld.type = 'button';
+  fld.value = 'Remove';
+  fld.onclick = function(){TBL.createRow(prefix, No);};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createButton2 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.image('image/del_16.png');
+  fld.onclick = function(){TBL.createRow(prefix, No);};
+  OAT.Dom.addClass(fld, 'pointer');
+
+  td.appendChild(fld);
+  return fld;
 }

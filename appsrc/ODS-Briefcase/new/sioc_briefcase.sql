@@ -150,6 +150,12 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
       }
     }
   }
+  -- update WebAccess graph
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (waGraph());
+  for (select * from ODRIVE.WA.FOAF_GROUPS) do
+  {
+    foaf_group_insert (FG_USER_ID, FG_NAME, FG_WEBIDS);
+  }
   return;
 }
 ;
@@ -682,8 +688,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_U after update on WS.WS.SYS_DAV_PROP 
 {
   declare meta, c_iri, iri, xt, graph_iri, path, ins_dict, del_dict any;
   declare full_path, _wai_name varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -702,7 +708,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_U after update on WS.WS.SYS_DAV_PROP 
     return;
 
   graph_iri := get_graph ();
-  select WAI_NAME into _wai_name from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+  select WAI_NAME into _wai_name
+    from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_USER = U_ID and WAM_IS_PUBLIC = 1 and U_NAME = path[3]
       and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1;
   c_iri := briefcase_iri (_wai_name);
@@ -737,8 +744,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_PROP
 {
   declare meta, c_iri, iri, xt, graph_iri, path, ins_dict, del_dict any;
   declare full_path, _wai_name varchar;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
@@ -757,7 +764,8 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_PROP
     return;
 
   graph_iri := get_graph ();
-  select WAI_NAME into _wai_name from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
+  select WAI_NAME into _wai_name
+    from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS
       where WAI_TYPE_NAME = 'oDrive' and WAM_INST = WAI_NAME and WAM_USER = U_ID and WAM_IS_PUBLIC = 1 and U_NAME = path[3]
       and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1;
   c_iri := briefcase_iri (_wai_name);
@@ -776,6 +784,100 @@ create trigger SYS_DAV_PROP_BRIEFCASE_SIOC_D before delete on WS.WS.SYS_DAV_PROP
     }
   DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (graph_iri, del_dict, ins_dict);
   return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure waGraph ()
+{
+  return sprintf ('http://%s/webdav/webaccess', get_cname ());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure waGroup (
+  in id integer,
+  in name varchar)
+{
+  return sprintf ('%s/%s#%s', waGraph (), ODRIVE.WA.account_name (id), name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure foaf_group_insert (
+  inout id integer,
+  inout name varchar,
+  inout webIDs any)
+{
+  declare N integer;
+  declare graph_iri, group_iri varchar;
+  declare tmp any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..waGraph();
+  group_iri := SIOC..waGroup(id, name);
+  DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, rdf_iri ('type'), foaf_iri ('Group'));
+  tmp := split_and_decode (webIDs, 0, '\0\0\n');
+  for (N := 0; N < length (tmp); N := N + 1)
+  {
+    if (length (tmp[N]))
+      DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, foaf_iri ('member'), tmp[N]);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure foaf_group_delete (
+  inout id integer,
+  inout name varchar)
+{
+  declare graph_iri, group_iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..waGraph();
+  group_iri := SIOC..waGroup(id, name);
+  delete_quad_s_or_o (graph_iri, group_iri, group_iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FOAF_GROUPS_SIOC_I after insert on ODRIVE.WA.FOAF_GROUPS referencing new as N
+{
+  foaf_group_insert (N.FG_USER_ID,
+                     N.FG_NAME,
+                     N.FG_WEBIDS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FOAF_GROUPS_SIOC_U after update on ODRIVE.WA.FOAF_GROUPS referencing old as O, new as N
+{
+  foaf_group_delete (O.FG_USER_ID,
+                     O.FG_NAME);
+  foaf_group_insert (N.FG_USER_ID,
+                     N.FG_NAME,
+                     N.FG_WEBIDS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FOAF_GROUPS_SIOC_D before delete on ODRIVE.WA.FOAF_GROUPS referencing old as O
+{
+  foaf_group_delete (O.FG_USER_ID,
+                     O.FG_NAME);
 }
 ;
 

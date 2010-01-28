@@ -21,6 +21,7 @@
 --
 
 ODRIVE.WA.exec_no_error('drop table ODRIVE.WA.GROUPS');
+ODRIVE.WA.exec_no_error('drop table ODRIVE.WA.FOAF_GROUPS');
 ODRIVE.WA.exec_no_error('drop table ODRIVE.WA.SETTINGS');
 
 create procedure ODRIVE.WA.uninstall ()

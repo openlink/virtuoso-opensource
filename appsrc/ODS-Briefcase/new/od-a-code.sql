@@ -766,6 +766,36 @@ create procedure ODRIVE.WA.xml2string(
 --    N -  if pAny is in pArray
 --   -1 -  otherwise
 -------------------------------------------------------------------------------
+create procedure ODRIVE.WA.vector_contains (
+  inout aVector any,
+  in value varchar)
+{
+  declare N integer;
+
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (value = aVector[N])
+      return 1;
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.vector_index (
+  inout aVector any,
+  in value varchar)
+{
+  declare N integer;
+
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (value = aVector[N])
+      return N;
+  return null;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.vector_cut(
   inout pVector any,
   in pIndex integer)
@@ -4286,15 +4316,19 @@ create procedure ODRIVE.WA.aci_load (
           retValue := vector_concat (retValue, vector (V));
         aclNo := aclNo + 1;
         aclRule := data[N][0];
-        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 0, 0, 0);
+        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
       }
+      if (data[N][1] = 'foaf:Agent')
+        V[2] := 'public';
+      if (data[N][1] like SIOC..waGraph() || '%')
+        V[2] := 'group';
       aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
       if (aclMode = 'acl:Read')
-        V[2] := 1;
-      if (aclMode = 'acl:Write')
         V[3] := 1;
-      if (aclMode = 'acl:Control')
+      if (aclMode = 'acl:Write')
         V[4] := 1;
+      if (aclMode = 'acl:Control')
+        V[5] := 1;
     }
     if (not isnull (V))
       retValue := vector_concat (retValue, vector (V));
@@ -4321,6 +4355,7 @@ create procedure ODRIVE.WA.aci_params (
       aclNo := replace (params[N], 'aci_user_', '');
       V := vector (M,
                    trim (params[N+1]),
+                   get_keyword ('aci_mode_' || aclNo, params, 'person'),
                    atoi (get_keyword ('aci_r_grant_' || aclNo, params, '0')),
                    atoi (get_keyword ('aci_w_grant_' || aclNo, params, '0')),
                    atoi (get_keyword ('aci_x_grant_' || aclNo, params, '0'))
@@ -4353,17 +4388,23 @@ create procedure ODRIVE.WA.aci_n3 (
     if (length (aciArray[N][1]))
     {
       retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
-      if (aciArray[N][1] = 'foaf:Agent')
+      if (aciArray[N][2] = 'person')
       {
-        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
-      } else {
         retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
       }
-      if (aciArray[N][2])
-        retValue := retValue || ';\n   acl:mode acl:Read';
+      else if (aciArray[N][2] = 'group')
+      {
+        retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
+      }
+      else if (aciArray[N][2] = 'public')
+      {
+        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
+      }
       if (aciArray[N][3])
-        retValue := retValue || ';\n   acl:mode acl:Write';
+        retValue := retValue || ';\n   acl:mode acl:Read';
       if (aciArray[N][4])
+        retValue := retValue || ';\n   acl:mode acl:Write';
+      if (aciArray[N][5])
         retValue := retValue || ';\n   acl:mode acl:Control';
       retValue := retValue || '.\n';
     }

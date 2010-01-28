@@ -34,6 +34,26 @@ ODRIVE.WA.exec_no_error('
 -----------------------------------------------------------------------------
 --
 ODRIVE.WA.exec_no_error('
+  create table ODRIVE.WA.FOAF_GROUPS (
+    FG_ID integer identity,
+    FG_USER_ID integer not null,
+    FG_NAME varchar not null,
+    FG_DESCRIPTION long varchar,
+    FG_WEBIDS long varchar,
+
+    constraint FK_ODRIVE_FOAF_GROUPS_01 FOREIGN KEY (FG_USER_ID) references DB.DBA.SYS_USERS(U_ID) on delete cascade,
+
+    primary key (FG_ID)
+  )
+');
+
+AB.WA.exec_no_error ('
+  create unique index SK_ODRIVE_FOAF_GROUPS_01 on ODRIVE.WA.FOAF_GROUPS (FG_USER_ID, FG_NAME)
+');
+
+-----------------------------------------------------------------------------
+--
+ODRIVE.WA.exec_no_error ('
   create table ODRIVE.WA.SETTINGS (
     USER_ID   integer references DB.DBA.SYS_USERS(U_ID) on delete cascade,
     USER_SETTINGS long varchar,

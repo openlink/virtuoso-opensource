@@ -604,7 +604,8 @@
                         <input name="aci_seqNo" id="aci_seqNo" type="hidden" value="0" />
                         <table id="aciProperties" class="form-list" style="width: 100%;"  cellspacing="0">
                           <tr>
-                            <th align="center" nowrap="nowrap">User's WebID</th>
+                              <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
+                              <th align="center" nowrap="nowrap">WebID</th>
                             <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
                             <th width="1%" >Action</th>
                           </tr>
