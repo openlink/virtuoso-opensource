@@ -235,6 +235,46 @@
             }
           }
         }
+        else if ((vFormTab = 0) and (vFormSubtab = 5))
+        {
+          vUrl := vHostUrl || '/user.favorites.delete?sid=' || vSid || '&realm=' || vRealm;
+          commit work;
+          vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+          if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+          {
+            vError := vRespond[0];
+            vForm := 'login';
+          }
+          else
+          {
+            vXml := xml_tree_doc (vResult);
+            if (xpath_eval ('/failed/message', vXml))
+            {
+              vError := xpath_eval ('string (/failed/message)', vXml);
+              vForm := 'login';
+            }
+          }
+          if (vForm <> 'login')
+          {
+            vUrl := vHostUrl || '/user.favorites.new?sid=' || vSid || '&realm=' || vRealm || '&favorites=' || sprintf ('%U', get_keyword ('favorites', params, ''));
+            commit work;
+            vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+            if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+            {
+              vError := vRespond[0];
+              -- vForm := 'login';
+            }
+            else
+            {
+              vXml := xml_tree_doc (vResult);
+              if (xpath_eval ('/failed/message', vXml))
+              {
+                vError := xpath_eval ('string (/failed/message)', vXml);
+                -- vForm := 'login';
+              }
+            }
+          }
+        }
         else
         {
           vUrl := vHostUrl  || '/user.update.fields?sid=' || vSid || '&realm=' || vRealm;
@@ -521,6 +561,7 @@
       <input type="hidden" name="form" id="form" value="<?V vForm ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?V vFormTab ?>" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="<?V vFormSubtab ?>" />
+      <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><a href="/ods/?sid=<?V vSid ?>&amp;realm=<?V vRealm ?>">ODS Home</a> > <?V vForm ?></div>
@@ -1181,8 +1222,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>
@@ -1529,8 +1570,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>

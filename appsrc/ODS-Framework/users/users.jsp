@@ -354,6 +354,23 @@
                 }
       		    }
             }
+            else if (($_formTab == 0) && ($_formSubtab == 5))
+            {
+              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
+              $_retValue = httpRequest ("POST", "user.favorites.delete", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
+              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam("&", "favorites", request.getParameter("favorites"));
+              $_retValue = httpRequest ("POST", "user.favorites.new", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
+            }
             else
             {
               params = httpParam ( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
@@ -600,6 +617,7 @@
       <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
       <input type="hidden" name="formTab" id="formTab" value="<% out.print($_formTab); %>" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="<% out.print($_formSubtab); %>" />
+      <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&amp;realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
@@ -1272,8 +1290,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>
@@ -1632,8 +1650,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>

@@ -192,6 +192,28 @@
             }
           }
         }
+        else if (($_formTab == 0) && ($_formSubtab == 5))
+        {
+          $_url = apiURL()."/user.favorites.delete?sid=".$_sid."&realm=".$_realm;
+          $_result = file_get_contents($_url);
+          if (substr_count($_result, "<failed>") <> 0)
+          {
+            $_xml = simplexml_load_string($_result);
+            $_error = $_xml->failed->message;;
+            $_form = "login";
+          }
+          if ($_form != "login")
+          {
+            $_url = apiURL()."/user.favorites.new?sid=".$_sid."&realm=".$_realm."&favorites=".urlencode (str_replace("\\\"", "\"", $_REQUEST["favorites"]));
+            $_result = file_get_contents($_url);
+            if (substr_count($_result, "<failed>") <> 0)
+            {
+              $_xml = simplexml_load_string($_result);
+              $_error = $_xml->failed->message;;
+              $_form = "login";
+            }
+          }
+        }
         else
         {
           $_url = apiURL()."/user.update.fields"."?sid=".$_sid."&realm=".$_realm;
@@ -403,6 +425,7 @@
       <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?php print($_formTab); ?>" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="<?php print($_formSubtab); ?>" />
+      <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><a href="/ods/?sid=<?php print($_sid); ?>&amp;realm=<?php print($_realm); ?>">ODS Home</a> > <?php outFormTitle($_form); ?></div>
@@ -1067,8 +1090,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>
@@ -1412,8 +1435,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
                     </div>
                   </div>

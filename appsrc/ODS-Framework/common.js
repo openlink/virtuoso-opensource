@@ -487,9 +487,12 @@ function updateRow (prefix, No, optionObject)
   }
   else
   {
-    var tbl = $(prefix+'_tbl');
-    if (tbl)
-    {
+    var trParent = $(prefix+'_tbody');
+    if (!trParent)
+      trParent = $(prefix+'_tbl');
+    if (!trParent)
+      return;
+
       options = {btn_1: {mode: 1}};
       for (var p in optionObject) {options[p] = optionObject[p]; }
 
@@ -501,7 +504,7 @@ function updateRow (prefix, No, optionObject)
           fld.name = prefix+'_no';
           fld.id = fld.name;
           fld.value = '0';
-          tbl.appendChild(fld);
+        trParent.appendChild(fld);
         }
         No = $v(prefix+'_no');
       }
@@ -511,7 +514,7 @@ function updateRow (prefix, No, optionObject)
 
       var tr = OAT.Dom.create('tr');
       tr.id = prefix+'_tr_' + No;
-      tbl.appendChild(tr);
+    trParent.appendChild(tr);
 
       // fields
       for (var fld in options)
@@ -551,7 +554,6 @@ function updateRow (prefix, No, optionObject)
       $(prefix+'_no').value = No + 1;
     }
   }
-}
 
 function updateCell (td, prefix, fldName, No, optionObject)
 {

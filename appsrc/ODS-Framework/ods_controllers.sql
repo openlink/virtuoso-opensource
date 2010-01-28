@@ -304,7 +304,7 @@ create procedure obj2json (
 		}
 		retValue := '"' || retValue || '"';
 	}
-  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and o[1] = '<soap_box_structure>')))
+  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
   {
   	retValue := '{';
   	for (N := 2; N < length(o); N := N + 2)
@@ -2310,6 +2310,73 @@ create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/j
 }
 ;
 
+create procedure ODS.ODS_API."user.favorites.new" (
+  in favorites any) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc, N, M integer;
+  declare _u_id integer;
+  declare ontologies, ontology, ontologyItems, item any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  ontologies := json_parse (favorites);
+  for (N := 0; N < length (ontologies); N := N + 1)
+  {
+    ontology := ontologies[N];
+    ontologyItems := get_keyword ('items', ontology);
+    for (M := 0; M < length (ontologyItems); M := M + 1)
+    {
+      item := ontologyItems[M];
+      insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
+        values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize ( get_keyword ('properties', item)), _u_id);
+    }
+  }
+  rc := row_count ();
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.delete" (
+  in id integer := null,
+  in "type" varchar := null,
+  in "class" varchar := null) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  if (isnull (id))
+  {
+    delete
+      from DB.DBA.WA_USER_FAVORITES
+     where WUF_U_ID = _u_id
+       and ("type"  is null or WUF_TYPE  = "type")
+       and ("class" is null or WUF_CLASS = "class");
+  } else {
+    delete
+      from DB.DBA.WA_USER_FAVORITES
+     where WUF_U_ID = _u_id
+       and WUF_ID   = id;
+  }
+  rc := row_count ();
+  return ods_serialize_int_res (rc);
+}
+;
+
 create procedure ODS.ODS_API."user.offer.new" (
   in offerName varchar,
   in offerComment varchar := null) __soap_http 'text/xml'
@@ -3417,6 +3484,8 @@ grant execute on ODS.ODS_API."user.bioEvents.list" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.new" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.list" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.new" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.new" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.offer.property.new" to ODS_API;
