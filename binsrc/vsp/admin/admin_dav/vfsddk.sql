@@ -51,6 +51,7 @@ create table WS.WS.VFS_QUEUE (
     VQ_STAT	varchar (15),
     VQ_OTHER	varchar,
     VQ_ERROR	long varchar,
+    VQ_LEVEL	int default 0,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
 create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS)
@@ -82,6 +83,7 @@ create table WS.WS.VFS_SITE (
     VS_INST_ID	int,
     VS_EXTRACT_FN  varchar,
     VS_STORE_FN  varchar,
+    VS_DEPTH	int default null,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -149,3 +151,8 @@ alter table WS.WS.VFS_SITE add VS_INST_ID  int
 ;
 --#ENDIF
 
+alter table WS.WS.VFS_SITE add VS_DEPTH int default null
+;
+
+alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0
+;
