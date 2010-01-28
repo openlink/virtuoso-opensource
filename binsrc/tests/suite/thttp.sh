@@ -641,7 +641,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 0.2
+       sleep 1
        clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 

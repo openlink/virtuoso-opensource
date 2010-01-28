@@ -236,7 +236,7 @@ START_SERVER()
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
     while [ "z$stat" != "z" -a $timeout -gt 0 ]
     do
-	sleep 0.2
+	sleep 1
 	stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
 
 	nowh=`date | cut -f 2 -d :`
@@ -323,7 +323,7 @@ START_SERVER()
 		LOG "PASSED: Virtuoso Server successfully started on port $port"
 		return 0
 	    fi
-            sleep 0.2
+            sleep 1
 	    nowh=`date | cut -f 2 -d :`
 	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
 
@@ -350,7 +350,7 @@ CHECK_PORT()
 	LOG "PASSED: Port $port is not listened by any process"
 	return 0
     fi
-    sleep 0.2
+    sleep 1
     nowh=`date | cut -f 2 -d :`
     nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
 
