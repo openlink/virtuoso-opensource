@@ -415,10 +415,10 @@ struct log_segment_s
 #define O_LARGEFILE	0
 #endif
 
+extern int c_use_o_direct;
 #ifndef O_DIRECT
 #define O_MAYBE_DIRECT 0
 #else
-extern int c_use_o_direct;
 #define O_MAYBE_DIRECT (c_use_o_direct ? O_DIRECT : 0)
 #endif
 
@@ -483,5 +483,6 @@ void db_dbg_account_add_page (dp_addr_t start);
 void db_dbg_account_check_page_in_hash (dp_addr_t start);
 void db_dbg_account_init_hash ();
 #endif
+extern int32 malloc_bufs;
 
 #endif /* _WIDISK_H */

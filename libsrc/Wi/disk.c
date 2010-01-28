@@ -1328,48 +1328,54 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
   return 1;
 }
 
-#if defined (VALGRIND) || defined (PURIFY) || defined (BUF_BOUNDS)
-#define MALLOC_BUFS 1
-#endif
-
+int32 malloc_bufs = 0;
+#define MIN_BUFS_FOR_ALLOC 100000 /* bellow 1gig buffer space */
 
 buffer_pool_t *
 bp_make_buffer_list (int n)
 {
   buffer_desc_t *buf;
   int c;
-#ifndef MALLOC_BUFS
   unsigned char *buffers_space;
-#endif
   unsigned char *buf_ptr;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
-  mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */, (void*) bp);
+  mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */ , (void *) bp);
   bp->bp_n_bufs = n;
   bp->bp_bufs = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t) * n);
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
-#ifndef MALLOC_BUFS
-  buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
-  if (!buffers_space)
-    GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
-  buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
-  memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
-  buf_ptr = buffers_space;
-#endif
+  if (n > MIN_BUFS_FOR_ALLOC)
+    malloc_bufs = 1;
+
+  if (!malloc_bufs)
+    {
+      buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
+      if (!buffers_space)
+	GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
+      buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
+      memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
+      buf_ptr = buffers_space;
+    }
+  else
+    c_use_o_direct = 0;
+
   for (c = 0; c < n; c++)
     {
       buf = &bp->bp_bufs[c];
-#ifdef MALLOC_BUFS
-      if (c_use_o_direct)
-	GPF_T1 ("An exec ompiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
-      buf->bd_buffer = malloc (BUF_ALLOC_SZ);
-      BUF_SET_END_MARK (buf);
-#else
-      buf->bd_buffer = buf_ptr;
-#endif
-      buf_ptr += ALIGN_VOIDP (PAGE_SZ);
+      if (malloc_bufs)
+	{
+	  if (c_use_o_direct)
+	    GPF_T1 ("An exec ompiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
+	  buf->bd_buffer = malloc (BUF_ALLOC_SZ);
+	  BUF_SET_END_MARK (buf);
+	}
+      else
+	{
+	  buf->bd_buffer = buf_ptr;
+	  buf_ptr += ALIGN_VOIDP (PAGE_SZ);
+	}
       buf->bd_pool = bp;
       buf->bd_timestamp = 0;
     }
