@@ -50,6 +50,13 @@
         <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
     </owl:Ontology>
 
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#BusinessLocations">
+        <rdfs:comment>Google Base item of type 'business locations'</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>
+        <rdfs:label>Business Location</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/google-base#ItemType"/>
+    </owl:Class>
+
     <owl:Class rdf:about="http://www.openlinksw.com/schemas/google-base#Housing">
         <rdfs:comment>Google Base item of type 'housing'</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/google-base"/>

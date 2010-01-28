@@ -121,11 +121,11 @@
 						<xsl:variable name="cur_cell_num" select="@ss:Index" />
 						<xsl:choose>
 							<xsl:when test="$cur_cell_num &gt; 0">
-								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))}"/>
+								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_row', $cur_row_num, 'col', $cur_cell_num))}"/>
 							</xsl:when>
 							<xsl:otherwise>
 								<xsl:variable name="cur_cell_num" select="$prev_cell_num + 1" />
-								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))}"/>
+								<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_row', $cur_row_num, 'col', $cur_cell_num))}"/>
 							</xsl:otherwise>
 						</xsl:choose>
 						<xsl:variable name="prev_cell_num"  select="$cur_cell_num"/>
@@ -150,12 +150,12 @@
 					<xsl:variable name="cellName"/>
 					<xsl:choose>
 						<xsl:when test="$cur_cell_num &gt; 0">
-							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))"/>
+							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_row', $cur_row_num, 'col', $cur_cell_num))"/>
 							<xsl:variable name="cellName" select="concat('row ', $cur_row_num, ', col ', $cur_cell_num)"/>
 						</xsl:when>
 						<xsl:otherwise>
 							<xsl:variable name="cur_cell_num" select="$prev_cell_num + 1" />
-							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_Cell_', $cur_row_num, '_', $cur_cell_num))"/>
+							<xsl:variable name="cellIRI" select="vi:proxyIRI($baseUri, '', concat(../../../@ss:Name, '_Table_', $table_num, '_row', $cur_row_num, 'col', $cur_cell_num))"/>
 							<xsl:variable name="cellName" select="concat('row ', $cur_row_num, ', col ', $cur_cell_num)"/>
 						</xsl:otherwise>
 					</xsl:choose>

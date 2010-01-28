@@ -85,6 +85,8 @@
 
     <xsl:variable name="uc">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
     <xsl:variable name="lc">abcdefghijklmnopqrstuvwxyz</xsl:variable>
+    <xsl:variable name="strip_ws_from">_ </xsl:variable>
+    <xsl:variable name="strip_ws_to">_</xsl:variable>
 
     <xsl:template match="/">
 	<rdf:RDF>
@@ -120,29 +122,71 @@
     <xsl:template match="a:entry" >
    		<xsl:variable name="entryID" select="substring-after(a:id, 'snippets/')"/>
    		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
+   		<xsl:variable name="itemType" select="translate(g:item_type, $strip_ws_from, $strip_ws_to)"/>
 
 		<rdf:Description rdf:about="{$resourceURL}">
+			<xsl:choose>
+				<xsl:when test="contains($itemType, 'BusinessLocation')">
+					<rdf:type rdf:resource="&gr;BusinessEntity" />
+					<rdf:type rdf:resource="&foaf;Organization" />
+					<foaf:member>
+	    				<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', concat('Contact_', $entryID))}">
+							<foaf:name><xsl:value-of select="a:title"/></foaf:name>
+							<rdfs:seeAlso rdf:resource="{./a:link[@rel='alternate']/@href}"/>
+						</foaf:Person>
+					</foaf:member>
+				</xsl:when>
+				<xsl:otherwise>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
-			<rdf:type rdf:resource="&oplgb;{g:item_type}" /> <!-- OpenLink GoogleBase schema should declare a class for each supported item type -->
 			<gr:amountOfThisGood>1</gr:amountOfThisGood>
+	    			<dc:title><xsl:value-of select="a:title"/></dc:title>
+					<rdfs:label><xsl:value-of select="a:title"/></rdfs:label>
+				</xsl:otherwise>
+			</xsl:choose>
+			<!-- OpenLink GoogleBase schema declares a class for each supported item type -->
+			<rdf:type rdf:resource="&oplgb;{$itemType}" />
 	   		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			<owl:sameAs><xsl:value-of select="a:id"/></owl:sameAs>
-	    	<dc:title><xsl:value-of select="a:title"/></dc:title>
 	    	<dcterms:publisher>Google Inc.</dcterms:publisher>
-			<rdfs:label><xsl:value-of select="a:title"/></rdfs:label>
 	    	<xsl:apply-templates select="g:*"/>
 	    	<xsl:apply-templates select="a:*"/>
 		</rdf:Description>
-	   	<xsl:apply-templates select="g:price" mode="offering" />
-	   	<xsl:apply-templates select="a:author" mode="offering" />
+
+		<!-- wanted ads may not stipulate a price -->
+		<xsl:if test="g:price or contains($itemType, 'WantedAds' )">
+			<xsl:choose>
+				<xsl:when test="contains($itemType, 'WantedAds')">
+	   				<xsl:call-template name="wantedAd" />
+	   				<xsl:apply-templates select="a:author" mode="wants" />
+				</xsl:when>
+				<xsl:otherwise>
+	   				<xsl:apply-templates select="g:price" mode="offers" />
+	   				<xsl:apply-templates select="a:author" mode="offers" />
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="a:content">
+   		<xsl:variable name="itemType" select="translate(../g:item_type, $strip_ws_from, $strip_ws_to)"/>
+
+		<xsl:choose>
+			<xsl:when test="contains($itemType, 'BusinessLocation')">
+		   		<gr:legalName><xsl:value-of select="."/></gr:legalName>
+		   		<rdfs:label><xsl:value-of select="."/></rdfs:label>
+			</xsl:when>
+			<xsl:otherwise>
 		<dc:description><xsl:value-of select="."/></dc:description>
+			</xsl:otherwise>
+		</xsl:choose>
     </xsl:template>
 
     <xsl:template match="a:entry//a:link[@rel = 'alternate']">
+   		<xsl:variable name="itemType" select="translate(../g:item_type, $strip_ws_from, $strip_ws_to)"/>
+
+		<xsl:if test="not(contains($itemType, 'BusinessLocation'))">
 		<rdfs:seeAlso rdf:resource="{@href}"/>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="a:entry//a:published">
@@ -155,7 +199,7 @@
 
     <xsl:template match="a:category"/>
 
-    <xsl:template match="g:price" mode="offering">
+    <xsl:template match="g:price" mode="offers">
    		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
    		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
 
@@ -194,7 +238,33 @@
 		</gr:Offering>
     </xsl:template>
 
-    <xsl:template match="a:entry//a:author" mode="offering">
+    <xsl:template name="wantedAd">
+   		<xsl:variable name="entryID" select="substring-after(a:id, 'snippets/')"/>
+   		<xsl:variable name="resourceURL" select="vi:proxyIRI($baseUri, '', concat('Item_', $entryID))"/>
+
+		<rdf:Description rdf:about="{$docproxyIRI}">
+			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Offer_', $entryID))}"/>
+		</rdf:Description>
+
+		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', concat('Offer_', $entryID))}">
+		   	<gr:hasBusinessFunction rdf:resource="&gr;Buy"/>
+		    <gr:includes rdf:resource="{$resourceURL}"/>
+		    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="g:expiration_date"/></gr:validThrough>
+
+			<xsl:if test="g:price">
+				<gr:hasPriceSpecification>
+		  			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price_', $entryID))}">
+						<rdfs:label>Price</rdfs:label>
+						<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement> <!-- C62 implies 'one' -->	
+           				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="substring-before(g:price, ' ')"/></gr:hasCurrencyValue>
+           				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="translate (substring-after(g:price, ' '), $lc, $uc)"/></gr:hasCurrency>
+          			</gr:UnitPriceSpecification>
+				</gr:hasPriceSpecification>
+			</xsl:if>
+		</gr:Offering>
+    </xsl:template>
+
+    <xsl:template match="a:entry//a:author" mode="offers">
    		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
 
 		<rdf:Description rdf:about="{$docproxyIRI}">
@@ -204,6 +274,21 @@
 		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}"> <!-- TO DO : Risks multiple URIs for same vendor -->
       		<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer_', $entryID))}"/>
 			<rdfs:comment>The legal agent making the offering</rdfs:comment>
+		    <rdfs:label><xsl:value-of select="a:name"/></rdfs:label>
+		    <gr:legalName><xsl:value-of select="a:name"/></gr:legalName>
+    	</gr:BusinessEntity>
+    </xsl:template>
+
+    <xsl:template match="a:entry//a:author" mode="wants">
+   		<xsl:variable name="entryID" select="substring-after(../a:id, 'snippets/')"/>
+
+		<rdf:Description rdf:about="{$docproxyIRI}">
+			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Buyer_', $entryID))}"/>
+		</rdf:Description>
+
+		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Buyer_', $entryID))}"> <!-- TO DO : Risks multiple URIs for same buyer -->
+      		<gr:seeks rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer_', $entryID))}"/>
+			<rdfs:comment>The legal agent seeking the offering</rdfs:comment>
 		    <rdfs:label><xsl:value-of select="a:name"/></rdfs:label>
 		    <gr:legalName><xsl:value-of select="a:name"/></gr:legalName>
     	</gr:BusinessEntity>
@@ -231,6 +316,10 @@
 		<!-- Latitude/longitude information may already be present if original query string included parameter 'content=geocodes' -->
 		<xsl:if test="not (g:latitude)">
 			<!-- Transform address into vCard format, so geocoder metacartridge can determine latitude & longitude -->
+			<!--
+				Many Google Base addresses are incomplete (particularly for 'business locations' items)
+				e.g. ',Winter Haven,FL,33675'
+			-->
 			<xsl:variable name="pt1" select="substring-before(., ',')"/>
 			<xsl:variable name="pt1a" select="substring-after(., ',')"/>
 			<xsl:variable name="pt2" select="substring-before($pt1a, ',')"/>
@@ -246,11 +335,26 @@
 			-->
 				<vcard:adr>
 					<vcard:Address rdf:about="{vi:proxyIRI($baseUri, '', concat('VCardAddress_', $entryID))}">
+						<xsl:if test="string-length($pt1) &gt; 0">
 						<vcard:street-address><xsl:value-of select="$pt1"/></vcard:street-address>
+						</xsl:if>
+						<xsl:if test="string-length($pt2) &gt; 0">
 						<vcard:locality><xsl:value-of select="$pt2"/></vcard:locality>
+						</xsl:if>
+						<xsl:if test="string-length($pt3) &gt; 0">
 						<vcard:region><xsl:value-of select="$pt3"/></vcard:region>
+						</xsl:if>
+						<xsl:choose>
+							<xsl:when test="string-length($pt4) &gt; 0">
 						<vcard:postal-code><xsl:value-of select="$pt4"/></vcard:postal-code>
+							</xsl:when>
+							<xsl:otherwise>
+								<vcard:postal-code><xsl:value-of select="$pt3a"/></vcard:postal-code>
+							</xsl:otherwise>
+						</xsl:choose>
+						<xsl:if test="string-length($pt5) &gt; 0">
 						<vcard:country-name><xsl:value-of select="$pt5"/></vcard:country-name>
+						</xsl:if>
 					</vcard:Address>
 				</vcard:adr>
 			<!--
@@ -270,8 +374,8 @@
 		<wgs84:long><xsl:value-of select="."/></wgs84:long>
     </xsl:template>
 
-    <xsl:template match="g:price" /> <!-- Already handled by "offering" mode -->
-    <xsl:template match="a:author" /> <!-- Already handled by "offering" mode -->
+    <xsl:template match="g:price" /> <!-- Already handled by "offers" mode -->
+    <xsl:template match="a:author" /> <!-- Already handled by "offers" mode -->
 
 	<!-- UPCs should be 12 characters, not all Google Base entries conform -->
     <xsl:template match="g:upc"> 
@@ -288,6 +392,7 @@
     </xsl:template>
 
 	<!-- Not of use to end-user -->
+    <xsl:template match="g:customer_id" />
     <xsl:template match="g:googleaffiliatenetworkpublish" />
     <xsl:template match="g:product_ad_extension_trademark_cleared" /> 
 
@@ -306,5 +411,6 @@
 
     <xsl:template match="text()|@*" />
     <xsl:template match="text()|@*" mode="container" />
-    <xsl:template match="text()|@*" mode="offering" />
+    <xsl:template match="text()|@*" mode="offers" />
+    <xsl:template match="text()|@*" mode="wants" />
 </xsl:stylesheet>
