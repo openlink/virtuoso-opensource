@@ -1827,7 +1827,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
           if (not isiri_id (arr[i])) 
             arr[i] := iri_to_id (arr[i], 0);  
 	}
-      objs := (select vector_agg (id_to_iri (O)) from DB.DBA.RDF_QUAD where G = iri_to_id (graph, 0) and P in (arr) and isiri_id (O));
+      objs := (select DB.DBA.VECTOR_AGG (id_to_iri (O)) from DB.DBA.RDF_QUAD where G = iri_to_id (graph, 0) and P in (arr) and isiri_id (O));
       WS.WS.SITEMAP_URLS_REGISTER (_host, _root, objs, lev);
     } 
   insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
