@@ -99,7 +99,7 @@ function init()
       $('dawg_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_dawg_toggle'),"click",ref);
+  OAT.Event.attach($('tab_dawg_toggle'),"click",ref);
   $('dawg_tree_container')._Tree_collapsed = 0;
 
   var ref3v=function() { 
@@ -118,7 +118,7 @@ function init()
       $('virt_ext_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_virt_ext_toggle'),"click",ref3v);
+  OAT.Event.attach($('tab_virt_ext_toggle'),"click",ref3v);
   $('virt_ext_tree_container')._Tree_collapsed = 0;
 
 
@@ -138,7 +138,7 @@ function init()
       $('samples_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_sq_toggle'),"click",ref2);
+  OAT.Event.attach($('tab_sq_toggle'),"click",ref2);
   $('samples_tree_container')._Tree_collapsed = 0;
 
   var ref5=function() {
@@ -157,7 +157,7 @@ function init()
       $('tutorial_tree_container')._Tree_collapsed = 0;
     }
   }
-  OAT.Dom.attach($('tab_tutorial_toggle'),"click",ref5);
+  OAT.Event.attach($('tab_tutorial_toggle'),"click",ref5);
   $('tutorial_tree_container')._Tree_collapsed = 0;
 }
 
