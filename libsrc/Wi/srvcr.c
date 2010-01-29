@@ -35,12 +35,19 @@
 #include "sqlintrp.h"
 #include "arith.h"
 #include "crsr.h"
-#include "util/md5.h"
 #include "util/strfuns.h"
 #include "sqlbif.h"
 #include "list2.h"
 #include "sqltype_c.h"
 
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
 
 long max_static_cursor_rows = _MAX_STATIC_CURSOR_ROWS;
 

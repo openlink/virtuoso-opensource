@@ -34,11 +34,12 @@
 #include <openssl/safestack.h>
 #include <openssl/bio.h>
 #include <openssl/asn1.h>
-#define MD5Init MD5_Init
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
 #define MD5Update MD5_Update
-#define MD5Final MD5_Final
+#define MD5Final  MD5_Final
 #else
-#include "../util/md5.h"
+#include "util/md5.h"
 #endif /* _SSL */
 
 #ifndef _WI_STRLIKE_H

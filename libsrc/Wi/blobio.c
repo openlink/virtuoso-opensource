@@ -27,12 +27,20 @@
  */
 
 #include "virtpwd.h"
-#define MD5_CTX virt__MD5_CTX
-#include "util/md5.h"
 #include "CLI.h"
 #include "multibyte.h"
 #include "sqlfn.h"
 #include "numeric.h"
+
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
+
 
 void
 bh_free (blob_handle_t * bh)

@@ -56,7 +56,6 @@ libutil_la_SOURCES = \
 	logmsg.c \
 	ltrim.c \
 	make_env.c \
-	md5.c \
 	mpl.c \
 	ncfg.c \
 	ntapp.c \
