@@ -102,7 +102,6 @@ void virtuoso_set_create_thread (CreateThreadPtr ptr);
 #include "sqlpar.h"
 #include "security.h"
 #include <util/fnmatch.h>
-#include <util/md5.h>
 #include "statuslog.h"
 #include "sqlcmps.h"
 #include "sqlintrp.h"

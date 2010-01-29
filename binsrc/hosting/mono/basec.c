@@ -36,7 +36,6 @@
 #include "sqlfn.h"
 #include "sqlpar.h"
 #include <util/fnmatch.h>
-#include <util/md5.h>
 #include "statuslog.h"
 #include "sqlcmps.h"
 #include "sqlintrp.h"
