@@ -2544,17 +2544,12 @@ AC_CONFIG_FILES([
 	binsrc/rdf_mappers/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
-	binsrc/samples/docbookview/Makefile
 	binsrc/samples/hslookup/Makefile
-	binsrc/samples/IBuySpy/Makefile
 	binsrc/samples/image_magick/Makefile
 	binsrc/samples/JDBC/Makefile
 	binsrc/samples/Makefile
 	binsrc/samples/odp/Makefile
-	binsrc/samples/petshop/Makefile
-	binsrc/samples/schemaview/Makefile
 	binsrc/samples/sparql_demo/Makefile
-	binsrc/samples/TPC-W/Makefile
 	binsrc/samples/wbxml2/Makefile
 	binsrc/samples/webapp/Makefile
 	binsrc/samples/xpath/Makefile
