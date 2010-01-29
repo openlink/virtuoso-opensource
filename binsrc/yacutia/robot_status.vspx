@@ -24,7 +24,7 @@
  -
 -->
 <v:page name="robot_queues_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagetitle>Virtuoso Crawler Status</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
       <v:variable name="error_str" persist="1" type="varchar" default="''"/>
@@ -85,12 +85,11 @@
 			       <v:before-render><![CDATA[
 				 declare params any;
 				 params := self.vc_event.ve_params;
-				 control.bt_url := sprintf ('%s?host=%U&root=%U&url=%U&start=%U',
+				 control.bt_url := sprintf ('%s?host=%U&root=%U&url=%U',
 				 http_path (),
 				 get_keyword ('host', params, ''),
 				 get_keyword ('root', params, ''),
-				 get_keyword ('url', params, ''),
-				 get_keyword ('start', params, '0'));
+				 get_keyword ('url', params, ''));
 				 ]]></v:before-render>
 		  </v:button>
 		  </td>
@@ -101,9 +100,7 @@
                     <v:button action="simple" value="Back" name="robot_button25" format="%s" style="url">
                       <v:on-post>
                         <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
+                          self.vc_redirect ('robot_queues.vspx');
                         ]]>
                       </v:on-post>
                     </v:button>
@@ -113,44 +110,17 @@
             </v:form>
       <?vsp
         set isolation='uncommitted';
-        declare _count, upd, i, l, in_proc, idx integer;
-        declare stime, cnt, wait integer;
-        declare host, root, url, sid, reqs varchar;
-        declare refr, elap int;
-        _count := 0; refr := 0; upd := 1;
-        reqs := http_pending_req();
-        in_proc := 0;
+	declare host, root, url varchar;
+
         host := get_keyword ('host', params, '');
         root := get_keyword ('root', params, '');
         url := get_keyword ('url', params, '');
-        sid := get_keyword ('sid', params, '');
-        stime := atoi(get_keyword ('start', params, '0'));
-        elap := msec_time () - stime;
-        i := 0;
-        l := length (reqs);
-        while (i < l)
-        {
-          declare rec any;
-          rec := reqs [i];
-          if (rec[1] = 'robot_queues.vspx')
-            {
-              i := l;
-              in_proc := 1;
-            }
-          i := i + 1;
-        }
-        if (in_proc or(exists( select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and ((VQ_URL <> url and VQ_STAT in ('waiting', 'pending')) or (VQ_URL = url and VQ_STAT = 'pending')))))
-          refr := 1;
-        if (refr)
-          select count(*) into cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'retrieved';
-        else
-          select count(*) into cnt from WS.WS.VFS_URL where VU_HOST = host and VU_ROOT = root;
-        select count(*) into wait from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'waiting';
+
         http(concat('<h4>Results for ', host,'</h4>'));
-        if (refr)
+        if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and VQ_STAT = 'pending'))
         {
-	  http(sprintf ('<table class="listing"><tr><td>Top %d pending URLs (Total waiting %d)</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>',
-	    case when wait > 20 then 20 else wait end, wait));
+	  declare idx int;
+	  http('<table class="listing"><tr><td>Top pending URLs</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>');
 	  idx := 0;
 	  for select top 10 VQ_URL, VQ_TS, VQ_STAT from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT
 	  in ('waiting', 'pending', 'error') order by VQ_HOST, VQ_ROOT, VQ_TS do
@@ -167,42 +137,29 @@
 	  <?vsp
 	    }
 	    http ('</table>');
-	    http_header ('Refresh: 5\r\n');
-        }
-        else
-        {
-          declare _err_cnt, updated_l, sttime int;
-          _err_cnt := coalesce ((select count(*) from ws.ws.vfs_queue where vq_host = host and vq_root = root and vq_stat = 'error'), 0);
-          if (_err_cnt > 1)
-            http (concat ('<p>errors while retrieving target. wrong entries : ', cast (_err_cnt as varchar) ,'. select "stop" and "reset" to return initial state</p>'));
+          
+	  http ('<table class="listing">');
+	  http('<tr class="listing_header_row"><th>Status</th><th>Count</th></tr>');
+	  for select vq_stat, count(*) as cnt from  ws.ws.vfs_queue where vq_host = host and vq_root = root do
           {
-            declare continue handler for sqlstate '*' { upd := 0; sttime := now (); };
-            sttime := cast (get_keyword ('stime', params, cast (now() as varchar)) as datetime);
+	      ?>
+	      <tr><td><?V vq_stat ?></td><td><?V cnt ?></td></tr>
+	      <?vsp
           }
-          if (upd)
-          {
-            declare continue handler for not found { updated_l := 0; };
-            {
-              select count(*) into updated_l from ws.ws.vfs_url where vu_root = root and vu_host = host and vu_cptime > sttime and vu_url not like '%/';
+	  http ('</table>');
+          http_header ('Refresh: 5\r\n');
             }
-            if (updated_l > 0)
-              http(sprintf('<p><small><strong>Total updated : %d</strong></small></p>', updated_l));
             else
-              http(sprintf('<p><small><strong>No Updates</strong></small></p>', updated_l));
-          }
+        {
+          if (exists (select 1 from ws.ws.vfs_queue where vq_host = host and vq_root = root and vq_stat = 'error'))
+            http (concat ('<p>errors while retrieving target. Select "reset" to return initial state</p>'));
       ?>
       <p>
-        <b>download finished</b>
+	  Total URLs processed : <?V coalesce ((select count(*) as cnt from  ws.ws.vfs_queue where vq_host = host and vq_root = root), 0) ?>
       </p>
-      <?vsp
-        }
-      ?>
-      <p>total download: <b><?V cnt ?></b> pages</p>
-      <?vsp
-        if (refr)
-        {
-      ?>
-      <p>Elapsed time: <b><?V elap ?></b> msec.</p>
+      <p>
+        <b>Download finished</b>
+      </p>
       <?vsp
         }
       ?>
