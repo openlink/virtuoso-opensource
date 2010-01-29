@@ -274,7 +274,6 @@ directory_init() {
   cp -f $HOME/docsrc/stylesheets/sections/doc.css               vad/data/demo/docsrc
   cp -f $HOME/docsrc/stylesheets/sections/openlink.css          vad/data/demo/docsrc
   cp -f $HOME/docsrc/releasenotes/*                             vad/data/demo/releasenotes
-  cp -f drop_petshop.sql                                        vad/data/demo/sql
   cp -f grant_select.sql                                        vad/data/demo/sql
   cp -f nw.owl                                                  vad/data/demo/sql
   cp -f load_ontology_dav.sql                                   vad/data/demo/sql
@@ -340,17 +339,6 @@ directory_init() {
   cp -f $HOME/binsrc/samples/webapp/forums/def_vad.sql              vad/data/demo/sql
   cp -f $HOME/binsrc/samples/webapp/forums/func_vad.sql             vad/data/demo/sql
 
-  cp -f $HOME/binsrc/samples/IBuySpy/PortalDB_vad.sql               vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/IBuySpy/PortalDB_data_vad.sql          vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/IBuySpy/PortalDB_proc_vad.sql          vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/IBuySpy/StoreDB_schema_vad.sql         vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/IBuySpy/StoreDB_data_vad.sql           vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/IBuySpy/StoreDB_proc_vad.sql           vad/data/demo/sql
-
-  cp -f $HOME/binsrc/samples/petshop/CreateDBLogin1_vad.sql         vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/petshop/CreateTables1_vad.sql          vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/petshop/CreateTables2_vad.sql          vad/data/demo/sql
-  cp -f $HOME/binsrc/samples/petshop/LoadTables1_vad.sql            vad/data/demo/sql
   cp -f check_demo.sql                                          vad/data/demo/sql
 }
 
@@ -442,23 +430,6 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/eNews_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/def_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/func_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/PortalDB_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/PortalDB_data_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/PortalDB_proc_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_schema_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_data_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/StoreDB_proc_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      VHOST_REMOVE (lpath=>'/PortalCSVS');" >> $STICKER
-  echo "      VHOST_REMOVE (lpath=>'/StoreCSVS');" >> $STICKER
-  echo "      VHOST_DEFINE (lpath=>'/PortalCSVS', ppath=>'/IBuySpy/PortalCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
-  echo "      VHOST_DEFINE (lpath=>'/StoreCSVS', ppath=>'/IBuySpy/StoreCSVS/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateDBLogin1_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables1_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/CreateTables2_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/LoadTables1_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      VHOST_REMOVE (lpath=>'/PetShop');" >> $STICKER
-  echo "      VHOST_DEFINE (lpath=>'/PetShop', ppath=>'/PetShop/Web/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/drop_petshop.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/tpch.sql', 1, 'report', 1);" >> $STICKER
