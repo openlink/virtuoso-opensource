@@ -1,3 +1,72 @@
+January 29, 2010, V5.0.13:
+  * Database engine
+    - Added configuration option BuffersAllocation
+    - Added configuration option AsyncQueueMaxThreads
+    - Added docbook-xsl-1.75.2
+    - Added RoundRobin connection support
+    - Removed deprecated samples/demos
+    - Fixed copyright and license clarification
+    - Fixed use MD5 from OpenSSL when possible
+    - Fixed issue with XA exception, double rollback, transact timeout
+    - Fixed issue reading last chunk in http session
+    - Fixed use pipeline client in crawler
+    - Fixed accept different headers in pipeline request
+    - Fixed do not post when no post parameters
+    - Fixed checkpoint messages in log
+    - Fixed read after allocated memory
+    - Fixed shortened long URLs in the crawlers view to avoid ui breakage
+
+  * SPARQL and RDF
+    - Added initial support for SPARQL-FED
+    - Added initial support for SERVICE { ... };
+    - Added support for expressions in LIMIT and OFFSET clauses
+    - Added support for Google Base, ithalia, revyu
+    - Added built-in predicate IsRef()
+    - Added new error reporting for unsupported syntax
+    - Added rdf box id only serialization; stays compatible with 5/6
+    - Added Yelp categories
+    - Added support for SPARQL INSERT DATA / DELETE DATA
+    - Added support for HAVING in sparql
+    - Added special codegen for
+      sparql select distinct ?g where { graph ?g { ?s ?p ?o }}
+    - Added support for RDFa export
+    - Added support for output:maxrows
+    - Updated ontologies API
+    - Updated iSPARQL application
+    - Fixed IRI parts syntax to match SPARQL 1.0 W3C recommendation
+    - Fixed support for XMLLiteral
+    - Fixed bad box flags for strings for bnodes and types
+    - Fixed replace lost filters with equivs that have no spog vars and
+      no "good" subequivs.
+    - Fixed cnet doublt awol:content
+    - Fixed Googlebase query results with multiple entries
+    - Fixed Googlebase location info
+    - Fixed default sitemap crawling functions/pages
+    - Fixed use sparul load instead of soft
+    - Fixed make sure version is intact as changes to .ttl file must
+      reflect in sparql.sql
+    - Fixed missing qualification of aggregate
+    - Fixed compilation of ORDER BY column_idz clause in iterator of sponge
+      with loop
+    - Fixed UNION of SELECTs and for multiple OPTIONALs at one level with
+      "good" and "bad" equalities
+    - Fixed support for define output:format "JSON"
+
+  * ODS Applications
+    - Added support for ckeditor
+    - Added new popup calendar based on OAT
+    - Added VSP and REST implementation for user API
+    - Added new API functions
+    - Added FOAF+SSL groups
+    - Added feed admin rights
+    - Added Facebook registration and login
+    - Removed support for Kupu editor
+    - Removed support for rte editor
+    - Removed support for IE 5 and 6 compatibility
+    - Fixed users paths to physical location
+    - Fixed problem with activity pages
+
+
 October 16, 2009, V5.0.12:
   * Database engine
     - Added Public Key Infrastructure UI in conductor
