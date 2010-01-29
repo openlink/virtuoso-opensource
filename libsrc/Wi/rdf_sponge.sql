@@ -769,8 +769,8 @@ resp_received:
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
 
-  if (__tag (ret_body) = 185)
-    ret_body := string_output_string (subseq (ret_body, 0, 10000000));
+  --if (__tag (ret_body) = 185)
+  --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
 
   {
   whenever sqlstate '*' goto error_during_load;
@@ -881,7 +881,7 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'text/rdf+n3';
     }
   declare ret_begin, ret_html any;
-  ret_begin := "LEFT" (ret_body, 1024);
+  ret_begin := subseq (ret_body, 0, 1024);
   ret_html := xtree_doc (ret_begin, 2);
   if (xpath_eval ('/html|/xhtml', ret_html) is not null)
     return 'text/html';
@@ -1228,7 +1228,7 @@ load_grddl:;
     {
       signal ('RDFXX', sprintf (
           'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
-          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], "LEFT" (ret_body, 500) ) );
+          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], subseq (ret_body, 0, 500) ) );
     }
   if (strstr (ret_content_type, 'text/html') is not null)
     {
@@ -1236,7 +1236,7 @@ load_grddl:;
           'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
           graph_iri, new_origin_uri, ret_content_type, ret_hdr[0],
 --          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 500)
-          "LEFT" (ret_body, 500)
+          subseq (ret_body, 0, 500)
  ) );
     }
   signal ('RDFZZ', sprintf (
