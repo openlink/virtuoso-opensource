@@ -103,20 +103,18 @@
                       declare tmpString varchar;
 
                       tmpString := '';
-                      if (self.v_mode = 'blog') {
+                  if (self.v_mode = 'blog')
+                  {
                         declare title, link any;
                         select coalesce(EFI_TITLE, '~ no title ~'), EFI_LINK into title, link from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
                         tmpString := sprintf('Post URL: <a href="%V">%V</a>', link, title);
                       }
                     ?>
+                <textarea id="f_message" name="f_message" style="width: 400; height: 170"><?vsp http (tmpString); ?></textarea>
                     <![CDATA[
-                  <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                      <script language="JavaScript" type="text/javascript">
-                    initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                      </script>
-                      <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                      <script language="JavaScript" type="text/javascript">
-                        writeRichText('f_message', '<?vsp http(tmpString); ?>', 480, 165, true, false);
+                  <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                  <script type="text/javascript">
+                    var oEditor = CKEDITOR.replace('f_message');
                       </script>
                     ]]>
                   </td>
@@ -132,7 +130,7 @@
             </table>
           </div>
           <div class="new-form-footer">
-            <v:button action="simple" value="--either(equ(self.v_mode, 'blog'), 'Post', 'Comment')" enabled="--case when (self.step = 0) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_class="form-button">
+        <v:button action="simple" value="--either(equ(self.v_mode, 'blog'), 'Post', 'Comment')" enabled="--case when (self.step = 0) then 1 else 0 end" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
                   declare url, blog, userName, userMail, title, message, content varchar;

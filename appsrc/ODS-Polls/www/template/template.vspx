@@ -52,7 +52,6 @@
         var featureList=["ajax2", "xml", "anchor", "barchart", "piechart", "dialog", "calendar"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/polls.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">

@@ -27,12 +27,9 @@
   xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
   xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" >
 
-  <xsl:output
-    method="html"
-    encoding="utf-8"
-    />
-
+  <xsl:output method="html" encoding="utf-8"/>
   <xsl:include href="common.xsl"/>
+
   <xsl:template match="/">
    <div class="working-area">
     <h3>Topic '<xsl:value-of select="$ti_raw_title"/>' does not exist</h3>
@@ -40,32 +37,18 @@
     <div style="text-align: justify; padding: 0 10%;">
       <xsl:apply-templates/>
     </div>
-    <xsl:choose>
-      <xsl:when test="wv:params('mode', 'plain') = 'plain'">
-        <xsl:call-template name="switch-to-another-mode">
-          <xsl:with-param name="target-mode">js</xsl:with-param>
-        </xsl:call-template>
         <xsl:call-template name="edit-form">
           <xsl:with-param name="text">
             If you think that it's worth to create it right now, just do it! 
           </xsl:with-param>
         </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="switch-to-another-mode">
-          <xsl:with-param name="target-mode">plain</xsl:with-param>
-        </xsl:call-template>
-        <xsl:call-template name="kupu-editor"/>
-      </xsl:otherwise>
-    </xsl:choose>
   </div>
   </xsl:template>
+
   <xsl:template match="node()">
       <xsl:copy>
         <xsl:copy-of select="@*" />
         <xsl:apply-templates select="node()" />
       </xsl:copy>
    </xsl:template>
-
-			     
 </xsl:stylesheet>

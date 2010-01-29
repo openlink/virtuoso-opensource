@@ -62,12 +62,11 @@ function toggleTab(obj, noValue)
 {
   if (obj.checked == true)
   {
-    document.getElementById('plain').style.display = 'none';
-    document.getElementById('rte').style.display = 'block';
-    initEditor('rteMessage');
+    OAT.Dom.hide('plain');
+    OAT.Dom.show('rte');
   } else {
-    document.getElementById('plain').style.display = 'block';
-    document.getElementById('rte').style.display = 'none';
+    OAT.Dom.show('plain');
+    OAT.Dom.hide('rte');
   }
   if (noValue == null)
     toggleValue(obj);
@@ -84,23 +83,23 @@ function toggleValue(obj)
 {
   if (obj.checked == true)
   {
-    var value = document.forms['f1'].elements['plainMessage'].value;
-    enableDesignMode('rteMessage', text2rte(value), true);
+    var value = $v('plainMessage');
+    oEditor.setData(text2rte(value));
   } else {
-    updateRTE('rteMessage');
-    var value = document.forms['f1'].elements['rteMessage'].value;
-    document.forms['f1'].elements['plainMessage'].value = rte2text(value);
+    oEditor.updateElement();
+    var value = $v('rteMessage');
+    $('plainMessage').value = rte2text(value);
   }
 }
 
 function initValue (obj)
 {
-  var value = document.forms['f1'].elements['message'].value;
+  var value = $v('message');
   if (obj.checked == true)
   {
-    enableDesignMode('rteMessage', initRte(value), false);
+    oEditor.setData(initRte(value));
   } else {
-    document.forms['f1'].elements['plainMessage'].value = value;
+    $('plainMessage').value = value;
   }
 }
 
@@ -109,10 +108,10 @@ function returnValue(obj)
   var value;
   if (obj.checked == true)
   {
-    updateRTE('rteMessage');
-    value = clearRte(document.forms['f1'].elements['rteMessage'].value);
+    oEditor.updateElement();
+    value = $v('rteMessage');
   } else {
-    value = document.forms['f1'].elements['plainMessage'].value;
+    value = $v('plainMessage');
   }
   document.forms['f1'].elements['message'].value = value;
 }

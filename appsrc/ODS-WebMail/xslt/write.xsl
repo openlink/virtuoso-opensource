@@ -304,7 +304,7 @@
           <label for="message">Message</label>
         </th>
         <td style="height: 290px;" valign="top">
-          <input name="message" type="hidden">
+          <input name="message" id="message" type="hidden">
             <xsl:attribute name="value">
               <xsl:if test="string-length (message/mbody) > 0">
                   <xsl:apply-templates select="message/mbody"/>
@@ -314,17 +314,13 @@
           </input>
           <div>
             <div id="plain" style="display: none;">
-              <textarea name="plainMessage" rows="15" cols="75" wrap="hard" ONSELECT="storeCaret(this);" ONCLICK="storeCaret(this);" ONKEYUP="storeCaret(this);" id="addr_msg"/>
+              <textarea id="plainMessage" name="plainMessage" style="width: 600px; height: 290px;" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);"></textarea>
             </div>
             <div id="rte" style="display: none;">
-              <script language="JavaScript" type="text/javascript" src="/oMail/i/rte/js/richtext.js"></script>
-              <script language="JavaScript" type="text/javascript" src="/oMail/i/rte/js/html2xhtml.js"></script>
+              <textarea id="rteMessage" name="rteMessage"></textarea>
+              <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
               <script language="JavaScript" type="text/javascript">
-                initRTE("/oMail/i/rte/images/", "/oMail/i/rte/js/", "", true);
-              </script>
-              <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-              <script language="JavaScript" type="text/javascript">
-                writeRichText('rteMessage', '', 440, 200, true, false);
+                var oEditor = CKEDITOR.replace('rteMessage');
               </script>
             </div>
           </div>

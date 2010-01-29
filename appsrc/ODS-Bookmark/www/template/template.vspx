@@ -53,7 +53,6 @@
         var featureList=["ajax2", "json", "ws", "anchor", "dialog", "dav", "tree", "calendar"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">

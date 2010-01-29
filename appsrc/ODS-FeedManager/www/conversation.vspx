@@ -356,22 +356,11 @@
                           Comment
                         </th>
                         <td>
-                          <?vsp
-                            declare tmpString any;
-                            tmpString := self.getComment();
-                            tmpString := replace(tmpString, '\'', '&#39;');
-                            tmpString := replace(tmpString, '"', '&#34;');
-                            tmpString := replace(tmpString, chr(10), ' ');
-                            tmpString := replace(tmpString, chr(13), ' ');
-                          ?>
+			                <textarea id="f_message" name="f_message" style="width: 400; height: 170"><?vsp http (self.getComment()); ?></textarea>
                           <![CDATA[
-                        <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                            <script language="JavaScript" type="text/javascript">
-                          initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                            </script>
-                            <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                            <script language="JavaScript" type="text/javascript">
-                              writeRichText('f_message', '<?vsp http(tmpString); ?>', 500, 170, true, false);
+                        <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                        <script type="text/javascript">
+                          var oEditor = CKEDITOR.replace('f_message');
                             </script>
                           ]]>
                         </td>
@@ -379,7 +368,7 @@
                       <tr>
                         <td colspan="2" align="center">
                       <div class="comment-button">
-                      <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_message\')" xhtml_title="Post" xhtml_class="button">
+                      <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
                             <v:on-post>
                               <![CDATA[
                             declare name, mail, url, title, comment any;

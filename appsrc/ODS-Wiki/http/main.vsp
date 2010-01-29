@@ -561,15 +561,6 @@ content:
 
   if (_cmd = 'preview')
     {
-      if (get_keyword ('kupu', params) is not null)
-	{
-	  _text := get_keyword ('kupu', params);
-	  declare _nodes any;
-	  _nodes := xpath_eval ('//body/node()', xtree_doc (_text), 0);
-	  _text := '';
-	  foreach (any _xt in _nodes) do
-	      _text := _text || replace (serialize_to_UTF8_xml (_xt), ' xmlns="http://www.w3.org/1999/xhtml"', '');
-	    }
       WV.WIKI.VSPTOPICPREVIEW (path, lines, _topic.ti_id, _topic.ti_raw_title, _text, {?'is_new'}, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust), _cluster );
       goto make_footer;
     }

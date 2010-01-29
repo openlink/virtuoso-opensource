@@ -256,9 +256,10 @@ directory_init() {
   mkdir vad/data/wa/users
   mkdir vad/data/wa/users/css
   mkdir vad/data/wa/users/js
-  mkdir vad/data/wa/rte
-  mkdir vad/data/wa/rte/images
-  mkdir vad/data/wa/rte/images/smileys
+  for dir in `find ckeditor -type d -print | LC_ALL=C sort | grep -v CVS`
+  do
+    mkdir vad/data/wa/$dir
+  done
   mkdir vad/data/wa/oauth
   mkdir vad/data/wa/oauth/images
   cp *.vspx vad/data/wa
@@ -313,9 +314,10 @@ directory_init() {
   cp users/* vad/data/wa/users
   cp users/css/* vad/data/wa/users/css
   cp users/js/* vad/data/wa/users/js
-  cp rte/* vad/data/wa/rte
-  cp rte/images/* vad/data/wa/rte/images
-  cp rte/images/smileys/* vad/data/wa/rte/images/smileys
+  for file in `find ckeditor -type f -print | LC_ALL=C sort | grep -v CVS | grep -v '.vspx-m' | grep -v '.vspx-sql'`
+  do
+    cp $file vad/data/wa/$file
+  done
   cp oauth/* vad/data/wa/oauth
   cp oauth/images/* vad/data/wa/oauth/images
 }
