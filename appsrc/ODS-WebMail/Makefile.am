@@ -56,10 +56,6 @@ EXTRA_DIST = \
 	www-root/mail/i/css/*.css \
 	www-root/mail/i/dav/*.gif \
 	www-root/mail/i/js/*.js \
-	www-root/mail/i/rte/css/*.css \
-	www-root/mail/i/rte/images/*.gif \
-	www-root/mail/i/rte/js/*.htm \
-	www-root/mail/i/rte/js/*.js \
 	www-root/mail/p/*.vsp \
 	www-root/mail/p/*.xml \
 	www-root/mail/p/*.xsl \
