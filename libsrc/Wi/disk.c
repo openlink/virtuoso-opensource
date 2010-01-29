@@ -3553,7 +3553,7 @@ wi_init_globals (void)
 #ifdef PAGE_SET_CHECKSUM
   page_set_checksums = hash_table_allocate (203);
 #endif
-  #ifdef DISK_CHECKSUM
+#ifdef DISK_CHECKSUM
   disk_checksum = hash_table_allocate (100000);
   dck_mtx = mutex_allocate ();
 #endif

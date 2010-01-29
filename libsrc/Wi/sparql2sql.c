@@ -1555,7 +1555,7 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
           if (NULL == external_namesake_eq)
             continue;
           eq->e_external_src_idx = external_namesake_eq->e_own_idx;
-                  eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
+          eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
           break;
         }
       END_DO_BOX_FAST_REV;
@@ -2308,7 +2308,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
               if (0 > triple_idx)
                 {
                   if (var_tr_idx < SPART_TRIPLE_FIELDS_COUNT)
-                spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
+                    spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
 #if 0
                   else
                     spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var is in equiv but not in any triple of the group, var %s/%s#%d/%s", var->_.var.selid, var->_.var.tabid, var->_.var.tr_idx, var->_.var.vname);
@@ -3513,7 +3513,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
             (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[0])) &&
             !strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
             {
-              ft_cond_to_relocate = sparp_gp_detach_filter (sparp, parent_gp, filt_ctr, NULL); 
+              ft_cond_to_relocate = sparp_gp_detach_filter (sparp, parent_gp, filt_ctr, NULL);
               break;
             }
         }
@@ -4568,10 +4568,10 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
           if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
             continue;
           dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
-          #if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
+#if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
           if (strcmp (dep_qm->qmTableName, base_qm->qmTableName)) /* Can not reuse tabid for different tables */
             continue;
-          #endif
+#endif
           dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
           if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
             continue;
