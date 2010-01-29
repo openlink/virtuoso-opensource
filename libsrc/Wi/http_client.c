@@ -1916,10 +1916,15 @@ http_cli_get_canonic_host (http_cli_ctx * ctx, char * host, size_t len)
   if (!sep)
     return;
   port = atoi (sep + 1);
+#ifdef _SSL
   if (80 == port && !ctx->hcctx_pkcs12_file)
     *sep = 0;
   else if (443 == port && ctx->hcctx_pkcs12_file)
     *sep = 0;
+#else
+  if (80 == port)
+    *sep = 0;
+#endif
 }
 
 int
