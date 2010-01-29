@@ -27,9 +27,16 @@
 */
 
 #include "libutil.h"
-#include <util/md5.h>
 #include <fcntl.h>
 
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
 
 static PCFGENTRY _cfg_poolalloc (PCONFIG p, u_int count);
 static int _cfg_parse (PCONFIG pconfig);
