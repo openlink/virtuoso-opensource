@@ -21,7 +21,7 @@
 #
 #
 
-phplib=php4ts.lib
+phplib=php5ts.lib
 jdk=c:/j2sdk1.4.1_01
 
 mono=../mono
