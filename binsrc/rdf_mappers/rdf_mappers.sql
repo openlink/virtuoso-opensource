@@ -211,6 +211,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('.+\\.svg\x24', 'URL', 'DB.DBA.RDF_LOAD_SVG', null, 'SVG');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('.+\\.csv\x24', 'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
+        
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
@@ -4642,6 +4645,58 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+    declare exit handler for sqlstate '*'
+    {
+        DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        return 0;
+    };
+    declare cur, docproxyIRI, resourceURL, baseUri, docIRI varchar;
+    declare xml_entity, myparams, xml1, xml2, xml3 any;
+    
+    xml1 := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/1.csv');
+    xml2 := split_and_decode(cast(xml1 as varchar), 0, '\0\r\n');
+    baseUri := RDF_SPONGE_DOC_IRI (dest, graph_iri);
+    docproxyIRI := DB.DBA.RDF_SPONGE_PROXY_IRI(baseUri);
+    resourceURL := DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri);
+    docIRI := DB.DBA.RM_SPONGE_DOC_IRI(baseUri);
+
+    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/Document');
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, docproxyIRI, 'http://purl.org/dc/elements/1.1/title', RDF_SPONGE_DOC_IRI (dest, graph_iri));
+    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://rdfs.org/sioc/ns#container_of', resourceURL);
+    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://xmlns.com/foaf/0.1/primaryTopic', resourceURL);
+    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://purl.org/dc/terms/subject', resourceURL);
+    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://www.w3.org/2002/07/owl#sameAs', docIRI);
+    DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/Document');
+
+    for (declare i int, i := 0; i < length (xml2); i := i + 1)
+    {
+        cur := trim(cast(xml2[i] as varchar), '\r\n');
+        xml3 := split_and_decode(cur, 0, '\0\0,');
+        for (declare j int, j := 0; j < length (xml3); j := j + 1)
+        {
+            DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))));
+            if (i = 0)
+            {
+                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
+            }
+            else
+            {
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#has_container', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#has_container', resourceURL);
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://purl.org/ontology/bibo/content', xml3[j]);
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))));
+            }
+        }
+    }
+    return 1;
 }
 ;
 

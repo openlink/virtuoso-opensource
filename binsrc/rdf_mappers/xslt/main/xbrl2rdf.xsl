@@ -105,11 +105,9 @@
 				<xsl:value-of select="identifier" />
 			</opl-xbrl:identifier>
 			<xsl:if test="identifier/@scheme = 'http://www.sec.gov/CIK'">
-			    <dc:subject rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
 			    <owl:sameAs rdf:resource="http://www.rdfabout.com/rdf/usgov/sec/id/cik{$identifier_value}"/>
 			    <xsl:variable name="nam" select="virt:getIRIbyCIK ($identifier_value)"/>
 			    <xsl:if test="$nam != ''">
-				<dc:subject rdf:resource="{$nam}"/>
 				<owl:sameAs rdf:resource="{$nam}"/>
 			    </xsl:if>
 			</xsl:if>
