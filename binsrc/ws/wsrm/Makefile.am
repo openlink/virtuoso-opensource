@@ -19,7 +19,7 @@
 #  
 #  
 
-TARGETS	= wsrm_xsd.sql
+BUILT_SOURCES=wsrm_xsd.sql
 
 SCH_FILES = \
 	wsrm.xsd \
@@ -35,19 +35,14 @@ SCH_FILES = \
 	wsrm_2005_02.xsd \
 	wsa200408.xsd
 
-
-.PHONY: all
-all: $(TARGETS)
-
-generate: $(TARGETS)
-
+GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 wsrm_xsd.sql: $(SCH_FILES) xsd2sql.awk Makefile
-	@echo "Generating wsrm_xsd.sql"
-	@-LANG=C gawk -v prefix=wsrm -f xsd2sql.awk $(SCH_FILES) > wsrm_xsd.tmp
-	@-[ -s wsrm_xsd.tmp ] && mv wsrm_xsd.tmp wsrm_xsd.sql
-	@rm -f wsrm_xsd.tmp
-	
+	@${GEN} ${GAWK} \
+                -o wsrm_xsd.sql \
+                -f $(srcdir)/xsd2sql.awk \
+                -v prefix=wsrm \
+                $(SCH_FILES)
 
 # ----------------------------------------------------------------------
 #
