@@ -224,9 +224,9 @@
       R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eEdit(this)" about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eView(this)" about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eEdit(this)" about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s onclick="eView(this)" about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
       }
       return T;
     ]]>
@@ -324,7 +324,7 @@
       declare domain_id integer;
       
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eEdit(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
+      return sprintf ('<a id="e_%d" href="%s" onclick="javascript: eView(\'e_%d\'); return false;" class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, SIOC..calendar_event_iri(domain_id, _id), _id, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
     ]]>
   </v:method>
 
@@ -986,7 +986,7 @@
 
   <v:method name="windowOpen" arglist="in p_url varchar, in p_name varchar, in p_title varchar">
     <![CDATA[
-      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=700\'); return false;" title="%s %s" class="link">%s</span>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
+      return  sprintf ('<span onclick="javascript: window.open (\'%s\', \'calendar_%s_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=600, width=800\'); return false;" title="%s %s" class="link">%s</span>', CAL.WA.url_fix (sprintf ('%s%s', CAL.WA.calendar_url (self.domain_id), p_url), self.sid, self.realm), p_name, p_name, p_title, p_name);
     ]]>
   </v:method>
 
@@ -1372,6 +1372,30 @@
                       self.cScope := 'tasks';
                   }
                 }
+
+                      cCommand := get_keyword ('view', params, '');
+                      if (cCommand <> '')
+                      {
+                        cParams := split_and_decode(cCommand, 0,'\0\0_');
+                        if (length (cParams) > 1)
+                        {
+                          self.v_id := cast (cParams [1] as integer);
+                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role);
+                          if ((cPermission = 'W') or (cPermission = 'R'))
+                          {
+                            self.cAction := 'view';
+                          }
+                          else
+                          {
+                            return;
+                          }
+                          kind := CAL.WA.event_kind (self.v_id);
+                          if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
+                            self.cScope := 'events';
+                          if (kind = 'task')
+                            self.cScope := 'tasks';
+                        }
+                      }
 
                       cCommand := get_keyword ('delete', params, '');
                       if (cCommand <> '')
@@ -3001,23 +3025,11 @@
                     Notes
                   </th>
                   <td>
-                      <?vsp
-                        declare tmpString any;
-
-                        tmpString := coalesce (self.v_notes, '');
-                        tmpString := replace(tmpString, '\'', '&#39;');
-                        tmpString := replace(tmpString, '"', '&#34;');
-                        tmpString := replace(tmpString, chr(10), ' ');
-                        tmpString := replace(tmpString, chr(13), ' ');
-                      ?>
+                          <textarea id="e_notes" name="e_notes" style="width: 400; height: 170"><?vsp http (self.v_notes); ?></textarea>
                       <![CDATA[
-                            <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                        <script language="JavaScript" type="text/javascript">
-                              initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                        </script>
-                        <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                        <script language="JavaScript" type="text/javascript">
-                          writeRichText('e_notes', '<?vsp http (tmpString); ?>', 500, 170, true, false);
+                            <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                            <script type="text/javascript">
+                              var oEditor = CKEDITOR.replace('e_notes');
                         </script>
                       ]]>
                   </td>
@@ -3120,7 +3132,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-                <v:button action="simple" name="e_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_onclick="javascript:updateRTE(\'e_notes\')" xhtml_class="form-button">
+                <v:button action="simple" name="e_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -3304,6 +3316,14 @@
           </table>
         </div>
         <div class="new-form-footer">
+                <v:button action="simple" name="ev_edit" value="Edit" enabled="--case when CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) = 'W' then 1 else 0 end" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'edit';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 <v:button action="simple" name="ev_cancel" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -3576,23 +3596,11 @@
                     Notes
                   </th>
                   <td>
-                    <?vsp
-                      declare tmpString any;
-                      
-                      tmpString := coalesce (self.v_notes, '');
-                      tmpString := replace(tmpString, '\'', '&#39;');
-                      tmpString := replace(tmpString, '"', '&#34;');
-                      tmpString := replace(tmpString, chr(10), ' ');
-                      tmpString := replace(tmpString, chr(13), ' ');
-                    ?>
+                          <textarea id="t_notes" name="t_notes" style="width: 400; height: 170"><?vsp http (self.v_notes); ?></textarea>
                     <![CDATA[
-                            <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                      <script language="JavaScript" type="text/javascript">
-                              initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                      </script>
-                      <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                      <script language="JavaScript" type="text/javascript">
-                        writeRichText('t_notes', '<?vsp http (tmpString); ?>', 500, 170, true, false);
+                            <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                            <script type="text/javascript">
+                              var oEditor = CKEDITOR.replace('t_notes');
                       </script>
                     ]]>
                   </td>
@@ -3695,7 +3703,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-                <v:button action="simple" name="t_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'t_notes\')" xhtml_class="form-button">
+                <v:button action="simple" name="t_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveTask ();
@@ -3856,6 +3864,14 @@
           </table>
         </div>
         <div class="new-form-footer">
+                <v:button action="simple" name="tv_edit" value="Edit" enabled="--case when CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) = 'W' then 1 else 0 end" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.cAction := 'edit';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 <v:button action="simple" name="tv_cancel" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[

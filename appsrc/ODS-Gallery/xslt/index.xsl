@@ -342,7 +342,7 @@
         </td>
           <td valign="top" class="right" id="tags_edit" style="display:none;">
             <h2>Add new tags (comma-separated)</h2>
-          <textarea name="new_tag" id="new_tag"></textarea>
+            <textarea name="new_tag" id="new_tag" style="width: 400; height: 70;"></textarea>
           <br/>
           <button type="button" name="bnt_new_tag" id="bnt_new_tag">Save</button>
             <button type="button" name="bnt_new_tag_cancel" id="bnt_new_tag_cancel">Cancel</button>
@@ -363,13 +363,10 @@
             <div id="comment_block">
               <h2 id="comment_header">New comment</h2>
               <div id="rte">
-                <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                <script language="JavaScript" type="text/javascript">
-                  initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                </script>
-                <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                <textarea id="comment2" name="comment2" style="width: 400; height: 170;"></textarea>
+                <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                 <script type="text/javascript">
-                  writeRichText('comment2', '', 480, 180, true, false);
+                  var oEditor = CKEDITOR.replace('comment2');
                 </script>
             </div>
               <button type="button" name="comment_save" id="comment_save">Save</button>

@@ -163,8 +163,8 @@
           <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
           <div id="a" class="c1">
             <div class="tabs">
-              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="0" caption="Main" />
-              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="1" caption="Claims" />
+              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="0" caption="Notes" />
+              &nbsp;<vm:tabCaption tab="a" tabsCount="2" tabNo="1" caption="Structured Statements (Triples)" />
             </div>
             <div class="contents">
               <div id="a_content_0" class="tabContent" style="display: none;">
@@ -189,23 +189,11 @@
                 Annotation
               </th>
               <td>
-                      <?vsp
-                        declare tmpString any;
-
-                        tmpString := coalesce (self.v_body, '');
-                        tmpString := replace(tmpString, '\'', '&#39;');
-                        tmpString := replace(tmpString, '"', '&#34;');
-                        tmpString := replace(tmpString, chr(10), ' ');
-                        tmpString := replace(tmpString, chr(13), ' ');
-                      ?>
+			                <textarea id="f_body" name="f_body" style="width: 400; height: 170"><?vsp http (self.v_body); ?></textarea>
                       <![CDATA[
-                        <script language="JavaScript" type="text/javascript" src="/ods/rte/richtext.js"></script>
-                        <script language="JavaScript" type="text/javascript">
-                          initRTE("/ods/rte/images/", "/ods/rte/", "", false);
-                        </script>
-                        <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                        <script language="JavaScript" type="text/javascript">
-                          writeRichText('f_body', '<?vsp http (tmpString); ?>', 400, 170, true, false);
+                        <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                        <script type="text/javascript">
+                          var oEditor = CKEDITOR.replace('f_body');
                         </script>
                       ]]>
               </td>
@@ -213,87 +201,39 @@
                 </table>
               </div>
               <div id="a_content_1" class="tabContent" style="display: none;">
-                <v:text name="c_seqNo" xhtml_id="c_seqNo" type="hidden" value="--length (self.v_claims)" />
-                <div style="margin-bottom: 5px;"><b>Annotated URI: <i><?V SIOC..bmk_post_iri (self.domain_id, self.v_oid) ?></i></b></div>
-                <table id="c_table" width="90%" cellspacing="0">
+                <div style="margin-bottom: 5px;">
+                  <b>Subject URI</b>: <a href="<?V SIOC..bmk_post_iri (self.domain_id, self.v_oid) ?>"><i><?V BMK.WA.utf2wide ((select coalesce(BD_NAME, '~ no title ~') from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.v_oid)) ?></i></a>
+                </div>
+                <table>
+                  <tr>
+                    <td width="800px">
+                      <table id="c_tbl" class="form-list" cellspacing="0">
                   <thead class="sortHeader">
             <tr>
-                      <th style="text-align: left;">URI</th>
-                      <th style="text-align: left;">Relation</th>
-                      <th style="text-align: left;">Value</th>
-                      <th />
+                            <th>Relation</th>
+                            <th width="70%">Value</th>
+                            <th class="last" width="1%">
+                              Action
+                            </th>
                     </tr>
                   </thead>
+                  		  <![CDATA[
+                  		    <script type="text/javascript">
                   <?vsp
                     declare N integer;
 
                     for (N := 0; N < length (self.v_claims); N := N + 1)
                     {
-                  ?>
-                    <tr id="c_tr_<?V cast (N as varchar) ?>">
-                      <td width="40%">
-                        <input name="c_iri_<?V cast (N as varchar) ?>" value="<?V self.v_claims[N][0] ?>" style="width: 97%;" />
-                      </td>
-                      <td id="c_td_<?V cast (N as varchar) ?>" width="20%">
-                  		  <![CDATA[
-                  		    <script type="text/javascript">
-                  	        function categoryCombo_<?V cast (N as varchar) ?> ()
-                            {
-                              var cl = new OAT.Combolist([], '<?V self.v_claims[N][1] ?>');
-                  		        cl.input.name = "c_relation_<?V cast (N as varchar) ?>";
-                  		        cl.input.id = "c_relation_<?V cast (N as varchar) ?>";
-                              cl.input.style.width = "80%";
-                   		        $('c_td_<?V cast (N as varchar) ?>').appendChild(cl.div);
-                  		        cl.addOption('rdfs:seeAlso');
-                  		        cl.addOption('foaf:made');
-                  		        cl.addOption('foaf:maker');
-                  		      }
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo_<?V cast (N as varchar) ?>);
-                  		    </script>
-                  		  ]]>
-                      </td>
-                      <td width="40%">
-                        <input name="c_value_<?V cast (N as varchar) ?>" value="<?V self.v_claims[N][2] ?>" style="width: 97%;" />
-                      </td>
-                      <td>
-                        &nbsp;<a onclick="javascript: BMK.updateClaim('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0"/></a>
-                      </td>
-                    </tr>
-                  <?vsp
+                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("c", null, {fld_1: {mode: 2, value: "%s"}, fld_2: {mode: 0, value: "%s"}, btn_1: {mode: 2}});});', self.v_claims[N][1], self.v_claims[N][2]));
                     }
                   ?>
-                  <tr id="c_tr">
-                    <td colspan="4">
-                      <hr />
-                    </td>
-                  </tr>
-                  <tr id="c_tr_xxx">
-                    <td width="40%">
-                      <input id="c_iri_xxx" name="c_iri_xxx" style="width: 97%;" />
-                    </td>
-                    <td id="c_td_xxx" width="20%">
-                		  <![CDATA[
-                		    <script type="text/javascript">
-                	        function categoryCombo_xxx ()
-                          {
-                		        var cl = new OAT.Combolist([], '');
-                		        cl.input.name = "c_relation_xxx";
-                		        cl.input.id = "c_relation_xxx";
-                            cl.input.style.width = "80%";
-                 		        $("c_td_xxx").appendChild(cl.div);
-                		        cl.addOption('rdfs:seeAlso');
-                		        cl.addOption('foaf:made');
-                		        cl.addOption('foaf:maker');
-                		      }
-                          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo_xxx);
                 		    </script>
                 		  ]]>
+                        <tr id="c_tr_no" style="display: none;"><td colspan="2"><b>No Triplets</b></td></tr>
+                      </table>
 		                </td>
-                    <td width="40%">
-                      <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
-                    </td>
-                    <td>
-                      &nbsp;<a onclick="javascript: BMK.updateClaim('xxx');"><img src="image/add_16.png" border="0"/></a>
+                    <td valign="top" nowrap="nowrap">
+                      <img class="pointer" src="image/add_16.png" border="0" alt="Add Security" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {mode: 0}, btn_1: {mode: 2}});" />
                     </td>
                   </tr>
                 </table>
@@ -301,7 +241,7 @@
             </div>
           </div>
           <div class="new-form-footer">
-            <v:button action="simple" value="Post" xhtml_onclick="javascript:updateRTE(\'f_body\')" xhtml_title="Post" xhtml_class="button">
+            <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                   declare N, M integer;
@@ -317,10 +257,11 @@
                   self.v_claims := vector ();
                   for (N := 0; N < length (params); N := N + 2)
                   {
-                    if ((params[N] like 'c_iri_%') and (params[N] <> 'c_iri_xxx'))
+                    if ((params[N] like 'c_fld_1_%') and (trim (params[N+1]) <> ''))
                     {
-                      M := replace (params[N], 'c_iri_', '');
-                      self.v_claims := vector_concat (self.v_claims, vector (vector (get_keyword ('c_iri_'||M, params), get_keyword ('c_relation_'||M, params), get_keyword ('c_value_'||M, params))));
+                      M := replace (params[N], 'c_fld_1_', '');
+                      if (trim (get_keyword ('c_fld_2_'||M, params)) <> '')
+                        self.v_claims := vector_concat (self.v_claims, vector (vector (null, trim (params[N+1]), trim (get_keyword ('c_fld_2_'||M, params)))));
                     }
                   }
 

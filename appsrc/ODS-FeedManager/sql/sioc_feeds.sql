@@ -747,16 +747,12 @@ create procedure feeds_claims_insert (
   V := deserialize (claims);
   for (N := 0; N < length (V); N := N +1)
   {
-    cURI := V[N][0];
     cPedicate := V[N][1];
     cValue := V[N][2];
-    delete_quad_s_or_o (graph_iri, cURI, cURI);
-
     if (0 = length (cPedicate))
       cPedicate := rdfs_iri ('seeAlso');
 
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, cPedicate, cURI);
-    DB.DBA.ODS_QUAD_URI_L (graph_iri, cURI, rdfs_iri ('label'), cValue);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, cPedicate, cValue);
   }
 }
 ;
@@ -765,18 +761,10 @@ create procedure feeds_claims_insert (
 --
 create procedure feeds_claims_delete (
   in graph_iri varchar,
-  in iri varchar,
+  in annotattion_iri varchar,
   in claims any)
 {
-  declare N integer;
-  declare V, cURI any;
-
-  V := deserialize (claims);
-  for (N := 0; N < length (V); N := N +1)
-  {
-    cURI := V[N][0];
-    delete_quad_s_or_o (graph_iri, cURI, cURI);
-  }
+  SIOC..delete_quad_so (graph_iri, annotattion_iri, annotattion_iri);
 }
 ;
 

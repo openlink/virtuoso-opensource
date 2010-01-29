@@ -1331,10 +1331,12 @@ gallery.comment_init = function (comment_id, comment_text)
   }
   if (comment_id)
   {
-    enableDesignMode(rte, comment_text, false);
+    oEditor.setData(comment_text);
+    // enableDesignMode(rte, comment_text, false);
     $('comment_header').innerHTML = 'Edit Comment';
   } else {
-    enableDesignMode(rte, '', false);
+    oEditor.setData('');
+    // enableDesignMode(rte, '', false);
     $('comment_header').innerHTML = 'New Comment';
   }
 }
@@ -1342,13 +1344,8 @@ gallery.comment_init = function (comment_id, comment_text)
 //------------------------------------------------------------------------------
 gallery.comment_save_click = function()
 {
+  oEditor.updateElement();
   var rte = 'comment2';
-  if ($("chkSrc" + rte).checked)
-  {
-    $("chkSrc" + rte).checked = false;
-    toggleHTMLSrc(rte, true);
-  }
-  updateRTE(rte);
   var obj = document.f1.elements[rte];
   if (!(obj.value) || (obj.value == ''))
   {
