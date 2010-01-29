@@ -403,8 +403,6 @@ mkdir vad/vsp/vspx/browser/images/16x16
 mkdir vad/code/conductor
 mkdir vad/vsp/conductor
 mkdir vad/vsp/conductor/help
-mkdir vad/vsp/conductor/ie7
-mkdir vad/vsp/conductor/ie7/src
 mkdir vad/vsp/conductor/images
 mkdir vad/vsp/conductor/images/dav_browser
 mkdir vad/vsp/conductor/images/icons
@@ -423,8 +421,6 @@ cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
 cp -f images/* vad/vsp/conductor/images
 cp -f images/dav_browser/* vad/vsp/conductor/images/dav_browser
 cp -f images/icons/* vad/vsp/conductor/images/icons
-cp -f ie7/* vad/vsp/conductor/ie7
-cp -f ie7/src/* vad/vsp/conductor/ie7/src
 cp -f * vad/vsp/conductor
 cp -f syntax/* vad/vsp/conductor/syntax
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.

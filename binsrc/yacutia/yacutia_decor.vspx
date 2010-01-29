@@ -47,9 +47,6 @@
     <title></title>
     <?vsp
 
-http ('<script type="text/javascript">var IE7_PNG_SUFFIX=".png";</script>');
-http ('<!--[IF lt IE 7]><script src="ie7/ie7-standard-p.js" type="text/javascript"></script><![endif]-->');
-
     ?>
   <![CDATA[
   <script type="text/javascript">
