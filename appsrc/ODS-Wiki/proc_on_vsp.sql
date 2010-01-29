@@ -943,18 +943,6 @@ create procedure  WV.WIKI.GETCMDTITLE (inout params any)
 }
 ;
   
-create function WV.WIKI.HEADER_KUPU_PATH (in res varchar, in _base_adjust varchar)
-{
-  return  WV.WIKI.RESOURCEPATH ('kupu/common/' || res, _base_adjust);
-}
-;
-
-create function WV.WIKI.HEADER_KUPU_SCRIPT (in script_name varchar)
-{
-  return '<script type="text/javascript" src="' || WV.WIKI.HEADER_KUPU_PATH (script_name, connection_get ('WIKIV BaseAdjust')) || '"></script>';
-}
-;
-
 create procedure WV.WIKI.VSPHEADER (
   inout path any,
   inout params any,
@@ -965,13 +953,8 @@ create procedure WV.WIKI.VSPHEADER (
   if (get_keyword ('xmlraw', params) is not null)
     return;
 
-  declare add_kupu_headers int;
   declare _topic WV.WIKI.TOPICINFO;
   declare _skin, _topic_title varchar;
-  if (get_keyword ('mode', params) = 'js')
-    add_kupu_headers := 1;
-  else
-    add_kupu_headers := 0;
   if (isstring (topic_or_title))
     {      
       _skin := 'default';
@@ -993,11 +976,6 @@ create procedure WV.WIKI.VSPHEADER (
   http ('</title>');
   http ('<link rel="stylesheet" href="' || WV.WIKI.SKINCSS (_skin, _base_adjust) || '" type="text/css"></link>');
 
-  if (add_kupu_headers)
-    {
-	http('<link rel="stylesheet" href="' || WV.WIKI.HEADER_KUPU_PATH ('kupustyles.css', _base_adjust) ||'" type="text/css"></link>');
-	http('<link rel="stylesheet" href="' || WV.WIKI.HEADER_KUPU_PATH ('kupudrawerstyles.css', _base_adjust) ||'" type="text/css"></link>');
-    }
   declare _server_base varchar;
   if (isstring (topic_or_title))
     {
@@ -1048,33 +1026,7 @@ create procedure WV.WIKI.VSPHEADER (
 --    http ('</script>\n');
   }
 
-  if (add_kupu_headers)
-    {
-      declare scripts any;
-      scripts := vector (
-	'sarissa.js', 
-	'sarissa_ieemu_xpath.js', 
-	'kupuhelpers.js', 
-	'kupueditor.js',
-	'kupubasetools.js',
-	'kupuloggers.js',
-	'kupunoi18n.js',
-	'../../i18n.js/i18n.js',
-	'kupucleanupexpressions.js',
-	'kupucontentfilters.js',
-	'kuputoolcollapser.js',
-	'kupucontextmenu.js',
-	'kupuinit_form.js',
-	'kupustart_form.js',
-	'kupusourceedit.js',
-	'kupuspellchecker.js',
-	'kupudrawers.js');
-      http (
-	WV.WIKI.STRJOIN ('\n', WV.WIKI.MAP ('WV.WIKI.HEADER_KUPU_SCRIPT', scripts)));
-      http ('</head>');
-      http ('<body onload="kupu = startKupu()">');
-    }
-else if (topic_or_title <> 'Settings')
+  if (topic_or_title <> 'Settings')
     {
       http ('</head>');
       http ('<body>');

@@ -234,7 +234,6 @@ directory_init() {
   cp *.sql vad/data/wiki
   cp -r http/* vad/data/wiki/Root
   cp -r Skins  vad/data/wiki/Root
-  cp -r kupu  vad/data/wiki/Root
   cp -r js  vad/data/wiki/Root
   cp -r initial/Main/* vad/data/wiki/Main
   cp -r initial/Wiki/* vad/data/wiki/Doc
@@ -397,15 +396,6 @@ sticker_init() {
     if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/Skins/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-    fi
-  done
-  cd ..
-  cd kupu
-  for file in `find . -type f | sed 's/^..//'`
-  do
-    if echo "$file" | grep -v "CVS" >/dev/null
-    then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/kupu/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..

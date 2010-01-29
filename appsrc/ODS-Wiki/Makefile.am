@@ -70,18 +70,6 @@ EXTRA_DIST =  \
 	initial/Main/Attachments/*.sql \
 	initial/Wiki/*.txt \
 	js/*.js \
-	kupu/common/*.css \
-	kupu/common/*.js \
-	kupu/common/kupu.pox \
-	kupu/common/kupu.pox.jspx \
-	kupu/common/kupudrawers/*.xml \
-	kupu/common/kupudrawers/*.xsl \
-	kupu/common/kupudrawers/drawer.xsl.metadata \
-	kupu/common/kupudrawers/logos/*.gif \
-	kupu/common/kupudrawers/logos/*.png \
-	kupu/common/kupuimages/*.gif \
-	kupu/common/kupuimages/*.png \
-	kupu/common/kupupopups/*.html \
 	make_vad.sh \
 	retry.sh \
 	setup.isql \

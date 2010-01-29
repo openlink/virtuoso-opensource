@@ -26,29 +26,14 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
   xmlns:wv="http://www.openlinksw.com/Virtuoso/WikiV/" >
-  <xsl:output
-    method="html"
-    encoding="utf-8"
-    />
 
+  <xsl:output method="html" encoding="utf-8"/>
   <xsl:include href="common.xsl"/>
+
   <xsl:template match="/">
    <div class="working-area">
     <h3>Edit the content of '<xsl:value-of select="wv:NormalizeWikiWordLink ($ti_cluster_name, $ti_local_name)"/>'</h3>
-    <xsl:choose>
-      <xsl:when test="wv:params('mode', 'plain') = 'plain'">
-        <xsl:call-template name="switch-to-another-mode">
-          <xsl:with-param name="target-mode">js</xsl:with-param>
-        </xsl:call-template>
         <xsl:call-template name="edit-form"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="switch-to-another-mode">
-          <xsl:with-param name="target-mode">plain</xsl:with-param>
-        </xsl:call-template>
-        <xsl:call-template name="kupu-editor"/>
-      </xsl:otherwise>
-    </xsl:choose>
   </div>
 </xsl:template>
 </xsl:stylesheet>
