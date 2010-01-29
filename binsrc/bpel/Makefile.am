@@ -231,7 +231,6 @@ EXTRA_DIST = \
 	tests/sqlexec/*.vsp \
 	tests/sqlexec/*.wsdl \
 	tests/sqlexec/*.xml \
-	tests/sqlexec/wsa.xsd \
 	tests/t1/buyer/*.bpel \
 	tests/t1/buyer/*.sql \
 	tests/t1/buyer/*.wsdl \
