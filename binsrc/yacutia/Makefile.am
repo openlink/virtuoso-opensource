@@ -60,28 +60,6 @@ EXTRA_DIST = \
 	conductor.list \
 	ent.dtd \
 	help/*.xml \
-	ie7/*.css \
-	ie7/*.gif \
-	ie7/*.htm \
-	ie7/*.html \
-	ie7/*.js \
-	ie7/*.png \
-	ie7/*.txt \
-	ie7/compatibility/*.css \
-	ie7/compatibility/*.gif \
-	ie7/compatibility/*.htm \
-	ie7/compatibility/*.html \
-	ie7/compatibility/*.jpg \
-	ie7/compatibility/*.js \
-	ie7/compatibility/*.png \
-	ie7/compatibility/*.xml \
-	ie7/compatibility/complexspiral/*.css \
-	ie7/compatibility/complexspiral/*.gif \
-	ie7/compatibility/complexspiral/*.html \
-	ie7/compatibility/complexspiral/*.jpg \
-	ie7/license \
-	ie7/src/*.htm \
-	ie7/src/*.js \
 	images/*.gif \
 	images/*.jpg \
 	images/*.png \
