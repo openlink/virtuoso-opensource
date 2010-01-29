@@ -27,7 +27,7 @@
   xmlns:plnk="http://schemas.xmlsoap.org/ws/2003/05/partner-link/"
   xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing"
   xmlns="http://schemas.xmlsoap.org/wsdl/">
-  <import namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing" location="wsa.xsd"/>
+  <import namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing" location="http://schemas.xmlsoap.org/ws/2004/03/addressing/"/>
   <types>
     <schema attributeFormDefault="qualified" elementFormDefault="qualified"
       targetNamespace="http://temp.org"
