@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2010 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -53,6 +53,41 @@ EXTRA_DIST = \
 	*.vspx \
 	*.xml \
 	*.xsl \
+	ckeditor/*.html \
+	ckeditor/*.js \
+	ckeditor/images/*.gif \
+	ckeditor/lang/*.js \
+	ckeditor/plugins/clipboard/dialogs/*.js \
+	ckeditor/plugins/colordialog/dialogs/*.js \
+	ckeditor/plugins/dialog/*.js \
+	ckeditor/plugins/find/dialogs/*.js \
+	ckeditor/plugins/flash/dialogs/*.js \
+	ckeditor/plugins/flash/images/*.png \
+	ckeditor/plugins/image/dialogs/*.js \
+	ckeditor/plugins/link/dialogs/*.js \
+	ckeditor/plugins/link/images/*.gif \
+	ckeditor/plugins/pastetext/dialogs/*.js \
+	ckeditor/plugins/scayt/dialogs/*.css \
+	ckeditor/plugins/scayt/dialogs/*.js \
+	ckeditor/plugins/showblocks/images/*.png \
+	ckeditor/plugins/smiley/dialogs/*.js \
+	ckeditor/plugins/smiley/images/*.gif \
+	ckeditor/plugins/specialchar/dialogs/*.js \
+	ckeditor/plugins/stylescombo/styles/*.js \
+	ckeditor/plugins/table/dialogs/*.js \
+	ckeditor/plugins/tabletools/dialogs/*.js \
+	ckeditor/plugins/templates/dialogs/*.js \
+	ckeditor/plugins/templates/templates/*.js \
+	ckeditor/plugins/templates/templates/images/*.gif \
+	ckeditor/plugins/wsc/dialogs/*.css \
+	ckeditor/plugins/wsc/dialogs/*.html \
+	ckeditor/plugins/wsc/dialogs/*.js \
+	ckeditor/skins/kama/*.css \
+	ckeditor/skins/kama/*.js \
+	ckeditor/skins/kama/*.png \
+	ckeditor/skins/kama/images/*.gif \
+	ckeditor/skins/kama/images/*.png \
+	ckeditor/themes/default/*.js \
 	comp/*.js \
 	comp/*.xml \
 	comp/*.xsl \
@@ -77,12 +112,6 @@ EXTRA_DIST = \
 	oauth/*.sql \
 	oauth/*.vsp \
 	oauth/*.vspx \
-	rte/*.css \
-	rte/*.htm \
-	rte/images/*.gif \
-	rte/images/*.jpg \
-	rte/images/smileys/*.gif \
-	rte/*.js \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
 	tmpl/WS_CHANGE_BY_OWNER_TEMPLATE \
@@ -106,3 +135,4 @@ EXTRA_DIST = \
 	vad_version \
 	version.base \
 	version.curr
+
