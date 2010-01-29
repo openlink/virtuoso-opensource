@@ -986,7 +986,7 @@ self.vc_data_bind (e);
                     				    return;
                     				  };
                     				  uri := get_keyword ('t_rdf_url', e.ve_params);
-                    				  exec (sprintf ('sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }', uri, _graph));
+                    				  exec (sprintf ('sparql load "%s" into <%s>', uri, _graph));
                   		        goto end_post;
                   				  }
 
