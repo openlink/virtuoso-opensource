@@ -1,3 +1,213 @@
+2010-01-29 20:16  source
+
+	* Removed deprecated version of rte
+
+2010-01-29 19:54  source
+
+	* Added support for ckeditor
+
+2010-01-29 19:53  source
+
+	* Removed support for Kupu
+
+2010-01-29 19:44  source
+
+	* Added ckeditor to replace rte
+
+2010-01-29 16:15  source
+
+	* Fixed removed unused include
+
+2010-01-29 15:21  source
+
+	* Fixed minor issues
+
+2010-01-29 15:07  source
+
+	* Removed support for IE 5 and 6 compatibility
+
+2010-01-29 15:00  source
+
+	* Fixed crawler pages
+
+2010-01-29 14:59  source
+
+	* Fixed use sparul load instead of soft
+
+2010-01-29 14:52  source
+
+	* Fixed use newer version of wsa
+
+2010-01-29 13:23  source
+
+	* Removed deprecated samples
+
+2010-01-29 13:20  source
+
+	* Fixed build issue with md5
+
+2010-01-29 11:30  source
+
+	* Removed reprecated samples/demos
+
+2010-01-29 01:56  source
+
+	* Fixed use MD5 from OpenSSL when possible
+
+2010-01-29 00:15  source
+
+	* Fixed build to use generate script
+	* Removed deprecated file
+
+2010-01-28 17:08  source
+
+	* Fixed make sure version is intact as changes to .ttl file must
+	  reflect in sparql.sql
+
+2010-01-28 14:42  source
+
+	* Fixed version of virtrdf ttl
+
+2010-01-28 13:36  source
+
+	* Fixed missing qualification of aggregate
+
+2010-01-28 10:54  source
+
+	* Fixed issue reading last chunk
+
+2010-01-27 20:44  source
+
+	* Updated php,jsp and vsp users update
+
+2010-01-27 20:43  source
+
+	* Added FOAF+SSL groups
+
+2010-01-27 20:36  source
+
+	* Fixed do not post when no post parameters
+
+2010-01-27 20:36  source
+
+	* Fixed checkpoint messages in log
+
+2010-01-27 20:34  source
+
+	* Fixed default sitemap crawling functions
+
+2010-01-27 20:31  source
+
+	* Added support for Google Base items types 'wanted ads', 'business
+	  location' and 'product catalogs'
+
+2010-01-27 20:31  source
+
+	* Fixed virtrdf_label
+
+2010-01-27 01:29  source
+
+	* Fixed read after allocated memory
+
+2010-01-27 01:28  source
+
+	* Fixed minor issues
+
+2010-01-27 01:26  source
+
+	* Fixed wrong variable
+	* Fixed wait before update
+
+2010-01-26 11:17  source
+
+	* Fixed missing symbols
+
+2010-01-26 11:16  source
+
+	* Added option BuffersAllocation
+
+2010-01-26 11:14  source
+
+	* Added FOAF+SSL groups
+
+2010-01-25 23:46  source
+
+	* Removed deprecated files
+
+2010-01-25 23:25  source
+
+	* Fixed datatype
+
+2010-01-25 22:42  source
+
+	* Fixed copyright and license clarification
+
+2010-01-25 22:32  source
+
+	* Fixed copyright notice
+
+2010-01-25 16:05  source
+
+	* Updated version
+
+2010-01-25 16:05  source
+
+	* Fixed bug in permissions
+
+2010-01-25 15:19  source
+
+	* Added support for expressions in LIMIT and OFFSET clauses
+
+2010-01-25 15:15  source
+
+	* Fixed accept different headers in pipeline request; add header only
+	  if it contains something
+
+2010-01-25 15:13  source
+
+	* Fixed typo
+
+2010-01-25 15:12  source
+
+	* Fixed support for Google Base 'products' item type
+	* Fixed headers
+
+2010-01-25 15:02  source
+
+	* Added test for new crawler queue mode
+
+2010-01-25 15:01  source
+
+	* Fixed extenal decl
+
+2010-01-25 14:57  source
+
+	* Fixed use pipeline client in crawler
+
+2010-01-22 14:41  source
+
+	* Fixed problem with driver properties
+
+2010-01-22 14:40  source
+
+	* Fixed problem with MaxMempoolSize
+
+2010-01-22 14:09  source
+
+	* Added php, jsp and vsp users update
+
+2010-01-22 14:09  source
+
+	* Fixed problem with activity pages
+
+2010-01-22 10:43  source
+
+	* Fixed missing file in distribution
+
+2010-01-22 10:19  source
+
+	* Updated version to 5.0.13-rc4
+
 2010-01-21 23:00  source
 
 	* Added configuration setting AsyncQueueMaxThreads in Parameters
@@ -2711,10 +2921,6 @@
 2009-07-17 10:34  source
 
 	* Moved README files to top directory
-
-2009-07-17 09:11  source
-
-	* Fixed CSS loading
 
 2009-07-16 15:34  source
 
@@ -21988,13 +22194,8 @@
 
 	* Added URI element in SOAP result
 
-2006-08-16 08:25  source
+2006-08-16 08:31  source
 
-	* Fixed dos crlf
-
-2006-08-16 08:20  source
-
-	* Fixed headers
 	* Fixed dos crlf
 
 2006-08-16 07:58  source
