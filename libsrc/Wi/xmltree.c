@@ -4412,7 +4412,7 @@ static void xp_lexem_descrs_fill (void)
   if (!first_run)
     return;
   first_run = 0;
-  #include "xpathp_lex_props.c"
+#include "xpathp_lex_props.c"
 }
 
 caddr_t

@@ -1051,7 +1051,7 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   ctx->octx_ext_set = dbs_read_page_set (dbs, db.db_extent_set, DPF_EXTENT_SET);
   if (db.db_checkpoint_map)
     ctx->octx_cpt_set = dbs_read_page_set (dbs, db.db_checkpoint_map, DPF_CP_REMAP);
-  #if 0
+#if 0
   obackup_trace = fopen ("obackup.out", "a");
   fprintf (obackup_trace, "\n\n\Bakup file %s\n", "xx");
 #endif

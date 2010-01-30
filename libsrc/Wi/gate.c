@@ -144,7 +144,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       em_check_dp (itc->itc_tree->it_extent_map, phys_dp);
       if (phys_dp != dp)
 	em_check_dp (itc->itc_tree->it_extent_map, dp);
-      #endif
+#endif
       if ((DP_DELETED == phys_dp || dbs_is_free_page (itc->itc_tree->it_storage, phys_dp))
 	  && !strchr (wi_inst.wi_open_mode, 'a'))
 	{

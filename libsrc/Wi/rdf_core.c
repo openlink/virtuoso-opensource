@@ -1114,7 +1114,7 @@ static void ttl_lexem_descrs_fill (void)
   if (!first_run)
     return;
   first_run = 0;
-  #include "turtle_lex_props.c"
+#include "turtle_lex_props.c"
 }
 
 caddr_t

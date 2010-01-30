@@ -99,8 +99,8 @@
 #define INTERSECT_ST		(ptrlong)119
 #define INTERSECT_ALL_ST	(ptrlong)120
 #define PROC_TABLE		(ptrlong)121
-#define SELECT_TOP		 (ptrlong)122
- #define SELECT_BREAKUP ((ptrlong)123)
+#define SELECT_TOP		(ptrlong)122
+#define SELECT_BREAKUP 		(ptrlong)123
 
 #define TABLE_DOTTED		(ptrlong)200
 #define COL_DOTTED		(ptrlong)201

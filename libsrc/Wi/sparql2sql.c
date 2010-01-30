@@ -4670,10 +4670,10 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
           if (1 != BOX_ELEMENTS (dep_triple->_.triple.tc_list)) /* Only triples with one allowed quad mapping can be reused, unions can not */
             continue;
           dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
-          #if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
+#if 0 /* There's no need to check this because if QMVs match then tables are the same, otherwise names does not matter anyway */
           if (strcmp (dep_qm->qmTableName, base_qm->qmTableName)) /* Can not reuse tabid for different tables */
             continue;
-          #endif
+#endif
           dep_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, dep_field_tr_idx);
           if (key_qmv != dep_qmv) /* The key mapping differs in set of source columns or in the IRI serialization (or literal cast) */
             continue;

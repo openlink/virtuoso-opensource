@@ -3865,7 +3865,7 @@ static void spar_lexem_descrs_fill (void)
   if (!first_run)
     return;
   first_run = 0;
-  #include "sparql_lex_props.c"
+#include "sparql_lex_props.c"
 }
 
 caddr_t
