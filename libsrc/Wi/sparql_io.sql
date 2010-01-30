@@ -176,7 +176,7 @@ create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any)
 ;
 
 --!AWK PUBLIC
-create procedure SPARQL_RSET_NT_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RSET_NT_WRITE_NS (inout ses any)
 {
   http ('_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#ResultSet> .\n', ses);
 }
@@ -205,6 +205,7 @@ create function DB.DBA.SPARQL_RSET_NT_HTTP_PRE (in colnames any, in accept varch
   http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
   http_flush (1);
   ses := 0;
+  DB.DBA.SPARQL_RSET_NT_WRITE_NS (ses);
   DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (ses, colnames);
   colcount := length (colnames);
   res := make_array (colcount * 7, 'any');
@@ -1273,7 +1274,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
   if (ret_format in ('JSON', 'JSON;RES'))
     {
-      if (('callretRDF/XML-0' = singlefield) or ('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+      if (singlefield in ('callretRDF/XML-0', 'callretTURTLE-0', 'callretTTL-0', 'callretNT-0'))
         {
           http('"', ses);
           http_escape (cast (rset[0][0] as varchar), 11, ses, 1, 1);
@@ -1289,12 +1290,22 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       http (rset[0][0], ses);
       goto body_complete;
     }
-  if (('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+  if (singlefield in ('callretTURTLE-0', 'callretTTL-0'))
     {
       if ((ret_format = 'TTL') or (ret_format is null))
         {
           if (ret_format is null)
             ret_mime := 'text/rdf+n3';
+        }
+      http (rset[0][0], ses);
+      goto body_complete;
+    }
+  if (('callretNT-0' = singlefield))
+    {
+      if ((ret_format = 'NT') or (ret_format is null))
+        {
+          if (ret_format is null)
+            ret_mime := 'text/plain';
         }
       http (rset[0][0], ses);
       goto body_complete;
@@ -1334,7 +1345,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (ret_format = 'TTL')
     {
-      if (ret_format is null)
+      if (ret_mime is null)
         ret_mime := 'text/rdf+n3';
       SPARQL_RESULTS_TTL_WRITE_NS (ses);
       SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
@@ -1343,6 +1354,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (ret_format = 'NT')
     {
+      if (ret_mime is null)
+        ret_mime := 'text/plain';
       SPARQL_RESULTS_NT_WRITE_NS (ses);
       SPARQL_RESULTS_NT_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_NT_WRITE_RES (ses, metas, rset);
