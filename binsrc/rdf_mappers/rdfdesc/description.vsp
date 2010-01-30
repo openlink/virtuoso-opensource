@@ -18,6 +18,8 @@
    host := http_request_header (http_request_header (), 'Host');
    langs := rdfdesc_get_lang_acc (lines);
    gr := get_keyword ('g', params, '');
+   if (gr like '%?debug=on' or gr like '%&debug=on')
+     gr := subseq (gr, 0, length (gr) - 9);
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '') -- case when /about/html/www.cname/path i.e. when no scheme the default is http
      gr := 'http://' || gr;
@@ -36,6 +38,10 @@
      }
    http_header (http_header_get () || 'Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    connection_set ('__rdf_sponge_sid', sid);
+   if (get_keyword ('debug', params, '') = 'on')
+     connection_set ('__rdf_sponge_debug', 1);
+   else
+     connection_set ('__rdf_sponge_debug', 0);
    proxy_iri_fn := get_keyword ('p', params, null);
    pars := split_and_decode (arr[4]);
    if (isarray (pars) and get_keyword ('p', pars, '') = proxy_iri_fn)
