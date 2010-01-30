@@ -645,6 +645,8 @@ create procedure DB.DBA.RM_RDF_SPONGE_ERROR (in pname varchar, in graph_iri varc
   declare gr, errs_iri, err_iri, nam any;
   if (0 = length (sql_message) or pname is null)
     return;
+  if (coalesce (connection_get ('__rdf_sponge_debug'), 0) <> 1)
+    return;
   pname := cast (pname as varchar);
   gr := coalesce (dest, graph_iri);
   nam := lower (name_part (pname, 2));
@@ -888,21 +890,10 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 {
   declare cname any;
   declare ret any;
-  declare default_host, url_sch varchar;
+  declare url_sch varchar;
   declare ua any;
 
-  if (is_http_ctx ())
-    default_host := http_request_header(http_request_header (), 'Host', null, null);
-  else
-    default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (default_host is not null)
-    cname := default_host;
-  else
-  {
-    cname := sys_stat ('st_host_name');
-    if (server_http_port () <> '80')
-        cname := cname ||':'|| server_http_port ();
-  }
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
 
   if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
     frag := '';
@@ -926,19 +917,13 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
 }
 ;
 
-
---
--- # this one is used to make proxy IRI for primary topic (entity)
---
-create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
+create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 {
-  declare cname any;
-  declare ret any;
-  declare default_host, url_sch varchar;
-  declare ua any;
-
+  declare default_host, cname varchar;
   if (is_http_ctx ())
     default_host := http_request_header(http_request_header (), 'Host', null, null);
+  else if (connection_get ('__http_host') is not null)
+    default_host := connection_get ('__http_host');
   else
     default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   if (default_host is not null)
@@ -949,6 +934,21 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
     if (server_http_port () <> '80')
         cname := cname ||':'|| server_http_port ();
   }
+  return cname;
+}
+;
+
+--
+-- # this one is used to make proxy IRI for primary topic (entity)
+--
+create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
+{
+  declare cname any;
+  declare ret any;
+  declare url_sch varchar;
+  declare ua any;
+
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
 
   if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
     frag := '';
