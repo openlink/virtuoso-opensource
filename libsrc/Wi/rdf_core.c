@@ -3115,13 +3115,18 @@ rdf_core_init (void)
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_define ("iri_ensure", bif_iri_ensure);
   bif_set_uses_index (bif_iri_to_id);
+  bif_set_no_cluster ("iri_to_id");
   bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
   bif_set_uses_index (bif_iri_to_id_nosignal);
+  bif_set_no_cluster ("iri_to_id_nosignal");
   bif_define ("iri_to_id_if_cached", bif_iri_to_id_if_cached);
   bif_define ("id_to_iri", bif_id_to_iri);
   bif_set_uses_index (bif_id_to_iri);
+  bif_set_no_cluster ("id_to_iri");
   bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);
   bif_set_uses_index (bif_id_to_iri_nosignal);
+  bif_set_no_cluster ("id_to_iri_nosignal");
+
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);

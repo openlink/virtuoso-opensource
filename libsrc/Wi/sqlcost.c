@@ -529,6 +529,9 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
     }
 }
 
+caddr_t sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret);
+
+
 
 /* Text hits estimate */
 

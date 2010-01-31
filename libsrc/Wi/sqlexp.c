@@ -1583,6 +1583,8 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	  if (subq_comp_func == ins->_.pred.func)
 	    {
 	      subq_pred_t * subq = (subq_pred_t *) ins->_.pred.cmp;
+	      if (CV_IS_LOCAL_CN == is_cluster)
+		break;
 	      if (is_cluster || !qr_is_local (subq->subp_query))
 		return 0;
 	    }
@@ -1590,6 +1592,8 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	    return 0;
 	  break;
 	case INS_SUBQ:
+	  if (CV_IS_LOCAL_CN == is_cluster)
+	    break;
 	  return 0;
 	case INS_CALL:
 	  {
