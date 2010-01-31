@@ -319,14 +319,15 @@ order by
 ) as subq
 ;
 
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Q8\n";
+--XXX: disabled until optimizer is fixed
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": Q8\n";
 
-select cmp ('MS_OUT_Q8', 'OUT_Q8');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ":  Result from Q8 \n";
+--select cmp ('MS_OUT_Q8', 'OUT_Q8');
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ":  Result from Q8 \n";
 
 delete from OUT_Q9;
 

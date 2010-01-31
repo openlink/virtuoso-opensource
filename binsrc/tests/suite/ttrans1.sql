@@ -1,4 +1,4 @@
-set echo on;
+--set echo on;
 
 -- transitive dt
 

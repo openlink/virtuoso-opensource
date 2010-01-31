@@ -60,7 +60,7 @@ create procedure lock_test (in with_commit integer)
     {
       fetch cr into _row_no;
       whenever sqlstate '08U01' goto cont;
-      rexecute (_remote_dsn, 'raw_exit ()');
+      rexecute (_remote_dsn, 'cl_exec (''raw_exit ()'')');
 cont:
       _row_no := 0;
       if (with_commit)

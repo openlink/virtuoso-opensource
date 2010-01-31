@@ -32,9 +32,9 @@ export LOGFILE
 BANNER "STARTED NorthWind XML TEST (nwxml.sh)"
 
 SHUTDOWN_SERVER
+cp "${HOME}/binsrc/samples/demo/noise.txt" .
 rm -f $DELETEMASK
 MAKECFG_FILE_WITH_HTTP $TESTCFGFILE $PORT $HTTPPORT $CFGFILE
-cp "${HOME}/binsrc/samples/demo/noise.txt" .
 START_SERVER $PORT 1000
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tlogft1.sql

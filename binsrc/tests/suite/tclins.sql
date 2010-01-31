@@ -32,12 +32,17 @@ echo both ": ins repl + soft no1\n";
 
 set autocommit manual;
 insert replacing kd values (4, 6, 7);
-echo both $if $equ $sqlstate 23000 "PASSED" "***FAILED";
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
 echo both ": non unq 2nd in ins repl\n";
 
 rollback work;
 set autocommit off;
 
+insert replacing kd values (5, 7, 8);
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": non unq 2nd in ins repl 2\n";
+
+rollback work;
 insert replacing kd values (4, 10, 11);
 
 select * from kd where k1 = 4;

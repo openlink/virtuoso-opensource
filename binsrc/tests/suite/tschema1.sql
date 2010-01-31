@@ -30,7 +30,7 @@ ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
 --- test schema evolution
 
 
-set echo on;
+--set echo on;
 
 drop table T2;
 

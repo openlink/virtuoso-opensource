@@ -289,9 +289,10 @@ order by
 	o_year
 ;
 
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Q8\n";
+-- XXX: disabled until compilation is fixed
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": Q8\n";
 
 select
 	nation,

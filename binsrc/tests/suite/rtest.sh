@@ -50,9 +50,12 @@ then
     exit
 fi
 
+DSN = $DS1
+STOP_SERVER
+DSN = $DS2
+STOP_SERVER
 
-RUN $ISQL $DS1 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
-RUN $ISQL $DS2 dba dba '"EXEC=raw_exit();"' ERRORS=STDOUT
+
 
 #
 #  Create temp directories for the two remote databases
@@ -148,7 +151,8 @@ then
     exit 1
 fi
 
-RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
+DSN = $DS1
+SHUTDOWN_SERVER
 
 RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest4.sql
 if test $STATUS -ne 0
@@ -273,8 +277,12 @@ fi
 
 
 LOG "Shutdown databases"
-RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
-RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
+
+DSN=$DS1
+SHUTDOWN_SERVER
+DSN=$DS2
+SHUTDOWN_SERVER
+
 
 
 #

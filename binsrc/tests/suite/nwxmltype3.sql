@@ -29,7 +29,8 @@ drop table XML_TEXT2;
 
 
 create table XML_TEXT2 (XT_ID integer, XT_FILE varchar, XT_TEXT DB.DBA.XMLType identified by XT_FILE, primary key (XT_ID));
-create index XT_FILE on XML_TEXT2 (XT_FILE);
+alter index xml_text2 on xml_text2 partition (xt_id int);
+create index XT_FILE2 on XML_TEXT2 (XT_FILE) partition (xt_file varchar);
 create text xml index on XML_TEXT2 (XT_TEXT) with key XT_ID;
 sequence_set ('XML_TEXT2', 1, 0);
 
@@ -42,7 +43,7 @@ create procedure xml_per_text(in f varchar, in text varchar)
   declare  tree, s, xper any;
   whenever sqlstate '40001' goto deadl;
  again:
-   xper := xml_persistent (blob_to_string (text));
+   xper := xtree_doc (blob_to_string (text));
   if (exists (select 1 from XML_TEXT2 where XT_FILE = f))
     update XML_TEXT2 set XT_TEXT = xper where XT_FILE = f;
   else
@@ -61,7 +62,7 @@ create procedure xml_per_load (in f varchar)
   whenever sqlstate '40001' goto deadl;
  again:
   text := file_to_string (f);
-  xper := xml_persistent (text);
+  xper := xtree_doc (text);
   if (exists (select 1 from XML_TEXT2 where XT_FILE = f))
     update XML_TEXT2 set XT_TEXT = xper where XT_FILE = f;
   else

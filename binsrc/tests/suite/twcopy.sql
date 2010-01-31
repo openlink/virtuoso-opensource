@@ -25,6 +25,11 @@ echo BOTH "STARTED: Web Import tests\n";
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
+delete from WS.WS.VFS_SITE;
+delete from WS.WS.VFS_URL;
+delete from WS.WS.VFS_QUEUE;
+delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/local/%';
+
 ECHO BOTH "Adding entries into configuration\n";
 insert into WS.WS.VFS_SITE (VS_DESCR, VS_HOST, VS_ROOT, VS_URL, VS_FOLLOW, VS_DEL, VS_SRC, VS_OWN)
             values ('Virtuoso', '$U{HOST}', 'local', '/', '/%', 'checked', 'checked', http_dav_uid ());
@@ -69,7 +74,7 @@ ECHO BOTH ": Retrival of the non existing site done : STATE=" $STATE " MESSAGE="
 
 
 select count (*) from WS.WS.VFS_QUEUE;
-echo both $if $equ $last[1] 2 "PASSED" "*** FAILED";
+echo both $if $equ $last[1] 36 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": " $last[1] " entries in queue processed\n";
 
