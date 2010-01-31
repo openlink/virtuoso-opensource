@@ -243,5 +243,6 @@ void sqlp_breakup (ST * sel);
 int sel_n_breakup (ST * sel);
 void sqlp_dt_header (ST * exp);
 caddr_t sqlp_col_num (caddr_t);
-
+int sqlp_is_num_lit (caddr_t x);
+caddr_t sqlp_minus (caddr_t n);
 #endif /* _SQLPFN_H */

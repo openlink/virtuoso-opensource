@@ -2414,3 +2414,37 @@ sqlp_col_num (caddr_t n)
   return (caddr_t)((ptrlong)(n1 - 1));
 }
 
+
+caddr_t
+sqlp_minus (caddr_t x)
+{
+  switch (DV_TYPE_OF (x))
+    {
+    case DV_LONG_INT: return t_box_num (- unbox (x));
+    case DV_NUMERIC: {
+      NUMERIC_VAR (zero);
+      numeric_from_int32 (zero, 0);
+      numeric_subtract ((numeric_t)x, zero, (numeric_t)x);
+      return x;
+    }
+    case DV_SINGLE_FLOAT: return t_box_float (- unbox_float (x));
+    case DV_DOUBLE_FLOAT: return t_box_double (- unbox_double (x));
+    default: yyerror ("unary minus of non-number");
+    }
+  return NULL;
+}
+
+
+int
+sqlp_is_num_lit (caddr_t x)
+{
+  switch (DV_TYPE_OF (x))
+    {
+    case DV_LONG_INT:
+    case DV_NUMERIC:
+    case DV_SINGLE_FLOAT:
+    case DV_DOUBLE_FLOAT:
+      return 1;
+    default: return 0;
+    }
+}
