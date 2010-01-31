@@ -10547,20 +10547,15 @@ bif_get_user_by_cert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return sec_get_user_by_cert (u_cert);
 }
 
-
-caddr_t
-bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
+void
+bif_log_text_array_impl (caddr_t * inst, caddr_t *arr)
 {
   query_instance_t *qi = (query_instance_t *) inst;
-  int inx, len = BOX_ELEMENTS (args);
-  caddr_t *arr;
-  dk_set_t temp_blobs = NULL;
   client_connection_t * cli = qi->qi_client;
-
-  arr = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  int inx, len = BOX_ELEMENTS (arr);
+  dk_set_t temp_blobs = NULL;
   for (inx = 0; inx < len; inx++)
     {
-      arr[inx] = bif_arg (inst, args, inx, "log_text");
       if (IS_BLOB_HANDLE (arr[inx]))
 	{
 	  arr[inx] = blob_to_string (qi->qi_trx, arr[inx]);
@@ -10571,12 +10566,40 @@ bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
     log_text_array (qi->qi_trx, (caddr_t) arr);
   else
     log_text_array_as_user (cli->cli_user, qi->qi_trx, (caddr_t) arr);
-  dk_free_box ((caddr_t) arr);
-  dk_free_tree (list_to_array (temp_blobs));
+  while (NULL != temp_blobs) dk_free_tree (dk_set_pop (&temp_blobs));
+}
 
+caddr_t
+bif_log_text_array (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *arr;
+  if (1 == BOX_ELEMENTS (args))
+    arr = box_copy (bif_array_of_pointer_arg (inst, args, 0, "log_text_array"));
+  else
+    {
+      caddr_t qry_text = bif_string_arg (inst, args, 0, "log_text_array");
+      caddr_t *arg1 = bif_array_of_pointer_arg (inst, args, 1, "log_text_array");
+      int len = BOX_ELEMENTS (arg1);
+      arr = (caddr_t *) dk_alloc_box ((len+1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      arr[0] = qry_text;
+      memcpy (arr+1, arg1, len * sizeof (caddr_t));
+    }
+  bif_log_text_array_impl (inst, arr);
+  dk_free_box ((caddr_t) arr);
   return 0;
 }
 
+caddr_t
+bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int inx, len = BOX_ELEMENTS (args);
+  caddr_t *arr = (caddr_t *) dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  for (inx = 0; inx < len; inx++)
+    arr[inx] = bif_arg (inst, args, inx, "log_text");
+  bif_log_text_array_impl (inst, arr);
+  dk_free_box ((caddr_t) arr);
+  return 0;
+}
 
 caddr_t
 bif_repl_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
@@ -14290,6 +14313,7 @@ sql_bif_init (void)
 
   bif_define ("user_set_password", bif_user_set_password); /* only for SQL users */
   bif_define ("log_text", bif_log_text);
+  bif_define ("log_text_array", bif_log_text_array);
   bif_define ("repl_text", bif_repl_text);
   bif_define ("repl_text_pushback", bif_repl_text_pushback);
   bif_define ("repl_set_raw", bif_repl_set_raw);
