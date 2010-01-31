@@ -111,6 +111,9 @@ unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_s
 int key_n_partitions (dbe_key_t * key);
 caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
+caddr_t cl_find_rdf_obj (caddr_t obj);
+rdf_box_t * key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb);
+caddr_t mdigest5 (caddr_t str);
 
 
 void plh_free (placeholder_t * pl);
@@ -325,6 +328,7 @@ extern int neodisk;
 void dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
 void dbs_write_cfg_page (dbe_storage_t * dbs, int is_first);
 void lt_wait_checkpoint (void);
+void lt_wait_checkpoint_1 (int cl_listener_also);
 
 /*
 void dbs_locate_free_bit (dbe_storage_t * dbs, dp_addr_t near_dp,
@@ -468,7 +472,7 @@ void pfh_init (pf_hash_t * pfh, buffer_desc_t * buf);
 extern resource_t * pfh_rc;
 pf_hash_t * pfh_allocate ();
 void pfh_free (pf_hash_t * pfh);
-
+short pfh_var (pf_hash_t * pfh, dbe_col_loc_t * cl, db_buf_t str, int len, unsigned short * prefix_bytes, unsigned short * prefix_ref, dtp_t * extra, int mode);
 row_size_t  row_space_after (buffer_desc_t * buf, short irow);
 void  pfh_set_int (pf_hash_t * pfh, int32 v, short nth_cl, short irow, short place);
 void  pfh_set_int64 (pf_hash_t * pfh, int32 v, short nth_cl, short irow, short place);
@@ -848,6 +852,8 @@ extern int page_wait_blob_access (it_cursor_t * itc, dp_addr_t dp_to, buffer_des
 
 /* neodisk.c */
 
+#define lt_weird() lt_note (__FILE__, __LINE__);
+void lt_note (char * file, int line);
 void  dbs_cpt_recov (dbe_storage_t * dbs);
 void dbs_recov_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
 void cpt_ins_image (buffer_desc_t * buf, int map_pos);
@@ -1009,6 +1015,8 @@ void plugin_loader_init(void);
 /* rdfinf.c */
 void sas_ensure (void);
 /*  rdfbox.c */
+void print_short (short s, dk_session_t * ses);
+
 extern rdf_box_t * rb_allocate (void);
 extern int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
 extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
@@ -1150,6 +1158,10 @@ extern int virtuoso_server_initialized;
 extern int dive_pa_mode;
 extern unsigned int bp_hit_ctr;
 extern int c_compress_mode;
+extern int rdf_no_string_inline;
+/* geo.c */
+
+
 /* extent.c */
 
 void em_free_mem (extent_map_t * em);
@@ -1177,4 +1189,6 @@ extern dk_mutex_t * extent_map_create_mtx;
 
 #define WAIT_IF(msec) if (msec) virtuoso_sleep ((msec) /1000, 1000 * ((msec) % 1000));
 extern int32 sql_const_cond_opt;
+extern int aq_max_threads;
+extern int in_log_replay;
 #endif /* _WIFN_H */

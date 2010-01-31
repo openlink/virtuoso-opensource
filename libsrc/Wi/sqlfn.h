@@ -321,7 +321,8 @@ void table_source_input (table_source_t * ts, caddr_t * inst,
     caddr_t * volatile state);
 void inx_op_source_input (table_source_t * ts, caddr_t * inst,
     caddr_t * volatile state);
-
+int table_source_input_rdf_range (table_source_t * ts, caddr_t * inst, caddr_t * state);
+extern dk_mutex_t * alt_ts_mtx;
 void table_source_input_unique (table_source_t * ts, caddr_t * inst,
     caddr_t * state);
 
@@ -1276,6 +1277,9 @@ void ssi_free (ssa_iter_node_t * ssi);
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
 
 query_t * sch_ua_func_ua (caddr_t name);
+
+caddr_t box_n_chars (dtp_t * bin, int len);
+
 
 #ifdef MTX_DEBUG
 void itc_assert_no_reg (it_cursor_t * itc);
