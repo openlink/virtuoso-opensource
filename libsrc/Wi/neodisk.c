@@ -1793,6 +1793,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   wi_inst.wi_checkpoint_atomic = 1;
   iq_restart ();
 
+  log_info ("Checkpoint started");
   mutex_enter (dbs_autocompact_mtx); /* an autcompact running in the background can confuse the unremap */
   WITHOUT_SIGNALS
   {
@@ -1908,7 +1909,7 @@ dbs_checkpoint (char *log_name, int shutdown)
     mcp_itc->itc_itm1 = NULL;
     itc_free (mcp_itc);
     mcp_itc = NULL;
-    uc_printf (("Checkpoint made. %d delta pages.\n", mcp_delta_count));
+    uc_printf (("Checkpoint finished. %d delta pages.\n", mcp_delta_count));
 
     rdbg_printf (("Checkpoint atomic over.\n"));
   }

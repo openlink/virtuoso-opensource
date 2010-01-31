@@ -1959,6 +1959,7 @@ log_check_trx (int64 trx_no)
   return ret;
 }
 
+uint32 log_last_local_w_id = 0;
 
 void
 log_replay_file (int fd)
@@ -2069,8 +2070,8 @@ read_again:
 	    {
 	      uint32 local_id = (uint32)trx_id;
 	      /* start transaction numbering where left off, do not confuse sequence for purposes of 2pc recov */
-	      if (local_id > lt_w_counter)
-		lt_w_counter = local_id;
+	      if (local_id > log_last_local_w_id)
+		log_last_local_w_id = local_id;
 	    }
 
 	  do_replay = id[0] != LOG_2PC_ABORT;
@@ -2136,11 +2137,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
-	  log_info ("Checkpoint made, log reused");
+	  log_info ("Checkpoint finished, log reused");
 	}
       else
 	{
-	  log_info ("Checkpoint made, log off");
+	  log_info ("Checkpoint finished, log off");
 	}
     }
   else
@@ -2173,7 +2174,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  log_set_byte_order_check (1);
 	  log_set_server_version_check (1);
 	}
-      log_info ("Checkpoint made, new log is %s", new_log);
+      log_info ("Checkpoint finished, new log is %s", new_log);
     }
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
