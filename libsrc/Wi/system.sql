@@ -5186,7 +5186,7 @@ create procedure cl_exec (in str varchar, in params any := null, in txn int := 0
   else if (as_read)
     flags := 0;
   else
-    flags := 1;
+  flags := 1;
   if (best_effort)
     flags := bit_or (flags, 32);
   if (control)
@@ -5327,6 +5327,7 @@ create procedure cl_new_db ()
   log_message ('new clustered database:Init of RDF');
   rdf_cl_init ();
   DB.DBA.RDF_CREATE_SPARQL_ROLES_CL ();
+  WS.WS.SYS_DAV_INIT ();
   cl_exec ('checkpoint');
 }
 ;
