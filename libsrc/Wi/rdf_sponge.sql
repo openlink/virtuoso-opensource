@@ -1271,6 +1271,10 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   cookie := connection_get ('__rdf_sponge_sid');
   if (cookie is not null)
     options := vector_concat (options, vector ('rdf_sponge_sid', cookie));
+  if (connection_get ('__rdf_sponge_debug') is not null)
+    options := vector_concat (options, vector ('rdf_sponge_debug', connection_get ('__rdf_sponge_debug')));
+  if (is_http_ctx ())
+    options := vector_concat (options, vector ('http_host', http_request_header(http_request_header (), 'Host', null, null)));
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
@@ -1301,6 +1305,10 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   cookie := get_keyword ('rdf_sponge_sid', options);
   if (cookie is not null)
     connection_set ('__rdf_sponge_sid', cookie);
+  if (get_keyword ('rdf_sponge_debug', options) is not null)
+    connection_set ('__rdf_sponge_debug', get_keyword ('rdf_sponge_debug', options));
+  if (get_keyword ('http_host', options) is not null)
+    connection_set ('__http_host', get_keyword ('http_host', options));
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
   perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
