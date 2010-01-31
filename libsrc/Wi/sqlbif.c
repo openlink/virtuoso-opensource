@@ -4612,6 +4612,30 @@ bif_matches_like (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+box_n_chars (dtp_t * bin, int len)
+{
+  caddr_t res = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (res, bin, len);
+  res[len] = 0;
+  return res;
+}
+
+
+caddr_t
+bif_rdf_rng_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* 10 first chars if over 10 */
+  int len;
+  caddr_t res;
+  caddr_t str_in = bif_arg_unrdf (qst, args, 0, "__like_min");
+  if (!DV_STRINGP (str_in)
+      || box_length (str_in) - 1 < 10)
+    return box_copy_tree (str_in);
+  return box_n_chars ((db_buf_t)str_in, 10);
+}
+
+
+caddr_t
 bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len;
@@ -14109,6 +14133,7 @@ sql_bif_init (void)
   bif_define_typed ("matches_like", bif_matches_like, &bt_integer);
   bif_define_typed ("__like_min", bif_like_min, &bt_string);
   bif_define_typed ("__like_max", bif_like_max, &bt_string);
+  bif_define_typed ("__rdf_rng_min", bif_rdf_rng_min, &bt_string);
   bif_define_typed ("fix_identifier_case", bif_fix_identifier_case, &bt_varchar);
   bif_define_typed ("casemode_strcmp", bif_casemode_strcmp, &bt_integer);
 
