@@ -5143,7 +5143,22 @@ create procedure daq_results (in daq any)
 }
 ;
 
-create procedure cl_exec (in str varchar, in params any := null, in txn int := 0, in hosts any := null, in delay float := null, in best_effort int := 0, 
+
+create procedure cl_all_hosts ()
+{
+  declare map, inx, hosts any;
+  map := cl_control (0, 'cl_host_map');
+  hosts := vector ();
+  for (inx := 0; inx < length (map); inx := inx + 1)
+    {
+      if (map[inx] <> 1 and map[inx] <> 7)
+        hosts := vector_concat (hosts, vector (inx));
+    }
+  return hosts;
+}
+;
+
+create procedure cl_exec (in str varchar, in params any := null, in txn int := 0, in hosts any := null, in delay float := null, in best_effort int := 0,
 			  in control int := 0, in as_read int := 0)
 {
   declare d, flags any;
@@ -5165,14 +5180,7 @@ create procedure cl_exec (in str varchar, in params any := null, in txn int := 0
     delay (delay);
   if (as_read and hosts is null)
     {
-      declare map, inx any;
-      map := cl_control (0, 'cl_host_map');
-      hosts := vector ();
-      for (inx := 0; inx < length (map); inx := inx + 1)
-	{
-	  if (map[inx] <> 1 and map[inx] <> 7)
-	    hosts := vector_concat (hosts, vector (inx));
-	}
+      hosts := cl_all_hosts ();
       flags := 0;
     }
   else if (as_read)
@@ -5199,10 +5207,36 @@ create procedure CL_STAT_SRV (in x varchar, in k varchar, in fl varchar)
 }
 ;
 
+
+create procedure daq_next_or_error (in daq any)
+{
+  declare r, err any;
+  r := daq_next (daq);
+  if (0 = r)
+    return null;
+  if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+    {
+      declare err any;
+      err := r[2][1];
+      if (isarray (err))
+	signal (err[2], err[2]);
+    }
+
+  return r[2][1];
+}
+;
+
 create procedure cl_sys_stat (in x varchar, in  k varchar := null, in fl varchar := null)
 {
   declare daq, r any;
   declare s int;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      if (k is null)
+	return sys_stat (x);
+      else
+	return key_stat (x, k, fl);
+    }
   daq := daq (0);
   daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_STAT_SRV', vector (x, k, fl), 1);
   while (r:= daq_next (daq))
@@ -5316,7 +5350,6 @@ create procedure cl_node_started ()
       if (0 = sys_stat ('db_exists'))
 	{
 	  cl_new_db ();
-	  DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ();
 	}
     }
 }
@@ -5738,10 +5771,23 @@ create procedure CL_RANGE_WORDS_SRV (in l varchar, in h varchar, in mask varchar
 
 create procedure cl_range_words (in tb varchar, in l varchar, in h varchar, in mask varchar)
 {
-  declare daq any;
+  declare daq, r, d any;
   daq := daq (0);
-  daq_call (daq, tb, name_part (tb, 2), 'DB.DBA.CL_RANGE_WORDS_SRV', vector (l, h, mask, tb), 0);
-  return daq_next (daq);
+  d := dict_new ();
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_RANGE_WORDS_SRV', vector (l, h, mask, tb), 1);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	err := r[2][1];
+	  if (isarray (err))
+	    signal (err[2], err[2]);
+	}
+      foreach (any w in r[2][1]) do
+	dict_put (d, w[0], 1);
+    }
+  return dict_list_keys (d, 2);
 }
 ;
 
