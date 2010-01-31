@@ -6008,7 +6008,10 @@ http_read_chunked_content (dk_session_t *ses, caddr_t *err_ret, char *uri, int a
 	  if (1 != sscanf (line,"%x", (unsigned *)(&icnk)))
 	    break;
 	  if (!icnk && readed)
+	    {
+	      readed = dks_read_line (ses, line, sizeof (line));
 	    break;
+	    }
 	  while (icnk > 0)
 	    {
 	      readed = MIN (icnk, sizeof (line));

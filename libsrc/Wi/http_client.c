@@ -2426,7 +2426,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  goto error_ret;
 	}
 
-      if (!DV_STRINGP (http_hdr) && DV_DB_NULL != DV_TYPE_OF (http_hdr))
+      if (http_hdr && !DV_STRINGP (http_hdr) && DV_DB_NULL != DV_TYPE_OF (http_hdr))
 	{
 	  *err_ret = srv_make_new_error ("22023", "HTC03", "Headers must be array of strings or single string");
 	  goto error_ret;
