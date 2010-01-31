@@ -1571,7 +1571,7 @@ a collection of SPARQL query language use cases that enable interactive and simp
 If you have installed the SPARQL Demo VAD locally, it can be found at a URL similar to 'http://example.com:8080/sparql_demo/', the exact form will depend on your local configuration. Alternatively, a live 
 version of the documentation is available at <ulink url="http://demo.openlinksw.com/sparql_demo">Virtuoso Demo Server</ulink>.
 </para>
-<para><emphasis>Example SPARQL query issued via curl:</emphasis></para>
+<sect4 id="rdfsparqlendpointexamples1"><title>Example SPARQL query issued via curl</title>
 <programlisting><![CDATA[
 curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo/rdf_sink/> WHERE {?s ?p ?o}" http://demo.openlinksw.com/sparql
 ]]></programlisting>
@@ -1607,6 +1607,8 @@ curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo
  </results>
 </sparql>
 ]]></programlisting>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples2"><title>Other Examples of SPARQL query issued via curl</title>
 <para><emphasis>Further example SPARQL queries:</emphasis></para>
 <programlisting><![CDATA[
 curl -F "query=SELECT DISTINCT ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} LIMIT 10" http://dbpedia.org/sparql
@@ -1620,7 +1622,8 @@ curl -F "query=SELECT DISTINCT ?Concept FROM <http://data.openlinksw.com/oplweb/
 <programlisting><![CDATA[
 curl -F "query=SELECT DISTINCT ?Concept FROM <http://openlinksw.com/dataspace/organization/openlink> WHERE {?s a ?Concept} LIMIT 10" http://demo.openlinksw.com/sparql
 ]]></programlisting>
-<para><emphasis>Simple example with curl and sparql-ssl endpoint</emphasis></para>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples3"><title>Example with curl and SPARQL-SSL endpoint</title>
 <programlisting><![CDATA[
 $ curl -H "Accept: text/rdf+n3"  --cert test.pem -k https://demo.openlinksw.com/dataspace/person/demo
 Enter PEM pass phrase: *****
@@ -1843,7 +1846,8 @@ ns1:this        foaf:mbox       ns4: ;
 ns1:event       dc:date "1968-01-01" .
 ns1:this        ns2:event       ns1:event .
 ]]></programlisting>
-<para><emphasis>Simple example with curl and sparql-oauth endpoint</emphasis></para>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples4"><title>Example with curl and SPARQL-OAuth endpoint</title>
 <para>Note: this is just an example as token had expired already. You can go to <link linkend="sparqloauthendpoint">this</link> section to see how to interact with our Virtuoso UI.</para>
 <programlisting><![CDATA[
 $ curl "http://demo.openlinksw.com/oauth/sparql.vsp?debug=on&default-graph-uri=&format=text%2Fhtml&oauth_consumer_key=27f105a327f5f23163e0636f78901
@@ -2057,7 +2061,8 @@ w9yJ2saU1vgHuFxWcughai5cZY%3D"
   </tr>
 </table>
 ]]></programlisting>
-<para><emphasis>Simple example with CONSTRUCT:</emphasis></para>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples5"><title>Example with CONSTRUCT</title>
 <para>Go to the sparql endpoint UI: i.e. go to http://host:port/sparql</para>
 <para>For the Default Graph URI enter: http://www.w3.org/2001/sw/DataAccess/proto-tests/data/construct/simple-data.rdf</para>
 <para>Select "Retrieve remote RDF data for all missing source graphs".</para>
@@ -2132,7 +2137,10 @@ Client-Response-Num: 1
 </rdf:RDF>
 Done
 ]]></programlisting>
-<para><emphasis>Simple example how to extract a part of a literal as a variable for use in a numeric comparison using SPARQL</emphasis></para>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples6"><title>Example with extraction part of literal as variable</title>
+<para>The following example shows how to extract a part of a literal as a variable for
+use in a numeric comparison using SPARQL</para>
 <para>Suppose there are the following triples inserted:</para>
 <programlisting><![CDATA[
 SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <:a>
@@ -2174,9 +2182,11 @@ ___________________________________
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-<para><emphasis>Simple example how to define rule:</emphasis></para>
+</sect4>
+<sect4 id="rdfsparqlendpointexamples7"><title>Example how to define rule</title>
 See details <link linkend="rdfsparqlruleexamples">here</link> how to define rule context that is
 initialized from the contents of a given graph.
+</sect4>
 </sect3>
 
 <sect3 id="rdfsparqlendpointimplnotes"><title>Implementation Notes</title>
@@ -2938,7 +2948,9 @@ Done. -- 130 msec.
 SQL>DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
 Done. -- 140 msec.
 
--- See impact of the index  by querying the subjects and predicates of all triples in the GRAPH: <http://www.w3.org/people#>,  where the object is a string which contains a word beginning with "TIM".
+-- See impact of the index  by querying the subjects and predicates
+-- of all triples in the GRAPH: <http://www.w3.org/people#>,
+-- where the object is a string which contains a word beginning with "TIM".
 
 SQL>SPARQL SELECT * FROM <http://www.w3.org/people#> WHERE { ?s ?p ?o . ?o bif:contains '"Timo*"'};
 s                                             p                                      o
@@ -3105,6 +3117,38 @@ WHERE {
     ?text bif:contains "hello and world" . }
 ]]></programlisting>
 </sect4>
+<sect4 id="rdfsparqlrulescoreexmp"><title>Example Using Score</title>
+<programlisting><![CDATA[
+SQL>
+SPARQL
+SELECT *
+WHERE
+  {
+    ?s ?p ?o .
+    ?o bif:contains 'NEW AND YORK'
+    OPTION (score ?sc) .
+  }
+ORDER BY DESC (?sc)
+LIMIT 10
+
+s                                                                        p                                               o                                                sc
+ANY                                                                      ANY                                             ANY 	                                          ANY
+______________________________________________________________________________________________________________________________________________________________________________
+
+http://dbpedia.org/resource/New_York%2C_New_York_%28disambiguation%29	 http://www.w3.org/2000/01/rdf-schema#comment	 New York, New York, New York kentini........     88
+http://dbpedia.org/resource/New_York%2C_New_York_%28disambiguation%29	 http://dbpedia.org/property/abstract	         New York, New York, New York kentinin re....     88
+http://newyorkjobs.wordpress.com/2006/07/10/new-york-jobs-71006	         http://purl.org/dc/elements/1.1/description	 York Marketing Jobs New York Retail Jobs....     84
+http://dbpedia.org/resource/Global_Communication	                 http://dbpedia.org/property/contenu	         A - New York, New York (Headfuq Mix) B1 ....     84
+http://dbpedia.org/resource/New_York_%28disambiguation%29	         http://www.w3.org/2000/01/rdf-schema#comment	 New York a^?? New York amerikai vA~?ros ....     76
+http://dbpedia.org/resource/New_York_%28disambiguation%29	         http://dbpedia.org/property/abstract	         New York a^?? New York amerikai vA~?ros ....     76
+http://dbpedia.org/resource/New_York_%28disambiguation%29	         http://www.w3.org/2000/01/rdf-schema#comment	 New York ima lahko naslednje pomene: New ...     74
+http://dbpedia.org/resource/New_York_%28disambiguation%29	         http://dbpedia.org/property/abstract	         New York ima lahko naslednje pomene: New ...     74
+http://dbpedia.org/resource/New_York_College	                         http://www.w3.org/2000/01/rdf-schema#comment	 There are several colleges of New York t ...     72
+http://dbpedia.org/resource/New_York_College	                         http://dbpedia.org/property/abstract	         There are several colleges of New York t ...     72
+No. of rows in result: 10
+
+]]></programlisting>
+</sect4>
 </sect3>
 <sect3 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
      <sect4 id="rdfsparulintro"><title>Introduction</title>
@@ -3173,7 +3217,7 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 ]]></programlisting>
      </sect4>
      <sect4 id="rdfsparulexamples"><title>Examples</title>
-<para><emphasis>Example for changing the graph</emphasis></para>
+     <sect5 id="rdfsparulexamples1"><title>Example for changing the graph</title>
        <para>The graph to be changed may be specified by an option preceding of query, instead
 of being specified in the 'insert into graph' clause.
        </para>
@@ -3188,7 +3232,8 @@ Insert into <http://mygraph.com>, 1 triples -- done
 
 1 Rows. -- 20 msec.
 ]]></programlisting>
-<para><emphasis>Example for delete graph equivalents</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples2"><title>Example for delete graph equivalents</title>
        <para>The following two statements are equivalent but the latter may work faster, especially
 if there are many RDF views in the system or if the graph in question contains triples from RDF views. 
 Note that neither of these two statements affects data coming from RDF views.
@@ -3212,7 +3257,8 @@ Clear <http://mygraph.com> -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-<para><emphasis>Example for deleting all triples for given subject</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples3"><title>Example for deleting all triples for given subject</title>
 <para>The following statement deletes all records with &lt;http://myopenlink.net/dataspace/Kingsley#this&gt; as the subject:</para>
 <programlisting><![CDATA[
 SQL>SPARQL
@@ -3241,7 +3287,8 @@ Delete from <http://mygraph.com>, 1 triples -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-<para><emphasis>Example for INSERT statements equivalent</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples4"><title>Example for INSERT statements equivalent</title>
        <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
 compatibility, but the SPARUL specification lists only 'insert into'. For example,
 the statements below are equivalent:
@@ -3292,7 +3339,8 @@ Insert into <http://mygraph.com>, 1 triples -- done
 1 Rows. -- 0 msec.
 
 ]]></programlisting>
-<para><emphasis>Example for various expressions usage</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples5"><title>Example for various expressions usage</title>
        <para>It is possible to use various expressions to calculate fields of new triples. This is
  very convenient, even if not a part of the original specification.
        </para>
@@ -3307,7 +3355,8 @@ Insert into <http://mygraph.com>, 4 triples -- done
 
 1 Rows. -- 0 msec.
 ]]></programlisting>
-<para><emphasis>Example for operator IN usage</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples6"><title>Example for operator IN usage</title>
 <para>The example shows how to find which predicate/object pairs the following
 subjects have in common and count the occurances:</para>
 <programlisting><![CDATA[
@@ -3363,7 +3412,8 @@ http://dbpedia.org/resource/Capacity_building 	 http://dbpedia.org/resource/Disa
 http://dbpedia.org/resource/Poverty 	         http://dbpedia.org/resource/Tanzania 	              1
 ]]></programlisting>
 <para>You can also find live demo query results <ulink url="http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&amp;should-sponge=&amp;query=SELECT+%0D%0A%3Fs1+%3Fs2+count+%281%29+where+{%0D%0A%3Fs1+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs1+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0A%3Fs2+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs2+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0Afilter+%28%3Fs1+!%3D+%3Fs2%29%0D%0Afilter+%28str%28%3Fs1%29+%3C+str+%28%3Fs2%29%29%0D%0A}+limit+20&amp;format=html&amp;debug=on&amp;timeout=">here</ulink></para>
-<para><emphasis>Example for Modify used as Update</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples7"><title>Example for Modify used as Update</title>
        <para>'Modify graph' may be used as a form of 'update' operation.
        </para>
 <programlisting><![CDATA[
@@ -3373,7 +3423,8 @@ SQL>SPARQL
 DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
 
 ]]></programlisting>
-<para><emphasis>Example for generating RDF information resource URI</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples8"><title>Example for generating RDF information resource URI</title>
        <para>The RDF information resource URI can be generated via a string expression.</para>
 <itemizedlist mark="bullet">
   <listitem>Suppose there is a sample file kidehen.n3:
@@ -3439,7 +3490,8 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://www.w3
 ]]></programlisting>
   </listitem>
 </itemizedlist>
-<para><emphasis>Example for operations over a web service endpoint</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples9"><title>Example for operations over a web service endpoint</title>
        <para>Several operations can be sent to a web service endpoint as a single statement and
 executed in sequence.
        </para>
@@ -3476,7 +3528,8 @@ SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Ca
 SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3") INTO GRAPH <http://mygraph.com>;
 ]]></programlisting>
-<para><emphasis>Example for Dropping graph</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples10"><title>Example for Dropping graph</title>
 <para>When handling very large RDF data collections (e.g. 600 million triples ) loaded into Virtuoso
 server as a single graph, the fastest operation to drop the graph is:</para>
 <programlisting><![CDATA[
@@ -3492,7 +3545,8 @@ Clear <http://mygraph.com> -- done
 <para>The operation can be speeded up by executing log_enable (0) or even log_enable (2) beforehand,
 and log_enable(1) after it completes.
 </para>
-<para><emphasis>Example for testing Graph Equality</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples11"><title>Example for testing Graph Equality</title>
 <para>The procedure below keeps simple cases of graphs with bnodes:</para>
 <orderedlist>
   <listitem>First it compares all triples without bnodes</listitem>
@@ -4016,8 +4070,8 @@ select DB.DBA.TEST_RDF_GRAPHS_DIFFER_EXP ( 'throughout test on foafs (equiv)', 0
   100 );
 
 ]]></programlisting>
-
-<para><emphasis>Example for Adding triples to graph</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples12"><title>Example for Adding triples to graph</title>
 <programlisting><![CDATA[
 SQL>SPARQL
 INSERT INTO GRAPH <http://BookStore.com>
@@ -4035,7 +4089,8 @@ Insert into <http://BookStore.com>, 6 triples -- done
 
 1 Rows. -- 0 msec.
 ]]></programlisting>
-<para><emphasis>Example for Updating triples from graph</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples13"><title>Example for Updating triples from graph</title>
 <para>A SPARQL/Update request that contains a triple to be deleted and a triple to be added (used here to correct a book title).
 </para>
 <programlisting><![CDATA[
@@ -4053,7 +4108,8 @@ Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
 
 1 Rows. -- 20 msec.
 ]]></programlisting>
-<para><emphasis>Example for Deleting triples from graph</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples14"><title>Example for Deleting triples from graph</title>
 <para>The example below has a request to delete all records of old books (dated before year 2000)
 </para>
 <programlisting><![CDATA[
@@ -4074,7 +4130,8 @@ Delete from <http://BookStore.com>, 6 triples -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
-<para><emphasis>Example for Copying triples from one graph to another.</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples15"><title>Example for Copying triples from one graph to another</title>
 <para>The next snippet copies records from one named graph to another based on a pattern:
 </para>
 <programlisting><![CDATA[
@@ -4097,7 +4154,8 @@ Insert into <http://NewBookStore.com>, 6 triples -- done
 
 1 Rows. -- 30 msec.
 ]]></programlisting>
-<para><emphasis>Example for Moving triples from one graph to another.</emphasis></para>
+</sect5>
+<sect5 id="rdfsparulexamples16"><title>Example for Moving triples from one graph to another</title>
 <para>This example moves records from one named graph to another named graph based on a pattern:
 </para>
 <programlisting><![CDATA[
@@ -4138,6 +4196,132 @@ Delete from <http://BookStore.com>, 3 triples -- done
 
 1 Rows. -- 10 msec.
 ]]></programlisting>
+</sect5>
+<sect5 id="rdfsparulexamples17"><title>Example for BBC SPARQL Collection</title>
+<programlisting><![CDATA[
+## All programmes related to James Bond:
+PREFIX po: <http://purl.org/ontology/po/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?uri ?label
+WHERE
+  {
+    ?uri po:category
+      <http://www.bbc.co.uk/programmes/people/bmFtZS9ib25kLCBqYW1lcyAobm8gcXVhbGlmaWVyKQ#person> ;
+    rdfs:label ?label.
+   }
+]]></programlisting>
+
+<programlisting><![CDATA[
+## Find all Eastenders broadcasta after 2009-01-01,
+## along with the broadcast version & type
+PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
+PREFIX tl: <http://purl.org/NET/c4dm/timeline.owl#>
+PREFIX po: <http://purl.org/ontology/po/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT ?version_type ?broadcast_start
+WHERE
+  {
+    <http://www.bbc.co.uk/programmes/b006m86d#programme> po:episode ?episode .
+    ?episode po:version ?version .
+    ?version a ?version_type .
+    ?broadcast po:broadcast_of ?version .
+    ?broadcast event:time ?time .
+    ?time tl:start ?broadcast_start .
+    FILTER ( (?version_type != <http://purl.org/ontology/po/Version>)
+    && (?broadcast_start > "2009-01-01T00:00:00Z"^^xsd:dateTime) )
+  }
+]]></programlisting>
+
+<programlisting><![CDATA[
+## Find all programmes that featured both the Foo Fighters and Al Green
+PREFIX po: <http://purl.org/ontology/po/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX mo: <http://purl.org/ontology/mo/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX event: <http://purl.org/NET/c4dm/event.owl#>
+PREFIX tl: <http://purl.org/NET/c4dm/timeline.owl#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?programme ?label
+WHERE
+  {
+    ?event1 po:track ?track1 .
+    ?track1 foaf:maker ?maker1 .
+    ?maker1 owl:sameAs
+       <http://www.bbc.co.uk/music/artists/67f66c07-6e61-4026-ade5-7e782fad3a5d#artist> .
+    ?event2 po:track ?track2 .
+    ?track2 foaf:maker ?maker2 .
+    ?maker2 owl:sameAs
+       <http://www.bbc.co.uk/music/artists/fb7272ba-f130-4f0a-934d-6eeea4c18c9a#artist> .
+    ?event1 event:time ?t1 .
+    ?event2 event:time ?t2 .
+    ?t1 tl:timeline ?tl .
+    ?t2 tl:timeline ?tl .
+    ?version po:time ?t .
+    ?t tl:timeline ?tl .
+    ?programme po:version ?version .
+    ?programme rdfs:label ?label .
+  }
+]]></programlisting>
+
+<programlisting><![CDATA[
+## Get short synopsis' of EastEnders episodes
+PREFIX po: <http://purl.org/ontology/po/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+SELECT ?t ?o
+WHERE
+  {
+    <http://www.bbc.co.uk/programmes/b006m86d#programme> po:episode ?e .
+    ?e a po:Episode .
+    ?e po:short_synopsis ?o .
+    ?e dc:title ?t
+  }
+]]></programlisting>
+
+<programlisting><![CDATA[
+## Get short synopsis' of EastEnders episodes (with graph)
+PREFIX po: <http://purl.org/ontology/po/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+SELECT ?g ?t ?o
+WHERE
+  {
+    graph ?g
+      {
+         <http://www.bbc.co.uk/programmes/b006m86d#programme> po:episode ?e .
+         ?e a po:Episode .
+         ?e po:short_synopsis ?o .
+         ?e dc:title ?t
+      }
+  }
+]]></programlisting>
+
+<programlisting><![CDATA[
+## Get reviews where John Paul Jones' has been involved
+
+PREFIX mo: <http://purl.org/ontology/mo/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX rev: <http://purl.org/stuff/rev#>
+PREFIX po: <http://purl.org/ontology/po/>
+SELECT DISTINCT ?r_name, ?rev
+WHERE
+  {
+    {
+      <http://www.bbc.co.uk/music/artists/4490113a-3880-4f5b-a39b-105bfceaed04#artist> foaf:made ?r1 .
+      ?r1 a mo:Record .
+      ?r1 dc:title ?r_name .
+      ?r1 rev:hasReview ?rev
+    }
+    UNION
+    {
+      <http://www.bbc.co.uk/music/artists/4490113a-3880-4f5b-a39b-105bfceaed04#artist> mo:member_of ?b1 .
+      ?b1 foaf:made ?r1 .
+      ?r1 a mo:Record .
+      ?r1 dc:title ?r_name .
+      ?r1 rev:hasReview ?rev
+    }
+  }
+]]></programlisting>
+</sect5>
    </sect4>
    </sect3>
 <sect3 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
@@ -5272,7 +5456,7 @@ automatically add code for format conversion into the resulting SQL
 code so SQL functions can be used even if <emphasis>define output:valmode
 'LONG'</emphasis> forces the use of RDF representation in the
 result set.</para>
-<para><emphasis>Example:</emphasis></para>
+<sect3 id="rdfsqlfromsparqlex1"><title>Example with sql: namespace prefix</title>
 <programlisting><![CDATA[
 SQL>create procedure DB.DBA.ComposeInfo (
   in pname varchar,
@@ -5308,6 +5492,39 @@ Timothy Berners-Lee TimBL
 
 1 Rows. -- 30 msec.
 ]]></programlisting>
+    <tip><title>See Also:</title>
+      <itemizedlist mark="bullet">
+        <listitem><link linkend="rdfsparqlgeospatexmp11">Example "Things around highly populated places"</link></listitem>
+        <listitem><link linkend="virtuosospongerfacent">Virtuoso Facets Web Service Examples</link></listitem>
+        <listitem><link linkend="VirtFacetUsage6">Virtuoso Facets Usage Statistics Examples</link></listitem>
+      </itemizedlist>
+    </tip>
+  </sect3>
+  <sect3 id="rdfsqlfromsparqlex2"><title>Example with bif: namespace prefix</title>
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT *
+FROM <http://www.w3.org/people#>
+WHERE { ?s ?p ?o . ?o bif:contains '"Timo*"'};
+s                                               p                                     o
+VARCHAR                                         VARCHAR                               VARCHAR
+_______________________________________________________________________________
+
+ http://www.w3.org/People/Berners-Lee/card#i	http://xmlns.com/foaf/0.1/name	      Timothy Berners-Lee
+ http://www.w3.org/People/Berners-Lee/card#i	http://xmlns.com/foaf/0.1/givenname   Timothy
+
+2 Rows. -- 2 msec.
+
+]]></programlisting>
+    <tip><title>See Also:</title>
+      <itemizedlist mark="bullet">
+        <listitem><link linkend="rdfpredicatessparqlexamples">Example filtering RDF objects triples by a given predicate</link></listitem>
+        <listitem><link linkend="rdfsparqlendpointexamples6">Example with extraction part of literal as variable</link></listitem>
+        <listitem><link linkend="rdfsparulexamples5">Example for various expressions usage</link></listitem>
+        <listitem><link linkend="rdfsparulexamples8">Example for generating RDF information resource URI</link></listitem>
+      </itemizedlist>
+    </tip>
+  </sect3>
 </sect2>
 <sect2 id="rdfsqlfromsparqldescribe"><title>SPARQL DESCRIBE</title>
   <para>The SPARQL specification does not define the precise output of DESCRIBE, so different
@@ -31492,6 +31709,33 @@ For getting the complete entailment of same-as, a forward
 chaining approach should be used, effectively asserting all the
 implied triples.
 </para>
+<sect3 id="rdfsameasexmp"><title>OWL sameAs Example</title>
+<programlisting><![CDATA[
+SQL>SPARQL
+DEFINE input:same-as "yes"
+SELECT *
+WHERE
+ {
+   ?s <http://xmlns.com/foaf/0.1/name> "Kingsley Idehen" .
+ }
+LIMIT 10;
+
+s
+VARCHAR
+___________________________________________________
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://demo.openlinksw.com/dataspace/kingsley#person
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+http://myopenlink.net/dataspace/person/kidehen#this
+No. of rows in result: 10
+]]></programlisting>
+</sect3>
 </sect2>
 <sect2 id="rdfsparqlruleintro"><title>Implementation</title>
 <para>Triples entailed by subclass or subproperty statements in an inference context are not physically stored.
@@ -31543,6 +31787,12 @@ WHERE {?s ?p ?o}
 </programlisting>
 </sect2>
 <sect2 id="rdfsparqlruleexamples"><title>Examples</title>
+<sect3 id="rdfsparqlruleexamples1"><title>Example for loading data space instance data Triples
+into a Named Graph for schema/ontology data</title>
+<para>The following example shows how to load data space instance data Triples
+into a Named Graph: &lt;http://localhost:8890/test&gt;, for schema/ontology data called:
+&lt;http://localhost:8890/schema/test&gt; that expresses assertions about subclasses and
+subproperties.</para>
 <programlisting><![CDATA[
 ttlp ('
    <http://localhost:8890/dataspace>  	                        <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space>.
@@ -31553,8 +31803,6 @@ ttlp ('
    <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> .
    ', '', 'http://localhost:8890/test');
 ]]></programlisting>
-<para>This loads data space instance data Triples into a Named Graph: &lt;http://localhost:8890/test&gt;
-</para>
 <programlisting><![CDATA[
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   <http://rdfs.org/sioc/ns#Space> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .
@@ -31565,14 +31813,11 @@ ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   <http://rdfs.org/sioc/ns#link> rdfs:subPropertyOf <http://rdfs.org/sioc/ns> .
   ', '', 'http://localhost:8890/schema/test');
 ]]></programlisting>
-<para>This loads a Triples into a Named Graph for schema/ontology data called:
-&lt;http://localhost:8890/schema/test&gt; that expresses assertions
-about subclasses and subproperties.
-</para>
 <programlisting>
 rdfs_rule_set ('http://localhost:8890/schema/property_rules1', 'http://localhost:8890/schema/test');
 </programlisting>
-<para>This defines the rule context http://localhost:8890/schema/property_rules1 that is initialized from the contents of graph http://localhost:8890/schema/test.
+<para>This defines the rule context http://localhost:8890/schema/property_rules1 that is initialized
+from the contents of graph http://localhost:8890/schema/test.
 </para>
 <programlisting><![CDATA[
 SQL>SPARQL
@@ -31662,7 +31907,8 @@ http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/199
 1 Rows. -- 10 msec.
 
 ]]></programlisting>
-<emphasis>DBpedia example</emphasis>
+</sect3>
+<sect3 id="rdfsparqlruleexamples2"><title>DBpedia example</title>
 <programlisting><![CDATA[
 ttlp ('
  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -31767,7 +32013,8 @@ http://dbpedia.org/resource/Chiara_Costazza
 155287 Rows. -- 342179 msec.
 
 ]]></programlisting>
-<emphasis>Loading script of the Yago Class hierarchy as inference rules example</emphasis>
+</sect3>
+<sect3 id="rdfsparqlruleexamples3"><title>Example for loading script of the Yago Class hierarchy as inference rules</title>
 <programlisting><![CDATA[
 --- Load Class Hierarchy into a Named Graph
 SELECT ttlp_mt (file_to_string_output ('yago-class-hierarchy_en.nt'),
@@ -31918,8 +32165,8 @@ http://dbpedia.org/resource/Jimmie_Dodd                                         
 ...
 15296 Rows.
 ]]></programlisting>
-<para><emphasis>Pure SPARQL Examples:</emphasis></para>
-
+</sect3>
+<sect3 id="rdfsparqlruleexamples4"><title>Pure SPARQL Example</title>
 <programlisting><![CDATA[
 -- Query aimed at Fantasy Novel via query scoped to the "Fiction" class of
 -- which it is a subclass in the Yago Hierarchy
@@ -31946,9 +32193,10 @@ http://dbpedia.org/resource/The_Lord_of_the_Rings
 
 4 Rows. -- 150 msec.
 ]]></programlisting>
-
-<para><emphasis>Equivalence between classes</emphasis></para>
-<para>The example below is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and DBpedia integration:</para>
+</sect3>
+<sect3 id="rdfsparqlruleexamples5"><title>Example for equivalence between classes</title>
+<para>This example is based on <ulink url="http://umbel.org/documentation.html">UMBEL</ulink> and
+DBpedia integration:</para>
 <programlisting><![CDATA[
 -- Load UMBEL & DBpedia Instance Level Cross-Links (owl:sameAs) Triples
 SELECT ttlp_mt (file_to_string_output ('umbel_dbpedia_linkage_v071.n3'), '', 'http://dbpedia.org');
@@ -32016,6 +32264,64 @@ http://dbpedia.org/resource/BMW_C1
 http://dbpedia.org/resource/BMW_R75
 4 Rows. -- 26 msec.
 ]]></programlisting>
+</sect3>
+<sect3 id="rdfsparqlruleexamples6"><title>Example for finding celebrities which are not fans if their own fans</title>
+<programlisting><![CDATA[
+SQL>SPARQL
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sioc: <http://rdfs.org/sioc/ns#>
+INSERT INTO GRAPH <urn:rules.skos> { foaf:knows rdfs:subPropertyOf skos:follows . };
+
+callret-0
+VARCHAR
+Insert into <urn:rules.skos>, 1 triples -- done
+No. of rows in result: 1
+
+SQL>rdfs_rule_set ('foaf-trans', 'urn:rules.skos');
+
+Done.
+
+SPARQL>SPARQL
+DEFINE input:inference "foaf-trans"
+PREFIX sioc: <http://rdfs.org/sioc/ns#>
+SELECT ?celeb COUNT (*)
+WHERE
+  {
+    ?claimant sioc:follows ?celeb .
+    FILTER
+      (
+        !bif:exists
+         (
+           ( SELECT (1)
+             WHERE
+               {
+                 ?celeb sioc:follows ?claimant
+               }
+           )
+         )
+      )
+  }
+GROUP BY ?celeb
+ORDER BY DESC 2
+LIMIT 10
+
+celeb                                                                            callret-1
+ANY 	                                                                         ANY
+__________________________________________________________________________________________
+http://localhost.localdomain/about/id/entity/http/twitter.com/kidehen	         100
+http://localhost.localdomain/about/id/entity/http/twitter.com/shawnafennell	 77
+http://localhost.localdomain/about/id/entity/http/twitter.com/thines01	         71
+http://localhost.localdomain/about/id/entity/http/twitter.com/mhausenblas	 50
+http://localhost.localdomain/about/id/entity/http/twitter.com/DirDigEng	         2
+http://localhost.localdomain/about/id/entity/http/twitter.com/SarahPalinUSA	 1
+http://localhost.localdomain/about/id/entity/http/twitter.com/zbrox	         1
+http://localhost.localdomain/about/id/entity/http/twitter.com/LamarLee	         1
+http://localhost.localdomain/about/id/entity/http/twitter.com/HackerChick	 1
+http://localhost.localdomain/about/id/entity/http/twitter.com/programmingfeed	 1
+No. of rows in result: 10
+]]></programlisting>
+</sect3>
 </sect2>
 <!-- Uncommented for Virtuoso 6 Release-->
   <sect2 id="rdfsparqlruleinversefunc"><title>Identity With Inverse Functional Properties </title>
@@ -32100,13 +32406,978 @@ http://dbpedia.org/resource/BMW_R75
   loaded this is permanent as long as the set of subjects with the name
   John does not change.</para>
   </sect2>
-  <sect2>Inference Rules and SPARQL with Transitivity Option
-See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an inference rule to cater data being skos:broader based, which is no
-long transitive.
+  <sect2 id="rdfsparqlruletransoption"><title>Inference Rules and SPARQL with Transitivity Option</title>
+    <para>See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an
+inference rule to cater data being skos:broader based, which is no long transitive.
+    </para>
   </sect2>
 </sect1>
 
+<sect1 id="rdfsparqlgeospat"><title>RDF and Geometry</title>
+<para>A geometry may occur as an object of an RDF quad. The SQL MM functions can then be used for
+querying for geometries.
+</para>
+<para>
+For geometry functions, see the <link linkend="sqlrefgeospatial">SQL Geometry support section</link>.
+</para>
+<para>A geometry may occur as an object value in an RDF quad. In such a
+case, the bare geometry object is not used but instead a special RDF
+typed literal is made with the type virtrdf:Geometry. Such a literal
+is automatically indexed in an R tree index containing all distinct
+geometries occurring in any quad of any graph under any predicate.
+Normally, WGS84, SRID 4326 is the SRID of any such geometry.
+</para>
+<para>In this section, the geo namespace prefix is used to mean &lt;http://www.w3.org/2003/01/geo/wgs84_pos#&gt;.
+</para>
+<para>The preferred way of adding geometries to RDF graphs is with the ttlp and related functions
+which parse a text string in the Turtle syntax and insert the result in a graph.
+</para>
+<para>For example:</para>
+<programlisting><![CDATA[
+ttlp ('@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+<point> geo:geometry "point(1.2 22.4"^^virtrdf:Geometry .',
+'xxx', 'graph');
+]]></programlisting>
+<para>A typed literal whose text is a WKT representation of a geometry and whose type is virtrdf:geometry
+creates a geometry object and adds it to the R tree index of all RDF geometries.
+</para>
+<para>
+Geometries can be queried with geometry predicates, st_intersects, st_contains and st_within, as follows.
+As usual, the bif: namespace is used since these are SQL built-in functions.
+</para>
+<programlisting><![CDATA[
+SQL>
+SPARQL
+SELECT ?c COUNT (*)
+WHERE
+  {
+    ?m geo:geometry ?geo .
+    ?m a ?c .
+    FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 100))
+  }
+GROUP BY ?c
+ORDER BY DESC 2;
 
+c  	                                            callret-1
+VARCHAR                                             VARCHAR
+____________________________________________________________
+http://linkedgeodata.org/vocabulary#node 	    2317684
+http://linkedgeodata.org/vocabulary#way 	    85315
+http://linkedgeodata.org/vocabulary#building 	    14257
+http://dbpedia.org/class/yago/Landmark108624891     9093
+http://linkedgeodata.org/vocabulary#wood 	    7155
+http://linkedgeodata.org/vocabulary#gate 	    7079
+http://www.w3.org/2002/07/owl#Thing 	            6788
+http://linkedgeodata.org/vocabulary#post_box 	    6144
+http://linkedgeodata.org/vocabulary#pub 	    5697
+http://dbpedia.org/ontology/Place 	            5670
+http://linkedgeodata.org/vocabulary#hedge 	    5391
+...
+]]></programlisting>
+<para>
+This would return the classes of things within 100 km of 0, 52, which is near London.
+</para>
+<programlisting><![CDATA[
+SQL>
+SPARQL
+SELECT ?m (bif:st_distance (?geo, bif:st_point (0, 52)))
+WHERE
+  {
+    ?m geo:geometry ?geo .
+    ?m a <http://dbpedia.org/ontology/City> .
+    FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 30))
+  }
+ORDER BY DESC 2
+LIMIT 20;
+
+m                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            39.13180985471543
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            39.13180985471543
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            39.13180985471543
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            39.13180985471543
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            37.36907252285992
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            34.49432513061792
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            33.7676326404143
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            33.24238654570499
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            32.60139660515003
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            32.60139660515003
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            32.17414911350438
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            31.45681319171456
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            31.17750625349044
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            31.115377038
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            31.115377038
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            30.56388658524301
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            29.89662974046085
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            29.85090625132639
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            29.82605254366244
+http://dbpedia.org/resource/Kingston%2C_Cambridgeshire                            29.60102064794003
+
+20 Rows. -- 13600 msec.
+
+]]></programlisting>
+<para>This would be the cities within 20 km of 0, 52, ordered by increasing distance from this point.
+</para>
+<para>When SPARQL is called from SQL, the geometries can be bound to SQL
+variables as anything else returned from SPARQL. The <emphasis>st_</emphasis> functions
+can then be used for retrieving properties of these objects.
+</para>
+  <tip><title>See Also</title>
+    <para><link linkend="fn_st_point"><function>st_point</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
+    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
+    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
+    <para><link linkend="fn_geo_insert"><function>geo_insert</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
+  </tip>
+  <sect2 id="rdfsparqlgeospatprog"><title>Programmatic Manipulation of Geometries in RDF</title>
+<para>The <link linkend="fn_ttlp"><function>ttlp</function></link> function is the preferred
+way of inserting geometries. The more are inserted at one time, the more efficient the operation is.
+This loader function will also deal with cluster message optimization.
+</para>
+<para>For deleting quads with geometries, normal
+<link linkend="rdfsparqlimplementationextent">SPARUL operations</link> apply.
+</para>
+<para>A geometry occurring in an RDF quad object is a member of the RDF box data type. This data type
+stands for a typed RDF literal. The type of all geometries is 256. This is mapped to a URI in
+the RDF_DATATYPE system table.
+</para>
+<para>A geometry does not occur directly in the object position of a quad. It is referenced by an id
+that is stored in the RDF typed literal box and references RO_ID of the RDF_OBJ system table.
+To translate a geometry into a RDF box that can be stored, do as in the example below:
+</para>
+<programlisting><![CDATA[
+INSERT INTO RDF_QUAD (g, s, p, o)
+VALUES (
+         "g",
+         "s",
+         iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry'),
+         DB.DBA.rdf_geo_add (rdf_box (st_point (lng, lat), 256, 257, 0, 1)));
+]]></programlisting>
+<para>The DB.DBA.RDF_GEO_ADD function looks if an identical geometry already exists and if so assigns the
+existing id to it. If the geometry is new, it gets a new ID and is stored in the RDF literals
+table RDF_OBJ. At this time it is also automatically inserted into the RDF geometry index.
+</para>
+<para>In a cluster situation one should use the dpipe mechanism for inserting into RDF quad so as to
+get large numbers of inserts into a single message. This is essential for performance.
+</para>
+  </sect2>
+  <sect2 id="rdfsparqlgeospatcrg"><title>Creating Geometries From RDF Data</title>
+<para>Many data sets use the geo:lat and geo:long properties for describing a position.
+Virtuoso comes with a function for converting these properties into geometries. This operation
+reads through all graphs and for each subject with at least one geo:lat and geo:long, a point
+geometry is made for each distinct lat/long pair where lat and long are in the same graph. It
+should not happen in practice that a single subject has multiple lats or long within one graph.
+If this still happens, a geometry is made for each combination.
+The geometry is added to the subject with the lat and long as the value of the geo:geometry property.
+This is added to the same graph where the lat and long were.
+</para>
+<para>The SQL procedure DB.DBA.RDF_GEO_FILL () performs this operation. This is performed in parallel on
+multiple threads and is optimized for cluster execution. This is done without transaction logging
+and is not transactional. To make the result persistent, the operator should do an explicit checkpoint.
+This is done by executing:</para>
+<programlisting><![CDATA[
+SQL>cl_exec ('checkpoint');
+]]></programlisting>
+<para>on any process of a cluster or single server.
+Otherwise the result may be lost if the server terminates abnormally before an automatic checkpoint is made.
+</para>
+<para>The DB.DBA.RDF_GEO_FILL procedure may in principle be called several times but it will read
+every lat and long in the database. This is inefficient if there are large numbers of geometries.
+</para>
+<para>Application logic must generally be used for constructing geometries and adding these to RDF subjects.
+It is easiest for the application to construct a text representation of the geometries in TTL and to
+use the <link linkend="fn_ttlp"><function>ttlp</function></link> function for loading this.
+</para>
+  </sect2>
+  <sect2 id="rdfsparqlgeospatusg"><title>Using Geometries With Existing Databases</title>
+<para>
+The geometry feature is compatible with any Virtuoso 6 databases.
+Once geometries are used, the database should not be opened with a
+server older than the one used for first inserting geometries, older
+servers will consider the storage format a physical corruption.
+</para>
+  </sect2>
+  <sect2 id="rdfsparqlgeospatexmp"><title>GEO Spatial Examples</title>
+    <sect3 id="rdfsparqlgeospatexmp1"><title>Example 1</title>
+<programlisting><![CDATA[
+## Get All Stuff For Given Coordinates
+SQL>SPARQL
+SELECT ?c COUNT (*)
+WHERE
+   {
+     ?m geo:geometry ?geo .
+     ?m a ?c .
+     FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 100))
+   }
+GROUP BY ?c
+ORDER BY desc 2;
+
+c                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://linkedgeodata.org/vocabulary#node                                          2317684
+http://linkedgeodata.org/vocabulary#way                                           85315
+http://linkedgeodata.org/vocabulary#building                                      14257
+http://dbpedia.org/class/yago/Landmark108624891                                   9093
+http://linkedgeodata.org/vocabulary#wood                                          7155
+....
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp2"><title>Example 2</title>
+<programlisting><![CDATA[
+## Get City Stuff Around Catholic Churches In Paris
+SQL>
+SPARQL
+SELECT ?m (bif:st_distance (?geo, bif:st_point (0, 52)))
+WHERE
+  {
+    ?m geo:geometry ?geo .
+    ?m a <http://dbpedia.org/ontology/City> .
+    FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 30))
+  }
+ORDER BY DESC 2
+LIMIT 20;
+m                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 39.13180985471543
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 39.13180985471543
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 39.13180985471543
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 39.13180985471543
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 37.36907252285992
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 34.49432513061792
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 33.7676326404143
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 33.24238654570499
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 32.60139660515003
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 32.60139660515003
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 31.45681319171456
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 31.115377038
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 31.115377038
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 30.56388658524301
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.89662974046085
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.85090625132639
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.82605254366244
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.60102064794003
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.44147385851453
+http://dbpedia.org/resource/Stansted_Mountfitchet                                 29.421242437379
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp3"><title>Example 3</title>
+<programlisting><![CDATA[
+## Get City Stuff Around Catholic Churches In Paris Extended
+SQL>
+SPARQL
+SELECT ?m (bif:st_distance (?geo, bif:st_point (0, 52)))
+WHERE
+  {
+    ?m geo:geometry ?geo .
+    ?m a <http://dbpedia.org/ontology/City> .
+    FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 100))
+  }
+ORDER BY DESC 2
+LIMIT 20;
+m                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/Weston-on-Trent                                       138.7082197019335
+http://dbpedia.org/resource/Weston-on-Trent                                       137.7213767969613
+http://dbpedia.org/resource/Weston-on-Trent                                       136.4597167847218
+http://dbpedia.org/resource/Weston-on-Trent                                       134.1807668663677
+http://dbpedia.org/resource/Weston-on-Trent                                       133.104337839536
+http://dbpedia.org/resource/Weston-on-Trent                                       133.104337839536
+http://dbpedia.org/resource/Nonington                                             132.7368236183588
+http://dbpedia.org/resource/Nonington                                             132.1339163200362
+http://dbpedia.org/resource/Nonington                                             132.1339163200362
+http://dbpedia.org/resource/Nonington                                             130.5478483560461
+http://dbpedia.org/resource/Nonington                                             130.1620410981843
+http://dbpedia.org/resource/Nonington                                             129.8549842943355
+http://dbpedia.org/resource/Nonington                                             129.6459280567849
+http://dbpedia.org/resource/Nonington                                             129.4504858595742
+http://dbpedia.org/resource/Nonington                                             129.2790713235814
+http://dbpedia.org/resource/Nonington                                             128.9081040147881
+http://dbpedia.org/resource/Nonington                                             128.8845164618929
+http://dbpedia.org/resource/Nonington                                             128.6676189617872
+http://dbpedia.org/resource/Nonington                                             128.2565253458452
+http://dbpedia.org/resource/Nonington                                             128.2551696344652
+
+20 Rows. -- 120 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp4"><title>Example 4</title>
+<programlisting><![CDATA[
+## Text Or Geo
+SQL>
+SPARQL
+SELECT ?c COUNT (*)
+WHERE
+  {
+    ?m geo:geometry ?geo .
+    ?m a ?c .
+    FILTER (bif:st_intersects (?geo, bif:st_point (0, 52), 100)  &&  REGEX (str (?c), "London") )
+  }
+GROUP BY ?c
+ORDER BY DESC 2
+LIMIT 10;
+
+c  	                                                        callret-1
+____________________________________________________________________________
+
+http://dbpedia.org/class/yago/DistrictsOfLondon 	            861
+http://dbpedia.org/class/yago/GradeIListedBuildingsInLondon 	    199
+http://dbpedia.org/class/yago/MuseumsInLondon 	                    107
+http://dbpedia.org/class/yago/ArtMuseumsAndGalleriesInLondon 	    92
+http://dbpedia.org/class/yago/GradeIIListedBuildingsInLondon 	    89
+http://dbpedia.org/class/yago/SportsVenuesInLondon 	            80
+http://dbpedia.org/class/yago/RoyalBuildingsInLondon 	            72
+http://dbpedia.org/class/yago/LondonOvergroundStations 	            69
+http://dbpedia.org/class/yago/NationalGovernmentBuildingsInLondon   69
+http://dbpedia.org/class/yago/SkyscrapersInLondon 	            60
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp5"><title>Example 5</title>
+<programlisting><![CDATA[
+## Example "Places Of Worship, Within 5 km Of Paris":
+
+## Describes places of worship, within 5 km of Paris,
+## that have cafes in close proximity(0.2 km).
+## The query requires V6 or higher.
+SQL>
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+DESCRIBE ?cafe ?church
+WHERE
+  {
+    ?church a lgv:place_of_worship .
+    ?church geo:geometry ?churchgeo .
+    ?church lgv:name ?churchname .
+    ?cafe a lgv:cafe .
+    ?cafe lgv:name ?cafename .
+    ?cafe geo:geometry ?cafegeo .
+    ?cafe geo:lat ?lat .
+    ?cafe geo:long ?long .
+    FILTER ( bif:st_intersects ( ?churchgeo, bif:st_point ( 2.3498, 48.853 ), 5 ) &&
+             bif:st_intersects ( ?cafegeo, ?churchgeo, 0.2 ) )
+  }
+LIMIT 10;
+
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:	<http://linkedgeodata.org/triplify/node/243360870#> .
+@prefix ns2:	<http://linkedgeodata.org/vocabulary#> .
+ns1:id	rdf:type	ns2:place_of_worship ,
+		ns2:node .
+@prefix geo:	<http://www.w3.org/2003/01/geo/wgs84_pos#> .
+ns1:id	geo:lat	48.8794 ;
+	geo:long	2.3748 ;
+	ns2:created_by	"Potlatch 0.6c" ;
+	ns2:name	"Saint-Georges de la Villette" ;
+	ns2:religion	"christian" ,
+		ns2:christian .
+@prefix virtrdf:	<http://www.openlinksw.com/schemas/virtrdf#> .
+ns1:id	geo:geometry	"POINT(2.3748 48.8794)"^^virtrdf:Geometry .
+@prefix ns5:	<http://linkedgeodata.org/triplify/node/266632049#> .
+ns5:id	rdf:type	ns2:node ,
+		ns2:cafe ;
+	geo:lat	48.8518 ;
+	geo:long	2.325 ;
+	ns2:created_by	"Potlatch 0.9a" ;
+	ns2:name	"Le Babylone" ;
+	geo:geometry	"POINT(2.325 48.8518)"^^virtrdf:Geometry .
+....
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp6"><title>Example 6</title>
+<programlisting><![CDATA[
+## Count Geo
+SQL>
+SPARQL
+SELECT ?c COUNT (*)
+WHERE
+   {
+     ?s geo:geometry ?geo .
+     FILTER (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 5)) .
+     ?s a ?c
+   }
+GROUP BY ?c
+ORDER BY desc 2
+LIMIT 10;
+
+c                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://linkedgeodata.org/vocabulary#node                                          37792
+http://dbpedia.org/class/yago/Landmark108624891                                   4003
+http://linkedgeodata.org/vocabulary#way                                           1688
+http://linkedgeodata.org/vocabulary#building                                      719
+http://linkedgeodata.org/vocabulary#station                                       257
+http://linkedgeodata.org/vocabulary#post_box                                      247
+http://www.w3.org/2002/07/owl#Thing                                               227
+http://linkedgeodata.org/vocabulary#park                                          208
+http://linkedgeodata.org/vocabulary#restaurant                                    198
+http://dbpedia.org/ontology/Place                                                 192
+
+10 Rows. -- 932 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp7"><title>Example 7</title>
+<programlisting><![CDATA[
+## Get Stuff Around Notre Dame De Paris
+SQL>
+SPARQL
+SELECT ?c COUNT (*)
+WHERE
+  {
+    ?s a ?c .
+    ?s geo:geometry ?geo .
+    FILTER (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 0.3))
+  }
+GROUP BY ?c
+ORDER BY desc 2
+LIMIT 10;
+
+c                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://linkedgeodata.org/vocabulary#node                                          408
+http://dbpedia.org/class/yago/Landmark108624891                                   134
+http://linkedgeodata.org/vocabulary#way                                           17
+http://dbpedia.org/class/yago/RomanCatholicChurchesInParis                        17
+http://dbpedia.org/class/yago/TallBuildingsAndStructuresInParis                   13
+http://dbpedia.org/class/yago/CathedralsInFrance                                  13
+http://sw.opencyc.org/2008/06/10/concept/Mx4rvVigPpwpEbGdrcN5Y29ycA               13
+http://sw.opencyc.org/2008/06/10/concept/Mx4rjm5QanS6EdaAAACgyZzFrg               13
+http://sw.opencyc.org/2008/06/10/concept/Mx4rwQwtGpwpEbGdrcN5Y29ycA               13
+http://www.w3.org/2002/07/owl#Thing                                               10
+
+10 Rows. -- 241 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp8"><title>Example 8</title>
+<programlisting><![CDATA[
+## Things within 10 km proximity of place of worship
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+SELECT ?c COUNT (*)
+WHERE
+  {
+    ?s a ?c .
+    ?s a lgv:place_of_worship .
+    ?s geo:geometry ?geo .
+    FILTER (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 10))
+  }
+GROUP BY ?c
+ORDER BY desc 2
+LIMIT 10;
+
+c                                                                                 callret-1
+VARCHAR                                                                           VARCHAR
+_______________________________________________________________________________
+
+http://linkedgeodata.org/vocabulary#place_of_worship                              147
+http://linkedgeodata.org/vocabulary#node                                          146
+http://linkedgeodata.org/vocabulary#way                                           46
+http://linkedgeodata.org/vocabulary#building                                      36
+http://linkedgeodata.org/vocabulary#attraction                                    3
+http://linkedgeodata.org/vocabulary#church                                        1
+
+6 Rows. -- 120 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp9"><title>Example 9</title>
+<programlisting><![CDATA[
+## Get Stuff Around Notre Dame De Paris with Names
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+SELECT ?cn
+WHERE
+  {
+    ?s lgv:name ?cn  .
+    ?s geo:geometry ?geo .
+    FILTER (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 0.3))
+  }
+LIMIT 20;
+cn
+VARCHAR
+_______________________________________________________________________________
+
+Parking Lagrange
+Maitre Albert B&B
+Le Grenier de Notre Dame
+Eglise Saint-Julien-le-Pauvre
+Eglise Saint Julien le Pauvre
+Polly Magoo
+Point 0 des Routes de France
+Square Jean XXIII
+....
+20 Rows. -- 140 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp10"><title>Example 10</title>
+<programlisting><![CDATA[
+## Get Churches With The Most Bars
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+SELECT ?churchname ?cafename (bif:st_distance (?churchgeo, ?cafegeo))
+WHERE
+  {
+    ?church a lgv:place_of_worship .
+    ?church geo:geometry ?churchgeo .
+    ?church lgv:name ?churchname .
+    ?cafe a lgv:cafe .
+    ?cafe lgv:name ?cafename .
+    ?cafe geo:geometry ?cafegeo .
+    FILTER (bif:st_intersects (?churchgeo, bif:st_point (2.3498, 48.853), 5)
+      && bif:st_intersects (?cafegeo, ?churchgeo, 0.2))
+  }
+LIMIT 10;
+
+churchname                            cafename                            callret-2
+VARCHAR                               VARCHAR                             VARCHAR
+_______________________________________________________________________________
+
+Eglise Saint-Julien-le-Pauvre         Le Saint R+?-?gis                   0.09759308692691648
+Eglise Saint-Germain des Pr+?-?s      Caf+?-? de Flore                    0.08774468391412803
+Eglise Saint-Germain des Pr+?-?s      Les Deux Magots                     0.05235923473923059
+Eglise Saint-Germain des Pr+?-?s      Caf+?-? Mabillon                    0.1712042770289815
+Eglise Saint-Germain-des-Pr+?-?s      Caf+?-? de Flore                    0.1466502865197912
+Eglise Saint-Germain-des-Pr+?-?s      Les Deux Magots                     0.1096767137079839
+Eglise Saint-Germain-des-Pr+?-?s      Bar du march+?-?                    0.1831441251868126
+Eglise Saint-Germain-des-Pr+?-?s      Caf+?-? Mabillon                    0.1174051745495528
+Synagogue                             La Chaise au Plafond                0.1038387283609551
+Synagogue                             Le Loir dans la Th+?-?i+?-?re       0.1632848322062273
+
+10 Rows. -- 511225 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp11"><title>Example 11</title>
+<programlisting><![CDATA[
+## Things around highly populated places
+SQL>
+SPARQL
+SELECT ?s ( sql:num_or_null (?o) ) COUNT (*)
+WHERE
+  {
+    ?s <http://dbpedia.org/ontology/populationTotal> ?o .
+        FILTER ( sql:num_or_null (?o) > 6000000 ) .
+    ?s geo:geometry ?geo .
+        FILTER ( bif:st_intersects (?pt, ?geo,2) ) .
+    ?xx geo:geometry ?pt
+  }
+GROUP BY ?s ( sql:num_or_null (?o) )
+ORDER BY desc 3
+LIMIT 20;
+
+s                                                         callret-1        callret-2
+VARCHAR                                                   VARCHAR          VARCHAR
+_______________________________________________________________________________
+
+http://dbpedia.org/resource/London                        7556900          312307
+http://dbpedia.org/resource/Toronto                       8102163          115859
+http://dbpedia.org/resource/New_York_City                 8363710          95629
+http://dbpedia.org/resource/The_Hague                     6659300          84410
+http://dbpedia.org/resource/Tokyo                         12790000         78618
+http://dbpedia.org/resource/Philadelphia                  6385461          67115
+http://dbpedia.org/resource/Los_Angeles                   17755322         64394
+http://dbpedia.org/resource/Bangkok                       8160522          62519
+http://dbpedia.org/resource/Barcelona                     2147483648       57635
+http://dbpedia.org/resource/Cairo                         6758581          52738
+http://dbpedia.org/resource/Istanbul                      12697164         50745
+http://dbpedia.org/resource/Seoul                         10421782         43962
+http://dbpedia.org/resource/Beijing                       17430000         35979
+http://dbpedia.org/resource/Purmerend                     6659300          33508
+http://dbpedia.org/resource/Baghdad                       6554126          33426
+http://dbpedia.org/resource/Bogot%C3%A1                   6776009          30429
+http://dbpedia.org/resource/Mexico_City                   8836045          30127
+http://dbpedia.org/resource/Jakarta                       8500000          28944
+http://dbpedia.org/resource/Boston                        7514759          27705
+http://dbpedia.org/resource/Baden-W%C3%BCrttemberg        10755000         25112
+
+20 Rows. -- 4296 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp12"><title>Example 12</title>
+<programlisting><![CDATA[
+## Example "Places Of Worship, Within 5 km Of Paris":
+
+## Constructs a custom Linked Data Mesh (graph) about
+## places of worship, within 5 km of Paris, that have
+## cafes in close proximity(0.2 km).
+
+## Note: we have distinct pin colors that identify
+## for places of worship distinct from cafes.
+
+## The query requires V6 or higher.
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+PREFIX rtb: <http://www.openlinksw.com/schemas/oat/rdftabs#>
+CONSTRUCT
+  {
+    ?cafe geo:geometry ?cafegeo        ;
+                   rtb:useMarker '01'  ;
+                  lgv:name ?cafename   .
+    ?church geo:geometry ?churchgeo    ;
+                   rtb:useMarker '02'  ;
+                lgv:name ?churchname   .
+  }
+WHERE
+  {
+    ?church a lgv:place_of_worship .
+    ?church geo:geometry ?churchgeo .
+    ?church lgv:name ?churchname .
+    ?cafe a lgv:cafe .
+    ?cafe lgv:name ?cafename .
+    ?cafe geo:geometry ?cafegeo .
+    ?cafe geo:lat ?lat .
+    ?cafe geo:long ?long .
+    FILTER ( bif:st_intersects ( ?churchgeo, bif:st_point ( 2.3498, 48.853 ), 5 ) &&
+             bif:st_intersects ( ?cafegeo, ?churchgeo, 0.2 ) )
+  }
+LIMIT 10;
+
+@prefix ns0:	<http://linkedgeodata.org/vocabulary#> .
+@prefix ns1:	<http://linkedgeodata.org/triplify/node/237435716#> .
+ns1:id	ns0:name	"Chapelle du Val de Gr\u00C3\u00A2ce" .
+@prefix ns2:	<http://www.openlinksw.com/schemas/oat/rdftabs#> .
+ns1:id	ns2:useMarker	"02" .
+@prefix virtrdf:	<http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix geo:	<http://www.w3.org/2003/01/geo/wgs84_pos#> .
+ns1:id	geo:geometry	"POINT(2.3418 48.8406)"^^virtrdf:Geometry .
+@prefix ns5:	<http://linkedgeodata.org/triplify/node/218147750#> .
+ns5:id	ns0:name	"Synagogue" ;
+	ns2:useMarker	"02" ;
+	geo:geometry	"POINT(2.3593 48.857)"^^virtrdf:Geometry .
+@prefix ns6:	<http://linkedgeodata.org/triplify/node/218145208#> .
+ns6:id	ns0:name	"Synagogue" ;
+	ns2:useMarker	"02" ;
+	geo:geometry	"POINT(2.3589 48.8567)"^^virtrdf:Geometry .
+...
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp13"><title>Example 13</title>
+<programlisting><![CDATA[
+## Example "Places Of Worship, Within 5 km Of Paris":
+
+## Asks for places of worship, within 5 km of Paris,
+## that have cafes in close proximity(0.2 km).
+## The query requires V6 or higher.
+
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+ASK
+WHERE
+  {
+    ?church a lgv:place_of_worship .
+    ?church geo:geometry ?churchgeo .
+    ?church lgv:name ?churchname .
+    ?cafe a lgv:cafe .
+    ?cafe lgv:name ?cafename .
+    ?cafe geo:geometry ?cafegeo .
+    ?cafe geo:lat ?lat .
+    ?cafe geo:long ?long .
+    FILTER ( bif:st_intersects ( ?churchgeo, bif:st_point ( 2.3498, 48.853 ), 5 ) &&
+             bif:st_intersects ( ?cafegeo, ?churchgeo, 0.2 ) )
+  };
+
+Done.
+
+true
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp14"><title>Example 14</title>
+<programlisting><![CDATA[
+## Places of worship, within 5 km of Paris,
+## that have cafes in close proximity(0.2 km)
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+SELECT DISTINCT ?cafe ?lat ?long ?cafename ?churchname
+(bif:round(bif:st_distance (?churchgeo, ?cafegeo)))
+WHERE
+  {
+    ?church a lgv:place_of_worship .
+    ?church geo:geometry ?churchgeo .
+    ?church lgv:name ?churchname .
+    ?cafe a lgv:cafe .
+    ?cafe lgv:name ?cafename .
+    ?cafe geo:geometry ?cafegeo .
+    ?cafe geo:lat ?lat.
+    ?cafe geo:long ?long.
+    FILTER ( bif:st_intersects (?churchgeo, bif:st_point (2.3498, 48.853), 5) &&
+                   bif:st_intersects (?cafegeo, ?churchgeo, 0.2) )
+  }
+LIMIT 10;
+
+cafe                                                 lat       long     cafename                           churchname                             callret-5
+VARCHAR                                              VARCHAR   VARCHAR  VARCHAR                            VARCHAR                                VARCHAR
+_______________________________________________________________________________________________________________________________________________________________
+
+http://linkedgeodata.org/triplify/node/321932192#id  48.8522   2.3484   Le Saint R+?-?gis                  Eglise Saint-Julien-le-Pauvre          0
+http://linkedgeodata.org/triplify/node/251699776#id  48.8541   2.3326   Caf+?-? de Flore                   Eglise Saint-Germain des Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/251699775#id  48.854    2.3331   Les Deux Magots                    Eglise Saint-Germain des Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/315769036#id  48.8533   2.3358   Caf+?-? Mabillon                   Eglise Saint-Germain des Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/251699776#id  48.8541   2.3326   Caf+?-? de Flore                   Eglise Saint-Germain-des-Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/251699775#id  48.854    2.3331   Les Deux Magots                    Eglise Saint-Germain-des-Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/315769035#id  48.8539   2.3371   Bar du march+?-?                   Eglise Saint-Germain-des-Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/315769036#id  48.8533   2.3358   Caf+?-? Mabillon                   Eglise Saint-Germain-des-Pr+?-?s       0
+http://linkedgeodata.org/triplify/node/251126326#id  48.8572   2.3577   La Chaise au Plafond               Synagogue                              0
+http://linkedgeodata.org/triplify/node/251043135#id  48.8562   2.361    Le Loir dans la Th+?-?i+?-?re      Synagogue                              0
+
+10 Rows. -- 120 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp15"><title>Example 15</title>
+<programlisting><![CDATA[
+## Stuff around Notre Dame de Paris
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+SELECT ?s ?cn ?lat ?long
+WHERE
+  {
+    ?s lgv:name ?cn  .
+    ?s geo:geometry ?geo .
+    ?s geo:lat ?lat.
+    ?s geo:long ?long.
+    FILTER ( bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 0.3) )
+  }
+LIMIT 20;
+
+s                                                      cn                                                        lat        long
+VARCHAR                                                VARCHAR                                                   VARCHAR    VARCHAR
+______________________________________________________________________________________________________________
+
+http://linkedgeodata.org/triplify/node/237004656#id    Parking Lagrange                                          48.8506    2.3487
+http://linkedgeodata.org/triplify/node/237003117#id    Mus+?-?e de l'Assistance Publique H+?-¦pitaux de Paris    48.8507    2.3519
+http://linkedgeodata.org/triplify/way/23071565#id      Jardin de la Rue de Bi+?-?vre                             48.8504    2.3502
+http://linkedgeodata.org/triplify/node/251652818#id    Maitre Albert B&B                                         48.8507    2.3496
+http://linkedgeodata.org/triplify/node/251373384#id    Le Grenier de Notre Dame                                  48.8513    2.35
+http://linkedgeodata.org/triplify/node/205266764#id    Eglise Saint-Julien-le-Pauvre                             48.852     2.3471
+http://linkedgeodata.org/triplify/way/19741083#id      Eglise Saint Julien le Pauvre                             48.8521    2.3469
+http://linkedgeodata.org/triplify/node/251474112#id    Polly Magoo                                               48.8526    2.3467
+http://linkedgeodata.org/triplify/node/251531803#id    H+?-¦tel Esmerelda                                        48.8523    2.3468
+http://linkedgeodata.org/triplify/node/191031796#id    Point 0 des Routes de France                              48.8533    2.3489
+http://linkedgeodata.org/triplify/way/20444455#id      Square Jean XXIII                                         48.8529    2.3511
+http://linkedgeodata.org/triplify/way/19740745#id      Square Ren+?-? Viviani                                    48.8525    2.3476
+http://linkedgeodata.org/triplify/node/321932192#id    Le Saint R+?-?gis                                         48.8522    2.3484
+http://linkedgeodata.org/triplify/node/27440965#id     Notre-Dame de Paris                                       48.853     2.3499
+http://linkedgeodata.org/triplify/node/243461762#id    Parking Notre-Dame                                        48.8537    2.3475
+http://linkedgeodata.org/triplify/way/21816758#id      Notre-Dame de Paris                                       48.8531    2.349
+http://linkedgeodata.org/triplify/way/22972062#id      La Seine                                                  48.8538    2.3531
+http://linkedgeodata.org/triplify/way/25463927#id      La Seine                                                  48.8548    2.3518
+http://linkedgeodata.org/triplify/node/251128395#id    H+?-¦tel Hospitel                                         48.854     2.3484
+http://linkedgeodata.org/triplify/way/14155323#id      H+?-¦tel Dieu                                             48.8555    2.3485
+
+20 Rows. -- 167 msec.
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp16"><title>Example 16</title>
+<programlisting><![CDATA[
+## Stuff around Notre Dame de Paris
+SQL>
+SPARQL
+PREFIX lgv: <http://linkedgeodata.org/vocabulary#>
+DESCRIBE ?s
+WHERE
+  {
+    ?s lgv:name ?cn  .
+    ?s geo:geometry ?geo .
+    ?s geo:lat ?lat.
+    ?s geo:long ?long.
+    FILTER (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 0.3))
+  }
+LIMIT 20;
+
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ns1:	<http://linkedgeodata.org/triplify/node/27440966#> .
+@prefix ns2:	<http://linkedgeodata.org/vocabulary#> .
+ns1:id	rdf:type	ns2:node ,
+		ns2:police .
+@prefix geo:	<http://www.w3.org/2003/01/geo/wgs84_pos#> .
+ns1:id	geo:lat	48.8542 ;
+	geo:long	2.3473 ;
+	ns2:created_by	"Potlatch 0.6a" ;
+	ns2:name	"Pr\u00C3\u00A9fecture de Police de Paris" ,
+		"Pr\u00E9fecture de Police de Paris" .
+@prefix virtrdf:	<http://www.openlinksw.com/schemas/virtrdf#> .
+ns1:id	geo:geometry	"POINT(2.3473 48.8542)"^^virtrdf:Geometry .
+@prefix ns5:	<http://linkedgeodata.org/triplify/node/27440965#> .
+ns5:id	rdf:type	ns2:node ,
+		ns2:place_of_worship ;
+	geo:lat	48.853 ;
+	geo:long	2.3499 ;
+	ns2:denomination	"catholic" ;
+	ns2:name	"Notre-Dame de Paris" ;
+	ns2:religion	"christian" ,
+		ns2:christian ;
+	geo:geometry	"POINT(2.3499 48.853)"^^virtrdf:Geometry .
+
+......
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp17"><title>Example 17</title>
+<programlisting><![CDATA[
+## Cities within 30 km proximity of London
+SQL>
+SPARQL
+SELECT ?m (bif:round(bif:st_distance (?geo, ?gm)))
+WHERE
+  {
+    <http://dbpedia.org/resource/London> geo:geometry ?gm .
+    ?m geo:geometry ?geo .
+    ?m a <http://dbpedia.org/ontology/City> .
+    FILTER (bif:st_intersects (?geo, ?gm, 30))
+  }
+ORDER BY DESC 2
+LIMIT 20;
+
+m                                                   callret-1
+VARCHAR                                             VARCHAR
+____________________________________________________________
+
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Ebbsfleet_Valley        30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+http://dbpedia.org/resource/Bletchingley            30
+
+20 Rows. -- 727666 msec.
+
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp18"><title>Example 18</title>
+<programlisting><![CDATA[
+## Motorways across England & Scotland from DBpedia
+SQL>
+SPARQL
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbpprop: <http://dbpedia.org/property/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+SELECT ?road ?services ?lat ?long
+WHERE
+  {
+    {
+      ?services dbpprop:road ?road .
+      ?road a yago:MotorwaysInEngland .
+      ?services dbpprop:lat ?lat .
+      ?services dbpprop:long ?long .
+     }
+    UNION
+    {
+      ?services dbpprop:road ?road .
+      ?road a yago:MotorwaysInScotland .
+      ?services dbpprop:lat ?lat .
+      ?services dbpprop:long ?long .
+     }
+  }
+LIMIT 20;
+
+road                                          services                                                        lat             long
+VARCHAR                                       VARCHAR                                                         VARCHAR         VARCHAR
+______________________________________________________________________________________________________________________________________
+
+http://dbpedia.org/resource/M90_motorway      http://dbpedia.org/resource/Kinross_services                    56.209628       -3.439257
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Leicester_Forest_East_services      52.6192         -1.206
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Woodall_services                    53.3152         -1.2813
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Tibshelf_services                   53.13708        -1.33179
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/London_Gateway_services             51.631          -0.264
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Donington_Park_services             52.823651       -1.305887
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Watford_Gap_services                52.3069         -1.1226
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Newport_Pagnell_services            52.083066       -0.748508
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Trowell_services                    52.963198       -1.265988
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Woolley_Edge_services               53.62259        -1.549422
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Toddington_services                 51.9478         -0.502075
+http://dbpedia.org/resource/M1_motorway       http://dbpedia.org/resource/Northampton_services                52.209201       -0.944799
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Chieveley_services                  51.449          -1.3112
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Magor_services                      51.58786        -2.83713
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Pont_Abraham_services               51.74712        -4.0655
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Swansea_services                    51.678197       -3.994646
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Leigh_Delamere_services             51.511528       -2.159468
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Reading_services                    51.424527       -1.035633
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Cardiff_West_services               51.50626        -3.30535
+http://dbpedia.org/resource/M4_motorway       http://dbpedia.org/resource/Heston_services                     51.48807        -0.39106
+
+20 Rows. -- 531 msec.
+
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp18"><title>Example 19</title>
+<programlisting><![CDATA[
+SELECT DISTINCT ?s (bif:round(?lat)) as ?lat (bif:round(?long)) as ?long
+WHERE
+  {
+    {
+      SELECT ?g ?s WHERE
+        {
+          graph ?g {
+            ?s geo:geometry ?geo }
+        }
+      LIMIT 100
+    }
+    graph ?g {
+      ?s geo:lat ?lat .
+      ?s geo:long ?long . }
+    FILTER (datatype (?lat) in (xsd:integer, xsd:float, xsd:double)) .
+    FILTER (datatype (?long) in (xsd:integer, xsd:float, xsd:double))
+  }
+
+s                                                                             lat        long
+ANY 	                                                                      ANY 	 ANY
+________________________________________________________________________________________________
+http://dbpedia.org/resource/QUaD	                                      -90	 -139
+http://dbpedia.org/resource/Amundsen-Scott_South_Pole_Station	              -90	 -139
+http://dbpedia.org/resource/Amundsen-Scott_South_Pole_Station	              -90	 0
+http://dbpedia.org/resource/Degree_Angular_Scale_Interferometer	              -90	 -139
+http://dbpedia.org/resource/South_Pole_Telescope	                      -90	 -139
+http://dbpedia.org/resource/Arcminute_Cosmology_Bolometer_Array_Receiver      -90	 -139
+http://dbpedia.org/resource/Viper_telescope	                              -90	 -139
+http://dbpedia.org/resource/Mount_Weaver	                              -87	 -154
+http://dbpedia.org/resource/Axel_Heiberg_Glacier	                      -85	 -163
+http://dbpedia.org/resource/Mount_Ray	                                      -85	 -171
+http://linkedgeodata.org/triplify/node/275487234#id	                      -85	 -142
+http://linkedgeodata.org/triplify/node/303732928#id	                      -85	 -142
+http://linkedgeodata.org/triplify/node/332036611#id	                      -85	 -85
+http://linkedgeodata.org/triplify/node/303732935#id	                      -85	 -143
+http://linkedgeodata.org/triplify/node/303732951#id	                      -85	 -144
+http://linkedgeodata.org/triplify/node/303732953#id	                      -85	 -144
+http://linkedgeodata.org/triplify/node/276208684#id	                      -85	 -166
+]]></programlisting>
+    </sect3>
+  </sect2>
+</sect1>
 
 <sect1 id="rdfperformancetuning"><title>Performance Tuning</title>
 <para>For RDF query performance, we have the following possible questions:</para>
@@ -32121,6 +33392,99 @@ long transitive.
 	<para>For running with large data sets, one should configure the Virtuoso process to use between 2/3 to  3/5 of system RAM and to stripe storage on all available disks.  See <link linkend="VIRTINI">NumberOfBuffers</link> and <link linkend="VIRTINI">Striping</link> ini parameters.</para>
 <para> Also, if running with a large database, setting <link linkend="VIRTINI">MaxCheckpointRemap</link> to 1/4th of
  the database size is recommended.  This is in pages, 8K per page.</para>
+    </sect2>
+    <sect2 id="rdfperfrdfscheme"><title>RDF Index Scheme</title>
+<para>
+Starting with version 6.00.3126 the default RDF index scheme consists
+of 2 full indices over RDF quads plus 3 partial indices. This index
+scheme is generally adapted to all kinds of workloads, regardless of
+whether queries generally specify a graph.
+</para>
+
+<para>
+Alternate indexing schemes are possible but will not be generally needed.
+For upgrading old databases with a different index scheme see the corresponding documentation.
+</para>
+
+<para>
+The index scheme consists of the following indices:
+</para>
+
+<itemizedlist mark="bullet">
+  <listitem><emphasis>PSOG</emphasis> - primary key</listitem>
+  <listitem><emphasis>POGS</emphasis> - bitmap index for lookups on object value.</listitem>
+  <listitem><emphasis>SP</emphasis> - partial index for cases where only S is specified.</listitem>
+  <listitem><emphasis>OP</emphasis> - partial index for cases where only O is specified.</listitem>
+  <listitem><emphasis>GS</emphasis> - partial index for cases where only G is specified.</listitem>
+</itemizedlist>
+
+<para>
+This index scheme is created by the following statements:
+</para>
+
+<programlisting><![CDATA[
+create table DB.DBA.RDF_QUAD (
+  G IRI_ID_8,
+  S IRI_ID_8,
+  P IRI_ID_8,
+  O any,
+  primary key (P, S, O, G)
+  )
+alter index RDF_QUAD on DB.DBA.RDF_QUAD partition (S int (0hexffff00))
+
+create distinct no primary key ref bitmap index RDF_QUAD_SP on RDF_QUAD (S, P) partition (S int (0hexffff00))
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff))
+create distinct no primary key ref bitmap index RDF_QUAD_GS on RDF_QUAD (G, S) partition (S int (0hexffff00))
+create distinct no primary key ref index RDF_QUAD_OP on RDF_QUAD (O, P) partition (O varchar (-1, 0hexffff))
+;
+]]></programlisting>
+
+
+<para>
+The idea is to favor queries where the predicate is specified in
+triple patterns. The entire quad can be efficiently accessed when P
+and either or both S and O are known. This has the advantage of
+clustering data by the predicate which improves working set: A page
+read from disk will only have entries pertaining to the same
+predicate, chances of accessing other entries of the page are thus
+higher than if the page held values for arbitrary predicates. For
+less frequent cases where only S is known, as in describe, the
+distinct P's of the S are found in the SP index. These SP pairs are
+then used for accessing the PSOG index to get the O and G. For cases
+where only the G is known, as in dropping a graph, the distinct S's of
+the G are found in the GS index. The P's of the S are then found in
+the SP index. After this the whole quad is found in the PSOG index.
+</para>
+
+<para>
+The SP, OP and GS indices do not store duplicates. If a S has many
+values of the P, there is only one entry. Extries are not deleted
+from SP, OP or GS. This does not lead to erroneous results since a
+full index, that is either POSG or PSOG is always consulted in order
+to know if a quad actually exists. For cases of updating data, most
+often a graph is entirely dropped and a substantially similar graph is
+inserted in its place. The SP, OP and GS indices get to stay relatively unaffected.
+</para>
+
+<para>
+Still over time specially if there are frequent updates and values do not repeat between
+consecutive states the SP, OP and GS indices will get polluted which may affect performance.
+Dropping and recreating the index will then remedy the situation.
+</para>
+
+<para>
+For cases where this is not practical the index scheme should only have full indices, i.e.
+each key holds all columns of the primary key of the quad. This will be the case if the
+distinct no primary key ref options are not specified in the create index statement. In
+such cases all indices remain in strict sync across deletes.
+</para>
+
+<para>
+Many RDF workloads have bulk load and read intensive access patterns with few deletes.
+The default index scheme is optimized for these. With these situations this scheme offers
+significant space savings resulting in better working set. Typically this layout takes
+60-70% of the space of a layout with 4 full indices.
+</para>
     </sect2>
     <sect2 id="rdfperfindexes"><title>Index Scheme Selection</title>
 <para>If the graph is always given, as one or more <emphasis>FROM</emphasis> or <emphasis>FROM NAMED</emphasis>, and there are no patterns where only graph and predicate are given, then the default indices should be appropriate.
