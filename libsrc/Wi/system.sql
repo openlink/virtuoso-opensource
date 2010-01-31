@@ -5143,7 +5143,8 @@ create procedure daq_results (in daq any)
 }
 ;
 
-create procedure cl_exec (in str varchar, in params any := null, in txn int := 0, in hosts any := null, in delay float := null, in best_effort int := 0, in control int := 0)
+create procedure cl_exec (in str varchar, in params any := null, in txn int := 0, in hosts any := null, in delay float := null, in best_effort int := 0, 
+			  in control int := 0, in as_read int := 0)
 {
   declare d, flags any;
   if (0 = txn) -- if got branches, will not do with autocommitting daq
@@ -5162,7 +5163,22 @@ create procedure cl_exec (in str varchar, in params any := null, in txn int := 0
  d := daq (txn);
   if (delay is not null)
     delay (delay);
-  flags := 1;
+  if (as_read and hosts is null)
+    {
+      declare map, inx any;
+      map := cl_control (0, 'cl_host_map');
+      hosts := vector ();
+      for (inx := 0; inx < length (map); inx := inx + 1)
+	{
+	  if (map[inx] <> 1 and map[inx] <> 7)
+	    hosts := vector_concat (hosts, vector (inx));
+	}
+      flags := 0;
+    }
+  else if (as_read)
+    flags := 0;
+  else
+    flags := 1;
   if (best_effort)
     flags := bit_or (flags, 32);
   if (control)
@@ -5265,6 +5281,7 @@ create procedure cl_reset_seqs ()
 	  __sequence_set (sprintf ('__MAX__%s', name), 0, 0);
 	}
     }
+  rdf_seq_init_srv ();
 }
 ;
 

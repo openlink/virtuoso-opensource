@@ -230,7 +230,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
     it->it_n_blob_est++;
   for (n_tries =  0; ; n_tries++)
     {
-      buf = bp_get_buffer_1 (NULL, &action_bp, BP_BUF_IF_AVAIL);
+      buf = bp_get_buffer_1 (NULL, &action_bp, in_log_replay ? BP_BUF_REQUIRED : BP_BUF_IF_AVAIL);
       if (buf)
 	break;
       if (action_bp)
@@ -244,7 +244,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
       if (5 == n_tries)
 	log_info ("Failed to get a buffer for a new page. Retrying.  If the failure repeats, an out of disk error will be signnalled.  The cause of this is having too many buffers wired down for preread, flush or group by/hash join temp space.  To correct, increase the number of buffers in the configuration file.  If this repeats in spite of having hundreds of thousands  of buffers, please report to support.");
       if (n_tries > 4)
-	virtuoso_sleep (0, 50000);
+	virtuoso_sleep (0, 50000 * (n_tries - 4));
     }
   if (action_bp)
     bp_delayed_stat_action (action_bp);
