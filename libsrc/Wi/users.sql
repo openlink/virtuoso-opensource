@@ -188,6 +188,13 @@ nf:
 }
 ;
 
+create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
+{
+  cl_exec (txt, args);
+  cl_exec ('log_text_array (?, ?)', vector (txt, args), 1);
+}
+;
+
 create procedure
 USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 {
@@ -271,14 +278,12 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 
   if (_sql_enable)
     {
-      sec_set_user_struct (_name, passwd, _u_id, _prim_group_id,
-		concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass);
-      log_text ('sec_set_user_struct (?,?,?,?,?,?,?)',
-	  _name, passwd, _u_id, _prim_group_id, concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass);
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?,?)', vector (
+	  _name, passwd, _u_id, _prim_group_id, concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass ) );
       if (_disabled = 1)
         {
-          sec_user_enable (_name, 0);
-          log_text ('sec_user_enable (?, ?)', _name, 0);
+          DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (
+            _name, 0 ) );
         }
     }
 
@@ -304,11 +309,8 @@ USER_ROLE_CREATE (in _name varchar, in is_dav integer := 0)
     _sql_enable := 0;
   insert into SYS_USERS (U_ID, U_NAME, U_GROUP, U_IS_ROLE, U_DAV_ENABLE, U_SQL_ENABLE) values (_g_id, _name, _g_id, 1, is_dav, _sql_enable);
   if (_sql_enable)
-    {
-      sec_set_user_struct (_name, '', _g_id, _g_id, NULL, 1);
-      log_text ('sec_set_user_struct (?,?,?,?,?,?)',
-	  _name, '', _g_id, _g_id, NULL, 1);
-    }
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?)',
+	  vector (_name, '', _g_id, _g_id, NULL, 1) );
   return _g_id;
 }
 ;
@@ -326,10 +328,7 @@ USER_ROLE_DROP (in _name varchar)
   delete from SYS_ROLE_GRANTS where GI_SUPER = _u_id or GI_SUB = _u_id or GI_GRANT = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
   if (_u_is_sql)
-    {
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
-    }
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
 ;
 
@@ -381,8 +380,7 @@ USER_SET_QUALIFIER (in _name varchar, in qual varchar)
       if (not length (qual))
 	signal ('22023', 'Qualifier cannot be empty string');
       update DB.DBA.SYS_USERS set U_DATA = concatenate ('Q ', qual), U_DEF_QUAL = qual where U_NAME = _name;
-      sec_set_user_data (_name, concatenate ('Q ', qual));
-      log_text ('sec_set_user_data(?,?)', _name, concatenate ('Q ', qual));
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_data(?,?)', vector (_name, concatenate ('Q ', qual)));
     }
   else
     {
@@ -476,8 +474,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
 	    rg.GI_SUPER = _u_id and rg.GI_GRANT = _g_id and u.U_ID = GI_SUB and u.U_SQL_ENABLE
 	    do
 	      {
-		sec_grant_user_role (_u_id, GI_SUB);
-		log_text ('sec_grant_user_role (?,?)', _u_id, GI_SUB);
+		DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_grant_user_role (?,?)', vector (_u_id, GI_SUB));
 	      }
 	}
     }
@@ -506,10 +503,7 @@ USER_REVOKE_ROLE (in _name varchar, in _role varchar)
 	      {
 		if (_u_is_sql and
 		  exists (select 1 from SYS_USERS where U_ID = sub and U_SQL_ENABLE) )
-		  {
-	            sec_revoke_user_role (_u_id, sub);
-	            log_text ('sec_revoke_user_role (?,?)', _u_id, sub);
-		  }
+		  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_revoke_user_role (?,?)', vector (_u_id, sub));
 	      }
 	  }
 
@@ -575,10 +569,7 @@ USER_DROP (in _name varchar, in _cascade integer := 0)
   delete from SYS_USER_GROUP where UG_UID = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
   if (_u_is_sql)
-    {
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
-    }
+    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
 ;
 
@@ -658,13 +649,12 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
   if (_sql_enable)
     {
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into passwd from SYS_USERS where U_NAME = _name;
-      sec_set_user_struct (_name, passwd, _u_id, _u_group_id,
-	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end);
-      sec_user_enable (_name, case when _disabled = 0 then 1 else 0 end);
-      log_text ('sec_set_user_struct (?,?,?,?,?)',
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?)',
+        vector (
 	  _name, passwd, _u_id, _u_group_id,
-	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end);
-      log_text ('sec_user_enable (?, ?)', _name, case when _disabled = 0 then 1 else 0 end);
+	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end ) );
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)',
+        vector (_name, case when _disabled = 0 then 1 else 0 end) );
     }
   else
     {
@@ -672,8 +662,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
 	{
 	  goto done;
 	};
-      sec_remove_user_struct (_name);
-      log_text ('sec_remove_user_struct(?)', _name);
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
       done:;
     }
 }
