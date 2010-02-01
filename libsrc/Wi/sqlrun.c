@@ -636,6 +636,8 @@ cli_terminate_in_itc_fail (client_connection_t * cli, it_cursor_t * itc, buffer_
 {
   lock_trx_t * lt = cli->cli_trx;
   /* if cancel in a cluster server thread, signal as anytime so as not to kill the transaction.  Existences etc can be cancelled without affecting the txn */
+  if (wi_inst.wi_checkpoint_atomic)
+    return;
   if (CLI_RESULT == cli->cli_terminate_requested
       || (CLI_TERMINATE == cli->cli_terminate_requested && cli->cli_clt))
     {
