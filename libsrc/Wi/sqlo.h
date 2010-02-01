@@ -732,7 +732,7 @@ void dk_set_ins_after (dk_set_t * s, void* point, void* new_elt);
 void dk_set_ins_before (dk_set_t * s, void* point, void* new_elt);
 void sqlg_cl_colocate (sql_comp_t * sc, data_source_t * qn, fun_ref_node_t * prev_fref);
 void  sqlg_top_max (query_t * qr);
-void sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first);
+outer_seq_end_node_t * sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first);
 data_source_t * qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn);
 int sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val);
 void sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx);

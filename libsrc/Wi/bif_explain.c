@@ -939,6 +939,24 @@ node_print (data_source_t * node)
       stmt_printf (("\n"));
 
     }
+  else if (in == (qn_input_fn) outer_seq_end_input)
+    {
+      outer_seq_end_node_t * ose = (outer_seq_end_node_t *)node;
+      stmt_printf (("end of outer seq "));
+      ssl_print (ose->ose_set_no);
+      stmt_printf (("\n out: "));
+      ssl_array_print (ose->ose_out_slots);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) set_ctr_input)
+    {
+      QNCAST (set_ctr_node_t, sctr, node);
+      stmt_printf (("cluster outer seq start, set no "));
+      ssl_print (sctr->sctr_set_no);
+      stmt_printf (("    \nsave ctx:"));
+      ssl_array_print (sctr->clb.clb_save);
+      stmt_printf (("\n"));
+    }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)
     {

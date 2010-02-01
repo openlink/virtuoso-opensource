@@ -43,6 +43,20 @@
 #include "security.h"
 
 
+caddr_t *
+ht_keys_to_array (dk_hash_t * ht)
+{
+  caddr_t * arr = (caddr_t*) dk_alloc_box (ht->ht_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  int fill = 0;
+  DO_HT (caddr_t, key, caddr_t, d, ht)
+    {
+      arr[fill++] = key;
+    }
+  END_DO_HT;
+  return arr;
+}
+
+
 dk_set_t
 rs_first_sub (rdf_sub_t * rs, int mode, char * is_eq_ret)
 {
@@ -1839,9 +1853,50 @@ sqlc_asg_mark (state_slot_t * ssl)
 }
 
 
-void
+outer_seq_end_node_t *
 sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
 {
+  /* brackets the space between the successor of first and the end of the generated query seq between a set ctr and outer seq end node
+   * Each set that comes in either produces an output or an output is filled with nulls and inserted in the right place in the sequence no matter how complicated the nodes in between are */
+  /* first find what nodes are assigned in the bracketed space. */
+  sql_comp_t * sc = so->so_sc;
+  outer_seq_end_node_t * ose;
+  dk_hash_t * res = hash_table_allocate (11);
+  data_source_t * first1 = qn_next (first);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, res);
+  sc->sc_any_clb = 1;
+  while (first1)
+    {
+      int is_sc;
+      qn_refd_slots (so->so_sc, first1, NULL, NULL, &is_sc);
+      first1 = qn_next (first1);
+    }
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, NULL);
+  {
+    SQL_NODE_INIT (outer_seq_end_node_t, ose2, outer_seq_end_input, ose_free);
+    ose = ose2;
+    ose->ose_out_slots = (state_slot_t **) ht_keys_to_array (res);
+    ose->ose_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "set_ctr", DV_LONG_INT);
+    ose->ose_prev_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "prev_set_ctr", DV_LONG_INT);
+    ose->ose_buffered_row = ssl_new_inst_variable (so->so_sc->sc_cc, "buf_row", DV_ARRAY_OF_POINTER);
+    ose->ose_last_outer_set = cc_new_instance_slot (so->so_sc->sc_cc);
+    hash_table_free (res);
+    sql_node_append (&first, (data_source_t*)ose);
+  }
+  {
+    data_source_t * qn;
+    SQL_NODE_INIT (set_ctr_node_t, sctr, set_ctr_input, set_ctr_free);
+    qn_ins_before (sc, &first, qn_next (first), (data_source_t *) sctr);
+    clb_init (sc->sc_cc, &sctr->clb, 1);
+    sctr->sctr_itcl = ssl_new_inst_variable (so->so_sc->sc_cc, "buf_row", DV_ARRAY_OF_POINTER);
+    sctr->sctr_ose = ose;
+    sctr->sctr_set_no = ose->ose_set_no;
+    sctr->src_gen.src_local_save = (state_slot_t**)list (2, sctr->sctr_set_no, ssl_new_inst_variable (sc->sc_cc, "set_no_save", DV_LONG_INT));
+    ose->ose_sctr = sctr;
+    for (qn = qn_next ((data_source_t*)sctr); qn != (data_source_t*)ose && qn; qn = qn_next (qn))
+      dk_set_push (&sctr->sctr_continuable, (void*)qn);
+  }
+  return ose;
 }
 
 
@@ -1854,8 +1909,10 @@ sqlg_cl_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t *
 {
   /* if the ts has in iters or rdf inf iters before it bracket the whole
    * leading iters + driving ts + main key ts + post iters inside a set_ctr - outer seq end node pair */
+  code_vec_t ojt = NULL;
   data_source_t * first_iter = NULL;
   data_source_t * qn = *head;
+  outer_seq_end_node_t * ose = NULL;
   while (qn)
     {
       if (IS_ITER (qn))
@@ -1871,25 +1928,41 @@ sqlg_cl_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t *
 	  if (!first_iter)
 	    first_iter = qn;
 	  before = qn_prev (head, first_iter);
-	  sqlg_cl_bracket_outer (tb_dfe->dfe_sqlo, before);
+	  ose = sqlg_cl_bracket_outer (tb_dfe->dfe_sqlo, before);
 	  for (ts = ts; ts; ts = qn_next (ts))
 	    {
 	      if (IS_TS (((table_source_t*)ts)))
 		{
 		  QNCAST (table_source_t, ts2, ts);
+		  if (ts2->ts_after_join_test)
+		    {
+		      ojt = ts2->ts_after_join_test;
+		      ts2->ts_after_join_test = NULL;
+		    }
 		  ts2->ts_is_outer = 0;
 		  /* if not ordered, still keep sets in order */
 		  if (ts2->ts_order_ks && !ts2->ts_order_ks->ks_cl_order)
 		    ts2->ts_order_ks->ks_cl_order = (clo_comp_t**) list (0);
 		}
 	      else if (IS_HS (ts))
-		((hash_source_t *)ts)->hs_is_outer = 0;
+		{
+		  QNCAST (hash_source_t, hs, ts);
+		  if (hs->hs_after_join_test)
+		    {
+		      ojt = hs->hs_after_join_test;
+		      hs->hs_after_join_test = NULL;
+		    }
+		  hs->hs_is_outer = 0;
+		}
 	    }
 	}
       else
 	first_iter = NULL;
       qn = qn_next (qn);
     }
+  if (!ose) SQL_GPF_T1 (tb_dfe->dfe_sqlo->so_sc->sc_cc, "supposed to have ose in bracket outer");
+  if (ojt)
+    ose->src_gen.src_after_test = ojt;
 }
 
 
