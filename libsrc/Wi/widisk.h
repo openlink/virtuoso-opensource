@@ -386,6 +386,7 @@ struct log_segment_s
   };
 
 
+extern int c_use_o_direct;
 #if defined (WINDOWS) || defined (WINNT)
 # define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY
 # define OPEN_FLAGS_RO	O_RDONLY | O_BINARY
@@ -415,7 +416,6 @@ struct log_segment_s
 #define O_LARGEFILE	0
 #endif
 
-extern int c_use_o_direct;
 #ifndef O_DIRECT
 #define O_MAYBE_DIRECT 0
 #else
