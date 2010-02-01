@@ -6462,7 +6462,7 @@ static const char *same_as__names [SAME_AS__VARIANT_COUNT] = {"IFP", "SAME_AS", 
           if (NULL != val)
             t_set_push (&tblopts, val);
         }
-      if (NULL != active_inference)
+      if (IS_BOX_POINTER (active_inference))
         t_set_push (&tblopts, t_box_sprintf (200, "WITH '%.100s'", active_inference));
       if (NULL != tblopts)
         has_table_options = 1;

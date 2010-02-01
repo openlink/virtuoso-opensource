@@ -2209,7 +2209,7 @@ sparp_clone_id (sparp_t *sparp, caddr_t orig_name)
   return t_box_dv_short_string (buf);
 }
 
-static SPART **
+SPART **
 sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp);
 
 SPART *

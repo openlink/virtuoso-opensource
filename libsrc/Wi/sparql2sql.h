@@ -477,6 +477,9 @@ extern void sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp);
 /*! This replaces selids of all variables in a filter */
 extern void sparp_set_filter_selid (sparp_t *sparp, SPART *filter, caddr_t new_selid);
 
+extern SPART **sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp);
+extern SPART *sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp);
+
 /*! This creates a full clone of \c gp subtree with cloned equivs.
 The function will substitute all selids and tabids of all graph patterns and triples in the tree and
 substitute equiv indexes with indexes of cloned equivs (except SPART_BAD_EQUIV_IDX index that persists). */

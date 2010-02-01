@@ -635,7 +635,7 @@ spar_ask_query		/* [8]	AskQuery	 ::=  'ASK' DatasetClause* WhereClause	*/
 	    spar_where_clause {
 		SPART * where_gp = spar_gp_finalize (sparp_arg, NULL);
 		$$ = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
-		  where_gp, NULL, NULL, NULL, t_box_num(1), t_box_num(0) ); }
+		  where_gp, NULL, NULL, NULL, (SPART *)t_box_num(1), (SPART *)t_box_num(0) ); }
 	;
 
 spar_dataset_clauses_opt
@@ -698,7 +698,7 @@ spar_where_clause	/* [13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 
 spar_solution_modifier	/* [14]*	SolutionModifier	 ::=  GroupClause? HavingClause? OrderClause? */
 			/*... ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
-	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), t_box_num (SPARP_MAXLIMIT), t_box_num (0)); }
+	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), (SPART *)t_box_num (SPARP_MAXLIMIT), (SPART *)t_box_num (0)); }
 	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $4, $5); }
 	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $5, $4); }
 	;
@@ -769,7 +769,7 @@ spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
 	;
 
 spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
-	: /* empty */ { $$ = t_box_num (SPARP_MAXLIMIT); }
+	: /* empty */ { $$ = (SPART *)t_box_num (SPARP_MAXLIMIT); }
 	| spar_limit_clause
 	;
 
@@ -778,7 +778,7 @@ spar_limit_clause	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
 	;
 
 spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
-	: /* empty */ { $$ = t_box_num (0); }
+	: /* empty */ { $$ = (SPART *)t_box_num (0); }
 	| spar_offset_clause
 	;
 
@@ -925,7 +925,7 @@ spar_objects		/* [32]*	ObjectList	 ::=  ObjGraphNode ( ',' ObjectList )?	*/
 
 spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
 	: spar_graph_node spar_triple_optionlist_opt {
-		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1, NULL, $2); }
+		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1, NULL, $2, 0x0); }
 	;
 
 spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
@@ -944,7 +944,7 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 		if (strcasecmp ($2, "none"))
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2);
 		else
-		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, NULL); }
+		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, (ptrlong)1); }
 	| INFERENCE_L QNAME {
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
         | INFERENCE_L Q_IRI_REF		{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_q_iri_ref (sparp_arg, $2)); }
@@ -1006,7 +1006,7 @@ spar_triples_node	/* [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList	*
 		  NULL, NULL,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil),
-		  NULL, NULL );
+		  NULL, NULL, 0x0 );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
 	| _LPAR _RPAR { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil); }
@@ -1021,17 +1021,17 @@ spar_cons_collection
 	: spar_graph_node {
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $1, NULL, NULL ); }
+		  $1, NULL, NULL, 0x0 ); }
 	| spar_cons_collection spar_graph_node {
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1);
 		spar_gp_add_triple_or_special_filter (sparp_arg,
 		  NULL, NULL,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
-		  bn, NULL, NULL );
+		  bn, NULL, NULL, 0x0 );
 		sparp_env()->spare_context_subjects->data = bn;
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $2, NULL, NULL ); }
+		  $2, NULL, NULL, 0x0 ); }
 	;
 
 spar_graph_node		/* [37]	GraphNode	 ::=  VarOrTerm | TriplesNode	*/
@@ -1209,7 +1209,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
-		  where_gp, NULL, NULL, NULL, t_box_num(1), t_box_num(0) );
+		  where_gp, NULL, NULL, NULL, (SPART *)t_box_num(1), (SPART *)t_box_num(0) );
 		spar_env_pop (sparp_arg);
 		$$ = spar_gp_finalize_with_subquery (sparp_arg, $7, subselect_top); }
 	| _LPAR spar_select_query_mode {

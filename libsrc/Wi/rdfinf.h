@@ -40,6 +40,8 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_iri_to_subclass;
   id_hash_t *	ric_iri_to_subproperty;
   caddr_t *	ric_ifp_list;
+  caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys */
+  caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted, only bit1 is used atm means transitive */
   id_hash_t *	ric_ifp_exclude; /* from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of mailto:// */
   id_hash_t *	ric_samples; /* cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx; /* for sample cache */
@@ -186,9 +188,7 @@ struct trans_node_s
 
 #define TN_DEFAULT_MAX_MEMORY 100000000
 
-
-
-
+extern id_hash_t * rdf_name_to_ric;
 void rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst, 		   caddr_t * volatile state);
 void rdf_inf_pre_free (rdf_inf_pre_node_t * ri);
 caddr_t dfe_iri_const (df_elt_t * dfe);

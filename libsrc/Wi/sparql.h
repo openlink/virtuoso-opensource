@@ -161,21 +161,22 @@ typedef struct rdf_grab_config_s {
 typedef struct sparp_env_s
   {
     /*spar_query_t *	spare_sparqr;*/
-    ptrlong             spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
-    ptrlong *           spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
+    ptrlong		spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
+    ptrlong *		spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
     dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
     dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
     caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
-    caddr_t             spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
-    caddr_t             spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
-    caddr_t             spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
-    caddr_t             spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
-    caddr_t             spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
-    caddr_t             spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
+    caddr_t		spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
+    caddr_t		spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
+    caddr_t		spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
+    caddr_t		spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
+    caddr_t		spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
+    caddr_t		spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
     caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
+    struct rdf_inf_ctx_s *	spare_inference_ctx;		/*!< Pointer to an inference structure, to expand transitive and add unions for inverses */
     caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
     caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
     dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
@@ -652,7 +653,9 @@ extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
-extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
+/*! Makes and adds a triple or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
+\c banned tricks is a bitmask that is 0 by default, 0x1 to ignore transitivity in inf rules or options, 0x2 to ignore inverse props */
+extern SPART *spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
 extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);

@@ -43,6 +43,8 @@ extern "C" {
 }
 #endif
 
+#include "sqlo.h" /* to load rdfinf.h :) */
+#include "rdfinf.h"
 #include "rdf_mapping_jso.h"
 
 #ifdef MALLOC_DEBUG
@@ -878,9 +880,14 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         }
       if (!strcmp (param, "input:inference"))
         {
+          rdf_inf_ctx_t ** place;
           if (NULL != sparp->sparp_env->spare_inference_name)
             spar_error (sparp, "'define %.30s' is used more than once", param);
           sparp->sparp_env->spare_inference_name = t_box_dv_uname_string (value);
+          place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&value);
+          if (NULL == place)
+            spar_error (sparp, "'define %.30s refers to undefined inference rule set \"%.200s\"", param, value);
+          sparp->sparp_env->spare_inference_ctx = place[0];
           return;
         }
       if ((11 < strlen (param)) && !memcmp (param, "input:grab-", 11))
@@ -1129,7 +1136,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
           spar_make_variable (sparp, pv->sparpv_subj_var->_.var.vname),
           pv->sparpv_verb_qname,
           spar_make_variable (sparp, pv->sparpv_obj_var_name),
-          NULL, NULL );
+          NULL, NULL, 0x0 );
       if (_STAR_GT == pv->sparpv_op)
         {
           SPART *pv_gp;
@@ -1899,8 +1906,13 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if (NULL != sparp->sparp_env->spare_output_maxrows)
     {
       boxint hard_lim = unbox (sparp->sparp_env->spare_output_maxrows);
-      if (unbox (limit) > hard_lim)
-        limit = t_box_num_nonull (hard_lim);
+      if (DV_LONG_INT == DV_TYPE_OF (limit))
+        {
+          if (unbox ((caddr_t)limit) > hard_lim)
+            limit = (SPART *)t_box_num_nonull (hard_lim);
+        }
+      else
+        limit = spar_make_funcall (sparp, 0, "bif:__max", (SPART **)t_list (2, limit, t_box_num_nonull (hard_lim)));
     }
   return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
@@ -1911,8 +1923,56 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     limit, offset, env );
 }
 
-void
-spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
+SPART *
+spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks, dk_set_t inv_props)
+{
+  SPART *triple, *gp, *union_gp;
+  rdf_inf_ctx_t *saved_inf = sparp->sparp_env->spare_inference_ctx;
+  spar_gp_init (sparp, UNION_L);
+  spar_gp_init (sparp, 0);
+  if (NULL != options)
+    spar_error (sparp, "Options are not supported for a triple pattern with property name \"%.200s\" that is declared in inference rules \"%.200s\" as a property with inverse",
+      predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
+  sparp->sparp_env->spare_inference_ctx = NULL;
+  triple = spar_gp_add_triple_or_special_filter (sparp, graph, subject, predicate, object, qm_iri, options, banned_tricks & 0x2);
+  if (SPAR_TRIPLE != SPART_TYPE (triple))
+    spar_error (sparp, "Property name \"%.200s\" has special meaning that conflicts with its declaration in inference rules \"%.200s\" as a property with inverse",
+      predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
+  sparp_set_triple_selid_and_tabid (sparp, triple, sparp->sparp_env->spare_selids->data, spar_mkid (sparp, "t"));
+  if (NULL != options)
+    sparp_validate_options_of_tree (sparp, triple, options);
+  gp = spar_gp_finalize (sparp, NULL);
+  spar_gp_add_member (sparp, gp);
+  while (NULL != inv_props)
+    {
+      caddr_t inv_p_name = t_box_dv_uname_string (t_set_pop (&inv_props));
+      spar_gp_init (sparp, 0);
+      triple = spar_gp_add_triple_or_special_filter (sparp,
+        (SPART *)t_full_box_copy_tree ((caddr_t)graph),
+        (SPART *)t_full_box_copy_tree ((caddr_t)object), /* object is swapped with subject*/
+        (SPART *)t_full_box_copy_tree ((caddr_t)predicate),
+        (SPART *)t_full_box_copy_tree ((caddr_t)subject),
+        t_full_box_copy_tree (qm_iri),
+        (SPART **)t_full_box_copy_tree ((caddr_t)options),
+        banned_tricks & 0x2 );
+      if (SPAR_TRIPLE != SPART_TYPE (triple))
+        spar_error (sparp, "Property name \"%.200s\" has special meaning but it is declared in inference rules \"%.200s\" as an inverse property of \"%.200s\"",
+          inv_p_name, sparp->sparp_env->spare_inference_name, predicate->_.qname.val );
+      triple->_.triple.tr_predicate->_.qname.val = inv_p_name;
+      if (SPAR_IS_BLANK_OR_VAR (triple->_.triple.tr_object))
+        triple->_.triple.tr_object->_.var.rvr.rvrRestrictions &= ~SPART_VARR_IS_REF;
+      sparp_set_triple_selid_and_tabid (sparp, triple, sparp->sparp_env->spare_selids->data, spar_mkid (sparp, "t"));
+      gp = spar_gp_finalize (sparp, NULL);
+      spar_gp_add_member (sparp, gp);
+    }
+  union_gp = spar_gp_finalize (sparp, NULL);
+  spar_gp_add_member (sparp, union_gp);
+  sparp->sparp_env->spare_inference_ctx = saved_inf;
+  return union_gp;
+}
+
+SPART *
+spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks)
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
@@ -1974,7 +2034,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
       if (SPAR_IS_BLANK_OR_VAR (fields[fld_ctr]))
         fields[fld_ctr]->_.var.selid = gp_selid;
     }
-  spar_gp_add_triple_or_special_filter (sparp, graph, subj_var, predicate, obj_var, qm_iri, NULL);
+  spar_gp_add_triple_or_special_filter (sparp, graph, subj_var, predicate, obj_var, qm_iri, NULL, 0x1);
   sparp_set_option (sparp, &options, T_IN_L,
     spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
     SPARP_SET_OPTION_REPLACING );
@@ -1984,7 +2044,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
     spar_selid_pop (sparp), where_gp,
-    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
+    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)t_box_num (SPARP_MAXLIMIT), (SPART *)t_box_num_nonull (0));
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
   spar_env_pop (sparp);
   t_check_tree (options);
@@ -2010,6 +2070,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   if (members_stack != sparp->sparp_env->spare_acc_triples)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in triples");
 #endif
+  return wrapper_gp;
 }
 
 static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
@@ -2018,10 +2079,11 @@ static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
   SPART_VARR_IS_REF | SPART_VARR_NOT_NULL,			/* predicate	*/
   SPART_VARR_NOT_NULL };					/* object	*/
 
-void
-spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
+SPART *
+spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks)
 {
   sparp_env_t *env = sparp->sparp_env;
+  rdf_inf_ctx_t *inf_ctx = sparp->sparp_env->spare_inference_ctx;
   SPART *triple;
   if (NULL == subject)
     subject = (SPART *)t_box_copy_tree (env->spare_context_subjects->data);
@@ -2050,11 +2112,59 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     }
   if (NULL != options)
     {
-      SPART *trans = sparp_get_option (sparp, options, TRANSITIVE_L);
-      if (NULL != trans)
+      caddr_t inf_name = (caddr_t)sparp_get_option (sparp, options, INFERENCE_L);
+      if (NULL != inf_name)
         {
-          spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options);
-          return;
+          if (IS_BOX_POINTER(inf_name))
+            {
+              rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&inf_name);
+              if (NULL == place)
+                spar_error (sparp, "'OPTION (INFERENCE \"%.30s\") refers to undefined inference rule set", inf_name);
+              inf_ctx = place[0];
+            }
+          else
+            inf_ctx = NULL;
+        }
+    }
+  if (NULL != options)
+    {
+      SPART *trans = sparp_get_option (sparp, options, TRANSITIVE_L);
+      if ((NULL != trans) && !(0x1 & banned_tricks))
+        return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options, 0x1 | banned_tricks);
+    }
+  if ((NULL != inf_ctx) && (SPAR_QNAME == SPART_TYPE (predicate)))
+    {
+      caddr_t p_name = predicate->_.qname.val;
+      caddr_t *propprops = sparp->sparp_env->spare_inference_ctx->ric_prop_props;
+      caddr_t *invlist = sparp->sparp_env->spare_inference_ctx->ric_inverse_prop_pair_sortedalist;
+      if (NULL != propprops)
+        {
+          int propproplen = BOX_ELEMENTS (propprops);
+          int pp_pos = ecm_find_name (p_name, propprops, propproplen/2, 2 * sizeof (caddr_t));
+          if (ECM_MEM_NOT_FOUND != pp_pos)
+            {
+              ptrlong flags = (ptrlong)(propprops[pp_pos * 2 + 1]);
+              if ((1 & flags) && !(0x1 & banned_tricks))
+                {
+                  sparp_set_option (sparp, &options, TRANSITIVE_L, (SPART *)((ptrlong)1), SPARP_SET_OPTION_REPLACING);
+                  return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options, 0x1 | banned_tricks);
+                }
+            }
+        }
+      if ((NULL != invlist) && !(0x2 & banned_tricks))
+        {
+          int invlistlen = BOX_ELEMENTS (invlist);
+          int inv_pos = ecm_find_name (p_name, invlist, invlistlen/2, 2 * sizeof (caddr_t));
+          if (ECM_MEM_NOT_FOUND != inv_pos)
+            { /* There may be many inverse predicates for a single given one and ecm_find_name may point to any of pairs */
+              dk_set_t inv_names = NULL;
+              while ((0 < inv_pos) && !strcmp (invlist[(inv_pos-1) * 2], p_name))
+                inv_pos--;
+              t_set_push (&inv_names, invlist [1 + 2 * inv_pos]);
+              while ((((inv_pos+1) * 2) < invlistlen) && !strcmp (invlist[(inv_pos+1) * 2], p_name))
+                t_set_push (&inv_names, invlist [1 + 2 * ++inv_pos]);
+              return spar_gp_add_union_of_triple_and_inverses (sparp, graph, subject, predicate, object, qm_iri, options, 0x2 | banned_tricks, inv_names);
+            }
         }
     }
   if (SPAR_QNAME == SPART_TYPE (predicate))
@@ -2081,8 +2191,8 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, pname,
               (SPART **)t_list_concat ((caddr_t)t_list (2, subject, object), (caddr_t)options) ) );
-	  dk_free_tree (spec_pred_names);
-          return;
+          dk_free_tree (spec_pred_names);
+          return NULL;
         }
       dk_free_tree (spec_pred_names);
     }
@@ -2133,6 +2243,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, triple, options);
   spar_gp_add_member (sparp, triple);
+  return triple;
 }
 
 SPART *
@@ -3215,6 +3326,7 @@ spar_env_push (sparp_t *sparp)
   env_copy->spare_output_valmode_name = t_box_dv_short_string ("AUTO");
   ENV_COPY (spare_storage_name);
   ENV_COPY (spare_inference_name);
+  ENV_COPY (spare_inference_ctx);
   ENV_COPY (spare_use_same_as);
 #if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */

@@ -887,6 +887,26 @@ bif_rdf_inf_ifp_is_excluded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 }
 
 caddr_t
+bif_rdf_inf_set_inverses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_inverses");
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_inverses", 0);
+  dk_free_tree (ctx->ric_inverse_prop_pair_sortedalist);
+  ctx->ric_inverse_prop_pair_sortedalist = box_copy_tree (lst);
+  return NULL;
+}
+
+caddr_t
+bif_rdf_inf_set_prop_props (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_prop_props");
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_props", 0);
+  dk_free_tree (ctx->ric_prop_props);
+  ctx->ric_prop_props = box_copy_tree (lst);
+  return NULL;
+}
+
+caddr_t
 bif_rdf_inf_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t ctx_name = bif_string_arg (qst, args, 0, "rdf_inf_clear");
@@ -1158,6 +1178,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_set_ifp_list", bif_rdf_inf_set_ifp_list);
   bif_define ("rdf_inf_set_ifp_exclude_list", bif_rdf_inf_set_ifp_exclude_list);
   bif_define ("rdf_inf_ifp_is_excluded", bif_rdf_inf_ifp_is_excluded);
+  bif_define ("rdf_inf_set_inverses", bif_rdf_inf_set_inverses);
+  bif_define ("rdf_inf_set_prop_props", bif_rdf_inf_set_prop_props);
   bif_define ("rdf_check_init" , bif_rdf_check_init);
   bif_set_uses_index (bif_rdf_check_init);
   bif_define ("rdf_super_sub_list", bif_rdf_super_sub_list);
@@ -1711,6 +1733,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
       df_elt_t ** g_in_list = sqlo_in_list (cp, NULL, NULL);
       dbe_column_t * col = g_in_list ? g_in_list[0]->_.col.col : cp->_.bin.left->_.col.col;
       if (BOP_EQ != cp->_.bin.op)
+	continue;
+      if (cp->_.bin.left == cp->_.bin.right)
 	continue;
       if (g_in_list && col->col_name[0] != 'G')
 	continue;
