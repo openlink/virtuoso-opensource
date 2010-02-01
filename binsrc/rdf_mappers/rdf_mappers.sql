@@ -793,7 +793,12 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
       tmp := sprintf_inverse (val, '%s %s %s %s %s %s', 0);
       if (tmp is not null and length (tmp) > 5)
 	{
-	  ret := http_string_date (sprintf ('%s, %s %s %s %s %s', tmp[0], tmp[2], tmp[1], tmp[5], tmp[3], tmp[4]));
+	  declare tz int;
+	  tz := -1 * RM_GET_TZ (tmp[4]);
+	  ret := http_string_date (sprintf ('%s, %s %s %s %s GMT', tmp[0], tmp[2], tmp[1], tmp[5], tmp[3]));
+	  if (tz is not null)
+	    ret := dt_set_tz (ret, tz);
+	  else
 	  ret := dt_set_tz (ret, 0);
 	  ret := date_iso8601 (ret);
 	  if (ret is not null)
