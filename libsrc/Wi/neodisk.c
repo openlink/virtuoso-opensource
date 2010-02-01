@@ -478,6 +478,32 @@ rl_add_cpt_wait (row_lock_t * rl, it_cursor_t * wait)
   *prev = wait;
 }
 
+
+void
+lt_note (char * file, int line)
+{
+  log_error ("cpt/lt unusual cond %s:%d", file, line);
+}
+
+
+int cpt_init_trx_rc_fill;
+int cpt_trx_rc_n_ck = 0;
+
+
+void
+cpt_trx_rc_ck ()
+{
+  int inx;
+  cpt_trx_rc_n_ck++;
+  for (inx = 0; inx < trx_rc->rc_fill; inx++)
+    {
+      lock_trx_t * lt = (lock_trx_t*) trx_rc->rc_items[inx];
+      if (lt->lt_lock.ht_count)
+	lt_weird ();
+    }
+}
+
+
 void
 page_lock_to_row_locks (buffer_desc_t * buf)
 {
@@ -509,6 +535,7 @@ page_lock_to_row_locks (buffer_desc_t * buf)
       waiting = next;
     }
   pl->pl_waiting = NULL;
+  cpt_trx_rc_ck ();
 }
 
 
@@ -615,6 +642,8 @@ cpt_reinsert_uci (uc_insert_t * uci, it_cursor_t * itc)
   itc->itc_key_spec = rd.rd_key->key_insert_spec;
   for (inx = 0; inx < rd.rd_key->key_n_significant; inx++)
     itc->itc_search_params[inx] = rd.rd_values[rd.rd_key->key_part_in_layout_order[inx]];
+  ITC_FAIL (itc)
+    {
   buf = itc_reset (itc);
   res = itc_search (itc, &buf);
   if (BUF_NEEDS_DELTA (buf))
@@ -631,11 +660,17 @@ cpt_reinsert_uci (uc_insert_t * uci, it_cursor_t * itc)
     {
       log_error ("suspect non-unq insert in replay of cpt rb");
       itc_page_leave (itc, buf);
-      uci->uci_rl->pl_owner->lt_status = old_lt_status;
-      return;
+	  goto cleanup;
     }
+    }
+  ITC_FAILED
+    {
+      goto cleanup;
+    }
+  END_FAIL (itc);
   rd.rd_keep_together_itcs = uci->uci_registered;
   itc_insert_dv (itc, &buf, &rd, 0, uci->uci_rl);
+cleanup:
   uci->uci_rl->pl_owner->lt_status = old_lt_status;
   rd_free (&rd);
 }
@@ -752,7 +787,9 @@ cpt_lt_rollback (lock_trx_t * lt)
 	  itc->itc_insert_key = itc->itc_tree->it_key;
 	  sethash ((void*)pl, visited, (void*) 1);
 	  pl_cpt_rollback_page (pl, itc);
-	  lt_rb_check (wi_inst.wi_cpt_lt);	  ITC_LEAVE_MAPS (itc);
+	  cpt_trx_rc_ck ();
+	  lt_rb_check (wi_inst.wi_cpt_lt);
+	  ITC_LEAVE_MAPS (itc);
 	}
       END_DO_SET ();
       dk_set_free (locks);
@@ -763,6 +800,9 @@ cpt_lt_rollback (lock_trx_t * lt)
 void
 cpt_uncommitted ()
 {
+  cpt_init_trx_rc_fill = trx_rc->rc_fill;
+  cpt_trx_rc_n_ck = 0;
+  cpt_trx_rc_ck ();
   if (!wi_inst.wi_cpt_lt)
     {
       wi_inst.wi_cpt_lt = lt_allocate ();
@@ -878,6 +918,7 @@ cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
 void
 cpt_restore_uncommitted (it_cursor_t * itc)
 {
+  int n_uci = 0;
   itc->itc_ltrx = wi_inst.wi_cpt_lt;
   lt_rb_check (wi_inst.wi_cpt_lt);
   DO_SET (index_tree_t *, it, &cpt_dbs->dbs_trees)
@@ -896,6 +937,7 @@ cpt_restore_uncommitted (it_cursor_t * itc)
 		    sethash ((void*)pl, visited, (void*) 1);
 		    mutex_leave (itm_mtx);
 		    cpt_pl_restore (pl, itc);
+		    cpt_trx_rc_ck ();
 		    mutex_enter (itm_mtx);
 		  }
 	      }
@@ -911,6 +953,8 @@ cpt_restore_uncommitted (it_cursor_t * itc)
     {
       uc_insert_t * next = cpt_uci_list->uci_next;
       cpt_reinsert_uci (cpt_uci_list, itc);
+      n_uci++;
+      cpt_trx_rc_ck ();
       dk_free ((caddr_t) cpt_uci_list, sizeof (uc_insert_t));
       cpt_uci_list = next;
     }
