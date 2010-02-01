@@ -2027,7 +2027,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (((NULL == lang) && (
           ((uname_xmlschema_ns_uri_hash_string == type) && (DV_STRING == DV_TYPE_OF (value))) ||
           ((uname_xmlschema_ns_uri_hash_integer == type) && (DV_LONG_INT == DV_TYPE_OF (value))) ||
-          ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ) ) ||
+          ((uname_xmlschema_ns_uri_hash_double == type) && (DV_DOUBLE_FLOAT == DV_TYPE_OF (value))) ||
+          ((uname_xmlschema_ns_uri_hash_decimal == type) && (DV_NUMERIC == DV_TYPE_OF (value))) ) ) ||
         ((NULL != lang) && (NULL == type) && (DV_STRING == DV_TYPE_OF (value))) )
         {
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);

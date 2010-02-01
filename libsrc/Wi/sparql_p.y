@@ -1192,8 +1192,28 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPAR_BIN_OP ($$, BOP_PLUS,
 		  spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
 	| _MINUS spar_expn	%prec UMINUS	{
+		caddr_t *val_ptr = NULL;
+		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) {
+		    if (SPAR_LIT == $2->type)
+		      val_ptr = &($2->_.lit.val); }
+		else
+		  val_ptr = (caddr_t *)($2);
+		if (NULL != val_ptr) {
+		    dtp_t val_dtp = DV_TYPE_OF (val_ptr[0]);
+		    if (DV_LONG_INT == val_dtp)
+		      val_ptr[0] = t_box_num_nonull (-unbox (val_ptr[0]));
+		    else if (DV_DOUBLE_FLOAT == val_dtp)
+		      ((double *)(val_ptr[0]))[0] = -((double *)(val_ptr[0]))[0];
+		    else if (DV_NUMERIC == val_dtp)
+		      ((struct numeric_s *)(val_ptr[0]))->n_neg = (((struct numeric_s *)(val_ptr[0]))->n_neg ? 0 : 1);
+		    else
+		      val_ptr = NULL; }
+		if (NULL == val_ptr)
 		SPAR_BIN_OP ($$, BOP_MINUS,
-		  spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
+		    spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL),
+		  $2 );
+		else
+		  $$ = $2; }
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
