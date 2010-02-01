@@ -173,7 +173,8 @@ public class VirtuosoXAResource implements XAResource
         int start_param;
         if (param == XAResource.TMJOIN) {
             transaction = manager.getTransaction(xid);
-            if (transaction.getStatus() != XATransaction.ACTIVE) {
+            if (transaction.getStatus() != XATransaction.ACTIVE
+                && transaction.getStatus() != XATransaction.IDLE) {
                 throw new XAException(XAException.XAER_PROTO);
             }
             start_param = SQL_XA_JOIN;
@@ -237,6 +238,7 @@ public class VirtuosoXAResource implements XAResource
 	else if (param == XAResource.TMFAIL)
 	{
            end_param = SQL_XA_END;
+           nstatus = XATransaction.ROLLBACKONLY;
         }
 	else
        	{

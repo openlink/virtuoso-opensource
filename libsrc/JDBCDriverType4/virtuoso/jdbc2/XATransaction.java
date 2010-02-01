@@ -32,6 +32,7 @@ class XATransaction
     final static int PREPARED = 3;
     final static int COMMITTED = 4;
     final static int ROLLEDBACK = 5;
+    final static int ROLLBACKONLY = 6;
 
     private VirtuosoXid xid;
     private int status;
@@ -103,11 +104,13 @@ class XATransaction
     }
 
     void checkNewStatus(int nstatus, boolean onePhase) throws XAException {
-      if (status == ACTIVE && nstatus != IDLE && nstatus != ACTIVE) {
+      if (status == ACTIVE && nstatus != IDLE && nstatus != ACTIVE && nstatus != ROLLBACKONLY) {
           throw createException(nstatus);
       } else if (status == IDLE && (nstatus != PREPARED && !(nstatus == COMMITTED && onePhase))) {
           throw createException(nstatus);
       } else if (status == PREPARED && (nstatus != COMMITTED && nstatus != ROLLEDBACK)) {
+          throw createException(nstatus);
+      } else if (status == ROLLBACKONLY && nstatus != ROLLEDBACK && nstatus != PREPARED) {
           throw createException(nstatus);
       } else if (status == COMMITTED || status == ROLLEDBACK) {
           throw createException(nstatus);
@@ -122,6 +125,7 @@ class XATransaction
         case PREPARED:   return "PREPARED";
         case COMMITTED:  return "COMMITED";
         case ROLLEDBACK: return "ROLLEDBACK";
+        case ROLLBACKONLY: return "ROLLBACKONLY";
         default:         return "UNKNOWN";
       }
     }
