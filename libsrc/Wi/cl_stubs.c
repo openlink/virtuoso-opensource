@@ -42,26 +42,9 @@
 /*
  *  Globals
  */
-
-//char *c_cluster_listen;
-//char *c_cluster_local;
-//char *c_cluster_master;
-
-//cl_host_t *cl_master;
-
 cl_listener_t local_cll;
-//cl_thread_t *listen_clt;
-//cluster_map_t *clm_all;
 cluster_map_t *clm_replicated;
 
-//dk_mutex_t *cluster_thread_mtx;
-//dk_set_t cluster_hosts;
-
-//du_thread_t *cl_listener_thr;
-
-//int cl_n_clt_running, cl_n_clt_start, clt_n_late_cancel;
-//int cl_trx_inited;
-//int cl_wait_query_queued;
 int cluster_enable = 0;
 int enable_dfg_print = 0;
 int enable_dfg = 1;
@@ -84,7 +67,6 @@ int32 cl_res_buffer_bytes;	/* no of bytes before sending to client */
 int32 cl_stage;
 int32 cl_wait_query_delay = 20000;	/* wait 20s before requesting forced sync of cluster wait graph */
 int32 cl_dead_w_interval;
-//int32 drop_seed;
 
 int64 cl_cum_messages, cl_cum_bytes, cl_cum_txn_messages;
 int64 cl_cum_wait, cl_cum_wait_msec;
