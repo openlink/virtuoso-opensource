@@ -225,11 +225,11 @@ sqlo_ic_set_tsa (df_elt_t * tb_dfe, dk_set_t path)
   DO_SET (df_elt_t *, pred, &tb_dfe->dfe_sqlo->so_after_preds)
     {
       pos++;
-      if (sqlo_pred_in_path (path, (void*)(ptrlong)pos - 1)
+      if (sqlo_pred_in_path (path, (void *)(ptrlong)(pos - 1))
 	  || sqlo_pred_eliminated_in_path (path, pred))
 	continue;
       if (sqlo_after_test_placeable (tb_dfe, path, pred->dfe_tree))
-	t_set_push (&local, (void*)(ptrlong)pos - 1);
+	t_set_push (&local, (void *)(ptrlong)(pos - 1));
     }
   END_DO_SET();
   ic->ic_after_preds = local;
