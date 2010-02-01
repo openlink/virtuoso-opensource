@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="maildrop"
 	ProjectGUID="{C5F98602-E5B9-11DA-85E2-A4E5714C712A}"
 	RootNamespace="maildrop"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -93,6 +94,8 @@
 				ModuleDefinitionFile="..\binsrc\maildrop\win32\maildrop.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/maildrop.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/maildrop.lib"
 			/>
 			<Tool
@@ -112,9 +115,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -196,6 +196,8 @@
 				ModuleDefinitionFile="..\binsrc\maildrop\win32\maildrop.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/maildrop.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/maildrop.lib"
 			/>
 			<Tool
@@ -215,9 +217,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -299,6 +298,8 @@
 				ModuleDefinitionFile="..\binsrc\maildrop\win32\maildrop.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/maildrop.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/maildrop.lib"
 			/>
 			<Tool
@@ -318,9 +319,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -403,6 +401,8 @@
 				ModuleDefinitionFile="..\binsrc\maildrop\win32\maildrop.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/maildrop.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/maildrop.lib"
 			/>
 			<Tool
@@ -422,9 +422,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

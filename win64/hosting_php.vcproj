@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="hosting_php"
 	ProjectGUID="{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}"
 	RootNamespace="hosting_php"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -92,6 +93,8 @@
 				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
 			/>
 			<Tool
@@ -111,9 +114,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -194,6 +194,8 @@
 				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
 				TargetMachine="17"
 			/>
@@ -214,9 +216,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -296,6 +295,8 @@
 				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
 			/>
 			<Tool
@@ -315,9 +316,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -397,6 +395,8 @@
 				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				ImportLibrary="$(ConfigurationName)/hosting_php.lib"
 				TargetMachine="17"
 			/>
@@ -417,9 +417,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

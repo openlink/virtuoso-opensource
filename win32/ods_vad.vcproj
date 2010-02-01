@@ -1,118 +1,170 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="9.00"
 	Name="ods_framework_vad"
 	ProjectGUID="{7DF920B2-EFDA-11DA-988C-EBAD6065650A}"
 	RootNamespace="ods_framework_vad"
-	Keyword="MakeFileProj">
+	Keyword="MakeFileProj"
+	TargetFrameworkVersion="131072"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)\ods_framework_vad"
 			IntermediateDirectory="$(ConfigurationName)\ods_framework_vad"
-			ConfigurationType="1">
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			>
 			<Tool
-				Name="VCCLCompilerTool"/>
+				Name="VCPreBuildEventTool"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCCustomBuildTool"
+			/>
 			<Tool
-				Name="VCLinkerTool"/>
+				Name="VCXMLDataGeneratorTool"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCMIDLTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCCLCompilerTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCResourceCompilerTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLinkerTool"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)\ods_framework_vad"
 			IntermediateDirectory="$(ConfigurationName)\ods_framework_vad"
-			ConfigurationType="1">
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			>
 			<Tool
-				Name="VCCLCompilerTool"/>
+				Name="VCPreBuildEventTool"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile=""/>
+				OutputFile=""
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
 	</References>
 	<Files>
 		<File
-			RelativePath="..\appsrc\ODS-Framework\make_vad.sh">
+			RelativePath="..\appsrc\ODS-Framework\make_vad.sh"
+			>
 			<FileConfiguration
-				Name="Debug|Win32">
+				Name="Debug|Win32"
+				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="cd $(InputDir)
-set PATH=$(TargetDir)\..;%PATH%
-set HOME=$(ProjectDir)\..\
-set PORT=5555
-set ISQL=isql.exe
-set SERVER=virtuoso-t.exe
-bash make_vad.sh
-cd $(ProjectDir)
-"
+					CommandLine="cd $(InputDir)&#x0D;&#x0A;set PATH=$(TargetDir)\..;%PATH%&#x0D;&#x0A;set HOME=$(ProjectDir)\..\&#x0D;&#x0A;set PORT=5555&#x0D;&#x0A;set ISQL=isql.exe&#x0D;&#x0A;set SERVER=virtuoso-t.exe&#x0D;&#x0A;bash make_vad.sh&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
-					Outputs="$(InputDir)\ods_framework_dav.vad"/>
+					Outputs="$(InputDir)\ods_framework_dav.vad"
+				/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="Release|Win32">
+				Name="Release|Win32"
+				>
 				<Tool
 					Name="VCCustomBuildTool"
-					CommandLine="cd $(InputDir)
-set PATH=$(TargetDir)\..;%PATH%
-set HOME=$(ProjectDir)\..\
-set PORT=5555
-set ISQL=isql.exe
-set SERVER=virtuoso-t.exe
-bash make_vad.sh
-cd $(ProjectDir)
-"
+					CommandLine="cd $(InputDir)&#x0D;&#x0A;set PATH=$(TargetDir)\..;%PATH%&#x0D;&#x0A;set HOME=$(ProjectDir)\..\&#x0D;&#x0A;set PORT=5555&#x0D;&#x0A;set ISQL=isql.exe&#x0D;&#x0A;set SERVER=virtuoso-t.exe&#x0D;&#x0A;bash make_vad.sh&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
-					Outputs="$(InputDir)\ods_framework_dav.vad"/>
+					Outputs="$(InputDir)\ods_framework_dav.vad"
+				/>
 			</FileConfiguration>
 		</File>
 	</Files>

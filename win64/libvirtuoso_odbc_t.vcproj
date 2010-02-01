@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="libvirtuoso_t"
 	ProjectGUID="{FB836C59-41E1-48EA-A59B-460AB56587EE}"
 	RootNamespace="libvirtuoso_t"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -76,8 +77,10 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
-				TargetMachine="1"
+				RandomizedBaseAddress="1"
 				FixedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -96,9 +99,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -163,8 +163,10 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
-				TargetMachine="17"
+				RandomizedBaseAddress="1"
 				FixedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -183,9 +185,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -251,8 +250,10 @@
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
-				TargetMachine="1"
+				RandomizedBaseAddress="1"
 				FixedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -271,9 +272,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -307,7 +305,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\xml.new,..\libsrc,..\libsrc\Dk,..\libsrc\util\win32,..\libsrc\Wi,..\libsrc\zlib,..\binsrc\driver,..\libsrc\plugin,..\libsrc\langfunc,..\libsrc\openssl, ."
-				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG;PACKAGE_VERSION=\&quot;5.0.10\&quot;"
+				PreprocessorDefinitions="_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG;PACKAGE_VERSION=\&quot;6.0.0\&quot;"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -340,8 +338,10 @@
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile="$(OutDir)/libvirtuoso_t.pdb"
 				SubSystem="2"
-				TargetMachine="17"
+				RandomizedBaseAddress="1"
 				FixedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -360,9 +360,6 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

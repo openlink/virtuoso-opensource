@@ -48,6 +48,10 @@ gawk -f "jso_reformat.awk" -v "output_mode=ttl" -v "init_name=rdf_mapping" rdf_m
 
 gawk -f "jso_reformat.awk" -v "output_mode=ttl-sample" -v "init_name=rdf_mapping" rdf_mapping.jso > rdf_mapping_jso.ttl-sample
 
+cd ../../binsrc/cached_resources
+bash cache_gen.sh > cached_resources.c
+cd ../../libsrc/Wi
+
 @echo #include "sql_code_cache_impl.c" > sql_code_cache.c
 @echo #include "../../binsrc/cached_resources/cached_resources.c" >> sql_code_cache.c
 

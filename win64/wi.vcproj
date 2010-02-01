@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="wi"
 	ProjectGUID="{93051962-7797-49F0-8958-BB1CE60FFE6F}"
 	RootNamespace="wi"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -124,7 +125,7 @@
 				AdditionalOptions=""
 				Optimization="3"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -277,7 +278,7 @@
 				AdditionalOptions="/Zm200 "
 				Optimization="0"
 				AdditionalIncludeDirectories="..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\tidy;..\binsrc\driver;."
-				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
@@ -599,6 +600,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\neodisk.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\nquad_p.c"
 				>
 			</File>
 			<File
@@ -1438,6 +1443,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sqlinx.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\sqlo.c"
 				>
 			</File>
@@ -2081,6 +2090,19 @@
 						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies=""
 						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\nquad_p.y"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f nquad_p.c&#x0D;&#x0A;rm -f nquad_p.h&#x0D;&#x0A;bison -y -vd -pnqyy nquad_p.y -onquad_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)nquad_p.c;$(InputDir)nquad_p.h"
 					/>
 				</FileConfiguration>
 			</File>
