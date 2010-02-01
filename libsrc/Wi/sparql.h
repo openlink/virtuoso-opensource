@@ -638,6 +638,8 @@ extern SPART* spartlist_with_tail (sparp_t *sparp, ptrlong length, caddr_t tail,
 extern caddr_t sparp_expand_qname_prefix (sparp_t *sparp, caddr_t qname);
 extern caddr_t sparp_expand_q_iri_ref (sparp_t *sparp, caddr_t ref);
 
+extern caddr_t sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname);
+extern caddr_t sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid);
 extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
 extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_boxed string or plain NULL pointer */
 
@@ -669,13 +671,13 @@ extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *g
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
-extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
+extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit, SPART *offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
-extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
+extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);

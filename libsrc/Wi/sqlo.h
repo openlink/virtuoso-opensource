@@ -743,6 +743,26 @@ int sqlo_is_unq_preserving (caddr_t name);
 
 int box_is_subtree (caddr_t box, caddr_t subtree);
 void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
+char  sqlc_geo_op (sql_comp_t * sc, ST * op);
+int sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds);
+
+df_inx_op_t * inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
+			   df_elt_t * org_tb_dfe, df_elt_t * tb_dfe);
+df_elt_t ** dfe_pred_body_copy (sqlo_t * so, df_elt_t ** body, df_elt_t * parent);
+void sqlo_choose_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * col_preds_ret, dk_set_t * after_preds_ret);
+void dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway);
+void sqlo_choose_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * col_preds_ret, dk_set_t * after_preds_ret);
+void sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic);
+void sqlg_xpath_node (sqlo_t * so, df_elt_t * tb_dfe);
+inx_op_t * sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * parent_iop);
+key_source_t * sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key);
+void sqlg_non_index_ins (df_elt_t * tb_dfe);
+void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
+data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
+int dfe_is_eq_pred (df_elt_t * pred);
+float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
+data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe);
+int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
 
 
 #endif /* _SQLO_H */

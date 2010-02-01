@@ -231,8 +231,11 @@ void ddl_init_xml (void);
 
 #define ENTITY_MAX_ATTRS 200
 
+void geo_node_input (text_node_t * txs, caddr_t * inst, caddr_t * state);
 void txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state);
 void txs_free (text_node_t * txs);
+void xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state);
+caddr_t txs_xn_text_query (text_node_t * txs, query_instance_t * qi, caddr_t xp_str);
 
 #endif /* _XMLNODE_H */
 
