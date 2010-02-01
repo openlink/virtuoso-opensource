@@ -1237,6 +1237,8 @@ lt_blob_transact (it_cursor_t * itc, int op)
     }
 }
 
+
+extern du_thread_t * cpt_thread;
 void
 lt_wait_until_dead (lock_trx_t * lt)
 {
@@ -1251,6 +1253,16 @@ lt_wait_until_dead (lock_trx_t * lt)
 /*  rdbg_printf (("Wait for transact of %s T=%ld\n", LT_NAME (lt), TRX_NO (lt))); */
   semaphore_enter (thr->thr_sem);
   IN_TXN;
+  if (CPT_CHECKPOINT == wi_inst.wi_is_checkpoint_pending
+      && THREAD_CURRENT_THREAD != cpt_thread)
+    {
+      if (wi_inst.wi_checkpoint_atomic)
+	{
+	  log_error ("Resume of lt_wait_until_dead during atomic cpt.  Unusual.  Waiting until cpt done");
+	  lt_wait_checkpoint ();
+	}
+      lt_weird ();
+    }
 }
 
 
