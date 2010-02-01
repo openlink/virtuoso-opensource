@@ -876,8 +876,7 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
     }
   if (ST_P (tree, CALL_STMT) && 3 == BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name) && nc_strstr ((dtp_t*)tree->_.call.name, (dtp_t*)"RDF_MAKE_OBJ_OF_TYPEDSQLVAL")
-      && DV_STRINGP (tree->_.call.params[0])
-      && DV_STRINGP (tree->_.call.params[2]))
+      && DV_STRINGP (tree->_.call.params[0]))
     {
       if (val_ret)
 	*val_ret = (caddr_t) tree->_.call.params[0];
@@ -889,9 +888,6 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
 }
 
 
-
-
-
 #define KS_CAST_UNDEF 16
 
 
@@ -900,25 +896,24 @@ int
 rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret)
 {
   dtp_t dtp = DV_TYPE_OF (val);
-  int len;
   if (IS_NUM_DTP (dtp))
     {
       *data_ret = box_copy (val);
       return 1;
     }
-  if (DV_STRING == dtp
-      && (len = box_length (val)) <= 21)
+  if (DV_STRING == dtp)
     {
-      caddr_t box = dk_alloc_box (len + 5, DV_STRING);
-      box[0] = 1;
-      box[1] = 1;
-      memcpy (box + 2, val, len - 1);
-      box[len + 1] = 0;
-      box[len + 2] = 1;
-      box[len + 3] = 1;
-      box[len + 4] = 0;
-      *data_ret =  box;
-      return 1;
+      caddr_t r;
+      rdf_box_t * rb;
+      rb = (rdf_box_t*)rbb_allocate ();
+      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      rb->rb_box = box_copy_tree (val);
+      OUTSIDE_PARSE_SEM;
+      r = (caddr_t)key_find_rdf_obj (NULL, rb);
+      END_OUTSIDE_PARSE_SEM;
+      *data_ret =  r;
+      return r != NULL;
     }
   return 0;
 }
@@ -928,26 +923,30 @@ int
 rdf_obj_of_typed_sqlval (caddr_t val, caddr_t vtype, caddr_t lang, caddr_t * data_ret)
 {
   dtp_t dtp = DV_TYPE_OF (val);
-  int len;
+  if (IS_NUM_DTP (dtp))
+    {
+      *data_ret = box_copy (val);
+      return 1;
+    }
   if (RDF_LANG_STRING != vtype)
     return 0;
-  if (DV_STRING == dtp
-      && (len = box_length (val)) <= 21)
+  if (DV_STRING == dtp)
     {
-      int lang_id = key_rdf_lang_id (lang);
-      caddr_t box;
+      int lang_id = DV_DB_NULL == DV_TYPE_OF (lang) ? RDF_BOX_DEFAULT_LANG 
+	: key_rdf_lang_id (lang);
+      caddr_t r;
+      rdf_box_t * rb;
       if (!lang_id)
 	return 0;
-      box = dk_alloc_box (len + 5, DV_STRING);
-      box[0] = 1;
-      box[1] = 1;
-      memcpy (box + 2, val, len - 1);
-      box[len + 1] = 0;
-      box[len + 2] = lang_id & 0xff;
-      box[len + 3] = lang_id >> 8;
-      box[len + 4] = 0;
-      *data_ret =  box;
-      return 1;
+      rb = (rdf_box_t*)rbb_allocate ();
+      rb->rb_lang = lang_id;
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      rb->rb_box = box_copy_tree (val);
+      OUTSIDE_PARSE_SEM;
+      r = (caddr_t)key_find_rdf_obj (NULL, rb);
+      END_OUTSIDE_PARSE_SEM;
+      *data_ret =  r;
+      return r != NULL;
     }
   return 0;
 }

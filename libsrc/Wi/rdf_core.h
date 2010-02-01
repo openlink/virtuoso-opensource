@@ -269,5 +269,8 @@ caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 void rdf_graph_keyword (iri_id_t id, char *ret);
 caddr_t uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli);
 
+/* if rb content longer than this, use md5 in rdf_obj table key */
+#define RB_BOX_HASH_MIN_LEN 50
+
 
 #endif

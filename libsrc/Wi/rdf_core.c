@@ -1945,6 +1945,138 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
   return r;
 }
 
+dbe_key_t * sch_find_key (dbe_schema_t * sc, char * tb_name, char * key_name);
+
+
+int64
+key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
+{
+  int res;
+  int64 id = 0;
+  caddr_t id_box = NULL;
+  dbe_key_t * key = sch_find_key (NULL, "DB.DBA.RDF_OBJ", "RO_VAL");
+  dbe_column_t * val_col;
+  dbe_column_t * dtlang_col;
+  dbe_column_t * id_col;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  caddr_t dtlang = box_num ((rb->rb_type << 16) | rb->rb_lang);
+  buffer_desc_t * buf;
+  search_spec_t sp, sp2;
+  if (dk_set_length (key->key_parts) < 3)
+    return 0;
+  id_col = (dbe_column_t*)key->key_parts->next->next->data;
+  val_col = (dbe_column_t*)key->key_parts->data;
+  dtlang_col = (dbe_column_t*)key->key_parts->next->next->data;
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_from (itc, key);
+  ITC_SEARCH_PARAM (itc, name);
+  ITC_SEARCH_PARAM (itc, dtlang);
+  ITC_OWNS_PARAM (itc, dtlang);
+  itc->itc_isolation = ISO_UNCOMMITTED;
+  itc->itc_key_spec.ksp_spec_array = &sp;
+  itc->itc_key_spec.ksp_key_cmp = NULL;
+  memset (&sp, 0, sizeof (sp));
+  sp.sp_min_op = CMP_EQ;
+  sp.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->data)->col_id);
+  memset (&sp2, 0, sizeof (sp2));
+  sp2.sp_min_op = CMP_EQ;
+  sp2.sp_min = 1;
+  sp2.sp_cl = *key_find_cl (key, ((dbe_column_t *) key->key_parts->next->data)->col_id);
+  sp.sp_next = &sp2;
+  ITC_FAIL (itc)
+    {
+      buf = itc_reset (itc);
+      res = itc_search (itc, &buf);
+      if (DVC_MATCH == res)
+	{
+	  id_box = itc_box_column (itc, buf, id_col->col_id, NULL);
+	  id = unbox (id_box);
+	  dk_free_box (id_box);
+	}
+      itc_page_leave (itc, buf);
+    }
+	ITC_FAILED
+      {
+	return 0;
+      }
+  END_FAIL (itc);
+  itc_free (itc);
+  return id;
+}
+
+
+rdf_box_t *
+key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
+{
+  caddr_t r, trid;
+  int len;
+  caddr_t allocd_content = NULL;
+  int entered = 0;
+#ifdef CL6
+  if (!cl_run_local_only)
+    {
+      rdf_box_t * r = (rdf_box_t *)cl_find_rdf_obj ((caddr_t)rb);
+      if (!r)
+	return rb;
+      rb->rb_ro_id = r->rb_ro_id;
+      dk_free_box ((caddr_t)r);
+      return rb;
+    }
+#endif
+
+  if (!lt)
+    {
+      int rc;
+      client_connection_t * cli = sqlc_client ();
+      lt = cli->cli_trx;
+      if (0 == cli->cli_trx->lt_threads)
+	{
+	  entered = 1;
+	  rc = lt_enter (cli->cli_trx);
+	  if (LTE_OK != rc)
+	    return rb;
+	}
+    }
+  {
+    caddr_t content = rb->rb_box;
+    dtp_t cdtp = DV_TYPE_OF (content);
+    
+    if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
+      {
+	QNCAST (rdf_bigbox_t, rbb, rb);
+	
+	rb->rb_ro_id = key_find_rdf_obj_1 (rb, rbb->rbb_chksum);
+      }
+    else 
+      {
+	if (DV_GEO == cdtp)
+	  {
+	    caddr_t err = NULL;
+	    content = box_to_any (content, &err);
+	    allocd_content = content;
+	  }
+	len = box_length (content) - 1;
+	if (len > RB_BOX_HASH_MIN_LEN)
+	  {
+	    caddr_t trid = mdigest5 (content);
+	    rb->rb_ro_id = key_find_rdf_obj_1 (rb, trid);
+	    dk_free_box (trid);
+	  }
+	else 
+	  rb->rb_ro_id = key_find_rdf_obj_1 (rb, rb->rb_box);
+	dk_free_box (allocd_content);
+      }
+  }
+  if (entered)
+    {
+      IN_TXN;
+      lt_leave (lt);
+      LEAVE_TXN;
+    }
+  return rb;
+}
+
 
 caddr_t
 key_name_to_existing_cached_iri_id (lock_trx_t * lt, caddr_t name)

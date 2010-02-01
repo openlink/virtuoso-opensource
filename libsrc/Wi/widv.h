@@ -201,6 +201,7 @@ User-level object is of type DV_XML_ENTITY. */
 
 #define DV_INDEX_TREE 137
 #define DV_ITC 138
+#define DV_GEO 238
 #define DV_FIXED_STRING 240
 #define DV_TINY_INT 241
 #define DV_ANY 242
@@ -218,8 +219,8 @@ User-level object is of type DV_XML_ENTITY. */
 #define DV_COMPOSITE 255 /* value important for free text, where long w/ high byte of 255 signifies composite key */
 
 /* cluster data */
-#define DV_CLRG 248
-#define DV_CLOP 249
+#define DV_CLRG 139
+#define DV_CLOP 140
 
 #define DV_OBJECT 254
 /*#define DV_REFERENCE 206 Moved to Dk.h */
@@ -530,6 +531,7 @@ sqlr_new_error is void, and should never return.
   ((type) == DV_INT64) ? "BIGINT" : \
   ((type) == DV_UNAME) ? "UNAME" : \
   ((type) == DV_RDF) ? "rdf" : \
+  ((type) == DV_GEO) ? "geometry" : \
   "UNK_DV_TYPE" )
 #endif /* _WIDV_H */
 

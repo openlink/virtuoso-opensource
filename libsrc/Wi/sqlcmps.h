@@ -631,4 +631,18 @@ dk_set_t  sqlg_continue_list (data_source_t * qn);
 extern int cl_rdf_inf_inited;
 extern du_thread_t * cl_rdf_inf_init_thread;
 
+
+#define OUTSIDE_PARSE_SEM \
+  { \
+      int is_sem = sqlc_inside_sem; \
+      if (is_sem) \
+	semaphore_leave (parse_sem); 
+
+
+#define END_OUTSIDE_PARSE_SEM \
+      if (is_sem) \
+	semaphore_enter (parse_sem); \
+  }
+
+
 #endif /* _SQLCMPS_H */
