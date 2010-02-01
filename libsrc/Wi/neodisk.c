@@ -110,6 +110,7 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
+du_thread_t * cpt_thread;
 
 void
 cpt_rollback (int may_freeze)
@@ -118,7 +119,7 @@ cpt_rollback (int may_freeze)
   start_killing = get_msec_real_time();
 #endif
   wi_inst.wi_is_checkpoint_pending = LT_KILL_FREEZE == may_freeze ? CPT_CHECKPOINT : CPT_ATOMIC_PENDING;
-
+  cpt_thread = THREAD_CURRENT_THREAD;
  next:
   ASSERT_IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -168,7 +169,7 @@ cpt_rollback (int may_freeze)
 	  goto  next;
 
 	case LT_CL_PREPARED:
-	  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending)
+	  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending && !wi_inst.wi_atomic_ignore_2pc)
 	    {
 	      TC (tc_atomic_wait_2pc);
 	      lt_wait_until_dead (lt);
@@ -211,7 +212,7 @@ server_lock_t server_lock;
 
 
 void
-lt_wait_checkpoint (void)
+lt_wait_checkpoint_1 (int cl_listener_also)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
   ASSERT_IN_TXN;
@@ -232,11 +233,18 @@ lt_wait_checkpoint (void)
 
 
 void
+lt_wait_checkpoint (void)
+{
+  lt_wait_checkpoint_1 (0);
+}
+
+void
 cpt_over (void)
 {
   ASSERT_IN_TXN;
   wi_inst.wi_checkpoint_atomic = 0;
   wi_inst.wi_is_checkpoint_pending = 0;
+  cpt_thread = NULL;
   DO_SET (du_thread_t *, thr, &wi_inst.wi_waiting_checkpoint)
   {
     semaphore_leave (thr->thr_sem);
@@ -1960,6 +1968,7 @@ srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
         lt_commit (lt, TRX_CONT);
       LEAVE_TXN;
       server_lock.sl_owner = NULL;
+      wi_inst.wi_atomic_ignore_2pc = 0;
       IN_TXN;
       cpt_over ();
       LEAVE_TXN;
@@ -1998,6 +2007,7 @@ srv_global_lock (query_instance_t * qi, int flag)
 	  }
       }
       IN_CPT(lt);
+      wi_inst.wi_atomic_ignore_2pc = 0 != (flag & 2);
       server_lock.sl_count = 1;
       lt->lt_is_excl = 1;
       lt->lt_replicate = REPL_NO_LOG;

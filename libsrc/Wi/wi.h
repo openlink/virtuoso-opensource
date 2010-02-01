@@ -207,6 +207,7 @@ typedef struct wi_inst_s
   dk_set_t		wi_free_schemas; /* schema structs awaiting idle moment for safe deallocation */
   int32			wi_max_dirty;
   char			wi_is_checkpoint_pending; /* true if no new activity should be started due to checkpoint */
+  char			wi_atomic_ignore_2pc; /* do not wait for prepared uncommitted to be finished  before atomic.  Need that when resetting cluster cfg after node failures */
   char			wi_checkpoint_atomic;
   char			wi_checkpoint_rollback; /* use special cpt delta space for rb results? */
   lock_trx_t *		wi_cpt_lt; /* used to keep stuff rolled back for cpt duration */
@@ -1487,7 +1488,7 @@ extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does
     { \
       client_connection_t * cli = lt->lt_client; \
       char __term = cli ? cli->cli_terminate_requested : 0;			\
-      if (__term) cli_terminate_in_itc_fail (cli, itc, buf); \
+      if (__term && !wi_inst.wi_checkpoint_atomic) cli_terminate_in_itc_fail (cli, itc, buf); \
       if (cli && cli->cli_session && cli->cli_session->dks_to_close)	\
    { \
        LT_ERROR_DETAIL_SET (lt, \
@@ -1507,8 +1508,12 @@ extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does
       CHECK_SESSION_DEAD (__lt, it, buf);		   \
       if ((__lt && __lt->lt_status != LT_PENDING)  \
 || (wi_inst.wi_is_checkpoint_pending && cpt_is_global_lock ())) \
+	{ \
+	  if (!wi_inst.wi_checkpoint_atomic) \
 	itc_bust_this_trx (it, buf, may_ret); \
-}
+}\
+ }								\
+
 
 
 /* reset catch context around itc operations */
