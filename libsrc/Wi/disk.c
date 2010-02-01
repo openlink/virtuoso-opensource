@@ -2588,14 +2588,16 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 
 
 OFF_T
-db_file_size (int fd, char * fn)
+db_file_size (int fd, char * fn, int check)
 {
   OFF_T rem;
   OFF_T size = LSEEK (fd, 0L, SEEK_END);
-  if ((rem = (size % (PAGE_SZ * EXTENT_SZ))))
+  if ((rem = (size % (PAGE_SZ * EXTENT_SZ))) && check)
     {
-      log_error ("It is impossible to have a database file with a length not multiple of 2MB. Truncating %s to the last 2MB boundary.  The process must have last terminated while growing the file", fn);
-      ftruncate (fd, size - rem);
+      log_error ("It is impossible to have a database file %s with a length not multiple of 2MB.", fn);
+      log_error ("The process must have last terminated while growing the file.");
+      log_error ("Please contact OpenLink Customer Support");
+      call_exit (1);
     }
   return size - rem;
 }
@@ -2642,7 +2644,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 	      dst_fd_done (dst, fd);
 	    }
 	}
-      size = db_file_size (dst->dst_fds[0], dst->dst_file);
+      size = db_file_size (dst->dst_fds[0], dst->dst_file, 0);
       if (size)
 	{
 	  if (is_first)
@@ -3231,16 +3233,17 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   storage_ver = atoi (cfg_page->db_generic);
   if (storage_ver < 3100)
     {
-      log_error ("The database was created with a pre-6.0 server.  This server does not read this format.  Exiting.");
+      log_error ("The database you are opening was last closed with a server of version %d." , storage_ver);
+      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR ".");
+      log_error ("This server does not read this pre 6.0 format.");
       call_exit (-1);
     }
   if (storage_ver > atoi (DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR))
     {
       log_error ("The database you are opening was last closed with a server of version %d." , storage_ver);
-      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR "."
-	  " The database will contain data types");
-      log_error ("which are not recognized by this server.  Please use a newer server.");
-      log_error ("Exiting.");
+      log_error ("The present server is of version " DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR ".");
+      log_error ("The database will contain data types which are not recognized by this server.");
+      log_error ("Please use a newer server.");
       call_exit (-1);
     }
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
@@ -3382,16 +3385,37 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 #endif
 
       dbs->dbs_fd = fd;
-      size = db_file_size (fd, dbs->dbs_file);
+      size = db_file_size (fd, dbs->dbs_file, 0);
       dbs->dbs_file_length = size;
       dbs->dbs_n_pages = (dp_addr_t ) (dbs->dbs_file_length / PAGE_SZ);
       if (size)
 	*exists = 1;
     }
+
+  if (*exists && DBS_TEMP != type)
+    dbs_read_cfg_page (dbs, &cfg_page);
+
+  if (dbs->dbs_disks)
+    {
+      int inx;
+      DO_SET (disk_segment_t *, ds, &dbs->dbs_disks)
+	{
+	  DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
+	    {
+	      db_file_size (dst->dst_fds[0], dst->dst_file, 1);
+	    }
+	  END_DO_BOX;
+	}
+      END_DO_SET ();
+    }
+  else
+    {
+      db_file_size (fd, dbs->dbs_file, 1);
+    }
+
   if (*exists && DBS_TEMP != type)
     {
       /* There's a file. */
-      dbs_read_cfg_page (dbs, &cfg_page);
       dbs->dbs_stripe_unit = cfg_page.db_stripe_unit ? cfg_page.db_stripe_unit : 1;
       dbs->dbs_initial_gen = cfg_page.db_initial_gen;
 #ifdef BYTE_ORDER_REV_SUPPORT
