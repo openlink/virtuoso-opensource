@@ -181,12 +181,12 @@
 	    declare qr varchar;
 	    if (tp = 1) -- refd in data sets
 	      {
-	        qr := sprintf ('sparql %s select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', b3s_render_inf_clause(), _S);
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', _S);
                 http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
 	      }
 	    if (tp = 2) -- defd in data sets
 	      {
-	        qr := sprintf ('sparql %s select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', b3s_render_inf_clause(), _S);
+	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', _S);
                 http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
 	      }
 	    if (tp = 3) -- Expanded sas
@@ -232,10 +232,15 @@
 		       http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[2], b3s_render_ses_params(), b3s_uri_curie (data[2])));
 		     else
                        {
-		         if (isstring (data[2]))
-			   http ('<td>' || data[2] || '</td>');
+		         declare tmp any;
+			 if (__tag (data[2]) = 246)
+			   tmp := __rdf_sqlval_of_obj (data[2], 1);
+			 else
+			   tmp := data[2];   
+		         if (isstring (tmp))
+			   http ('<td>' || tmp || '</td>');
 			 else  
-                           http_value (data[2], 'td');
+                           http_value (tmp, 'td');
 		       }	 
 		     http (sprintf ('<td align="right">%.06g</td>', cast (data[3] as decimal)));
 		     --http (sprintf ('<td align="right">%s</td>', data[3]));

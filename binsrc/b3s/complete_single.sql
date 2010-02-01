@@ -60,3 +60,51 @@ urilbl_ac_init_db ()
               n, n_ins, n_strange));
 }
 ;
+
+create procedure
+cmp_label (in lbl_str varchar, in langs varchar)
+{
+  declare res any;
+  declare q,best_q float;
+  declare cur_iid any;
+  declare cur_lbl varchar;
+  declare n integer;
+
+  res := vector();
+
+--  dbg_printf ('cmp_label');
+  cur_iid := null;
+  best_q := 0;
+
+  {
+    declare exit handler for sqlstate 'S1TAT' { 
+      goto done;
+    };
+
+    for (select ull_label_lang, ull_label, ull_iid
+         from urilbl_complete_lookup_2 
+         where ull_label_ruined like urilbl_ac_ruin_label (lbl_str) || '%') do
+      {
+        if (cur_iid is not null and ull_iid <> cur_iid)
+          {
+            res := vector_concat (res, vector (cur_lbl, id_to_iri(cur_iid)));
+            n := n + 1;
+            if (n >= 50) goto done;
+            best_q := 0;
+  	}
+
+        cur_iid := ull_iid;
+        q := cmp_get_lang_by_q (langs, ull_label_lang);
+
+        if (q >= best_q) 
+          {
+            best_q := q;
+            cur_lbl := ull_label;
+	  }
+      }
+    res := vector_concat (res, vector (cur_lbl, id_to_iri (cur_iid)));
+   done:;
+    return res;
+  }
+}
+;

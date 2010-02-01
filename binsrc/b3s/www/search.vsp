@@ -23,7 +23,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
   declare label varchar;
-  declare srch, srch2, res, sql_state, err_msg, meta, data, rs any;
+  declare srch, srch2, srch3, srch4, res, sql_state, err_msg, meta, data, rs any;
   declare squery, smode, sm varchar;
   declare i,j integer;
 
@@ -31,6 +31,8 @@
 
   srch := {?'sc'};
   srch2 := {?'sc2'};
+  srch3 := {?'sc3'};
+  srch4 := {?'sc4'};
   smode := {?'q'};
   sm := {?'fa'};
   if (isnull(smode) or smode='') smode := '1';
@@ -38,7 +40,7 @@
 
   label := label_get(smode);
 
-  pick_query(smode,srch,squery,srch2);
+  pick_query(smode,srch,squery,srch2,srch3,srch4);
   sql_state := '00000';
   err_msg := 'none';
 
@@ -95,10 +97,46 @@
 		<?V input_get (smode) ?> <input size="60" type="text" name="sc" value="<?= srch ?>"/>&nbsp;
                 <!-- show the second input field-->
                 <?vsp
-                  if  (smode ='7' or smode = '1002' or smode = '1003')
+                  if  (smode = '1002' or smode = '1003')
                   {
                 ?>
                 <br/><?V input_get (smode) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='7')
+                  {
+                ?>
+                <br/><?V input_getcustom (8) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (9) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='13')
+                  {
+                ?>
+                <br/><?V input_getcustom (2) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (3) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <br/><?V input_getcustom (4) ?> <input size="60" type="text" name="sc4" value="<?= srch4 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='15')
+                  {
+                ?>
+                <br/><?V input_getcustom (5) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (6) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='16')
+                  {
+                ?>
+                <br/><?V input_getcustom (7) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
                 <?vsp
                   };
                 ?>
@@ -195,10 +233,10 @@
 			    http (sprintf('&nbsp;<b><a href="search.vsp?q=1004&sc=%U&fa=Execute">Authors</a></b>',tmp));
 		          }		
 			else if (smode not in ('2'))
-		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://b3s.openlinksw.com/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
+		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
  		        else
                           http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://demo.openlinksw.com/ode/?uri=',tmp), get_curie (tmp)));
-                        if (smode in ('5','6','7', '8','9', '101') and j=0)
+                        if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '101') and j=0)
 			  http (sprintf('&nbsp;<b><a href="dlistall.vsp?p=%U">Drill-down</a></b>',tmp));
 			if (0 and smode = '5')
                           http (sprintf('&nbsp;<b><a href="search.vsp?q=1001&sc=%U&fa=Execute">NEs</a></b>',tmp));
@@ -216,9 +254,9 @@
 			  http ('Incomplete box');
 			else  
 			  {
-			    if (smode = '8' and j = 1) 
+			    if ((smode = '8' or smode ='9' or smode ='10') and j = 1)
 			      http (sprintf ('<a href="search.vsp?q=%U&sc=%U&fa=Execute">', smode, tmp));	
-			    if (smode = '8' and j = 2) 
+			    if ((smode = '8' or smode ='9' or smode ='10') and j = 2)
 			      http (sprintf ('<a href="search.vsp?q=1005&sc=%U&fa=Execute">', rs[1]));	
 		            if ((smode = '1' and j = 2) or (smode = '1002' and j = 2) or (smode = '1003' and j = 2))
                               http (tmp);
@@ -228,7 +266,7 @@
 				  tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
 			        http_value(tmp);
 		              } 		
-			    if (smode = '8' and (j = 1 or j = 2)) 
+			    if ( (smode = '8' or smode ='9' or smode ='10') and (j = 1 or j = 2))
 			      http ('</a>');	
 			  }
                         http('</td>');

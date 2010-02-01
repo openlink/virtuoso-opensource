@@ -196,7 +196,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_l := 0;
   best_q := 0;
   for select o, p
-        from rdf_quad table option (no cluster)
+        from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o))
@@ -252,7 +252,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_l := 0;
   best_q := 0;
   for select o, p
-        from rdf_quad table option (no cluster)
+        from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o))
@@ -309,9 +309,9 @@ create procedure decl_dpipe_define ()
 {
   if (sys_stat ('cl_run_local_only'))
     return;
-  dpipe_define ('DB.DBA.FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
-  dpipe_define ('FCT_LABEL_L', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP_L', 0);
-  dpipe_define ('FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_OPGS', 'DB.DBA.FCT_LABEL_DP', 0);
+  dpipe_define ('DB.DBA.FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_SP', 'DB.DBA.FCT_LABEL_DP', 0);
+  dpipe_define ('FCT_LABEL_L', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_SP', 'DB.DBA.FCT_LABEL_DP_L', 0);
+  dpipe_define ('FCT_LABEL', 'DB.DBA.RDF_QUAD', 'RDF_QUAD_SP', 'DB.DBA.FCT_LABEL_DP', 0); -- was OPGS
   dpipe_define ('LBL_O_VALUE', 'DB.DBA.RDF_OBJ', 'RDF_OBJ', 'DB.DBA.LBL_O_VALUE', 0);
 }
 ;
@@ -342,6 +342,9 @@ bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
 gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
+<http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
+<http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
+<http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
@@ -551,8 +554,8 @@ fct_xml_wrap (in tree any, in txt any)
                                                               __ro2sq ("c1")),
                                                   xmlelement ("column",
                                                               fct_label ("c1", 0, ''facets'' )),
-                                                  xmlelement ("column", "c2"),
-                                                  xmlelement ("column", "c3")
+                                                  xmlelement ("column", __ro2sq ("c2")),
+                                                  xmlelement ("column", __ro2sq ("c3"))
 						  	)))
              from (sparql define output:valmode "LONG" ', ntxt);
 
@@ -692,7 +695,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
   if ('text-d' = mode)
     {
       declare exp any;
-      exp := cast (xpath_eval ('//text', tree) as varchar);
+      exp := charset_recode (xpath_eval ('string (//text)', tree), '_WIDE_', 'UTF-8');
       http (sprintf ('select 
 		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm)), <bif:vector> (%s)))  as ?res where { { 
       select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', element_split (exp), this_s, this_s, this_s, this_s), pre);
@@ -878,8 +881,9 @@ fct_text (in tree any,
 	prop := '<' || prop || '>';
       else
 	prop := sprintf ('?s%dtextp', this_s);
+
       http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s,
-		     fti_make_search_string (cast (tree as varchar)), sc_opt), txt);
+		     fti_make_search_string (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), sc_opt), txt);
     }
 
   if ('property' = n)

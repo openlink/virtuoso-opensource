@@ -24,14 +24,21 @@ create procedure label_get(in smode varchar)
 {
   declare label varchar;
   if (smode='1') label := 'Text Search';
-  else if (smode='2') label := 'Graphs With Text';
+  else if (smode='2') label := 'Graph associated with a Full Text Pattern';
   else if (smode='3') label := 'Types of Things With Text';
   else if (smode='4') label := 'Interests Around';
   else if (smode='5') label := 'Top 100 Authors by Text';
   else if (smode='6') label := 'Social Connections a la LinkedIn';
   else if (smode='7') label := 'Connection Between';
   else if (smode='8') label := 'People With Shared Interests';
-  else if (smode='9') label := 'Cloud Around Person';
+  else if (smode='9') label := 'Cloud around a Text Pattern';
+  else if (smode='10') label := 'Cloud Around Person With Filtered Out Blank Nodes';
+  else if (smode='11') label := 'Product Count By Manufacturer';
+  else if (smode='12') label := 'Vendors with offers';
+  else if (smode='13') label := 'Places of worship around Paris with Cafe''s in close proximity';
+  else if (smode='14') label := 'Motorways across England & Scotland';
+  else if (smode='15') label := 'Places of worship around London with Cities in close proximity';
+  else if (smode='16') label := 'Places with coordinates';
   else if (smode='100') label := 'Concept Cloud';
   else if (smode='101') label := 'Social Net';
   else if (smode='102') label := 'Graphs in Social Net';
@@ -44,8 +51,33 @@ create procedure label_get(in smode varchar)
   else if (smode='1005') label := 'Shared Interests';
   else label := 'No such query';
   return label;
+
+  --else if (smode='13') label := 'Products with certain text patterns in Manfacturer''s legal name';
 }
 ;
+
+create procedure input_getcustom (in num varchar)
+{
+  if (num = 2)
+    return 'City Latitude';
+  else if (num = 3)
+    return 'Cafe Proximity to Place of Worship';
+  else if (num = 4)
+    return 'City Proximity to Place of Worship';
+  if (num = 5)
+    return 'Class URI';
+  if (num = 6)
+    return 'City Proximity to Place of Worship';
+  if (num = 7)
+    return 'Geometry Longitude';
+  if (num = 8)
+    return 'Person URI';
+  if (num = 9)
+    return 'Person URI';
+  else return '';
+}
+;
+
 
 create procedure input_get (in num varchar)
 {
@@ -54,12 +86,20 @@ create procedure input_get (in num varchar)
   	'Search for',
 	'Search for',
 	'Search for',
-	'interest URI',
+	'Interest',
 	'Search for',
 	'Person URI',
-	'Person URI',
+	'Property',
 	'Nickname',
-	'Nickname'
+	'Nickname',
+	'Nickname',
+	'Number of items',
+        'Price value',
+--	'Manufacturer',
+        'City Longitude',
+        'Latitude',
+        'Place of Worship URI',
+        'Geometry Latitude'
 	);
   t2 := vector (
   	'',
@@ -68,7 +108,7 @@ create procedure input_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 9)
+  if (num > -1 and num < 16)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -92,7 +132,15 @@ create procedure desc_get (in num varchar)
 	'Show the people a person directly or indirectly knows. Sort by distance and count of connections of the known person',
 	'Given two people, find what chain of acquaintances links them together. For each step in the chain show the person linked to, the graph linking this person to the previous person, the number of the step and the number of the path. Note that there may be many paths through which the people are linked.',
 	'Given a person, find people with the most interests in common with this person. Show the person, number of shared interests and the total number of interests.',
-	'Show names of things surrounding a person. These may be interests, classes of things, other people and so forth. For each label show the count of occurrences, largest count first. This uses the b3s:label superproperty which includes rdfs:label, dc:title, and other qualities which have  a general meaning of label.'
+	'Show names of things surrounding a person by given text pattern. These may be interests, classes of things, other people and so forth. For each label show the count of occurrences, largest count first. This uses the b3s:label superproperty which includes rdfs:label, dc:title, and other qualities which have a general meaning of label.',
+	'Show names of things surrounding a person with filtered out blank nodes. These things may be interests, classes of things, other people and so forth. For each label show the count of occurrences, largest count first. This uses the b3s:label superproperty which includes rdfs:label, dc:title, and other qualities which have a general meaning of label.',
+	'Show product total by manufacturer where total is greater than given value.',
+        'Show all vendors with all offers and their prices that are greater than given value.',
+--        'Show products count for given manufacturer.',
+        'Show places of worship, within certain km of Paris, that have cafes in close proximity.',
+        'Show motorways across England & Scotland from DBpedia.',
+        'Shows cities within cerain proximity of London.',
+        'Shows geometries with their coordinates.'
 	);
   t2 := vector (
   	'',
@@ -101,7 +149,7 @@ create procedure desc_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 9)
+  if (num > -1 and num < 16)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -121,7 +169,15 @@ create procedure head_get (in num varchar)
     vector ('Connection', 'Distance', 'Number of Connections'),
     vector ('Person URI', 'Graph', 'Step No.', 'Path'),
     vector ('Person', 'Nick name', 'Shared Interests', 'Total Interests'),
-    vector ('Thing', 'Nick name', 'Occurrences')
+    vector ('Thing', 'Nick name', 'Occurrences'),
+    vector ('Thing', 'Nick name', 'Occurrences'),
+    vector ('Manifacturer URI', 'Total Products'),
+    vector ('Vendor', 'Offer', 'Business Function', 'Customer Type', 'Offer Object', 'Type of Good', 'Price'),
+--    vector ('Total Products'),
+    vector ('Cafe URI', 'Latitude', 'Longitude', 'Cafe Name', 'Church Name', 'Count'),
+    vector ('Road', 'Service', 'Latitude', 'Longitude'),
+    vector ('City URI', 'Count'),
+    vector ('Geometry URI', 'Latitude', 'Longitude')
   );
   t2 := vector (
     vector (),
@@ -131,7 +187,7 @@ create procedure head_get (in num varchar)
   );
   t3 := vector ();
   num := atoi (num) - 1;
-  if (num > -1 and num < 9)
+  if (num > -1 and num < 16)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -174,7 +230,7 @@ create procedure get_curie (in val any)
 
   res := null;
   if (strstr (val, 'http://dbpedia.org/resource/') = 0 ) res :=  'dbpedia';
-  if (strstr (val, 'http://dbpedia.org/property/') = 0 ) res :=  'p';
+  if (strstr (val, 'http://dbpedia.org/property/') = 0 ) res :=  'dbpprop';
   if (strstr (val, 'http://dbpedia.openlinksw.com/wikicompany/') = 0 ) res :=  'wikicompany';
   if (strstr (val, 'http://dbpedia.org/class/yago/') = 0 ) res :=  'yago';
   if (strstr (val, 'http://www.w3.org/2003/01/geo/wgs84_pos#') = 0 ) res :=  'geo';
@@ -191,12 +247,22 @@ create procedure get_curie (in val any)
   if (strstr (val, 'http://www.w3.org/1999/xhtml/vocab#') = 0 ) res :=  'xhv';
   if (strstr (val, 'http://rdfs.org/sioc/ns#') = 0 ) res :=  'sioc';
   if (strstr (val, 'http://purl.org/ontology/bibo/') = 0 ) res :=  'bibo';
+  if (strstr (val, 'http://purl.org/goodrelations/v1#') = 0 ) res :=  'gr';
+  if (strstr (val, 'http://linkedgeodata.org/vocabulary#') = 0 ) res :=  'lgv';
 
   if (res is null)
     res := __xml_get_ns_prefix (pref, 2);
   if (res is null)
     return val;
   return res||':'||suff;
+}
+;
+
+
+create procedure print_http(inout val varchar)
+{
+  if (strstr (val, 'http') = 0)
+    val := concat('<', val, '>');
 }
 ;
 
@@ -358,7 +424,7 @@ create procedure words_to_string(in val any)
 }
 ;
 
-create procedure pick_query(in smode varchar, inout val any, inout query varchar, inout val2 any := null)
+create procedure pick_query(in smode varchar, inout val any, inout query varchar, inout val2 any := null, inout val3 any := null, inout val4 any := null)
 {
   declare s1, s2, s3, s4, s5 varchar;
 
@@ -382,9 +448,9 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --;
 
     if (isnull(val) or val = '') val := '"semantic web"';
-    s1 := 'sparql select ?s ?p (bif:search_excerpt (bif:vector (';
-    s3 := '), ?o)) where  {  ?s ?p ?o .  filter (bif:contains (?o, ''';
-    s5 := '''))  }  limit 10';
+    s1 := 'sparql SELECT ?s ?p (bif:search_excerpt (bif:vector (';
+    s3 := '), ?o)) WHERE  {  ?s ?p ?o .  FILTER (bif:contains (?o, ''';
+    s5 := '''))  }  LIMIT 10';
 
     validate_input(val);
     s2 := element_split(val);
@@ -403,11 +469,22 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --    filter (bif:contains (?o, "paris and dakar"))
 --  } } group by ?g order by desc 2 limit 50
 --;
-    if (isnull(val) or val = '') val := 'paris and dakar';
-    s1 := 'sparql select ?g count (*) where { graph ?g { ?s ?p ?o . filter (bif:contains (?o, \'';
+
+-- old variant
+--    if (isnull(val) or val = '') val := 'paris and dakar';
+--    s1 := 'sparql SELECT ?g COUNT (*) WHERE { graph ?g { ?s ?p ?o . FILTER (bif:contains (?o, \'';
     --validate_input(val);
+--    s2 := trim (fti_make_search_string(val), '()');
+--    s3 := '\')) } } GROUP BY ?g ORDER BY DESC 2 LIMIT 50';
+--    query := concat('',s1, s2, s3,'');
+
+
+    if (isnull(val) or val = '') val := '"Linked Data"';
+    s1 := 'sparql SELECT ?g COUNT (*) WHERE { graph ?g { ?s ?p ?o . ?s a ?c .  ' ||
+    ' FILTER (bif:contains (?o, ''';
+    validate_input(val);
     s2 := trim (fti_make_search_string(val), '()');
-    s3 := '\')) } } group by ?g order by desc 2 limit 50';
+    s3 := ''')) } } GROUP BY ?g ORDER BY DESC 2 LIMIT 50';
     query := concat('',s1, s2, s3,'');
   }
   else if (smode='3')
@@ -427,10 +504,11 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --group by ?tp
 --order by desc 2;
     if (isnull(val)  or val = '') val := '"Paris Hilton"';
-    s1 := 'sparql select ?tp count(*) where { graph ?g  { ?s ?p ?o . ?s a ?tp  filter (bif:contains (?o, ''';
+    s1 := 'sparql SELECT ?tp COUNT(*) WHERE { graph ?g  { ?s ?p ?o . ?s a ?tp  . ' ||
+    ' FILTER (bif:contains (?o, ''';
     validate_input(val);
     s2 := trim (fti_make_search_string(val), '()');
-    s3 := ''') ) } } group by ?tp order by desc 2';
+    s3 := ''') ) } } GROUP BY ?tp ORDER BY DESC 2';
     query := concat('',s1, s2, s3,'');
   }
   else if (smode='4')
@@ -447,11 +525,24 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --order by desc 2
 --limit 20
 --;
-  if (isnull(val)  or val = '') val := 'http://www.livejournal.com/interests.bml?int=harry+potter';
-  s1 := 'sparql select ?i2 count (*) where   { ?p foaf:interest <';
+
+
+-- old variant
+--  if (isnull(val)  or val = '') val := 'http://www.livejournal.com/interests.bml?int=harry+potter';
+--  s1 := 'sparql SELECT ?i2 COUNT (*) WHERE   { ?p foaf:interest <';
+--  validate_input(val);
+--  s2 := val;
+--  s3 := '> . ?p foaf:interest ?i2  } GROUP BY ?i2 ORDER BY DESC 2 LIMIT 20';
+--  query := concat('',s1, s2, s3,'');
+
+
+    if (isnull(val)  or val = '') val := 'Kingsley Idehen';
+    s1 := 'sparql SELECT ?i2 COUNT (*) WHERE  { ?p foaf:interest ?i1 . ' ||
+    ' ?p foaf:name ?name . ' ||
+    ' FILTER ( bif:contains (?name, \'';
   validate_input(val);
-  s2 := val;
-  s3 := '> . ?p foaf:interest ?i2  } group by ?i2 order by desc 2 limit 20';
+    s2 := trim (fti_make_search_string(val), '()');
+    s3 := '\')) . ?p foaf:interest ?i2  } GROUP BY ?i2 ORDER BY DESC 2 LIMIT 20';
   query := concat('',s1, s2, s3,'');
   }
   else if (smode='5')
@@ -490,10 +581,12 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --;
 
     if (isnull(val) or val = '') val := 'semantic and web';
-    s1 := 'sparql select ?auth ?cnt ((select count (distinct ?xx) where { ?xx dc:creator ?auth } )) where { { select ?auth count (distinct ?d) as ?cnt where { ?d dc:creator ?auth .  ?d ?p ?o   filter (bif:contains (?o, \'' ;
+    s1 := 'sparql SELECT ?auth ?cnt ((SELECT COUNT (DISTINCT ?xx) ' ||
+    ' WHERE { ?xx dc:creator ?auth } )) WHERE { { SELECT ?auth COUNT (DISTINCT ?d) as ?cnt ' ||
+    ' WHERE { ?d dc:creator ?auth .  ?d ?p ?o  . FILTER (bif:contains (?o, \'' ;
     validate_input(val);
     s2 := trim (fti_make_search_string(val), '()');
-    s3 := '\') && isIRI (?auth)) } group by ?auth order by desc 2 limit 100 } } ' ;
+    s3 := '\') && isIRI (?auth)) } GROUP BY ?auth ORDER BY DESC 2 LIMIT 100 } } ' ;
     query := concat('',s1, s2, s3, '');
 
 
@@ -515,10 +608,10 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --    filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
 --  } order by ?dist desc 3 limit 50;
     if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    s1 := 'sparql select ?o ?dist ( ( select count (*) where {?o foaf:knows ?xx } ) ) where  { { select ?s ?o  where { ?s foaf:knows ?o } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step (''step_no'') as ?dist ) . filter (?s= <';
+    s1 := 'sparql SELECT ?o ?dist ( ( SELECT COUNT (*) WHERE {?o foaf:knows ?xx } ) ) WHERE  { { SELECT ?s ?o  WHERE { ?s foaf:knows ?o } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step (''step_no'') as ?dist ) . FILTER (?s= <';
     validate_input(val);
     s2 := val;
-    s3 := '> ) } order by ?dist desc 3 limit 50 ';
+    s3 := '> ) } ORDER BY ?dist DESC 3 LIMIT 50 ';
     query := concat('',s1, s2, s3,'');
   }
   else if (smode='7')
@@ -540,73 +633,288 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --    filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
 --	&& ?o = <http://www.advogato.org/person/mparaz/foaf.rdf#me>)
 --  } limit 20;
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    if (isnull(val2)  or val2 = '') val2 := 'http://www.advogato.org/person/mparaz/foaf.rdf#me';
-    s1 := 'sparql select ?link ?g ?step ?path where { { select ?s ?o ?g where { graph ?g {?s foaf:knows ?o } } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . filter (?s= <';
+
+    if (isnull(val)  or val = '') val := 'foaf:knows';
+    if (isnull(val2)  or val2 = '') val2 := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val3)  or val3 = '') val3 := 'http://www.advogato.org/person/mparaz/foaf.rdf#me';
+-- old variant with foaf:knows
+--  s1 := 'sparql SELECT ?link ?g ?step ?path WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s foaf:knows ?o } } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . FILTER (?s= <';
+    s1 := 'sparql SELECT ?link ?g ?step ?path WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s ';
     validate_input(val);
+    print_http(val);
     s2 := val;
-    s3 := '>  && ?o = <';
+    s1 := concat(s1, s2, ' ?o } } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . FILTER (?s= <');
     validate_input(val2);
-    s4 := val2;
-    s5 := '>)  } limit 20';
-    query := concat('',s1, s2, s3, s4, s5, '');
+    s3 := val2;
+    validate_input(val3);
+    s4 := val3;
+    s5 := concat(s3, '>  && ?o = <', s4, '>)  } LIMIT 20' );
+    query := concat('',s1, s5, '');
   }
   else if (smode = '8')
     {
-      if (isnull(val)  or val = '') val := '"aeon_phoenix"@en';
-s1 := 'sparql
-select ?p ?n ((select count (*) where {?p foaf:interest ?i . ?ps foaf:interest ?i}))
-   ((select count (*) where { ?p foaf:interest ?i}))
-where {
-?ps foaf:nick ';
-if (val not like '"%"' and strchr (val, '@') is null)
-  val := '"'||val||'"';
-s2 := val;
-s3 := ' .
-{ select distinct ?p ?psi where { ?p foaf:interest ?i . ?psi foaf:interest ?i } } .  filter (?ps = ?psi) ?p foaf:nick ?n } order by desc 3 limit 50';
+
+-- old variant
+--      if (isnull(val)  or val = '') val := '"aeon_phoenix"@en';
+--      s1 := 'sparql
+--SELECT ?p ?n ((SELECT COUNT (*) WHERE {?p foaf:interest ?i . ?ps foaf:interest ?i}))
+--((SELECT COUNT (*) WHERE { ?p foaf:interest ?i}))
+--WHERE {
+--?ps foaf:nick ';
+--if (val not like '"%"' and strchr (val, '@') is null)
+--  val := '"'||val||'"';
+--s2 := val;
+--s3 := ' .
+--{ SELECT DISTINCT ?p ?psi WHERE { ?p foaf:interest ?i . ?psi foaf:interest ?i } } .  FILTER (?ps = ?psi) ?p foaf:nick ?n } ORDER BY DESC 3 LIMIT 50';
+--      query := concat(s1, s2, s3);
+--    }
+--  else if (smode = '9')
+--    {
+--      if (isnull(val)  or val = '') val := '"SQL"';
+--
+---- b3s variant:
+--
+----      if (isnull(val)  or val = '') val := '"aeon_phoenix"';
+----      s1 :=
+----      'sparql define input:inference \'b3s\' select ?s ?lbl count(*) where { ?s  ?p2 ?o2 .  ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl . ' ||
+----      ' ?s  foaf:nick ?o .  filter (bif:contains (?o, ''';
+--
+--      s1 :=
+--      'sparql define input:inference \'virtrdf-label\' SELECT ?s ?lbl COUNT(*) WHERE { ?s  ?p2 ?o2 .  ?o2 <http://www.w3.org/2000/01/rdf-schema#label> ?lbl . ' ||
+--      ' ?s  foaf:nick ?o .  FILTER (bif:contains (?o, ''';
+--      validate_input(val);
+--      s2 := trim (fti_make_search_string(val), '()');
+--      s3 := ''')) } GROUP BY ?s ?lbl ORDER BY DESC 3';
+--      query := s1 || s2 || s3;
+
+
+      if (isnull(val)  or val = '') val := '"kidehen"';
+      s1 := 'sparql SELECT DISTINCT ?p ?n ((SELECT COUNT (*) WHERE {?p foaf:interest ?i . ?ps foaf:interest ?i})) ' ||
+      ' ((SELECT COUNT (*) WHERE { ?p foaf:interest ?i})) ' ||
+      ' WHERE { '||
+      ' ?ps foaf:nick ?nick . ' ||
+      ' FILTER (bif:contains (?nick, \'';
+      validate_input(val);
+      s2 := trim (fti_make_search_string(val), '()');
+s3 := '\')) .
+{ SELECT DISTINCT ?p ?psi WHERE { ?p foaf:interest ?i . ?psi foaf:interest ?i } } .  FILTER (?ps = ?psi) ?p foaf:nick ?n } ORDER BY DESC 3 LIMIT 50';
       query := concat(s1, s2, s3);
     }
   else if (smode = '9')
     {
-      if (isnull(val)  or val = '') val := '"aeon_phoenix"';
+      if (isnull(val)  or val = '') val := '"SQL"';
+
+-- b3s variant:
+
+--      if (isnull(val)  or val = '') val := '"aeon_phoenix"';
+--      s1 :=
+--      'sparql define input:inference \'b3s\' select ?s ?lbl count(*) where { ?s  ?p2 ?o2 .  ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl . ' ||
+--      ' ?s  foaf:nick ?o .  filter (bif:contains (?o, ''';
+
       s1 :=
-      'sparql define input:inference \'b3s\' select ?s ?lbl count(*) where { ?s  ?p2 ?o2 .  ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl . ' ||
-      ' ?s  foaf:nick ?o .  filter (bif:contains (?o, ''';
+      'sparql define input:inference \'virtrdf-label\' SELECT ?s ?lbl COUNT(*) WHERE { ?s  ?p2 ?o2 .  ?o2 <http://www.w3.org/2000/01/rdf-schema#label> ?lbl . ' ||
+      ' ?s  foaf:nick ?o .  FILTER (bif:contains (?o, ''';
       validate_input(val);
       s2 := trim (fti_make_search_string(val), '()');
-      s3 := ''')) } group by ?s ?lbl order by desc 3';
+      s3 := ''')) } GROUP BY ?s ?lbl ORDER BY DESC 3';
+      query := s1 || s2 || s3;
+
+    }
+  else if (smode = '10')
+    {
+      if (isnull(val)  or val = '') val := '"SQL"';
+
+      s1 :=
+      'sparql define input:inference \'virtrdf-label\' SELECT ?s ?lbl COUNT(*) WHERE { ?s  ?p2 ?o2 .  ?o2 <http://www.w3.org/2000/01/rdf-schema#label> ?lbl . ' ||
+      ' ?s  foaf:nick ?o .  FILTER (bif:contains (?o, ''';
+      validate_input(val);
+      s2 := trim (fti_make_search_string(val), '()');
+      s3 := ''') && !isblank(?s) ) } GROUP BY ?s ?lbl ORDER BY DESC 3';
       query := s1 || s2 || s3;
     }
+  else if (smode = '11')
+    {
+      if (isnull(val)  or val = '') val := '500';
+
+      s1 :=
+      'sparql SELECT ?mnf COUNT(?prd) AS ?total WHERE { ?prd gr:hasManufacturer ?mnf }' ||
+      ' GROUP BY ?mnf HAVING COUNT(?prd) > ';
+      validate_input(val);
+      s2 := val;
+      s3 := ' ORDER BY DESC 2 LIMIT 50';
+      query := s1 || s2 || s3;
+    }
+  else if (smode = '12')
+    {
+      if (isnull(val)  or val = '') val := '500';
+
+      s1 :=
+      'sparql SELECT ?xx ?ab ?bp ?el ?b ?c ?cv WHERE {' ||
+      ' ?xx a gr:BusinessEntity . ' ||
+      ' ?xx gr:offers ?ab . ' ||
+      ' ?ab rdf:type gr:Offering . ' ||
+      ' ?ab gr:hasBusinessFunction ?bp . ' ||
+      ' ?ab gr:eligibleCustomerTypes ?el . ' ||
+      ' ?ab gr:includesObject ?b . ' ||
+      ' ?b rdf:type gr:TypeAndQuantityNode . ' ||
+      ' ?b gr:typeOfGood ?c . ' ||
+      ' ?c rdf:type gr:ProductOrServicesSomeInstancesPlaceholder . ' ||
+      ' ?ab gr:hasPriceSpecification ?p . ' ||
+      ' ?p gr:hasCurrencyValue ?cv . ' ||
+      ' FILTER (?cv > ';
+      validate_input(val);
+      s2 := val;
+      s3 := ') } LIMIT 50';
+      query := s1 || s2 || s3;
+    }
+-- for now is removed from the list
+--  else if (smode = '13')
+--    {
+--      if (isnull(val)  or val = '') val := '"Manufacturer"';
+--      s1 := 'sparql SELECT COUNT(?prd) AS ?total WHERE { ?prd gr:hasManufacturer ?mnf . ' ||
+--      ' ?mnf gr:legalName ?name . ' ||
+--      ' FILTER( bif:contains (?name, ''';
+--      validate_input(val);
+--      s2 := trim (fti_make_search_string(val), '()');
+--      s3 := ''')) } LIMIT 50';
+--      query := concat('',s1, s2, s3,'');
+--    }
+  else if (smode = '13')
+  {
+    if (isnull(val)  or val = '') val := '2';
+    if (isnull(val2)  or val2 = '') val2 := '48';
+
+    if (isnull(val3)  or val3 = '') val3 := '5';
+    if (isnull(val4)  or val4 = '') val4 := '0.2';
+
+
+    s1 := 'sparql SELECT DISTINCT ?cafe ?lat ?long ?cafename ?churchname ' ||
+    ' ( bif:round(bif:st_distance (?churchgeo, ?cafegeo)) ) ' ||
+    ' WHERE ' ||
+    ' { ' ||
+    '   ?church a lgv:place_of_worship . ' ||
+    '   ?church geo:geometry ?churchgeo . ' ||
+    '   ?church lgv:name ?churchname . ' ||
+    '   ?cafe a lgv:cafe . ' ||
+    '   ?cafe lgv:name ?cafename . ' ||
+    '   ?cafe geo:geometry ?cafegeo . ' ||
+    '   ?cafe geo:lat ?lat . ' ||
+    '   ?cafe geo:long ?long . ' ||
+    '   FILTER ( bif:st_intersects (?churchgeo, bif:st_point (';
+    validate_input(val);
+    validate_input(val2);
+    validate_input(val3);
+    s2 := concat( val, ',', val2,'),', val3);
+    s3 := ')  && bif:st_intersects (?cafegeo, ?churchgeo, ';
+    validate_input(val4);
+    s4 := val4;
+    s5 := ') ) } LIMIT 50';
+    query := concat('',s1, s2, s3, s4, s5, '');
+  }
+  else if (smode = '14')
+    {
+      if (isnull(val)  or val = '') val := '52.000';
+
+      s1 :=
+      'sparql SELECT ?road ?services ?lat ?long WHERE ' ||
+      '  { ' ||
+      '    { ' ||
+      '     ?services dbpprop:road ?road . ' ||
+      '      ?road a yago:MotorwaysInEngland . ' ||
+      '      ?services dbpprop:lat ?lat . ' ||
+      '      ?services dbpprop:long ?long . ' ||
+      '    } ' ||
+      '    UNION ' ||
+      '    { ' ||
+      '      ?services dbpprop:road ?road . ' ||
+      '      ?road a yago:MotorwaysInScotland . ' ||
+      '      ?services dbpprop:lat ?lat . ' ||
+      '      ?services dbpprop:long ?long . ' ||
+      '    } ' ||
+      '    FILTER (?lat > ';
+      validate_input(val);
+      s2 := val;
+      s3 := ') } LIMIT 50';
+      query := s1 || s2 || s3;
+    }
+  else if (smode='15')
+  {
+    if (isnull(val)  or val = '') val := 'http://dbpedia.org/resource/London';
+    if (isnull(val2)  or val2 = '') val2 := 'http://dbpedia.org/ontology/City';
+    if (isnull(val3)  or val3 = '') val3 := '10';
+    s1 := 'sparql SELECT DISTINCT ?m ( bif:round(bif:st_distance (?geo, ?gm)) ) ' ||
+    ' WHERE { <';
+    validate_input(val);
+    s2 := val;
+    s3 := '> geo:geometry ?gm . ' ||
+    ' ?m geo:geometry ?geo . ' ||
+    ' ?m a <';
+    validate_input(val2);
+    s4 := val2;
+    s5 := '> . FILTER (bif:st_intersects (?geo, ?gm,';
+    validate_input(val3);
+    s5 := concat(s5, val3, ')) } ORDER BY DESC 2 LIMIT 50');
+    query := concat('',s1, s2, s3, s4, s5, '');
+  }
+  else if ( smode='16' )
+  {
+    if (isnull(val)  or val = '') val := '-80.000';
+    if (isnull(val2)  or val2 = '') val2 := '-140.000';
+    s1 := 'sparql SELECT DISTINCT ?s (bif:round(?lat)) AS ?lat (bif:round(?long)) AS ?long ' ||
+      ' WHERE ' ||
+      '   { ' ||
+      '     { ' ||
+      '       SELECT ?g ?s WHERE  ' ||
+      '         {  ' ||
+      '           graph ?g { ' ||
+      '             ?s geo:geometry ?geo }  ' ||
+      '         } ' ||
+      '       LIMIT 100  ' ||
+      '     } ' ||
+      '     graph ?g { ' ||
+      '       ?s geo:lat ?lat . ' ||
+      '       ?s geo:long ?long . } ' ||
+      '     FILTER (datatype (?lat) IN (xsd:integer, xsd:float, xsd:double)) . ' ||
+      '     FILTER (datatype (?long) IN (xsd:integer, xsd:float, xsd:double)) . ' ||
+      '    FILTER (?lat < ';
+    validate_input(val);
+    s2 := val;
+    validate_input(val2);
+    s3 := val2;
+    s4 := concat(s2, ' && ?long > ', s3);
+    s5 := ' ) }  LIMIT 50';
+    query := s1 || s4 || s5;
+  }
   --smode > 99 is reserved for drill-down queries
   else if (smode = '1001' or smode = '104')
     {
       validate_input(val);
-      query := sprintf ('sparql select ?ne count (*) where { graph <umbel-sc> { ?s rdfs:seeAlso ?ne . }  ?s dc:creator <%s> } group by ?ne order by desc 2', val);
+      query := sprintf ('sparql SELECT ?ne COUNT (*) WHERE { graph <umbel-sc> { ?s rdfs:seeAlso ?ne . }  ?s dc:creator <%s> } GROUP BY ?ne ORDER BY DESC 2', val);
     }
   else if (smode = '1002')
     {
       validate_input(val);
       s2 := element_split(val);
       s4 := trim (fti_make_search_string(val), '()');
-      query := sprintf ('sparql select ?s ?p ( bif:search_excerpt ( bif:vector (%s) , ?o ) ) where {  graph ?g  {  ?s ?p ?o . filter ( bif:contains ( ?o, \'%s\' ) )  } . filter (?g = <%s>)   } limit 10', s2, s4, val2);
+      query := sprintf ('sparql SELECT ?s ?p ( bif:search_excerpt ( bif:vector (%s) , ?o ) ) WHERE {  graph ?g  {  ?s ?p ?o . FILTER ( bif:contains ( ?o, \'%s\' ) )  } . FILTER (?g = <%s>)   } LIMIT 10', s2, s4, val2);
     }
   else if (smode = '1003')
     {
       validate_input(val);
       s2 := element_split(val);
       s4 := trim (fti_make_search_string(val), '()');
-      query := sprintf ('sparql select ?title ?ne  ( bif:search_excerpt ( bif:vector (%s) , ?o ) )  where {  { ?s dc:creator <%s> ; dc:title ?title ; ?p ?o . filter bif:contains (?o, \'%s\') } graph <umbel-sc> { ?s rdfs:seeAlso ?ne } } limit 50', s2, val2, s4);
+      query := sprintf ('sparql SELECT ?title ?ne  ( bif:search_excerpt ( bif:vector (%s) , ?o ) )  WHERE {  { ?s dc:creator <%s> ; dc:title ?title ; ?p ?o . FILTER bif:contains (?o, \'%s\') } graph <umbel-sc> { ?s rdfs:seeAlso ?ne } } LIMIT 50', s2, val2, s4);
     }
   else if (smode = '1004')
     {
       validate_input(val);
-      query := sprintf ('sparql select ?author count(*) where { graph <umbel-sc> { ?s rdfs:seeAlso <%s> } { ?s dc:creator ?author . filter isIRI (?author) }} group by ?author order by desc 2 limit 50', val);
+      query := sprintf ('sparql SELECT ?author COUNT(*) WHERE { graph <umbel-sc> { ?s rdfs:seeAlso <%s> } { ?s dc:creator ?author . FILTER isIRI (?author) }} GROUP BY ?author ORDER BY DESC 2 LIMIT 50', val);
     }
   else if (smode = '1005')
     {
       if (val not like '"%"' and strchr (val, '@') is null)
 	val := '"'||val||'"';
-      query := sprintf ('sparql select distinct ?i where {  ?ps foaf:nick %s . ?ps foaf:interest ?i . ?psi foaf:interest ?i . filter (?ps != ?psi)  . ?ps foaf:nick ?n } limit 200', val);
+      query := sprintf ('sparql SELECT DISTINCT ?i WHERE {  ?ps foaf:nick %s . ?ps foaf:interest ?i . ?psi foaf:interest ?i . FILTER (?ps != ?psi)  . ?ps foaf:nick ?n } LIMIT 200', val);
     }
   else if (smode='100')
   {
@@ -620,10 +928,10 @@ s3 := ' .
 --  }
 --;
     if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    s1 := 'sparql define input:inference ''b3s'' select ?lbl count(*) where { <';
+    s1 := 'sparql define input:inference ''virtrdf-label'' SELECT ?lbl COUNT(*) WHERE { <';
     validate_input(val);
     s2 := val;
-    s3 := '>  ?p2 ?o2 . ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl .  } group by ?lbl order by desc 2 limit 50';
+    s3 := '>  ?p2 ?o2 . ?o2 <http://www.w3.org/2000/01/rdf-schema#label> ?lbl .  } GROUP BY ?lbl ORDER BY DESC 2 LIMIT 50';
     query := concat('',s1, s2, s3, '');
   }
   else if (smode='101')
@@ -645,10 +953,10 @@ s3 := ' .
 --  } order by ?dist desc 3 limit 50
 --;
     if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    s1 := 'sparql select ?o ?name ?dist ((select count (*) where {?o foaf:knows ?xx})) where { { select ?s ?o ?name where { ?s foaf:knows ?o . ?o foaf:name ?name } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (2), t_max (4), t_step (''step_no'') as ?dist) . filter (?s= <';
+    s1 := 'sparql SELECT ?o ?name ?dist ((SELECT COUNT (*) WHERE {?o foaf:knows ?xx})) WHERE { { SELECT ?s ?o ?name WHERE { ?s foaf:knows ?o . ?o foaf:name ?name } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (2), t_max (4), t_step (''step_no'') as ?dist) . FILTER (?s= <';
     validate_input(val);
     s2 := val;
-    s3 := '> ) } order by ?dist desc 4 limit 50';
+    s3 := '> ) } ORDER BY ?dist DESC 4 LIMIT 50';
     query := concat('',s1, s2, s3, '');
   }
   else if (smode='102')
@@ -675,10 +983,10 @@ s3 := ' .
     if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
     --if (isnull(val2)  or val2 = '') val2 := 'http://www.advogato.org/person/mparaz/foaf.rdf#me';
     --s1 := 'sparql select ?link ?g ?step ?path where  { { select ?s ?o ?g where { graph ?g {?s foaf:knows ?o } } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . filter (?s= <';
-    s1 := 'sparql define input:same-as "YES" select ?g count (*) where { { select ?s ?o ?g where { graph ?g {?s foaf:knows ?o } } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1)) .  filter (?s= <';
+    s1 := 'sparql define input:same-as "YES" SELECT ?g COUNT (*) WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s foaf:knows ?o } } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1)) .  FILTER (?s= <';
     validate_input(val);
     s2 := val;
-    s3 := '>) } group by ?g order by desc 2 limit 100';
+    s3 := '>) } GROUP BY ?g ORDER BY DESC 2 LIMIT 100';
     --s3 := '> && ?o = <';
     --validate_input(val2);
     --s4 := val2;
@@ -698,12 +1006,12 @@ s3 := ' .
 --} order by desc 2 limit 50
 --;
     if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    s1 := 'sparql select ?n ((select count (*) where { ?p foaf:interest ?i . ?ps foaf:interest ?i})) ((select count (*) where { ?p foaf:interest ?i})) where { { select distinct ?p ?psi where { ?p foaf:interest ?i . ?psi foaf:interest ?i  } } . filter (?psi = <';
+    s1 := 'sparql SELECT ?n ((SELECT COUNT (*) WHERE { ?p foaf:interest ?i . ?ps foaf:interest ?i})) ((SELECT COUNT (*) WHERE { ?p foaf:interest ?i})) WHERE { { SELECT DISTINCT ?p ?psi WHERE { ?p foaf:interest ?i . ?psi foaf:interest ?i  } } . FILTER (?psi = <';
     validate_input(val);
     s2 := val;
     s3 := '> && ?ps = <';
     s4 := val;
-    s5 := '> ) ?p foaf:nick ?n } order by desc 3 limit 50';
+    s5 := '> ) ?p foaf:nick ?n } ORDER BY DESC 3 LIMIT 50';
     query := concat('',s1, s2, s3, s4, s5, '');
   }
   else

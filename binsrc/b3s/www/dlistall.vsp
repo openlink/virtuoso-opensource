@@ -89,7 +89,7 @@
                       tmp := rs[j];
                       if ( isstring(tmp ) and (strstr(tmp,'http://') = 0 or strstr(tmp,'nodeID://')=0))
                       {
-		        http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://b3s.openlinksw.com/describe/?url=', sprintf ('%U',tmp)), tmp));
+		        http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), tmp));
                         http ('</td>');
                       }
                       else

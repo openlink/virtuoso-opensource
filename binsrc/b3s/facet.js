@@ -280,7 +280,7 @@ OAT.Autocomplete = function (_input, _value_input, _button, _form, optObj) {
             self.input.focus();
 	    self.submit_form();
 	}
-	OAT.Dom.attach(option, "click", ref);
+	OAT.Event.attach(option, "click", ref);
     }
 
     this.set_opts = function (opt_list)

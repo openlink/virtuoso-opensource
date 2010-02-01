@@ -23,13 +23,15 @@ urilbl_ac_init_db ()
   for (sparql 
         define output:valmode 'LONG' 
         define input:inference 'facets' 
-        select ?s ?o (lang(?o)) as ?lng where { ?s virtrdf:label ?o }) do 
+        select ?s ?o where { ?s virtrdf:label ?o }) do 
     {
+      declare lng, id int;
+      lng := 257;
       if (__tag of rdf_box = __tag(o)) 
-	o_str := cast (o as varchar);
-      else if (isstring(o) and o not like 'Unresolved literal for ID%')
 	{ 
-	  o_str := o;
+	  o_str := cast (o as varchar);
+	  lng := rdf_box_lang (o);
+	  id := rdf_box_ro_id (o);
         }
       else
 	{
@@ -41,9 +43,7 @@ urilbl_ac_init_db ()
 
       o_str := "LEFT"(o_str, 512);
 
-      insert soft urilbl_complete_lookup_2 option (into daq)
-           (ull_label_lang, ull_label_ruined, ull_iid, ull_label) 
-          values (lng, urilbl_ac_ruin_label (o_str), s, o_str);
+      insert soft rdf_label option (into daq) (rl_o, rl_ro_id, rl_text, rl_lang) values (o, id, urilbl_ac_ruin_label (o_str), lng);
 
      cont:;
       n := n + 1;
@@ -65,3 +65,58 @@ urilbl_ac_init_db ()
               n, n_ins, n_strange));
 }
 ;
+
+create procedure
+cmp_label (in lbl_str varchar, in langs varchar)
+{
+  declare res any;
+  declare q,best_q float;
+  declare cur_iid any;
+  declare cur_lbl varchar;
+  declare n integer;
+
+  res := vector();
+
+--  dbg_printf ('cmp_label');
+  cur_iid := null;
+  best_q := 0;
+
+  {
+    declare exit handler for sqlstate 'S1TAT' { 
+      goto done;
+    };
+
+    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from rdf_label, rdf_quad  
+	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o) do
+      {
+	declare ull_label_lang varchar;
+	ull_label_lang := '';
+	if (rl_lang <> 257)
+	  ull_label_lang := coalesce ((select rl_id from rdf_language where rl_twobyte = rl_lang), '');
+        if (cur_iid is not null and ull_iid <> cur_iid)
+          {
+            res := vector_concat (res, vector (cur_lbl, id_to_iri(cur_iid)));
+            n := n + 1;
+            if (n >= 50) goto done;
+            best_q := 0;
+  	}
+
+        cur_iid := ull_iid;
+        q := cmp_get_lang_by_q (langs, ull_label_lang);
+
+        if (q >= best_q) 
+          {
+            best_q := q;
+	    if (__tag (ull_label) = 246)
+	      cur_lbl := rdf_box_data (ull_label);
+	    else
+	      cur_lbl := ull_label;
+	  }
+      }
+    res := vector_concat (res, vector (cur_lbl, id_to_iri (cur_iid)));
+   done:;
+    return res;
+  }
+}
+;
+

@@ -28,9 +28,10 @@ DB.DBA.XML_SET_NS_DECL ('geo', 'http://www.w3.org/2003/01/geo/wgs84_pos#', 2);
 DB.DBA.XML_SET_NS_DECL ('usc',  'http://www.rdfabout.com/rdf/schema/uscensus/details/100pct/', 2);
 DB.DBA.XML_SET_NS_DECL ('b3s', 'http://b3s.openlinksw.com/', 2);
 DB.DBA.XML_SET_NS_DECL ('lod', 'http://lod.openlinksw.com/', 2);
+DB.DBA.XML_SET_NS_DECL ('lgv', 'http://linkedgeodata.org/vocabulary#', 2);
 
 
-delete from rdf_quad where g = iri_to_id ('b3sonto');
+--delete from rdf_quad where g = iri_to_id ('b3sonto');
 
 ttlp ('
 @prefix foaf: <http://xmlns.com/foaf/0.1/>

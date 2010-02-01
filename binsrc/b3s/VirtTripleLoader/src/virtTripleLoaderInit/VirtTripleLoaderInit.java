@@ -84,7 +84,7 @@ public class VirtTripleLoaderInit {
 	private static final Integer myMajorVer = 0;
 	private static final Integer myMinorVer = 1;
 	private static final Integer myBuild = 0;
-	private static final String myCopyright = "Copyright (c) 2008-2009 OpenLink Software";
+	private static final String myCopyright = "Copyright (c) 2008-2010 OpenLink Software";
 
 	private static final String virtConnectUrlDef = "jdbc:virtuoso://neo:1111";
 	private static final String virtUserDef = "dba";

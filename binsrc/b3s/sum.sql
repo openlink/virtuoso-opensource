@@ -209,6 +209,18 @@ create procedure s_sum_page_c (in rows any, in text_exp varchar)
 
 create procedure s_sum_page (in rows any, in text_exp varchar)
 {
+  declare i int;
+  if (__tag (text_exp) = 193)
+    foreach (any v in text_exp) do
+      {
+	if (iswidestring (v))
+	  {
+	    v := charset_recode (v, '_WIDE_', 'UTF-8');
+	    text_exp [i] := v;
+	  }
+	i := i + 1;
+      }
+
   if (sys_stat ('cl_run_local_only'))
     return s_sum_page_s (rows, text_exp);
   else
@@ -270,22 +282,22 @@ create procedure sum_tst_1 (in text_exp varchar, in text_words varchar := null)
 }
 ;
 
-create procedure sum_tst_2 (in text_exp varchar, in text_words varchar := null)
-{
-  declare res any;
-  if  (text_words is null)
-    text_words := vector (text_exp);
-  res := (select vector_agg (vector (s, sm)) from (
-   select top 20 s, s_sum (iri_rank (s), p, o, score)  as sm
-   from rdf_obj, rdf_ft, rdf_quad q1 
-   where contains (ro_flags, text_exp) and rf_id = ro_id and q1.o = rf_o group by s 
-   order by sum_rank (sm) option (quietcast) ) s option (quietcast)
-);
+--create procedure sum_tst_2 (in text_exp varchar, in text_words varchar := null)
+--{
+--  declare res any;
+--  if  (text_words is null)
+--    text_words := vector (text_exp);
+--  res := (select vector_agg (vector (s, sm)) from (
+--   select top 20 s, s_sum (iri_rank (s), p, o, score)  as sm
+--   from rdf_obj, rdf_ft, rdf_quad q1 
+--   where contains (ro_flags, text_exp) and rf_id = ro_id and q1.o = rf_o group by s 
+--   order by sum_rank (sm) option (quietcast) ) s option (quietcast)
+--);
   --dbg_obj_print (res);
- res := s_sum_page (res, text_words);
-  return res;
-}
-;
+--  res := s_sum_page (res, text_words);
+--  return res;
+--}
+--;
 
 --  sum_tst ('oori');
 

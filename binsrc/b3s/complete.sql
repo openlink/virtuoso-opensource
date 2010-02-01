@@ -203,17 +203,26 @@ cmp_uri (in str varchar)
   if (length (nss) = 0)
     return cmp_find_iri (str);
 
-  iris := cmp_find_iri (nss[0], 1);
+  vectorbld_init (iris);
+  foreach (any x in nss) do
+    {
+      vectorbld_acc (iris, cmp_find_iri (x, 1));
+    }
+  vectorbld_final (iris);
 
-  return vector (iris, nss);
+  return iris;
 }
 ;
 
 create procedure 
 urilbl_ac_ruin_label (in lbl varchar)
 {
-  return left (upper (regexp_replace (lbl, '[''",.]', '', 1, null)), 
-               _min (length (lbl), 50));
+  declare tmp any;
+  tmp := regexp_replace (lbl, '[''",.]', '', 1, null);
+  tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+  tmp := upper (tmp);
+  tmp := subseq (tmp, 0, 50);
+  return charset_recode (tmp, '_WIDE_', 'UTF-8');
 }
 ;
 
@@ -266,54 +275,6 @@ cmp_get_lang_by_q (in accept varchar, in lang varchar)
   if (q = 0 and not length (lang))
     q := 0.001;
   return q;
-}
-;
-
-create procedure
-cmp_label (in lbl_str varchar, in langs varchar)
-{
-  declare res any;
-  declare q,best_q float;
-  declare cur_iid any;
-  declare cur_lbl varchar;
-  declare n integer;
-
-  res := vector();
-
---  dbg_printf ('cmp_label');
-  cur_iid := null;
-  best_q := 0;
-
-  {
-    declare exit handler for sqlstate 'S1TAT' { 
-      goto done;
-    };
-
-    for (select ull_label_lang, ull_label, ull_iid
-         from urilbl_complete_lookup_2 
-         where ull_label_ruined like urilbl_ac_ruin_label (lbl_str) || '%') do
-      {
-        if (cur_iid is not null and ull_iid <> cur_iid)
-          {
-            res := vector_concat (res, vector (cur_lbl, id_to_iri(cur_iid)));
-            n := n + 1;
-            if (n >= 50) goto done;
-            best_q := 0;
-  	}
-
-        cur_iid := ull_iid;
-        q := cmp_get_lang_by_q (langs, ull_label_lang);
-
-        if (q >= best_q) 
-          {
-            best_q := q;
-            cur_lbl := ull_label;
-	  }
-      }
-    res := vector_concat (res, vector (cur_lbl, id_to_iri (cur_iid)));
-   done:;
-    return res;
-  }
 }
 ;
 

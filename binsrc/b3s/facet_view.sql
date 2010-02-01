@@ -202,13 +202,13 @@ fct_query_info (in tree any,
                      fct_var_tag (this_s, ctx),
                        connection_get ('sid'),
                        fct_short_form (prop),
-                       cast (tree as varchar)), txt);
+                       charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
       else
         http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any property</a> containing text <span class="value">"%s"</span>. ', 
                       fct_var_tag (this_s, ctx), 
                       connection_get('sid'), 
                       cno,
-                      cast (tree as varchar)), txt);
+		      charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
 
     }
   else if ('property' = n)

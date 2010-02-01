@@ -40,9 +40,9 @@
         <?vsp
 	  declare qrlist any;
           declare i integer;
-	  qrlist := vector ('1','2','3','8','4','5','6','7','9');
+	  qrlist := vector ('1','2','3','8','4','5','6','7','9','10','13','15','16','14','11','12');
 
-          for(i:=0;i<9;i:=i+1)
+          for(i:=0;i<16;i:=i+1)
 	  {
 	    declare num int;
 	    num := qrlist [i];
@@ -51,7 +51,8 @@
         ?>
       </table>
     </div><!--  #content -->
-    <div>You may also use the <a href="/sparql">SPARQL endpoint</a> . For your convenience we have a set of <a href="nspref.vsp">predefined name space prefixes</a>.</div>
+    <div>You may also use the <a href="/sparql">SPARQL endpoint</a> and the <a href="/isparql">iSPARQL Query Editor</a>.<br/>
+For your convenience we have a set of <a href="nspref.vsp">predefined name space prefixes</a>.</div>
     <div id="footer">
       <div id="ft_b">
 	<a href="about.html">About</a> 
