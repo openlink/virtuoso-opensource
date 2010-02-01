@@ -59,7 +59,11 @@ uriqa_get_host_for_dynamic_local (query_instance_t *qi, int * is_https)
       ws_connection_t *ws = qi->qi_client->cli_ws;
       res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
       if (NULL != is_https)
+#ifdef _SSL
 	*is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
+#else
+	*is_https = 0;
+#endif
     }
   if (NULL == res)
     {
