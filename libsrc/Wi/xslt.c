@@ -3689,7 +3689,10 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
   if (len > batch_size)
     len = batch_size;
   if (0 == len)
-    return list (0);
+    {
+      res = list (0);
+      goto res_done; /* see below */
+    }
   res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
@@ -3702,11 +3705,15 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
           dk_free_tree (val);
           (tail++)[0] = key;
           if (!(--len))
-            return (caddr_t)res;
+            goto res_done; /* see below */
 	}
     }
   GPF_T1 ("bif_" "dict_destructive_list_rnd_keys(): corrupted hashtable");
   return NULL; /* never reached */
+res_done:
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return (caddr_t)res;
 }
 
 caddr_t
