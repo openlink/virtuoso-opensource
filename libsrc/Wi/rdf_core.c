@@ -2013,17 +2013,6 @@ key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
   int len;
   caddr_t allocd_content = NULL;
   int entered = 0;
-#ifdef CL6
-  if (!cl_run_local_only)
-    {
-      rdf_box_t * r = (rdf_box_t *)cl_find_rdf_obj ((caddr_t)rb);
-      if (!r)
-	return rb;
-      rb->rb_ro_id = r->rb_ro_id;
-      dk_free_box ((caddr_t)r);
-      return rb;
-    }
-#endif
 
   if (!lt)
     {
