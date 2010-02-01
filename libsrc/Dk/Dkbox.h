@@ -598,7 +598,10 @@ uname_blk_t;
 
 #define RDF_BOX_DEFAULT_TYPE 		0x101
 #define RDF_BOX_DEFAULT_LANG 		0x101
-
+#define RDF_BOX_GEO 			0x100
+#define RDF_BOX_INTERVAL 		0xff
+#define RDF_BOX_STRING_ID 		0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
+#define RDF_BOX_MIN_TYPE 		0xfe
 
 typedef struct rdf_box_s
 {
@@ -623,7 +626,7 @@ typedef struct rdf_box_s
 #define RBS_CHKSUM			0x10
 #define RBS_64				0x20
 #define RBS_SKIP_DTP			0x40
-#define RBS_EXT_TYPE 0x80
+#define RBS_EXT_TYPE 			0x80
 
 
 #define RBS_ID_ONLY(f) \
