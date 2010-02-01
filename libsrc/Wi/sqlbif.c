@@ -2025,7 +2025,7 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t num_arg2 = bif_arg (qst, args, 1, "subseq");
   caddr_t num_arg3 = ((n_args > 2) ? bif_arg (qst, args, 2, "subseq") : NULL);
 
-  dtp_t dtp1 = DV_TYPE_OF (str);
+  dtp_t dtp1;
   dtp_t dtp2 = DV_TYPE_OF (num_arg2);
 
   /* If the third argument is missing, then act like it were NULL: */
@@ -2033,12 +2033,14 @@ bif_subseq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int fail_in_dtp3 = 0;
   long len;
   caddr_t res;
-  int sizeof_char = IS_WIDE_STRING_DTP (dtp1) ? sizeof (wchar_t) : sizeof (char);
+  int sizeof_char;
 
+retry_unrdf:
+  dtp1 = DV_TYPE_OF (str);
+  sizeof_char = IS_WIDE_STRING_DTP (dtp1) ? sizeof (wchar_t) : sizeof (char);
   /* Return NULL if the first argument is NULL: */
   if (DV_DB_NULL == dtp1)
     return (NEW_DB_NULL);
-retry_unrdf:
   switch (dtp1)
     {
     case DV_RDF:
@@ -4837,7 +4839,7 @@ bif_chr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "lcase");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "lcase");
   long len;
   caddr_t res;
   int i;
@@ -4878,7 +4880,7 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "ucase");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "ucase");
   long len;
   caddr_t res;
   int i;
@@ -5030,7 +5032,7 @@ bif_box_flags_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong flags = bif_long_arg (qst, args, 1, "__box_flags_tweak");
   caddr_t res;
   if (!IS_BOX_POINTER (x))
-    sqlr_new_error ("22023", "SR589", "__box_flags_tweak () can not handle integer as a first argument");
+    return x; /*was: sqlr_new_error ("22023", "SR589", "__box_flags_tweak () can not handle integer as a first argument");*/
   res = box_copy_tree (x);
   box_flags (res) = flags;
   return res;
@@ -11108,6 +11110,8 @@ caddr_t
 bif_rollback (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
+  if (qi->qi_trx->lt_branch_of)
+    sqlr_new_error ("4000X", "CL...", "Cannot explicitly rollback a cluster transaction branch from non owner node");
   IN_TXN;
   if (IS_ENLISTED_TXN (qi))
     {
