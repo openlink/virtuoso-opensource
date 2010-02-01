@@ -550,6 +550,7 @@ void ha_free (hash_area_t * ha);
 #ifdef BIF_XML
 ST ** sqlc_ancestor_args (ST * tree);
 ST ** sqlc_contains_args (ST * tree, int * ctype);
+ST ** sqlc_geo_args (ST * tree, int * ctype);
 char sqlc_contains_fn_to_char (const char *name);
 void upd_arrange_misc (sql_comp_t * sc, update_node_t * upd);
 void ins_arrange_misc (sql_comp_t * sc, insert_node_t * upd);
