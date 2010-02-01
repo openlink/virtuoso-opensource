@@ -31,10 +31,12 @@
 #include "security.h" /* For sec_check_dba() */
 
 void
-rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
+rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v, int is_local)
 {
   static query_t *rdf_box_qry_complete_xml = NULL;
   static query_t *rdf_box_qry_complete_text = NULL;
+  static query_t *rdf_box_qry_complete_xml_l;
+  static query_t *rdf_box_qry_complete_text_l;
   query_instance_t *caller_qi = caller_qi_v;
   caddr_t err;
   local_cursor_t *lc;
@@ -45,15 +47,23 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
 #endif
   if (NULL == rdf_box_qry_complete_text)
     {
+      rdf_box_qry_complete_xml_l = sql_compile_static (
+        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 257 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
+        bootstrap_cli, NULL, SQLC_DEFAULT );
+      rdf_box_qry_complete_text_l = sql_compile_static (
+        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
+        bootstrap_cli, NULL, SQLC_DEFAULT );
+
       rdf_box_qry_complete_xml = sql_compile_static (
-        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = ?",
+        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 257 from DB.DBA.RDF_OBJ where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
       rdf_box_qry_complete_text = sql_compile_static (
-        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = ?",
+        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
     }
   err = qr_rec_exec (
-    (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text),
+		     is_local ? (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml_l : rdf_box_qry_complete_text_l)
+    : (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text),
     lt->lt_client, &lc, caller_qi, NULL, 1,
       ":0", box_num(rb->rb_ro_id), QRP_RAW );
   if (NULL != err)
@@ -66,11 +76,18 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
   if (lc_next (lc))
     {
       caddr_t val = lc_nth_col (lc, 0);
+      uint32 dt_lang = unbox (lc_nth_col (lc, 1));
+      rb->rb_lang = dt_lang & 0xffff;
+      rb->rb_type = dt_lang >> 16;
+      rb->rb_serialize_id_only = 0; /* may also serialize with value if for order by once it is filled */
       if (rb->rb_chksum_tail && (DV_TYPE_OF (val) != ((rdf_bigbox_t *)rb)->rbb_box_dtp))
         sqlr_new_error ("22023", "SR579", "The type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
-      rb->rb_box = box_copy_tree (val);
+      if (RDF_BOX_GEO == rb->rb_type)
+	rb->rb_box = box_deserialize_string (val, box_length (val) - 1, 0);
+      else
+	rb->rb_box = box_copy_tree (val);
       if (DV_STRING == DV_TYPE_OF (rb->rb_box))
         box_flags (rb->rb_box) |= BF_UTF8;
       rb->rb_is_complete = 1;
@@ -89,6 +106,13 @@ rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t
 }
 
 
+void
+rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
+{
+  rb_complete_1 (rb, lt, caller_qi_v, 0);
+}
+
+
 #define RB_MAX_INLINED_CHARS 20
 
 caddr_t
@@ -104,7 +128,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lang = bif_long_arg (qst, args, 2, "rdf_box");
   ro_id = bif_long_arg (qst, args, 3, "rdf_box");
   is_complete = bif_long_arg (qst, args, 4, "rdf_box");
-  if ((RDF_BOX_DEFAULT_TYPE > type) || (type & ~0xffff))
+  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff))
     sqlr_new_error ("22023", "SR547", "Invalid datatype id %ld as argument 2 of rdf_box()", type);
   if ((RDF_BOX_DEFAULT_LANG > lang) || (lang & ~0xffff))
     sqlr_new_error ("22023", "SR548", "Invalid language id %ld as argument 3 of rdf_box()", lang);
@@ -144,6 +168,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (ro_id)
         rbb->rbb_base.rb_is_outlined = 1;
       rbb->rbb_base.rb_is_complete = is_complete;
+      rbb->rbb_base.rb_serialize_id_only = is_complete >> 1;
       rbb->rbb_base.rb_chksum_tail = 1;
       rbb->rbb_chksum = box_copy_tree (chksum);
       if (6 < BOX_ELEMENTS (args))
@@ -169,6 +194,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ro_id)
     rb->rb_is_outlined = 1;
   rb->rb_is_complete = is_complete;
+  rb->rb_serialize_id_only = is_complete >> 1;
   rdf_box_audit(rb);
   return (caddr_t) rb;
 }
@@ -387,12 +413,26 @@ bif_rdf_box_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (RDF_BOX_DEFAULT_TYPE);
 }
 
+
+caddr_t
+bif_rdf_box_dt_and_lang (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_lang");
+  if (DV_RDF == DV_TYPE_OF (rb))
+    {
+      rdf_box_audit (rb);
+      return box_num ((rb->rb_type << 16) | rb->rb_lang);
+    }
+  return box_num ((RDF_BOX_DEFAULT_TYPE << 16) | RDF_BOX_DEFAULT_LANG);
+}
+
+
 caddr_t
 bif_rdf_box_set_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_box_t *rb = bif_rdf_box_arg (qst, args, 0, "rdf_box_set_type");
   long type = bif_long_arg (qst, args, 1, "rdf_box_set_type");
-  if ((RDF_BOX_DEFAULT_TYPE > type) || (type & ~0xffff))
+  if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff))
     sqlr_new_error ("22023", "SR554", "Invalid datatype id %ld as argument 2 of rdf_box_set_type()", type);
   if (0 != rb->rb_ro_id)
     sqlr_new_error ("22023", "SR555", "Datatype id can be changed only if rdf box has no ro_id in call of rdf_box_set_type ()");
@@ -446,6 +486,7 @@ bif_rdf_box_set_is_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       rdf_box_t * rb2 = (rdf_box_t *) rb;
       rb2->rb_is_text_index = f;
+      rb2->rb_serialize_id_only = f >> 1;
     }
   return box_num (1);
 }
@@ -511,23 +552,27 @@ bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
         if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
           {
             if (DV_DB_NULL != dict_dtp)
-              return box_num (3);
+              return (caddr_t)((ptrlong)3);
 /* This is no longer needed because in Vajra we don't ft-index all typed strings, but only some
             if ((RDF_BOX_DEFAULT_TYPE != rb2->rb_type) || (RDF_BOX_DEFAULT_LANG != rb2->rb_lang))
               return box_num (3);
 */
-            return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 0 : 1);
+	    if (rdf_no_string_inline)
+	      return (caddr_t)((ptrlong)1);
+            return (caddr_t)((ptrlong)(((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 0 : 1));
           }
-        return box_num (0);
+        return (caddr_t)((ptrlong)0);
       }
     case DV_STRING: case DV_UNAME:
       if (DV_DB_NULL != dict_dtp)
-        return box_num (7);
-      return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb)) ? 0 : 1);
+        return (caddr_t)((ptrlong)7);
+      if (rdf_no_string_inline)
+	return (caddr_t)((ptrlong)1);
+      return (caddr_t)((ptrlong)(((RB_MAX_INLINED_CHARS + 1) >= box_length (rb)) ? 0 : 1));
     case DV_XML_ENTITY:
-        return box_num (7);
+        return (caddr_t)((ptrlong)7);
     default:
-      return box_num (0);
+      return (caddr_t)((ptrlong)0);
     }
 }
 
@@ -585,6 +630,18 @@ rbs_length (db_buf_t rbs)
 {
   long hl, l;
   dtp_t flags = rbs[1];
+  if (RBS_EXT_TYPE & flags)
+    {
+      int len = (RBS_64 & flags ? 10 : 6);
+      if (! RBS_ID_ONLY (flags))
+	len += 2;
+      if (RBS_COMPLETE & flags)
+	{
+	  db_buf_length (rbs + len, &hl, &l);
+	  len += hl + l;
+	}
+      return len;
+    }
   if (flags & RBS_SKIP_DTP)
     {
       hl = 1;
@@ -609,6 +666,9 @@ rbs_hash_range (dtp_t ** buf, int * len, int * is_string)
   /* the partition hash of a any typpe col with an rdf box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
   long l, hl;
   dtp_t * rbs = *buf;
+  dtp_t flags = rbs[1];
+  if (RBS_EXT_TYPE & flags)
+    GPF_T1 ("rbs ahsh range not for geo or serialize id only boxes");
   if (RBS_SKIP_DTP & rbs[1])
     {
       *buf += 1 == wi_inst.wi_master->dbs_stripe_unit ? 2 : 3;
@@ -623,12 +683,58 @@ rbs_hash_range (dtp_t ** buf, int * len, int * is_string)
 }
 
 
-static void
+void
 print_short (short s, dk_session_t * ses)
 {
   session_buffered_write_char (s >> 8, ses);
   session_buffered_write_char (s & 0xff, ses);
 }
+
+
+void
+rb_id_serialize (rdf_box_t * rb, dk_session_t * ses)
+{
+  if (rb->rb_ro_id > INT32_MAX || rb->rb_ro_id < INT32_MIN)
+    {
+      session_buffered_write_char (DV_RDF_ID_8, ses);
+      print_int64_no_tag (rb->rb_ro_id, ses);
+    }
+  else
+    {
+      session_buffered_write_char (DV_RDF_ID, ses);
+      print_long (rb->rb_ro_id, ses);
+    }
+}
+
+
+void
+rb_ext_serialize (rdf_box_t * rb, dk_session_t * ses)
+{
+  /* non string special rdf boxes like geometry or interval or udt.  id is last  */
+  int with_content = DKS_DB_DATA (ses) != NULL || DKS_CL_DATA (ses) != NULL
+    || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY) & ses->dks_cluster_flags);
+  dtp_t flags = RBS_EXT_TYPE;
+  session_buffered_write_char (DV_RDF, ses);
+  if (with_content && rb->rb_is_complete)
+    flags |= RBS_COMPLETE;
+  if (rb->rb_ro_id > INT32_MAX)
+    flags |= RBS_64;
+  if (rb->rb_serialize_id_only)
+    flags |= RBS_HAS_LANG | RBS_HAS_TYPE;
+  session_buffered_write_char (flags, ses);
+  if (!(RBS_HAS_TYPE & flags && RBS_HAS_LANG & flags))
+    print_short (rb->rb_type, ses);
+  if (rb->rb_ro_id > INT32_MAX)
+    print_int64_no_tag (rb->rb_ro_id, ses);
+  else
+    print_long (rb->rb_ro_id, ses);
+  if (flags & RBS_COMPLETE)
+    print_object (rb->rb_box, ses, NULL, NULL);
+}
+
+
+int rdf_no_string_inline = 0;
+
 
 void
 rb_serialize (caddr_t x, dk_session_t * ses)
@@ -636,11 +742,26 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
    * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
   client_connection_t *cli = DKS_DB_DATA (ses);
+  int with_content = DKS_DB_DATA (ses) != NULL || DKS_CL_DATA (ses) != NULL
+    || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY) & ses->dks_cluster_flags);
   rdf_box_t * rb = (rdf_box_t *) x;
   rdf_box_audit (rb);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
-  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
+  if (rb->rb_type < RDF_BOX_DEFAULT_TYPE)
+    {
+      /* geo boxes and strings if string inlining is off */
+      rb_ext_serialize (rb, ses);
+      return;
+    }
+  if  ((!unbox_inline (rb->rb_box) && !rb->rb_is_complete)
+       || ((rdf_no_string_inline || rb->rb_serialize_id_only)
+	   && ((DV_STRINGP (rb->rb_box) && !with_content))))
+    {
+      rb_id_serialize (rb, ses);
+      return;
+    }
+      if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
     sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
   if (NULL != cli && cli->cli_version < 3031)
     print_object (rb->rb_box, ses, NULL, NULL);
@@ -775,6 +896,45 @@ rb_copy (rdf_box_t * rb)
 #define RBS_RO_ID(place, flags) \
   (((flags) & RBS_OUTLINED) ? (((flags) & RBS_64) ? INT64_REF_NA ((place)) : LONG_REF_NA ((place))) : 0)
 
+#define DVC_DTP_CMP(d1, d2) (d1 < d2 ? DVC_DTP_LESS : DVC_DTP_GREATER)
+
+int
+dv_rdf_ext_compare (db_buf_t dv1, db_buf_t dv2)
+{
+  /* rdf ext boxes like geometries, intervals or udts collate by type and ro id, values are not compared. Always gt than any scalar (non ext)  rdf type.
+  * both lang and type bits set means that there is no lang or type here and that collation is by id only.  These are less than typed ext and gt non-ext rdf dvs */
+  unsigned short type1;
+  unsigned short type2;
+  int64 id1, id2;
+  dtp_t flags1 = dv1[1], flags2;
+  dtp_t dtp2 = *dv2;
+  if (DV_RDF != dtp2)
+    return DVC_DTP_CMP(DV_RDF, dtp2);
+  flags2 = dv2[1];
+  if (!(RBS_EXT_TYPE & flags2))
+    return DVC_DTP_GREATER;
+  if (RBS_ID_ONLY (flags1) && RBS_ID_ONLY (flags2))
+    {
+      id1 = (RBS_64 & flags1) ? INT64_REF_NA (dv1 + 2) : LONG_REF_NA (dv1 + 2);
+      id2 = (RBS_64 & flags2) ? INT64_REF_NA (dv2 + 2) : LONG_REF_NA (dv2 + 2);
+      return NUM_COMPARE (id1, id2);
+    }
+  if (RBS_ID_ONLY (flags1))
+    return DVC_DTP_LESS;
+  if (RBS_ID_ONLY (flags2))
+    return DVC_DTP_GREATER;
+  type1 = SHORT_REF_NA (dv1 + 2);
+  type2 = SHORT_REF_NA (dv2 + 2);
+  if (type1 < type2)
+    return DVC_DTP_LESS;
+  if (type1 > type2)
+    return DVC_DTP_GREATER;
+  id1 = (RBS_64 & flags1) ? INT64_REF_NA (dv1 + 4) : LONG_REF_NA (dv1 + 4);
+  id2 = (RBS_64 & flags2) ? INT64_REF_NA (dv2 + 4) : LONG_REF_NA (dv2 + 4);
+  return NUM_COMPARE (id1, id2);
+}
+
+
 int
 dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 {
@@ -800,6 +960,10 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 	}
     }
   flags1 = dv1[1];
+  if (RBS_EXT_TYPE & flags1)
+    return dv_rdf_ext_compare (dv1, dv2);
+  if (dtp2 > DV_RDF)
+    return DVC_DTP_LESS;
   if (RBS_SKIP_DTP & flags1)
     {
       data_dtp1 = DV_SHORT_STRING_SERIAL;
@@ -953,6 +1117,9 @@ In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of
 }
 
 
+#define RB_ID_ONLY(rb) \
+  (DV_RDF == DV_TYPE_OF (rb) && !(rb)->rb_box && !(rb)->rb_is_complete)
+
 int
 rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 {
@@ -974,6 +1141,14 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
     }
   if ((DV_RDF == dtp2) && (0 != rb1->rb_ro_id) && (rb2->rb_ro_id == rb1->rb_ro_id))
     return DVC_MATCH;
+  if (RB_ID_ONLY (rb1) && DV_RDF != dtp2)
+    return DVC_GREATER;
+  if (RB_ID_ONLY (rb1) && RB_ID_ONLY (rb2))
+    return rb1->rb_ro_id < rb2->rb_ro_id ? DVC_LESS : DVC_GREATER;
+  if (RB_ID_ONLY (rb2))
+    return DVC_LESS;
+  if (RB_ID_ONLY (rb1))
+    return DVC_GREATER;
   data1 = rb1->rb_box;
   data_dtp1 = DV_TYPE_OF (data1);
   /* if stringg and non-string */
@@ -1088,7 +1263,7 @@ rdf_box_hash (caddr_t box)
 {
   rdf_box_t *rb = (rdf_box_t *)box;
   rdf_box_audit (rb);
-  if (rb->rb_is_complete)
+  if (rb->rb_is_complete && rb->rb_type >= RDF_BOX_DEFAULT_TYPE)
     {
       if ((RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
         return box_hash (rb->rb_box);
@@ -1650,7 +1825,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/soap+xml"			, "SOAP"	,
         "application/soap+xml;11"		, "SOAP"	,
         "application/rdf+xml"			, "RDFXML"	,
-	"text/rdf+nt"				, "NT"		,
+        "text/rdf+nt"				, "NT"		,
         "application/xhtml+xml"			, "RDFA;XHTML"	,
         "text/plain"				, "NT"		,
         "application/sparql-results+json"	, "JSON;RES"	,
@@ -2986,7 +3161,12 @@ res_done:
     dk_free_tree (iri);
   return res;
 }
-;
+
+id_hash_iterator_t *rdf_graph_iri2id_dict_hit;
+id_hash_t *rdf_graph_iri2id_dict_htable;
+
+id_hash_iterator_t *rdf_graph_id2iri_dict_hit;
+id_hash_t *rdf_graph_id2iri_dict_htable;
 
 id_hash_iterator_t *rdf_graph_group_dict_hit;
 id_hash_t *rdf_graph_group_dict_htable;
@@ -3002,6 +3182,20 @@ id_hash_t *rdf_graph_default_world_perms_of_user_dict_htable;
 
 id_hash_iterator_t *rdf_graph_default_private_perms_of_user_dict_hit;
 id_hash_t *rdf_graph_default_private_perms_of_user_dict_htable;
+
+caddr_t
+bif_rdf_graph_id2iri_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_id2iri_dict");
+  return box_copy (rdf_graph_id2iri_dict_hit);
+}
+
+caddr_t
+bif_rdf_graph_iri2id_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_iri2id_dict");
+  return box_copy (rdf_graph_iri2id_dict_hit);
+}
 
 caddr_t
 bif_rdf_graph_group_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3148,7 +3342,7 @@ bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_sl
       perms = bif_long_arg (qst, args, 2, "__rdf_graph_specific_perms_of_user");
       u = sec_id_to_user (u_id);
       if (NULL == u)
-        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID");
+        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID %ld", (long)u_id);
       if (0 > perms)
         {
           if (NULL != u->usr_rdf_graph_perms)
@@ -3358,6 +3552,194 @@ bif_rgs_ack_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_rgs_impl (qst, err_ret, args, fname, RGU_ACK, 1);
 }
 
+static int
+rdf_single_check (query_instance_t *qi, caddr_t start_box_arg, boxint ro_id, rdf_box_t **complete_rb_ptr, long opcode, caddr_t opval)
+{
+  dtp_t opval_dtp = DV_TYPE_OF (opval);
+  caddr_t opval_strval, complete_strval;
+  int start_box_len, complete_strval_len, opval_len, cmp;
+  switch (opval_dtp)
+    {
+    case DV_STRING: opval_strval = opval; break;
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)(opval);
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        opval_strval = rb->rb_box;
+        if (DV_STRING != DV_TYPE_OF (opval_strval))
+          return 0 /* because DVC_NOORDER */;
+        break;
+      }
+    default:
+      return 0 /* because DVC_NOORDER */;
+    }
+  if (NULL != complete_rb_ptr[0])
+    goto complete_rb_is_available; /* see below */
+  start_box_len = box_length (start_box_arg) - 1;
+  opval_len = box_length (opval_strval) - 1;
+  cmp = memcmp (start_box_arg, opval_strval, MIN (start_box_len, opval_len));
+  switch (opcode)
+    {
+    case BOP_LT:
+      if (0 < cmp)
+        return 0; /* because DVC_GT; */
+      if (RO_START_LEN <= opval_len)
+        {
+          if (0 > cmp)
+            return 1; /* because DVC_LT at the beginning */
+          break; /* the beginning is same but the rest may differ */
+        }
+      if (0 == cmp)
+        return (start_box_len < opval_len);
+      return 1;
+    case BOP_LTE:
+      if (0 < cmp)
+        return 0; /* because DVC_GT; */
+      if (RO_START_LEN <= opval_len)
+        {
+          if (0 > cmp)
+            return 1; /* because DVC_LT at the beginning */
+          break; /* the beginning is same but the rest may differ */
+        }
+      if (0 == cmp)
+        return (start_box_len <= opval_len);
+      return 1;
+    case BOP_EQ:
+      if (0 != cmp)
+        return 0; /* because DVC_GT; */
+      if (RO_START_LEN <= opval_len)
+        {
+          break; /* the beginning is same but the rest may differ */
+        }
+      return (start_box_len == opval_len);
+    case BOP_GT:
+      if (0 > cmp)
+        return 0; /* because DVC_LT; */
+      if (RO_START_LEN <= opval_len)
+        {
+          if (0 < cmp)
+            return 1; /* because DVC_GT at the beginning */
+          break; /* the beginning is same but the rest may differ */
+        }
+      if (0 == cmp)
+        return (start_box_len > opval_len);
+      return 1;
+    case BOP_GTE:
+      if (0 > cmp)
+        return 0; /* because DVC_LT; */
+      if (RO_START_LEN <= opval_len)
+        {
+          if (0 < cmp)
+            return 1; /* because DVC_GT at the beginning */
+          break; /* the beginning is same but the rest may differ */
+        }
+      if (0 == cmp)
+        return (start_box_len >= opval_len);
+      return 1;
+    default: return 0;
+    }
+/* Now a whole value should be filled in if needed and compared */
+  complete_rb_ptr[0] = (rdf_box_t *)rbb_from_id (ro_id);
+  rb_complete_1 (complete_rb_ptr[0], qi->qi_trx, qi, 1);
+complete_rb_is_available:
+  complete_strval = complete_rb_ptr[0]->rb_box;
+  if (DV_STRING != DV_TYPE_OF (complete_strval))
+    return 0; /* DVC_NOCOMP */
+  complete_strval_len = box_length (complete_strval) - 1;
+  cmp = memcmp (complete_strval, opval_strval, MIN (complete_strval_len, opval_len));
+  switch (opcode)
+    {
+    case BOP_LT:
+      if (0 < cmp)
+        return 0; /* because DVC_GT; */
+      if (0 == cmp)
+        return (complete_strval_len < opval_len);
+      return 1;
+    case BOP_LTE:
+      if (0 < cmp)
+        return 0; /* because DVC_GT; */
+      if (0 == cmp)
+        return (complete_strval_len <= opval_len);
+      return 1;
+    case BOP_EQ:
+      if (0 != cmp)
+        return 0; /* because DVC_GT; */
+      return (complete_strval_len == opval_len);
+    case BOP_GT:
+      if (0 > cmp)
+        return 0; /* because DVC_LT; */
+      if (0 == cmp)
+        return (complete_strval_len > opval_len);
+      return 1;
+    case BOP_GTE:
+      if (0 > cmp)
+        return 0; /* because DVC_LT; */
+      if (0 == cmp)
+        return (complete_strval_len >= opval_len);
+      return 1;
+    default: return 0;
+    }
+}
+
+
+caddr_t
+bif_rdf_range_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t start_box_arg = bif_string_arg (qst, args, 0, "__rdf_range_check");
+  boxint ro_id = 0;
+  rdf_box_t *complete_box = NULL;
+  caddr_t ro_id_arg;
+  int res = 1;
+  /* prefix_str, ro_id, lower, lower_op, upper, upper_op, completed_box_ret */
+  /* check if prefix is between uppoer and lower as per lower_op and upper_op.  If prefix is too short to know, get the full text using ro_id.  If fetching the full text, put it in complete_box_ret if this is a writable ssl */
+  ro_id_arg = bif_arg (qst, args, 1, "__rdf_range_check");
+  switch (DV_TYPE_OF (ro_id_arg))
+    {
+    case DV_LONG_INT:
+      ro_id = unbox (ro_id_arg);
+      break;
+    case DV_RDF:
+      if (((rdf_box_t *)ro_id_arg)->rb_is_complete)
+        {
+          complete_box = (rdf_box_t *)ro_id_arg;
+          break;
+        }
+      ro_id = ((rdf_box_t *)ro_id_arg)->rb_ro_id;
+      break;
+    default:
+      bif_long_arg (qst, args, 1, "__rdf_range_check");
+    }
+  for (;;)
+    {
+      long lo_op, hi_op;
+      lo_op = bif_long_arg (qst, args, 3, "__rdf_range_check");
+      if (lo_op)
+        {
+          if (!(res = rdf_single_check ((query_instance_t *)qst, start_box_arg, ro_id, &complete_box, lo_op, bif_arg (qst, args, 2, "__rdf_range_check"))))
+            break;
+        }
+      hi_op = bif_long_arg (qst, args, 5, "__rdf_range_check");
+      if (hi_op)
+        res = rdf_single_check ((query_instance_t *)qst, start_box_arg, ro_id, &complete_box, hi_op, bif_arg (qst, args, 4, "__rdf_range_check"));
+      break;
+    }
+  if (7 <= BOX_ELEMENTS (args))
+    {
+      caddr_t *box_ret_ptr = qst_address (qst, args[6]);
+      if (NULL != box_ret_ptr)
+        {
+          if (complete_box == (rdf_box_t *)ro_id_arg)
+            complete_box = box_copy (ro_id_arg);
+          qst_swap (qst, args[6], (void *)(&complete_box));
+        }
+    }
+  if ((NULL != complete_box) && (complete_box != (rdf_box_t *)ro_id_arg))
+    dk_free_tree (complete_box);
+  return (caddr_t)((ptrlong)res);
+}
+
+
 caddr_t boxed_zero_iid = NULL;
 caddr_t boxed_8k_iid = NULL;
 caddr_t boxed_nobody_uid = NULL;
@@ -3366,6 +3748,7 @@ caddr_t boxed_nobody_uid = NULL;
   name##_htable = (id_hash_t *)box_dv_dict_hashtable (31); \
   name##_htable->ht_rehash_threshold = 120; \
   name##_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT; \
+  name##_htable->ht_mutex = mutex_allocate (); \
   name##_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)name##_htable); \
   } while (0)
 
@@ -3394,6 +3777,10 @@ rdf_box_init ()
   boxed_zero_iid = box_iri_id (0);
   boxed_8k_iid = box_iri_id (8192);
   boxed_nobody_uid = box_num (U_ID_NOBODY);
+  MAKE_RDF_GRAPH_DICT(rdf_graph_iri2id_dict);
+  rdf_graph_iri2id_dict_htable->ht_hash_func = strhash;
+  rdf_graph_iri2id_dict_htable->ht_cmp = strhashcmp;
+  MAKE_RDF_GRAPH_DICT(rdf_graph_id2iri_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_public_perms_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
@@ -3409,6 +3796,7 @@ rdf_box_init ()
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
   bif_define_typed ("rdf_box_lang", bif_rdf_box_lang, &bt_integer);
   bif_define_typed ("rdf_box_type", bif_rdf_box_type, &bt_integer);
+  bif_define_typed ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, &bt_integer);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);
   bif_define ("rdf_box_chksum", bif_rdf_box_chksum);
   bif_define_typed ("rdf_box_is_text", bif_rdf_box_is_text, &bt_integer);
@@ -3454,6 +3842,8 @@ rdf_box_init ()
   /* Short aliases for use in generated SQL text: */
   bif_define ("__ro2lo", bif_rdf_long_of_obj);
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
+  bif_define ("__rdf_graph_id2iri_dict", bif_rdf_graph_id2iri_dict);
+  bif_define ("__rdf_graph_iri2id_dict", bif_rdf_graph_iri2id_dict);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
   bif_define ("__rdf_graph_public_perms_dict", bif_rdf_graph_public_perms_dict);
   bif_define ("__rdf_graph_group_of_privates_dict", bif_rdf_graph_group_of_privates_dict);
@@ -3466,4 +3856,6 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
+  bif_define ("__rdf_range_check", bif_rdf_range_check);
+  bif_set_uses_index (bif_rdf_range_check );
 }

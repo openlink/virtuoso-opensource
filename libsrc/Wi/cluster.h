@@ -53,9 +53,6 @@ void cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret);
 #define CLO_DDL_TRIG 5
 #define CLO_DDL_ATOMIC 6
 #define CLO_DDL_ATOMIC_OVER 7
-void lt_send_rollbacks (lock_trx_t * lt, int sync);
-extern long dbf_cpt_rb;
-#define DKS_TO_CLUSTER 1
 
 typedef struct cl_op_s
 {
@@ -106,8 +103,10 @@ extern int32 cl_wait_query_delay;
 typedef void cu_func_t;
 
 #define CLO_ITCL 16 /* not a message.  A container for a local itc_cluster_t */
+#define DKS_TO_CLUSTER 1
 
 #define DKS_QI_DATA(ses)  (*((query_instance_t **)&(ses)->dks_object_temp))
+#define DKS_CL_DATA(ses)  NULL
 void cl_ts_set_context (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, int nth_set);
 cl_op_t * clo_allocate (char op);
 itc_cluster_t * itcl_allocate (lock_trx_t * lt, caddr_t * inst);
@@ -117,5 +116,7 @@ cl_host_t * cl_name_to_host (char * name);
 cu_func_t * cu_func (caddr_t name, int must_find);
 caddr_t cl_id_to_iri (query_instance_t * qi, caddr_t id);
 
+
+extern long dbf_cpt_rb;
 
 #endif
