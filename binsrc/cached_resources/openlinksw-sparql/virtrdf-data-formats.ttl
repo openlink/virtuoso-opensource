@@ -37,10 +37,11 @@ bif:contains virtrdf:isSpecialPredicate bif:contains .
 bif:xcontains virtrdf:isSpecialPredicate bif:xcontains .
 bif:xpath_contains virtrdf:isSpecialPredicate bif:xpath_contains .
 bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
+bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2009-11-20 0001v6' ;
+  virtrdf:version '2010-01-19 0001v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -207,9 +208,9 @@ rdfdf:default
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __ro2lo (^{tree}^)";			# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " __ro2sq (^{tree}^)";		# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " DB.DBA.RDF_DATATYPE_OF_OBJ (^{tree}^)";	# STRING REQUIRED ... datatype IRI STRING from short
-  virtrdf:qmfLanguageOfShortTmpl " DB.DBA.RDF_LANGUAGE_OF_OBJ (^{tree}^)";	# STRING REQUIRED ... language ID STRING from short
-  virtrdf:qmfBoolOfShortTmpl " DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)";		# STRING REQUIRED ... boolean value from short
+  virtrdf:qmfDatatypeOfShortTmpl " DB.DBA.RDF_DATATYPE_OF_OBJ (__ro2sq (^{tree}^))";	# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfLanguageOfShortTmpl " DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (^{tree}^))";	# STRING REQUIRED ... language ID STRING from short
+  virtrdf:qmfBoolOfShortTmpl " DB.DBA.RDF_BOOL_OF_OBJ (__ro2sq (^{tree}^))";		# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_LONG (__ro2lo (^{tree}^))";
   virtrdf:qmfUriOfShortTmpl " __id2in (^{tree}^)";				# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " __rdf_strsqlval (^{tree}^, 0)";	# STRING REQUIRED ... SQL representation of the STRING value of short
@@ -2198,6 +2199,7 @@ virtrdf:DefaultQuadMap-O
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultQuadMap-O-cols;
   virtrdf:qmvFText virtrdf:DefaultQuadMap-ft;
+  virtrdf:qmvGeo virtrdf:DefaultQuadMap-geo;
   virtrdf:qmvFormat rdfdf:default;
   virtrdf:qmvColumnsFormKey 0
 .
@@ -2226,18 +2228,12 @@ virtrdf:DefaultQuadMap-pquad
 
 virtrdf:DefaultQuadMap-ft
   rdf:type virtrdf:QuadMapFText;
-  virtrdf:qmvftAlias "pobj";
-  virtrdf:qmvftAuxAlias "pobjft";
-  virtrdf:qmvftColumnName "RO_FLAGS";
-  virtrdf:qmvftConds virtrdf:DefaultQuadMap-ft-conds;
-  virtrdf:qmvftTableName "DB.DBA.RDF_OBJ";
-  virtrdf:qmvftAuxTableName "DB.DBA.RDF_FT";
+  virtrdf:qmvftColumnName "O";
   virtrdf:qmvftXmlIndex 1
 .
 
-virtrdf:DefaultQuadMap-ft-conds
-  rdf:type virtrdf:array-of-string;
-  rdf:_1 "^{pobj.}^.RO_ID = ^{pobjft.}^.RF_ID";
-  rdf:_2 "^{!pquad.}^.O = ^{pobjft.}^.RF_O"
+virtrdf:DefaultQuadMap-geo
+  rdf:type virtrdf:QuadMapFText;
+  virtrdf:qmvftColumnName "O";
 .
 
