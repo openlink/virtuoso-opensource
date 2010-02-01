@@ -154,6 +154,7 @@
 #define CO_COMPRESS ((ptrlong) 523)
 #define CLUSTER_DEF ((ptrlong) 524)
 #define PARTITION_DEF ((ptrlong) 525)
+#define COLUMN_GROUP (ptrlong)526
 
 
 /* Procedures */
@@ -321,6 +322,8 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_SAME_AS ((ptrlong) 1016)
 #define OPT_ARRAY ((ptrlong) 1017)
 #define OPT_ANY_ORDER (ptrlong)1018
+#define OPT_INDEX_ONLY (ptrlong)932
+
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
@@ -507,7 +510,13 @@ typedef struct sql_tree_s
 	  {
 	    char *	name;
 	    ST **	cols;
+	    ptrlong	flags;
 	  } table_def;
+	struct {
+	  caddr_t	name;
+	  caddr_t  *	inx_opts;
+	  caddr_t *	cols;
+	} col_group;
 	struct
 	  {
 	    caddr_t	name;
@@ -889,5 +898,12 @@ extern long sqlp_bin_op_serial;
 #define XR_AUTO 32
 #define XR_EXPLICIT 64
 #define XR_ELEMENT 128
+
+
+/* table layout */
+#define T_ROW 0
+#define T_COLUMN 1
+#define T_DISTINCT_COLUMNS 2
+
 
 #endif

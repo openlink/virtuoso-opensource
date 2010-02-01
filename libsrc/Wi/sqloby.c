@@ -391,11 +391,13 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  best = ot->ot_table->tb_primary_key;
 	}
     }
-  else if (is_txt_inx)
+  else if (is_txt_inx || tb_dfe->_.table.index_path)
     return 0;
 
   DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
     {
+      if (key->key_no_pk_ref)
+	continue;
       if (opt_inx_name)
 	{
 	  if (!CASEMODESTRCMP (opt_inx_name, key->key_name))

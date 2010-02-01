@@ -215,6 +215,7 @@ struct df_elt_s
       op_table_t *	ot;
       dbe_key_t *	key;
       df_inx_op_t *	inx_op;
+      dk_set_t	index_path;
       dk_set_t 	col_pred_merges;
       dk_set_t	all_preds;
       dk_set_t 	inx_preds;
@@ -316,6 +317,7 @@ struct df_elt_s
     } head;
     struct {
       int type;
+      char geo;
       ST ** args;
       dbe_column_t *col;
       state_slot_t *ssl;
@@ -395,6 +397,7 @@ struct sqlo_s
 
   char	so_is_top_and;
   char	so_in_cond_exp;
+  char	so_no_text_preds;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;
@@ -402,6 +405,11 @@ struct sqlo_s
   float 	so_top_best_score;
   float	so_dt_input_arity;
   float	so_cost_up_to_dt;
+  float	so_best_index_cost;
+  float	so_best_index_card;
+  char	so_best_index_card_sure;
+  dk_set_t	so_best_index_path;
+  dk_set_t	so_after_preds; /* during inx choice, the exps that are not col preds */
   locus_t *	so_target_locus;
   int		so_locus_ctr;
   remote_table_source_t * 	so_target_rts;
@@ -487,6 +495,14 @@ typedef struct text_count_s
 } text_count_t;
 
 
+typedef struct ts_action_s
+{
+  /* operation done on a row in an index after inx preds are matched.  Can eval exps, compare columns and extract column values */
+  df_elt_t *	tsa_exp;
+  df_elt_t *	tsa_test_col;
+  df_elt_t *	tsa_extract_col;
+} ts_action_t;
+
 /* for index choice being considered, for each index the below is filled in.
  * if looping over in or rdf subclass/subpred is involved, this is mentioned as ic_n_lookups
  * if checking indexable in or rdf subc/subp as after test is preferred, this is indicated by putting the removed col pred in ic_rm_col_preds and adding the corresponding after test in ic_after_test */
@@ -506,6 +522,19 @@ typedef struct index_choice_s
   struct rdf_inf_ctx_s *	ic_ric;
   df_elt_t *	ic_inf_dfe;
   int		ic_inf_type;
+  dk_set_t	ic_inx_preds;
+  dk_set_t	ic_col_preds;
+  df_inx_op_t *	ic_inx_op;
+  dk_set_t	ic_ts_action; /* non key col extraction, comparison, expressions, eveld while page wired down  */
+  dk_set_t	ic_after_preds;
+  dk_set_t	ic_eliminated_after_preds; /* if an after is transformed into a col pred, mark it here */
+  df_elt_t *		ic_o_range;
+  struct index_choice_s *		ic_o_range_ref_ic;
+  df_elt_t *	ic_text_pred;
+  df_elt_t *	ic_geo_pred;
+  char		ic_text_order;
+  char		ic_geo_order;
+  char		ic_o_string_range_lit; /* 1 if o is known to be a string 2 if literal strings */
 } index_choice_t;
 
 #define IC_OPT_ITERS 0 /* can change in or rdf inf iters into after test */

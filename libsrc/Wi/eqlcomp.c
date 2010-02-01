@@ -1319,6 +1319,17 @@ inx_op_free (inx_op_t * iop)
 void
 ts_free (table_source_t * ts)
 {
+  if (TS_ALT_POST == ts->ts_is_alternate)
+    {
+      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to nulll */
+      ts->src_gen.src_after_test = NULL;
+      ts->src_gen.src_after_code = NULL;
+      if (ts->ts_order_ks)
+	{
+	  ts->ts_order_ks->ks_local_test = NULL;
+	  ts->ts_order_ks->ks_local_code = NULL;
+	}
+    }
   if (!ts)
     return;
   if (ts->ts_inx_op)

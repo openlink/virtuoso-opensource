@@ -290,8 +290,10 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
   if (BOP_EQ == lower->_.bin.op)
     {
       *a1 = (float) 0.03;
-      if (lower->_.bin.left == lower->_.bin.right)
+      if (lower->_.bin.left == lower->_.bin.right
+	  && DFE_COLUMN != lower->_.bin.left->dfe_type)
 	{
+	  /* x=x is always true except if x is a column.  This idiom is used for joining between different keys on an index path */
 	  *a1 = 1; /* recognize the dummy 1=1 */
 	  return;
 	}
@@ -563,6 +565,7 @@ lc_ret (local_cursor_t * lc)
 int64
 sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
 {
+  char * tn, *tn_full;
   caddr_t ret = NULL;
   int rc;
   int entered = 0;
@@ -598,13 +601,23 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str)
       if (err)
 	goto err;
     }
-  snprintf (cn, sizeof (cn), "%s.%s.TEXT_EST_%s", tb->tb_qualifier, tb->tb_owner, tb->tb_name_only);
+  if (!stricmp (tb->tb_name, "DB.DBA.RDF_QUAD") || !stricmp (tb->tb_name, "DB.DBA.R2"))
+    {
+      tn = "RDF_OBJ";
+      tn_full = "DB.DBA.RDF_OBJ";
+    }
+  else
+    {
+      tn = tb->tb_name_only;
+      tn_full = tb->tb_name;
+    }
+  snprintf (cn, sizeof (cn), "%s.%s.TEXT_EST_%s", tb->tb_qualifier, tb->tb_owner, tn);
   cli->cli_user = sec_name_to_user ("dba");
   proc = sch_proc_def (wi_inst.wi_schema, cn);
   if (!proc)
     {
       err = qr_rec_exec (make_proc, cli, &lc, CALLER_LOCAL, NULL, 1,
-			 ":0", tb->tb_name, QRP_STR);
+			 ":0", tn_full, QRP_STR);
       if (err)
 	goto err;
       ret = lc_ret (lc);
@@ -779,9 +792,27 @@ dfe_non_text_id_refd (df_elt_t * dfe, dbe_column_t * text_id_col)
     return 0;
 }
 
+int
+sqlo_is_text_after_test (df_elt_t * tb_dfe, df_elt_t * text_pred)
+{
+  /* text or geo is an after test if there is 1. a unique non-text cond
+   * the key is not the key with the text id col leading 3. the key is the text id key and there is a non-text eq on the first key part */
+  dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+  if (tb_dfe->_.table.is_unique || tb_dfe->_.table.key != id_key)
+    return 1;
+  DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
+    {
+      if ((DFE_BOP_PRED == pred->dfe_type || DFE_BOP == pred->dfe_type)
+	  && BOP_EQ == pred->_.bin.op && pred->_.bin.left->dfe_type == DFE_COLUMN && pred->_.bin.left->_.col.col == (dbe_column_t*)id_key->key_parts->data)
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
-dfe_text_cost (df_elt_t * dfe, float *u1, float * a1)
+dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
 {
   /* text predicate cost.  If by non-pk, this is always a check for whether text occurs.  If by unq this is a check for whether text occurs.
    * If by pk and no unq, this is driven by text node. */
@@ -802,8 +833,7 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1)
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
 	text_key_cost = dbe_key_unit_cost (text_key->key_text_table->tb_primary_key);
-      if (dfe->_.table.is_unique
-	  || dfe->_.table.ot->ot_table->tb_primary_key != dfe->_.table.key)
+      if (!text_order_anyway && sqlo_is_text_after_test (dfe, text_pred))
 	{
 	  /* the id is given, text match is an after test */
 	  total_cost += 1.5 * text_key_cost * total_card;
@@ -825,7 +855,7 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1)
 	  total_cost += non_text_row_cost;
 	}
       if (1 != cl_run_local_only)
-	total_cost += 200; /* about 20 inx lookups worth of latency, text lookups are not batched */
+	total_cost += 10; /* a little latency, lookups are batched */
       *u1 = total_cost;
       *a1 = total_card;
     }
@@ -932,7 +962,7 @@ rdf_obj_of_typed_sqlval (caddr_t val, caddr_t vtype, caddr_t lang, caddr_t * dat
     return 0;
   if (DV_STRING == dtp)
     {
-      int lang_id = DV_DB_NULL == DV_TYPE_OF (lang) ? RDF_BOX_DEFAULT_LANG 
+      int lang_id = DV_DB_NULL == DV_TYPE_OF (lang) ? RDF_BOX_DEFAULT_LANG
 	: key_rdf_lang_id (lang);
       caddr_t r;
       rdf_box_t * rb;
@@ -1694,6 +1724,13 @@ arity_scale (float ar)
 
 
 void
+dfe_table_ip_cost (df_elt_t * tb_dfe, index_choice_t * ic)
+{
+  sqlo_index_path_cost (tb_dfe->_.table.index_path, &ic->ic_unit, &ic->ic_arity, &ic->ic_leading_constants);
+}
+
+
+void
 dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 {
   float * u1 = &ic->ic_unit;
@@ -1715,6 +1752,11 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   df_elt_t * inx_uppers[5];
   df_elt_t * inx_lowers[5];
   int is_inx_const = 1, inx_const_fill = 0;
+  if (dfe->_.table.index_path)
+    {
+      dfe_table_ip_cost (dfe, ic);
+	return;
+    }
   ic->ic_key = key;
   inx_arity = (float) dbe_key_count (dfe->_.table.key);
   ic->ic_leading_constants = dfe->_.table.is_arity_sure = 0;
@@ -1890,7 +1932,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       p_arity = 1;
     }
   if (tb_text_key (dfe->_.table.ot->ot_table))
-    dfe_text_cost (dfe, &total_cost, &total_arity);
+    dfe_text_cost (dfe, &total_cost, &total_arity, 0);
 
   if (HR_FILL == dfe->_.table.hash_role)
     {

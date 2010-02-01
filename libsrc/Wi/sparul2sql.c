@@ -42,10 +42,12 @@ extern "C" {
 #endif
 #include "xml_ecm.h"
 
-#define CTOR_NEEDS_LIMOFS_TRICK(top) \
- ((0 != unbox (top->_.req_top.offset)) || \
-   ((SPARP_MAXLIMIT != unbox (top->_.req_top.limit)) && \
-     ((1 != unbox (top->_.req_top.limit)) || \
+#define CTOR_NEEDS_LIMOFS_TRICK(top) ( \
+ (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.offset)) || \
+ (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.limit)) || \
+ (0 != unbox ((caddr_t)(top->_.req_top.offset))) || \
+ ((SPARP_MAXLIMIT != unbox ((caddr_t)(top->_.req_top.limit))) && \
+     ((1 != unbox ((caddr_t)(top->_.req_top.limit))) || \
        (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) )
 
 #define CTOR_DISJOIN_WHERE 1

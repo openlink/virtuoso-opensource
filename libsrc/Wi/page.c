@@ -235,7 +235,7 @@ str_delta (db_buf_t str1, db_buf_t str2, int len1, int len2, row_size_t * prefix
 }
 
 
-#define PFH_INT_HASH(i) (((unsigned int)(((i) >> 10) ^  ((i) >> 20))) % PFH_N_WAYS)
+#define PFH_INT_HASH(i) (((unsigned int)(((i) >> 10) ^ ((i) >> 20))) % PFH_N_WAYS)
 
 resource_t * pfh_rc;
 
@@ -427,15 +427,18 @@ pfh_var (pf_hash_t * pfh, dbe_col_loc_t * cl, db_buf_t str, int len, unsigned sh
 	  if (0 != memcmp (col, str, len - 1))
 	    continue;
 	  delta = str[h_len] - col[h_len];
-	  if (delta < 16)
+	  if (delta < 16 || CC_LAST_BYTE == mode)
 	    {
 	      switch ((dtp_t) col[0])
 		{
 		case DV_LONG_INT: case DV_INT64:
 		case DV_IRI_ID: case DV_IRI_ID_8:
 		case DV_SHORT_STRING_SERIAL:
-		case DV_RDF:
-		  *prefix_ref = pfv->pfv_irow | (delta << COL_OFFSET_SHIFT);
+		case DV_RDF: case DV_RDF_ID: case DV_RDF_ID_8:
+		  if (CC_LAST_BYTE == mode)
+		    *prefix_ref = pfv->pfv_irow;
+		  else
+		    *prefix_ref = pfv->pfv_irow | (delta << COL_OFFSET_SHIFT);
 		  return CC_OFFSET;
 		}
 	    }
@@ -721,10 +724,12 @@ page_set_values (buffer_desc_t * buf, row_fill_t * rf, dbe_key_t * key,
   dtp_t extra[N_COMPRESS_OFFSETS];
   int inx = 0, compressible_inx = 0, val_inx = 0;
   row_ver_t rv;
-  dk_set_t compressible = leaf == 0 ? key->key_row_compressibles : key->key_key_compressibles;
+  short n_comp;
+  dk_set_t compressible = leaf == 0 ? (n_comp = key->key_n_row_compressibles, key->key_row_compressibles)
+    : (n_comp = key->key_n_key_compressibles, key->key_key_compressibles);
   db_buf_t row = rf->rf_row;
   rf->rf_is_leaf = leaf != 0;
-  RF_LARGE_CHECK (rf, 2 + 2 * dk_set_length (compressible), 0);
+  RF_LARGE_CHECK (rf, 2 + 2 * n_comp, 0);
   if (leaf)
     IE_SET_KEY_VERSION (row, 0);
   else
@@ -862,7 +867,8 @@ page_set_values (buffer_desc_t * buf, row_fill_t * rf, dbe_key_t * key,
 	}
       else
 	{
-	  if (CC_PREFIX == page_try_offset (buf, row, irow, cl, values[cl->cl_nth], &prefix_bytes[0], &prefix_ref[0], &extra[0], &comp_null[0], 0, NULL))
+	  if (CC_NONE != cl->cl_compression
+	      && CC_PREFIX == page_try_offset (buf, row, irow, cl, values[cl->cl_nth], &prefix_bytes[0], &prefix_ref[0], &extra[0], &comp_null[0], 0, NULL))
 	    row_set_prefix (rf, cl, values[val_inx], prefix_bytes[0], prefix_ref[0], extra[0]);
 	  else
 	    row_set_col (rf, cl, values[val_inx]);
@@ -1976,8 +1982,6 @@ pf_rd_list (page_fill_t * pf, char first_affected, dp_addr_t * first_dp_ret, cha
   if (first_affected)
     {
       arr[0]->rd_op = RD_UPDATE;
-      if (pf->pf_left)
-	arr[0]->rd_is_double_lp = 1;
     }
   return arr;
 }
@@ -2405,8 +2409,9 @@ pf_pop_root (page_fill_t * pf)
       db_buf_t row = BUF_ROW (buf, 0);
       key_ver_t kv = IE_KEY_VERSION (row);
       dp_addr_t leaf = LONG_REF (row + LD_LEAF);
-      if (kv != KV_LEFT_DUMMY)
-	GPF_T1 ("single leaf root page with ;l;leaf other than left dummy is not expected");
+      if (kv != KV_LEFT_DUMMY
+	  )
+	GPF_T1 ("single leaf root page with leaf other than left dummy is not expected");
       if (!leaf)
 	return 0;
       itc_set_parent_link (pf->pf_itc, leaf, 0);

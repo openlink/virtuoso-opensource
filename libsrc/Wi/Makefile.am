@@ -220,6 +220,7 @@ libwi_la_SOURCES = \
 	sqlgen.c \
 	sqlhash.c \
 	sqlintrp.c \
+	sqlinx.c \
 	sqloby.c \
 	sqlo.c \
 	sqlocr.c \
@@ -336,6 +337,7 @@ libwi_odbc_la_SOURCES = \
 	sqlgen.c \
 	sqlhash.c \
 	sqlintrp.c \
+	sqlinx.c \
 	sqloby.c \
 	sqlo.c \
 	sqlocr.c \

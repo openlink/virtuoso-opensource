@@ -621,6 +621,16 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
       db_buf_t ptr;
       int fill = rd->rd_temp_fill;
       int bytes = 8 + ALIGN_8 (len);
+#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
+      if (0 == fill)
+        {
+	  fill = (uptrlong) rd->rd_temp % 8;
+	  if (fill)
+	    fill = 8 - fill;
+	  rd->rd_temp_max -= fill;
+	  rd->rd_temp_fill += fill;
+        }
+#endif
       if (fill + bytes > rd->rd_temp_max)
 	{
 	  rd->rd_allocated = RD_ALLOCATED_VALUES;
@@ -641,7 +651,10 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
 }
 
 #define RD_IRI_BOX(val) \
-  { caddr_t box = rd_alloc_box (rd, sizeof (iri_id_t), DV_IRI_ID); *((iri_id_t*)box) = val; return box;}
+  { if (rd->rd_temp_fill + 16 < rd->rd_temp_max) \
+      { rd->rd_temp_fill += 16; *(int64*)(rd->rd_temp + rd->rd_temp_fill - 16) = DV_IRI_TAG_WORD_64; *(iri_id_t*)(rd->rd_temp + rd->rd_temp_fill - 8) = val; return (caddr_t)rd->rd_temp + rd->rd_temp_fill - 8;} \
+    else \
+      { caddr_t box = rd_alloc_box (rd, sizeof (iri_id_t), DV_IRI_ID); *((iri_id_t*)box) = val; return box;}}
 
 
 caddr_t
@@ -686,6 +699,12 @@ page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_
 	VL;
 	str = rd_alloc_box (rd, (int) len + vl2 + 1, DV_LONG_STRING);
 	memcpy (str, xx, len);
+	if (!vl2)
+	  {
+	    str[len - 1] += offset;
+	    str[len] = 0;
+	    return str;
+	  }
 	memcpy (str + len, xx2, vl2);
 	str[len + vl2 - 1] += offset;
 	str[len + vl2] = 0;

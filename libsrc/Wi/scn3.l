@@ -236,6 +236,8 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
    sparqre->sparqre_compiled_text = NULL;
    sparqre->sparqre_catched_error = NULL;
    sparqre->sparqre_super_sc = top_sc;
+   if (!rdf_no_string_inline)
+     yyerror ("This server version only works with RDF data with no strings inlined.  To convert an existing database, see the documentation concerning the clrdf23.sql script and upgrading pre 06.00.3126 databases. This takes a potentially long time.  To avoid this operation, use the server executable with which the database was created instead.");
    if (0 == cl_run_local_only && (1 != cl_rdf_inf_inited && THREAD_CURRENT_THREAD != cl_rdf_inf_init_thread))
      yyerror ("RDFNI");
    sparp_compile_subselect (sparqre);

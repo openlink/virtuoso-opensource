@@ -50,6 +50,7 @@ const_length_init (void)
 {
   db_buf_const_length[DV_SHORT_INT] = 2;
   db_buf_const_length[DV_LONG_INT] = 5;
+  db_buf_const_length[DV_INT64] = 9;
   db_buf_const_length[DV_DB_NULL] = 1;
   db_buf_const_length[DV_SINGLE_FLOAT] = 5;
   db_buf_const_length[DV_DOUBLE_FLOAT] = 9;
@@ -59,8 +60,13 @@ const_length_init (void)
   db_buf_const_length[DV_NUMERIC] = -1;
   db_buf_const_length[DV_WIDE] = -1;
   db_buf_const_length[DV_COMPOSITE] = -1;
-  db_buf_const_length[DV_BLOB] = 9;
-  db_buf_const_length[DV_BLOB_WIDE] = 9;
+  db_buf_const_length[DV_BLOB] = DV_BLOB_LEN;
+  db_buf_const_length[DV_BLOB_WIDE] = DV_BLOB_LEN;
+  db_buf_const_length[DV_IRI_ID] = 5;
+  db_buf_const_length[DV_IRI_ID_8] = 9;
+  db_buf_const_length[DV_RDF_ID] = 5;
+  db_buf_const_length[DV_RDF_ID_8] = 9;
+
 
   num_int64_max = numeric_allocate ();
   num_int64_min = numeric_allocate ();
@@ -111,6 +117,7 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
     case DV_SINGLE_FLOAT:
     case DV_OBJECT_REFERENCE:
     case DV_IRI_ID:
+    case DV_RDF_ID:
       *head_ret = 1;
       *len_ret = 4;
       break;
@@ -118,6 +125,7 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
     case DV_DOUBLE_FLOAT:
     case DV_INT64:
     case DV_IRI_ID_8:
+    case DV_RDF_ID_8:
       *head_ret = 1;
       *len_ret = 8;
       break;
@@ -158,7 +166,7 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
       break;
     case DV_RDF:
       *head_ret = 1;
-      *len_ret = rbs_length (buf);
+      *len_ret = rbs_length (buf) - 1;
       break;
     case DV_BOX_FLAGS:
       db_buf_length (buf+2, head_ret, len_ret);
@@ -532,6 +540,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
     {
       switch (dtp1)
 	{
+	case DV_RDF_ID:
 	case DV_LONG_INT:
 	  n1 = LONG_REF_NA (dv1 + 1) + offset;
 	  n2 = LONG_REF_NA (dv2 + 1);
@@ -612,6 +621,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
   {
     switch (dtp1)
       {
+      case DV_RDF_ID:
       case DV_LONG_INT:
 	ln1 = LONG_REF_NA (dv1 + 1) + offset;
 	collation = NULL;
@@ -619,6 +629,11 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
       case DV_INT64:
 	ln1 = INT64_REF_NA (dv1 + 1) + offset;
 	dtp1 = DV_LONG_INT;
+	collation = NULL;
+	break;
+      case DV_RDF_ID_8:
+	ln1 = INT64_REF_NA (dv1 + 1) + offset;
+	dtp1 = DV_RDF_ID;
 	collation = NULL;
 	break;
       case DV_SHORT_STRING_SERIAL:
@@ -723,6 +738,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
 
     switch (dtp2)
       {
+      case DV_RDF_ID:
       case DV_LONG_INT:
 	ln2 = LONG_REF_NA (dv2 + 1);
 	collation = NULL;
@@ -730,6 +746,11 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
       case DV_INT64:
 	ln2 = INT64_REF_NA (dv2 + 1);
 	dtp2 = DV_LONG_INT;
+	collation = NULL;
+	break;
+      case DV_RDF_ID_8:
+	ln2 = INT64_REF_NA (dv2 + 1);
+	dtp2 = DV_RDF_ID;
 	collation = NULL;
 	break;
       case DV_SHORT_STRING_SERIAL:
@@ -844,6 +865,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
       {
 	switch (dtp1)
 	  {
+	  case DV_RDF_ID:
 	  case DV_LONG_INT:
 	    return ((ln1 < ln2 ? DVC_LESS
 		    : (ln1 == ln2 ? DVC_MATCH
@@ -1962,6 +1984,7 @@ next_row:
 	{
 	  if (++it->itc_map_pos >= (*buf_ret)->bd_content_map->pm_count)
 	    {
+	      *leaf_ret = 0;
 	      it->itc_map_pos = ITC_AT_END;
 	      return DVC_INDEX_END;
 	    }

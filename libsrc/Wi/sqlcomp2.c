@@ -1739,7 +1739,7 @@ query_t *
 dbg_sql_compile_static (const char *file, int line, const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type)
 {
-  caddr_t *my_err = NULL;
+  caddr_t my_err = NULL;
   query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, &my_err, cr_type, NULL, NULL);
   if (NULL != err)
     err[0] = my_err;

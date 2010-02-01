@@ -130,6 +130,7 @@ struct dbe_table_s
     /* SQL statistics members */
     int64                tb_count;
     int64	tb_count_estimate;
+    double	tb_geo_area;
     int			tb_count_delta;
 
     /* row level security functions */
@@ -278,6 +279,7 @@ struct dbe_column_s
 #define CC_NONE 1
 #define CC_OFFSET 2
 #define CC_PREFIX 3
+#define CC_LAST_BYTE 4
 
 
 #define ROW_SET_NULL(row, cl, rv)		\
@@ -350,6 +352,9 @@ typedef struct key_spec_s
 #define KEY_MAX_VERSIONS KV_LONG_GAP  /* lowest special purpose kv number */
 #define KEY_VERSION_OVERFLOW -1
 
+#define KEY_PRIMARY 1
+#define KEY_PRIMARY_ORDER 2 /* starts with pk, more columns as dependent */
+
 struct dbe_key_s
 {
   char *		key_name;
@@ -365,6 +370,10 @@ struct dbe_key_s
   char			key_is_bitmap;
   char			key_simple_compress;
   key_ver_t		key_version;
+  char			key_is_col; /* column-wise layout */
+  char		key_no_pk_ref; /* the key does not ref the main row */
+  char		key_distinct; /* if no pk ref, do not put duplicates */
+  char		key_not_null; /* if a significant key part is nullable and null, do not make an index entry */
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
   dbe_key_t **		key_versions;
@@ -412,10 +421,12 @@ struct dbe_key_s
   dbe_col_loc_t *	key_key_var;
   dbe_col_loc_t *	key_row_fixed;
   dbe_col_loc_t *	key_row_var;
+  struct extent_map_s **	key_col_em; /* for col projection, column wise em */
+  short		key_n_key_compressibles;
+  short		key_n_row_compressibles;
   short		key_length_area[N_ROW_VERSIONS]; /* if key/row have variable length, the offset of the first length word */
   short		key_key_leaf[N_ROW_VERSIONS];
   short		key_row_compressed_start[N_ROW_VERSIONS]; /* compress offsets of non-key offset compressibles */
-  short		key_n_row_compressed[N_ROW_VERSIONS]; /* compress offsets of non-key offset compressibles */
   short		key_key_var_start[N_ROW_VERSIONS];	/* offset of first var on leaf ptr */
   short		key_row_var_start[N_ROW_VERSIONS];	/* offset of first var on leaf row */
   short		key_null_flag_start[N_ROW_VERSIONS];

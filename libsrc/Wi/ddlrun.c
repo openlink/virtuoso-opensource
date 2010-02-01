@@ -709,18 +709,19 @@ ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
 
 
 void
-ddl_key_bitmap (query_instance_t * qi, char * tb_name, key_id_t key_id)
+ddl_key_options (query_instance_t * qi, char * tb_name, key_id_t key_id, caddr_t * opts)
 {
   caddr_t err;
   static query_t * key_bitmap_qr;
   if (!ddl_std_procs_inited)
     return;
   if (! key_bitmap_qr)
-    key_bitmap_qr = sql_compile_static ("DB.DBA.ddl_bitmap_inx (?, ?)",
+    key_bitmap_qr = sql_compile_static ("DB.DBA.ddl_bitmap_inx (?, ?, ?)",
 			      bootstrap_cli, &err, SQLC_DEFAULT);
-  AS_DBA (qi, err = qr_rec_exec (key_bitmap_qr, qi->qi_client, NULL, qi, NULL, 2,
+  AS_DBA (qi, err = qr_rec_exec (key_bitmap_qr, qi->qi_client, NULL, qi, NULL, 3,
 		     ":0", tb_name, QRP_STR,
-		     ":1", (ptrlong) key_id, QRP_INT));
+				 ":1", (ptrlong) key_id, QRP_INT,
+				 ":2", box_copy_tree (opts), QRP_RAW));
   if (err != (caddr_t) SQL_SUCCESS)
     {
       QI_POISON_TRX (qi);
@@ -1301,6 +1302,10 @@ ddl_ensure_constraint_name_unique (const char *name, client_connection_t *cli, q
 
 void inx_opt_cluster (query_instance_t * qi, caddr_t tb_name, caddr_t inx, caddr_t * opts);
 
+#define KO_NO_PK(opt) \
+  inx_opt_flag (opt, "no_pk")
+
+
 
 void
 ddl_create_key (query_instance_t * qi,
@@ -1347,6 +1352,8 @@ ddl_create_key (query_instance_t * qi,
       /* oid_t col_id = unbox (lc_get_col (lc_key_parts, "K.KP_COL")); */
       /* int nth = (int) unbox (lc_get_col (lc_key_parts, "K.KP_NTH")); */
       char *c_name = box_string (lc_get_col (lc_key_parts, "C.COLUMN"));
+      if (KO_NO_PK (opts))
+	goto already_in;
       for (x = 0; x < n_parts; x++)
 	if (0 == CASEMODESTRCMP (c_name, parts[x]))
 	  {
@@ -1371,9 +1378,8 @@ ddl_create_key (query_instance_t * qi,
   dk_free_tree (list_to_array (to_free));
   dk_free_box (parts_box);
 
-  if (is_bitmap)
-    ddl_key_bitmap (qi, szTheTableName, key_id);
-  else if (is_unique)
+  ddl_key_options (qi, szTheTableName, key_id, opts);
+  if (is_unique)
     ddl_key_opt (qi, szTheTableName, key_id);
   ddl_table_changed (qi, szTheTableName);
   tn = box_dv_short_string (table);
@@ -2918,7 +2924,7 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
   atomic_mode (qi, 1, atomic);  /* global lock (log is disabled) */
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      if (qi_name_to_table (qi, table))
+      if (qi_name_to_table (qi, table) && !inx_opt_flag (opts, "no_fill"))
 	{
 	  ddl_build_index (qi, table, name, repl);
 	}
@@ -4894,9 +4900,17 @@ du_thread_t * recomp_thread;
 void
 qr_recompile_enter (int * is_entered)
 {
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (THREAD_CURRENT_THREAD == recomp_thread)
     return;
   mutex_enter (recomp_mtx);
+  if (!recomp_cli)
+    {
+      recomp_cli = client_connection_create ();
+      recomp_cli->cli_replicate = REPL_NO_LOG;
+      local_start_trx (recomp_cli);
+      local_commit_end_trx (recomp_cli);
+    }
   recomp_thread = THREAD_CURRENT_THREAD;
   *is_entered = 1;
 }
@@ -4905,6 +4919,7 @@ qr_recompile_enter (int * is_entered)
 void
 qr_recompile_leave (int * is_entered)
 {
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (*is_entered)
     {
       recomp_thread = NULL;
@@ -4913,6 +4928,30 @@ qr_recompile_leave (int * is_entered)
     }
 }
 
+
+void
+qr_recomp_rdf_inf_init (caddr_t * err_ret)
+{
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  if (cli && cli->cli_trx && cli->cli_trx->lt_threads)
+    {
+      QR_RESET_CTX
+	{
+	  vdb_enter_lt (cli->cli_trx);
+	  cl_rdf_inf_init (recomp_cli, err_ret);
+	  vdb_leave_lt (cli->cli_trx, NULL);
+	}
+      QR_RESET_CODE
+	{
+	  POP_QR_RESET;
+	  *err_ret = RST_ERROR == reset_code ? thr_get_error_code (THREAD_CURRENT_THREAD)
+	    : srv_make_new_error ("xxxxx", ".....", "unidentified error in cl rdf inf innit");
+	}
+      END_QR_RESET;
+    }
+  else
+    cl_rdf_inf_init (recomp_cli, err_ret);
+}
 
 query_t *
 qr_recompile (query_t * qr, caddr_t * err_ret)
@@ -4947,13 +4986,6 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  dk_free_tree (proc_name);
 	  new_qr = NULL;
 	}
-    }
-  if (!recomp_cli)
-    {
-      recomp_cli = client_connection_create ();
-      recomp_cli->cli_replicate = REPL_NO_LOG;
-      local_start_trx (recomp_cli);
-      local_commit_end_trx (recomp_cli);
     }
   org_user = recomp_cli->cli_user;
   org_qual = recomp_cli->cli_qualifier;
@@ -5057,7 +5089,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	{
 	  dk_free_tree (err);
 	  err = NULL;
-	  cl_rdf_inf_init (recomp_cli, &err);
+	  qr_recomp_rdf_inf_init (&err);
 	  if (!err)
 	    return qr_recompile (qr, err_ret);
 	}
@@ -6134,16 +6166,16 @@ const char * wsst =
 
 
 const char * bm_proc_1 =
-"create procedure ddl_bitmap_inx (in tb varchar, in bm_id integer)\n"
+"create procedure ddl_bitmap_inx (in tb varchar, in bm_id integer, in opts any)\n"
 "{\n"
 "  declare last_col, last_col_dtp int;\n"
+" if (not isarray (opts)) return;\n"
 "  whenever not found goto err;\n"
 "  select kp_col into last_col from sys_key_parts where kp_key_id = bm_id and kp_nth = (select max (kp_nth) from sys_key_parts where kp_key_id = bm_id);\n"
 "  select col_dtp into last_col_dtp from sys_cols where col_id = last_col;\n"
-"  if (last_col_dtp in (189, 243, 244, 247))\n"
-"    update sys_keys set key_options = vector ('bitmap') where key_id = bm_id;\n"
-"  else \n"
+"  if (position ('bitmap', opts) and last_col_dtp not in (189, 243, 244, 247))\n"
 "    signal ('42000', 'BM001: The last effective part of a bitmap index must be an int or iri_id');\n"
+"    update sys_keys set key_options = opts where key_id = bm_id;\n"
 "  return;\n"
 " err:\n"
 "  signal ('42000', 'Inconsistent bitmap key layout.');\n"

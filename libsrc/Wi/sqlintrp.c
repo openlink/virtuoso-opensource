@@ -721,6 +721,8 @@ qn_init (table_source_t * ts, caddr_t * inst)
       QNCAST (select_node_t, sel, ts);
       if (sel->sel_row_ctr)
 	qst_set_long (inst, sel->sel_row_ctr, 0);
+      if (sel->sel_row_ctr_array)
+	qst_set_long (inst, sel->sel_row_ctr_array, 0);
     }
 }
 
@@ -780,6 +782,8 @@ subq_init (query_t * subq, caddr_t * inst)
   END_DO_SET ();
   if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr)
     qst_set_long (inst, subq->qr_select_node->sel_row_ctr, 0);
+  if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr_array)
+    qst_set (inst, subq->qr_select_node->sel_row_ctr_array, NULL);
 }
 
 caddr_t

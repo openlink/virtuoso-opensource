@@ -589,6 +589,8 @@ typedef struct inx_op_s
 } inx_op_t;
 
 
+typedef int (*ts_alt_func_t)(struct table_source_s * ts, caddr_t * inst, caddr_t * state);
+
 typedef struct table_source_s
   {
     data_source_t	src_gen;
@@ -603,14 +605,24 @@ typedef struct table_source_s
     bitf_t		ts_is_random:1; /* random search */
     bitf_t 		ts_no_blobs:1;
     bitf_t		ts_need_placeholder:1;
+    bitf_t		ts_is_alternate:2;
+    bitf_t 		ts_alternate_inited:1;
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
     inx_locality_t	ts_il;
     hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
+    ts_alt_func_t 	ts_alternate_test;
+    struct table_source_s *	ts_alternate;
+    state_slot_t*		ts_alternate_cd;
     short		ts_max_rows; /* if last of top n and a single state makes this many, then can end whole set */
     short		ts_prefetch_rows; /* recommend cluster end batch   after this many because top later */
   } table_source_t;
+
+/* for alternate index path, flag whether ts is 1st or 2nd */
+#define TS_ALT_PRE 1
+#define TS_ALT_POST 2
+
 
 typedef table_source_t sort_read_node_t;
 
@@ -679,6 +691,7 @@ typedef struct stage_node_s
   state_slot_t *	stn_current_input;
   int			stn_read_to; /* qst int, position in current input for the next clo of input */
   int			stn_out_bytes; /* qst int, bytes send to others by all non-first stn's of the dfg.  Cap on intm res size  */
+  int			stn_reset_ctr;
   dk_set_t		stn_in_slots; /* same as stn params but now used to read rows in input into */
   char			stn_need_enlist; /* excl parts later in the chain, enlist from start */
 } stage_node_t;
@@ -1009,6 +1022,7 @@ typedef struct select_node_s
     state_slot_t *	sel_top;
     state_slot_t *	sel_top_skip;
     state_slot_t *	sel_row_ctr;
+    state_slot_t *	sel_row_ctr_array;
     state_slot_t **	sel_tie_oby;
     state_slot_t *	sel_set_no; /* in array exec'd dt no if set this row belongs to */
     state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */

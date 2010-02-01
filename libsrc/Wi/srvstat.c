@@ -97,6 +97,7 @@ long tc_page_fill_hash_overflow;
 long tc_key_sample_reset;
 long tc_pl_moved_in_reentry;
 long tc_enter_transiting_bm_inx;
+long tc_geo_delete_retry, tc_geo_delete_missed;
 extern long tc_aio_seq_read;
 extern long tc_aio_seq_write;
 
@@ -1259,6 +1260,8 @@ stat_desc_t stat_descs [] =
     {"tc_key_sample_reset", &tc_key_sample_reset},
     {"tc_pl_moved_in_reentry", &tc_pl_moved_in_reentry},
     {"tc_enter_transiting_bm_inx", &tc_enter_transiting_bm_inx},
+    {"tc_geo_delete_retry", &tc_geo_delete_retry},
+    {"tc_geo_delete_missed", &tc_geo_delete_missed},
     {"tc_aio_seq_write", &tc_aio_seq_write},
     {"tc_aio_seq_read", &tc_aio_seq_read},
     {"tc_read_absent_while_finalize", &tc_read_absent_while_finalize},
@@ -1506,6 +1509,7 @@ stat_desc_t dbf_descs [] =
     {"cl_dfg_batch_bytes", &cl_dfg_batch_bytes, SD_INT32},
     {"cl_res_buffer_bytes", &cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", &cl_batches_per_rpc, SD_INT32},
+    {"cl_rdf_inf_inited", &cl_rdf_inf_inited, SD_INT32},
     {"enable_mem_hash_join", &    enable_mem_hash_join, SD_INT32},
     {"enable_dfg", &enable_dfg, SD_INT32},
     {"enable_setp_partition", &enable_setp_partition, SD_INT32},

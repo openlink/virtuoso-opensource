@@ -2030,14 +2030,14 @@ key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
   {
     caddr_t content = rb->rb_box;
     dtp_t cdtp = DV_TYPE_OF (content);
-    
+
     if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
       {
 	QNCAST (rdf_bigbox_t, rbb, rb);
-	
+
 	rb->rb_ro_id = key_find_rdf_obj_1 (rb, rbb->rbb_chksum);
       }
-    else 
+    else
       {
 	if (DV_GEO == cdtp)
 	  {
@@ -2052,7 +2052,7 @@ key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
 	    rb->rb_ro_id = key_find_rdf_obj_1 (rb, trid);
 	    dk_free_box (trid);
 	  }
-	else 
+	else
 	  rb->rb_ro_id = key_find_rdf_obj_1 (rb, rb->rb_box);
 	dk_free_box (allocd_content);
       }

@@ -590,6 +590,30 @@ leave_and_ret:
 }
 #endif
 
+caddr_t
+sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname)
+{
+  caddr_t *place, res;
+  mutex_enter (rdf_graph_iri2id_dict_htable->ht_mutex);
+  place = (caddr_t *)id_hash_get (rdf_graph_iri2id_dict_htable, (caddr_t)(&qname));
+  res = (NULL == place) ? NULL : box_copy_tree (place[0]);
+  mutex_leave (rdf_graph_iri2id_dict_htable->ht_mutex);
+  return res;
+}
+
+caddr_t
+sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid)
+{
+  char iid_box_buf[ALIGN_16 (sizeof (iri_id_t)) + BOX_AUTO_OVERHEAD];
+  caddr_t boxed_iid, *place, res;
+  BOX_AUTO (boxed_iid, iid_box_buf, sizeof (iri_id_t), DV_IRI_ID);
+  ((iri_id_t *)boxed_iid)[0] = iid;
+  mutex_enter (rdf_graph_id2iri_dict_htable->ht_mutex);
+  place = (caddr_t *)id_hash_get (rdf_graph_id2iri_dict_htable, (caddr_t)(&iid));
+  res = (NULL == place) ? NULL : box_copy_tree (place[0]);
+  mutex_leave (rdf_graph_id2iri_dict_htable->ht_mutex);
+  return res;
+}
 
 static query_t *iri_to_id_nosignal_cached_qr = NULL;
 static const char *iri_to_id_nosignal_text = "DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (?)";
@@ -1231,6 +1255,8 @@ spar_filter_is_freetext (SPART *filt)
     return SPAR_FT_XPATH_CONTAINS;
   if (!strcmp (fname, "bif:xquery_contains"))
     return SPAR_FT_XQUERY_CONTAINS;
+  if (!strcmp (fname, "bif:spatial_contains"))
+    return SPAR_GEO_CONTAINS;
   return 0;
 }
 
@@ -1622,7 +1648,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
 }
 
 SPART **
-spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset)
+spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SPART *offset_expn)
 {
   int retval_ctr;
   dk_set_t vars = NULL;
@@ -1635,7 +1661,11 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   SPART **opts;
   caddr_t limofs_name;
   const char *descr_name;
-  int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
+  int need_limofs_trick = (
+    (DV_LONG_INT != DV_TYPE_OF (limit_expn)) ||
+    (DV_LONG_INT != DV_TYPE_OF (offset_expn)) ||
+    (SPARP_MAXLIMIT != unbox ((caddr_t)(limit_expn))) ||
+    (0 != unbox ((caddr_t)(offset_expn)) ) );
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
   for (retval_ctr = BOX_ELEMENTS_INT (retvals); retval_ctr--; /* no step */)
     {
@@ -1730,10 +1760,14 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
 }
 
 SPART *
-spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
+spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
 {
   if ((NULL != having) && (NULL == groupings))
     spar_error (sparp, "HAVING clause should be preceeded by a GROUP BY clause");
+  if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (limit)) && (SPAR_LIT == limit->type) && (DV_LONG_INT == DV_TYPE_OF (limit->_.lit.val)))
+    limit = (SPART *)(limit->_.lit.val);
+  if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (offset)) && (SPAR_LIT == offset->type) && (DV_LONG_INT == DV_TYPE_OF (offset->_.lit.val)))
+    offset = (SPART *)(offset->_.lit.val);
   return spartlist (sparp, 7, SPAR_WHERE_MODIFS, pattern, groupings, having, order, limit, offset);
 }
 
@@ -1767,8 +1801,8 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   SPART **groupings = wm->_.wm.groupings;
   SPART *having = wm->_.wm.having;
   SPART **order = wm->_.wm.obys;
-  caddr_t limit = wm->_.wm.lim;
-  caddr_t offset = wm->_.wm.ofs;
+  SPART *limit = wm->_.wm.lim;
+  SPART *offset = wm->_.wm.ofs;
 #ifndef NDEBUG
   if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
     spar_internal_error (sparp, "Ill wm");
@@ -1871,7 +1905,7 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
 
 SPART *
 spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, caddr_t limit, caddr_t offset)
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
 {
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
@@ -2133,7 +2167,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options, 0x1 | banned_tricks);
     }
   if ((NULL != inf_ctx) && (SPAR_QNAME == SPART_TYPE (predicate)))
-    {
+        {
       caddr_t p_name = predicate->_.qname.val;
       caddr_t *propprops = sparp->sparp_env->spare_inference_ctx->ric_prop_props;
       caddr_t *invlist = sparp->sparp_env->spare_inference_ctx->ric_inverse_prop_pair_sortedalist;
@@ -2191,7 +2225,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, pname,
               (SPART **)t_list_concat ((caddr_t)t_list (2, subject, object), (caddr_t)options) ) );
-          dk_free_tree (spec_pred_names);
+	  dk_free_tree (spec_pred_names);
           return NULL;
         }
       dk_free_tree (spec_pred_names);
@@ -2448,7 +2482,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
   dk_set_t *set_ptr;
   int *is_locked_ptr = NULL;
   SPART *dupe_found = NULL;
-  caddr_t **group_members_ptr;
+  caddr_t **group_members_ptr = NULL;
   SPART *precode;
   switch (subtype)
     {
@@ -2506,11 +2540,14 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
     }
   if (rdf_graph_group_dict_htable->ht_count)
     {
-      caddr_t iid = sparp_iri_to_id_nosignal (sparp, iri);
+      caddr_t iid = sparp_graph_sec_iri_to_id_nosignal (sparp, iri);
+      if (NULL != iid)
+        {
+          mutex_enter (rdf_graph_group_dict_htable->ht_mutex);
       group_members_ptr = (caddr_t **)id_hash_get (rdf_graph_group_dict_htable, (caddr_t)(&iid));
+          mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
+        }
     }
-  else
-    group_members_ptr = NULL;
   if (NULL != group_members_ptr)
     {
       switch (subtype)
@@ -3003,7 +3040,7 @@ spar_graph_static_perms (sparp_t *sparp, caddr_t graph_iri, int req_perms)
   caddr_t boxed_uid;
   id_hash_t *dflt_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
   id_hash_t *dflt_other_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
-  caddr_t *hit, *potential_hit;
+  caddr_t *hit = NULL, *potential_hit;
   int res = 0, potential_res = 0, potential_res_is_user_specific = 0;
   int graph_is_private = 0;
   query_t *query_with_deps = NULL;
@@ -3021,15 +3058,22 @@ static caddr_t boxed_8192_iid = NULL;
     query_with_deps = sparp->sparp_sparqre->sparqre_super_sc->sc_cc->cc_super_cc->cc_query;
   if (NULL != graph_iri)
     {
-      caddr_t boxed_graph_iid = sparp_iri_to_id_nosignal (sparp, graph_iri);
+      caddr_t boxed_graph_iid = sparp_graph_sec_iri_to_id_nosignal (sparp, graph_iri);
+      if (NULL != boxed_graph_iid)
+        {
+          mutex_enter (rdf_graph_group_of_privates_dict_htable->ht_mutex);
       if (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&(boxed_graph_iid))))
         {
           graph_is_private = 1;
           dflt_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
           dflt_other_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
         }
-/*!!! TBD: add retrieval of permissions of specific user on specific graph */
+          mutex_leave (rdf_graph_group_of_privates_dict_htable->ht_mutex);
+/*!!! maybe TBD: add retrieval of permissions of specific user on specific graph */
+          mutex_enter (dflt_perms_of_user->ht_mutex);
       hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_graph_iid)));
+          mutex_leave (dflt_perms_of_user->ht_mutex);
+        }
       if (NULL != hit)
         {
           if (NULL != query_with_deps)
@@ -3040,7 +3084,9 @@ static caddr_t boxed_8192_iid = NULL;
           return unbox (hit[0]);
         }
     }
+  mutex_enter (dflt_perms_of_user->ht_mutex);
   hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid)));
+  mutex_leave (dflt_perms_of_user->ht_mutex);
   if ((NULL != query_with_deps) || (NULL == graph_iri))
     {
       potential_hit = (caddr_t *)id_hash_get (dflt_other_perms_of_user, (caddr_t)(&(boxed_uid)));
@@ -3067,7 +3113,9 @@ static caddr_t boxed_8192_iid = NULL;
         return res;
       return res & potential_res;
     }
+  mutex_enter (rdf_graph_public_perms_dict_htable->ht_mutex);
   hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_8192_iid : &boxed_zero_iid));
+  mutex_leave (rdf_graph_public_perms_dict_htable->ht_mutex);
   if (NULL != hit)
     res = unbox (hit[0]);
   else res = RDF_GRAPH_PERM_DEFAULT;

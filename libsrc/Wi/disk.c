@@ -2799,6 +2799,9 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     fd = dbs->dbs_fd;
   memset (&db, 0, sizeof (db));
   strcpy_ck (db.db_ver, DBMS_SRV_VER_ONLY);
+  if (!rdf_no_string_inline)
+    strcpy_ck (db.db_generic, "3100");
+  else
   strcpy_ck (db.db_generic, DBMS_STORAGE_VER);
   db.db_registry = dbs->dbs_registry;
   db.db_extent_set = dbs->dbs_extent_set->bd_page;
@@ -3587,6 +3590,15 @@ wi_open (char *mode)
   wi_open_dbs ();
   mt_write_init ();
   sqlo_tc_init ();
+  if (wi_inst.wi_master->dbs_initial_gen >= 3126)
+    rdf_no_string_inline = 1;
+  else
+    {
+      IN_TXN;
+      if (registry_get ("rdf_no_string_inline"))
+	rdf_no_string_inline = 1;
+      LEAVE_TXN;
+    }
 }
 
 
@@ -3698,6 +3710,7 @@ wi_init_globals (void)
   dbs_autocompact_mtx = mutex_allocate ();
   dk_mem_hooks (DV_INDEX_TREE, box_non_copiable, it_free_cb, 0);
   dk_mem_hooks (DV_ITC, box_non_copiable, itc_free_cb, 0);
+  alt_ts_mtx = mutex_allocate ();
 }
 
 

@@ -1393,7 +1393,8 @@ table_source_input (table_source_t * ts, caddr_t * inst,
   volatile int any_passed = 1;
   query_instance_t *qi = (query_instance_t *) inst;
   int rc, start;
-
+  if (ts->ts_alternate_test && ts->ts_alternate_test (ts, inst, state))
+    return;
   if (ts->ts_inx_op)
     {
       inx_op_source_input (ts, inst, state);
@@ -1896,7 +1897,8 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	{
 	  DO_SET (dbe_key_t *, key, &tb->tb_keys)
 	  {
-	    if (key == cr_key || key->key_is_primary)
+	    if (key == cr_key || KEY_PRIMARY == key->key_is_primary
+		|| key->key_distinct)
 	      goto next_key;
 	    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
 	    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);

@@ -2558,8 +2558,8 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       tgt->_.req_top.groupings = sparp_treelist_full_copy (sparp, orig->_.req_top.groupings, parent_gp);
       tgt->_.req_top.having = sparp_tree_full_copy (sparp, orig->_.req_top.having, parent_gp);
       tgt->_.req_top.order = sparp_treelist_full_copy (sparp, orig->_.req_top.order, parent_gp);
-      tgt->_.req_top.limit = t_box_copy (orig->_.req_top.limit);
-      tgt->_.req_top.offset = t_box_copy (orig->_.req_top.offset);
+      tgt->_.req_top.limit = sparp_tree_full_copy (sparp, orig->_.req_top.limit, parent_gp);
+      tgt->_.req_top.offset = sparp_tree_full_copy (sparp, orig->_.req_top.offset, parent_gp);
       return tgt;
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
@@ -3994,10 +3994,10 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.req_top.sources, ses, indent+2, "SOURCES", -2);
 	      spart_dump (tree->_.req_top.pattern, ses, indent+2, "PATTERN", -1);
 	      spart_dump (tree->_.req_top.groupings, ses, indent+2, "GROUPINGS", -2);
-	      spart_dump (tree->_.req_top.having, ses, indent+2, "HAVING", -1);
+	      spart_dump (tree->_.req_top.having, ses, indent+2, "HAVING", -2);
 	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -2);
-	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", 0);
-	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", 0);
+	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", -1);
+	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", -1);
 	      break;
 	    }
 	  case SPAR_VARIABLE:

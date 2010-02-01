@@ -724,7 +724,7 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
   caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
   rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
   if (!place && !create)
-    sqlr_new_error ("42000", "RDFI.", "No rdf inf ctx %s", ctx_name);
+    sqlr_new_error ("42000", "RDFI.", "No rdf inf ctx %.200s", ctx_name);
   if (!place)
     {
       caddr_t n2 = box_copy (ctx_name);
@@ -734,12 +734,15 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
       ctx = c1;
       ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
       ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
+      ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (text_count_t), treehash, treehashcmp);
+      /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);*/
+      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
       id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
       id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
-      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
-      ctx->ric_mtx = mutex_allocate ();
-      ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (text_count_t), treehash, treehashcmp);
       id_hash_set_rehash_pct (ctx->ric_samples, 200);
+      id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
+      /*id_hash_set_rehash_pct (ctx->ric_prop_props, 200);*/
+      ctx->ric_mtx = mutex_allocate ();
       return ctx;
     }
   else
@@ -1293,9 +1296,15 @@ sqlg_rdf_ts_replace_ssl (table_source_t * ts, state_slot_t * old, state_slot_t *
 	{
 	  sp_list_replace_ssl  (ks->ks_spec.ksp_spec_array, old, new, col_id);
 	  sp_list_replace_ssl  (ks->ks_row_spec, old, new, col_id);
+	  if (ks->ks_key->key_no_pk_ref)
+	    {
+	      table_source_t * next = (table_source_t*) qn_next ((data_source_t*)ts);
+	      if (next && IS_TS (next))
+		sqlg_rdf_ts_replace_ssl (next, old, new, col_id, inxop_inx);
+	    }
 	}
     }
-  else
+  else if (IS_QN (ts, hash_source_input))
     {
       hash_source_t * hs = (hash_source_t *) ts;
       int inx;
@@ -1996,7 +2005,7 @@ sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** h
   /* if the ts has in iters or rdf inf iters before it, make the outermost iter node handle the outer output and add a node after the ts to set the any passed flag */
   data_source_t * first_iter = NULL;
   data_source_t * qn = *head;
-  if (1 != cl_run_local_only)
+  if (1 != cl_run_local_only || tb_dfe->_.table.index_path)
     {
       sqlg_cl_outer_with_iters (tb_dfe, ts, head);
       return;

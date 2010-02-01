@@ -499,9 +499,15 @@ sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl
 }
 
 
+
+
+
+
 void
-sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
+sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
 {
+  ST ** geo_args;
+  int gtype;
   df_elt_t * text_pred = tb_dfe->_.table.text_pred;
   int ctype = text_pred->_.text.type, inx;
   op_table_t *ot = dfe_ot (tb_dfe);
@@ -512,7 +518,8 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
   dbe_key_t * text_key = tb_text_key (ot->ot_table);
   SQL_NODE_INIT (text_node_t, txs, txs_input, txs_free);
   /* make a col predicate to drive the ts, then generate a text node that will instantiate the variable  */
-  if (tb_dfe->_.table.is_text_order)
+  txs->txs_card = text_pred->dfe_arity;
+  if (tb_dfe->_.table.is_text_order && !ic)
     {
       df_elt_t *text_pred = tb_dfe->_.table.text_pred;
       text_id = sqlc_new_temp (sc, "text_id", DV_LONG_INT);
@@ -527,13 +534,17 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe)
       df_elt_t *col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name));
       text_id = sqlg_dfe_ssl (so, col_dfe);
       text_id = sqlg_rdf_text_check (tb_dfe, txs, text_id);
+      if (tb_dfe->_.table.is_text_order)
+	col_dfe->dfe_is_placed = DFE_GEN;
     }
   txs->txs_cached_string = sqlc_new_temp (sc, "text_search_cached_exp_string", DV_SHORT_STRING);
   txs->txs_cached_compiled_tree = sqlc_new_temp (sc, "text_search_cached_tree", DV_ARRAY_OF_POINTER);
   txs->txs_cached_dtd_config = sqlc_new_temp (sc, "text_search_dtd_config", DV_ARRAY_OF_POINTER);
-  txs->txs_table =text_key->key_text_table;
+    txs->txs_table =text_key->key_text_table;
   txs->txs_d_id = text_id;
   txs->txs_is_driving = tb_dfe->_.table.is_text_order;
+  if (ot->ot_table && (0 == stricmp (ot->ot_table->tb_name, "DB.DBA.RDF_QUAD") || 0 == stricmp (ot->ot_table->tb_name, "DB.DBA.R2")))
+    txs->txs_is_rdf = 1;
   if (ctype == 'x')
     {
       txs->txs_xpath_text_exp = sqlc_new_temp (sc, "xpath_text_exp", DV_SHORT_STRING);
@@ -625,7 +636,11 @@ sqlg_xpath_node (sqlo_t * so, df_elt_t * tb_dfe)
   tb_dfe->_.table.xpath_node = (data_source_t *) xn;
   if (tb_dfe->_.table.text_node && tb_dfe->_.table.is_xcontains)
     {
-      ((text_node_t *) tb_dfe->_.table.text_node)->txs_xpath_node = xn;
+      QNCAST (text_node_t, txs, tb_dfe->_.table.text_node);
+      txs->txs_xn_pred_type =
+	txs->txs_xn_pred_type = xn->xn_predicate_type;
+      txs->txs_xn_xq_compiled = xn->xn_compiled_xqr;
+      txs->txs_xn_xq_source = xn->xn_compiled_xqr_text;
       xn->xn_text_node = (text_node_t *) tb_dfe->_.table.text_node;
       xn->src_gen.src_after_test = tb_dfe->_.table.text_node->src_after_test;
       tb_dfe->_.table.text_node->src_after_test = NULL;
@@ -643,7 +658,9 @@ sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts)
   text_node_t * txs = (text_node_t *) tb_dfe->_.table.text_node;
   key_source_t * order_ks = ts->ts_order_ks;
   if (!ts->ts_main_ks
-      && !ts->ts_order_ks->ks_row_spec && !tb_dfe->_.table.xpath_node)
+      && !ts->ts_order_ks->ks_row_spec && !tb_dfe->_.table.xpath_node
+      && !order_ks->ks_key->key_distinct
+      && !txs->txs_is_rdf)
     {
       dbe_column_t * col;
       dk_set_t cols = order_ks->ks_out_cols;
@@ -846,7 +863,7 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 
 
 data_source_t *
-sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
+sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe)
 {
   sql_comp_t * sc = so->so_sc;
   comp_context_t *cc = so->so_sc->sc_cc;
@@ -869,11 +886,11 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
     }
   END_DO_SET ();
 #ifdef BIF_XML
-  if (ot->ot_text_score)
+  if (tb_dfe->_.table.text_pred || ot->ot_text_score)
     {
       if (!tb_dfe->_.table.text_pred)
 	SQL_GPF_T1 (cc, "The contains pred present and not placed");
-      sqlg_text_node (so, tb_dfe);
+      sqlg_text_node (so, tb_dfe, NULL);
       order_key = tb_dfe->_.table.key;
       if (tb_dfe->_.table.is_text_order)
 	{
@@ -996,6 +1013,16 @@ hs_make_signature (setp_node_t * setp, dbe_table_t * tb)
   hsi->hsi_isolation = NULL;
 #endif
   return hsi;
+}
+
+
+data_source_t *
+sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
+{
+  if (tb_dfe->_.table.index_path)
+    return sqlg_make_path_ts (so, tb_dfe);
+  else
+    return sqlg_make_np_ts (so, tb_dfe);
 }
 
 
@@ -1598,6 +1625,8 @@ sqlg_make_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t *pre_
       sqs->sqs_set_no = NULL;
     qr->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
     sqs->sqs_after_join_test = sqlg_pred_body (so, dt_dfe->_.sub.after_join_test);
+    if (qr->qr_cl_run_started )
+      sc->sc_cc->cc_query->qr_cl_run_started = qr->qr_cl_run_started;
     sc->sc_order = old_order;
     return ((data_source_t *) sqs);
   }
@@ -2754,10 +2783,10 @@ bitmap_index_box);
   DO_SET (df_elt_t *, dep_dfe, &out1)
     {
       state_slot_t *out = dep_dfe->dfe_ssl;
-      sqlc_copy_ssl_if_constant (sc, &dep_dfe->dfe_ssl);
       if (out)
 	{
 	  ptrlong nth_key = dk_set_position (setp->setp_keys, (caddr_t) out);
+	  sqlc_copy_ssl_if_constant (sc, &dep_dfe->dfe_ssl);
 	  if (SSL_CONSTANT == out->ssl_type)
 	    continue;
 	  if (-1 == nth_key)

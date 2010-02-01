@@ -188,9 +188,9 @@ no_attrs:
   ddl_sel_for_effect ("select count (*) from SYS_ELEMENT_MAP where xmls_element_col (EM_TABLE, EM_COL_ID, EM_A_ID)");
   tb = sch_name_to_table (isp_schema (NULL), "DB.DBA.SYS_VT_INDEX");
   if (tb && tb_name_to_column (tb, LAST_FTI_COL))
-    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR))");
+    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR), VI_OPTIONS)");
   else
-    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, NULL, deserialize (VI_ID_CONSTR))");
+    ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, NULL, deserialize (VI_ID_CONSTR), VI_OPTIONS)");
 #ifdef OLD_VXML_TABLES
   xp_comp_init ();
 #endif
@@ -487,6 +487,19 @@ bif_vt_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_error ("S0022", "no index in vt_index");
   id_col = tb_name_to_column (tb, id_col_name);
   text_col = tb_name_to_column (tb, text_col_name);
+  if (!text_col)
+    {
+      /* text col is always case insensitive.  Trick to allow geo and ft inxon the same o col of rdf_quad */
+      DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
+	{
+	  if (0 == stricmp (col->col_name, text_col_name))
+	    {
+	      text_col = col;
+	      break;
+	    }
+	}
+      END_DO_SET();
+    }
   if (!id_col || !text_col)
     sqlr_error ("S0002", "No column in vt_index");
     {
@@ -643,7 +656,7 @@ qi_tb_xml_schema (query_instance_t * qi, char *read_tb)
   if (tb && !tb_name_to_column (tb, LAST_FTI_COL))
     return NULL;
 
-  err = qi_sel_for_effect (qi, "select __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR)) "
+  err = qi_sel_for_effect (qi, "select __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR), VI_OPTIONS) "
 		     " from DB.DBA.SYS_VT_INDEX where VI_TABLE = ?", 1,
 		     ":0", read_tb, QRP_STR);
   if (err)

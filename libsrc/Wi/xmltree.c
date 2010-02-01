@@ -8182,6 +8182,41 @@ xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str)
 
 
 caddr_t
+txs_xn_text_query (text_node_t * txs, query_instance_t * qi, caddr_t xp_str)
+{
+  /* with a combination of text_node, table_source, xp_node
+   * the txs calls this to get the text part of the query */
+  caddr_t * qst = (caddr_t *) qi;
+  caddr_t err = NULL;
+  xp_query_t * xqr;
+  caddr_t prev_text = qst_get (qst, txs->txs_xn_xq_source);
+  if (prev_text && 0 == strcmp (prev_text, xp_str))
+    xqr = (xp_query_t *) qst_get (qst, txs->txs_xn_xq_compiled);
+  else
+    {
+      caddr_t _str = DV_WIDESTRINGP (xp_str) ?
+	      box_wide_as_utf8_char (xp_str, box_length (xp_str) / sizeof (wchar_t) - 1, DV_SHORT_STRING) :
+	      NULL;
+      caddr_t str_to_parse = (_str ? _str : xp_str);
+      if (!DV_STRINGP(str_to_parse) && (NULL != str_to_parse))
+        {
+          dk_free_box (_str);
+          sqlr_error ("37000", "XPATH interpreter: input text is not a string");
+        }
+      xqr = xp_query_parse (qi, str_to_parse, txs->txs_xn_pred_type, &err, &xqre_default);
+      dk_free_box (_str);
+      if (err)
+	sqlr_resignal (err);
+      if (qi->qi_query->qr_no_cast_error)
+	xqr->xqr_is_quiet = 1;
+      qst_set (qst, txs->txs_xn_xq_compiled, (caddr_t) xqr);
+      qst_set (qst, txs->txs_xn_xq_source, box_copy_tree (xp_str));
+    }
+  return ((caddr_t) xpt_text_exp (xqr->xqr_tree, NULL));
+}
+
+
+caddr_t
 xml_deserialize_from_blob (caddr_t bh, lock_trx_t *lt, caddr_t *qst, caddr_t uri)
 {
   int bh_sort;

@@ -1002,7 +1002,18 @@ dbe_key_layout_1 (dbe_key_t * key)
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
 				   && inx_opt_flag (key->key_options, "bitmap"))
     key->key_is_bitmap = 1;
-
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
+      && inx_opt_flag (key->key_options, "no_pk"))
+    key->key_no_pk_ref = 1;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
+      && inx_opt_flag (key->key_options, "distinct"))
+    key->key_distinct = 1;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
+      && inx_opt_flag (key->key_options, "not_null"))
+    key->key_not_null = 1;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
+      && inx_opt_flag (key->key_options, "column"))
+    key->key_is_col = 1;
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       if (inx >= key->key_n_significant)
@@ -1057,8 +1068,13 @@ dbe_key_layout_1 (dbe_key_t * key)
       key_null_area = kf_fill;
       kf_fill += ALIGN_8 (key_nullables) / 8;
     }
+#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
+  kf_fill = ALIGN_8 (kf_fill);
+  key->key_length_area[0] = kf_fill;
+#else
   kf_fill = ALIGN_2 (kf_fill);
   key->key_length_area[0] = ALIGN_2 (kf_fill);
+#endif
   kv_fill = 0;
   key_place_var (key, &kv_fill, &null_fill, &key_var, keys);
 #ifdef DEBUG
@@ -1078,9 +1094,12 @@ dbe_key_layout_1 (dbe_key_t * key)
 #ifdef DEBUG
   n_placed += dk_set_length (row_var);
 #endif
+#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
+  rf_fill = ALIGN_8 (kf_fill + kv_fill);
+#else
   rf_fill = ALIGN_2 (kf_fill + kv_fill);
+#endif
   key->key_row_compressed_start[0] = rf_fill;
-  key->key_n_row_compressed[0] = key_count_compressed (deps);
   key_place_fixed (key, &rf_fill, &null_fill, &row_fixed, deps);
 #ifdef DEBUG
   n_placed += dk_set_length (row_fixed);
@@ -1125,7 +1144,6 @@ dbe_key_version_layout (dbe_key_t * key, row_ver_t rv, dk_set_t parts)
   key->key_key_leaf[rv] = kv->key_key_leaf[0];
   key->key_key_leaf[rv] = kv->key_key_leaf[0];
   key->key_row_compressed_start[rv] = kv->key_row_compressed_start[0];
-  key->key_n_row_compressed[rv] =   kv->key_n_row_compressed[0];
   key->key_key_var_start[rv] =   kv->key_key_var_start[0];
   key->key_row_var_start[rv] =   kv->key_row_var_start[0];
   key->key_null_flag_start[rv] =   kv->key_null_flag_start[0];
@@ -1347,6 +1365,8 @@ dbe_key_compression (dbe_key_t * key)
 void
 key_set_simple_compression (dbe_key_t * key)
 {
+  key->key_n_key_compressibles  = dk_set_length (key->key_key_compressibles);
+  key->key_n_row_compressibles  = dk_set_length (key->key_row_compressibles);
   if (dk_set_length (key->key_key_compressibles) == dk_set_length (key->key_row_compressibles)
       && !key->key_key_pref_compressibles && !key->key_row_pref_compressibles)
     key->key_simple_compress = 1;

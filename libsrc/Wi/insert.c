@@ -639,6 +639,13 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
  searched:
   if (NO_WAIT != itc_insert_lock (it, buf, &res))
     goto reset_search;
+  if (it->itc_insert_key->key_distinct && DVC_MATCH == res)
+    {
+      /* if key is distinct values only hitting a duplicate does nothing and returns success */
+      page_leave_outside_map (buf);
+      return DVC_LESS;
+    }
+
  re_insert:
   if (BUF_NEEDS_DELTA (buf))
     {
@@ -1318,7 +1325,7 @@ wi_check_all_compact (int age_limit)
   dbs_autocompact_in_progress = 1;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
-      it_check_compact (it, age_limit);
+	it_check_compact (it, age_limit);
     }
   END_DO_SET();
   dbs_autocompact_in_progress = 0;

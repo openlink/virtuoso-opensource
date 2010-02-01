@@ -471,8 +471,8 @@ typedef struct spar_tree_s
         SPART **groupings;
         SPART *having;
         SPART **order;
-        caddr_t limit;
-        caddr_t offset;
+        SPART *limit;
+        SPART *offset;
         sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
       } req_top;
     struct {
@@ -541,8 +541,8 @@ typedef struct spar_tree_s
         SPART **groupings;	/*!< Array of groupings */
         SPART *having;		/*!< Expression of HAVING clause, or NULL */
         SPART **obys;		/*!< Array of ORDER BY criteria */
-        caddr_t lim;		/*!< Boxed LIMIT value */
-        caddr_t ofs;		/*!< Boxed OFFSET value */
+        SPART *lim;		/*!< Boxed LIMIT value or an expression tree */
+        SPART *ofs;		/*!< Boxed OFFSET value or an expression tree */
       } wm;
   } _;
 } sparp_tree_t;
@@ -596,6 +596,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPAR_FT_XCONTAINS	12
 #define SPAR_FT_XPATH_CONTAINS	13
 #define SPAR_FT_XQUERY_CONTAINS	14
+#define SPAR_GEO_CONTAINS	21
 
 extern caddr_t spar_var_name_of_ret_column (SPART *tree);
 extern caddr_t spar_alias_name_of_ret_column (SPART *tree);

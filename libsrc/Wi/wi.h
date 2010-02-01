@@ -552,6 +552,8 @@ typedef struct out_map_s
   index_tree_t *	itc_tree; \
   bitmap_pos_t		itc_bp
 
+#define itc_row_no itc_bp.bp_value
+
 #define ITC_PLACEHOLDER_BYTES \
 	((int)(ptrlong)(&((it_cursor_t *)0x0)->itc_to_reset))
 
@@ -1167,8 +1169,8 @@ extern buffer_desc_t * bounds_check_buf;
 
 
 
-#define PFH_N_WAYS 8
-#define PFH_MAX_COLS 10
+#define PFH_N_WAYS 29
+#define PFH_MAX_COLS 5
 #define PFH_N_SHORTS 4096
 #define PFH_KV_ANY 255 /* in pfh_)kv when the kv is not yet set */
 

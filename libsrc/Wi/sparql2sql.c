@@ -2961,7 +2961,7 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
           qm_ftext_t *qmft;
           if (NULL == qm->qmObjectMap)
             break; /* not a good case for ft */
-          qmft = qm->qmObjectMap->qmvFText;
+          qmft = ((SPAR_GEO_CONTAINS == ft_t) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           if (NULL == qmft)
             break; /* not a good case for ft */
         }
@@ -5514,6 +5514,33 @@ sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree)
   return 0;
 }
 
+void
+sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
+{
+  int oby_ctr;
+  DO_BOX_FAST (SPART *, oby, oby_ctr, obys)
+    {
+      caddr_t lit_val;
+      int col_idx;
+      SPART *tree, *tree_copy;
+      if (SPAR_LIT != SPART_TYPE (oby->_.oby.expn))
+        continue;
+      lit_val = SPAR_LIT_VAL (oby->_.oby.expn);
+      if (DV_LONG_INT != DV_TYPE_OF (lit_val))
+        continue;
+      col_idx = unbox (lit_val);
+      if ((0 >= col_idx) && (col_idx > BOX_ELEMENTS (sparp->sparp_expr->_.req_top.orig_retvals)))
+        continue;
+      tree = sparp->sparp_expr->_.req_top.orig_retvals [col_idx-1];
+      while (SPAR_ALIAS == SPART_TYPE (tree))
+        tree = tree->_.alias.arg;
+      tree_copy = sparp_tree_full_copy (sparp, tree, sparp->sparp_expr->_.req_top.pattern);
+      oby->_.oby.expn = tree_copy;
+    }
+  END_DO_BOX_FAST;
+}
+
+
 int
 sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -5691,7 +5718,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
   sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
-  sparp_of_seed->sparp_expr->_.req_top.limit = t_box_num (SPARP_MAXLIMIT);
+  sparp_of_seed->sparp_expr->_.req_top.limit = (SPART *)t_box_num (SPARP_MAXLIMIT);
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
   sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
@@ -5703,12 +5730,16 @@ sparp_rewrite_grab (sparp_t *sparp)
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
   sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
+  if (NULL != sparp_of_iter->sparp_expr->_.req_top.order)
+    sparp_tweak_order_of_iter (sparp_of_iter, sparp_of_iter->sparp_expr->_.req_top.order);
   sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_iter->sparp_env->spare_global_num_offset = 1;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_preds = env->spare_grab.rgc_sa_preds;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_vars = env->spare_grab.rgc_sa_vars;
   sparp_of_iter->sparp_env->spare_grab.rgc_vars = env->spare_grab.rgc_vars;
+/* Only after making the iter subquery from the seed one, seed may loose its ORDER BY */
+  sparp_of_seed->sparp_expr->_.req_top.order = NULL;
 /*!!! TBD: relax graph conditions in sparp_of_iter */
 /* Making subqueries: final */
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
@@ -5742,7 +5773,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
     sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */
-    t_box_copy (sparp->sparp_expr->_.req_top.limit),	/* #7 */
+    sparp_tree_full_copy (sparp, sparp->sparp_expr->_.req_top.limit, NULL),	/* #7 */
     ((NULL == rgc->rgc_consts) ? NULL :
       spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ), /* #8 */
     ((NULL == sa_graphs) ? NULL :

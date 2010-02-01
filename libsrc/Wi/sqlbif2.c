@@ -38,7 +38,7 @@
 #include "sqlpfn.h"
 #include "http.h"
 #include "libutil.h"
-#include "sqloinv.h"
+#include "sqlo.h"
 #include "sqlver.h"
 #include "srvmultibyte.h"
 #include "xmlparser.h"

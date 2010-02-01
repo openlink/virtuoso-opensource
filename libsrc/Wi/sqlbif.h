@@ -275,5 +275,6 @@ typedef struct
 
 void strses_write_out_gz (dk_session_t *ses, dk_session_t *out, strses_chunked_out_t * outd);
 int gz_stream_free (void *s);
+extern int32 cl_non_logged_write_mode;
 
 #endif /* _SQLBIF_H */

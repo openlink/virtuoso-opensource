@@ -1898,6 +1898,12 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       cv_refd_slots (sc, ts->ts_after_join_test, res, all_res, non_cl_local);
       ks_refd_slots (sc, ts->ts_order_ks, res, all_res, non_cl_local);
       ks_refd_slots (sc, ts->ts_main_ks, res, all_res, non_cl_local);
+      if (ts->ts_alternate)
+	{
+
+	  qn_refd_slots (sc, (data_source_t*)ts->ts_alternate, res, all_res, non_cl_local);
+	  qn_refd_slots (sc, qn_next ((data_source_t*)ts->ts_alternate), res, all_res, non_cl_local);
+	}
       return;
     }
   else if ((qn_input_fn) update_node_input == qn->src_input)
@@ -1979,6 +1985,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       if (!txs->txs_is_driving)
 	{
 	  REF_SSL (all_res, txs->txs_d_id);
+	  REF_SSL (res, txs->txs_d_id);
 	}
       else
 	ASG_SSL (res, all_res, txs->txs_d_id);
@@ -1988,6 +1995,20 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ASG_SSL (res, all_res, txs->txs_attr_range_out);
       ASG_SSL (res, all_res, txs->txs_score);
       asg_ssl_array (res, all_res, txs->txs_offband);
+    }
+  else if (IS_QN (qn, xn_input))
+    {
+      QNCAST (xpath_node_t, xn, qn);
+      REF_SSL (res, xn->xn_exp_for_xqr_text);
+      REF_SSL (res, xn->xn_text_col);
+      REF_SSL (res, xn->xn_base_uri);
+      ASG_SSL (res, all_res, xn->xn_output_val);;
+      if (xn->xn_text_node)
+	{
+	  text_node_t * txs = xn->xn_text_node;
+	  REF_SSL (res, txs->txs_main_range_out);
+	  REF_SSL (res, txs->txs_attr_range_out);
+	}
     }
 }
 

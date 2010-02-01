@@ -125,6 +125,18 @@ d_id_set_box (d_id_t * d_id, caddr_t box)
       else
 	D_SET_AT_END (d_id);
     }
+  else if (DV_RDF == dtp)
+    {
+      QNCAST (rdf_box_t, rb, box);
+      unsigned int64 n = (unsigned int64) rb->rb_ro_id;
+      if (n < 0xdf00000000000000ULL)
+	{
+	  D_ID_NUM_SET (&d_id->id[0], n);
+	}
+      else
+	D_SET_AT_END (d_id);
+
+    }
   else
     D_SET_AT_END (d_id);
 }
@@ -2925,10 +2937,10 @@ txs_init (text_node_t * txs, query_instance_t * qi)
   caddr_t cached_string;
   int tree_is_temporary;
   sst_tctx_t context;
-  if (txs->txs_xpath_node)
+  if (txs->txs_xn_xq_source)
     {
       tree_is_temporary = 1;
-      tree = (caddr_t *) xn_text_query (txs->txs_xpath_node, (query_instance_t *)qst, str);
+      tree = (caddr_t *) txs_xn_text_query (txs, (query_instance_t *)qst, str);
 #ifdef TEXT_DEBUG
       fprintf(stderr, "\nCompiled xcontains text criteria:\n");
       dbg_print_box((caddr_t)tree,stderr);
@@ -3227,6 +3239,8 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
   d_id_set_box (&d_id, qst_get (qst, txs->txs_d_id));
   if (!txs->txs_is_driving)
     {
+      if (D_AT_END (&d_id))
+	return ((caddr_t) SQL_NO_DATA_FOUND);
       sst_next (sst, &d_id, 1);
       if (DVC_MATCH != d_id_cmp (&sst->sst_d_id, &d_id))
 	return ((caddr_t) SQL_NO_DATA_FOUND);
@@ -3264,7 +3278,13 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
     }
   if (txs->txs_score)
     qst_set_long (qst, txs->txs_score, sst->sst_score);
-  qst_set (qst, txs->txs_d_id, box_d_id (&d_id));
+  if (txs->txs_is_rdf)
+    {
+      unsigned int64 n = D_ID_NUM_REF (&d_id.id[0]);
+      qst_set (qst, txs->txs_d_id, (caddr_t)rbb_from_id (n));
+    }
+  else
+    qst_set (qst, txs->txs_d_id, box_d_id (&d_id));
   txs_set_offband (txs, qst);
   txs_set_ranges (txs, qst, sst);
   return ((caddr_t) SQL_SUCCESS);

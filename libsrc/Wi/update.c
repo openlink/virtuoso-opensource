@@ -695,8 +695,11 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	      {
 		if (key == tb->tb_primary_key)
 		  goto next_key;
-		res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
-		itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
+		if (!key->key_distinct)
+		  {
+		    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
+		    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
+		  }
 		upd_insert_2nd_key (key, del_itc,
 				    &new_rd);
 	      next_key:;

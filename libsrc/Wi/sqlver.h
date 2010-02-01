@@ -33,12 +33,12 @@
 #define DBMS_SRV_NAME		PRODUCT_DBMS " Universal Server"
 #define DBMS_SRV_VER_ONLY	"06.00"
 #define DBMS_SRV_GEN_MAJOR	"31"
-#define DBMS_SRV_GEN_MINOR	"25"
+#define DBMS_SRV_GEN_MINOR	"26"
 #define DBMS_SRV_VER		DBMS_SRV_VER_ONLY "." \
 				DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR
 
 /* Database compatibility version */
-#define DBMS_STORAGE_VER	"3100"
+#define DBMS_STORAGE_VER	"3126"
 
 /* ODBC Driver */
 #define PRODUCT_ODBC		PRODUCT_NAME " ODBC"

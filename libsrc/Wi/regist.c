@@ -226,6 +226,10 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
 	box[len ] = 0;
 	return box;
       }
+    case DV_RDF_ID:
+      return rbb_from_id (LONG_REF_NA (text + 1) + offset);
+    case DV_RDF_ID_8:
+      return rbb_from_id (INT64_REF_NA (text + 1) + offset);
     case DV_RDF:
       if (!opt_len)
 	opt_len = box_length (text);
@@ -252,6 +256,15 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
   if (buf != dvrdf_temp)
     dk_free (buf, opt_len);
   return reg;
+}
+
+
+caddr_t
+mp_rbb_from_id (mem_pool_t * mp, int64 n)
+{
+  caddr_t rb = rbb_from_id (n);
+  mp_trash (mp, rb);
+  return rb;
 }
 
 
@@ -286,6 +299,10 @@ mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short off
 	box[len ] = 0;
 	return box;
       }
+    case DV_RDF_ID:
+      return mp_rbb_from_id (mp, LONG_REF_NA (text + 1) + offset);
+    case DV_RDF_ID_8:
+      return mp_rbb_from_id (mp, INT64_REF_NA (text + 1) + offset);
     case DV_RDF:
       if (!opt_len)
 	opt_len = box_length (text);

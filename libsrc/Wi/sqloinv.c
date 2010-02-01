@@ -37,7 +37,7 @@
 #include "sqloinv.h"
 #include "sqlbif.h"
 #include "security.h"
-
+#include "xmlnode.h"
 static id_hash_t *sinv_func_hash = NULL;
 
 #define REPORT_ERR(err) \
@@ -602,6 +602,17 @@ sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *aval)
       *pcol = res->_.bin_exp.left;
       *pval = res->_.bin_exp.right;
     }
+}
+
+
+
+
+int
+sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds)
+{
+  /* put one or more conds into cond ret such that they are equivalent to cond and each has dependent of ot on the left and no dependent of ot on the right.  */
+  /* more cases here */
+  return 0;
 }
 
 

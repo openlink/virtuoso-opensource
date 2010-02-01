@@ -536,7 +536,12 @@ ts_print (table_source_t * ts)
       code_vec_print (ts->ts_after_join_test);
     }
   stmt_printf (("\n"));
-
+  if (ts->ts_alternate)
+    {
+      stmt_printf (("Alternate ts {\n"));
+      node_print (ts->ts_alternate);
+      stmt_printf (("\n}\n"));
+    }
 }
 
 
@@ -961,12 +966,14 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) txs_input)
     {
       text_node_t *txs = (text_node_t *) node;
-      if (txs->txs_xpath_text_exp)
+	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
       else
 	stmt_printf (("CONTAINS ("));
       ssl_print (txs->txs_text_exp);
-      stmt_printf ((") node on %s\n", txs->txs_table->tb_name));
+      stmt_printf ((") node on %s %9.2g rows\n", txs->txs_table->tb_name, txs->txs_card));
+      ssl_print (txs->txs_d_id);
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) xn_input)
     {

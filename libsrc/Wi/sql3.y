@@ -244,6 +244,7 @@
 %type <box> opt_escape
 
 %type <intval> opt_with_data
+%type <intval> base_table_opt
 %type <tree> base_table_def
 %type <tree> view_def
 %type <tree> view_def_select_and_opt
@@ -586,7 +587,7 @@
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOREIGN FOUND FROM GOTO GO
-%token GRANT GROUP GROUPING HAVING IN_L INDEX INDICATOR INSERT INTEGER INTO
+%token GRANT GROUP GROUPING HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
 %token IS KEY LANGUAGE ENCODING LIKE NULLX NUMERIC OF ON OPEN OPTION
 %token PRECISION PRIMARY PRIVILEGES PROCEDURE
 %token PUBLIC REAL REFERENCES RESTRICT ROLLBACK ROLLUP SCHEMA SELECT SET
@@ -830,10 +831,17 @@ opt_with_data
 	| WITHOUT_L DATA	{ $$ = 0; }
 	;
 
+base_table_opt
+	: { $$ = T_ROW; }
+	| COLUMN { $$ = T_COLUMN; }
+	| DISTINCT COLUMN { $$ = T_DISTINCT_COLUMNS; }
+	;
+
+
 base_table_def
-	: CREATE TABLE new_table_name '(' base_table_element_commalist ')'
-		{ $$ = t_listst (3, TABLE_DEF, $3,
-			t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5)))); }
+	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt
+		{ $$ = t_listst (4, TABLE_DEF, $3,
+				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), $7); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
 		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
 	;
@@ -983,6 +991,7 @@ table_constraint_def
 		  t_listst (5, UNIQUE_DEF, $1, NULL,
 		      sqlp_string_col_list ((caddr_t *) t_list_to_array ($4)),
 		      (ST *) t_list (1, t_box_string ("unique"))); }
+| opt_constraint_name GROUP opt_index_option_list '(' index_column_commalist ')' { $$ = t_listst (4, COLUMN_GROUP, $1, $3, sqlp_string_col_list (t_list_to_array ($5))); }
 	;
 
 opt_constraint_name
@@ -1005,6 +1014,11 @@ index_option
 	| UNIQUE	{ $$ = t_box_string ("unique"); }
 	| OBJECT_ID	{ $$ = t_box_string ("object_id"); }
 	| BITMAPPED 	{ $$ = t_box_string ("bitmap"); }
+	| DISTINCT { $$ = t_box_string ("distinct"); }
+	| COLUMN { $$ = t_box_string ("column"); }
+	| NOT NULLX { $$ = t_box_string ("not_null"); }
+	| NO_L PRIMARY KEY REF { $$ = t_box_string ("no_pk"); }
+	| INDEX_NO_FILL { $$ = t_box_string ("no_fill"); }
 	;
 
 index_option_list
@@ -1703,6 +1717,7 @@ sql_option
 	| INDEX identifier { $$ = t_CONS (OPT_INDEX, t_CONS ($2, NULL)); }
 	| INDEX PRIMARY KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("PRIMARY KEY"), NULL)); }
 	| INDEX TEXT_L KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("TEXT KEY"), NULL)); }
+	| INDEX_ONLY { $$ = t_CONS (OPT_INDEX_ONLY, t_CONS (t_box_num (1), NULL)); }
 	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }

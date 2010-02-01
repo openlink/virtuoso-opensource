@@ -777,6 +777,24 @@ sqlo_df (sqlo_t * so, ST * tree)
 	       text ot as dependency */
 	    t_set_delete (&dfe->dfe_tables, tot);
 	  }
+	else if (!so->so_no_text_preds && NULL != (args = sqlc_geo_args (tree, &ctype)))
+	  {
+	    int inx;
+	    TNEW (op_table_t, tot);
+	    tot->ot_is_group_dummy = 1;
+	    tot->ot_dfe = dfe = sqlo_new_dfe (so, DFE_TEXT_PRED, tree);
+	    dfe->_.text.type = ctype;
+	    dfe->_.text.args = args;
+	    dfe->_.text.geo = ctype;
+	    dfe->_.text.ot = tot;
+	    DO_BOX (ST *, arg, inx, args)
+	      {
+		df_elt_t *arg_dfe = sqlo_df (so, arg);
+		if (arg_dfe->dfe_tables)
+		  dfe->dfe_tables = t_set_union (dfe->dfe_tables, arg_dfe->dfe_tables);
+	      }
+	    END_DO_BOX;
+	  }
 	else
 	  {
 	    dfe = sqlo_new_dfe (so, DFE_BOP, tree);
@@ -1904,11 +1922,25 @@ sqlo_pred_sort (sqlo_t * so, int op, df_elt_t ** terms)
 df_elt_t ** df_body_to_array (df_elt_t * dfe);
 
 
+void
+dfe_geo_after_test (sqlo_t * so, df_elt_t ** pred_ret)
+{
+  /* take the geo text pred in pred and make a bop pred suitable for use as an after test */
+  df_elt_t * pred = *pred_ret;
+  ST * tree = pred->dfe_tree;
+  ST * copy = t_listst (5, tree->type, tree->_.bin_exp.left, tree->_.bin_exp.right, NULL, t_box_num ((ptrlong)tree));
+  so->so_no_text_preds = 1;
+  *pred_ret = sqlo_df (so, copy);
+  so->so_no_text_preds = 0;
+}
+
 df_elt_t **
 sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 {
   if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
     pred = sqlo_wrap_dfe_true_or_false (so, pred);
+  if (DFE_TEXT_PRED == pred->dfe_type && pred->_.text.geo)
+    dfe_geo_after_test (so, &pred);
   switch (pred->dfe_type)
     {
     case DFE_BOP_PRED:
@@ -2922,6 +2954,13 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
       END_DO_SET();
       return 1;
     }
+  if (0 == stricmp ("DB.DBA.RDF_QUAD",  dfe->_.table.ot->ot_table->tb_name ))
+    {
+      /* geo cond on rdf quad.  If there is an eq on the leading part then geo is not driving */
+      df_elt_t * key_part_best = sqlo_key_part_best ((dbe_column_t*)dfe->_.table.key->key_parts->data, dfe->_.table.col_preds, 0);
+      if (key_part_best && DFE_BOP_PRED == key_part_best->dfe_type && BOP_EQ == key_part_best->_.bin.op)
+	return 0;
+    }
   return 1;
 }
 
@@ -2944,6 +2983,37 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
     }
 }
 
+int enable_index_path = 1;
+
+int
+sqlo_need_index_path (df_elt_t * tb_dfe)
+{
+  /* rdf quad with text/geo and no p needs a potentially multi-index access path if partial distinct inxes are used.  Other cases are done with regular inx choice */
+  char * tn = tb_dfe->_.table.ot->ot_table->tb_name;
+  if (!stricmp (tn, "DB.DBA.RDF_QUAD") || !stricmp (tn, "DB.DBA.R2"))
+    {
+      dbe_column_t * p_col = tb_name_to_column (tb_dfe->_.table.ot->ot_table, "P");
+      df_elt_t * pred;
+      if (2 == enable_index_path)
+	return 1;
+      if (tb_dfe->_.table.text_pred)
+	return 1;
+      DO_SET (df_elt_t *, pred, &tb_dfe->_.table.all_preds)
+	{
+	  df_elt_t * r, * l;
+	  int op;
+	  if (dfe_is_o_ro2sq_range (pred, tb_dfe, &l, &r, &op))
+	    return 1;
+	  if (sqlo_in_list (pred, NULL, NULL))
+	    return 0;
+	}
+      END_DO_SET();
+      pred = sqlo_key_part_best ( p_col, tb_dfe->_.table.col_preds, 0);
+      return !dfe_is_eq_pred (pred);
+    }
+  return 0;
+}
+
 
 void
 sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
@@ -2962,6 +3032,11 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   float best_group;
   if (tb_dfe->_.table.key)
     return;
+  if (enable_index_path && sqlo_need_index_path (tb_dfe))
+    {
+      sqlo_choose_index_path (so, tb_dfe, col_preds, after_preds);
+      return;
+    }
   memset (&best_ic, 0, sizeof (best_ic));
   sqlo_prepare_inx_int_preds (so);
   tb_dfe->_.table.is_unique = 0;
@@ -2996,6 +3071,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     {
       DO_SET (dbe_key_t *, key, &ot->ot_table->tb_keys)
 	{
+	  if (key->key_no_pk_ref && !opt_inx_name)
+	    continue;
 	  memset (&ic, 0, sizeof (ic));
 	  if (opt_inx_name)
 	    {
@@ -3214,11 +3291,13 @@ sqlo_make_inv_pred (sqlo_t * so, sinv_map_t * map, df_elt_t * left, df_elt_t * r
 
 
 int
-sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
+sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds, dk_set_t * after_preds)
 {
   /* if pred is f (c1,...cn) = exp independent of tb_dfe and inverse of f exists and c1...cn are cols of tb_dfe
   * then generate AND of inverses of f app,lied to exp, equated to each of c1...cn */
   sinv_map_t * map;
+  if (sqlo_solve (so, tb_dfe, pred, col_preds, after_preds))
+    return 1;
   if (BOP_EQ != pred->_.bin.op)
     return 0;
 
@@ -3362,7 +3441,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	{ /*GK : this is already placed */
 	  continue;
 	}
-      else if (DFE_TEXT_PRED == pred->dfe_type)
+      else if (DFE_TEXT_PRED == pred->dfe_type && !pred->_.text.geo)
 	{
 	  dk_set_t text_after_preds = NULL;
 	  if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
@@ -3426,7 +3505,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	      inv_pred->_.bin.op = (int) cmp_op_inverse (pred->_.bin.op);
 	      t_set_push (&col_preds, inv_pred);
 	    }
-	  else if (sqlo_col_inverse (so, tb_dfe, pred, &col_preds))
+	  else if (sqlo_col_inverse (so, tb_dfe, pred, &col_preds, &after_preds))
 	    ; /* no action, preds added by func if true */
 	  else
 	    {
@@ -3434,6 +3513,8 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	    }
 	}
       else if (sqlo_col_dtp_func (so, tb_dfe, pred, &col_preds))
+	; /* no action, preds added by func if true */
+      else if (sqlo_col_inverse (so, tb_dfe, pred, &col_preds, &after_preds))
 	; /* no action, preds added by func if true */
       else
 	t_set_push (&after_preds, pred);
@@ -3490,7 +3571,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
     {
       tb_dfe->_.table.vdb_join_test = sqlo_and_list_body (so, LOC_LOCAL, tb_dfe, vdb_preds);
     }
-  if (after_preds || vdb_preds)
+  if ((after_preds || vdb_preds) && !tb_dfe->_.table.index_path)
     tb_dfe->dfe_unit = 0; /* recalc the cost if more preds were added */
 }
 
@@ -6761,14 +6842,14 @@ sqlo_co_place (sql_comp_t * sc)
   /* in searched update / delete, there's one table source.
      Get its current of */
   data_source_t *head = sc->sc_cc->cc_query->qr_head_node;
-  while (head && !(
-	(qn_input_fn) table_source_input == head->src_input
-	|| (qn_input_fn) table_source_input_unique == head->src_input))
-    head = head->src_continuations ? (data_source_t *) head->src_continuations->data : NULL;
-  if (head)
-    return ((table_source_t *)head)->ts_current_of;
-  else
-    return NULL;
+  state_slot_t * ret = NULL;
+  while (head)
+    {
+      if (IS_TS (head))
+        ret = ((table_source_t *)head)->ts_current_of;
+      head = head->src_continuations ? (data_source_t *) head->src_continuations->data : NULL;
+    }
+  return ret;
 }
 
 

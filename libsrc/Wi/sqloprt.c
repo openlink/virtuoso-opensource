@@ -50,6 +50,28 @@ sqlo_dfe_list_print (dk_set_t list, int offset)
   END_DO_SET();
 }
 
+void
+sqlo_index_path_print (df_elt_t * dfe)
+{
+  DO_SET (index_choice_t *, ic, &dfe->_.table.index_path)
+    {
+      if (ic->ic_key)
+	{
+	  if (ic->ic_text_order)
+	    printf ("by_text ");
+	  printf ("key %s %9.2g %9.2g ", ic->ic_key->key_name, ic->ic_unit, ic->ic_arity);
+	}
+      if (ic->ic_inx_op)
+	{
+	  DO_SET (df_inx_op_t *, dio, &ic->ic_inx_op->dio_terms)
+	    printf ("%s ", dio->dio_key->key_name);
+	  END_DO_SET();
+	}
+    }
+  END_DO_SET();
+  printf ("\n");
+}
+
 
 void
 sqlo_dfe_print (df_elt_t * dfe, int offset)
@@ -178,6 +200,8 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,
 		(double) dfe->dfe_arity));
 	sqlo_print (("  col preds: "));
+	if (dfe->_.table.index_path)
+	  sqlo_index_path_print (dfe);
 	if (dfe->_.table.col_preds)
 	  sqlo_print (("\n"));
 	sqlo_dfe_list_print (dfe->_.table.col_preds, offset + OFS_INCR);

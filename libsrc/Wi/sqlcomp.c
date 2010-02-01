@@ -609,6 +609,12 @@ sqlc_contains_fn_to_char (const char *name)
 }
 
 
+char
+sqlc_geo_fn_to_char (const char *name)
+{
+  return 0;
+}
+
 ST **
 sqlc_contains_args (ST * tree, int * contains_type)
 {
@@ -620,6 +626,28 @@ sqlc_contains_args (ST * tree, int * contains_type)
       if (ST_P (call, CALL_STMT))
 	{
 	  ct = sqlc_contains_fn_to_char (call->_.call.name);
+	  if (!ct)
+	    return NULL;
+	  if (contains_type)
+	    *contains_type = ct;
+	  return (call->_.call.params);
+	}
+    }
+  return NULL;
+}
+
+
+ST **
+sqlc_geo_args (ST * tree, int * contains_type)
+{
+  int ct = 0;
+  if (ST_P (tree, BOP_NOT)
+      && ST_P (tree->_.bin_exp.left, BOP_EQ))
+    {
+      ST * call = tree->_.bin_exp.left->_.bin_exp.right;
+      if (ST_P (call, CALL_STMT))
+	{
+	  ct = sqlc_geo_fn_to_char (call->_.call.name);
 	  if (!ct)
 	    return NULL;
 	  if (contains_type)
