@@ -1941,6 +1941,8 @@ bif_xml_persistent (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lang_handler_t *lh = ((argc > 2) ? lh_get_handler (bif_string_arg (qst, args, 2, "xml_persistent")) : server_default_lh);
   caddr_t dtd_config = ((argc > 3) ? bif_array_or_null_arg (qst, args, 3, "xml_persistent") : NULL);
   int index_attrs = ((argc > 4) ? (int) bif_long_arg (qst, args, 4, "xml_persistent") : 1);
+  if (!cl_run_local_only)
+    sqlr_new_error ("42000", "CLXML", "xml_persistent is deprecated in cluster.  Use xtree_doc instead.");
   res =
       (caddr_t) xper_entity ((query_instance_t *) QST_INSTANCE (qst), source,
       NULL, 0, box_copy (path), NULL, lh, dtd_config, index_attrs);
