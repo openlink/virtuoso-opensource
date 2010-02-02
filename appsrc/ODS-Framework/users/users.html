@@ -18,6 +18,22 @@
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      function navigate(e) {
+        if (e.keyCode == 13) {
+          if (isShow("lf"))
+            lfLoginSubmit();
+
+          else if (isShow("uf"))
+            ufProfileSubmit();
+
+          else if (isShow("pf"))
+            pfCancelSubmit();
+
+          return false;
+        }
+        return true;
+      }
+      document.onkeypress=navigate;
     </script>
   </head>
   <body>
@@ -29,7 +45,7 @@
       <input type="hidden" name="formTab" id="formTab" value="" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=&realm=wa">ODS Home</a> > Login</div>
+        <div id="ob_left">Login</div>
         <div id="ob_right" style="display: none;"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
       </div>
       <div id="MD">
@@ -991,11 +1007,6 @@
 
                   <div id="pf_page_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
-                      <tr>
-                        <td align="center" colspan="2">
-                          <span id="pf_change_txt"></span>
-                        </td>
-                      </tr>
                       <tr>
                         <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
                           Password Settings

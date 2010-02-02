@@ -371,6 +371,13 @@ function pfShowFavorites() {
 	OAT.AJAX.GET('/ods/api/user.favorites.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
 }
 
+function isShow(element) {
+	var elm = $(element);
+	if (elm && elm.style.display == "none")
+	  return false;
+  return true;
+}
+
 function loadFacebookData(cb) {
 	var x = function(data) {
 		try {
@@ -532,22 +539,20 @@ function afterLogin(data) {
 		} else {
      	var T = $('ob_left');
      	if (T)
-				T.innerHTML = '<a href="/ods/myhome.vspx?sid=' + $('sid').value + '&realm=' + $('realm').value + '">ODS Home</a> > View Profile';
+				T.innerHTML = 'View Profile';
 
       OAT.Dom.show("ob_right");
       OAT.Dom.hide("ob_links");
       OAT.Dom.hide("lf");
-      OAT.Dom.hide("rf");
-      OAT.Dom.show("uf");
-      OAT.Dom.hide("pf");
-        selectProfile();
+			OAT.Dom.hide("uf");
+			OAT.Dom.show("pf");
+			ufProfileSubmit();
     }
 	} else {
 		$('sid').value = '';
 		$('realm').value = '';
 		OAT.Dom.hide("ob_links");
 		OAT.Dom.show("lf");
-		OAT.Dom.hide("rf");
 		OAT.Dom.hide("uf");
 		OAT.Dom.hide("pf");
   }
@@ -753,13 +758,11 @@ function logoutCallback(obj) {
 
  	var T = $('ob_left');
  	if (T)
-		T.innerHTML = '<a href="/ods/myhome.vspx?sid=' + $('sid').value
-				+ '&realm=' + $('realm').value + '">ODS Home</a> > Login';
+		T.innerHTML = 'Login';
 
   OAT.Dom.hide("ob_links");
   OAT.Dom.hide("ob_right");
   OAT.Dom.show("lf");
-  OAT.Dom.hide("rf");
   OAT.Dom.hide("pf");
   OAT.Dom.hide("uf");
 }
@@ -861,7 +864,25 @@ function ufProfileSubmit() {
 	ufProfileLoad()
 }
 
-function ufProfileLoad() {
+function ufProfileLoad(No) {
+  if (No == 1) {
+    var formTab = parseInt($v('formTab'));
+    var formSubtab = parseInt($v('formSubtab'));
+
+    formSubtab++;
+    if (
+        ((formTab == 0) && (formSubtab > 5)) ||
+        ((formTab == 1) && (formSubtab > 3)) ||
+        (formTab > 1)
+       )
+    {
+      formTab++;
+      formSubtab = 0;
+      pfTabInit('pf_tab_', formTab);
+    }
+    $('formTab').value = "" + formTab;
+    $('formSubtab').value = "" + formSubtab;
+  }
   ufCleanTablesData("x1");
   ufCleanTablesData("x2");
   ufCleanTablesData("x3");
@@ -871,9 +892,6 @@ function ufProfileLoad() {
   ufCleanTablesData("r");
   ufCleanTablesData("y1");
   ufCleanTablesData("y2");
-
- 	var T = $('pf_change_txt');
-	if (T) {T.innerHTML = '';}
 
 	var S = '/ods/api/user.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&short=0';
   OAT.AJAX.GET(S, '', ufProfileCallback);
@@ -981,10 +999,9 @@ function ufProfileCallback(data) {
 
      	var T = $('ob_left');
      	if (T)
-				T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Edit Profile';
+				T.innerHTML = 'Edit Profile';
 
       OAT.Dom.hide("lf");
-      OAT.Dom.hide("rf");
       OAT.Dom.hide("uf");
       OAT.Dom.show("pf");
 			pfTabInit('pf_tab_', $v('formTab'));
@@ -1153,22 +1170,22 @@ function pfUpdateSubmit(No) {
   if ((formTab == 0) && (formSubtab == 2))
   {
     updateOnlineAccounts('x4', 'P');
-    ufProfileLoad();
+    ufProfileLoad(No);
   }
   else if ((formTab == 0) && (formSubtab == 3))
   {
     updateBioEvents('x5');
-    // ufProfileLoad();
+    ufProfileLoad(No);
   }
   else if ((formTab == 0) && (formSubtab == 5))
   {
     updateFavorites('x6');
-    ufProfileLoad();
+    ufProfileLoad(No);
   }
   else if ((formTab == 1) && (formSubtab == 2))
   {
     updateOnlineAccounts('y1', 'B');
-    ufProfileLoad();
+    ufProfileLoad(No);
   }
   else
   {
@@ -1278,7 +1295,7 @@ function pfUpdateSubmit(No) {
 function pfUpdateCallback(data, No) {
   var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
-    ufProfileLoad();
+    ufProfileLoad(No);
   }
 }
 
@@ -1286,10 +1303,11 @@ function pfChangeSubmit(event) {
 	if ($v('pf_newPassword') != $v('pf_newPassword2')) {
     alert ('Bad new password. Please retype!');
   } else {
-		var S = '/ods/api/user.password_change' + '?sid='
-				+ encodeURIComponent($v('sid')) + '&realm='
-				+ encodeURIComponent($v('realm')) + '&new_password='
-				+ encodeURIComponent($v('pf_newPassword'));
+		var S = '/ods/api/user.password_change' +
+		    '?sid=' + encodeURIComponent($v('sid')) +
+		    '&realm=' + encodeURIComponent($v('realm')) +
+		    '&old_password=' + encodeURIComponent($v('pf_oldPassword')) +
+		    '&new_password=' + encodeURIComponent($v('pf_newPassword'));
     OAT.AJAX.GET(S, '', pfChangeCallback);
   }
   $('pf_oldPassword').value = '';
@@ -1301,20 +1319,19 @@ function pfChangeSubmit(event) {
 function pfChangeCallback(data) {
   var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
-   	var T = $('pf_change_txt');
-		if (T) {T.innerHTML = 'The password was changed successfully.'};
+		alert('The password was changed successfully.');
 	}
 }
 
 function pfCancelSubmit() {
  	var T = $('ob_left');
  	if (T)
-		T.innerHTML = '<a href="/ods/myhome.vspx?sid=' + $('sid').value + '&realm=' + $('realm').value + '">ODS Home</a> > View Profile';
+		T.innerHTML = 'View Profile';
 
   OAT.Dom.hide("lf");
-  OAT.Dom.hide("rf");
   OAT.Dom.show("uf");
   OAT.Dom.hide("pf");
+  selectProfile()
 	return false;
 }
 
