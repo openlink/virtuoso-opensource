@@ -35,6 +35,7 @@
 #define FD_SETSIZE 8192
 /* GK: hack that is placed here for compatibility with the WIN2003 Platform SDK */
 #define _WSPIAPI_H_
+#define _USE_MATH_DEFINES
 
 #include <stdio.h>
 #include <winsock2.h>
