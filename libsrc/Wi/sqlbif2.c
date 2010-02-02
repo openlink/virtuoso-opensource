@@ -1163,9 +1163,9 @@ rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_ur
       caddr_t fixed_base;
       int prefix_len = ((0 != base_split.two_slashes) ? 5 : 7);
       buf_len = base_split.fragment_end + prefix_len;
-      fixed_base = dk_alloc_box (base_split.fragment_end + prefix_len, DV_STRING);
-      strcpy (fixed_base, ((0 != base_split.two_slashes) ? "http:" : "http://"));
-      strcpy (fixed_base+prefix_len, base_uri);
+      fixed_base = dk_alloc_box (base_split.fragment_end + prefix_len + 1, DV_STRING);
+      strcpy_box_ck (fixed_base, ((0 != base_split.two_slashes) ? "http:" : "http://"));
+      strcat_box_ck (fixed_base, base_uri);
       buffer = rfc1808_expand_uri (/*qi,*/ fixed_base, rel_uri, buffer_cs_upcase, 0, buffer_cs_upcase, buffer_cs_upcase, err_ret);
       if (NULL != err_ret[0])
         {
