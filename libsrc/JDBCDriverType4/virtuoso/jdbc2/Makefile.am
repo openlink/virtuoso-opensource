@@ -1,28 +1,28 @@
-#  
+#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2009 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
-#  
+#
+#
 
 
-########################################### 
+###########################################
 # Settings
-########################################### 
+###########################################
 
 if WITH_JDK2
 CLASSPATH2=$(CLASSPATH2)
@@ -49,9 +49,9 @@ jdbc3_defs = -DJDK_VER=14 -Djdbc2=jdbc3 '-DVIRT_JDBC_VER="3.x"'
 jdbc4_defs = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.x"'
 
 
-########################################### 
+###########################################
 # Sources
-########################################### 
+###########################################
 infiles = \
 	Driver.java \
 	VirtuosoAsciiInputStream.java \
@@ -138,16 +138,22 @@ javaxfiles = \
 
 sqlfiles = \
 	ExtendedString.java \
-	RdfBox.java 
+	RdfBox.java
 
 
-########################################### 
-# JDBC 2.x 
-########################################### 
+###########################################
+# JDBC 2.x
+###########################################
 std2javafiles = \
         $(utilfiles:%.java=outstd2/openlink/util/%.java) \
         $(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
     	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
+
+
+.PHONY: doc2
+doc2: ../../virtjdbc2.jar
+	@cd outstd2 ; $(JDK2)/javadoc -d ../../../doc/virtjdbc2 -classpath . virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	
 
 .PHONY: std2
 std2: ../../virtjdbc2.jar
@@ -176,9 +182,9 @@ outstd2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd2/virtuoso/sql; cp ../../../$< .
 
 
-########################################### 
+###########################################
 # JDBC 2.x (SSL)
-########################################### 
+###########################################
 ssl2javafiles = \
 	$(infiles:%.java=outssl2/virtuoso/jdbc2/%.java) \
         $(sqlfiles:%.java=outssl2/virtuoso/sql/%.java) \
@@ -213,9 +219,9 @@ outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl/virtuoso/sql; cp ../../../$< .
 
 
-########################################### 
+###########################################
 # JDBC 3.x
-########################################### 
+###########################################
 std3javafiles = \
         $(utilfiles:%.java=outstd3/openlink/util/%.java) \
         $(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
@@ -223,6 +229,12 @@ std3javafiles = \
     	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
     	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
         $(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
+
+
+.PHONY: doc3
+doc3: ../../virtjdbc3.jar
+	@cd outstd3 ; $(JDK3)/javadoc -d ../../../doc/virtjdbc3 -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	
 
 .PHONY: std3
 std3: ../../virtjdbc3.jar
@@ -255,9 +267,9 @@ outstd3/virtuoso/javax/%.java: ../javax/%.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 
-########################################### 
+###########################################
 # JDBC 3.x (SSL)
-########################################### 
+###########################################
 ssl3javafiles = \
         $(utilfiles:%.java=outssl3/openlink/util/%.java) \
         $(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
@@ -297,9 +309,9 @@ outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 
-########################################### 
+###########################################
 # JDBC 4.x
-########################################### 
+###########################################
 std4javafiles = \
         $(utilfiles:%.java=outstd4/openlink/util/%.java) \
         $(sqlfiles:%.java=outstd4/virtuoso/sql/%.java) \
@@ -309,6 +321,13 @@ std4javafiles = \
     	$(in4files:%.java=outstd4/virtuoso/jdbc4/%.java) \
     	$(infiles:%.java=outstd4/virtuoso/jdbc4/%.java) \
         $(javaxfiles:%.java=outstd4/virtuoso/javax/%.java)
+
+
+.PHONY: doc4
+doc4: ../../virtjdbc4.jar
+	@cd outstd4 ; $(JDK4)/javadoc -d ../../../doc/virtjdbc4 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	
+
 
 .PHONY: std4
 std4: ../../virtjdbc4.jar
@@ -341,9 +360,9 @@ outstd4/virtuoso/javax/%.java: ../javax/%.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 
-########################################### 
+###########################################
 # JDBC 4.x (SSL)
-########################################### 
+###########################################
 ssl4javafiles = \
         $(utilfiles:%.java=outssl4/openlink/util/%.java) \
         $(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
@@ -385,13 +404,13 @@ outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 
-########################################### 
+###########################################
 # Cleanup
-########################################### 
+###########################################
 clean-local:
 	-$(RM) -f *.class version.h
-	-$(RM) -rf outstd outssl 
+	-$(RM) -rf outstd outssl
 	-$(RM) -rf outstd1 outssl1
-	-$(RM) -rf outstd2 outssl2 
-	-$(RM) -rf outstd3 outssl3 
-	-$(RM) -rf outstd4 outssl4 
+	-$(RM) -rf outstd2 outssl2
+	-$(RM) -rf outstd3 outssl3
+	-$(RM) -rf outstd4 outssl4
