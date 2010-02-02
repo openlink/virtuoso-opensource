@@ -23,14 +23,9 @@
 ########################################### 
 # Settings
 ########################################### 
-if WITH_JDK1
-CLASSPATH1=$(CLASSPATH1):.:$(JDK1)/lib/classes.zip
-JDK1=@ac_jdk1_path@
-JDK1_FLAGS=-O
-endif
 
 if WITH_JDK2
-CLASSPATH2=$(CLASSPATH2):.:$(JDK2)/jre/lib/rt.jar:$(top_srcdir)/libsrc/JDBCDriverType4/security/jdk1.2/jcert.jar:$(top_srcdir)/libsrc/JDBCDriverType4/security/jdk1.2/jnet.jar:$(top_srcdir)/libsrc/JDBCDriverType4/security/jdk1.2/jsse.jar
+CLASSPATH2=$(CLASSPATH2)
 JDK2=@ac_jdk2_path@
 JDK2_FLAGS=-O -g:none
 endif
@@ -147,42 +142,6 @@ sqlfiles = \
 
 
 ########################################### 
-# JDBC 1.x 
-########################################### 
-std1javafiles = \
-        $(utilfiles:%.java=outstd1/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd1/virtuoso/sql/%.java) \
-    	$(infiles:%.java=outstd1/virtuoso/jdbc/%.java) \
-    	$(in1files:%.java=outstd1/virtuoso/jdbc/%.java)
-
-.PHONY: std1
-std1: ../../virtjdbc.jar
-
-../../virtjdbc.jar: outstd1 $(std1javafiles)
-	@echo jdbc1 javac $(JDK1_FLAGS)
-	@cd outstd1 ; $(JDK1)/javac $(JDK1_FLAGS) -classpath .:$(JDK1)/lib/classes.zip virtuoso/jdbc/*.java openlink/util/*.java virtuoso/sql/*.java
-	@cd outstd1 ; $(JDK1)/jar cf ../../../virtjdbc.jar virtuoso/jdbc/*.class openlink/util/*.class virtuoso/sql/*.class
-	@echo "............. Virtuoso pure Java 1.0 built"
-
-outstd1:
-	@mkdir outstd1
-	@mkdir outstd1/virtuoso
-	@mkdir outstd1/virtuoso/jdbc
-	@mkdir outstd1/virtuoso/sql
-	@mkdir outstd1/openlink
-	@mkdir outstd1/openlink/util
-
-outstd1/virtuoso/jdbc/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc1_defs) $< >$@
-
-outstd1/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc1_defs) $< >$@
-
-outstd1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd1/virtuoso/sql; cp ../../../$< .
-
-
-########################################### 
 # JDBC 2.x 
 ########################################### 
 std2javafiles = \
@@ -225,7 +184,7 @@ ssl2javafiles = \
         $(sqlfiles:%.java=outssl2/virtuoso/sql/%.java) \
 	$(utilfiles:%.java=outssl2/openlink/util/%.java)
 
-jssljars = ../../../security/jdk1.2/jcert.jar:../../../security/jdk1.2/jnet.jar:../../../security/jdk1.2/jsse.jar
+jssljars = ../../../security/jcert.jar:../../../security/jnet.jar:../../../security/jsse.jar
 
 .PHONY: ssl2
 ssl2: ../../virtjdbc2ssl.jar

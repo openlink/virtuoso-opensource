@@ -6,7 +6,7 @@ AC_REVISION($Id$)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2010 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -1879,32 +1879,10 @@ AM_CONDITIONAL(WITH_IODBC, test "x$virt_do_iodbc" = "xyes" )
 ##########################################################################
 
 AC_MSG_CHECKING(for Java options)
-ac_jdk1_path="none"
-AC_ARG_WITH(jdk1, [dnl
-AC_HELP_STRING([--with-jdk1=DIR], [use the Sun JDK 1.1.x at the specified location])dnl
-], [
-    case "${withval}" in
-      yes)
-          AC_MSG_ERROR("You need to specify a directory")
-	  ;;
-
-      no)
-	  ac_jdk1_path="none"
-	  ;;
-
-      *)
-	  if test -d "${withval}" ; then
-	      ac_jdk1_path="${withval}"
-	  else
-	      AC_MSG_ERROR("Directory specified with --enable-jdk1 does not exist")
-	  fi
-	  ;;
-    esac
-])
 
 ac_jdk2_path="none"
 AC_ARG_WITH(jdk2, [dnl
-AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.2.x or 1.3.x at the specified location])
+AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.3.x at the specified location])
 ], [
     case "${withval}" in
       yes)
@@ -1927,7 +1905,7 @@ AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.2.x or 1.3.x at the specifi
 
 ac_jdk3_path="none"
 AC_ARG_WITH(jdk3, [dnl
-AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x, 1.5.x or 1.6.x at the specified location])dnl
+AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x or 1.5.x at the specified location])dnl
 ], [
     case "${withval}" in
       yes)
@@ -2029,13 +2007,7 @@ EOF
 fi
 ])
 
-AC_PROG_JAVA_WORKS($ac_jdk1_path, 1, 1)
-ac_jdk1_works="$ac_cv_prog_java_works"
-ac_jdk1_path="$ac_jw_path"
-AM_CONDITIONAL(WITH_JDK1, test "x$ac_jdk1_works" = "xyes")
-AC_SUBST(ac_jdk1_path)
-
-AC_PROG_JAVA_WORKS($ac_jdk2_path, 2, 3)
+AC_PROG_JAVA_WORKS($ac_jdk2_path, 3, 3)
 ac_jdk2_works="$ac_cv_prog_java_works"
 ac_jdk2_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK2, test "x$ac_jdk2_works" = "xyes")
@@ -2616,7 +2588,6 @@ AC_CONFIG_FILES([
 	docsrc/xmlsource/Makefile
 	libsrc/Dk/Makefile
 	libsrc/JDBCDriverType4/Makefile
-	libsrc/JDBCDriverType4/testsuite_1.2/Makefile
 	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_4.0/Makefile
