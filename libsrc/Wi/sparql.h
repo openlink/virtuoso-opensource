@@ -669,7 +669,8 @@ extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
-extern int spar_filter_is_freetext (SPART *filt);
+/*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
+extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);

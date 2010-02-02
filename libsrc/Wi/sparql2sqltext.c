@@ -6069,7 +6069,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
   if (tree == (box_t)(1)) /* The filter has been disabled because it's printed already */
     return;
-  if (spar_filter_is_freetext (tree))
+  if (spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
     {
       return;
       /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
@@ -6403,9 +6403,7 @@ from_printed:
           int ctr, argctr, argcount, contains_in_rdf_quad;
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
-              if (!spar_filter_is_freetext (filt))
-                continue;
-              if (strcmp (var_name, filt->_.funcall.argtrees[0]->_.var.vname))
+              if (!spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {

@@ -3301,6 +3301,29 @@ just_remove_braces:
 }
 
 void
+sparp_set_options_selid_and_tabid (sparp_t *sparp, SPART **options, caddr_t new_selid, caddr_t new_tabid)
+{
+  int ctr;
+  DO_BOX_FAST_REV (SPART *, opt_expn, ctr, options)
+    {
+      if (!SPAR_IS_BLANK_OR_VAR (opt_expn))
+        continue;
+      if (strcmp (opt_expn->_.var.selid, new_selid)) /* weird re-location */
+        {
+          if (SPART_BAD_EQUIV_IDX != opt_expn->_.var.equiv_idx)
+            {
+              sparp_equiv_t *eq = SPARP_EQUIV (sparp, opt_expn->_.var.equiv_idx);
+              sparp_equiv_remove_var (sparp, eq, opt_expn);
+            }
+          opt_expn->_.var.selid = t_box_copy (new_selid);
+        }
+      if (NULL != opt_expn->_.var.tabid)
+        opt_expn->_.var.tabid = t_box_copy (new_tabid);
+    }
+  END_DO_BOX_FAST_REV;
+}
+
+void
 sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid)
 {
   int field_ctr;
@@ -3324,6 +3347,8 @@ sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_sel
         }
       fld_expn->_.var.tabid = t_box_copy (new_tabid);
     }
+  if (NULL != triple->_.triple.options)
+    sparp_set_options_selid_and_tabid (sparp, triple->_.triple.options, new_selid, new_tabid);
   triple->_.triple.selid = t_box_copy (new_selid);
   triple->_.triple.tabid = t_box_copy (new_tabid);
 }
@@ -3501,17 +3526,10 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
 #endif
   if (triple->_.triple.ft_type)
     {
-      caddr_t ft_var_name;
       int filt_ctr;
-      if (SPAR_VARIABLE != SPART_TYPE (triple->_.triple.tr_object))
-        spar_internal_error (sparp, "sparp_" "make_qm_cases(): triple should have free-text predicate but the object is not a variable");
-      ft_var_name = triple->_.triple.tr_object->_.var.vname;
       DO_BOX_FAST_REV (SPART *, filt, filt_ctr, parent_gp->_.gp.filters)
         {
-          if (spar_filter_is_freetext (filt) &&
-            (0 < BOX_ELEMENTS (filt->_.funcall.argtrees)) &&
-            (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[0])) &&
-            !strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
+          if (spar_filter_is_freetext (sparp, filt, triple))
             {
               ft_cond_to_relocate = sparp_gp_detach_filter (sparp, parent_gp, filt_ctr, NULL);
               break;
@@ -3519,7 +3537,8 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
         }
       END_DO_BOX_FAST_REV;
       if (NULL == ft_cond_to_relocate)
-        spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s", ft_var_name);
+        spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s",
+          triple->_.triple.tr_object->_.var.vname );
     }
   res = (SPART **)t_alloc_box (box_length (tc_list), DV_ARRAY_OF_POINTER);
   DO_BOX_FAST (triple_case_t *, tc, tc_idx, tc_list)
@@ -3572,6 +3591,8 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
           sparp_jso_validate_format (sparp, native_fmt);
           qm_case_triple->_.triple.native_formats[field_ctr] = native_fmt;
         }
+      if (NULL != qm_case_triple->_.triple.options)
+        sparp_set_options_selid_and_tabid (sparp, qm_case_triple->_.triple.options, qm_selid, qm_tabid);
       sparp_gp_attach_member (sparp, qm_case_gp, qm_case_triple, 0, NULL);
       if (NULL != ft_cond_to_relocate)
         sparp_gp_attach_filter (sparp, qm_case_gp, sparp_tree_full_copy (sparp, ft_cond_to_relocate, parent_gp), 0, NULL);
