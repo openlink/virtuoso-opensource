@@ -29,6 +29,7 @@
 #endif
 /* GK: hack that is placed here for compatibility with the WIN2003 Platform SDK */
 #define _WSPIAPI_H_
+#define _USE_MATH_DEFINES
 
 #define MAXPATHLEN 1024
 #define DOSFS
