@@ -19,11 +19,6 @@
 #  
 #  
 
-if WITH_JDK1
-JDK1_TARGETS = jdk1-target
-JDK1_TEST = jdk1-test
-endif
-
 if WITH_JDK2
 JDK2_TARGETS = jdk2-target
 JDK2_TEST = jdk2-test
@@ -39,27 +34,22 @@ JDK4_TARGETS = jdk4-target
 JDK4_TEST = jdk4-test
 endif
 
-JDK_TESTS = $(JDK1_TEST) $(JDK2_TEST) $(JDK3_TEST)  $(JDK4_TEST)
+JDK_TESTS = $(JDK2_TEST) $(JDK3_TEST) $(JDK4_TEST)
 
-SUBDIRS	= . virtuoso testsuite_1.2 testsuite_2.0 testsuite_3.0  testsuite_4.0
+SUBDIRS	= . virtuoso testsuite_2.0 testsuite_3.0 testsuite_4.0
 
 
-all-am: $(JDK1_TARGETS) $(JDK2_TARGETS) $(JDK3_TARGETS)  $(JDK4_TARGETS)
+all-am: $(JDK2_TARGETS) $(JDK3_TARGETS) $(JDK4_TARGETS)
 
 run-tests:
 	$(MAKE) $(JDK_TESTS)
-
-.PHONY: jdk1-target
-jdk1-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std1
-
-jdk1-test:
-	env "JDK1=@ac_jdk1_path@" $(SHELL) ./test1.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 
 .PHONY: jdk2-target
 jdk2-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std2
+
+jdk2-target-ssl:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl2
 
 jdk2-test:
@@ -104,9 +94,6 @@ clean-local:
 EXTRA_DIST = \
 	JDBC.release \
 	openlink/util/*.java \
-	security/jdk1.2/jcert.jar \
-	security/jdk1.2/jnet.jar \
-	security/jdk1.2/jsse.jar \
 	termcap \
 	test2.bat \
 	test2.sh \
@@ -117,7 +104,6 @@ EXTRA_DIST = \
 	test.bat \
 	test.sh \
 	virtjdbc2.jar \
-	virtjdbc2ssl.jar \
 	virtjdbc3.jar \
 	virtjdbc3ssl.jar \
 	virtjdbc4.jar \
