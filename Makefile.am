@@ -25,6 +25,14 @@ ACLOCAL_AMFLAGS 	= -I binsrc/config
 
 SUBDIRS = . docsrc libsrc binsrc appsrc
 
+dist_doc_DATA = \
+	AUTHORS \
+	COPYING \
+	CREDITS \
+	INSTALL \
+	LICENSE \
+	NEWS \
+	README*
 
 # ----------------------------------------------------------------------
 #
@@ -75,13 +83,6 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	AUTHORS \
-	COPYING \
-	CREDITS \
-	INSTALL \
-	LICENSE \
-	NEWS \
-	README* \
 	autogen.sh \
 	bin/makever \
 	bin/generate \
