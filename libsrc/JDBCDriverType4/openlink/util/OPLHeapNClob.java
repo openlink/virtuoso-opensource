@@ -1,6 +1,4 @@
 /*
- *  OPLHeapNClob.java
- *
  *  $Id$
  *
  *  Implementation of the JDBC Clob class
