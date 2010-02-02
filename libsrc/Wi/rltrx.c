@@ -1583,9 +1583,12 @@ resource_t *rb_page_rc;
 
 #define TMP_V_RD(rd) \
   row_delta_t rd; \
+  union { \
+  void * dummy; \
   dtp_t temp##rd[1100]; \
-  rd.rd_temp_max = sizeof (temp##rd); \
-  rd.rd_temp = temp##rd; \
+  } temp##rd_union; \
+  rd.rd_temp_max = sizeof (temp##rd_union.temp##rd); \
+  rd.rd_temp = &(temp##rd_union.temp##rd[0]); \
   rd.rd_allocated = RD_AUTO; \
 
 
