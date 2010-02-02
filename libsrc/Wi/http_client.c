@@ -2242,7 +2242,10 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
     http_cli_set_proxy (ctx, proxy);
 
   if (NULL != (ret = http_client_cache_get ((query_instance_t *)qst, url, http_hdr, body, args, ret_arg_index)))
-    return ret;
+    {
+      http_cli_ctx_free (ctx);
+      return ret;
+    }
 
   IO_SECT(qst);
 
