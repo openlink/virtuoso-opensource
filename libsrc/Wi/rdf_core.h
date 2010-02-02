@@ -209,10 +209,11 @@ extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, cad
 extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 
 /* Numeric values of these constants are important, do not alter them. Theyh're used in tricky way. */
-#define TTLP_STRLITERAL_QUOT 		1
-#define TTLP_STRLITERAL_QUOT_AT		2
-#define TTLP_STRLITERAL_3QUOT 		3
-#define TTLP_STRLITERAL_3QUOT_AT	4
+#define TTLP_STRLITERAL_LTGT 		0x10
+#define TTLP_STRLITERAL_QUOT 		0x11
+#define TTLP_STRLITERAL_QUOT_AT		0x21
+#define TTLP_STRLITERAL_3QUOT 		0x31
+#define TTLP_STRLITERAL_3QUOT_AT	0x41
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 
@@ -246,7 +247,7 @@ extern int uriqa_iri_is_local (query_instance_t *qi, const char *iri);
 #define RDF_GRAPH_PERM_LIST 0x08
 #define RDF_GRAPH_PERM_DEFAULT (RDF_GRAPH_PERM_READ | RDF_GRAPH_PERM_WRITE | RDF_GRAPH_PERM_SPONGE | RDF_GRAPH_PERM_LIST)
 
-extern id_hash_t *rdf_graph_group_dict_htable;			/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
+extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */

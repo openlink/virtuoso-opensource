@@ -668,7 +668,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
   char *tgt_tail;
   int strg_is_long = (TTLP_STRLITERAL_QUOT_AT < mode);
   src_tail = strg + (strg_is_long ? 3 : 1);
-  src_end = strg + strlen (strg) - mode;
+  src_end = strg + strlen (strg) - (mode>>4);
   tgt_tail = tmp_buf = dk_alloc_box ((src_end - src_tail) + 1, DV_SHORT_STRING);
   while (src_tail < src_end)
     {
@@ -1877,20 +1877,20 @@ again:
       return box_iri_int64 (acc, DV_IRI_ID);
     }
   if (uriqa_dynamic_local)
-        {
+    {
       int ofs = uriqa_iri_is_local (qi, name);
       if (0 != ofs)
-            {
-              int name_box_len = box_length (name);
+        {
+          int name_box_len = box_length (name);
 /*  0123456 */
 /* "local:" */
           caddr_t localized_name = dk_alloc_box (6 + name_box_len - ofs, DV_STRING);
-              memcpy (localized_name, "local:", 6);
+          memcpy (localized_name, "local:", 6);
           memcpy (localized_name + 6, name + ofs, name_box_len - ofs);
-              if (box_to_delete == name)
-                dk_free_box (name);
-              box_to_delete = name = localized_name;
-            }
+          if (box_to_delete == name)
+            dk_free_box (name);
+          box_to_delete = name = localized_name;
+        }
     }
   switch (mode)
     {
