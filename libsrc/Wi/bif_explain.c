@@ -539,7 +539,7 @@ ts_print (table_source_t * ts)
   if (ts->ts_alternate)
     {
       stmt_printf (("Alternate ts {\n"));
-      node_print (ts->ts_alternate);
+      node_print ((data_source_t *) ts->ts_alternate);
       stmt_printf (("\n}\n"));
     }
 }

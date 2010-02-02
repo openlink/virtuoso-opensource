@@ -2423,8 +2423,8 @@ sqlp_minus (caddr_t x)
     case DV_LONG_INT: return t_box_num (- unbox (x));
     case DV_NUMERIC: {
       NUMERIC_VAR (zero);
-      numeric_from_int32 (zero, 0);
-      numeric_subtract ((numeric_t)x, zero, (numeric_t)x);
+      numeric_from_int32 ((numeric_t) zero, 0);
+      numeric_subtract ((numeric_t)x, (numeric_t) zero, (numeric_t)x);
       return x;
     }
     case DV_SINGLE_FLOAT: return t_box_float (- unbox_float (x));

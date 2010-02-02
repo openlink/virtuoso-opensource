@@ -676,6 +676,9 @@ void
 qn_init (table_source_t * ts, caddr_t * inst)
 {
   /* Reset a single state query node in a qr */
+#if 0
+  query_t * subq = ts->src_gen.src_query;
+#endif
 #if 0 /* if needed, it is reset by itself */
   if (subq->qr_remote_mode != QR_LOCAL)
     remote_subq_close (subq, inst);
@@ -777,7 +780,7 @@ subq_init (query_t * subq, caddr_t * inst)
 	{
 	  qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
 	}
-      qn_init ((data_source_t*)ts, inst);
+      qn_init (ts, inst);
     }
   END_DO_SET ();
   if (subq->qr_select_node && subq->qr_select_node->sel_row_ctr)

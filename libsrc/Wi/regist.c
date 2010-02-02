@@ -200,7 +200,7 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
 {
   dtp_t dvrdf_temp[50];
   scheduler_io_data_t iod;
-  caddr_t reg, buf = dvrdf_temp;
+  caddr_t reg, buf = (caddr_t) dvrdf_temp;
 
   dk_session_t ses;
   /* read_object will not box top level numbers */
@@ -253,7 +253,7 @@ box_deserialize_string (caddr_t text, int opt_len, short offset)
   SESSION_SCH_DATA ((&ses)) = &iod;
 
   reg = (caddr_t) read_object (&ses);
-  if (buf != dvrdf_temp)
+  if (buf != (caddr_t) dvrdf_temp)
     dk_free (buf, opt_len);
   return reg;
 }
