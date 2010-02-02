@@ -107,9 +107,6 @@ create function WV.WIKI.VSPTOPICCREATE (
 			LocalName)))
 		  from WV.WIKI.TOPIC where ClusterId = _topic.ti_cluster_id and LocalName like cast ('%' || _topic.ti_local_name || '%' as varchar)); 
 
-		  
-
-	 
   http_value (
     WV.WIKI.VSPXSLT ( 'VspTopicCreate.xslt',
       _artiles,
@@ -375,8 +372,7 @@ create function WV.WIKI.VSPTOPICEDIT (
 	WV.WIKI.DELETE_SYSINFO_FOR (coalesce (get_keyword ('temp-text', params), _topic.ti_text), NULL),
 	params);
 
-  _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicEdit.xslt', _topic.ti_get_entity (null,1),
-     _ext_params);
+  _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicEdit.xslt', _topic.ti_get_entity (null,1), _ext_params);
   http_value (_xhtml);
 }
 ;
@@ -433,9 +429,7 @@ create function WV.WIKI.VSPTOPICPREVIEW (
   declare _ext_params any;
   _ext_params := _topic.ti_xslt_vector(
 	vector_concat(params, vector ('preview_mode', 1)));
-  http_value (
-    	 WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1),
-	    _ext_params));
+  http_value (WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), _ext_params));
 }
 ;
 
@@ -968,8 +962,6 @@ create procedure WV.WIKI.VSPHEADER (
     }
 
   _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), _skin);
---  http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">');
---  http ('<html xmlns="http://www.w3.org/1999/xhtml" xmlns:i18n="http://xml.zope.org/namespaces/i18n" i18n:domain="kupu"><head>');
   http ('<html><head>');
   http ('<title>oWiki | ');
   http (_topic_title || WV.WIKI.GETCMDTITLE (params));
@@ -1299,6 +1291,8 @@ create procedure WV.WIKI.VSPDECODEWIKIPATH (in path any, out _page varchar, out 
   declare _idx integer;
   declare path_sav varchar;
   path_sav := path := http_path ();
+  if ((path like '%wiki/Doc') or (path like '%wiki/Main'))
+    path := path || '/';
   path := split_and_decode(aref (WS.WS.PARSE_URI(path), 2), 0, '\0\0/');
   declare _host varchar;
   _host := DB.DBA.WA_GET_HOST();

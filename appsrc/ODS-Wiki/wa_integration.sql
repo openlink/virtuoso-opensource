@@ -331,10 +331,11 @@ create method wa_home_url () for wa_wikiv
  if (_home is null)
   {
     _home := (select DP_PATTERN from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_CLUSTER = self.cluster_id);
-    if (_home is null){
+    if (_home is null)
+    {
       if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
         return sprintf('http://%s/wiki/main/%U', sioc..get_cname(), _cluster);
-      return sprintf('http://%s/wiki/%U', sioc..get_cname(), _cluster);
+      return sprintf('http://%s/wiki/%U/', sioc..get_cname(), _cluster);
     }
   }
  return _home || '/' ||  WV.WIKI.READONLYWIKIWORDLINK (_cluster, '');
@@ -749,8 +750,7 @@ create procedure WV.WIKI.CREATEINSTANCE (
       WAI_MEMBERS_VISIBLE = 1,
       WAI_NAME = cluster_name,
       WAI_DESCRIPTION = ''
-    where
-      WAI_ID = id;
+   where WAI_ID = id;
   return id;
 }
 ;
