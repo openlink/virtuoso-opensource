@@ -1041,6 +1041,81 @@ wcharset_by_name_or_dflt (ccaddr_t cs_name, query_instance_t *qi)
   return charset;
 }
 
+
+int
+lang_match_to_accept_language_range (const char *lang, const char *key, const char *key_end)
+{
+  if ('*' == key[0])
+    return 1;
+  if (!strncasecmp (lang, key, key_end-key) && (('\0' == lang[key_end-key]) || ('-' == lang[key_end-key])))
+    return 1 + (key_end-key);
+  return 0;
+}
+
+double
+get_q_of_lang_in_http_accept_language (const char *lang, const char *line)
+{
+  const char *tail = line;
+  /* const char *best_key = NULL, *best_key_end = NULL; */
+  int best_match_weight = 0;
+  double best_q = 0;
+#define TAIL_SKIP_WS do { while ((' ' == tail[0]) || ('\t' == tail[0])) tail++; } while (0)
+  TAIL_SKIP_WS;
+  while ('\0' != tail[0])
+    {
+      const char *key, *key_end;
+      int match_weight;
+      double q=1.0;
+      key = tail;
+      while (isalnum (tail[0]) || ('-' == tail[0]) || ('/' == tail[0]) || ('*' == tail[0])) tail++;
+      key_end = tail;
+      if (key_end == key) goto garbage_after_q;
+      TAIL_SKIP_WS;
+      if (';' != tail[0]) goto garbage_after_q;
+      tail++;
+      TAIL_SKIP_WS;
+      if ('q' != tail[0]) goto garbage_after_q;
+      tail++;
+      TAIL_SKIP_WS;
+      if ('=' != tail[0]) goto garbage_after_q;
+      tail++;
+      TAIL_SKIP_WS;
+      q=0.0;
+      while (isdigit (tail[0])) { q = q * 10 + (tail[0]-'0'); tail++; }
+      if ('.' == tail[0])
+        {
+          double weight = 0.1;
+          tail++;
+          while (isdigit (tail[0])) { q += weight * (tail[0]-'0'); weight /= 10.0; tail++; }
+        }
+garbage_after_q:
+      while ((' ' <= tail[0]) && (',' != tail[0])) tail++;
+q_done:
+      match_weight = lang_match_to_accept_language_range (lang, key, key_end);
+      if (match_weight > best_match_weight)
+        {
+          best_match_weight = match_weight;
+          best_q = q;
+        }
+      if (',' != tail[0])
+        break;
+      tail++;
+      TAIL_SKIP_WS;
+    }
+  return best_q;
+}
+
+caddr_t
+bif_langmatches_pct_http (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static const char * bifname = "langmatches_pct_http";
+  caddr_t lang = bif_string_arg (qst, args, 0, bifname);
+  caddr_t line = bif_string_arg (qst, args, 1, bifname);
+  double q = get_q_of_lang_in_http_accept_language (lang, line);
+  return box_num (q * 100);
+}
+
+
 void
 bif_intl_init (void)
 {
@@ -1063,5 +1138,6 @@ bif_intl_init (void)
   bif_define ("set_utf8_output", bif_set_utf8_output);
 #endif
   bif_define ("dbg_assert_encoding", bif_dbg_assert_encoding);
+  bif_define_typed ("langmatches_pct_http", bif_langmatches_pct_http, &bt_integer);
 }
 
