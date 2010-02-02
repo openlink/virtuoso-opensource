@@ -466,6 +466,8 @@ extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);
 extern int sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two);
 extern int sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two);
 
+/*! This replaces selid and tabid in all variables in an option list (say, options of a triple) (assuming that ids in field variables match ids of a triple) */
+extern void sparp_set_options_selid_and_tabid (sparp_t *sparp, SPART **options, caddr_t new_selid, caddr_t new_tabid);
 /*! This replaces selid and tabid in a triple (assuming that ids in field variables match ids of a triple) */
 extern void sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_selid, caddr_t new_tabid);
 
@@ -595,7 +597,7 @@ extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, i
 /*! This produces a list of single-triple GPs such that every GP implements only one quad mapping from
 qm_list of the original \c triple.
 Every generated gp contains a triple that has qm_list of length 1; guess what's the member of the list :)
-If an original triple has \c ft_type set then a free-text condition is removed from parent_gp and cloned int every generated gp
+If an original triple has \c ft_type set then a free-text condition is removed from parent_gp and cloned into every generated gp
 */
 extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp);
 

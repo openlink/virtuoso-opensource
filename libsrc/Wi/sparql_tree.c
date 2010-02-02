@@ -2178,7 +2178,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
                   sparp_equiv_remove_var (sparp, eq, var);
                   if (NULL != touched_equivs_set_ptr)
                     t_set_pushnew (touched_equivs_set_ptr, eq);
-                  if (0 != var->_.var.tabid)
+                  if (NULL != var->_.var.tabid)
                     eq->e_gspo_uses--;
                   var->_.var.selid = uname_nil;
                 }
@@ -2673,7 +2673,10 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
             }
         }
       if (NULL != memb->_.triple.options)
-        sparp_gp_trav_cu_in_options (sparp, parent_gp, memb, memb->_.triple.options, NULL);
+        {
+          sparp_set_options_selid_and_tabid (sparp, memb->_.triple.options, parent_gp->_.gp.selid, memb->_.triple.tabid);
+          sparp_gp_trav_cu_in_options (sparp, parent_gp, memb, memb->_.triple.options, NULL);
+        }
       memb->_.triple.selid = t_box_copy (parent_gp->_.gp.selid);
     }
 }

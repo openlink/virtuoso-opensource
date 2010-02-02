@@ -1135,6 +1135,8 @@ void spar_gp_replace_selid (sparp_t *sparp, dk_set_t membs, caddr_t old_selid, c
             spar_internal_error (sparp, "spar_gp_replace_selid(): bad selid of var or bnode label");
           fld->_.var.selid = new_selid;
         }
+      if (NULL != memb->_.triple.options)
+        sparp_set_options_selid_and_tabid (sparp, memb->_.triple.options, new_selid, memb->_.triple.tabid);
     }
   END_DO_SET ()
 }
@@ -1191,14 +1193,34 @@ check_optionals:
           if (((0 == opt_ctr) && (1 < all_ctr)) || /* Add extra GP to guarantee proper left side of the left outer join */
             (0 < opt_ctr) )/* Add extra GP to guarantee proper support of {... OPTIONAL { ... ?x ... } ... OPTIONAL { ... ?x ... } } */
             {
-              dk_set_t left = NULL;
+              dk_set_t left_membs = NULL;
+              dk_set_t left_ft_filts = NULL;
               int left_ctr;
               SPART *left_group;
-              for (left_ctr = 0; left_ctr < all_ctr; left_ctr++)
-                t_set_push (&left, t_set_pop (&membs));
               spar_gp_init (sparp, 0);
-              spar_gp_replace_selid (sparp, left, orig_selid, env->spare_selids->data);
-              env->spare_acc_triples->data = left;
+              for (left_ctr = 0; left_ctr < all_ctr; left_ctr++)
+                {
+                  SPART *memb = t_set_pop (&membs);
+                  if ((SPAR_TRIPLE == SPART_TYPE(memb)) && (memb->_.triple.ft_type))
+                    {
+                      SPART *ft_filt = NULL;
+                      DO_SET (SPART *, filt, &filts)
+                        {
+                          if (!spar_filter_is_freetext (sparp, filt, memb))
+                            continue;
+                          t_set_delete (&filts, filt);
+                          t_set_push (&left_ft_filts, filt);
+                          /* A cheat use of sparp_set_options_selid_and_tabid for funcall.argtrees isntead of smth.options, looks OK for freetext */
+                          sparp_set_options_selid_and_tabid (sparp, filt->_.funcall.argtrees, env->spare_selids->data, memb->_.triple.tabid);
+                          break;
+                        }
+                      END_DO_SET()
+                    }
+                  t_set_push (&left_membs, memb);
+                }
+              spar_gp_replace_selid (sparp, left_membs, orig_selid, env->spare_selids->data);
+              env->spare_acc_triples->data = left_membs; /* a revlist is set to a revlist, no reverse needed */
+              env->spare_acc_filters->data = left_ft_filts; /* same is true for filters, even if not so important */
               left_group = spar_gp_finalize (sparp, NULL);
               t_set_push (&membs, left_group);
               goto check_optionals; /* see above */
@@ -1241,23 +1263,37 @@ void spar_gp_add_member (sparp_t *sparp, SPART *memb)
 }
 
 int
-spar_filter_is_freetext (SPART *filt)
+spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
 {
+  int res = 0;
   caddr_t fname;
   if (SPAR_FUNCALL != SPART_TYPE (filt))
     return 0;
   fname = filt->_.funcall.qname;
   if (!strcmp (fname, "bif:contains"))
-    return SPAR_FT_CONTAINS;
-  if (!strcmp (fname, "bif:xcontains"))
-    return SPAR_FT_XCONTAINS;
-  if (!strcmp (fname, "bif:xpath_contains"))
-    return SPAR_FT_XPATH_CONTAINS;
-  if (!strcmp (fname, "bif:xquery_contains"))
-    return SPAR_FT_XQUERY_CONTAINS;
-  if (!strcmp (fname, "bif:spatial_contains"))
-    return SPAR_GEO_CONTAINS;
+    res = SPAR_FT_CONTAINS;
+  else if (!strcmp (fname, "bif:xcontains"))
+    res = SPAR_FT_XCONTAINS;
+  else if (!strcmp (fname, "bif:xpath_contains"))
+    res = SPAR_FT_XPATH_CONTAINS;
+  else if (!strcmp (fname, "bif:xquery_contains"))
+    res = SPAR_FT_XQUERY_CONTAINS;
+  else if (!strcmp (fname, "bif:spatial_contains"))
+    res = SPAR_GEO_CONTAINS;
+  else
+    return 0;
+  if (NULL != base_triple)
+    {
+      caddr_t ft_var_name;
+      if (SPAR_VARIABLE != SPART_TYPE (base_triple->_.triple.tr_object))
+        spar_internal_error (sparp, "sparp_" "filter_is_freetext(): triple should have free-text predicate but the object is not a variable");
+      ft_var_name = base_triple->_.triple.tr_object->_.var.vname;
+      if ((0 == BOX_ELEMENTS (filt->_.funcall.argtrees)) ||
+        (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0])) ||
+        strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
   return 0;
+}
+  return res;
 }
 
 int
@@ -1287,7 +1323,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       spar_gp_add_filter (sparp, filt->_.bin_exp.right);
       return;
     }
-  ft_type = spar_filter_is_freetext (filt);
+  ft_type = spar_filter_is_freetext (sparp, filt, NULL);
   if (ft_type)
     {
       caddr_t ft_pred_name = filt->_.funcall.qname;

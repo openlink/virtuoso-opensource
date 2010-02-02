@@ -6069,7 +6069,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
   if (tree == (box_t)(1)) /* The filter has been disabled because it's printed already */
     return;
-  if (spar_filter_is_freetext (tree))
+  if (spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
     {
       return;
       /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
@@ -6297,7 +6297,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
               tree->_.triple.ft_type = -1;
               goto no_extra_ft_tables; /* see below */ /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");*/
             }
-          qmft = qm->qmObjectMap->qmvFText;
+          qmft = ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           if (NULL == qmft)
             {
               tree->_.triple.ft_type = -1;
@@ -6400,14 +6400,12 @@ from_printed:
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
           SPART *ft_pred = NULL, **args, *ft_arg1, *g;
-          qm_ftext_t *qmft = qm->qmObjectMap->qmvFText;
+          qm_ftext_t *qmft = ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           caddr_t ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           int ctr, argctr, argcount, contains_in_rdf_quad;
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
-              if (!spar_filter_is_freetext (filt))
-                continue;
-              if (strcmp (var_name, filt->_.funcall.argtrees[0]->_.var.vname))
+              if (!spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
@@ -6428,9 +6426,9 @@ from_printed:
             !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
           g = tree->_.triple.tr_graph;
           ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
-          ssg_print_where_or_and (ssg, "freetext predicate");
+          ssg_print_where_or_and (ssg, ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
-          ssg_puts (ft_pred->_.funcall.qname + 4);
+          ssg_puts (((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
           ssg_puts ("(");
           ssg_prin_id (ssg, ft_alias);
           ssg_puts (".");
@@ -6460,7 +6458,7 @@ contains_print_scalar:
         }
       else if (0 > tree->_.triple.ft_type)
         {
-          ssg_print_where_or_and (ssg, "invalidated freetext predicate");
+          ssg_print_where_or_and (ssg, "invalidated freetext or spatial predicate");
           ssg_puts ("(1 = 2)");
         }
       if ((0 == tree_ctr) || !inside_breakup)
