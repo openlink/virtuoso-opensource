@@ -191,8 +191,6 @@
     {
       if (formName.equals("login"))
         out.print("Login");
-      if (formName.equals("register"))
-        out.print("Register");
       if (formName.equals("user"))
         out.print("View Profile");
       if (formName.equals("profile"))
@@ -620,7 +618,7 @@
       <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&amp;realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
+        <div id="ob_left"><% outFormTitle (out, $_form); %></div>
         <%
           if ($_form != "login")
           {

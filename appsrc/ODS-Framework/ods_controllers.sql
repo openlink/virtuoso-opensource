@@ -1245,6 +1245,7 @@ create procedure ODS.ODS_API."user.update.fields" (
 ;
 
 create procedure ODS.ODS_API."user.password_change" (
+  in old_password varchar,
 	in new_password varchar) __soap_http 'text/xml'
 {
   declare uname, msg varchar;
@@ -1263,7 +1264,7 @@ create procedure ODS.ODS_API."user.password_change" (
   rc := -1;
   msg := 'Success';
   set_user_id ('dba');
-  DB.DBA.USER_PASSWORD_SET (uname, new_password);
+  DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
   rc := 1;
   ret:
   return ods_serialize_int_res (rc, msg);

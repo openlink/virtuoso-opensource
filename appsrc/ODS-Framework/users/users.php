@@ -99,7 +99,7 @@
         } else {
           $_xml = simplexml_load_string($_result);
           $_sid = $_xml->sid;
-            $_form = "user";
+          $_form = "profile";
           }
         }
       }
@@ -428,7 +428,7 @@
       <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<?php print($_sid); ?>&amp;realm=<?php print($_realm); ?>">ODS Home</a> > <?php outFormTitle($_form); ?></div>
+        <div id="ob_left"><?php outFormTitle($_form); ?></div>
         <?php
           if ($_form <> 'login')
           {

@@ -564,7 +564,7 @@
       <input type="hidden" name="favorites" id="favorites" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<?V vSid ?>&amp;realm=<?V vRealm ?>">ODS Home</a> > <?V vForm ?></div>
+        <div id="ob_left"><?V case when vForm = 'user' then 'View Profile' else case when vForm = 'profile' then 'User Profile' else 'Login' end end ?></div>
         <?vsp
           if (vForm <> 'login')
           {
