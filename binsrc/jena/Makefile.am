@@ -91,7 +91,7 @@ run-tests:
 endif
 
 clean-local:
-	-rm -rf out.driver
+	-rm -rf out.driver doc
 
 
 # ----------------------------------------------------------------------

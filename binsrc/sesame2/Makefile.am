@@ -91,7 +91,7 @@ endif
 
 
 clean-local:
-	-rm -rf out.driver out.examples
+	-rm -rf out.driver out.examples doc
 
 # ----------------------------------------------------------------------
 #
