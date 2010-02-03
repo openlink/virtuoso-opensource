@@ -57,8 +57,6 @@ EXTRA_DIST = \
 	public/images/dav_browser/*.png \
 	public/images/fav.ico \
 	public/images/smileys/*.gif \
-	public/scripts/*.htm \
-	public/scripts/*.html \
 	public/scripts/*.js \
 	templates/*.vspx \
 	templates/atlantis/*.css \
