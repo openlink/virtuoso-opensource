@@ -56,6 +56,6 @@ CKEDITOR.editorConfig = function( config )
                           });
                   }
               };
-  config.filebrowserImageBrowseUrl = function(){davBrowse('ss');};
-	baseFloatZIndex : 51;
+  // config.filebrowserImageBrowseUrl = function(){davBrowse('ss');};
+	config.baseFloatZIndex = 51;
 };
