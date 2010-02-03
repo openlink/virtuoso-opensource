@@ -140,6 +140,16 @@
                 <?vsp
                   };
                 ?>
+                <?vsp
+                  if  (smode ='17')
+                  {
+                ?>
+                <br/><?V input_getcustom (10) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (11) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <br/><?V input_getcustom (12) ?> <input size="60" type="text" name="sc4" value="<?= srch4 ?>"/>
+                <?vsp
+                  };
+                ?>
                 <input type="submit" name="fa" value="Execute"/>
               </td>
             </tr>
@@ -236,7 +246,7 @@
 		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
  		        else
                           http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://demo.openlinksw.com/ode/?uri=',tmp), get_curie (tmp)));
-                        if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '101') and j=0)
+                        if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '17', '101') and j=0)
 			  http (sprintf('&nbsp;<b><a href="dlistall.vsp?p=%U">Drill-down</a></b>',tmp));
 			if (0 and smode = '5')
                           http (sprintf('&nbsp;<b><a href="search.vsp?q=1001&sc=%U&fa=Execute">NEs</a></b>',tmp));

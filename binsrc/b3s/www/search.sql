@@ -39,6 +39,7 @@ create procedure label_get(in smode varchar)
   else if (smode='14') label := 'Motorways across England & Scotland';
   else if (smode='15') label := 'Places of worship around London with Cities in close proximity';
   else if (smode='16') label := 'Places with coordinates';
+  else if (smode='17') label := 'Subcategories of Protestant Churches';
   else if (smode='100') label := 'Concept Cloud';
   else if (smode='101') label := 'Social Net';
   else if (smode='102') label := 'Graphs in Social Net';
@@ -74,6 +75,12 @@ create procedure input_getcustom (in num varchar)
     return 'Person URI';
   if (num = 9)
     return 'Person URI';
+  if (num = 10)
+    return 'First Lang';
+  if (num = 11)
+    return 'Second Lang';
+  if (num = 12)
+    return 'Broader';
   else return '';
 }
 ;
@@ -99,7 +106,8 @@ create procedure input_get (in num varchar)
         'City Longitude',
         'Latitude',
         'Place of Worship URI',
-        'Geometry Latitude'
+        'Geometry Latitude',
+        'Narrower'
 	);
   t2 := vector (
   	'',
@@ -108,7 +116,7 @@ create procedure input_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 16)
+  if (num > -1 and num < 17)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -140,7 +148,8 @@ create procedure desc_get (in num varchar)
         'Show places of worship, within certain km of Paris, that have cafes in close proximity.',
         'Show motorways across England & Scotland from DBpedia.',
         'Shows cities within cerain proximity of London.',
-        'Shows geometries with their coordinates.'
+        'Shows geometries with their coordinates.',
+        'Find entities that are subcategories of Protestant Churches, no deeper than 3 levels within the concept scheme hierarchy filtered by a specific subcategory.'
 	);
   t2 := vector (
   	'',
@@ -149,7 +158,7 @@ create procedure desc_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 16)
+  if (num > -1 and num < 17)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -177,7 +186,8 @@ create procedure head_get (in num varchar)
     vector ('Cafe URI', 'Latitude', 'Longitude', 'Cafe Name', 'Church Name', 'Count'),
     vector ('Road', 'Service', 'Latitude', 'Longitude'),
     vector ('City URI', 'Count'),
-    vector ('Geometry URI', 'Latitude', 'Longitude')
+    vector ('Geometry URI', 'Latitude', 'Longitude'),
+    vector ('SKOS Broader', 'SKOS Narrower', 'SKOS Level', 'Entity URI', 'Entity Name', 'Geo Point')
   );
   t2 := vector (
     vector (),
@@ -187,7 +197,7 @@ create procedure head_get (in num varchar)
   );
   t3 := vector ();
   num := atoi (num) - 1;
-  if (num > -1 and num < 16)
+  if (num > -1 and num < 17)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -249,6 +259,8 @@ create procedure get_curie (in val any)
   if (strstr (val, 'http://purl.org/ontology/bibo/') = 0 ) res :=  'bibo';
   if (strstr (val, 'http://purl.org/goodrelations/v1#') = 0 ) res :=  'gr';
   if (strstr (val, 'http://linkedgeodata.org/vocabulary#') = 0 ) res :=  'lgv';
+  if (strstr (val, 'http://dbpedia.org/resource/Category:') = 0 ) res :=  'category';
+  if (strstr (val, 'http://www.georss.org/georss/') = 0 ) res :=  'grs';
 
   if (res is null)
     res := __xml_get_ns_prefix (pref, 2);
@@ -781,8 +793,8 @@ s3 := '\')) .
 --    }
   else if (smode = '13')
   {
-    if (isnull(val)  or val = '') val := '2';
-    if (isnull(val2)  or val2 = '') val2 := '48';
+    if (isnull(val)  or val = '') val := '2.3498';
+    if (isnull(val2)  or val2 = '') val2 := '48.853';
 
     if (isnull(val3)  or val3 = '') val3 := '5';
     if (isnull(val4)  or val4 = '') val4 := '0.2';
@@ -884,6 +896,44 @@ s3 := '\')) .
     s4 := concat(s2, ' && ?long > ', s3);
     s5 := ' ) }  LIMIT 50';
     query := s1 || s4 || s5;
+  }
+  else if ( smode='17' )
+  {
+    if (isnull(val)  or val = '') val := 'category:Protestant_churches';
+    if (isnull(val2)  or val2 = '') val2 := 'en';
+    if (isnull(val3)  or val3 = '') val3 := 'en';
+    if (isnull(val4)  or val4 = '') val4 := 'http://dbpedia.org/resource/Category:Churches_in_London';
+
+    validate_input(val);
+    validate_input(val2);
+    validate_input(val3);
+    validate_input(val4);
+
+    s1 := 'sparql define input:inference "skos-trans" SELECT DISTINCT ?c AS ?skos_broader ' ||
+       ' ?trans AS ?skos_narrower ' ||
+       ' ?dist AS ?skos_level ' ||
+       ' ?m ?n ?p AS ?geo_point ' ||
+       ' WHERE  ' ||
+       '   { ' ||
+       '     { ' ||
+       '       SELECT ?c  ?m ?n ?p ?trans?dist ' ||
+       '       WHERE ' ||
+       '         { ' ||
+       '           ?m rdfs:label ?n . ' ||
+       '           ?m skos:subject ?c . ' ||
+       '           ?c skos:broaderTransitive ';
+   s2 := concat (val, ' . ');
+   s3 := '         ?c skos:broaderTransitive ?trans ' ||
+       '           OPTION ( TRANSITIVE, t_distinct, t_in (?c), t_out (?trans), t_max (3),  t_step ( ''step_no'' ) as ?dist ) .  '||
+       '           ?m dbpprop:abstract ?d . ' ||
+       '           ?m grs:point ?p . ' ||
+       '           FILTER ( lang(?n) = "';
+   s4 := concat(val2, '" ) . FILTER ( lang(?d) = "', val3, '" ) ');
+   s5 := '      } ' ||
+       '     } ' ||
+       '     FILTER ( ?trans = <';
+   s5 := concat(s5, val4, '> )  } ORDER BY ASC (?dist) ');
+   query := concat('',s1, s2, s3, s4, s5, '');
   }
   --smode > 99 is reserved for drill-down queries
   else if (smode = '1001' or smode = '104')
