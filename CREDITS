@@ -77,8 +77,21 @@ OAT
 <http://sourceforge.net/projects/oat/>
 
     Virtuoso uses the OpenLink AJAX Toolkit (OAT) in the Data Space
-    application suite, distributable under the terms of the GNU Public
-    License v2: <http://www.gnu.org/copyleft/gpl.html>
+    application suite.
+
+    OAT is distributed under the terms of the GNU Public License v2:
+    <http://www.gnu.org/copyleft/gpl.html>
+
+
+CKEditor
+<http://ckeditor.com/>
+
+    Virtuoso uses the CKEditor, a WYSIWYG editor in javascript in the
+    Data Space application suite.
+
+    CKEditor is distributed under the terms of the GNU Public License,
+    the Lesser GNU Public License or the Mozilla Public License:
+    <http://ckeditor.com/license>
 
 
 SHA1 Javascript
@@ -86,7 +99,7 @@ SHA1 Javascript
     Virtuoso uses a Javsscript implementation of the Secure Hash Algoritm
     (SHA1) as defined in FIPS PUB 180-1, written  by Paul Johnston
 
-    SHA1 is distributable under the terms of the BSD license
+    SHA1 is distributed under the terms of the BSD license
     <http://pajhome.org.uk/crypt/md5>
 
 
