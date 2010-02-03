@@ -34,16 +34,6 @@ OpenSSL
     restrictions: <http://www.openssl.org/support/faq.html#LEGAL1>
 
 
-GD
-<http://www.boutell.com/gd/>
-
-    This product includes the "graphics draw" library by Boutell.Com, Inc
-    and others.
-
-    GD is distributed under the terms of the GD license:
-    <http://www.boutell.com/gd/manual2.0.33.html#notice>
-
-
 Tidy - HTML parser and pretty printer
 <http://www.w3.org/People/Raggett/tidy/>
 
@@ -63,39 +53,6 @@ Zlib - compression library
     <http://opensource.org/licenses/zlib-license.php>
 
 
-Kupu
-<http://kupu.oscom.org/>
-
-    This product includes the Kupu web-based editor.
-
-    Kupu is distributed under the terms of the Kupu (BSD-style) license:
-    <http://codespeak.net/svn/kupu/trunk/kupu/doc/LICENSE.txt>
-
-
-Sarissa
-<http://sarissa.sourceforge.net/>
-
-    This product includes the Sarissa XML library.
-
-    Sarissa is distributed under the terms of the
-    GNU General Public License version 2 or higher
-    <http://sarissa.sourceforge.net/doc/gpl.txt>, 
-    the GNU Lesser General Public License version 2.1 or higher
-    <http://sarissa.sourceforge.net/doc/lgpl.txt> 
-    or the Apache Software License 2.0 or higher 
-    <http://sarissa.sourceforge.net/doc/asl.txt>.
-
-
-Rendezvous
-<http://www.opensource.apple.com/projects/rendezvous/>
-
-    This product includes the Rendezvous network-discovery library by Apple
-    Computer, Inc.
-
-    Rendezvous is distributed under the terms of the Apple Public Source
-    License: <http://www.opensource.apple.com/apsl/>
-
-
 PCRE
 <http://www.pcre.org/>
 
@@ -104,16 +61,6 @@ PCRE
 
     PCRE is distributed under the terms of the BSD license:
     <http://www.pcre.org/license.txt>
-
-
-IE7
-<http://dean.edwards.name/IE7>
-
-    This product uses the IE7 JavaScript library by Dean Edwards to improve
-    standards-compliance in the Internet Explorer browser.
-
-    IE7 is distributed under the terms of the GNU Lesser General Public
-    License version 2.1: <http://creativecommons.org/licenses/LGPL/2.1/>
 
 
 RTE
@@ -130,8 +77,21 @@ OAT
 <http://sourceforge.net/projects/oat/>
 
     Virtuoso uses the OpenLink AJAX Toolkit (OAT) in the Data Space
-    application suite, distributable under the terms of the GNU Public
-    License v2: <http://www.gnu.org/copyleft/gpl.html>
+    application suite.
+
+    OAT is distributed under the terms of the GNU Public License v2:
+    <http://www.gnu.org/copyleft/gpl.html>
+
+
+CKEditor
+<http://ckeditor.com/>
+
+    Virtuoso uses the CKEditor, a WYSIWYG editor in javascript in the
+    Data Space application suite.
+
+    CKEditor is distributed under the terms of the GNU Public License,
+    the Lesser GNU Public License or the Mozilla Public License:
+    <http://ckeditor.com/license>
 
 
 SHA1 Javascript
@@ -139,8 +99,17 @@ SHA1 Javascript
     Virtuoso uses a Javsscript implementation of the Secure Hash Algoritm
     (SHA1) as defined in FIPS PUB 180-1, written  by Paul Johnston
 
-    SHA1 is distributable under the terms of the BSD license
+    SHA1 is distributed under the terms of the BSD license
     <http://pajhome.org.uk/crypt/md5>
+
+
+MD5 Java
+
+    Virtuoso uses a Java implementation of the MD5 hash algorithm
+    as defined in RFC1231, written Santeri Paavolainen
+
+    MD5.java is distributed under the terms of the GNU Lesser General
+    Public License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
 
 
 DocBook stylesheets
@@ -270,9 +239,21 @@ Handle System Client Library
    <http://hdl.handle.net/4263537/5027>
 
 
-TPC-W
-<http://www.tpc.org/tpcw/>
+Rendezvous
+<http://www.opensource.apple.com/projects/rendezvous/>
 
-   Virtuoso distributes a copy of the IMAGEGEN and WGET sources
-   from the Transaction Processing Performance Council as required
-   by <http://www.tpc.org/tpcw/spec/WGEN_README.doc>
+    Virtuoso may be linked against the Rendezvous network-discovery
+    library by Apple Computer, Inc.
+
+    Rendezvous is distributed under the terms of the Apple Public Source
+    License: <http://www.opensource.apple.com/apsl/>
+
+
+ImageMagick
+<http://www.imagemagick.org/>
+
+   Parts of Virtuoso may be linked against the ImageMagick graphics library.
+
+   ImageMagick is distributed under the terms of the ImageMagick license:
+   <http://www.imagemagick.org/script/license.php> which is compatible
+   with GPL.
