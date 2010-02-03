@@ -29,6 +29,8 @@ DB.DBA.XML_SET_NS_DECL ('usc',  'http://www.rdfabout.com/rdf/schema/uscensus/det
 DB.DBA.XML_SET_NS_DECL ('b3s', 'http://b3s.openlinksw.com/', 2);
 DB.DBA.XML_SET_NS_DECL ('lod', 'http://lod.openlinksw.com/', 2);
 DB.DBA.XML_SET_NS_DECL ('lgv', 'http://linkedgeodata.org/vocabulary#', 2);
+DB.DBA.XML_SET_NS_DECL ('category', 'http://dbpedia.org/resource/Category:', 2);
+DB.DBA.XML_SET_NS_DECL ('grs', 'http://www.georss.org/georss/', 2);
 
 
 --delete from rdf_quad where g = iri_to_id ('b3sonto');
@@ -63,3 +65,11 @@ foaf:mbox_sha1sum rdfs:subPropertyOf lod:ifp_like .
 ', 'xx', 'b3sifp');
 
 rdfs_rule_set ('b3sifp', 'b3sifp');
+
+SPARQL
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+INSERT INTO GRAPH <urn:rules.skos> { skos:broader rdfs:subPropertyOf skos:broaderTransitive .  skos:narrower rdfs:subPropertyOf skos:narrowerTransitive }
+;
+
+rdfs_rule_set ('skos-trans', 'urn:rules.skos');
