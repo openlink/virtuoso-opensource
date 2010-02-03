@@ -212,10 +212,11 @@ extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, cad
 extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 
 /* Numeric values of these constants are important, do not alter them. Theyh're used in tricky way. */
-#define TTLP_STRLITERAL_QUOT 		1
-#define TTLP_STRLITERAL_QUOT_AT		2
-#define TTLP_STRLITERAL_3QUOT 		3
-#define TTLP_STRLITERAL_3QUOT_AT	4
+#define TTLP_STRLITERAL_LTGT 		0x10
+#define TTLP_STRLITERAL_QUOT 		0x11
+#define TTLP_STRLITERAL_QUOT_AT		0x21
+#define TTLP_STRLITERAL_3QUOT 		0x31
+#define TTLP_STRLITERAL_3QUOT_AT	0x41
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 

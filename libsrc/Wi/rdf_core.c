@@ -669,7 +669,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
   char *tgt_tail;
   int strg_is_long = (TTLP_STRLITERAL_QUOT_AT < mode);
   src_tail = strg + (strg_is_long ? 3 : 1);
-  src_end = strg + strlen (strg) - mode;
+  src_end = strg + strlen (strg) - (mode>>4);
   tgt_tail = tmp_buf = dk_alloc_box ((src_end - src_tail) + 1, DV_SHORT_STRING);
   while (src_tail < src_end)
     {
