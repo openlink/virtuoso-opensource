@@ -131,6 +131,10 @@ function init() {
     }
 }
 
+iSPARQL.SERVER_TYPE = {
+    GENERIC:  0,
+    VIRTUOSO: 1
+};
 
 /* FIXME: this is only used by Schemas, so it should go away.
  * Schemas should use its own query (caching mechanism)
@@ -563,7 +567,9 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 		$("spongerVars").options[i] = null;
 	    }
 	}
+	
 	var l = $("spongerVars").options.length;
+
 	if (l<1) { OAT.Dom.hide("spongerVars"); }
 
 	self.opts.setGrabVars();
@@ -619,11 +625,17 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
     this.setEpOptCtl = function () {
 	self.epCombo.input.value = self.opts.endpointPath;
+
+	if (self.opts.verType == iSPARQL.SERVER_TYPE_VIRTUOSO)
+	    $("endpointTypeInd").innerHtml = "(Virtuoso)";
+	else
+	    $("endpointTypeInd").innerHtml = "(Generic)";
     }
 
     this.setPragmaSelect = function(pragma, select) {
 
 	var p = self.opts.findPragma(pragma) || false;
+	
 	if (!p) { return; }
 
 	var opts = $(select).options;
@@ -648,6 +660,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
 	var values = p[1];
 	var opts = $(select).options;
+	
 	for (var i=0;i<opts.length;i++) {
 	    var opt = opts[i];
 	    var index = values.find("<" + opt.value + ">");
@@ -735,6 +748,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
     this.endpointPath            = '/sparql';
     this.useProxy                = true;
     this.pragmas                 = [];
+    this.serverType    = iSPARQL.SERVER_TYPE.VIRTUOSO;
 
     // get:soft [replace|replacing|soft|none] - caching - control sponging
     // input:grab-all - overrides grab-seealso
@@ -754,7 +768,8 @@ iSPARQL.EndpointOpts = function (optsObj) {
 		var o = {
 			endpointPath:self.endpointPath,
 		 useProxy:    self.useProxy,
-		 	pragmas:     self.pragmas
+	    pragmas:     self.pragmas,
+	    serverType:  self.serverType
 		};
 
 	return OAT.JSON.stringify (o);
@@ -794,10 +809,32 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	self.saveSes();
     }
 
+    this.endpointDetectCB = function (data, headers) {
+	if (headers["Server"].match(/Virtuoso.*/)) {
+	    self.serverType = iSPARQL.SERVER_TYPE.VIRTUOSO;
+	} else { 
+	    self.serverType = iSPARQL.SERVER_TYPE.GENERIC;
+	}
+	OAT.Observer.notify (self.observers, null, 'detectEndpoint');
+    }
+
+    this.detectEndpointType = function () {
+	self.setEndpointTO = false;
+	var o = {
+	    type:OAT.AJAX.TYPE_XML,
+	};
+
+//	OAT.AJAX.POST (self.endpointPath, "select * where {?s ?p ?o} limit 1", self.endPointDetectCB, o);
+    }
+
+    this.setEndpointTO = false;
+
     this.setEndpoint = function (callerObj, val) {
 	self.endpointPath = val;
-	OAT.Observer.notify (self.observers, callerObj, 'setEndpoint');
+	if (self.setEndpointTO) clearTimeout (self.setEndpointTO);
+	self.setEndpointTO = setTimeout (self.detectEndpointType, 3000);
 	self.saveSes();
+	OAT.Observer.notify (self.observers, callerObj, 'setEndpoint');
     }
 
     this.resetPragmas = function () {
@@ -1254,6 +1291,18 @@ iSPARQL.Common = {
     //
 
     initDefaults: function () {
+	var o = { 
+	    async: false,
+	    onerror: function() { iSPARQL.Common.statMsg("Warning: Could not get server defaults.") },
+	};
+
+	OAT.AJAX.GET ('./defaults/',
+		      '',
+		      function(data, headers) {
+			  iSPARQL.serverDefaults = OAT.JSON.parse(data);
+		      },
+		      o);
+
 	for (var defName in iSPARQL.serverDefaults) {
 	    	if (defName == 'auth') {
 		    for (var authParm in iSPARQL.serverDefaults.auth) {
@@ -1400,6 +1449,7 @@ iSPARQL.Common = {
  			OAT.Dom.hide('queryopts');
 			OAT.Dom.hide('queryMetaData');
 			OAT.Dom.hide('controls');
+		
 	    }
 	}
 
@@ -1749,6 +1799,7 @@ iSPARQL.Common = {
 	var index = iSPARQL.dataObj.namedGraphs.find(graph);
 	if (index != -1) { return; }
 	iSPARQL.dataObj.namedGraphs.push(graph);
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
     },
 
@@ -1756,6 +1807,7 @@ iSPARQL.Common = {
 	var index = iSPARQL.dataObj.namedGraphs.find(graph);
 	if (index == -1) { return; }
 	iSPARQL.dataObj.namedGraphs.splice(index,1);
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.namedGraphs);
     },
 
@@ -1763,6 +1815,7 @@ iSPARQL.Common = {
 	var index = iSPARQL.dataObj.graphs.find(graph);
 	if (index != -1) { return; }
 	iSPARQL.dataObj.graphs.push(graph);
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
     },
 
@@ -1770,6 +1823,7 @@ iSPARQL.Common = {
 	var index = iSPARQL.dataObj.prefixes.find(prefix);
 	if (index != -1) { return; }
 	iSPARQL.dataObj.prefixes.push(prefix);
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.prefixes);
     },
 
@@ -1777,16 +1831,19 @@ iSPARQL.Common = {
 	var index = iSPARQL.dataObj.graphs.find(graph);
 	if (index == -1) { return; }
 	iSPARQL.dataObj.graphs.splice(index,1);
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.graphs);
     },
 
     setQuery:function(query) {
 	iSPARQL.dataObj.query = query;
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.query);
     },
 
     setDefaultGraph:function(graph) {
 	iSPARQL.dataObj.defaultGraph = graph;
+	this.saveSes();
 	iSPARQL.Common.log(iSPARQL.dataObj.defaultGraph);
     },
 
@@ -1800,18 +1857,34 @@ iSPARQL.Common = {
     // XXX should abstract better for better code reuse - have OAT Component for cross-browser(version) compat
     //
 
+    persistList:["query", "defaultGraph", "graphs", "namedGraphs", "prefixes", "pragmas", "maxrows","sponge","tab"],
+
     resetSes:function () {
 	sessionStorage.iSPARQLSes = '';
 	iSPARQL.Common.reset();
     },
 
     saveSes:function () {
-	sessionStorage.iSPARQLSes = OAT.JSON.stringify (iSPARQL.dataObj);
+	var storeObj = {};
+	for (mName in self.persistList) {
+	    if (typeof iSPARQL.dataObj[mName] != 'object')
+		storeObj[mName] = iSPARQL.dataObj[mName];
+	    else
+		storeObj[mName] = OAT.JSON.parse(OAT.JSON.stringify (iSPARQL.dataObj[mName]));
+	}
+
+	if (typeof sessionStorage.iSPARQLSes == 'undefined' || !sessionStorage.iSPARQLSes)
+	    sessionStorage.iSPARQLSes = {dataObj: {}};
+
+	sessionStorage.iSPARQLSes.dataObj = storeObj;
     },
 
     loadSes: function () {
-	if (typeof sessionStorage.iSPARQLSes != 'undefined' && sessionStorage.iSPARQLSes)
-	    iSPARQL.dataObj = OAT.JSON.parse (sessionStorage.iSPARQLSes);
+	if (typeof sessionStorage.iSPARQLSes != 'undefined') {
+	    var ss = sessionStorage.iSPARQLSes
+	    if (ss && typeof ss.dataObj != 'undefined')
+		iSPARQL.dataObj = OAT.JSON.parse (OAT.JSON.stringify(ss.dataObj));
+	}
     },
 
     //

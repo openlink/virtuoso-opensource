@@ -312,9 +312,9 @@ ASK WHERE
         <span class="maxrows_expln">Leave empty for server maximum setting.</span>
       </fieldset>
         <div class="controls" id="queryMetaData">
-          <h3 id="mdtoggler"><span class="indicator" id="mdoptstogglerarrow">&#9656;</span>Query Metadata</h3>
-          <div id="mdopts_ctr" style="display: none">
-            <fieldset class="mdopts" id="mdopts">
+        <h3 id="mdtoggler" class="ctl_tgl"><span class="tgl_indicator" id="mdoptstogglerarrow">&#9656;</span>Query Metadata</h3>
+        <div id="mdopts_ctr" class="ctl_ctr" style="display: none">
+          <fieldset class="md_opts" id="mdopts">
               <label for="mdtitle">Title:</label><input type="text" id="mdtitle"/><br/>
 	      <label for="mddescription">Description:</label><input type="text" id="mddescription"/><br/>
 	      <label for="mdcreator">Creator:</label><input type="text" id="mdcreator"/><br/>
@@ -323,14 +323,14 @@ ASK WHERE
           </div> <!-- #mdopts_ctr -->
         </div> <!-- #queryMetaData -->
         <div class="controls" id="controls">
-	  <h3 id="endpoint_opts_toggler">
-            <span class="indicator" id="endpointoptstogglerarrow">&#9656;</span>Endpoint Options <span id="epvirtuosoindicator" style="display: none">(Virtuoso)</span>
+        <h3 id="endpoint_opts_toggler" class="ctl_tgl">
+          <span class="tgl_indicator" id="endpointoptstogglerarrow">&#9656;</span>Endpoint Options <span id="epvirtuosoindicator" style="display: none">(Virtuoso)</span>
           </h3>
-	  <div id="endpoint_opts" style="display:none">
+	    <div id="endpoint_opts" class="ctl_ctr" style="display:none">
             <fieldset class="endpoint" id="endpoint"> <!-- endpoint -->
               <legend>Endpoint</legend>
 	    </fieldset>
-	    <fieldset class="derefOpts" id="derefOpts" style="display:none">
+	      <fieldset class="deref_opts" id="derefOpts" style="display:none">
 	      <legend>Data Dereferencing Options</legend>
               <table>
                 <tr>

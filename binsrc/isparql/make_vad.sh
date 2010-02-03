@@ -308,9 +308,13 @@ sticker_init() {
 	echo "" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/iSPARQL/sql/setup.sql',1,'report',1);" >> $STICKER
 	echo "      DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');" >> $STICKER
-	echo "      DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, def_page => 'index.vsp');" >> $STICKER
+  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, def_page=>'index.html');" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/isparql/view/');" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/isparql/view/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'execute.html');" >> $STICKER
+  echo "      DB.DBA.VHOST_REMOVE (lpath=>'/isparql/defaults/');" >> $STICKER
+  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/isparql/defaults/', ppath=>'/DAV/VAD/iSPARQL/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'defaults.vsp');" >> $STICKER
+#  echo "      registry_set ('iSPARQL_VERSION','$VERSION');" >> $STICKER
+#  echo "      registry_set ('iSPARQL_DATE','$PACKDATE');" >> $STICKER
   echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -328,11 +332,11 @@ sticker_init() {
   for file in `find vad -type f | grep -v '/CVS'`
   do
     name=`echo "$file" | cut -b18-`
-    if [ $name = 'index.html' ]; then
-      perm=111101000NN
-    else
+#    if [ $name = 'index.html' ]; then
+#      perm=111101000NN
+#    else
       perm=111101101NN
-    fi
+#    fi
     echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"iSPARQL/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perm\" makepath=\"yes\"/>" >> $STICKER
   done
   IFS="$oldIFS"

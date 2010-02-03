@@ -199,7 +199,6 @@ var QueryExec = function(optObj) {
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
 
-		paramsObj["format"] = "application/rdf+xml";
 		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
 	if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { paramsObj["maxrows"] = opts.maxrows; }
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
@@ -278,6 +277,122 @@ var QueryExec = function(optObj) {
 	return 0;
     };
 
+    this.RESULT_TYPE = {
+	URI:0,
+	LITERAL:1,
+    }
+
+    this.renderResultValue = function (val, opts) {
+	if (val.restype == self.RESULT_TYPE.URI) {
+	    var a = OAT.Dom.create("a");
+	    a.innerHTML = self.store.simplify (val.value);
+	    a.href="#";
+	    self.processLink(a, val.value);
+	    return a;
+	}
+	return val.value;
+    };
+
+    // return value, datatype
+    // 
+
+    this.parseSparqlResDt = function (elm) {
+	var ln = OAT.Xml.localName (elm);
+	var resVal = {};
+
+	if (ln == 'uri') {
+	    resVal.restype = this.RESULT_TYPE.URI;
+	    resVal.datatype = '';
+	}
+
+	if (ln == 'literal') {
+	    resVal.datatype = OAT.Xml.getLocalAttribute (elm, 'datatype');
+	    resVal.restype = this.RESULT_TYPE.LITERAL;
+	}
+
+	resVal.value = OAT.Xml.textValue(elm);
+
+	return resVal;
+    };
+
+    // return sparqlResultSet object
+
+    this.parseSparqlResultSet = function (xmlTxt) {
+	// Blah. Cannot XPATH on documents with default namespace so have to recreate the DOM.
+
+	var resSet = {
+	    variables:[],
+	    results:[]
+	};
+
+	xmlTxt = OAT.Xml.removeDefaultNamespace(xmlTxt);
+	var xmlDoc = OAT.Xml.createXmlDoc (xmlTxt);
+
+	var gHdrArr = [];
+
+	var vArr = OAT.Xml.xpath (xmlDoc,'/sparql/head/variable/@name',{});
+
+	for (i=0;i<vArr.length;i++) {
+	    resSet.variables.push (vArr[i].value);
+	}
+	
+	var resRows = OAT.Xml.xpath (xmlDoc, '/sparql/results/result', {});
+	
+	for (i=0;i<resRows.length;i++) {
+	    var bindings = OAT.Xml.getElementsByLocalName (resRows[i], 'binding');
+	    var procRow = {};
+
+	    for (j=0;j<bindings.length;j++) {
+		var bVarName = OAT.Xml.getLocalAttribute (bindings[j],'name');
+		var bElms = OAT.Xml.childElements (bindings[j]);
+
+		var bVar = self.parseSparqlResDt (bElms[0]);
+		procRow[bVarName] = bVar;
+	    }
+	    resSet.results.push (procRow);
+	}
+	return resSet;
+    };
+
+    this.fixGridRow = function (grid, resSet, n) {
+	for (var i=0;i<resSet.variables.length;i++) {
+	    if (typeof resSet.results[n][resSet.variables[i]] != 'undefined') {
+		var valObj = resSet.results[n][resSet.variables[i]];
+		var val = self.renderResultValue (valObj);
+		if (typeof val != 'string') {
+		    var cell = grid.rows[grid.rows.length-1].cells[i].value;
+		    OAT.Dom.clear (cell);
+		    OAT.Dom.append ([cell, val]);
+		}
+	    }
+	}
+    };
+
+    this.drawSparqlResultSet = function (resSet) {
+	OAT.Dom.clear(self.dom.result);
+
+	var grid = new OAT.Grid (self.dom.result);
+	grid.createHeader(resSet.variables);
+
+	for (var z=0;z<resSet.results.length;z++) {
+	    var gRow = [];
+	    for (var y=0;y<resSet.variables.length;y++) {
+		var v;
+		if (typeof resSet.results[z][resSet.variables[y]] != 'undefined')
+		    v = resSet.results[z][resSet.variables[y]].value;
+		else 
+		    v = '';
+		gRow.push(v);
+	    }
+	    grid.createRow (gRow);
+
+	    // XXX: this hack because OAT.grid cannot add rows with cell values containing DOM nodes.
+	    //      should add this to OAT.grid at earliest convenience
+
+	    self.fixGridRow (grid,resSet, z);
+	}
+    };
+
 	this.drawTable = function() {
 		OAT.Dom.clear(self.dom.result);
 
@@ -296,7 +411,8 @@ var QueryExec = function(optObj) {
 			}
 		}
 
-/*	var h = OAT.Dom.create("h3");
+/*
+	var h = OAT.Dom.create("h3");
 		h.innerHTML = "This page is about:";
 	
 		if (entCount) {
@@ -327,16 +443,20 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.append([self.dom.result,execURIa]);
 
-		var root = self.store.data.all[0];
+	var data_root = self.store.data.all[0];
 		var ns_var = "http://www.w3.org/2005/sparql-results#resultVariable";
 		var ns_var2 = "http://www.w3.org/2005/sparql-results#variable";
 		var ns_sol = "http://www.w3.org/2005/sparql-results#solution";
 		var ns_bind = "http://www.w3.org/2005/sparql-results#binding";
 		var ns_val = "http://www.w3.org/2005/sparql-results#value";
-		if (!ns_sol in root.preds) { return; }
+
+	if (!(ns_sol in data_root.preds)) 
+	{ 
+	    return; 
+	}
 
 		var grid = new OAT.Grid(self.dom.result);
-		var header = root.preds[ns_var];
+	var header = data_root.preds[ns_var];
 		if (self.dom.select.value == "1") {
 			var map = {
 				"hasValue":"Range",
@@ -349,8 +469,9 @@ var QueryExec = function(optObj) {
 		}
 		grid.createHeader(header);
 
-		if (!(ns_sol in root.preds)) { return; }
-		var solutions = root.preds[ns_sol];
+	if (!(ns_sol in data_root.preds)) { return; }
+
+	var solutions = data_root.preds[ns_sol];
 
 		for (var i=0;i<solutions.length;i++) {
 			var row = [];
@@ -462,6 +583,7 @@ var QueryExec = function(optObj) {
 	    return;
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
+	    var xmlTxt = txt; // Used if we have to draw a result set - need to remove namespace, etc.
 			txt = OAT.Xml.escape(txt);
 			self.dom.response.innerHTML = txt;
 
@@ -504,12 +626,18 @@ var QueryExec = function(optObj) {
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 		OAT.MSG.attach (self.mini, OAT.MSG.RDFMINI_VIEW_CHANGED, self.makeMiniRDFPlinkURI);
 			} else {
+		if (data.firstChild.tagName == 'sparql' && 
+		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
+		    var rs = self.parseSparqlResultSet (xmlTxt);
+		    self.drawSparqlResultSet (rs);
+		} else {
 				/* own table */
 				self.store.clear();
 				self.store.addXmlDoc(data);
 				self.drawTable();
 			}
 		}
+	}
 		self.tab.go(0);
 		self.refreshNav();
     };
@@ -656,7 +784,8 @@ var QueryExec = function(optObj) {
 			type:OAT.AJAX.TYPE_XML,
 			onstart:opts.onstart,
 			onend:opts.onend,
-			onerror:onerror
+	    onerror:onerror,
+	    headers:{Accept:"application/rdf+xml,application/sparql-results+xml"}
 	};
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
