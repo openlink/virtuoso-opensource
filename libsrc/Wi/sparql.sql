@@ -4733,6 +4733,68 @@ create function DB.DBA.RDF_LANGMATCHES (in r varchar, in t varchar)
 ;
 
 --!AWK PUBLIC
+create procedure DB.DBA.BEST_LANGMATCH_INIT (inout env any)
+{
+  env := vector (0, -2);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.BEST_LANGMATCH_ACC (inout env any, inout obj any, in range varchar, in dflt_lang varchar)
+{
+  declare lang varchar;
+  declare pct integer;
+  if (obj is null)
+    return;
+  if (__tag (env) <> __tag of vector)
+    env := vector (0, -2);
+  if (__tag of rdf_box = __tag (obj))
+    {
+      declare twobyte integer;
+      twobyte := rdf_box_lang (obj);
+      if (257 = twobyte)
+        lang := dflt_lang;
+      else
+        {
+          whenever not found goto badlang;
+          select lower (RL_ID) into lang from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+          goto lang_ready;
+badlang:
+          signal ('RDFXX', sprintf ('Unknown language in DB.DBA.BEST_LANGMATCH_ACC, bad lang id %d', twobyte));
+        }
+    }
+  else if (__tag of varchar = __tag (obj))
+      lang := dflt_lang;
+  else
+    {
+      if (env[1] = -2)
+        env := vector (obj, -1);
+      return;
+    }
+lang_ready:
+  pct := langmatches_pct_http (lang, range);
+  if (env[1] < pct)
+    env := vector (obj, pct);
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.BEST_LANGMATCH_FINAL (inout env any) returns any
+{
+  if (__tag (env) <> __tag of vector)
+    return null;
+  return env[0];
+}
+;
+
+--!AWK PUBLIC
+create aggregate DB.DBA.BEST_LANGMATCH (inout obj any, in range varchar, in dflt_lang varchar) from
+  DB.DBA.BEST_LANGMATCH_INIT,
+  DB.DBA.BEST_LANGMATCH_ACC,
+  DB.DBA.BEST_LANGMATCH_FINAL
+;
+
+--!AWK PUBLIC
 create procedure DB.DBA.SPARQL_CONSTRUCT_INIT (inout _env any)
 {
   _env := 0; -- No actual initialization
