@@ -1,3 +1,11 @@
+2010-02-03 10:29  source
+
+	* Added DB.DBA.BEST_LANGMATCH() and bif_langmatches_pct_http()
+
+2010-02-03 10:29  source
+
+	* Fixed bad init in trans node if multiple inputs or step output values
+
 2010-02-03 00:41  source
 
 	* Fixed CREDITS
