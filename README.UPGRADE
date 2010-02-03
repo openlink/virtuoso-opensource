@@ -9,8 +9,8 @@ Always make  sure the database has been properly shutdown and the
 transaction log (virtuoso.trx) is empty before performing any of the
 following updates/upgrades.
 
-Before any upgrading of a database, it is always a wise precaution to
-make a proper backup before upgrading.
+Before upgrading any database, it is always a wise precaution to make
+a proper backup.
 
 
 Upgrading from VOS 5.0.X to VOS 5.0.Y
