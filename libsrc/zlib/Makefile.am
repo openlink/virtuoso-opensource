@@ -20,7 +20,9 @@
 #  
 
 
+if WITH_ZLIB
 noinst_LTLIBRARIES = libz.la
+endif
 
 noinst_HEADERS = \
 	crc32.h \
