@@ -34,7 +34,7 @@ print the following message and refuses to start the database:
     new version.
 
 
-Upgrading from VOS 5.0.X to VOS 6.0.1
+Upgrading from VOS 5.0.X to VOS 6.1.0
 -------------------------------------
 
 The database format has substantially changed between these two versions
@@ -60,7 +60,7 @@ database:
 
 
 
-Upgrading from VOS 6.0.0(-TP1) to VOS 6.0.1
+Upgrading from VOS 6.0.0(-TP1) to VOS 6.1.0
 -------------------------------------------
 
 The database disk format has not changed, but the introduction of a newer
