@@ -64,8 +64,13 @@
 #include <sys/wait.h>
 #endif
 
-#include "zlib.h"
-#include "zutil.h"
+#include <zlib.h>
+#if MAX_MEM_LEVEL >= 8
+#  define DEF_MEM_LEVEL 8
+#else
+#  define DEF_MEM_LEVEL  MAX_MEM_LEVEL
+#endif
+
 #include "srvmultibyte.h"
 
 #define FS_MAX_STRING	(10L * 1024L * 1024L)	/* allow files up to 10 MB */
