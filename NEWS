@@ -1,3 +1,62 @@
+February 03, 2010, V6.1.0:
+  * Database engine
+    - Added new 2+3 index scheme for RDF_QUAD table
+    - Added new inlined string table for RDF_QUAD
+    - Added optimizations to cost based optimizer
+    - Added RoundRobin connection support
+    - Removed deprecated samples/demos
+    - Fixed align buffer to sizeof pointer to avoid crash on strict
+      checking platforms like sparc
+    - Fixed text of version mismatch messages
+    - Fixed issue with XA exception, double rollback, transact timeout
+    - Merged enhancements and fixes from V5 branch
+
+  * SPARQL and RDF
+    - Added support for owl:inverseOf, owl:SymmetricProperty and
+      owl:TransitiveProperty.
+    - Added DB.DBA.BEST_LANGMATCH() and bif_langmatches_pct_http()
+    - Added initial support for SPARQL-FED
+    - Added initial support for SERVICE { ... };
+    - Added support for expressions in LIMIT and OFFSET clauses
+    - Added support for Google Base, ithalia, revyu
+    - Added built-in predicate IsRef()
+    - Added new error reporting for unsupported syntax
+    - Added rdf box id only serialization; stays compatible with 5/6
+    - Added Yelp categories
+    - Added support for SPARQL INSERT DATA / DELETE DATA
+    - Added support for HAVING in sparql
+    - Added special codegen for
+      sparql select distinct ?g where { graph ?g { ?s ?p ?o }}
+    - Added support for RDFa export
+    - Added support for output:maxrows
+    - Improved SPARQL parsing and SQL codegen for negative numbers
+    - Improved recovery of lists in DB.DBA.RDF_AUDIT_METADATA()
+    - Fixed iSPARQL use of external sparql endpoints
+    - Fixed bad init in trans node if multiple inputs or step output values
+    - Fixed redundant trailing '>' in results of TTL load when IRIs contain
+      special chars
+    - Fixed problem with rfc1808_expand_uri not using proper macros
+      and allocate byte extra for strings
+    - Fixed when different TZ is used, must find offset and transform via GMT
+    - Fixed graph-level security in cluster
+    - Fixed redundant equalities in case of multiple OPTIONALs with
+      same variable
+    - Fixed BOOLEAN_OF_OBJ in case of incomplete boxes
+    - Fixed NTRIPLES serialization of triples
+    - Merged enhancements and fixes from V5 branch
+
+  * ODS Applications
+    - Added support for ckeditor
+    - Added new popup calendar based on OAT
+    - Added VSP and REST implementation for user API
+    - Added new API functions
+    - Added FOAF+SSL groups
+    - Added feed admin rights
+    - Added Facebook registration and login
+    - Removed deprecated rte and kupu editors
+    - Removed support for IE 5 and 6 compatibility
+    - Merged enhancements and fixes from V5 branch
+
 October 16, 2009, V6.0.0:
   * Official release of Virtuoso Open Source Edition V6.0.0
 
