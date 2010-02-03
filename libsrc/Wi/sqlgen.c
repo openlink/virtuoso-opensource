@@ -1504,14 +1504,16 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   DO_SET (df_elt_t *, in, &tl->tl_params)
     {
       tn->tn_input[inx] = scalar_exp_generate (sc, in->dfe_tree, pre_code);
+      inx++;
     }
   END_DO_SET();
   if (tl->tl_target)
     {
       tn->tn_target = dk_alloc_box_zero (sizeof (caddr_t) * dk_set_length (tl->tl_target), DV_BIN);
+      inx = 0;
       DO_SET (df_elt_t *, in, &tl->tl_target)
 	{
-	  tn->tn_target[inx] = scalar_exp_generate (sc, in->dfe_tree, pre_code);
+	  tn->tn_target[inx++] = scalar_exp_generate (sc, in->dfe_tree, pre_code);
 	}
       END_DO_SET();
     }

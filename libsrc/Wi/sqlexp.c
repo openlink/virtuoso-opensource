@@ -175,7 +175,7 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
 	  if (!sc->sc_trans->tn_step_out)
 	    {
 	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
-	      memset (sc->sc_trans, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
+	      memset (sc->sc_trans->tn_step_out, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
 	    }
 	  sc->sc_trans->tn_step_out[unbox ((caddr_t)tree->_.call.params[0]) - 1] = ret;
 	}
