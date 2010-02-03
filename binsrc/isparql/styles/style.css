@@ -45,20 +45,23 @@ ul, li {
 
 div#queryMetaData { margin-bottom: 3px}
 
-fieldset.mdopts {
-  margin-bottom: 10px}
+fieldset.md_opts {
+  margin-bottom: 10px;
+  border:0;
+}
 
-fieldset.mdopts .expln { margin: 4px}
+fieldset.md_opts .expln { margin: 4px}
 
-fieldset.derefOpts {
+fieldset.deref_opts {
   width: 90%;
   margin-top: 10px;
   border: 1px solid #666}
 
-fieldset.mdOpts label { float: left; clear: left; width: 150px}
-fieldset.mdOpts input { width: 350px;float: left;}
+fieldset.md_opts label { float: left; clear: left; width: 150px}
 
-fieldset.derefOpts td { vertical-align: top;}
+fieldset.md_opts input { width: 350px;float: left;}
+
+fieldset.deref_opts td { vertical-align: top;}
 
 #mdopts_ctr .expln { vertical-align: top; margin-left: 10px;}
 
@@ -73,11 +76,10 @@ td.cachingOpts input { float: left;}
 div.controls {
   background-color: #eee;
   margin: 0px 10px 10px 10px;
-  border: 1px solid #666;
 }
 
-div.controls h3 { margin: 0 0 0 3px; padding: 0; font-size: 10pt; }
 div.controls h3:hover { cursor: pointer;}
+div.controls h3 {margin: 0;padding:0}
 
 #pathTravSchemesPredSelCtr { margin-left: 5px; }
 #pathTravSchemesPredSelCtr label { margin-bottom: 3px; }
@@ -115,28 +117,47 @@ div#pragmaAddProp {
   text-align: center;
 }
 
+h3.ctl_tgl { 
+  background-color: #bfc8d6;
+  background-image: url(/isparql/images/ctl_toggler_bkg.png);
+  background-repeat: repeat-x;
+  color: #fff;
+  border-color:#DDDDDD;
+  border-style:none solid;
+  border-width:0 1px;
+  text-shadow:0.1em 0.1em #8c95a3;
+}
+
+div.ctl_ctr {
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
 
 h3#endpoint_opts_toggler,h3#mdtoggler {
-  width: 95%;
-  margin-bottom: 5px;
-  font-weight: bold;
+  width: 100%;
+  font-family: sans-serif;
   font-size: 10pt;
-  color: #335;
   cursor: hand;
   cursor: pointer;
 }
 
-fieldset.derefOpts button {
+span.tgl_indicator {
+  font-weight: normal;
+  margin-right: 5px;
+}
+
+fieldset.deref_opts button {
   font-weight: bold;
   cursor: hand;
   cursor: pointer;
 }
 
-fieldset.derefOpts button span {
+fieldset.deref_opts button span {
   font-weight: normal;
 }
 
-fieldset.derefOpts h4 { font-size: 10pt; margin-bottom: 5px;}
+fieldset.deref_opts h4 { font-size: 10pt; margin-bottom: 5px;}
 
 
 /*
@@ -292,10 +313,12 @@ label.load { font-size: 8pt; font-weight: normal}
 
 
 .toolbar {
+  background-color:#DDDDDD;
+  background-image:url("/isparql/images/toolbar_bkg.png");
   height: 30px;
-  background-color: #ddd;
-  margin-left: 8px;
-  padding: 4px 0 3px 0}
+  margin-left:0;
+  padding:3px 0 0;
+  width:100%;}
 
 .toolbar_icon {
   text-align: center;
@@ -307,6 +330,10 @@ label.load { font-size: 8pt; font-weight: normal}
   padding: 0px;
   width: 24px;
   height: 24px;
+}
+
+.toolbar_icon:first-child {
+  margin-left: 5px;
 }
 
 .toolbar_separator {
@@ -480,3 +507,5 @@ ul#tabgrph {
   width: 60px;
   border: 0;
 }
+
+#qbe_query_div {margin-top: 5px;}
