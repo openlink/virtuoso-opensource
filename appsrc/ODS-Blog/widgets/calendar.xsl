@@ -490,35 +490,23 @@
           <tr>
             <td>
               <?vsp
-                declare safetext, tmpString, strText varchar;
-                strText := self.text2;
-                tmpString := trim(blob_to_string (strText));
-                tmpString := replace(tmpString, '''', '&#39;');
-                tmpString := replace(tmpString, '"', '&#34;');
-                tmpString := replace(tmpString, chr(10), ' ');
-                tmpString := replace(tmpString, chr(13), ' ');
-                if (tmpString is null)
-                  tmpString := '';
+                declare tmpString varchar;
+
+                tmpString := trim(blob_to_string (coalesce (self.text2, '')));
+                if (trim (tmpString) = '')
+                  tmpString := '<p> </p>';
               ?>
+              <textarea id="text2" name="text2"><?vsp http (tmpString); ?></textarea>
               <![CDATA[
-	        <input type="hidden" name="post_src" value="<?vsp http (tmpString); ?>" />
-                <script type="text/javascript" src="/weblog/public/scripts/richtext.js"></script>
+                <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                 <script type="text/javascript">
-                <!--
-		initRTE ("/weblog/public/images/", "/weblog/public/scripts/", "/weblog/public/css/rte.css", "encl1");
-                //-->
-                </script>
-		<noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                <script language="JavaScript" type="text/javascript">
-                <!--
-                writeRichText('text2', document.page_form['post_src'].value, 440, 180, true, false);
-                //-->
+                  var oEditor = CKEDITOR.replace('text2', { width: '100%'});
                 </script>
 	      ]]>
               <script type="text/javascript">
                 function getTags ()
                  {
-                   updateRTE ('text2');
+                  oEditor.updateElement();
                    window.hdntext2=document.page_form['hdntext2'];
                    window.post_tags=document.page_form['post_tags'];
                    window.open ('index.vspx?page=get_tags&amp;sid=<?V self.sid ?>&amp;realm=wa&amp;hdntext2=' +
@@ -529,7 +517,7 @@
 		 <![CDATA[
                 function getTb ()
                  {
-                   updateRTE ('text2');
+                  oEditor.updateElement();
                    window.hdntext2=document.page_form['hdntext2'];
                    window.tpurl1=document.page_form['tpurl1'];
                    window.open ('index.vspx?page=suggest_tb&sid=<?V self.sid ?>&realm=wa&hdntext2=' +
@@ -539,7 +527,6 @@
                  }
                  function updateRTEsafe ()
 		 {
-		   updateRTE ('text2');
 		 }
 		 ]]>
               </script>
@@ -585,7 +572,7 @@
 			</span>
 			<script type="text/javascript"><![CDATA[
 			    <!--
-			    if (isRichText)
+      			    if (oEditor)
 			      {
 			        var sp = document.getElementById ("ins_media_cb");
 			        var cb = document.getElementById ("ins_media");
@@ -1000,7 +987,7 @@
                   return 1;
                 ]]>
               </v:method>
-              <v:button xhtml_class="real_button" action="simple" name="submit2" value="Post" xhtml_onclick="javascript:updateRTE(\'text2\')" xhtml_title="Post" xhtml_alt="Post">
+              <v:button xhtml_class="real_button" action="simple" name="submit2" value="Post" xhtml_title="Post" xhtml_alt="Post">
                 <v:on-post>
                   <![CDATA[
                     declare _retval, n_post_id any;
@@ -1029,7 +1016,7 @@
                   </xsl:if>
                 </v:on-post>
               </v:button>
-              <v:button xhtml_class="real_button" action="simple" name="make_draft_post" value="Save Draft"  xhtml_onclick="javascript:updateRTE(\'text2\')" xhtml_title="Save Draft" xhtml_alt="Save Draft" enabled="--equ (self.post_state, 1)">
+              <v:button xhtml_class="real_button" action="simple" name="make_draft_post" value="Save Draft" xhtml_title="Save Draft" xhtml_alt="Save Draft" enabled="--equ (self.post_state, 1)">
                 <v:on-post>
                   <![CDATA[
                     declare _retval, n_post_id any;
@@ -1055,7 +1042,7 @@
                   </xsl:if>
                 </v:on-post>
               </v:button>
-              <v:button xhtml_class="real_button" action="simple" name="make_preview_post" value="Preview" xhtml_onclick="javascript:updateRTE(\'text2\')" xhtml_title="Preview" xhtml_alt="Preview">
+              <v:button xhtml_class="real_button" action="simple" name="make_preview_post" value="Preview" xhtml_title="Preview" xhtml_alt="Preview">
                 <v:before-render>
                   <![CDATA[
                     if (self.editpost)
@@ -1329,32 +1316,20 @@
 	    {
 	      declare _author, _text varchar;
 	      whenever not found goto nfcm;
-	      select BM_NAME, BM_COMMENT into
-	        _author, _text from BLOG..BLOG_COMMENTS where BM_BLOG_ID = self.blogid and BM_POST_ID = self.postid
-		  and BM_ID = self.comm_ref;
+              	      select BM_NAME, BM_COMMENT
+              	        into _author, _text
+              	        from BLOG..BLOG_COMMENTS
+              	       where BM_BLOG_ID = self.blogid and BM_POST_ID = self.postid and BM_ID = self.comm_ref;
 		self.comment2 := _author || ' wrote: <br />' || blob_to_string (_text);
               nfcm:;
 	    }
-
-          tmpString := self.comment2;
-          tmpString := replace(tmpString, '\'', '&#39;');
-          tmpString := replace(tmpString, chr(10), ' ');
-          tmpString := replace(tmpString, chr(13), ' ');
-          if (tmpString is null)
-            tmpString := '';
+                  tmpString := coalesce (self.comment2, '');
           ?>
+                <textarea id="comment2" name="comment2"><?vsp http (tmpString); ?></textarea>
          <![CDATA[
-                <script language="JavaScript" type="text/javascript" src="/weblog/public/scripts/richtext.js"></script>
-                <script language="JavaScript" type="text/javascript">
-                <!--
-                initRTE("/weblog/public/images/", "/weblog/public/scripts/", "/weblog/public/css/rte.css", null);
-                //-->
-                </script>
-                <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
-                <script language="JavaScript" type="text/javascript">
-                <!--
-		writeRichText('comment2', '<?vsp http(tmpString); ?>', 340, 180, true, false);
-                //-->
+                  <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                  <script type="text/javascript">
+                    var oEditor = CKEDITOR.replace('comment2');
                 </script>
               ]]>
               </div>
@@ -1391,7 +1366,7 @@
       </v:template>
             <tr>
               <td colspan="2" align="right">
-                <v:button xhtml_class="real_button" action="simple" name="submit1" value="Post" xhtml_title="Post" xhtml_onclick="javascript:updateRTE(\'comment2\')">
+                <v:button xhtml_class="real_button" action="simple" name="submit1" value="Post" xhtml_title="Post">
                   <v:on-post>
                     <![CDATA[
           declare expires any;
