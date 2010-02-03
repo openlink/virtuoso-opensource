@@ -1,4 +1,4 @@
-January 29, 2010, V5.0.13:
+February 03, 2010, V5.0.13:
   * Database engine
     - Added configuration option BuffersAllocation
     - Added configuration option AsyncQueueMaxThreads
@@ -15,6 +15,9 @@ January 29, 2010, V5.0.13:
     - Fixed checkpoint messages in log
     - Fixed read after allocated memory
     - Fixed shortened long URLs in the crawlers view to avoid ui breakage
+    - Fixed building with external zlib
+    - Removed support for deprecated JDK 1.0, 1.1 and 1.2
+    - Rebuild jdbc drivers
 
   * SPARQL and RDF
     - Added initial support for SPARQL-FED
@@ -51,6 +54,13 @@ January 29, 2010, V5.0.13:
     - Fixed UNION of SELECTs and for multiple OPTIONALs at one level with
       "good" and "bad" equalities
     - Fixed support for define output:format "JSON"
+    - Fixed crash of rfc1808_expand_uri on base without schema
+    - Fixed redundant trailing '>' in results of TTL load when IRIs
+      contain special chars
+    - Fixed "option (score ...)" in a gp with multiple OPTIONAL {...}
+    - Fixed when different TZ is used, must find offset and transform via GMT
+    - Fixed SPARQL parsing and SQL codegen for negative numbers
+    - Fixed some 'exotic' cases of NT outputs
 
   * ODS Applications
     - Added support for ckeditor
