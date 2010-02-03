@@ -2326,7 +2326,8 @@ sqlg_setp_append (sqlo_t * so, data_source_t ** head, setp_node_t * setp)
       key_source_t * ks = last->ts_main_ks ? last->ts_main_ks : last->ts_order_ks;
       if (setp->src_gen.src_pre_code
 	  && cv_is_local (setp->src_gen.src_pre_code)
-	  &&  !ks->ks_local_code)
+	  &&  !ks->ks_local_code
+	  && (!sc->sc_qn_to_dpipe || !gethash ((void*)setp, sc->sc_qn_to_dpipe)))
 	{
 	  ks->ks_local_code = setp->src_gen.src_pre_code;
 	  setp->src_gen.src_pre_code = NULL;
