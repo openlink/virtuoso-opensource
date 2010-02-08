@@ -160,18 +160,10 @@
       <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
         <table id="ldap" class="listing ldap" cellspacing="0">
           <tr class="listing_header_row">
-            <th>
-              LDAP Name
-            </th>
-            <th>
-              LDAP Server Host
-            </th>
-            <th>
-              Is Default
-            </th>
-            <th align="center" width="1%">
-              Actions
-            </th>
+            <th>LDAP Name</th>
+            <th>LDAP Server Host</th>
+            <th>Is Default</th>
+		        <th width="50px">Action</th>
           </tr>
         </table>
       </v:template>

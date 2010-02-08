@@ -384,7 +384,7 @@ create procedure ODS.ODS_API."ontology.classes" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', ODS.ODS_API."ontology.normalize" (item[1])));
+    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
@@ -472,13 +472,6 @@ create procedure ODS.ODS_API."ontology.classProperties" (
   }
   if (property[0] <> '')
     properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-  if (prefix <> 'dc')
-  {
-    property := vector ('dc:title', vector(), vector('rdfs:string'));
-    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-    property := vector ('dc:description', vector(), vector('rdfs:string'));
-    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-  }
   return obj2json (properties, 10);
 }
 ;
@@ -575,22 +568,22 @@ create procedure ODS.ODS_API."ontology.objectProperty" (
 create procedure ODS.ODS_API."ontology.array" ()
 {
   return vector (
-                 'gr',   'http://purl.org/goodrelations/v1#',
-                 'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-                 'xsd',  'http://www.w3.org/2001/XMLSchema#',
-                 'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
-                 'owl',  'http://www.w3.org/2002/07/owl#',
+                 'acl',  'http://www.w3.org/ns/auth/acl#',
+                 'annotation', 'http://www.w3.org/2000/10/annotation-ns#',
+                 'atom', 'http://atomowl.org/ontologies/atomrdf#',
+                 'book', 'http://purl.org/NET/book/vocab#',
                  'dc',   'http://purl.org/dc/elements/1.1/',
                  'foaf', 'http://xmlns.com/foaf/0.1/',
+                 'gr',   'http://purl.org/goodrelations/v1#',
+                 'ibis', 'http://purl.org/ibis#',
+                 'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
+                 'mo',   'http://purl.org/ontology/mo/',
+                 'owl',  'http://www.w3.org/2002/07/owl#',
+                 'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                 'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
                  'sioc', 'http://rdfs.org/sioc/ns#',
                  'sioct','http://rdfs.org/sioc/types#',
-                 'mo',   'http://purl.org/ontology/mo/',
-                 'book', 'http://purl.org/NET/book/vocab#',
-                 'acl',  'http://www.w3.org/ns/auth/acl#',
-                 'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
-                 'atom', 'http://atomowl.org/ontologies/atomrdf#',
-                 'annotation', 'http://www.w3.org/2000/10/annotation-ns#',
-                 'ibis', 'http://purl.org/ibis#'
+                 'xsd',  'http://www.w3.org/2001/XMLSchema#'
                 );
 }
 ;

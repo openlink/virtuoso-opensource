@@ -33,15 +33,16 @@
 
 	<v:variable name="ol_id" type="any" default="null" />
 	<v:variable name="ol_properties" type="any" default="null" />
+	<v:variable name="ol_newProperties" type="any" default="null" />
 
-	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=7">
-    <h3>Offer Lists (GoodRelations Ontologies)</h3>
+	<v:form name="usr_personal_8" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Offers (GoodRelations Ontologies)</h3>
     <vm:if test="self.ol_mode = 'OL/browse'">
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="ol_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
             <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add OfferList';
+              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add Offer';
             ]]>
           </v:before-render>
           <v:on-post>
@@ -49,7 +50,8 @@
               self.ol_mode := 'OL/add';
               self.ol_offer.ufl_value := null;
               self.ol_comment.ufl_value := null;
-              self.ol_properties := self.jsonObject();
+              self.ol_properties := ODS..jsonObject ();
+              self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
 
               self.vc_data_bind(e);
             ]]>
@@ -66,8 +68,8 @@
         <v:template name="ol_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
-      		    <th>OfferList</th>
-		    <th>Action</th>
+      		    <th>Offer</th>
+      		    <th width="50px">Action</th>
 	    </tr>
           </table>
         </v:template>
@@ -77,7 +79,7 @@
           <v:template name="ol_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr align="center">
-                <td colspan="2">No OfferList Objects</td>
+                <td colspan="2">No Offers</td>
               </tr>
             </table>
           </v:template>
@@ -92,7 +94,7 @@
                   <v:button name="ol_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit OfferList" title="Edit OfferList"/> Edit';
+                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit Offer" title="Edit Offer"/> Edit';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -108,6 +110,8 @@
                           from WA_USER_OFFERLIST
                          where WUOL_ID = self.ol_id;
 
+                        self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
+
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -115,7 +119,7 @@
                   <v:button name="ol_dButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete OfferList" title="Delete OfferList"/> Delete';
+                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete Offer" title="Delete Offer"/> Delete';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -142,11 +146,11 @@
     <vm:if test="self.ol_mode <> 'OL/browse'">
 	  <div class="fm">
 	    <fieldset>
-  				<legend><b>OfferList</b></legend>
+  				<legend><b>Offer</b></legend>
 				<table>
 				  <tr>
 				    <th width="100px">
-  		          OfferList Name
+  		          Offer Name
 		        </th>
 		        <td>
         <v:text name="ol_offer" value="" xhtml_id="ol_offer" xhtml_size="50" xhtml_class="_validate_" />
@@ -160,120 +164,62 @@
 		    <v:textarea name="ol_comment" value="" xhtml_id="ol_comment" xhtml_rows="5" xhtml_cols="50"/>
             </td>
           </tr>
-				</table>
-	    </fieldset>
-	    <fieldset>
-				<legend><b>Products</b></legend>
-          <table class="ctl_grp">
           <tr>
+  				    <th valign="top">
+  		          Products
+  		        </th>
               <td width="800px">
                 <table id="ol_tbl" class="listing">
-                  <thead>
-                    <tr class="listing_header_row">
-                      <th>
-                        <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
-                    </th>
-                      <th width="20%">
-                        Type
-                      </th>
-                      <th width="80%">
-                        Class
-                      </th>
-                      <th width="80px">
-                        Action
-                    </th>
-                  </tr>
-                  </thead>
                   <tbody id="ol_tbody">
                     <tr id="ol_tr_no">
-                      <td colspan="4">
+                      <td colspan="3">
                         <b>No Elements</b>
      				</td>
    				</tr>
                   </tbody>
 			  </table>
                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
-                  </td>
-              <td valign="top" nowrap="nowrap">
-                <input type="button" value="Add" onclick="javascript: updateRow('ol', null, {fld_1: {mode: 6, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Element'}, fld_3: {mode: 8, cssText: 'width: 95%;'}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 3, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
-            </td>
-          </tr>
-        </table>
           <script type="text/javascript">
             <![CDATA[
               ODSInitArray.push ( function () {
-                OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
-              GR.tablePrefix = 'ol';
-                  GR.products = <?vsp http (replace (ODS..obj2json (get_keyword ('products', self.ol_properties, vector ()), 10), 'class:', 'objectClass:')); ?>;
-              GR.showProducts();
+                      OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+                        RDF.tablePrefix = 'ol';
+                        RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+                        RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.ol_newProperties, 10), 'class:', 'className:')); ?>;
+                        RDF.showItemTypes();
                 });
               });
             ]]>
           </script>
+              </td>
+            </tr>
+  				</table>
 	    </fieldset>
 	    <fieldset>
-	      <legend><b>
-	        Action
-	      </b></legend>
+  	      <legend><b>Action</b></legend>
 	      <span class="fm_ctl_btn">
-  		      <v:button name="ol_cancel" value="Cancel" action="simple">
+  		      <v:button name="user_c_personal_8" value="Cancel" action="simple">
 		        <v:on-post>
                 self.ol_mode := 'OL/browse';
                 self.vc_data_bind (e);
 		        </v:on-post>
 		      </v:button>
-  		      <v:button name="ol_save" value="--case when self.ol_mode = 'OL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
+  		      <v:button name="user_s_personal_8" value="--case when self.ol_mode = 'OL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		        <v:on-post><![CDATA[
-                declare N, M integer;
-                declare id, isOpened, id2, tmp, params, oldProducts, products, product, properties, property any;
+                if (self.vc_is_valid = 0)
+                  return;
 
-              params := e.ve_params;
+                declare ontologies, IDs any;
+                declare products any;
 
+                IDs := vector ();
+                ontologies := vector ();
+                self.getItems ('ol', 'gr', ontologies, IDs);
                 products := vector ();
-                for (N := 0; N < length (params); N := N + 4)
-              {
-                  if ((params [N] like 'ol_fld_3_%') and (trim (params [N+1]) <> ''))
-                {
-                    id := replace (params [N], 'ol_fld_3_', '');
-                    product := self.jsonObject();
-                    product := vector_concat (product, vector ('id', id, 'prefix', 'gr', 'class', trim (params [N+1])));
-                    isOpened := cast (get_keyword ('ol_fld_2_'||id, params, 0) as integer);
-                    properties := vector();
-                    if (isOpened)
-                    {
-                    for (M := 0; M < length (params); M := M + 4)
-              {
-                      if ((params [M] like 'prop_'||id||'_fld_1_%') and (trim (params [M+1]) <> ''))
-                {
-                        id2 := replace (params [M], 'prop_'||id||'_fld_1_', '');
-                        tmp := trim (get_keyword ('prop_'||id||'_fld_2_'||id2, params, ''));
-                        if (tmp <> '')
-              {
-                          property := self.jsonObject();
-                          property := vector_concat (property, vector ('name', trim (params [M+1]), 'value', tmp, 'type', get_keyword ('prop_'||id||'_fld_3_'||id2, params, 'data')));
-                          properties := vector_concat (properties, vector (property));
-              }
-                      }
-                    }
-                    } else {
-                      oldProducts := get_keyword ('products', self.ol_properties);
-                      foreach (any oldProduct in oldProducts) do
-                      {
-                        if (get_keyword ('id', oldProduct) = id)
-                        {
-                          properties := get_keyword ('properties', oldProduct);
-                          goto _exit;
-                        }
-                      }
-                    _exit:;
-                    }
-                    if (length (properties))
-                      product := vector_concat (product, vector ('properties', properties));
-                products := vector_concat (products, vector (product));
-              }
-                }
-                self.ol_properties := vector_concat (self.jsonObject(), vector ('version', '1.0', 'products', products));
+                if (length (ontologies))
+                  products := get_keyword ('items', ontologies[0], vector());
 
+                self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.ol_mode = 'OL/add')
               {
                 insert into WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)

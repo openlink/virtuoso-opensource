@@ -32,28 +32,28 @@
 
   <v:method name="favorites2json" arglist="">
     <![CDATA[
-      declare fID, fOntology, fItems any;
-      declare fItemTypes vector;
+      declare id, ontology, ontologyItems any;
+      declare itemTypes vector;
 
-      fID := 0;
-      fOntology := '';
-      fItemTypes := vector ();
-      fItems := vector ();
+      id := 0;
+      ontology := '';
+      itemTypes := vector ();
+      ontologyItems := vector ();
       for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
       {
-        if (fOntology <> WUF_TYPE)
+        if (ontology <> WUF_TYPE)
         {
-          if (fOntology <> '')
-            fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-          fID := fID + 1;
-          fOntology := WUF_TYPE;
-          fItems := vector ();
+          if (ontology <> '')
+            itemTypes := vector_concat (itemTypes, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (id as varchar), 'ontology', ontology, 'ontologyItems', ontologyItems))));
+          id := id + 1;
+          ontology := WUF_TYPE;
+          ontologyItems := vector ();
         }
-        fItems := vector_concat (fItems, vector (vector_concat (self.jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+        ontologyItems := vector_concat (ontologyItems, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
       }
-      if (length (fItems))
-        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (self.jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-      return ODS..obj2json (fItemTypes, 10);
+      if (length (ontologyItems))
+        itemTypes := vector_concat (itemTypes, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (id as varchar), 'ontology', ontology, 'items', ontologyItems))));
+      return ODS..obj2json (itemTypes, 10);
 	  ]]>
 	</v:method>
 
@@ -62,69 +62,14 @@
       if (self.vc_is_valid = 0)
         return;
 
-      declare params any;
-      declare N, M, L integer;
-      declare re, reParts any;
+      declare N, M integer;
       declare ontologies, IDs any;
-      declare ontology, ontologyNo, ontologyName, ontologyItems any;
-      declare item, itemID, itemNo, itemName, itemProperties any;
-      declare property, propNo, propName, propValue, propType any;
+      declare ontology, ontologyItems any;
+      declare item, itemID any;
 
-      params := self.vc_page.vc_event.ve_params;
       IDs := vector ();
       ontologies := vector ();
-      for (N := 0; N < length (params); N := N + 4)
-      {
-        if (not isstring(params[N+1]) or trim (params[N+1]) = '')
-          goto _skip;
-        re := 'r_fld_2_([0-9]+)';
-        if (regexp_like(params[N], re))
-        {
-          reParts := regexp_parse(re, params[N], 0);
-          ontologyNo := subseq (params[N], reParts[2], reParts[3]);
-          ontologyName := trim (params[N+1]);
-          ontologyItems := vector ();
-          for (M := 0; M < length (params); M := M + 4)
-          {
-            if (not isstring(params[M+1]) or trim (params[M+1]) = '')
-              goto _skip2;
-            re := 'r_item_'||ontologyNo||'_fld_2_([0-9]+)';
-            if (regexp_like(params[M], re))
-            {
-              reParts := regexp_parse(re, params[M], 0);
-              itemNo := subseq (params[M], reParts[2], reParts[3]);
-              itemName := trim (params[M+1]);
-              itemID := cast (get_keyword ('r_item_'||ontologyNo||'_fld_1_'||itemNo, params, -1) as integer);
-              if (itemID <> -1)
-                IDs := vector_concat (IDs, vector (itemID));
-              itemProperties := vector ();
-              for (L := 0; L < length (params); L := L + 4)
-              {
-                if (not isstring(params[L+1]) or trim (params[L+1]) = '')
-                  goto _skip3;
-                re := 'r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_1_([0-9]+)';
-                if (regexp_like(params[L], re))
-                {
-                  reParts := regexp_parse(re, params[L], 0);
-                  propNo := subseq (params[L], reParts[2], reParts[3]);
-                  propName := trim (params[L+1]);
-                  propValue := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params);
-                  propType := get_keyword ('r_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params, 'data');
-                  property := vector_concat (self.jsonObject(), vector ('name', propName, 'value', propValue, 'type', propType));
-                  itemProperties := vector_concat (itemProperties, vector (property));
-                }
-              _skip3:;
-              }
-              item := vector ('id', itemID, 'className', itemName, 'properties', itemProperties);
-              ontologyItems := vector_concat (ontologyItems, vector (item));
-            }
-          _skip2:;
-          }
-          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
-          ontologies := vector_concat (ontologies, vector (ontology));
-        }
-      _skip:;
-      }
+      self.getItems ('r', '', ontologies, IDs);
       delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id and not ODS.ODS_API.vector_contains(IDs, WUF_ID);
       for (N := 0; N < length (ontologies); N := N + 1)
       {
@@ -149,18 +94,6 @@
       }
     ]]>
   </v:method>
-
-  <v:before-data-bind>
-    <![CDATA[
-      declare tmp any;
-
-      if (e.ve_is_post and e.ve_button = self.page_form)
-      {
-        self.usr_personal_6.vc_focus := 1;
-        self.usr_personal_6.vc_set_childs_focus(1, e);
-      }
-    ]]>
-  </v:before-data-bind>
 
   <v:form name="usr_personal_6" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
@@ -200,7 +133,7 @@
       <script type="text/javascript">
         <![CDATA[
           ODSInitArray.push ( function () {
-            OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
+            OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
               RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
               RDF.showItemTypes();
             });
@@ -226,7 +159,7 @@
             <![CDATA[
               self.savePersonal_6();
               if (self.vc_is_valid)
-   		          self.vc_redirect ('uiedit.vspx?page=2');
+   		          self.vc_redirect ('uiedit.vspx?page=1&tabNo=7');
             ]]>
           </v:on-post>
         </v:button>

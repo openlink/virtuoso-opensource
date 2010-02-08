@@ -33,15 +33,16 @@
 
 	<v:variable name="wl_id" type="any" default="null" />
 	<v:variable name="wl_properties" type="any" default="null" />
+	<v:variable name="wl_newProperties" type="any" default="null" />
 
-	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=7">
-    <h3>WishLists (GoodRelations Ontologies)</h3>
+	<v:form name="usr_personal_9" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Seeks (GoodRelations Ontologies)</h3>
     <vm:if test="self.wl_mode = 'WL/browse'">
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="wl_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
     <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add WishList';
+              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add Seek';
             ]]>
           </v:before-render>
           <v:on-post>
@@ -50,6 +51,7 @@
               self.wl_offer.ufl_value := null;
               self.wl_comment.ufl_value := null;
         self.wl_properties := self.jsonObject();
+              self.wl_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.wl_properties, vector ()))));
 
               self.vc_data_bind(e);
     ]]>
@@ -66,8 +68,8 @@
         <v:template name="wl_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
 	  <table class="listing" rules="groups">
 	    <tr class="listing_header_row">
-      		    <th>WishList</th>
-		    <th>Action</th>
+      		    <th>Seek</th>
+      		    <th width="50px">Action</th>
 	    </tr>
           </table>
         </v:template>
@@ -77,7 +79,7 @@
           <v:template name="wl_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr align="center">
-                <td colspan="2">No WishList Objects</td>
+                <td colspan="2">No Seeks</td>
               </tr>
             </table>
           </v:template>
@@ -92,7 +94,7 @@
                   <v:button name="wl_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit WishList" title="Edit WishList"/> Edit';
+                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit Seek" title="Edit Seek"/> Edit';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -108,6 +110,7 @@
                           from WA_USER_WISHLIST
                          where WUWL_ID = self.wl_id;
 
+                        self.wl_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.wl_properties, vector ()))));
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -115,7 +118,7 @@
                   <v:button name="wl_dButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete WishList" title="Delete WishList"/> Delete';
+                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete Seek" title="Delete Seek"/> Delete';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -143,11 +146,11 @@
     <vm:if test="self.wl_mode <> 'WL/browse'">
 	  <div class="fm">
 	    <fieldset>
-  				<legend><b>WishList</b></legend>
+  				<legend><b>Seek</b></legend>
 				<table>
 				  <tr>
 				    <th width="100px">
-  		          WishList Name
+  		          Seek Name
 		        </th>
 		        <td>
               <v:text name="wl_offer" value="" xhtml_id="wl_offer" xhtml_size="50" xhtml_class="_validate_" />
@@ -161,120 +164,62 @@
               <v:textarea name="wl_comment" value="" xhtml_id="wl_comment" xhtml_rows="5" xhtml_cols="50"/>
             </td>
           </tr>
-				</table>
-	    </fieldset>
-	    <fieldset>
-				<legend><b>Products</b></legend>
-          <table class="ctl_grp">
           				  <tr>
+  				    <th valign="top">
+  		          Products
+  		        </th>
               <td width="800px">
                 <table id="wl_tbl" class="listing">
-                  <thead>
-                    <tr class="listing_header_row">
-                      <th>
-                        <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
-          		        </th>
-                      <th width="20%">
-                        Type
-                      </th>
-                      <th width="80%">
-                        Class
-                      </th>
-                      <th width="80px">
-                        Action
-          		        </th>
-                    </tr>
-                  </thead>
                   <tbody id="wl_tbody">
                     <tr id="wl_tr_no">
-                      <td colspan="4">
+                      <td colspan="3">
                         <b>No Elements</b>
      				</td>
    				</tr>
                   </tbody>
 			  </table>
                 <input type="hidden" id="wl_no" name="wl_no" value="1" />
-            </td>
-              <td valign="top" nowrap="nowrap">
-                <input type="button" value="Add" onclick="javascript: updateRow('wl', null, {fld_1: {mode: 6, cssText: 'display: none;'}, fld_2: {mode: 7, value: 'New Element'}, fld_3: {mode: 8, cssText: 'width: 95%;'}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 3, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
-            </td>
-          </tr>
-        </table>
           <script type="text/javascript">
             <![CDATA[
               ODSInitArray.push ( function () {
-                OAT.Loader.loadFeatures(["ajax2", "json", "ws", "combolist"], function(){
-              GR.tablePrefix = 'wl';
-                  GR.products = <?vsp http (replace (ODS..obj2json (get_keyword ('products', self.wl_properties, vector()), 10), 'class:', 'objectClass:')); ?>;
-              GR.showProducts();
+                      OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+                        RDF.tablePrefix = 'wl';
+                        RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+                        RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.wl_newProperties, 10), 'class:', 'className:')); ?>;
+                        RDF.showItemTypes();
                 });
               } );
             ]]>
           </script>
+              </td>
+            </tr>
+  				</table>
 	    </fieldset>
 	    <fieldset>
-	      <legend><b>
-	        Action
-	      </b></legend>
+  	      <legend><b>Action</b></legend>
 	      <span class="fm_ctl_btn">
-  		      <v:button name="wl_cancel" value="Cancel" action="simple">
+  		      <v:button name="user_c_personal_9" value="Cancel" action="simple">
 		        <v:on-post>
                 self.wl_mode := 'WL/browse';
                 self.vc_data_bind (e);
 		        </v:on-post>
 		      </v:button>
-  		      <v:button name="wl_save" value="--case when self.wl_mode = 'WL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
+  		      <v:button name="user_s_personal_9" value="--case when self.wl_mode = 'WL/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
 		        <v:on-post><![CDATA[
-                declare N, M integer;
-                declare id, isOpened, id2, tmp, params, oldProducts, products, product, properties, property any;
+                if (self.vc_is_valid = 0)
+                  return;
 
-              params := e.ve_params;
+                declare ontologies, IDs any;
+                declare products any;
 
+                IDs := vector ();
+                ontologies := vector ();
+                self.getItems ('wl', 'gr', ontologies, IDs);
                 products := vector ();
-                for (N := 0; N < length (params); N := N + 4)
-              {
-                  if ((params [N] like 'wl_fld_3_%') and (trim (params [N+1]) <> ''))
-                {
-                    id := replace (params [N], 'wl_fld_3_', '');
-                    product := self.jsonObject();
-                    product := vector_concat (product, vector ('id', id, 'prefix', 'gr', 'class', trim (params [N+1])));
-                    isOpened := cast (get_keyword ('wl_fld_2_'||id, params, 0) as integer);
-                    properties := vector();
-                    if (isOpened)
-                    {
-                    for (M := 0; M < length (params); M := M + 4)
-              {
-                      if ((params [M] like 'prop_'||id||'_fld_1_%') and (trim (params [M+1]) <> ''))
-                {
-                        id2 := replace (params [M], 'prop_'||id||'_fld_1_', '');
-                        tmp := trim (get_keyword ('prop_'||id||'_fld_2_'||id2, params, ''));
-                        if (tmp <> '')
-              {
-                          property := self.jsonObject();
-                          property := vector_concat (property, vector ('name', trim (params [M+1]), 'value', tmp, 'type', get_keyword ('prop_'||id||'_fld_3_'||id2, params, 'data')));
-                          properties := vector_concat (properties, vector (property));
-              }
-                      }
-                    }
-                    } else {
-                      oldProducts := get_keyword ('products', self.wl_properties);
-                      foreach (any oldProduct in oldProducts) do
-                      {
-                        if (get_keyword ('id', oldProduct) = id)
-                        {
-                          properties := get_keyword ('properties', oldProduct);
-                          goto _exit;
-                        }
-                      }
-                    _exit:;
-                    }
-                    if (length (properties))
-                      product := vector_concat (product, vector ('properties', properties));
-                products := vector_concat (products, vector (product));
-              }
-                }
-                self.wl_properties := vector_concat (self.jsonObject(), vector ('version', '1.0', 'products', products));
+                if (length (ontologies))
+                  products := get_keyword ('items', ontologies[0], vector());
 
+                self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.wl_mode = 'WL/add')
               {
                 insert into WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
