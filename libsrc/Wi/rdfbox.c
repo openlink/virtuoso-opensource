@@ -48,14 +48,14 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
   if (NULL == rdf_box_qry_complete_text)
     {
       rdf_box_qry_complete_xml_l = sql_compile_static (
-        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 257 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
+        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 16843009 from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
       rdf_box_qry_complete_text_l = sql_compile_static (
         "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
 
       rdf_box_qry_complete_xml = sql_compile_static (
-        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 257 from DB.DBA.RDF_OBJ where RO_ID = ?",
+        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 16843009 from DB.DBA.RDF_OBJ where RO_ID = ?",
         bootstrap_cli, NULL, SQLC_DEFAULT );
       rdf_box_qry_complete_text = sql_compile_static (
         "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end, RO_DT_AND_LANG from DB.DBA.RDF_OBJ where RO_ID = ?",
@@ -1991,7 +1991,10 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
       if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
         return;
       dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
-      box_flags (dt_ret->uri) |= BF_IRI;
+      if (dt_ret->uri) /* if by some reason rb_type is wrong */
+	{
+          box_flags (dt_ret->uri) |= BF_IRI;
+        }
     }
   else
     {
@@ -2127,7 +2130,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
             }
         }
-      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+      if (rb->rb_type > RDF_BOX_MIN_TYPE && RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         {
           session_buffered_write (ses, "^^", 2);
           ttl_http_write_ref (ses, env, dt_ptr);
