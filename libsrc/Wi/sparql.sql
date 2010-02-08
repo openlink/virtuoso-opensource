@@ -558,10 +558,24 @@ mknew:
 mknew_ser:
   res := sequence_next ('RDF_DATATYPE_TWOBYTE');
   if (0 = bit_and (res, 255))
-    res := sequence_next ('RDF_DATATYPE_TWOBYTE');
+    {
+      if (res = 0hex7F00)
+        {
+          sequence_set ('RDF_DATATYPE_TWOBYTE', 0hex7F00, 0);
+          res := 0hex7F01;
+          qname := 'http://www.openlinksw.com/schemas/virtrdf#Unsaved';
+          iid := iri_to_id (qname);
+          insert soft DB.DBA.RDF_DATATYPE
+            (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
+          values (iid, res, qname);
+          goto cache_and_log;
+        }
+      res := sequence_next ('RDF_DATATYPE_TWOBYTE');
+    }
   insert into DB.DBA.RDF_DATATYPE
     (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
   values (iid, res, qname);
+cache_and_log:
   rdf_cache_id ('t', qname, res);
   log_text ('rdf_cache_id (\'t\', ?, ?)', qname, res);  --'
   return res;
@@ -593,8 +607,19 @@ mknew:
 mknew_ser:
   res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
   if (0 = bit_and (res, 255))
-    res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
+    {
+      if (res = 0hex7F00)
+        {
+          sequence_set ('RDF_LANGUAGE_TWOBYTE', 0hex7F00, 0);
+          res := 0hex7F01;
+          id := 'x-unsaved';
+          insert soft DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
+          goto cache_and_log;
+        }
+      res := sequence_next ('RDF_LANGUAGE_TWOBYTE');
+    }
   insert into DB.DBA.RDF_LANGUAGE (RL_ID, RL_TWOBYTE) values (id, res);
+cache_and_log:
   rdf_cache_id ('l', id, res);
   log_text ('rdf_cache_id (\'l\', ?, ?)', id, res); --'
   return res;
