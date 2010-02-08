@@ -95,12 +95,16 @@ uriqa_iri_is_local (query_instance_t *qi, const char *iri)
   if (qi && NULL != qi->qi_client->cli_http_ses)
     {
       ws_connection_t *ws = qi->qi_client->cli_ws;
-      const char *host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
+      caddr_t host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
       if (NULL != host)
         {
           int host_len = strlen (host);
           if (!strncmp (iri+7, host, host_len) && ('/' == iri[7+host_len]))
-            return 7 + host_len;
+	    {
+	      dk_free_box (host);
+              return 7 + host_len;
+            }
+	  dk_free_box (host);
         }
     }
   IN_TXN;
