@@ -5786,9 +5786,6 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
           }
         return;
       }
-    case SPAR_BUILT_IN_CALL:
-      ssg_print_scalar_expn (ssg, tree, needed, asname);
-      return;
     case SPAR_FUNCALL:
       {
         int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
@@ -5880,6 +5877,8 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         ssg_putchar (')');
         goto print_asname;
       }
+    case BOP_NOT:
+    case SPAR_BUILT_IN_CALL:
     case SPAR_LIT: case SPAR_QNAME:/* case SPAR_QNAME_NS:*/
     case SPAR_GP:
       ssg_print_scalar_expn (ssg, tree, needed, asname);
