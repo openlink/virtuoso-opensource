@@ -11237,6 +11237,8 @@ create procedure CL_RDF_INF_CHANGED_SRV (in name varchar)
 create procedure CL_RDF_INF_CHANGED (in name varchar)
 {
   declare aq any;
+  if (2 = sys_stat ('cl_run_local_only'))
+    return;
  aq := async_queue (1);
   aq_request (aq, 'DB.DBA.CL_RDF_INF_CHANGED_SRV', vector (name));
   aq_wait_all (aq);
