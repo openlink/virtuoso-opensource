@@ -1178,8 +1178,14 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
               return;
             }
           if (__tag of rdf_box = __tag (parsed))
+            {
+              if (256 = rdf_box_type (parsed))
+                db..rdf_geo_add (parsed);
+              else
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+              parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, null);
+            }
           return parsed;
         }
       return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
@@ -1993,6 +1999,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
 	      else
 		rdf_box_set_type (parsed,
 				  DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+	      parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, ro_id_dict);
 	    }
           insert soft DB.DBA.RDF_QUAD (G,S,P,O)
           values (g_iid, iri_to_id (s_uri), p_iid, parsed);
@@ -9172,8 +9179,12 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
         {
           if (__tag of rdf_box = __tag (parsed))
             {
+	      if (256 = rdf_box_type (parsed))
+		db..rdf_geo_add (parsed);
+	      else
               rdf_box_set_type (parsed,
                 DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
+              parsed := DB.DBA.RDF_OBJ_ADD (257, parsed, 257, ro_id_dict);
               -- dbg_obj_princ ('rdf_box_type is set to ', rdf_box_type (parsed));
             }
           o_val := parsed;
