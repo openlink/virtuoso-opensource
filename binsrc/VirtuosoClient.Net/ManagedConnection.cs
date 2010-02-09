@@ -60,6 +60,7 @@ namespace OpenLink.Data.Virtuoso
 		internal protected int txnTimeout;
 		internal protected int queryTimeout;
 		internal protected bool utf8Execs;
+		internal protected bool charset_utf8;
 		internal protected bool noCharCEscape;
 		internal protected bool binaryTimeStamp;
 

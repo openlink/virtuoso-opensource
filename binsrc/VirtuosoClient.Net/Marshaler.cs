@@ -363,7 +363,10 @@ namespace OpenLink.Data.Virtuoso
 #if IGNORE_ENCODING
 				return Encoding.GetEncoding("iso-8859-1").GetString (bytes);
 #else
-				return Decode (table, bytes);
+				if (connection.charset_utf8)
+                                  return Encoding.UTF8.GetString (bytes);
+				else
+				  return Decode (table, bytes);
 #endif
 			}
 
@@ -421,7 +424,10 @@ namespace OpenLink.Data.Virtuoso
 #if IGNORE_ENCODING
 				return Encoding.GetEncoding("iso-8859-1").GetString (bytes);
 #else
-				return Decode (table, bytes);
+				if (connection.charset_utf8)
+                                  return Encoding.UTF8.GetString (bytes);
+				else
+				  return Decode (table, bytes);
 #endif
 			}
 

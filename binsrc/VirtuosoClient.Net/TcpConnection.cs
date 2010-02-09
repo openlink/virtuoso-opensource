@@ -65,6 +65,8 @@ namespace OpenLink.Data.Virtuoso
 			int hostIndex = 0;
 			int startIndex = 0;
 
+	                charset_utf8 = (options.Charset != null && options.Charset.ToUpper() == "UTF-8");
+
 			ArrayList ds_list = options.DataSourceList;
 			if (ds_list != null)
 			{
