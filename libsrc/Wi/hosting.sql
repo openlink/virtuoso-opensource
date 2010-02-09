@@ -48,8 +48,8 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
    ,'__VIRT_APP_UID', 		http_map_get ('vsp_uid')
    ,'__VIRT_APP_LPATH', 	http_map_get ('domain')
    ,'__VIRT_APP_PPATH', 	http_map_get ('mounted')
-   ,'SERVER_SOFTWARE', 		'Virtuoso Universal Server/5.0'
-   ,'SERVER_SIGNATURE',		'Virtuoso Universal Server/5.0 on ' || sys_addr
+   ,'SERVER_SOFTWARE', 		'Virtuoso Universal Server/6.0'
+   ,'SERVER_SIGNATURE',		'Virtuoso Universal Server/6.0 on ' || sys_addr
    ,'SERVER_NAME', 		server_name
    ,'SERVER_ADDR', 		server_addr[0]
    ,'DOCUMENT_ROOT', 		http_root()
