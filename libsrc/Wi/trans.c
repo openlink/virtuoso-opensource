@@ -205,6 +205,11 @@ tn_read_lc (trans_node_t * tn, caddr_t * inst, srv_stmt_t * lc, caddr_t * arr, c
 	  int set_no = lc_set_no (lc);
 	  dk_set_t * place = (dk_set_t*) id_hash_get (relation, (caddr_t)&arr[set_no]);
 	  any[set_no] = 1;
+	  if (THR_TMP_POOL->mp_bytes > tn->tn_max_memory)
+	    {
+	      SET_THR_TMP_POOL (NULL);
+	      sqlr_new_error ("42000", "TN...", "Exceeded " BOXINT_FMT " bytes in transitive temp memory.  This was detected in expanding a owl:sameAs or IFP implied identity.", (boxint) tn->tn_max_memory);
+	    }
 	  if (place)
 	    t_set_push (place, (void*) lc_t_row (lc));
 	  else
@@ -348,6 +353,11 @@ tn_read_inlined (trans_node_t * tn, caddr_t * inst, caddr_t * arr, caddr_t any, 
 	  int set_no = subq_set_no (tn->tn_inlined_step, inst);
 	  dk_set_t * place = (dk_set_t*) id_hash_get (relation, (caddr_t)&arr[set_no]);
 	  any[set_no] = 1;
+	  if (THR_TMP_POOL->mp_bytes > tn->tn_max_memory)
+	    {
+	      SET_THR_TMP_POOL (NULL);
+	      sqlr_new_error ("42000", "TN...", "Exceeded " BOXINT_FMT " bytes in transitive temp memory.  use t_distinct, t_max or more T_MAX_memory options to limit the search or increase the pool", (boxint) tn->tn_max_memory);
+	    }
 	  if (place)
 	    t_set_push (place, (void*) tn_t_row (tn, inst));
 	  else
