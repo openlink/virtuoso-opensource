@@ -368,9 +368,31 @@ var QueryExec = function(optObj) {
 	}
     };
 
+    this.makeExecPermalink = function () {
+	var item = self.cache[self.cacheIndex];
+	var opts = item.opts;
+	var request = item.request;
+	
+	var execURIa = OAT.Dom.create ("a");
+	execURIa.innerHTML = "Execute Permalink";
+	var nloca = document.location;
+
+	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
+	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+
+	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
+	
+	execURIa.target = "_blank";
+	
+	OAT.Dom.append([self.dom.result,execURIa]);
+    };
+
     this.drawSparqlResultSet = function (resSet) {
 	OAT.Dom.clear(self.dom.result);
 
+	self.makeExecPermalink ();
+	
 	var grid = new OAT.Grid (self.dom.result);
 	grid.createHeader(resSet.variables);
 
@@ -425,23 +447,8 @@ var QueryExec = function(optObj) {
 	    OAT.Dom.append([self.dom.result,ul]);
 		}
 */	
-		var item = self.cache[self.cacheIndex];
-		var opts = item.opts;
-		var request = item.request;
 
-		var execURIa = OAT.Dom.create ("a");
-		execURIa.innerHTML = "Execute Permalink";
-	var nloca = document.location;
-
-		var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
-	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-
-	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
-
-		execURIa.target = "_blank";
-
-		OAT.Dom.append([self.dom.result,execURIa]);
+	self.makeExecPermalink ();
 
 	var data_root = self.store.data.all[0];
 		var ns_var = "http://www.w3.org/2005/sparql-results#resultVariable";
