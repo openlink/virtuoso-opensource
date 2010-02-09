@@ -1230,8 +1230,9 @@ tn_free (trans_node_t * tn)
   dk_free_tree ((caddr_t)tn->tn_output_pos);
   dk_free_box ((caddr_t)tn->tn_data);
   dk_free_box ((caddr_t)tn->tn_target);
-
   dk_free_box ((caddr_t)tn->tn_sas_g);
+  dk_free_box ((caddr_t)tn->tn_step_out);
+  cv_free (tn->tn_after_join_test);
   dk_free_box (tn->tn_ifp_ctx_name);
 }
 

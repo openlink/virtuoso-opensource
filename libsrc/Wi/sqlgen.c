@@ -1520,6 +1520,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   sc->sc_trans = tn;
   tn->tn_step_set_no = ssl_new_variable (sc->sc_cc, "step_set", DV_LONG_INT);
   tn->tn_inlined_step = sqlg_dt_subquery (so, dt_dfe, NULL, target_names, tn->tn_step_set_no);
+  dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, tn->tn_inlined_step);
   tn->tn_inlined_step->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
   tn->tn_input_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.in : trans->_.trans.out));
   tn->tn_output_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.out : trans->_.trans.in));
