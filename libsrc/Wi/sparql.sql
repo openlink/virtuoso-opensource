@@ -5123,7 +5123,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
             }
           http ('            } } ) do { ', ses);
           if (graphs_listed)
-            http ('      if (position ("g1", sorted_good_graphs))\n', ses);
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
           http ('      dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
