@@ -121,9 +121,14 @@ namespace OpenLink.Data.Virtuoso
 		internal static IMarshal CreateExecString (ManagedConnection connection, string value)
 		{
 			Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "ExplicitString (" + value + ")");
-			byte[] bytes = connection.utf8Execs
-				? WideToUTF8 (value)
+            		byte[] bytes;
+			if (connection.charset_utf8) 
+			  bytes = WideToUTF8 (value);
+			else
+			  bytes = connection.utf8Execs
+				? WideToUTF8 ("\n--utf8_execs=yes\n"+value)
 				: WideToEscaped (connection.charsetMap, value);
+
 			return ((bytes.Length < 256)
 				? (IMarshal) new ShortString (bytes)
 				: (IMarshal) new LongString (bytes));
@@ -180,12 +185,7 @@ namespace OpenLink.Data.Virtuoso
 			if (value == String.Empty)
 				return new byte[0];
 
-			MemoryStream buffer = new MemoryStream (value.Length);
-			StreamWriter writer = new StreamWriter (buffer, Encoding.UTF8);
-			writer.Write (value);
-			writer.Flush ();
-			buffer.Close ();
-			return buffer.ToArray ();
+		        return Encoding.UTF8.GetBytes(value);
 		}
 
 		private static byte[] WideToEscaped (Hashtable map, string value)
