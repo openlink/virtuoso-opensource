@@ -596,9 +596,14 @@ uname_blk_t;
 #define DV_UNAME_BOX_HASH(hash,box) 	(hash) = UNAME_TO_UNAME_BLK(box)->unb_hdr[UNB_HDR_HASH]
 #endif
 
-#define RDF_BOX_DEFAULT_TYPE 		0x101
-#define RDF_BOX_DEFAULT_LANG 		0x101
-
+#define RDF_BOX_DEFAULT_TYPE 		0x0101
+#define RDF_BOX_DEFAULT_LANG 		0x0101
+#define RDF_BOX_MAX_TYPE 		0x7F01
+#define RDF_BOX_MAX_LANG 		0x7F01
+#define RDF_BOX_GEO 0x100
+#define RDF_BOX_INTERVAL 0xff
+#define RDF_BOX_STRING_ID 0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
+#define RDF_BOX_MIN_TYPE 0xfe
 
 typedef struct rdf_box_s
 {
