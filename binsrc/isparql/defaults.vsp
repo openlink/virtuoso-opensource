@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<?vsp 
+--  
+--  $Id$
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2009 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+?>
+<?vsp
+  http_rewrite ();
+  declare default_dgu varchar;
+  default_dgu := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'DefaultGraph');
+  if (default_dgu is null)
+  {
+    default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+    if (default_dgu is not null)
+      default_dgu := 'http://' || default_dgu || '/dataspace';
+    else
+      default_dgu := '';
+  }
+
+  declare def_qry varchar;
+  def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
+  if (def_qry is null)
+    def_qry := 'SELECT * WHERE {?s ?p ?o}';
+
+  declare fixed_sponge varchar;
+  fixed_sponge := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'EndpointFixedSponge');
+  if (fixed_sponge is null) fixed_sponge := '';
+
+  declare default_user, default_pass varchar;
+  if (exists(select 1 from DB.DBA.SYS_USERS where U_NAME = 'demo'))
+  {
+    default_user := 'demo';
+    default_pass := 'demo';
+  } else {
+    default_user := '';
+    default_pass := '';
+  }
+?>
+{  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
+   query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
+   sponge:'<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>',
+   auth: {
+       endpoint:'./auth.vsp',
+       user:    '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
+       pass:    '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
+   }<?vsp 
+        if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
+          http('        getInitialCredentials:''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
+        if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
+          http('        authEndpoint:''' || registry_get('iSPARQL_AUTH_ENDPOINT') || '''');
+?>}
