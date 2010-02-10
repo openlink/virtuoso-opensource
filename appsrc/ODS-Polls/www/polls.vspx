@@ -560,7 +560,7 @@
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                       </v:template>
-                      <th class="last">
+                      <th>
                         <?vsp
                           declare S, T varchar;
 

@@ -35,7 +35,7 @@
         var featureList=["dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/polls.js"></script>
       <script type="text/javascript">
         function myInit()
