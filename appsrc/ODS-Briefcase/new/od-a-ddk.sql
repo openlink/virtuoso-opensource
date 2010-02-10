@@ -47,7 +47,7 @@ ODRIVE.WA.exec_no_error('
   )
 ');
 
-AB.WA.exec_no_error ('
+ODRIVE.WA.exec_no_error ('
   create unique index SK_ODRIVE_FOAF_GROUPS_01 on ODRIVE.WA.FOAF_GROUPS (FG_USER_ID, FG_NAME)
 ');
 

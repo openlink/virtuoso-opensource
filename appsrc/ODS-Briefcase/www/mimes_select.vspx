@@ -113,8 +113,8 @@
                 <tr>
                   <?vsp http (ODRIVE.WA.show_column_header ('MIME Type', 'T_TYPE', self.v_order, self.v_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('File Extension', 'T_EXT', self.v_order, self.v_direction)); ?>
-                  <th class="last" align="center" width="1%">
-                    <v:label value="Action" format="%s"/>
+                  <th width="1%">
+                    Action
                   </th>
                 </tr>
               </thead>

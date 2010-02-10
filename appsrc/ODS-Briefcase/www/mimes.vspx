@@ -119,8 +119,8 @@
                   <?vsp http (ODRIVE.WA.show_column_header ('MIME Type', 'MT_IDENT', self.mimes_order, self.mimes_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('File Extension', 'MT_DEFAULT_EXT', self.mimes_order, self.mimes_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Description', 'MT_DESCRIPTION', self.mimes_order, self.mimes_direction)); ?>
-                  <th class="last" align="center" width="1%">
-                    <v:label value="Actions" format="%s"/>
+                  <th width="1%">
+                    Actions
                   </th>
                 </tr>
               </thead>
