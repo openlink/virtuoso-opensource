@@ -131,7 +131,7 @@ bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, 
     return u;
   if (u->usr_disabled)
     {
-     if ((USER_SPARQL_IS_PERMITTED & flags) && !strcmp (u->usr_name, "SPARQL"));
+     if ((USER_SPARQL_IS_PERMITTED & flags) && !strcmp (u->usr_name, "SPARQL"))
        return u;
       switch (error_level) { case 0: goto ret_null; case 1: goto generic_error; }
       sqlr_new_error ("22023", "SR614",
