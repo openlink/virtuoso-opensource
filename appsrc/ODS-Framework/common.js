@@ -706,22 +706,12 @@ function updateComboOption30 (fld, fldValue, ontologyClassName)
   var ontologyClass = RDF.getOntologyClass(ontologyClassName);
   if (ontologyClass && ontologyClass.properties)
   {
-    var P = ontologyClass.properties;
-    for (i = 0; i < P.length; i++)
-      updateComboOption2(fld, fldValue, P[i].name, P[i].name);
-    updateComboOption30 (fld, fldValue, ontologyClass.subClassOf);
-  }
-}
+    var properties = ontologyClass.properties;
+    if (!properties) {return;}
 
-function updateComboOption10 (fld, fldValue, ontologyClassName)
-{
-  var ontologyClass = GR.getOntologyClass(ontologyClassName);
-  if (ontologyClass && ontologyClass.properties)
-  {
-    var P = ontologyClass.properties;
-    for (i = 0; i < P.length; i++)
-      updateComboOption2(fld, fldValue, P[i].name, P[i].name);
-    updateComboOption10 (fld, fldValue, ontologyClass.subClassOf);
+    for (i = 0; i < properties.length; i++)
+      updateComboOption2(fld, fldValue, properties[i].name, properties[i].name);
+    updateComboOption30 (fld, fldValue, ontologyClass.subClassOf);
   }
 }
 
@@ -814,22 +804,11 @@ function updateField5 (elm, fldName, prefix, No, fldOptions)
   fld.id = fldName;
   fld.style.width = "80%";
   updateComboOption2(fld, fldOptions.value, '', '');
-  for (var prefix in RDF.ontologies)
-    updateComboOption2(fld, fldOptions.value, RDF.ontologies[prefix].name+' ('+prefix+')', RDF.ontologies[prefix].name);
-
-  var elm = $(elm);
-  elm.appendChild(fld);
+  for (var prefix in RDF.ontologies) {
+    var ontology = RDF.ontologies[prefix];
+    if (!ontology.hidden)
+      updateComboOption2(fld, fldOptions.value, ontology.name+' ('+prefix+')', ontology.name);
 }
-
-function updateField6 (elm, fldName, prefix, No, fldOptions)
-{
-  var fld = OAT.Dom.image("/ods/images/icons/orderdown_16.png");
-  fld.id = fldName;
-  fld.mode = 'show';
-  fld.title = 'Show Properties';
-  fld.onclick = function (){GR.showProperties(this, prefix, No);};
-  if (fldOptions.cssText)
-    fld.style.cssText = fldOptions.cssText;
 
   var elm = $(elm);
   elm.appendChild(fld);
@@ -850,22 +829,6 @@ function updateField7 (elm, fldName, prefix, No, fldOptions)
   elm.appendChild(fld);
 }
 
-function updateField8 (elm, fldName, prefix, No, fldOptions)
-{
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
-  var ontology = GR.ontologies['gr'];
-  if (ontology && ontology.classes)
-  {
-    for (i = 0; i < ontology.classes.length; i++)
-      updateComboOption2(fld, fldOptions.value, ontology.classes[i].name, ontology.classes[i].name);
-  }
-
-  var elm = $(elm);
-  elm.appendChild(fld);
-}
-
 function updateField9 (elm, fldName, prefix, No, fldOptions)
 {
   var elm = $(elm);
@@ -882,92 +845,6 @@ function updateField9 (elm, fldName, prefix, No, fldOptions)
     fldOptions.showValue = fldOptions.value;
 	var fld = OAT.Dom.text(fldOptions.showValue);
   var elm = $(elm);
-  elm.appendChild(fld);
-}
-
-function updateField10 (elm, fldName, prefix, No, fldOptions)
-{
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
-  fld.style.width = '95%';
-  fld.product = fldOptions.product;
-  var fldValue;
-    if (fldOptions.value)
-    fldValue = fldOptions.value.name;
-  updateComboOption2(fld, fldValue, '', '');
-  updateComboOption10 (fld, fldValue, fld.product.objectClass);
-  fld.onchange = function (){GR.changePropertyValue(fld);};
-  sortSelect (fld);
-
-  var elm = $(elm);
-  elm.appendChild(fld);
-}
-
-function updateField11(elm, fldName, prefix, No, fldOptions)
-{
-  if (!elm) {return;}
-  // clear
-  elm.innerHTML = '';
-
-  // get product
-  var product = fldOptions.product;
-  if (!product) {return;}
-
-  // get property
-  var property = fldOptions.value;
-  if (!property) {return;}
-
-  // get property data
-  var ontologyClassProperty = GR.getOntologyClassProperty(product.objectClass, property.name);
-  var propertyType;
-  if (ontologyClassProperty.objectProperties)
-  {
-  	var fld = OAT.Dom.create('select');
-    fld.id = fldName;
-    fld.name = fld.id;
-    fld.style.width = '95%';
-    updateComboOption2(fld, property.value, '', '');
-    for (var i = 0; i < GR.products.length; i++)
-    {
-      for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
-      {
-        if (GR.isKindOfClass(GR.products[i].objectClass,ontologyClassProperty.objectProperties[j]))
-	        updateComboOption2(fld, property.value, 'Element #'+GR.products[i].id, GR.products[i].id);
-	    }
-    }
-    var grObjects = GR.objects[product.prefix];
-    if (grObjects)
-    {
-      for (var i = 0; i < grObjects.length; i++)
-      {
-        for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
-        {
-          if (GR.isKindOfClass(grObjects[i].objectClass, ontologyClassProperty.objectProperties[j]))
-  	        updateComboOption2(fld, property.value, grObjects[i].id, grObjects[i].id);
-  	    }
-      }
-    }
-    elm.appendChild(fld);
-    propertyType = 'object';
-  }
-  if (ontologyClassProperty.datatypeProperties)
-  {
-    var fld = OAT.Dom.create('input');
-    fld.type = 'text';
-    fld.id = fldName;
-    fld.name = fld.id;
-    if (property.value)
-      fld.value = property.value;
-    fld.style.width = '95%';
-    elm.appendChild(fld);
-    propertyType = 'data';
-  }
-  var fld = OAT.Dom.create('input');
-  fld.type = 'hidden';
-  fld.id = fldName.replace(/fld_2/, 'fld_3');
-  fld.name = fld.id;
-  fld.value = propertyType;
   elm.appendChild(fld);
 }
 
@@ -1044,13 +921,17 @@ function updateField30 (elm, fldName, prefix, No, fldOptions)
   var fldValue;
   if (fldOptions.value)
     fldValue = fldOptions.value.name;
-  updateComboOption2(fld, fldValue, '', '');
-  updateComboOption30 (fld, fldValue, fld.item.className);
+  updateComboOption2(fld, null, '', '');
+  updateComboOption30 (fld, null, fld.item.className);
   fld.onchange = function(){RDF.changePropertyValue(fld);};
   sortSelect (fld);
+  fld.value = fldValue;
+  if (fld.selectedIndex != -1)
+    fld.options[fld.selectedIndex].defaultSelected = true;
 
   var elm = $(elm);
   elm.appendChild(fld);
+  return fld;
   }
 
 function updateField31 (elm, fldName, prefix, No, fldOptions)
@@ -1154,48 +1035,6 @@ function updateButton1 (elm, prefix, No, btnName, btnOptions)
   btn.type = 'button';
   btn.value = 'Remove';
   btn.onclick = function (){updateRow(prefix, No);};
-
-  elm.appendChild(btn);
-  return btn;
-}
-
-function updateButton2 (elm, prefix, No, btnName, btnOptions)
-{
-  var btn = OAT.Dom.image("/ods/images/icons/close_16.png");
-  btn.id = btnName;
-  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-  btn.onclick = function (){
-    var product = GR.getProduct(No);
-    if (product)
-    {
-    if (GR.checkProductInSelects(product))
-    {
-      GR.removeProductInSelects(product);
-      for (var i = 0; i < GR.products.length; i++)
-      {
-        if (GR.products[i].id == product.id)
-        {
-            GR.products.splice(i, 1);
-          break;
-        }
-      }
-      updateRow(prefix, No);
-    }
-    } else {
-      updateRow(prefix, No);
-    }
-  };
-
-  elm.appendChild(btn);
-  return btn;
-}
-
-function updateButton3 (elm, prefix, No, btnName, btnOptions)
-{
-  var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
-  btn.id = btnName;
-  btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-  btn.onclick = function (){GR.addProduct(prefix, No);};
 
   elm.appendChild(btn);
   return btn;
@@ -1317,466 +1156,81 @@ function validateInputs(fld)
   return retValue;
 }
 
-// Good Relations
-// ---------------------------------------------------------------------------
-var GR = new Object();
-GR.ontologies = new Object();
-GR.objects = new Object();
-GR.products = new Array();
-
-GR.loadOntology = function (prefix, ontology)
-{
-  // load classes
-  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontology);
-  var x = function(data) {
-    var o = null;
-    try {
-      o = OAT.JSON.parse(data);
-    } catch (e) {o = null;}
-    GR.ontologies[prefix] = o;
-}
-  OAT.AJAX.GET(S, '', x, {});
-
-  // load objects (individuals)
-  var S = '/ods/api/ontology.objects?ontology='+encodeURIComponent(ontology);
-  var x = function(data) {
-    var o = null;
-    try {
-      o = OAT.JSON.parse(data);
-    } catch (e) {o = null;}
-    GR.objects[prefix] = o;
-  }
-  OAT.AJAX.GET(S, '', x, {});
-}
-
-GR.getOntology = function (prefix)
-{
-  return GR.ontologies[prefix];
-}
-
-GR.getOntologyClass = function (className)
-{
-  var prefix = GR.getPrefix(className);
-  if (prefix)
-  {
-    var ontology = GR.getOntology(prefix);
-    if (ontology)
-  {
-    var classes = ontology.classes;
-    for (var i = 0; i < classes.length; i++)
-    {
-      if (classes[i].name == className)
-        return classes[i];
-    }
-  }
-  }
-  return null;
-}
-
-GR.getOntologyClassProperty = function (className, propertyName)
-{
-  var ontologyClass = GR.getOntologyClass(className);
-  if (ontologyClass)
-  {
-    var properties = ontologyClass.properties;
-    for (var i = 0; i < properties.length; i++)
-    {
-      if (properties[i].name == propertyName)
-        return properties[i];
-    }
-    if (ontologyClass.subClassOf)
-      return GR.getOntologyClassProperty(ontologyClass.subClassOf, propertyName)
-  }
-  return null;
-}
-
-GR.getProduct = function (No)
-{
-  for (var i = 0; i < GR.products.length; i++)
-  {
-    if (GR.products[i].id == No)
-      return GR.products[i];
-  }
-  return null;
-}
-
-GR.getPrefix = function (ontologyClassName)
-{
-  if (!ontologyClassName)
-    return null;
-  var N = ontologyClassName.indexOf(':');
-  if (N == -1)
-    return null;
-  return ontologyClassName.substring(0, N);
-}
-
-GR.isKindOfClass = function (objectClassName, propertyClassName)
-{
-  if (objectClassName == propertyClassName)
-    return true;
-  var ontologyClass = GR.getOntologyClass(objectClassName);
-  if (ontologyClass && ontologyClass.subClassOf)
-    return GR.isKindOfClass (ontologyClass.subClassOf, propertyClassName);
-  return false;
-}
-
-GR.loadClassProperties = function (ontologyClass, cbFunction)
-{
-  if (ontologyClass.properties)
-  {
-    cbFunction();
-    return;
-  }
-    var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name);
-    var x = function(data) {
-      var o = null;
-      try {
-        o = OAT.JSON.parse(data);
-      } catch (e) { o = null; }
-      ontologyClass.properties = o;
-    var ontologySubClass = GR.getOntologyClass(ontologyClass.subClassOf);
-    if (ontologySubClass)
-    {
-      GR.loadClassProperties(ontologySubClass, cbFunction)
-      return;
-    }
-    cbFunction();
-  }
-  OAT.AJAX.GET(S, '', x, {});
-}
-
-GR.emptyRowID = function (prefix)
-{
-  return prefix + '_tr_no';
-}
-
-GR.clearTable = function (prefix)
-{
-  var tbody = $(prefix+'_tbody');
-  if (!tbody)
-    return;
-  var noTR = GR.emptyRowID(prefix);
-  var TRs = tbody.childNodes;
-  for (i = TRs.length; i >= 0; i--)
-  {
-    var tr = TRs[i];
-    if (tr && tr.tagName == 'tr' && tr.id != noTR)
-      OAT.Dom.unlink(tr);
-  }
-  OAT.Dom.show(noTR);
-}
-
-GR.showProducts = function ()
-{
-  var prefix = GR.tablePrefix;
-  var tbody = $(prefix+'_tbody');
-  if (!tbody)
-    return;
-
-  // load ontology http://purl.org/goodrelations/v1#
-  GR.loadOntology('gr', 'http://purl.org/goodrelations/v1#');
-
-  // clear table first
-  GR.clearTable(prefix);
-
-  var noTR = GR.emptyRowID(prefix);
-  if (GR.products && GR.products.length)
-  {
-    OAT.Dom.hide(noTR);
-    for (i = 0; i < GR.products.length; i++)
-    {
-      GR.showProduct(GR.products[i]);
-    }
-  } else {
-    OAT.Dom.show(noTR);
-  }
-}
-
-GR.showProduct = function (product)
-{
-  var prefix = GR.tablePrefix;
-  var tbody = $(prefix+'_tbody');
-  if (!tbody)
-    return;
-  updateRow(prefix, null, {No: product.id, fld_1: {mode: 6, cssText: ''}, fld_2: {mode: 7, value: 'Element #'+product.id}, fld_3: {mode: 9, value: product.objectClass}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}});
-}
-
-GR.addProduct = function (prefix, No)
-{
-  var tr = $(prefix+'_tr_'+No);
-  if (!tr) {return;}
-
-  OAT.Dom.show(prefix+'_fld_1_'+No);
-  var td = $(prefix+'_td_'+No+'_2');
-  if (td)
-  	td.innerHTML = 'Element #'+No;
-
-  var td = $(prefix+'_td_'+No+'_3');
-  if (td)
-  {
-    var fld = $(prefix+'_fld_3_' + No);
-    if (fld)
-    {
-      // create new product object
-      var product = new Object();
-      product.prefix = 'gr';
-      product.objectClass = fld.value;
-      product.id = No;
-
-      // add product
-      GR.products[GR.products.length] = product;
-
-      // hide combo
-	    OAT.Dom.hide(fld);
-
-      // show combo value as text
-	    var fld = OAT.Dom.text(fld.value);
-      td.appendChild(fld);
-      GR.addProductToSelects(product);
-  	}
-  }
-	OAT.Dom.hide(prefix+'_btn_2_'+No);
-}
-
-GR.addProductToSelects = function (product)
-{
-  var tbl = $(GR.tablePrefix+'_tbl');
-  if (!tbl) {return;}
-
-  var selects = tbl.getElementsByTagName('select');
-  if (!selects) {return;}
-  for (var i = 0; i < selects.length; i++)
-  {
-    var obj = selects[i];
-    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
-    {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.objectClass, obj.value);
-      if (ontologyClassProperty.objectProperties)
-      {
-        for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
-        {
-          if (product.objectClass == ontologyClassProperty.objectProperties[j])
-          {
-      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
-            if (fld)
-    	        updateComboOption2(fld, fld.value, 'Element #'+product.id, product.id);
-    	    }
-        }
-      }
-    }
-  }
-}
-
-GR.checkProductInSelects = function (product)
-{
-  return GR.productInSelects (product, 'check');
-}
-
-GR.removeProductInSelects = function (product)
-{
-  return GR.productInSelects (product, 'remove');
-}
-
-GR.productInSelects = function (product, mode)
-{
-  var tbl = $(GR.tablePrefix+'_tbl');
-  if (!tbl) {return;}
-
-  var selects = tbl.getElementsByTagName('select');
-  if (!selects) {return;}
-  for (var i = 0; i < selects.length; i++)
-  {
-    var obj = selects[i];
-    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
-    {
-      var ontologyClassProperty = GR.getOntologyClassProperty(obj.product.objectClass, obj.value);
-      if (ontologyClassProperty.objectProperties)
-      {
-        for (var i = 0; i < ontologyClassProperty.objectProperties.length; i++)
-        {
-          if (product.objectClass == ontologyClassProperty.objectProperties[i])
-          {
-      	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
-            if (fld)
-            {
-              for (var j = fld.options.length-1; j >= 0; j--)
-              {
-                if (fld.options[j].value == product.id)
-                {
-                  if ((mode == 'check') && fld.options[j].selected)
-                    return confirm ('The selected object is used. Delete?');
-                  if (mode == 'remove')
-    	              fld.remove(j);
-    	          }
-    	        }
-    	      }
-    	    }
-        }
-      }
-    }
-  }
-  return true;
-}
-
-GR.showProperties = function (obj, prefix, No)
-{
-  var product = GR.getProduct(No);
-  if (!product)
-    return;
-  var ontologyClass = GR.getOntologyClass(product.objectClass);
-  if (!ontologyClass)
-    return;
-  var tr = $(prefix+'_tr_' + No);
-  if (!tr)
-    return;
-  var fld = $(prefix+'_fld_2_' + No);
-  if (fld)
-    fld.value = '1';
-  var trProperties = $(prefix+'_tr_' + No + '_properties');
-  if (obj.mode == 'show')
-  {
-    obj.mode = 'hide';
-    obj.title = 'Hide Properties';
-    obj.src = '/ods/images/icons/orderup_16.png';
-    if (!trProperties)
-    {
-      //
-      trProperties = OAT.Dom.create('tr');
-      trProperties.id = prefix + '_tr_' + No + '_properties';
-      trProperties.style.cssText = 'background-color: #F5F5EE;';
-      //
-      var tdProperties1 = OAT.Dom.create('td');
-      tdProperties1.style.cssText = 'background-color: #FFF;';
-      trProperties.appendChild(tdProperties1);
-      //
-      var tdProperties2 = OAT.Dom.create('td');
-      tdProperties2.style.cssText = 'vertical-align: top;';
-      tdProperties2.appendChild(OAT.Dom.text("~ properties"));
-      trProperties.appendChild(tdProperties2);
-      //
-      var tdProperties3 = OAT.Dom.create('td');
-      trProperties.appendChild(tdProperties3);
-      GR.loadClassProperties(ontologyClass, function(){GR.showPropertiesTable(product);});
-      //
-      var tdProperties4 = OAT.Dom.create('td');
-      tdProperties4.style.cssText = 'vertical-align: top;';
-      trProperties.appendChild(tdProperties4);
-
-      // insertBefore(trProperties, tr);
-      var trParent = tr.parentNode;
-  	  if(tr.nextSibling)
-  	  {
-  		  trParent.insertBefore(trProperties, tr.nextSibling);
-  	  } else {
-  		  trParent.appendChild(trProperties);
-  	  }
-    } else {
-      OAT.Dom.show(trProperties);
-    }
-  } else {
-    obj.mode = 'show';
-    obj.title = 'Show Properties';
-    obj.src = '/ods/images/icons/orderdown_16.png';
-    OAT.Dom.hide(trProperties);
-  }
-}
-
-GR.showPropertiesTable = function (product)
-{
-  var ontologyClass = GR.getOntologyClass(product.objectClass);
-  if (!ontologyClass)
-    return;
-  var prefix = GR.tablePrefix;
-  var No = product.id;
-  var tr = $(prefix + '_tr_' + No + '_properties');
-  if (tr)
-  {
-    var TDs = tr.getElementsByTagName('td');
-    if (ontologyClass.properties.length)
-    {
-      var prefixProp = 'prop_'+No;
-
-      var btn = OAT.Dom.image("/ods/images/icons/add_16.png");
-      btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-      btn.onclick = function (){updateRow(prefixProp, null, {fld_1: {mode: 10, product: product}, fld_2: {mode: 11}, btn_1: {mode: 4}});};
-      TDs[3].appendChild(btn);
-
-      var S = '<table id="prop_tbl" class="listing" style="background-color: #F5F5EE;"><thead><tr class="listing_header_row"><th width="50%">Property</th><th width="50%">Value</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="3">No Properties</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
-      TDs[2].innerHTML = S.replace(/prop_/g, prefixProp+'_');
-
-      var properties = product.properties;
-      if (properties)
-      {
-        for (var i = 0; i < properties.length; i++)
-          updateRow(prefixProp, null, {fld_1: {mode: 10, product: product, value: properties[i]}, fld_2: {mode: 11, product: product, value: properties[i]}, btn_1: {mode: 4}});
-      }
-    } else {
-      TDs[2].innerHTML = '<b><i>class has not properties</i></b>';
-    }
-  }
-}
-
-GR.changePropertyValue = function (obj)
-{
-  var fld;
-  var S = obj.id;
-  var fldName = S.replace(/fld_1/, 'fld_2');
-  var S = obj.parentNode.id;
-  var td = $(S.substr(0,S.lastIndexOf('_')+1)+'2');
-  updateField11(td, fldName, null, null, {product: obj.product, value: {name: obj.value}});
-}
-
 // RDF Relations
 // ---------------------------------------------------------------------------
 var RDF = new Object();
 RDF.tablePrefix = 'r';
-RDF.ontologies = new Object();
 RDF.itemTypes = new Object();
 
-var rdfTypes = [{"label":'mo',   "uri":'http://purl.org/ontology/mo/'},
-                {"label":'book', "uri":'http://purl.org/NET/book/vocab#'},
-    				 		{"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
-    						{"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
-    						{"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
-    						{"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-    						{"label":'ibis', "uri":'http://purl.org/ibis#',"hidden":1},
-    						{"label":'conf', "uri":'http://www.mindswap.org/~golbeck/web/www04photo.owl#'},
-    						{"label":'scot', "uri":'http://scot-project.org/scot/ns'},
-    						{"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
-    						{"label":'mo', "uri":'http://purl.org/ontology/mo/'},
-    						{"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
-    						{"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
-    						{"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
-    						{"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
-    						{"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
-    						{"label":'cc', "uri":'http://web.resource.org/cc/'},
-    						{"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
-    						{"label":'rss', "uri":'http://purl.org/rss/1.0/'},
-    						{"label":'skos', "uri":'http://www.w3.org/2008/05/skos#'},
-    						{"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
-    						{"label":'opo',"uri":'http://ggg.milanstankovic.org/opo/ns/'},
-    						{"label":'nco',"uri":'http://www.semanticdesktop.org/ontologies/nco/'},
-    						{"label":'lsdis',"uri":'http://lsdis.cs.uga.edu/projects/meteor-s/wsdl-s/ontologies/LSDIS_FInance.owl'},
-    						{"label":'nao',"uri":'http://www.semanticdesktop.org/ontologies/nao/'},
-    						{"label":'cohere',"uri":'http://cohere.open.ac.uk/ontology/cohere.owl#'},
-    						{"label":'nfo',"uri":'http://www.semanticdesktop.org/ontologies/nfo/'},
-    						{"label":'nmo',"uri":'http://www.semanticdesktop.org/ontologies/nmo/'},
-    						{"label":'nie',"uri":'http://www.semanticdesktop.org/ontologies/nie/'},
-    						{"label":'nid3',"uri":'http://www.semanticdesktop.org/ontologies/nid3/'},
-    						{"label":'kuaba',"uri":'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba'},
-    						{"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
-    						{"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
-    						{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
-    						{"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
-    						{"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}
-    					 ];
-for (var i=0; i<rdfTypes.length; i=i+1)
-{
-  rdfType = rdfTypes[i];
-  var o = new Object();
-  o.name = rdfType.uri;
-  RDF.ontologies[rdfType.label] = o;
+RDF.ontologies = new Object();
+RDF.ontologies['annotation'] = {"name": 'http://www.w3.org/2000/10/annotation-ns#'};
+RDF.ontologies['atom'] = {"name": 'http://atomowl.org/ontologies/atomrdf#'};
+RDF.ontologies['book'] = {"name": 'http://purl.org/NET/book/vocab#'};
+RDF.ontologies['cc'] = {"name": 'http://web.resource.org/cc/'};
+RDF.ontologies['cohere'] = {"name": 'http://cohere.open.ac.uk/ontology/cohere.owl#'};
+RDF.ontologies['conf'] = {"name": 'http://www.mindswap.org/~golbeck/web/www04photo.owl#'};
+RDF.ontologies['dataview'] = {"name": 'http://www.w3.org/2003/g/data-view#', "hidden": 1};
+RDF.ontologies['dc'] = {"name": 'http://purl.org/dc/elements/1.1/', "hidden": 1};
+RDF.ontologies['dcterms'] = {"name": 'http://purl.org/dc/terms/', "hidden": 1};
+RDF.ontologies['foaf'] = {"name": 'http://xmlns.com/foaf/0.1/'};
+RDF.ontologies['geo'] = {"name": 'http://www.w3.org/2003/01/geo/wgs84_pos#'};
+RDF.ontologies['gr'] = {"name": 'http://purl.org/goodrelations/v1#'};
+RDF.ontologies['ibis'] = {"name": 'http://purl.org/ibis#', "hidden": 1};
+RDF.ontologies['ical'] = {"name": 'http://www.w3.org/2002/12/cal/icaltzd#'};
+RDF.ontologies['kuaba'] = {"name": 'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba'};
+RDF.ontologies['lsdis'] = {"name": 'http://lsdis.cs.uga.edu/projects/meteor-s/wsdl-s/ontologies/LSDIS_FInance.owl'};
+RDF.ontologies['mo'] = {"name": 'http://purl.org/ontology/mo/'};
+RDF.ontologies['mo'] = {"name": 'http://purl.org/ontology/mo/'};
+RDF.ontologies['nao'] = {"name": 'http://www.semanticdesktop.org/ontologies/nao/'};
+RDF.ontologies['nco'] = {"name": 'http://www.semanticdesktop.org/ontologies/nco/'};
+RDF.ontologies['nfo'] = {"name": 'http://www.semanticdesktop.org/ontologies/nfo/'};
+RDF.ontologies['nid3'] = {"name": 'http://www.semanticdesktop.org/ontologies/nid3/'};
+RDF.ontologies['nie'] = {"name": 'http://www.semanticdesktop.org/ontologies/nie/'};
+RDF.ontologies['nmo'] = {"name": 'http://www.semanticdesktop.org/ontologies/nmo/'};
+RDF.ontologies['opo'] = {"name": 'http://ggg.milanstankovic.org/opo/ns/'};
+RDF.ontologies['owl'] = {"name": 'http://www.w3.org/2002/07/owl#'};
+RDF.ontologies['rdf'] = {"name": 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', "hidden": 1};
+RDF.ontologies['rdfs'] =
+  {
+    "name": 'http://www.w3.org/2000/01/rdf-schema#',
+    "hidden": 1,
+    "classes":
+    [
+      {
+        "name": 'rdfs:Class',
+        properties:
+        [
+          {"name": 'dc:contributor', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:coverage', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:creator', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:date', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:description', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:format', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:identifier', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:language', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:publisher', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:relation', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:rights', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:source', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:subject', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:title', "datatypeProperties": 'rdfs:string'},
+          {"name": 'dc:type', "datatypeProperties": 'rdfs:string'},
+          {"name": 'rdfs:label', "datatypeProperties": 'rdfs:string'},
+          {"name": 'rdfs:comment', "datatypeProperties": 'rdfs:string'},
+          {"name": 'rdfs:seeAlso', "datatypeProperties": 'rdfs:string'}
+        ]
 }
+    ]
+  };
+RDF.ontologies['rss'] = {"name": 'http://purl.org/rss/1.0/'};
+RDF.ontologies['scot'] = {"name": 'http://scot-project.org/scot/ns'};
+RDF.ontologies['sioc'] = {"name": 'http://rdfs.org/sioc/ns#'};
+RDF.ontologies['sioct'] = {"name": 'http://rdfs.org/sioc/types#'};
+RDF.ontologies['skos'] = {"name": 'http://www.w3.org/2008/05/skos#'};
+RDF.ontologies['vs'] = {"name": 'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
+RDF.ontologies['wot'] = {"name": 'http://xmlns.com/wot/0.1/', "hidden": 1};
+RDF.ontologies['xhtml'] = {"name": 'http://www.w3.org/1999/xhtml', "hidden": 1};
+RDF.ontologies['xsd'] = {"name": 'http://www.w3.org/2001/XMLSchema#', "hidden": 1};
 
 RDF.loadOntology = function (ontologyName, cbFunction)
 {
@@ -1844,17 +1298,23 @@ RDF.getOntologyClass = function(className)
 
 RDF.getOntologyClassProperty = function(className, propertyName)
 {
+	if (className instanceof Array) {
+		for (var i=0;i<className.length;i++) {
+		  var property = this.getOntologyClassProperty(className[i], propertyName);
+		  if (property)
+		    return property;
+		}
+	} else {
   var ontologyClass = this.getOntologyClass(className);
-  if (ontologyClass)
-  {
+    if (ontologyClass) {
     var properties = ontologyClass.properties;
-    for (var i = 0; i < properties.length; i++)
-    {
+      for (var i = 0; i < properties.length; i++) {
       if (properties[i].name == propertyName)
         return properties[i];
     }
     if (ontologyClass.subClassOf)
       return this.getOntologyClassProperty(ontologyClass.subClassOf, propertyName)
+  }
   }
   return null;
 }
@@ -1869,11 +1329,11 @@ RDF.ontologyPrefix = function(ontologyName)
 
 RDF.extractPrefix = function(ontologyClassName)
 {
-  if (!ontologyClassName)
-    return null;
+  if (!ontologyClassName) {return null;}
+
   var N = ontologyClassName.indexOf(':');
-  if (N == -1)
-    return null;
+  if (N == -1) {return null;}
+
   return ontologyClassName.substring(0, N);
 }
 
@@ -1889,8 +1349,7 @@ RDF.isKindOfClass = function(objectClassName, propertyClassName)
 
 RDF.loadClassProperties = function(ontologyClass, cbFunction)
 {
-  if (ontologyClass.properties)
-  {
+  if (ontologyClass.properties) {
     cbFunction();
     return;
   }
@@ -1902,14 +1361,35 @@ RDF.loadClassProperties = function(ontologyClass, cbFunction)
     } catch (e) { o = null; }
     ontologyClass.properties = o;
     var ontologySubClass = RDF.getOntologyClass(ontologyClass.subClassOf);
-    if (ontologySubClass)
-    {
+    if (ontologySubClass) {
       RDF.loadClassProperties(ontologySubClass, cbFunction)
       return;
     }
     cbFunction();
   }
   OAT.AJAX.GET(S, '', x, {});
+}
+
+RDF.hasClassProperties = function(className)
+{
+	if (className instanceof Array) {
+		for (var i=0;i<className.length;i++) {
+		  var hasProperties = this.hasClassProperties(className[i]);
+		  if (hasProperties)
+		    return true;
+		}
+	} else {
+    var ontologyClass = this.getOntologyClass(className);
+    if (!ontologyClass)
+      return false;
+
+    if (ontologyClass.properties.length)
+      return true;
+
+    if (ontologyClass.subClassOf)
+      return this.hasClassProperties(ontologyClass.subClassOf);
+  }
+  return false;
 }
 
 RDF.emptyRowID = function()
@@ -1936,7 +1416,6 @@ RDF.clearTable = function()
 }
 
 // Item Types functions
-//
 RDF.showItemTypes = function()
 {
   var prefix = this.tablePrefix;
@@ -1962,7 +1441,20 @@ RDF.showItemTypes = function()
 
 RDF.showItemType = function(prefix, itemType)
 {
-  updateRow(prefix, null, {No: itemType.id, fld_1: {mode: 12, cssText: ''}, fld_2: {mode: 9, value: itemType.ontology, showValue: itemType.ontology+' ('+RDF.ontologyPrefix(itemType.ontology)+')'}, btn_1: {mode: 2, cssText: 'margin-left: 2px; margin-right: 2px;'}});
+  var rowOptions = {No: itemType.id, fld_1: {mode: 12, cssText: ''}, fld_2: {mode: 9, value: itemType.ontology, showValue: itemType.ontology+' ('+RDF.ontologyPrefix(itemType.ontology)+')'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}};
+  if (this.tableOptions && this.tableOptions.itemType) {
+    var itemTypeOptions = this.tableOptions.itemType;
+    for (var p in rowOptions) {
+      if (itemTypeOptions[p]) {
+        for (var q in itemTypeOptions[p]) {
+          if (itemTypeOptions[p][q]) {
+            rowOptions[p][q] = itemTypeOptions[p][q];
+          }
+        }
+      }
+    }
+  }
+  updateRow(prefix, null, rowOptions);
   if (itemType.items)
   {
     var obj = $(prefix+'_fld_1_'+itemType.id);
@@ -2009,7 +1501,7 @@ RDF.addItemType = function(prefix, No)
 
   for (var i = 0; i < this.itemTypes.length; i++)
     if (this.itemTypes[i].ontology == fValue)
-      return alert ('This favorite type already exists. Please enter another value!');
+      return alert ('This type already exists. Please enter another value!');
 
   OAT.Dom.show(fld1);
   var td = $(prefix+'_td_'+No+'_2');
@@ -2351,7 +1843,7 @@ RDF.showPropertiesTable = function(item)
   if (tr)
   {
     var TDs = tr.getElementsByTagName('td');
-    if (ontologyClass.properties.length)
+    if (this.hasClassProperties(ontologyClass.name))
     {
       var prefixProp = prefix + '_prop_' + No;
 

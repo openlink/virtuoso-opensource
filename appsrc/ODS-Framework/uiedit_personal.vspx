@@ -30,6 +30,75 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+  <v:method name="getItems" arglist="in prefix varchar, in mode varchar, inout ontologies any, inout IDs any">
+    <![CDATA[
+      declare params any;
+      declare N, M, L integer;
+      declare re, reParts any;
+      declare ontology, ontologyNo, ontologyName, ontologyItems any;
+      declare item, itemID, itemNo, itemClass, itemProperties any;
+      declare property, propNo, propName, propValue, propType any;
+
+      params := self.vc_page.vc_event.ve_params;
+      IDs := vector ();
+      ontologies := vector ();
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if (not isstring(params[N+1]) or trim (params[N+1]) = '')
+          goto _skip;
+        re := prefix || '_fld_2_([0-9]+)';
+        if (regexp_like(params[N], re))
+        {
+          reParts := regexp_parse(re, params[N], 0);
+          ontologyNo := subseq (params[N], reParts[2], reParts[3]);
+          ontologyName := trim (params[N+1]);
+          ontologyItems := vector ();
+          for (M := 0; M < length (params); M := M + 4)
+          {
+            if (not isstring(params[M+1]) or trim (params[M+1]) = '')
+              goto _skip2;
+            re := prefix || '_item_'||ontologyNo||'_fld_2_([0-9]+)';
+            if (regexp_like(params[M], re))
+            {
+              reParts := regexp_parse(re, params[M], 0);
+              itemNo := subseq (params[M], reParts[2], reParts[3]);
+              itemClass := trim (params[M+1]);
+              itemID := cast (get_keyword (prefix || '_item_'||ontologyNo||'_fld_1_'||itemNo, params, -1) as integer);
+              if (itemID <> 0)
+                IDs := vector_concat (IDs, vector (itemID));
+              if ((mode = 'gr') and (itemID = -1))
+                itemID := itemNo;
+              itemProperties := vector ();
+              for (L := 0; L < length (params); L := L + 4)
+              {
+                if (not isstring(params[L+1]) or trim (params[L+1]) = '')
+                  goto _skip3;
+                re := prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_1_([0-9]+)';
+                if (regexp_like(params[L], re))
+                {
+                  reParts := regexp_parse(re, params[L], 0);
+                  propNo := subseq (params[L], reParts[2], reParts[3]);
+                  propName := trim (params[L+1]);
+                  propValue := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params);
+                  propType := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params, 'data');
+                  property := vector_concat (ODS..jsonObject (), vector ('name', propName, 'value', propValue, 'type', propType));
+                  itemProperties := vector_concat (itemProperties, vector (property));
+                }
+              _skip3:;
+              }
+              item := vector_concat (ODS..jsonObject (), vector ('id', itemID, 'className', itemClass, 'properties', itemProperties));
+              ontologyItems := vector_concat (ontologyItems, vector (item));
+            }
+          _skip2:;
+          }
+          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
+          ontologies := vector_concat (ontologies, vector (ontology));
+        }
+      _skip:;
+      }
+    ]]>
+  </v:method>
+
     <br />
     <div id="p" class="c1">
       <div class="tabs">
@@ -40,6 +109,9 @@
       <v:url name="p_url_4" xhtml_id="p_url_4" value="Biographical Events" url="--sprintf('uiedit.vspx?page=1&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_5" xhtml_id="p_url_5" value="Messaging Services" url="--sprintf('uiedit.vspx?page=1&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_6" xhtml_id="p_url_6" value="Favorite Things" url="--sprintf('uiedit.vspx?page=1&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_7" xhtml_id="p_url_7" value="Made" url="--sprintf('uiedit.vspx?page=1&tabNo=7')" xhtml_class="--case when self.tabNo = 7 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_8" xhtml_id="p_url_8" value="Offers" url="--sprintf('uiedit.vspx?page=1&tabNo=8')" xhtml_class="--case when self.tabNo = 8 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_9" xhtml_id="p_url_9" value="Seeks" url="--sprintf('uiedit.vspx?page=1&tabNo=9')" xhtml_class="--case when self.tabNo = 9 then 'tabX activeTabX' else 'tabX' end"/>
       </div>
       <div class="contents">
       <v:template name="personal_template_0" type="simple" enabled="-- equ (self.tabNo, 0)">
@@ -63,6 +135,15 @@
       <v:template name="personal_template_6" type="simple" enabled="-- equ (self.tabNo, 6)">
         <v:include url="uiedit_personal_6.vspx"/>
           </v:template>
+      <v:template name="personal_template_7" type="simple" enabled="-- equ (self.tabNo, 7)">
+        <v:include url="uiedit_prj.vspx"/>
+      </v:template>
+      <v:template name="personal_template_8" type="simple" enabled="-- equ (self.tabNo, 8)">
+        <v:include url="uiedit_offerlist.vspx"/>
+      </v:template>
+      <v:template name="personal_template_9" type="simple" enabled="-- equ (self.tabNo, 9)">
+        <v:include url="uiedit_wishlist.vspx"/>
+      </v:template>
         </div>
     </div>
 </v:page>

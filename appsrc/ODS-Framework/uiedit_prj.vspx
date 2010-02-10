@@ -28,118 +28,175 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-	<v:variable name="edit_prj" type="int" default="null" param-name="edit" />
-	<v:variable name="del_prj" type="int" default="null" param-name="del" />
-	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=5">
-    <br />
-	  <table class="listing" rules="groups">
-	      <tr class="listing_header_row">
-		  <th>Made</th>
-		  <th>Description</th>
-		  <th>Action</th>
-	      </tr>
-	    <v:data-set name="prj"
+
+  <v:variable name="m_mode" type="varchar" default="'M/browse'"/>
+
+	<v:variable name="m_id" type="integer" default="null" />
+	<v:variable name="m_name" type="varchar" default="null" />
+	<v:form name="usr_personal_7" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Made</h3>
+    <vm:if test="self.m_mode = 'M/browse'">
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="m_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add Made';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+              self.m_mode := 'M/add';
+              self.m_name := 'foaf:made';
+              self.m_url.ufl_value := null;
+              self.m_desc.ufl_value := null;
+
+              self.vc_data_bind (e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+
+	    <v:data-set name="m_ds"
 	                sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
-		              nrows="0">
-		  <v:before-data-bind>
-if (not e.ve_is_post and self.del_prj is not null)
-{
-  delete from WA_USER_PROJECTS where WUP_ID = self.del_prj and WUP_U_ID = self.u_id;
-}
-		  </v:before-data-bind>
+		              nrows="10">
 
-		  <v:template name="maps_rep" type="repeat">
-		      <v:template name="maps_brows" type="browse">
-			  <v:after-data-bind>
-if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
-{
-  self.prj_name.ufl_value := control.te_rowset[1];
-  self.prj_url.ufl_value := control.te_rowset[2];
-  self.prj_desc.ufl_value := control.te_rowset[3];
-}
-	                  </v:after-data-bind>
-			  <tr class="<?V case when self.edit_prj = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-			      <td>
-				  <v:url name="ur1"
-				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[1])'
-				      format="%s"
-				               url="--sprintf ('uiedit.vspx?page=5&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
-				      xhtml_title="Edit"
-				      xhtml_alt="Edit"
-				      />
-			      </td>
-			      <td>
-				        <v:label name="la1"
-				                 value="--subseq ((control.vc_parent as vspx_row_template).te_rowset[3], 0, 200)"
-				                 format="%120.120s"
-				                 render-only="1"/>
+        <v:template name="m_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+	  <table class="listing" rules="groups">
+	      <tr class="listing_header_row">
+      		    <th>Made Property</th>
+		  <th>Description</th>
+      		    <th width="1%" nowrap="nowrap">Action</th>
+	      </tr>
+          </table>
+        </v:template>
 
+        <v:template name="m_ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="m_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr>
+                <td colspan="3">No Made</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="m_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+  			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUP_NAME')" format="%s"/>
 			      </td>
-			      <td>
-				        <v:url name="ur2"
-				               value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
-				      format="%s"
-				               url="--sprintf ('uiedit.vspx?page=5&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
-				      xhtml_title="Delete"
-				      xhtml_alt="Delete"
-				      />
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUP_DESC')" format="%s"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button name="m_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit Offer" title="Edit Offer"/> Edit';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.m_mode := 'M/edit';
+                        self.m_id := (control.vc_parent as vspx_row_template).te_column_value('WUP_ID');
+                        select WUP_NAME,
+                               WUP_URL,
+                               WUP_DESC
+                          into self.m_name,
+                               self.m_url.ufl_value,
+                               self.m_desc.ufl_value
+                          from WA_USER_PROJECTS
+                         where WUP_ID = self.m_id;
+
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button name="m_dButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete Offer" title="Delete Offer"/> Delete';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        delete from WA_USER_PROJECTS where WUP_ID = (control.vc_parent as vspx_row_template).te_column_value('WUP_ID') and WUP_U_ID = self.u_id;
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
 			      </td>
 			  </tr>
+            </table>
 		      </v:template>
 		  </v:template>
 
-		  <v:template name="maps_footer" type="simple">
-		      <tr>
-			  <td colspan="3" class="listing_col_action">
-			      <vm:ds-navigation data-set="prj" type="set" />
-			  </td>
-		      </tr>
+		    <v:template name="m_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+          </table>
 		  </v:template>
 	      </v:data-set>
-	  </table>
+    </vm:if>
+
+    <vm:if test="self.m_mode <> 'M/browse'">
 	  <div class="fm">
 	      <fieldset>
-		  <label for="prj_url">URI</label>
-		    <br />
-        <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
+  		    <label for="m_name">Property*</label>
 		  <br />
-		  <label for="prj_name">Made*</label>
+          <div id="if_opt">
+            <script type="text/javascript">
+              <![CDATA[
+                function p_init ()
+                {
+                  var fld = new OAT.Combolist([], "<?V self.m_name ?>");
+                  fld.input.name = 'm_name';
+                  fld.input.id = 'm_name';
+                  fld.input.style.width = "300px";
+                  $("if_opt").appendChild(fld.div);
+                  fld.addOption("foaf:made");
+                  fld.addOption("dc:creator");
+                  fld.addOption("sioc:owner");
+                }
+                ODSInitArray.push ( function () { OAT.Loader.loadFeatures(["combolist"], p_init); } );
+              ]]>
+            </script>
+          </div>
+  		    <label for="m_url">URI</label>
 		    <br />
-		    <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*" />
+          <v:text name="m_url" value="" xhtml_id="m_url" xhtml_style="width:316px" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
 		  <br/>
-		  <label for="prj_desc">Description*</label>
+  		    <label for="m_desc">Description*</label>
 		    <br />
-		  <v:textarea name="prj_desc" value="" xhtml_id="prj_desc" xhtml_rows="5" xhtml_cols="50"/>
+  		    <v:textarea name="m_desc" value="" xhtml_id="m_desc" xhtml_rows="4" xhtml_cols="80"/>
 		  <br />
 		  <label>Note: The fields designated with '*' will be fetched from the source document if empty</label>
 		    <br />
 	      <span class="fm_ctl_btn">
-		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_prj),0)">
+  		      <v:button name="user_c_personal_7" value="Cancel" action="simple">
 		      <v:on-post>
-self.prj_name.ufl_value := null;
-self.prj_url.ufl_value := null;
-self.prj_desc.ufl_value := null;
-self.edit_prj := null;
-self.save1.vc_data_bind (e);
-control.vc_enabled := 0;
+                self.m_mode := 'M/browse';
+                self.vc_data_bind (e);
 		      </v:on-post>
 		  </v:button>
-		      <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
-		      <v:on-post><![CDATA[
+  		      <v:button name="user_s_personal_7" value="--case when self.m_mode = 'M/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
+  		        <v:on-post>
+  		          <![CDATA[
 declare xt, xp, tmp, descr, iri, name, url varchar;
-declare stat, msg, dta, mdta, qrs any;
+                  declare stat, msg, dta, mdta, qrs, params any;
 
 if (not self.vc_is_valid)
   return;
 
-url := self.prj_url.ufl_value;
-descr := self.prj_desc.ufl_value;
-name := self.prj_name.ufl_value;
+                  params := e.ve_params;
+                  self.m_name := get_keyword ('m_name', params);
+                  url := self.m_url.ufl_value;
+                  descr := self.m_desc.ufl_value;
+                  name := self.m_name;
 iri := url;
 tmp := uuid ();
-
 {
   declare exit handler for sqlstate '*'
   {
@@ -149,20 +206,28 @@ tmp := uuid ();
   qrs := vector (0,0,0);
   exec (sprintf ('sparql load "%s" into graph <%s>', url, tmp));
 
-  qrs[0] := sprintf ('sparql prefix doap: <http://usefulinc.com/ns/doap#>
-       select ?P ?N ?D from <%s> where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp);
-  qrs[1] := sprintf ('sparql prefix foaf: <http://xmlns.com/foaf/0.1/>
-       select ?P ?N ?D from <%s> where { ?P a foaf:Organization ; foaf:name ?N . optional { ?P foaf:dummy ?D . } }', tmp);
-  qrs[2] := sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                    qrs[0] := sprintf ('sparql
+                                        prefix doap: <http://usefulinc.com/ns/doap#>
+                                        select ?P ?N ?D
+                                          from <%s>
+                                         where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp);
+                    qrs[1] := sprintf ('sparql
+                                        prefix foaf: <http://xmlns.com/foaf/0.1/>
+                                        select ?P ?N ?D
+                                          from <%s>
+                                         where { ?P a foaf:Organization ; foaf:name ?N . optional { ?P foaf:dummy ?D . } }', tmp);
+                    qrs[2] := sprintf ('sparql
+                                        prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       			     prefix dc: <http://purl.org/dc/elements/1.1/>
 			     prefix foaf: <http://xmlns.com/foaf/0.1/>
-                                			     select ?P ?N ?D ?TI from <%s>
+                                    		select ?P ?N ?D ?TI
+                                    		  from <%s>
                                 			      where { ?P a ?TP .
 			     	optional { ?P foaf:name ?N } .
 				optional { ?P rdfs:label ?D . } .
 				optional { ?P dc:title ?TI }
-				filter ( ?P = <%s> ) }', tmp, url);
-
+                                         				filter ( ?P = <%s> )
+                                         			 }', tmp, url);
   foreach (any qr in qrs) do
     {
       exec (qr, stat, msg, vector (), 0, mdta, dta);
@@ -184,37 +249,37 @@ tmp := uuid ();
   _found:
   exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
 }
-
 nexts:;
 
-if (length (self.prj_name.ufl_value))
-  name := self.prj_name.ufl_value;
+                  if (length (self.m_name))
+                    name := self.m_name;
 if (not length (name))
   {
-    self.vc_is_valid := 0;
     self.vc_error_message := 'The title of item made is not specified nor can be retrieved from source URI, please specify.';
+                    self.vc_is_valid := 0;
     return;
   }
-
-if (self.edit_prj is null)
+                  if (self.m_mode = 'M/add')
   {
-    insert into WA_USER_PROJECTS (WUP_U_ID,WUP_NAME,WUP_URL,WUP_DESC, WUP_IRI) values (self.u_id, name, url, descr, iri);
-  }
-else
-  {
-    update WA_USER_PROJECTS set WUP_NAME = name, WUP_URL = url, WUP_DESC = descr, WUP_IRI = iri where WUP_ID = self.edit_prj;
+                    insert into WA_USER_PROJECTS (WUP_U_ID, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI)
+                      values (self.u_id, name, url, descr, iri);
+                  } else {
+                    update WA_USER_PROJECTS
+                       set WUP_NAME = name,
+                           WUP_URL = url,
+                           WUP_DESC = descr,
+                           WUP_IRI = iri
+                     where WUP_ID = self.m_id;
   }
 
-self.edit_prj := null;
-self.prj_name.ufl_value := null;
-self.prj_url.ufl_value := null;
-self.prj_desc.ufl_value := null;
-control.vc_data_bind (e);
-self.prj.vc_data_bind (e);
-]]></v:on-post>
+                  self.m_mode := 'M/browse';
+                  self.vc_data_bind (e);
+                ]]>
+              </v:on-post>
 		  </v:button>
 	      </span>
 	  </fieldset>
       </div>
+    </vm:if>
 	</v:form>
 </v:page>

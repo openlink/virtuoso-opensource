@@ -37,7 +37,7 @@
 	      <tr class="listing_header_row">
         <th>URI</th>
 		  <th>Relation</th>
-		  <th>Action</th>
+		    <th width="50px">Action</th>
 	      </tr>
 	      <v:data-set name="related"
 		  sql="select WUR_ID, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI from WA_USER_RELATED_RES where WUR_U_ID = :self.u_id"
@@ -116,9 +116,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 		      <?vsp
 		      for select distinct WUR_P_IRI as xx from WA_USER_RELATED_RES where WUR_P_IRI not in (sioc..rdfs_iri ('seeAlso'), sioc..foaf_iri ('made'), sioc..foaf_iri ('member')) do
 		       {
-		      ?>
-		      sr_cl.addOption("<?V ods_iri_qual (xx) ?>");
-              <?vsp
+                  http (sprintf ('sr_cl.addOption("%s");', ods_iri_qual (xx)));
                 }
               ?>
 		      }
@@ -130,12 +128,6 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 		  <br/>
         <v:text name="related_url" value="" xhtml_id="related_url" xhtml_size="50" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
 		  <br />
-        <!--
-        <label for="pred">Relation</label>
-        <br />
-        <v:text xhtml_id="pred" name="pred" value="" default_value="rdfs:seeAlso111"/>
-        <br/>
-        -->
         <label for="related_name">Label</label>
         <br/>
 		  <v:text name="related_name" value="" xhtml_id="related_name" xhtml_size="50" error-glyph="*">
@@ -148,7 +140,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 self.related_name.ufl_value := null;
 self.related_url.ufl_value := null;
 self.edit_related := null;
-self.save1.vc_data_bind (e);
+              self.vc_data_bind (e);
 control.vc_enabled := 0;
 		      </v:on-post>
 		  </v:button>
@@ -189,8 +181,7 @@ else
 self.edit_related := null;
 self.related_name.ufl_value := null;
 self.related_url.ufl_value := null;
-control.vc_data_bind (e);
-self.related.vc_data_bind (e);
+              self.vc_data_bind (e);
               ]]>
             </v:on-post>
 		  </v:button>

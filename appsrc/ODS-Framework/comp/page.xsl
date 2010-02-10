@@ -2237,11 +2237,34 @@ if (i > 0)
       <fieldset>
   			<legend><b>Feed Instances with Admin Rights</b></legend>
         <v:data-source name="wsf_source" expression-type="sql" nrows="0" initial-offset="0">
-          <v:expression>
+          <v:before-data-bind>
             <![CDATA[
-              select WSF_INSTANCE_ID, WAI_NAME from WA_SETTINGS_FEEDS, WA_INSTANCE where WAI_ID = WSF_INSTANCE_ID
+              control.ds_sql := 'select x.TYPE,                                \n' ||
+                                '       x.ID,                                  \n' ||
+                                '       x.NAME                                 \n' ||
+                                '  from (                                      \n' ||
+                                '        select 0        TYPE,                 \n' ||
+                                '               WAI_ID   ID,                   \n' ||
+                                '               WAI_NAME NAME                  \n' ||
+                                '          from DB.DBA.WA_INSTANCE,            \n' ||
+                                '               DB.DBA.WA_MEMBER               \n' ||
+                                '         where WAI_TYPE_NAME = \'eNews2\'     \n' ||
+                                '           and WAM_MEMBER_TYPE = 1            \n' ||
+                                '           and WAM_INST = WAI_NAME            \n' ||
+                                '           and (WAM_USER = 2 or WAM_USER = 0) \n' ||
+                                '                                              \n' ||
+                                '        union                                 \n' ||
+                                '                                              \n' ||
+                                '        select 1               TYPE,          \n' ||
+                                '               WSF_INSTANCE_ID ID,            \n' ||
+                                '               WAI_NAME        NAME           \n' ||
+                                '          from DB.DBA.WA_SETTINGS_FEEDS,      \n' ||
+                                '               DB.DBA.WA_INSTANCE             \n' ||
+                                '         where WAI_ID = WSF_INSTANCE_ID       \n' ||
+                                '       ) x                                    \n' ||
+                                ' order by TYPE, NAME';
             ]]>
-          </v:expression>
+          </v:before-data-bind>
         </v:data-source>
         <div style="width: 400px;">
         <table class="listing">
@@ -2254,10 +2277,10 @@ if (i > 0)
               <vm:template name="wsf_browse" type="browse">
                 <tr>
                   <td>
-                    <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                    <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))"/>
                   </td>
                   <td>
-                    <v:button name="wsf_remove" action="simple" value="Remove">
+                    <v:button name="wsf_remove" action="simple" value="Remove" enabled="--(control.vc_parent as vspx_row_template).te_rowset[0]">
                       <v:on-post>
                         <![CDATA[
                           if (not wa_user_is_dba (self.u_name, self.u_group))
@@ -2266,7 +2289,7 @@ if (i > 0)
                             control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                             return;
                           }
-                          delete from WA_SETTINGS_FEEDS where WSF_INSTANCE_ID = (control.vc_parent as vspx_row_template).te_rowset[0];
+                          delete from WA_SETTINGS_FEEDS where WSF_INSTANCE_ID = (control.vc_parent as vspx_row_template).te_rowset[1];
                           self.wsf_instance_id.ufl_value := null;
                           self.vc_data_bind(e);
                         ]]>
@@ -2279,7 +2302,7 @@ if (i > 0)
           </v:data-set>
       <tr>
         <td>
-              <v:data-list name="wsf_instance_id" sql="select '' as WAI_ID, '' as WAI_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select WAI_ID, WAI_NAME from WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' order by WAI_NAME" key-column="WAI_ID" value-column="WAI_NAME" />
+              <v:data-list name="wsf_instance_id" sql="select '' as WAI_ID, '' as WAI_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select WAI_ID, WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'eNews2' and WAM_MEMBER_TYPE = 1 and WAM_INST = WAI_NAME and WAM_USER <> 2 and WAM_USER <> 0 order by WAI_NAME" key-column="WAI_ID" value-column="WAI_NAME" />
             </td>
             <td>
               <v:button name="wsf_add" action="simple" value="Add">
