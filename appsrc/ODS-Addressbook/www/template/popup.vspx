@@ -36,6 +36,7 @@
         var featureList=["json", "dialog", "combolist", "quickedit", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/ab.js"></script>
       <script type="text/javascript" src="js/conversation.js"></script>
       <script type="text/javascript">

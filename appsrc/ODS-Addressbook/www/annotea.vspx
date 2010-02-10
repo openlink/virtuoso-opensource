@@ -208,9 +208,7 @@
             <tr>
                             <th>Relation</th>
                             <th width="70%">Value</th>
-                            <th class="last" width="1%">
-                              Action
-                            </th>
+                            <th width="1%">Action</th>
                     </tr>
                   </thead>
                   		  <![CDATA[
@@ -225,11 +223,11 @@
                   ?>
                 		    </script>
                 		  ]]>
-                        <tr id="c_tr_no" style="display: none;"><td colspan="2"><b>No Triplets</b></td></tr>
+                        <tr id="c_tr_no"><td colspan="2"><b>No Triplets</b></td></tr>
                       </table>
 		                </td>
                     <td valign="top" nowrap="nowrap">
-                      <img class="pointer" src="image/add_16.png" border="0" alt="Add Security" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {mode: 0}, btn_1: {mode: 2}});" />
+                      <img class="pointer" src="image/add_16.png" border="0" alt="Add Tripple" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {mode: 0}, btn_1: {mode: 2}});" />
                     </td>
                   </tr>
                 </table>

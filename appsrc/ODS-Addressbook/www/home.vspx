@@ -1171,7 +1171,7 @@
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
                       </v:template>
-                      <th class="last">
+                          <th>
                         Name
                       </th>
                     </tr>
@@ -1580,7 +1580,7 @@
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="2" caption="Home" />
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="3" caption="Business" />
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="4" caption="Relationships" />
-                  <vm:if test="(self.abAction <> 'view') and (AB.WA.domain_is_public (self.domain_id) = 2)">
+                  <vm:if test="AB.WA.domain_is_public (self.domain_id) = 2">
                     &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Access" />
                   </vm:if>
               </div>
@@ -1746,59 +1746,38 @@
                                 <table id="a_tbl" width="100%" cellspacing="0">
                                   <thead class="sortHeader">
                                     <tr>
-                                      <th>
-                                        URL
-                                      </th>
-                                      <th>
-                                        Label
-                                      </th>
+                                      <th>URL</th>
+                                      <th>Label</th>
                                       <vm:if test="self.abAction <> 'view'">
-                                        <th width="70px">
-                                          Action
-                                        </th>
+                                        <th width="50px">Action</th>
                                       </vm:if>
                                     </tr>
                                   </thead>
+                            		  <![CDATA[
+                            		    <script type="text/javascript">
                                   <?vsp
-                                    declare N, M integer;
+                                      declare N integer;
 
                                     N := 0;
                                     for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.v_interests) do
                                     {
-                                  ?>
-                                  <tr id="a_tr_<?V N ?>">
-                                    <td>
-                                      <vm:if test="self.abAction <> 'view'">
-                                        <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: AB.validateField(this);" />
-                                      </vm:if>
-                                      <?vsp self.viewField (interest, '', null); ?>
-                                    </td>
-                                    <td>
-                                      <vm:if test="self.abAction <> 'view'">
-                                        <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                                      </vm:if>
-                                      <?vsp self.viewField (label, '', null); ?>
-                                    </td>
-                                    <vm:if test="self.abAction <> 'view'">
-                                      <td>
-                                        <input type="button" value="Remove" onclick="javascript: AB.updateRow('a', <?V N ?>);" class="button" />
-                                      </td>
-                                    </vm:if>
-                                  </tr>
-                                  <?vsp
                                       N := N + 1;
-                                    }
-                                    M := 3;
                                     if (self.abAction <> 'view')
-                                      M := M - 1;
-                                    http (sprintf ('<tr id="a_tr_no" %s><td colspan="%d"><b>No Interests</b></td></tr>', case when N = 0 then '' else 'style="display: none;"' end, M));
+                                        {
+                                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("a", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_", onbBlur: function(){AB.validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
+                                        } else {
+                                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("a", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', interest, label));
+                                        }
+                                      }
                                   ?>
+                            		    </script>
+                            		  ]]>
+                                  <tr id="a_tr_no" style="display: <?V case when N=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 3 else 4 end ?>"><b>No Interests</b></td></tr>
                                 </table>
-                                <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                               </td>
                               <vm:if test="self.abAction <> 'view'">
-                                <td valign="top" nowrap="1">
-                                  <input type="button" value="Add" onclick="javascript: AB.updateRow('a', null, {fld1: {className: '_validate_ _url_ _canEmpty_', onbBlur: function(){AB.validateField(this);}}, fld2: {}});" class="button" />
+                                <td valign="top" nowrap="nowrap">
+                                  <img class="pointer" src="image/add_16.png" border="0" alt="Add Interest" title="Add Interest" onclick="javascript: TBL.createRow('a', null, {fld_1: {mode: 0, className: '_validate_ _url_', onblur: function(){AB.validateField(this);}}, fld_2: {mode: 0}});" />
                                 </td>
                               </vm:if>
                             </tr>
@@ -2481,54 +2460,37 @@
                           <table id="b_tbl" width="100%" cellspacing="0">
                             <thead class="sortHeader">
                               <tr>
-                                <th>
-                                  Relationship
-                                </th>
+                                <th>Relationship</th>
                                 <vm:if test="self.abAction <> 'view'">
-                                  <th width="70px">
-                                    Action
-                                  </th>
+                                  <th width="50px">Action</th>
                                 </vm:if>
                               </tr>
                             </thead>
+                      		  <![CDATA[
+                      		    <script type="text/javascript">
                             <?vsp
-                              declare N, M integer;
+                                declare N integer;
 
                               N := 0;
                               for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = self.v_relationships) do
                               {
-                            ?>
-                            <tr id="b_tr_<?V N ?>">
-                              <td id="b_td_<?V N ?>">
-                                <vm:if test="self.abAction <> 'view'">
-                            		  <![CDATA[
-                            		    <script type="text/javascript">
-                                      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function() {AB.updateRowCombo('b_td_<?V N ?>', 'b_fld_1_<?V N ?>', {mode: 1, value: '<?V relationship ?>', className: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}});});
-                            		    </script>
-                            		  ]]>
-                                </vm:if>
-                                <?vsp self.viewField (relationship, '', null); ?>
-                              </td>
-                              <vm:if test="self.abAction <> 'view'">
-                                <td>
-                                  <input type="button" value="Remove" onclick="javascript: AB.updateRow('b', <?V N ?>);" class="button" />
-                                </td>
-                              </vm:if>
-                            </tr>
-                            <?vsp
                                 N := N + 1;
-                              }
-                              M := 2;
                               if (self.abAction <> 'view')
-                                M := M - 1;
-                              http (sprintf ('<tr id="b_tr_no" %s><td colspan="%d"><b>No Relationships</b></td></tr>', case when N = 0 then '' else 'style="display: none;"' end, M));
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_", onblur: function(){AB.validateField(this);}}});});', relationship));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("b", {fld_1: {value: "%s"}});});', relationship));
+                                  }
+                                }
                             ?>
+                      		    </script>
+                      		  ]]>
+                            <tr id="b_tr_no" style="display: <?V case when N=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 1 else 2 end ?>"><b>No Relationships</b></td></tr>
                           </table>
-                          <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
                         </td>
                         <vm:if test="self.abAction <> 'view'">
-                          <td valign="top" nowrap="1">
-                            <input type="button" value="Add" onclick="javascript: AB.updateRow('b', null, {fld1: {mode: 1, className: '_validate_ _canEmpty_', onblur: function(){AB.validateField(this);}}});" class="button" />
+                          <td valign="top" nowrap="nowrap">
+                            <img class="pointer" src="image/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_', onblur: function(){AB.validateField(this);}}});" />
                           </td>
                         </vm:if>
                       </tr>
@@ -2541,25 +2503,22 @@
                           <table id="s_tbl" width="100%" cellspacing="0">
                             <thead class="sortHeader">
                               <tr>
-                                <th width="15%">
-                                  Type
-                                </th>
-                                <th>
-                                  Value
-                                </th>
-                                <th width="80px">
-                                  Access
-                                </th>
+                                <th width="15%">Type</th>
+                                <th>Value</th>
+                                <th width="80px">Access</th>
                                 <vm:if test="self.abAction <> 'view'">
-                                  <th width="70px">
-                                    Action
-                                  </th>
+                                  <th width="50px">Action</th>
                                 </vm:if>
                               </tr>
                             </thead>
+                      		  <![CDATA[
+                      		    <script type="text/javascript">
                             <?vsp
-                              declare N, M, L integer;
-                              declare acl any;
+                                declare N, L integer;
+                                declare acl, aType, aAccess any;
+
+                                aType := vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression');
+                                aAccess := vector ('G', 'Grant', 'R', 'Revoke');
 
                               L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
@@ -2567,65 +2526,28 @@
                               for (N := 1; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                            ?>
-                            <tr id="s_tr_<?V L ?>">
-                              <td id="s_td1_<?V L ?>" nowrap="nowrap">
-                                <b><?V get_keyword (acl[N][0], vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression')) ?></b>
-                              </td>
-                              <td id="s_td2_<?V L ?>" nowrap="nowrap">
-                                <b><?V acl[N][1] ?></b>
-                              </td>
-                              <td id="s_td3_<?V L ?>" nowrap="nowrap">
-                                <b><?V get_keyword (acl[N][2], vector ('G', 'Grant', 'R', 'Revoke')) ?></b>
-                              </td>
-                              <td>
-                                <b>Inherited</b>
-                              </td>
-                            </tr>
-                            <?vsp
+                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
                               }
                               acl := deserialize (self.v_acl);
                               for (N := 1; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                            ?>
-                            <tr id="s_tr_<?V L ?>">
-                              <td id="s_td1_<?V L ?>">
-                          		  <![CDATA[
-                             		  <script type="text/javascript">
-                             		  <?vsp
-                                    http (sprintf ('ODSInitArray.push ( function (){AB.updateRowCombo2(\'s_td1_%d\', \'s_fld_1_%d\', {value: \'%s\'});});', L, L, acl[N][0]));
-                             		  ?>
-                             		  </script>
-                           		  ]]>
-                              </td>
-                              <td id="s_td2_<?V L ?>">
-                                <input type="text" id="s_fld_2_<?V L ?>" name="s_fld_2_<?V L ?>" value="<?V acl[N][1] ?>" style="width: 95%;" class="_validate_" onblur="javascript: validateField(this);" />
-                              </td>
-                              <td id="s_td3_<?V L ?>">
-                          	    <![CDATA[
-                           		    <script type="text/javascript">
-                           		    <?vsp
-                                    http (sprintf ('ODSInitArray.push ( function (){AB.updateRowCombo3(\'s_td3_%d\', \'s_fld_3_%d\', {value: \'%s\'});});', L, L, acl[N][2]));
+                                  if (self.abAction <> 'view')
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
+                                  }
+                                }
                            		    ?>
                            		    </script>
                            		  ]]>
-                              </td>
-                              <td>
-                                <input type="button" value="Remove" onclick="javascript: AB.updateRow('s', <?V L ?>);" class="button" />
-                              </td>
-                            </tr>
-                            <?vsp
-                              }
-                              M := 4;
-                              http (sprintf ('<tr id="s_tr_no" %s><td colspan="%d"><b>No Sharings</b></td></tr>', case when L = 0 then '' else 'style="display: none;"' end, M));
-                            ?>
+                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
                           </table>
-                          <input type="hidden" id="s_no" name="s_no" value="<?V L+1 ?>" />
                         </td>
                         <vm:if test="self.abAction <> 'view'">
-                          <td valign="top" nowrap="1">
-                            <input type="button" value="Add" onclick="javascript: AB.updateRow('s', null, {fld1: {mode: 2}, fld2: {}, fld3: {mode: 3}});" class="button" />
+                          <td valign="top" nowrap="nowrap">
+                            <img class="pointer" src="image/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
                           </td>
                         </vm:if>
                       </tr>
