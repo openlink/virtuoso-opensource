@@ -373,7 +373,7 @@
                     <img src="image/flag.gif" border="0"/>
                   </th>
                 </v:template>
-                <th width="1%" class="last">
+                <th width="1%" style="border-width: 0px 0px 1px 0px;">
                   <img src="image/c.gif" border="0"/>
                 </th>
                 <th>

@@ -132,7 +132,7 @@
                   <th>
                     <?vsp self.sortColumn('Retrieved', 'EF_COUNT'); ?>
                   </th>
-                  <th class="last" width="5%" colspan="2">
+                  <th width="5%" colspan="2">
                     <v:label value="Action" format="%s"/>
                   </th>
                 </tr>
