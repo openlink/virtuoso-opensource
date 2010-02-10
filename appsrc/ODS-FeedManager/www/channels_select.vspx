@@ -134,8 +134,8 @@
                   <th>
                     <?vsp self.sortColumn('Feed URL', 'EF_URI'); ?>
                   </th>
-                  <th class="last" width="1%">
-                    <v:label value="Action" format="%s"/>
+                  <th width="1%">
+                    Action
                   </th>
                 </tr>
               </thead>

@@ -1191,7 +1191,7 @@ again:
     return 0;
   tag := new_tag;
 
-  xt := xml_tree_doc (xml_tree (content));
+  xt := ENEWS.WA.string2xml (content);
   if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null)
   {
     -- RSS formats
@@ -1270,7 +1270,8 @@ create procedure ENEWS.WA.process_rss_item(
     description := xpath_eval ('string(/item/description)', xt, 1);
   description := ENEWS.WA.string2xml (serialize_to_UTF8_xml (description));
   link := cast (xpath_eval ('/item/link', xt, 1) as varchar);
-  if (isnull(link)) {
+  if (isnull (link))
+  {
     link := cast (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /item/@rdf:about', xt, 1) as varchar);
     if ((isnull(link)) and isnull(cast(xpath_eval ('/item/guid[@isPermaLink = "false"]', xt, 1) as varchar)))
       link := cast (xpath_eval ('/item/guid', xt, 1) as varchar);

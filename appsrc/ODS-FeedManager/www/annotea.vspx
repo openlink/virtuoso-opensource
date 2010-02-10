@@ -213,7 +213,7 @@
             <tr>
                             <th>Relation</th>
                             <th width="70%">Value</th>
-                            <th class="last" width="1%">
+                            <th width="1%">
                               Action
                             </th>
                     </tr>
@@ -230,7 +230,7 @@
                   ?>
                 		    </script>
                 		  ]]>
-                        <tr id="c_tr_no" style="display: none;"><td colspan="2"><b>No Triplets</b></td></tr>
+                        <tr id="c_tr_no"><td colspan="2"><b>No Triplets</b></td></tr>
                       </table>
 		                </td>
                     <td valign="top" nowrap="nowrap">

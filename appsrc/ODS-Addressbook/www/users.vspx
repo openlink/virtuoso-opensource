@@ -203,7 +203,7 @@
                   <?vsp self.sortColumn('Description', 'U_FULL_NAME'); ?>
                 </th>
                 <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                  <th class="last" width="1%">
+                  <th width="1%">
                     <v:label value="Action" format="%s"/>
                   </th>
                 </v:template>

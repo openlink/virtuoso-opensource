@@ -376,7 +376,7 @@
                         <th width="1%" class="image">
                           <img src="image/flag.gif" border="0"/>
                         </th>
-                        <th width="1%" class="last">
+                        <th width="1%" style="border-width: 0px 0px 1px 0px;">
                           <img src="image/c.gif" border="0"/>
                         </th>
                         <th>
@@ -390,7 +390,7 @@
                             <?vsp self.sortColumn('Feed', 'EFD_TITLE'); ?>
                           </th>
                         </v:template>
-                        <th class="last">
+                        <th>
                           <?vsp self.sortColumn('Date', 'EFI_PUBLISH_DATE'); ?>
                         </th>
                       </tr>

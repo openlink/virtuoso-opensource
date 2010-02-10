@@ -53,8 +53,9 @@
         var featureList=["ajax2", "json", "tree", "anchor", "ghostdrag", "dav", "calendar"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript" src="js/enews.js"></script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="js/enews.js"></script>
       <script type="text/javascript">
         function myInit()
         {

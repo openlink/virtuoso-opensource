@@ -108,7 +108,7 @@
                 <th>
                   <?vsp self.sortColumn('Title', 'ESFO_NAME'); ?>
                 </th>
-                <th width="5%" colspan="2" class="last">
+                  <th width="5%" colspan="2">
                   <v:label value="Action" format="%s"/>
                 </th>
               </tr>

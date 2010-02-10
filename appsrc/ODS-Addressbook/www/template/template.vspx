@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
-  -  $Id$
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -53,6 +53,7 @@
         var featureList=["ajax2", "json", "ws", "anchor", "dialog", "dav", "panelbar", "combolist", "calendar"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/ab.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">

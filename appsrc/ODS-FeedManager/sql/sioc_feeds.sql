@@ -729,8 +729,6 @@ create procedure feeds_annotation_delete (
   graph_iri := get_graph ();
   annotattion_iri := feed_annotation_iri (domain_id, master_id, annotation_id);
   delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
-
-	feeds_claims_delete (graph_iri, annotattion_iri, claims);
 }
 ;
 
@@ -750,21 +748,13 @@ create procedure feeds_claims_insert (
     cPedicate := V[N][1];
     cValue := V[N][2];
     if (0 = length (cPedicate))
+    {
       cPedicate := rdfs_iri ('seeAlso');
-
+    } else {
+      cPedicate := ODS.ODS_API."ontology.denormalize" (cPedicate);
+    }
     DB.DBA.ODS_QUAD_URI (graph_iri, iri, cPedicate, cValue);
   }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure feeds_claims_delete (
-  in graph_iri varchar,
-  in annotattion_iri varchar,
-  in claims any)
-{
-  SIOC..delete_quad_so (graph_iri, annotattion_iri, annotattion_iri);
 }
 ;
 
