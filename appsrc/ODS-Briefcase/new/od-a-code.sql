@@ -2097,23 +2097,23 @@ create procedure ODRIVE.WA.prop_params (
   c_properties := vector ();
   for (N := 0; N < length (params); N := N + 2)
   {
-    if ((params[N] like 'c_property_%') and (params[N] <> 'c_property_xxx'))
+    if (params[N] like 'c_fld_1_%')
     {
-      c_seq := replace (params[N], 'c_property_', '');
+      c_seq := replace (params[N], 'c_fld_1_', '');
       c_property := trim (params[N+1]);
       if ((c_property <> '') and (not ODRIVE.WA.prop_right (c_property, user_id)))
       {
         signal ('TEST', 'Property name is empty or prefix is not allowed!');
       }
-      c_value := trim (get_keyword ('c_value_' || c_seq, params, ''));
+      c_value := trim (get_keyword ('c_fld_2_' || c_seq, params, ''));
       {
         declare exit handler for sqlstate '*' { goto _error; };
         if (isarray (xml_tree (c_value, 0)))
           c_value := serialize (xml_tree (c_value));
       }
     _error:;
-      c_action := get_keyword ('c_action_' || c_seq, params, '');
-      c_properties := vector_concat (c_properties, vector (c_property, c_value, c_action));
+      c_action := get_keyword ('c_fld_3_' || c_seq, params, '');
+      c_properties := vector_concat (c_properties, vector (vector (c_property, c_value, c_action)));
     }
   }
   return c_properties;
@@ -2140,30 +2140,30 @@ create procedure ODRIVE.WA.acl_params (
   }
   for (I := 0; I < length (params); I := I + 2)
   {
-    if ((params[I] like 'acl_user_%') and (params[I] <> 'acl_user_xxx'))
+    if (params[I] like 's_fld_1_%')
     {
-      acl_seq := replace (params[I], 'acl_user_', '');
+      acl_seq := replace (params[I], 's_fld_1_', '');
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
         acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {
-          acl_inheritance := atoi (get_keyword ('acl_inheritance_' || acl_seq, params));
+          acl_inheritance := atoi (get_keyword ('s_fld_2_' || acl_seq, params));
           if (acl_inheritance <> 3)
           {
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                               bit_shift (atoi (get_keyword ('acl_r_grant_' || acl_seq, params, '0')), 2) +
-                               bit_shift (atoi (get_keyword ('acl_w_grant_' || acl_seq, params, '0')), 1) +
-                               atoi (get_keyword ('acl_x_grant_' || acl_seq, params, '0')),
+                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
+                                 atoi (get_keyword ('s_fld_3_' || acl_seq || '_x_grant', params, '0')),
                                1,
                                acl_inheritance);
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                               bit_shift (atoi (get_keyword ('acl_r_deny_' || acl_seq, params, '0')), 2) +
-                               bit_shift (atoi (get_keyword ('acl_w_deny_' || acl_seq, params, '0')), 1) +
-                               atoi (get_keyword ('acl_x_deny_' || acl_seq, params, '0')),
+                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
+                                 atoi (get_keyword ('s_fld_4_' || acl_seq || '_x_deny', params, '0')),
                                0,
                                acl_inheritance);
         }
@@ -4318,7 +4318,7 @@ create procedure ODRIVE.WA.aci_load (
         aclRule := data[N][0];
         V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
       }
-      if (data[N][1] = 'foaf:Agent')
+      if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
         V[2] := 'public';
       if (data[N][1] like SIOC..waGraph() || '%')
         V[2] := 'group';
@@ -4350,15 +4350,15 @@ create procedure ODRIVE.WA.aci_params (
   retValue := vector ();
   for (N := 0; N < length (params); N := N + 2)
   {
-    if ((params[N] like 'aci_user_%') and (params[N] <> 'aci_user_xxx'))
+    if (params[N] like 'f_fld_2_%')
     {
-      aclNo := replace (params[N], 'aci_user_', '');
+      aclNo := replace (params[N], 'f_fld_2_', '');
       V := vector (M,
                    trim (params[N+1]),
-                   get_keyword ('aci_mode_' || aclNo, params, 'person'),
-                   atoi (get_keyword ('aci_r_grant_' || aclNo, params, '0')),
-                   atoi (get_keyword ('aci_w_grant_' || aclNo, params, '0')),
-                   atoi (get_keyword ('aci_x_grant_' || aclNo, params, '0'))
+                   get_keyword ('f_fld_1_' || aclNo, params, 'person'),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_r', params, '0')),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_w', params, '0')),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_x', params, '0'))
                   );
       retValue := vector_concat (retValue, vector (V));
       M := M + 1;

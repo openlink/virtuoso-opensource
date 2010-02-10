@@ -229,17 +229,17 @@
             }
 
             -- properties
-            for (N := 0; N < length (c_properties); N := N + 3)
+            for (N := 0; N < length (c_properties); N := N + 1)
             {
-              if (c_properties[N] <> '')
+              if (c_properties[N][0] <> '')
               {
-                if (c_properties[N+2] = 'U')
+                if (c_properties[N][2] = 'U')
                 {
-                  ODRIVE.WA.DAV_PROP_SET (self.items[I], c_properties[N], c_properties[N+1]);
+                  ODRIVE.WA.DAV_PROP_SET (self.items[I], c_properties[N][0], c_properties[N][1]);
                 }
-                else if (c_properties[N+2] = 'R')
+                else if (c_properties[N][2] = 'R')
                 {
-                  ODRIVE.WA.DAV_PROP_REMOVE (self.items[I], c_properties[N]);
+                  ODRIVE.WA.DAV_PROP_REMOVE (self.items[I], c_properties[N][0]);
                 }
               }
             }
@@ -525,38 +525,21 @@
                   <tr>
                     <th>WebDAV Properties</th>
                     <td>
-                      <v:text name="c_seqNo" xhtml_id="c_seqNo" type="hidden" value="0" />
-                      <table id="davProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                      <table>
                         <tr>
-                          <th>Property</th>
-                          <th>Value</th>
+                          <td width="600px">
+                            <table id="c_tbl" class="form-list" cellspacing="0">
+                        <tr>
+                                <th width="50%">Property</th>
+                                <th width="50%">Value</th>
                           <th>Action</th>
                           <th>&amp;nbsp;</th>
                         </tr>
-                        <tr id="c_tr">
-                          <td colspan="4">
-                            <hr />
+                              <tr id="c_tr_no"><td colspan="4"><b>No Properties</b></td></tr>
+                            </table>
                           </td>
-                        </tr>
-                        <tr id="c_tr_xxx">
-                          <td id="c_td_xxx" width="50%">
-                      		  <![CDATA[
-                      		    <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('xxx', '');});
-                      		    </script>
-                      		  ]]>
-      		                </td>
-                          <td width="50%">
-                            <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
-                          </td>
-                          <td>
-                            <select id="c_action_xxx" name="c_action_xxx">
-                              <option value="U">Set</option>
-                              <option value="R">Remove</option>
-                            </select>
-                          </td>
-                          <td nowrap="nowrap">
-                            <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property"/> Add</span>
+                          <td valign="top" nowrap="nowrap">
+                            <span class="button3 pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                           </td>
                         </tr>
                       </table>
@@ -571,26 +554,19 @@
                   <table>
                     <tr>
                       <td width="100%">
-                <input name="acl_seqNo" id="acl_seqNo" type="hidden" value="0" />
-                        <table id="aclProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                        <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
-                    <th align="center" nowrap="nowrap">User/Group</th>
-                    <th align="center">Inheritance</th>
+                            <th nowrap="nowrap">User/Group</th>
+                            <th>Inheritance</th>
                             <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%">Action</th>
                   </tr>
-                  <tbody id="acl_tbody">
-              		  <![CDATA[
-              		    <script type="text/javascript">
-                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclEmptyCreate();})
-              		    </script>
-              		  ]]>
-              		</tbody>
+                          <tr id="s_tr_no"><td colspan="5"><b>No Security Properties</b></td></tr>
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                        <span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                        <span class="button3 pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 45, value: 1}, fld_3: {mode: 44, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 44,  suffix: '_deny', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>
@@ -601,25 +577,18 @@
                   <table>
                     <tr>
                       <td width="100%">
-                        <input name="aci_seqNo" id="aci_seqNo" type="hidden" value="0" />
-                        <table id="aciProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                          <table id="f_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
                           <tr>
                               <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
-                              <th align="center" nowrap="nowrap">WebID</th>
+                              <th nowrap="nowrap">WebID</th>
                             <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
                             <th width="1%" >Action</th>
                           </tr>
-                          <tbody id="aci_tbody">
-                      		  <![CDATA[
-                      		    <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciEmptyCreate();})
-                      		    </script>
-                      		  ]]>
-                      		</tbody>
+                            <tr id="f_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
                         </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                        <span class="button3 pointer" onclick="javascript: ODRIVE.aciRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, imgCssText: 'display: none;'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>

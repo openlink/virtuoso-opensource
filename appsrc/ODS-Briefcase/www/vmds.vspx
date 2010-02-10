@@ -150,8 +150,8 @@
                   <?vsp http (ODRIVE.WA.show_column_header ('Label', 'RS_LABEL', self.vmds_order, self.vmds_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Kind', 'RS_CATNAME', self.vmds_order, self.vmds_direction)); ?>
                   <?vsp http (ODRIVE.WA.show_column_header ('Version', 'RS_VERSION', self.vmds_order, self.vmds_direction)); ?>
-                  <th class="last" align="center" width="1%">
-                    <v:label value="Actions" format="%s"/>
+                  <th width="1%">
+                    Actions
                   </th>
                 </tr>
               </thead>

@@ -782,13 +782,13 @@
           if (get_keyword ('dav_propEnable', params, '0') <> '0')
           {
           properties := ODRIVE.WA.DAV_PROP_LIST (dav_fullPath, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
-          for (N := 0; N < length (properties); N := N + 2)
+            for (N := 0; N < length (properties); N := N + 1)
           {
             ODRIVE.WA.DAV_PROP_REMOVE (dav_fullPath, properties[N][0]);
           }
-          for (N := 0; N < length (c_properties); N := N + 3)
+            for (N := 0; N < length (c_properties); N := N + 1)
           {
-            ODRIVE.WA.DAV_PROP_SET (dav_fullPath, c_properties[N], c_properties[N+1]);
+              ODRIVE.WA.DAV_PROP_SET (dav_fullPath, c_properties[N][0], c_properties[N][1]);
           }
           }
 
@@ -1714,92 +1714,55 @@
                 </v:template>
                 <v:template name="tform_19" type="simple" enabled="-- gte(self.command_mode, 10)">
                   <tr>
-                    <th>WebDAV Properties</th>
+                    <th valign="top">WebDAV Properties</th>
                     <td>
+                      <table>
+                        <tr>
+                          <td width="600px">
                       <?vsp
                         declare N integer;
                         declare properties any;
 
                         properties := ODRIVE.WA.DAV_PROP_LIST (self.dav_path, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
-                        if ((length (properties) = 0) and (self.dav_propEnable = 0))
-                        {
-                          http ('No Properties');
-                        }
-                        else
-                        {
                           http (sprintf ('<input type="hidden" name="dav_propEnable" id="dav_propEnable" value="%d" />', self.dav_propEnable));
-                          http (sprintf ('<input type="hidden" name="c_seqNo" id="c_seqNo" value="%d" />', length (properties)));
                       ?>
-                      <table class="form-list" style="width: 80%;" id="davProperties" cellspacing="0">
+                            <table id="c_tbl" class="form-list" cellspacing="0">
                         <tr>
-                          <th>Property</th>
-                          <th>Value</th>
+                                <th width="50%">Property</th>
+                                <th width="50%">Value</th>
                           <vm:if test="self.dav_propEnable">
                             <th>&amp;nbsp;</th>
                           </vm:if>
                         </tr>
-                        <?vsp
-                          for (N := 0; N < length (properties); N := N + 1)
-                          {
-                        ?>
-                          <tr id="c_tr_<?V cast (N as varchar) ?>">
-                            <td id="c_td_<?V cast (N as varchar) ?>" width="50%">
-                              <vm:if test="self.dav_propEnable">
                           		  <![CDATA[
                           		    <script type="text/javascript">
-                                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('<?V cast (N as varchar) ?>', '<?V properties[N][0] ?>');});
-                          		    </script>
-                          		  ]]>
-                              </vm:if>
-                              <vm:if test="not self.dav_propEnable">
-                                <?V properties[N][0] ?>
-                              </vm:if>
-                            </td>
-                            <td width="50%">
-                              <vm:if test="self.dav_propEnable">
-                                <input name="c_value_<?V cast (N as varchar) ?>" value="<?V properties[N][1] ?>" style="width: 97%;" />
-                              </vm:if>
-                              <vm:if test="not self.dav_propEnable">
-                                <?V properties[N][1] ?>
-                              </vm:if>
-                            </td>
-                            <vm:if test="self.dav_propEnable">
-                              <td nowrap="nowrap">
-                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('<?V cast (N as varchar) ?>');"><img src="image/del_16.png" border="0" alt="Delete Property" title="Delete Property" /> Delete</span>
-                              </td>
-                            </vm:if>
-                          </tr>
                         <?vsp
+                                  declare M integer;
+
+                                  M := 0;
+                                  for (N := 0; N < length (properties); N := N + 1)
+                                  {
+                                    M := M + 1;
+                                    if (self.dav_propEnable)
+                                    {
+                                      http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
+                                    } else {
+                                      http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("c", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', properties[N][0], properties[N][1]));
+                                    }
                           }
                         ?>
-                        <vm:if test="self.dav_propEnable">
-                          <tr id="c_tr">
-                            <td colspan="3">
-                              <hr />
-                            </td>
-                          </tr>
-                          <tr id="c_tr_xxx">
-                            <td id="c_td_xxx" width="50%">
-                        		  <![CDATA[
-                        		    <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.propertyCombo('xxx', '');});
                         		    </script>
                         		  ]]>
-        		                </td>
-                            <td width="50%">
-                              <input id="c_value_xxx" name="c_value_xxx" style="width: 97%;" />
+                              <tr id="c_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_propEnable then 2 else 3 end ?>"><b>No Properties</b></td></tr>
+                            </table>
                             </td>
                             <vm:if test="self.dav_propEnable">
-                              <td nowrap="nowrap">
-                                <span class="button3 pointer" onclick="javascript: ODRIVE.propertyUpdate('xxx');"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property"/> Add</span>
+                            <td valign="top" nowrap="nowrap">
+                              <span class="button3 pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0}});"><img src="image/add_16.png" border="0" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                               </td>
                             </vm:if>
                           </tr>
-                        </vm:if>
                       </table>
-                      <?vsp
-                        }
-                      ?>
                     </td>
                   </tr>
                 </v:template>
@@ -1813,47 +1776,44 @@
                   <table>
                     <tr>
                       <td width="100%">
-                <?vsp
-                  declare N integer;
-                  declare acl_values, acl, D any;
-
-                  acl_values := ODRIVE.WA.acl_vector (self.dav_acl);
-                  http (sprintf ('<input type="hidden" name="acl_seqNo" id="acl_seqNo" value="%d" />', length (acl_values)));
-                ?>
-                        <table id="aclProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                        <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
                   <tr>
-                    <th align="center" nowrap="nowrap">User/Group</th>
-                    <th align="center">Inheritance</th>
+                            <th nowrap="nowrap">User/Group</th>
+                            <th width="1%">Inheritance</th>
                             <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%">Action</th>
                   </tr>
-                  <tbody id="acl_tbody">
               		  <![CDATA[
               		    <script type="text/javascript">
                   <?vsp
-              		      declare aclEnable, rowEnable, aclValues varchar;
+                              declare M, N integer;
+                              declare acl, acl_values, V any;
 
-                        aclEnable := case when self.dav_enable then 'true' else 'false' end;
+                              M := 0;
+                              V := vector (0, 'This object only', 1, 'This object, subfolders and files', 2, 'Subfolders and files', 3, 'Inherited');
+                              acl_values := ODRIVE.WA.acl_vector (self.dav_acl);
                     for (N := 0; N < length (acl_values); N := N + 1)
                     {
+                                M := M + 1;
                       acl := acl_values[N];
-                          rowEnable := case when acl[1] <> 3 then 'true' else 'false' end;
-                          aclValues := sprintf ('{user: \'%s\', inheritance: %d, r_grant: %d, w_grant: %d, x_grant: %d, r_deny: %d, w_deny: %d, x_deny: %d}', ODRIVE.WA.account_name (acl[0]), acl[1], bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1));
-                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclRowCreate(%s, %s, %s);});', aclEnable, rowEnable, aclValues));
+                                if (self.dav_enable and (acl[1] <> 3))
+                                {
+                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s"}, fld_2: {mode: 45, value: %d}, fld_3: {mode: 44, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                } else {
+                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                }
                   }
                   ?>
-                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aclEmptyCreate();})
               		    </script>
               		  ]]>
-              		</tbody>
+                          <tr id="s_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 4 else 5 end ?>"><b>No Security</b></td></tr>
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                        <?vsp
-                          if (self.dav_enable)
-                            http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aclRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
-                        ?>
+                        <vm:if test="self.dav_enable">
+                          <span class="button3 pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 45, value: 1}, fld_3: {mode: 44, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 44,  suffix: '_deny', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                        </vm:if>
                       </td>
                     </tr>
                   </table>
@@ -1864,45 +1824,44 @@
                     <table>
                       <tr>
                         <td width="100%">
-                          <?vsp
-                            declare N integer;
-                            declare aci_values, aci, D any;
-
-                            aci_values := ODRIVE.WA.aci_load (self.dav_path);
-                            http (sprintf ('<input type="hidden" name="aci_seqNo" id="aci_seqNo" value="%d" />', length (aci_values)));
-                          ?>
-                          <table id="aciProperties" class="form-list" style="width: 100%;"  cellspacing="0">
+                          <table id="f_tbl" class="form-list" style="width: 100%;" cellspacing="0">
                             <tr>
-                              <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
-                              <th align="center" nowrap="nowrap">WebID</th>
+                              <th width="1%" nowrap="nowrap">Acces Type</th>
+                              <th nowrap="nowrap">WebID</th>
                               <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <vm:if test="self.dav_enable">
                               <th width="1%" >Action</th>
+                              </vm:if>
                             </tr>
-                            <tbody id="aci_tbody">
                         		  <![CDATA[
                         		    <script type="text/javascript">
                         		    <?vsp
-                        		      declare aciEnable, aciValues varchar;
+                                declare M, N integer;
+                                declare aci_values any;
 
-                                  aciEnable := case when self.dav_enable then 'true' else 'false' end;
+                                M := 0;
+                                aci_values := ODRIVE.WA.aci_load (self.dav_path);
                                   for (N := 0; N < length (aci_values); N := N + 1)
                                   {
-                                    aciValues := sprintf ('{user: \'%s\', access: \'%s\', r_grant: %d, w_grant: %d, x_grant: %d}', aci_values[N][1], aci_values[N][2], aci_values[N][3], aci_values[N][4], aci_values[N][5]);
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciRowCreate(%s, %s);});', aciEnable, aciValues));
+                                  M := M + 1;
+                                  if (self.dav_enable)
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'group' then '' else 'display: none;' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                  }
                                   }
                         		    ?>
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.aciEmptyCreate();})
                         		    </script>
                         		  ]]>
-                        		</tbody>
+                            <tr id="f_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 3 else 4 end ?>"><b>No FOAF+SSL Security</b></td></tr>
                           </table>
                         </td>
+                        <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                          <?vsp
-                            if (self.dav_enable)
-                              http ('<span class="button3 pointer" onclick="javascript: ODRIVE.aciRowCreate(true, true);"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />');
-                          ?>
+                            <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, imgCssText: 'display: none;'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </fieldset>
@@ -2222,7 +2181,7 @@
                               <?vsp self.showColumnHeader('column_#8'); ?>
                               <?vsp self.showColumnHeader('column_#9'); ?>
                             </vm:if>
-                            <th class="last" width="1%">
+                            <th width="1%">
                               Actions
                             </th>
                           </tr>

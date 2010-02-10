@@ -649,7 +649,7 @@ input.button {
   border-width: 0px 1px 1px 0px;
 }
 
-th.last {
+.form-list th:last-child {
   border-width: 0px 0px 1px 0px;
 }
 .form-list td {
@@ -850,7 +850,7 @@ thead.sortHeader th.checkbox {
   padding: 0;
 }
 
-thead.sortHeader th.last {
+thead.sortHeader th:last-child {
   border-width: 0px 0px 1px 0px;
 }
 
