@@ -4674,8 +4674,8 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1,
     goto done_all;
   last_iri_id := #i0;
 
-  if (1 <> sys_stat ('cl_run_local_only'))
-    {
+--  if (1 <> sys_stat ('cl_run_local_only'))
+--    {
       specials_vec := dict_list_keys (specials, 0);
       whenever not found goto done_rdf_quad_cl;
       open cr_cl (prefetch 1);
@@ -4696,27 +4696,27 @@ next_fetch_cr_cl:
 
 done_rdf_quad_cl:
       close cr_cl;
-    }
-  else
-    {
-  whenever not found goto done_rdf_quad;
-  open cr (prefetch 1);
+--    }
+--  else
+--    {
+--      whenever not found goto done_rdf_quad;
+--      open cr (prefetch 1);
 
-next_fetch_cr:
-  fetch cr into cur_iri_id;
-  if (return_iris)
-    result (id_to_iri (cur_iri_id));
-  else
-    result (cur_iri_id);
-  lim := lim - 1;
-  if (len >= lim)
-    goto done_rdf_quad;
-  last_iri_id := cur_iri_id;
-  goto next_fetch_cr;
+--next_fetch_cr:
+--      fetch cr into cur_iri_id;
+--      if (return_iris)
+--        result (id_to_iri (cur_iri_id));
+--      else
+--        result (cur_iri_id);
+--      lim := lim - 1;
+--      if (len >= lim)
+--        goto done_rdf_quad;
+--      last_iri_id := cur_iri_id;
+--      goto next_fetch_cr;
 
-done_rdf_quad:
-  close cr;
-    }
+--done_rdf_quad:
+--      close cr;
+--    }
 
 done_all:
   specials := dict_list_keys (specials, 1);
