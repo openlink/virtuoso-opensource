@@ -84,7 +84,7 @@ bif_uuencode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  failed = 1;
 	}
       END_READ_FAIL ((dk_session_t *)input)
-      END_IO_SECT (qst);
+      END_IO_SECT (err_ret);
       if (failed)
         {
           dk_free_tree (res);
