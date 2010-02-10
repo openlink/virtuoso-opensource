@@ -788,7 +788,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
             xe_serialize ((xml_entity_t *)(rb->rb_box), ses);
           else if (!rb->rb_box)
 	    print_int (0, ses);  /* a zero int with should be printed with int tag for partitioning etc */
-          else
+	  else
 	    print_object (rb->rb_box, ses, NULL, NULL);
           if (rb->rb_ro_id)
             {
@@ -1993,8 +1993,8 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
       dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
       if (dt_ret->uri) /* if by some reason rb_type is wrong */
 	{
-          box_flags (dt_ret->uri) |= BF_IRI;
-        }
+	  box_flags (dt_ret->uri) |= BF_IRI;
+	}
     }
   else
     {

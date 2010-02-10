@@ -5396,7 +5396,7 @@ print_cross_equs:
           if (NULL != jright_alias)
             { /* Note that left_var is not set if both vars are from jright_alias */
               if (!strcmp (jright_alias, tabid))
-            {
+                {
                   if (strcmp (jright_alias, tabid2))
                     {
                       if (0 <= dk_set_position_of_string (jleft_aliases, tabid2))
@@ -5432,7 +5432,7 @@ print_cross_equs:
               weak_eq_skipped++;
               if (!retry_count)
                 continue;
-            }
+           }
           var_native = sparp_expn_native_valmode (ssg->ssg_sparp, var);
           var2_native = sparp_expn_native_valmode (ssg->ssg_sparp, var2);
           common_native = ssg_largest_eq_valmode (var_native, var2_native);
@@ -5588,7 +5588,7 @@ print_cross_equs:
           if (NULL != jright_alias)
             { /* Note that left_sub_gp is not set if both subs are from jright_alias */
               if (!strcmp (jright_alias, sub_selid))
-            {
+                {
                   if (strcmp (jright_alias, sub2_selid))
                     {
                       if (0 <= dk_set_position_of_string (jleft_aliases, sub2_selid))
@@ -5617,7 +5617,7 @@ print_cross_equs:
               weak_eq_skipped++;
               if (!retry_count)
                 continue;
-            }
+           }
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
           sub2_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub2_gp, sub2_eq);
           common_native = ssg_largest_eq_valmode (sub_native, sub2_native);
@@ -7457,7 +7457,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       long lim = unbox ((caddr_t)(tree->_.req_top.limit));
       long ofs = unbox ((caddr_t)(tree->_.req_top.offset));
       if ((SPARP_MAXLIMIT != lim) || (0 != ofs))
-      has_limofs = 1;
+        has_limofs = 1;
     }
   else
     has_limofs = 2;

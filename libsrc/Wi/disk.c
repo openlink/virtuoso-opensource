@@ -1340,7 +1340,7 @@ bp_make_buffer_list (int n)
   unsigned char *buf_ptr = NULL;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
-  mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */ , (void *) bp);
+  mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */, (void*) bp);
   bp->bp_n_bufs = n;
   bp->bp_bufs = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t) * n);
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
@@ -1367,7 +1367,7 @@ bp_make_buffer_list (int n)
       if (malloc_bufs)
 	{
 	  if (c_use_o_direct)
-	    GPF_T1 ("An exec ompiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
+	    GPF_T1 ("An exe compiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
 	  buf->bd_buffer = malloc (BUF_ALLOC_SZ);
 	  BUF_SET_END_MARK (buf);
 	}
@@ -2804,7 +2804,7 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   if (!rdf_no_string_inline)
     strcpy_ck (db.db_generic, "3100");
   else
-  strcpy_ck (db.db_generic, DBMS_STORAGE_VER);
+    strcpy_ck (db.db_generic, DBMS_STORAGE_VER);
   db.db_registry = dbs->dbs_registry;
   db.db_extent_set = dbs->dbs_extent_set->bd_page;
   db.db_free_set = dbs->dbs_free_set->bd_page;
