@@ -349,7 +349,7 @@ sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, d
 int
 sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
 {
-  float text_cost, text_card = ic->ic_arity;
+  float text_cost = 0, text_card = ic->ic_arity;
   df_elt_t * text_pred =  tb_dfe->_.table.text_pred;
   if (!text_pred || text_pred->dfe_is_placed)
     return 0;
