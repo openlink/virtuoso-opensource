@@ -1040,9 +1040,13 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       rd_list_free (lp_box);
       *pos_ret =9999;
       if (itc->itc_ac_parent_deld)
-	cmp_printf (("autocompact caused del of parent L=%d\n", itc->itc_page));
+        {
+	  cmp_printf (("autocompact caused del of parent L=%d\n", itc->itc_page));
+	}
       else
-	cmp_printf (("autocompact caused split of parent\n"));
+        {
+	  cmp_printf (("autocompact caused split of parent\n"));
+	}
       return CP_LEAVE;
     }
   if (!parent->bd_is_write) GPF_T1 ("parent not occupied in compact");

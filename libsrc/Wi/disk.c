@@ -1991,7 +1991,9 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
   dbs_unfreeable (dbs, first_dp, flag);
   buf_disk_read (first);
   if (flag != DPF_EXTENT_MAP)
-    page_set_checksum_init (first->bd_buffer + DP_DATA);
+    {
+      page_set_checksum_init (first->bd_buffer + DP_DATA);
+    }
   while ((dp_first = LONG_REF (prev->bd_buffer + DP_OVERFLOW)))
     {
       buffer_desc_t *buf = buffer_allocate (flag);

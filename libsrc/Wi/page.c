@@ -2168,7 +2168,9 @@ pf_change_org (page_fill_t * pf)
   if (!LONG_REF (org->bd_buffer + DP_KEY_ID)) GPF_T1 ("no key id in jbuffer");
   buf_set_dirty (org);
   if (org->bd_content_map->pm_count)
-    pg_check_map (org);
+    {
+      pg_check_map (org);
+    }
 }
 
 

@@ -1758,7 +1758,9 @@ logh_set_level (lock_trx_t * lt, caddr_t * logh)
       repl_acct_t *ra;
       ra = ra_find (replh[REPLH_SERVER], replh[REPLH_ACCOUNT]);
       if (level_print)
-	dbg_printf ((" Rfwd level %s %s " BOXINT_FMT "\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
+        {
+	  dbg_printf ((" Rfwd level %s %s " BOXINT_FMT "\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
+	}
       if (!ra)
 	{
 	  ra = ra_add (replh[REPLH_SERVER], replh[REPLH_ACCOUNT], 1, 0, 0);

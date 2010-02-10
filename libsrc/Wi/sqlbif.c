@@ -9788,7 +9788,9 @@ set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual)
     CLI_SET_QUAL (cli, "DB");
 
   if (!in_srv_global_init)
-    CHANGE_THREAD_USER (user);
+    {
+      CHANGE_THREAD_USER (user);
+    }
 
   return 1;
 }

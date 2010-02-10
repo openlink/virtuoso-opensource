@@ -865,10 +865,12 @@ srv_client_connection_died (client_connection_t *cli)
   if (cli->cli_tp_data)
     {
       if (lt && lt->lt_2pc._2pc_type != cli->cli_tp_data->cli_trx_type)
-	lt_log_debug (("srv_client_connection_died diff trx_type cli=%p cli_trx_type=%d, 2pc_type=%d, enlisted=%d",
+        {
+	  lt_log_debug (("srv_client_connection_died diff trx_type cli=%p cli_trx_type=%d, 2pc_type=%d, enlisted=%d",
 	    cli, cli->cli_tp_data->cli_trx_type,
 	    lt->lt_2pc._2pc_type,
 	    cli->cli_tp_data->cli_tp_enlisted));
+	}
 
       lt_log_debug (("srv_client_connection_died no lt cli=%p type=%d, enlisted=%d",
 	  cli, cli->cli_tp_data->cli_trx_type,
@@ -3988,7 +3990,9 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 
   {
     if ('S' == code[0] || '4' == code[0])
-      at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
+      {
+        at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
+      }
   }
   box[0] = (caddr_t) QA_ERROR;
   box[1] = box_dv_short_string (code);

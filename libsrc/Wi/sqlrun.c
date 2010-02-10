@@ -2706,7 +2706,9 @@ qn_anytime_state (data_source_t * qn, caddr_t * inst)
 		  caddr_t err = subq_handle_reset (qi, reset_code);
 		  POP_QR_RESET;
 		  if (err_is_anytime (err))
-		    at_printf (("subq %d interrupted by anytime", qn->src_in_state));
+		    {
+		      at_printf (("subq %d interrupted by anytime", qn->src_in_state));
+		    }
 		  if (0 && err_is_anytime (err))
 		    SRC_IN_STATE (qn, inst) = NULL; /* timed out when continuing.  No more tries for this subq **/
 		  sqlr_resignal (err);

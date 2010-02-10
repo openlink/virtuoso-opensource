@@ -522,8 +522,10 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
     lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 
   if (lt->lt_error != LTE_OK)
-    lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
+    {
+      lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
 	    (int) lt->lt_error, lt, lt->lt_client));
+    }
   LEAVE_TXN;
   return lt->lt_error;
 }

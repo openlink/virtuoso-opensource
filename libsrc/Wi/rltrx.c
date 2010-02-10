@@ -386,7 +386,9 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       waiting = waiting->itc_next_on_lock;
     }
   if (itc->itc_ltrx->lt_status != LT_PENDING)
-    rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    {
+      rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    }
 
   pl->pl_n_row_locks++;
   /* rdbg_printf (("       rl insert at %d on %ld\n", pos, pl->pl_page)); */
@@ -397,7 +399,9 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       || (not_own = !pl_lt_is_owner (pl, itc->itc_ltrx)))
     {
       if (not_own)
-	rdbg_printf (("would be miss insert pl T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+        {
+	  rdbg_printf (("would be miss insert pl T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+	}
       lt_add_pl (itc->itc_ltrx, pl, 0);
     }
 }
@@ -612,7 +616,9 @@ itc_make_rl (it_cursor_t * itc)
     GPF_T1 ("itc has itc_pl of a different page");
 
   if (itc->itc_ltrx->lt_status != LT_PENDING)
-    rdbg_printf (("*** making posthumous lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    {
+      rdbg_printf (("*** making posthumous lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    }
   assert (ITC_AT_END != itc->itc_map_pos);
   rl->rl_pos = itc->itc_map_pos;
   PL_RL_ADD (pl, rl, itc->itc_map_pos);
@@ -1458,7 +1464,9 @@ lt_transact (lock_trx_t * lt, int op)
   page_lock_t * pl_arr_auto[100];
   page_lock_t ** pl_arr;
   if (SQL_ROLLBACK == op && QFID_HOST (lt->lt_w_id) == local_cll.cll_this_host)
-    rdbg_printf (("Host %d:  Own rollback with lte=%d of %d:%d\n", local_cll.cll_this_host, lt->lt_error, LT_W_NO (lt)));
+    {
+      rdbg_printf (("Host %d:  Own rollback with lte=%d of %d:%d\n", local_cll.cll_this_host, lt->lt_error, LT_W_NO (lt)));
+    }
   ASSERT_IN_TXN;
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
