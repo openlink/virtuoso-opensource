@@ -41,7 +41,7 @@
                 http('<input type="checkbox" name="cb_all" value="Unselect All" checked="checked" onclick="selectAllCheckboxes(this, \'cb_item\'); "/>');
               ?>
             </th>
-            <th style="text-align: center; width: 100%;" class="last">Tag</th>
+            <th style="text-align: center; width: 100%;">Tag</th>
           </tr>
         </thead>
         <?vsp

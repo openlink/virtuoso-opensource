@@ -705,8 +705,6 @@ create procedure bmk_annotation_delete (
   }
 	annotattion_iri := bmk_annotation_iri (domain_id, master_id, annotation_id);
   SIOC..delete_quad_s_or_o (graph_iri, annotattion_iri, annotattion_iri);
-
-  SIOC..bmk_claims_delete (graph_iri, annotattion_iri, claims);
 }
 ;
 
@@ -726,21 +724,13 @@ create procedure bmk_claims_insert (
     cPedicate := V[N][1];
     cValue := V[N][2];
     if (0 = length (cPedicate))
+    {
       cPedicate := rdfs_iri ('seeAlso');
-
-    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cValue);
+    } else {
+      cPedicate := ODS.ODS_API."ontology.denormalize" (cPedicate);
   }
+    DB.DBA.ODS_QUAD_URI (graph_iri, annotattion_iri, cPedicate, cValue);
 }
-;
-
--------------------------------------------------------------------------------
---
-create procedure bmk_claims_delete (
-  in graph_iri varchar,
-  in annotattion_iri varchar,
-  in claims any)
-{
-  SIOC..delete_quad_so (graph_iri, annotattion_iri, annotattion_iri);
 }
 ;
 

@@ -171,8 +171,8 @@
                   <?vsp self.sortColumn('Mail', 'P_MAIL'); ?>
                 </th>
                 <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                  <th class="last" width="1%">
-                    <v:label value="Action" format="%s"/>
+                  <th width="1%">
+                    Action
                   </th>
                 </v:template>
               </tr>

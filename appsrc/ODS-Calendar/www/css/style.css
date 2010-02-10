@@ -367,7 +367,7 @@ table#list th
   border-width: 0px 1px 1px 0px;
 }
 
-table#list th.last
+table#list th:last-child
 {
   border-width: 0px 0px 1px 0px;
 }
@@ -776,7 +776,7 @@ thead.sortHeader th.checkbox
   padding: 0;
 }
 
-thead.sortHeader th.last
+thead.sortHeader th:last-child
 {
   border-width: 0px 0px 1px 0px;
 }

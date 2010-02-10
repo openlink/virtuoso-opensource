@@ -146,7 +146,7 @@
                 <th>
                   <?vsp self.sortColumn('Description', 'WAI_DESCRIPTION'); ?>
                 </th>
-                <th class="last" width="1%">
+                <th width="1%">
                   <v:label value="Action" format="%s"/>
                 </th>
               </tr>

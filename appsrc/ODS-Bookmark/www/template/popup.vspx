@@ -35,6 +35,7 @@
         var featureList=["combolist", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>
       <script type="text/javascript">
         function myInit()
