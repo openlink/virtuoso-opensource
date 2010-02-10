@@ -348,6 +348,39 @@ create procedure params2json (in o any)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure dav_path_normalize (
+  in path varchar,
+  in path_type varchar := 'P')
+{
+  declare N integer;
+
+  path := trim (path);
+  N := length (path);
+  if (N > 0)
+  {
+    if (chr (path[0]) <> '/')
+    {
+      path := '/' || path;
+    }
+    if ((path_type = 'C') and (chr (path[N-1]) <> '/'))
+    {
+      path := path || '/';
+    }
+    if (chr (path[1]) = '~')
+    {
+      path := replace (path, '/~', '/DAV/home/');
+    }
+    if (path not like '/DAV/%')
+    {
+      path := '/DAV' || path;
+    }
+  }
+  return path;
+}
+;
+
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
   in ontology varchar) __soap_http 'application/json'

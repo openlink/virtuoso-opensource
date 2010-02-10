@@ -265,3 +265,25 @@ TBL.createCell31 = function (td, prefix, fldName, No, fldOptions) {
   td.appendChild(fld);
   return fld;
 }
+
+TBL.createButton1 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create("input");
+  fld.id = fldName;
+  fld.type = 'button';
+  fld.value = 'Remove';
+  fld.onclick = function(){TBL.createRow(prefix, No);};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createButton2 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.image('image/del_16.png');
+  fld.onclick = function(){TBL.createRow(prefix, No);};
+  OAT.Dom.addClass(fld, 'pointer');
+
+  td.appendChild(fld);
+  return fld;
+}
