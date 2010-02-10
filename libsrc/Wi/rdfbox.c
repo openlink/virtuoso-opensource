@@ -3577,10 +3577,10 @@ rdf_single_check (query_instance_t *qi, caddr_t start_box_arg, boxint ro_id, rdf
     default:
       return 0 /* because DVC_NOORDER */;
     }
+  opval_len = box_length (opval_strval) - 1;
   if (NULL != complete_rb_ptr[0])
     goto complete_rb_is_available; /* see below */
   start_box_len = box_length (start_box_arg) - 1;
-  opval_len = box_length (opval_strval) - 1;
   cmp = memcmp (start_box_arg, opval_strval, MIN (start_box_len, opval_len));
   switch (opcode)
     {
