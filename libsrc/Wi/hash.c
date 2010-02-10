@@ -772,6 +772,8 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
   rd.rd_allocated = RD_AUTO;
   rd.rd_itc = itc;
   rd.rd_key = ha->ha_key;
+  if (HA_PROC_FILL == ha->ha_op)
+    rd.rd_any_ser_flags = DKS_TO_HA_DISK_ROW;
   if (!bp_ref_itc)
     {
       index_tree_t * ha_tree = (index_tree_t *) QST_GET_V (qst, ha->ha_tree);
@@ -793,6 +795,8 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
     {
       int var_len_org = var_len;
       rd.rd_non_comp_max = MAX_ROW_BYTES;
+      if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &hm_val, (PAGE_DATA_SZ+2000)))
+        sqlr_new_error ("42000", "SR483", "Stack Overflow");
     try_with_blobs_outlined:
       rd.rd_non_comp_len = var_len + key->key_row_var_start[0];
       for (inx = ha->ha_n_keys; ha->ha_key_cols[inx].cl_col_id; inx++)
@@ -840,7 +844,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 	       cl->cl_sqt.sqt_dtp == DV_OBJECT))
 	    {
 	      caddr_t err = NULL;
-	      caddr_t serialized_value = box_to_any (value, &err);
+	      caddr_t serialized_value = box_to_any_1 (value, &err, NULL, rd.rd_any_ser_flags);
 	      if (err != NULL)
 		{
 		  dk_free_tree (err);
