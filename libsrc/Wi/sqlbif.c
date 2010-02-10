@@ -4347,7 +4347,7 @@ bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *fun
 {
   caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, func_name);
   caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, func_name);
-  char *inx;
+  char *inx = NULL;
   dtp_t dtp1 = DV_TYPE_OF (str1);
   dtp_t dtp2 = DV_TYPE_OF (str2);
   int len1, len2;

@@ -1337,7 +1337,7 @@ bp_make_buffer_list (int n)
   buffer_desc_t *buf;
   int c;
   unsigned char *buffers_space;
-  unsigned char *buf_ptr;
+  unsigned char *buf_ptr = NULL;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
   mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */ , (void *) bp);
@@ -2469,7 +2469,7 @@ gen_qsort (int * in, int * left,
   else
     {
       int split;
-      int mid, is_mid = 0;
+      int mid = 0, is_mid = 0;
       int n_left = 0, n_right = n_in - 1;
       int inx;
       if (depth > 60)
@@ -3319,7 +3319,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 {
   wi_database_t cfg_page;
   OFF_T size;
-  int fd;
+  int fd = -1;
   dbe_storage_t * dbs = dbs_allocate (name, type);
   *exists = 0;
   if (!file)

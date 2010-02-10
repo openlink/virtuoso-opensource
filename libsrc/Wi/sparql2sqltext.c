@@ -5582,7 +5582,7 @@ print_cross_equs:
           SPART *sub2_gp = sparp_find_gp_by_eq_idx (ssg->ssg_sparp, sub2_eq_idx);
           caddr_t sub2_selid = sub2_gp->_.gp.selid;
           ssg_valmode_t sub_native, sub2_native, common_native;
-          SPART *left_sub_gp;
+          SPART *left_sub_gp = NULL;
           int col_ctr, col_count, is_good;
 
           if (NULL != jright_alias)
@@ -7051,8 +7051,8 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
   int memb_ctr, memb_count;
   int equiv_ctr;
   int breakup_shift;
-  int save_where_l_printed;
-  const char *save_where_l_text;
+  int save_where_l_printed = 0;
+  const char *save_where_l_text = NULL;
   if (UNION_L == gp->_.gp.subtype)
     {
       members = gp->_.gp.members;
