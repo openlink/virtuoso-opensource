@@ -9641,7 +9641,7 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 	  char in_buf[3*4096], out_buf[(6*4096)+1];
 	  int readed, to_read, to_read_len;
 	  dk_session_t * bh_ses;
-	  size_t limit = (size_t) unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name));
+	  boxint limit = unbox(con_soap_get (ctx->cli, con_soap_blob_limit_name));
 
 	  if (bh->bh_length > MIME_POST_LIMIT && !limit)
 	    SOAP_VALIDATE_ERROR (("22023", "SV089", "Blob longer than maximum string length not allowed"));
