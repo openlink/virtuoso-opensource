@@ -2586,7 +2586,9 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra, int flags)
       ra_count++;
       ra_pages += ra->ra_bfill;
       if (ra->ra_nsiblings > 1)
-	dbg_printf (("RA %d sibling %d pages %d leaves\n", ra->ra_nsiblings, ra->ra_bfill, ra->ra_fill));
+        {
+	  dbg_printf (("RA %d sibling %d pages %d leaves\n", ra->ra_nsiblings, ra->ra_bfill, ra->ra_fill));
+        }
       iq_schedule (ra->ra_bufs, ra->ra_bfill);
     }
   ITC_LEAVE_MAPS (itc);

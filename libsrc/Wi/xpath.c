@@ -5136,9 +5136,13 @@ xp_wordstack_from_string (char * str, encoding_handler_t *eh, lang_handler_t *lh
 {
   int ret;
   if ((&eh__UTF8 == eh) || (&eh__UTF8_QR == eh))
-    ASSERT_NCHARS_UTF8 (str, strlen (str));
+    {
+      ASSERT_NCHARS_UTF8 (str, strlen (str));
+    }
   else
-    ASSERT_NCHARS_8BIT (str, strlen (str));
+    {
+      ASSERT_NCHARS_8BIT (str, strlen (str));
+    }
   ret = lh_iterate_patched_words(
     eh, lh->lh_ftq_language,
     str, strlen(str),

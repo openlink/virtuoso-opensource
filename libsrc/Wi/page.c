@@ -2333,8 +2333,10 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
       pf.pf_registered[inx]->itc_map_pos = ITC_AT_END;
 
   if (pf.pf_left)
+    {
+      buf_order_ck (pf.pf_current);
+    }
 
-  buf_order_ck (pf.pf_current);
   pf_change_org (&pf);
   page_reg_past_end (pf.pf_org);
   for (inx = 0; inx < pf.pf_rl_fill; inx++)
