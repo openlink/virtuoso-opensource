@@ -1622,7 +1622,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
       cf = cf + log (arity[nth_term]) * ROW_SKIP_COST * 0.1;
       dio->dio_table->_.table.key = prev_key;
       nth_term++;
-      if (nth_term > 10)
+      if (nth_term >= 10)
 	break;
     }
   END_DO_SET();
