@@ -396,27 +396,13 @@ function updateLabel(value)
 function showLabel(from, to)
 {
   for (var i = from; i <= to; i++)
-  {
-    var div = document.getElementById('tab_'+i);
-    if (div)
-    {
-      div.style.visibility = 'visible';
-      div.style.display = 'inline';
-    }
-  }
+    OAT.Dom.show('tab_'+i);
 }
 
 function hideLabel(from, to)
 {
   for (var i = from; i <= to; i++)
-  {
-    var div = document.getElementById('tab_'+i);
-    if (div != null)
-    {
-      div.style.visibility = 'hidden';
-      div.style.display = 'none';
-    }
-  }
+    OAT.Dom.hide('tab_'+i);
 }
 
 function showTab(tab, tabs)
@@ -440,13 +426,11 @@ function showTab(tab, tabs)
       } else {
         OAT.Dom.hide(div);
         if (divTab)
-        {
           OAT.Dom.removeClass(divTab, "activeTab");
         }
       }
     }
   }
-}
 
 function initTab(tabs, defaultNo)
 {
@@ -551,50 +535,52 @@ function coloriseTable(id)
 
 function rowSelect(obj)
 {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
   var s2 = (obj.name).replace('b1', 's2');
   var s1 = (obj.name).replace('b1', 's1');
 
+  var srcForm = window.document.F1;
+  var dstForm = window.opener.document.F1;
+
+  var submitMode = false;
+  if (srcForm.elements['src'] && (srcForm.elements['src'].value.indexOf('s') != -1)) {
+      submitMode = true;
+    if (dstForm && dstForm.elements['submitting'])
+        return false;
+  }
+  var closeMode = true;
+  var singleMode = true;
+  if (srcForm.elements['dst']) {
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
+      closeMode = false;
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+  }
+
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.elements['params'].value;
   var myArray;
+  if (dstForm) {
   while(true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+      if (myArray.length > 2) {
+        var fld = dstForm.elements[myArray[1]];
+        if (fld) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s2], singleMode, submitMode);
+        }
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
+  }
   if (submitMode) {
     window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    dstForm.submit();
   }
   if (closeMode)
     window.close();
@@ -616,13 +602,14 @@ function rowSelectValue(dstField, srcField, singleMode, submitMode)
       dstField.value = dstField.value + ',';
       for (var i = 0; i < aSrc.length; i = i + 1)
       {
-        if (aSrc[i] != '')
-          if (dstField.value.indexOf(aSrc[i]+',') == -1)
-            dstField.value = dstField.value + ODRIVE.trim(aSrc[i], ',') + ',';
+        if ((aSrc[i] != '') && (dstField.value.indexOf(aSrc[i]+',') == -1))
+          dstField.value += ODRIVE.trim(aSrc[i], ',') + ',';
       }
     }
     dstField.value = ODRIVE.trim(dstField.value, ',');
   }
+  if (dstField.onchange)
+    dstField.onchange();
 }
 
 function updateChecked(form, objName)
@@ -635,7 +622,7 @@ function updateChecked(form, objName)
       if (obj.checked)
       {
         if (form.s1.value.indexOf(obj.value+',') == -1)
-          form.s1.value = form.s1.value + obj.value+',';
+          form.s1.value += obj.value+',';
       } else {
         form.s1.value = (form.s1.value).replace(obj.value+',', '');
       }
@@ -1540,4 +1527,18 @@ ODRIVE.validateInputs = function (fld)
     }
   }
   return retValue;
+}
+
+ODRIVE.toggleEditor = function ()
+{
+  if ($v('dav_mime') == 'text/html') {
+    OAT.Dom.hide('dav_plain');
+    OAT.Dom.show('dav_html');
+    oEditor.setData($v('dav_content_plain'));
+  } else {
+    OAT.Dom.show('dav_plain');
+    OAT.Dom.hide('dav_html');
+    oEditor.updateElement();
+    $('dav_content_plain').value = $v('dav_content_html');
+  }
 }
