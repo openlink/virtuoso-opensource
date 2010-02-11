@@ -150,6 +150,33 @@
                 <?vsp
                   };
                 ?>
+                <?vsp
+                  if  (smode ='18')
+                  {
+                ?>
+                <br/><?V input_getcustom (13) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (14) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='19')
+                  {
+                ?>
+                <br/><?V input_getcustom (15) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <?vsp
+                  };
+                ?>
+                <?vsp
+                  if  (smode ='20')
+                  {
+                ?>
+                <br/><?V input_getcustom (16) ?> <input size="60" type="text" name="sc2" value="<?= srch2 ?>"/>
+                <br/><?V input_getcustom (17) ?> <input size="60" type="text" name="sc3" value="<?= srch3 ?>"/>
+                <br/><?V input_getcustom (18) ?> <input size="60" type="text" name="sc4" value="<?= srch4 ?>"/>
+                <?vsp
+                  };
+                ?>
                 <input type="submit" name="fa" value="Execute"/>
               </td>
             </tr>
@@ -235,6 +262,12 @@
 		            http_value (tmp);
 			    http (sprintf('</a>&nbsp;<a href="/describe/?url=%U">Browse</a>',tmp));
 			  }	
+			else if (smode = '18' and j = 0)
+			  {
+			    http (sprintf ('<td><a href="search.vsp?q=%U&sc=%U&sc2=%U&sc3=%U&fa=Execute">', smode, '<'||tmp||'>', srch2, srch3));
+		            http_value (tmp);
+			    http (sprintf('</a>&nbsp;<a href="/describe/?url=%U">Browse</a>',tmp));
+			  }
 			else if (smode  = '1001' and j = 0)
                           {
 		  	    http (sprintf ('<td><a class="uri" href="%V">%s</a>', 
@@ -246,7 +279,7 @@
 		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
  		        else
                           http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('http://demo.openlinksw.com/ode/?uri=',tmp), get_curie (tmp)));
-                        if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '17', '101') and j=0)
+                        if (0 and smode in ('5','6','7', '8','9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '101') and j=0)
 			  http (sprintf('&nbsp;<b><a href="dlistall.vsp?p=%U">Drill-down</a></b>',tmp));
 			if (0 and smode = '5')
                           http (sprintf('&nbsp;<b><a href="search.vsp?q=1001&sc=%U&fa=Execute">NEs</a></b>',tmp));

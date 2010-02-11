@@ -40,6 +40,9 @@ create procedure label_get(in smode varchar)
   else if (smode='15') label := 'Places of worship around London with Cities in close proximity';
   else if (smode='16') label := 'Places with coordinates';
   else if (smode='17') label := 'Subcategories of Protestant Churches';
+  else if (smode='18') label := 'Things within close proximity of New York City';
+  else if (smode='19') label := 'Distance between New York City and London, England';
+  else if (smode='20') label := 'All Educational Institutions within 10km of Oxford, UK';
   else if (smode='100') label := 'Concept Cloud';
   else if (smode='101') label := 'Social Net';
   else if (smode='102') label := 'Graphs in Social Net';
@@ -54,34 +57,6 @@ create procedure label_get(in smode varchar)
   return label;
 
   --else if (smode='13') label := 'Products with certain text patterns in Manfacturer''s legal name';
-}
-;
-
-create procedure input_getcustom (in num varchar)
-{
-  if (num = 2)
-    return 'City Latitude';
-  else if (num = 3)
-    return 'Cafe Proximity to Place of Worship';
-  else if (num = 4)
-    return 'City Proximity to Place of Worship';
-  if (num = 5)
-    return 'Class URI';
-  if (num = 6)
-    return 'City Proximity to Place of Worship';
-  if (num = 7)
-    return 'Geometry Longitude';
-  if (num = 8)
-    return 'Person URI';
-  if (num = 9)
-    return 'Person URI';
-  if (num = 10)
-    return 'First Lang';
-  if (num = 11)
-    return 'Second Lang';
-  if (num = 12)
-    return 'Broader';
-  else return '';
 }
 ;
 
@@ -107,7 +82,10 @@ create procedure input_get (in num varchar)
         'Latitude',
         'Place of Worship URI',
         'Geometry Latitude',
-        'Narrower'
+        'Broader',
+        'Place URI',
+        'First City URI',
+        'City URI'
 	);
   t2 := vector (
   	'',
@@ -116,11 +94,51 @@ create procedure input_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 17)
+  if (num > -1 and num < 20)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
   return '';
+}
+;
+
+create procedure input_getcustom (in num varchar)
+{
+  if (num = 2)
+    return 'City Latitude';
+  else if (num = 3)
+    return 'Cafe Proximity to Place of Worship';
+  else if (num = 4)
+    return 'City Proximity to Place of Worship';
+  if (num = 5)
+    return 'Class URI';
+  if (num = 6)
+    return 'City Proximity to Place of Worship';
+  if (num = 7)
+    return 'Geometry Longitude';
+  if (num = 8)
+    return 'Person URI';
+  if (num = 9)
+    return 'Person URI';
+  if (num = 10)
+    return 'First Language';
+  if (num = 11)
+    return 'Second Language';
+  if (num = 12)
+    return 'Narrower';
+  if (num = 13)
+    return 'Thing(s) Proximity (km)';
+  if (num = 14)
+    return 'Language';
+  if (num = 15)
+    return 'Second City URI';
+  if (num = 16)
+    return 'Institution Proximity to the Place';
+  if (num = 17)
+    return 'Ontology URI';
+  if (num = 18)
+    return 'Language';
+  else return '';
 }
 ;
 
@@ -147,9 +165,12 @@ create procedure desc_get (in num varchar)
 --        'Show products count for given manufacturer.',
         'Show places of worship, within certain km of Paris, that have cafes in close proximity.',
         'Show motorways across England & Scotland from DBpedia.',
-        'Shows cities within cerain proximity of London.',
+        'Shows cities within certain proximity of London.',
         'Shows geometries with their coordinates.',
-        'Find entities that are subcategories of Protestant Churches, no deeper than 3 levels within the concept scheme hierarchy filtered by a specific subcategory.'
+        'Find entities that are subcategories of Protestant Churches, no deeper than 3 levels within the concept scheme hierarchy filtered by a specific subcategory.',
+        'Shows things within certain proximity of a place.',
+        'Shows distance between 2 cities.',
+        'Find all Educational Institutions within 10km of Oxford, UK ordered by date of establishment.'
 	);
   t2 := vector (
   	'',
@@ -158,7 +179,7 @@ create procedure desc_get (in num varchar)
 	''
 	);
   num := atoi (num) - 1;
-  if (num > -1 and num < 17)
+  if (num > -1 and num < 20)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -179,15 +200,18 @@ create procedure head_get (in num varchar)
     vector ('Person URI', 'Graph', 'Step No.', 'Path'),
     vector ('Person', 'Nick name', 'Shared Interests', 'Total Interests'),
     vector ('Thing', 'Nick name', 'Occurrences'),
-    vector ('Thing', 'Nick name', 'Occurrences'),
+    vector ('Thing', 'Text Pattern', 'Occurrences'),
     vector ('Manifacturer URI', 'Total Products'),
     vector ('Vendor', 'Offer', 'Business Function', 'Customer Type', 'Offer Object', 'Type of Good', 'Price'),
 --    vector ('Total Products'),
     vector ('Cafe URI', 'Latitude', 'Longitude', 'Cafe Name', 'Church Name', 'Count'),
     vector ('Road', 'Service', 'Latitude', 'Longitude'),
-    vector ('City URI', 'Count'),
+    vector ('City URI', 'Distance (km)'),
     vector ('Geometry URI', 'Latitude', 'Longitude'),
-    vector ('SKOS Broader', 'SKOS Narrower', 'SKOS Level', 'Entity URI', 'Entity Name', 'Geo Point')
+    vector ('SKOS Broader', 'SKOS Narrower', 'SKOS Level', 'Entity URI', 'Entity Name', 'Geo Point'),
+    vector ('Resource URI', 'Name', 'Location'),
+    vector ('First City Location', 'Second City Location', 'Distance'),
+    vector ('Institution URI', 'Name', 'Established' ,'Location')
   );
   t2 := vector (
     vector (),
@@ -197,7 +221,7 @@ create procedure head_get (in num varchar)
   );
   t3 := vector ();
   num := atoi (num) - 1;
-  if (num > -1 and num < 17)
+  if (num > -1 and num < 20)
     return t1[num];
   else if (num > 98 and num < 102)
     return t2[num - 99];
@@ -934,6 +958,73 @@ s3 := '\')) .
        '     FILTER ( ?trans = <';
    s5 := concat(s5, val4, '> )  } ORDER BY ASC (?dist) ');
    query := concat('',s1, s2, s3, s4, s5, '');
+  }
+  else if ( smode='18' )
+  {
+    if (isnull(val)  or val = '') val := 'http://dbpedia.org/resource/New_York_City';
+    if (isnull(val2)  or val2 = '') val2 := '20';
+    if (isnull(val3)  or val3 = '') val3 := 'en';
+
+    validate_input(val);
+    validate_input(val2);
+    validate_input(val3);
+
+    s1 := 'sparql SELECT DISTINCT ?resource ?label ?location ' ||
+       ' WHERE  ' ||
+       '   { ' ||
+       '     <';
+   s2 := val;
+   s3 := '> geo:geometry ?sourcegeo . ' ||
+       '     ?resource geo:geometry ?location ; ' ||
+       '                    rdfs:label ?label . ' ||
+       '     FILTER( bif:st_intersects( ?location, ?sourcegeo, ';
+   s4 := val2;
+   s5 := concat(' ) ) . FILTER( lang( ?label ) = "', val3, '" ) } ');
+   query := concat('', s1, s2, s3, s4, s5, '');
+  }
+  else if ( smode='19' )
+  {
+    if (isnull(val)  or val = '') val := 'http://dbpedia.org/resource/New_York_City';
+    if (isnull(val2)  or val2 = '') val2 := 'http://dbpedia.org/resource/London';
+
+    validate_input(val);
+    validate_input(val2);
+
+    s1 := 'sparql SELECT ?nyl ?ln ( bif:st_distance( ?nyl, ?ln ) ) AS ?distanceBetweenNewYorkCityAndLondon ' ||
+          ' FROM <http://dbpedia.org> ' ||
+          ' WHERE ' ||
+          '  { ' ||
+          '    <';
+    s2 := val;
+    s3 := '> geo:geometry ?nyl . ' ||
+         '<';
+    s4 := val2;
+    s5 := '>  geo:geometry ?ln } ';
+    query := concat('', s1, s2, s3, s4, s5, '');
+  }
+  else if ( smode='20' )
+  {
+    if (isnull(val)    or val = '') val := 'http://dbpedia.org/resource/Oxford';
+    if (isnull(val2)  or val2 = '') val2 := '5';
+    if (isnull(val3)  or val3 = '') val3 := 'http://dbpedia.org/ontology/established';
+    if (isnull(val4)  or val4 = '') val4 := 'en';
+
+    validate_input(val);
+    validate_input(val2);
+    validate_input(val3);
+    validate_input(val4);
+
+    s1 := 'sparql SELECT DISTINCT ?thing AS ?uri ?thingLabel AS ?name ?date AS ?established ?matchgeo AS ?location ' ||
+          'WHERE ' ||
+          ' { ' ||
+          '   <';
+    s2 := val;
+    s3 := '> geo:geometry ?sourcegeo . ' ||
+          ' ?resource geo:geometry ?matchgeo . ' ||
+          ' FILTER( bif:st_intersects( ?matchgeo, ?sourcegeo, ';
+    s4 := concat (val2, ' ) ) . ?thing ?somelink ?resource . ?thing <', val3);
+    s5 := concat('> ?date . ?thing rdfs:label ?thingLabel . FILTER( lang( ?thingLabel ) = "', val4, '" ) } ORDER BY ASC( ?date )');
+    query := concat('', s1, s2, s3, s4, s5, '');
   }
   --smode > 99 is reserved for drill-down queries
   else if (smode = '1001' or smode = '104')
