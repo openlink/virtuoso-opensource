@@ -4007,14 +4007,14 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         else
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, vmode);
 #else
+        if (SPART_VARNAME_IS_GLOB (tree->_.var.vname))
+          {
+            ssg_print_global_param (ssg, tree->_.var.vname, needed);
+            goto print_asname; /* see below */
+          }
         if (NULL == ssg->ssg_equivs) /* This is for case when parts of the SPARQL front-end are used to produce small SQL fragments */
           {
             ssg_valmode_t vmode;
-            if (SPART_VARNAME_IS_GLOB (tree->_.var.vname))
-              {
-                ssg_print_global_param (ssg, tree->_.retval.vname, needed);
-                goto print_asname; /* see below */
-              }
             vmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
             if (vmode == needed)
               {
