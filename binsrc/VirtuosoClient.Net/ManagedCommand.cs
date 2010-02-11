@@ -149,7 +149,13 @@ namespace OpenLink.Data.Virtuoso
 					value = param.bufferType.ConvertValue (param.Value);
 				}
 				Debug.WriteLineIf (Switch.Enabled, "  value: " + param.Value);
-				parameterValues[i] = value;
+				if (value is System.String)
+				{
+				    BoxTag tag = (param.DbType == DbType.AnsiString ? BoxTag.DV_STRING : BoxTag.DV_WIDE);
+				    parameterValues[i] = ExplicitString.CreateExplicitString((String)value, tag, connection);
+				}
+				else
+				    parameterValues[i] = value;
 			}
 		}
 
