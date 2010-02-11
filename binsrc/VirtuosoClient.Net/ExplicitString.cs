@@ -121,7 +121,7 @@ namespace OpenLink.Data.Virtuoso
 		internal static IMarshal CreateExecString (ManagedConnection connection, string value)
 		{
 			Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "ExplicitString (" + value + ")");
-            		byte[] bytes;
+			byte[] bytes;
 			if (connection.charset_utf8) 
 			  bytes = WideToUTF8 (value);
 			else
@@ -134,7 +134,8 @@ namespace OpenLink.Data.Virtuoso
 				: (IMarshal) new LongString (bytes));
 		}
 
-		internal static IMarshal CreateExplicitString (string s, BoxTag tag)
+
+		internal static IMarshal CreateExplicitString (string s, BoxTag tag, ManagedConnection connection)
 		{
 			switch (tag)
 			{
@@ -154,8 +155,11 @@ namespace OpenLink.Data.Virtuoso
 			case BoxTag.DV_C_STRING:
 			case BoxTag.DV_BLOB:
 			{
-				// TODO: use right encoding.
-				byte[] bytes = Encoding.GetEncoding ("iso-8859-1").GetBytes (s);
+				byte[] bytes;
+				if (connection.charset_utf8) 
+					bytes = Encoding.UTF8.GetBytes (s);
+				else
+					bytes = Encoding.GetEncoding ("iso-8859-1").GetBytes (s);
 				return ((bytes.Length < 256)
 					? (IMarshal) new ShortString (bytes)
 					: (IMarshal) new LongString (bytes));
