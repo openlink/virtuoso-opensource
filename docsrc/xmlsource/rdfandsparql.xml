@@ -5880,7 +5880,7 @@ WHERE
 </sect4>
 <sect4 id="rdfsparqlimplementatiotransexamples7"><title>Inference Rule example using transitive properties from SKOS vocabulary</title>
 <p>The following example demostrates the steps how to retrieve the skos ontology, add triples
-for skos:broaderTransitiveinto the grpah, define inference rule, and at the and
+for skos:broaderTransitiveinto the graph, define inference rule, and at the and
 execute sparql query with inference rule and transitivity option. The queries were executed against
 the LOD instance (http://lod.openlinksw.com):</p>
 <orderedlist>
@@ -5930,8 +5930,9 @@ WHERE
   }
 ]]></programlisting>
 </listitem>
-  <listitem>As result should be returned for ex. 22 rows.
-Note that for comparison, if the option (transitive) is ommitted, then only 2 rows will be returned in our example query:
+  <listitem>You will get 22 rows returned from the query.
+Note that for comparison, if the option (transitive) is ommitted, then only 2 rows will be returned
+in our example query:
      <figure id="rdftr" float="1">
        <title>Transitive option</title>
        <graphic fileref="ui/trs1.png"/>
@@ -5939,9 +5940,63 @@ Note that for comparison, if the option (transitive) is ommitted, then only 2 ro
 </listitem>
 </orderedlist>
 </sect4>
+<sect4 id="rdfsparqlimplementatiotransexamples8"><title>Inference Rule example using
+transitive properties from SKOS vocabulary: Variant II</title>
+<p>This example shows how to find entities that are subcategories of Protestant Churches, no deeper
+than 3 levels within the concept scheme hierarchy, filtered by a specific subcategory. It demonstrates
+use of inference rules, sub-queries, and filter to obtain entities associated with category:
+Protestant_churches combined with the use of the transitivitve closure, sets to a maximum of
+3-steps  down a SKOS based concept scheme hierarchy:</p>
+<orderedlist>
+  <listitem>Make sure the inference rule "skos-trans" is created as described in the previous <link linkend="rdfsparqlimplementatiotransexamples7">example</link></listitem>
+  <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
+  <listitem>Use inference rule pragma to set context rule for SPARQL query, i.e:
+<programlisting><![CDATA[
+DEFINE input:inference "skos-trans"
+PREFIX p: <http://dbpedia.org/property/>
+PREFIX dbpedia: <http://dbpedia.org/resource/>
+PREFIX category: <http://dbpedia.org/resource/Category:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX geo: <http://www.georss.org/georss/>
+
+SELECT DISTINCT ?c AS ?skos_broader
+       ?trans AS ?skos_narrower
+       ?dist AS ?skos_level
+       ?m ?n ?p AS ?geo_point
+WHERE
+  {
+    {
+      SELECT ?c  ?m ?n ?p ?trans ?dist
+      WHERE
+        {
+  	  ?m rdfs:label ?n.
+  	  ?m skos:subject ?c.
+  	  ?c skos:broaderTransitive category:Protestant_churches .
+  	  ?c skos:broaderTransitive ?trans
+            OPTION ( TRANSITIVE, t_distinct, t_in (?c), t_out (?trans),
+                     t_max (3),  t_step ( 'step_no' ) as ?dist ) .
+  	  ?m p:abstract ?d.
+  	  ?m geo:point ?p
+  	  FILTER ( lang(?n) = "en" )
+  	  FILTER ( lang(?d) = "en" )
+        }
+    }
+    FILTER ( ?trans = <http://dbpedia.org/resource/Category:Churches_in_London> )
+  }
+ORDER BY ASC (?dist)
+]]></programlisting>
+</listitem>
+  <listitem>You will get 22 rows returned from the query.
+     <figure id="rdftr" float="1">
+       <title>Transitive option</title>
+       <graphic fileref="ui/trs2.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+</sect4>
 </sect3>
 </sect2>
-
 </sect1>
 
 <sect1 id="rdfgraphsecurity"><title>RDF Graphs Security</title>
@@ -8019,8 +8074,8 @@ means of converting structured data extracted from web content by a cartridge's 
         <para><emphasis>Virtuoso's XML Infrastructure &amp; Tools</emphasis></para>
         <para>Virtuoso's XML support and XSLT support are covered in detail in the on-line documentation.
 Virtuoso includes a highly capable XML parser and supports XPath, XQuery, XSLT and XML Schema validation.</para>
-        <para>Virtuoso supports extraction of XML documents from SQL datasets. A SQL long varchar, long xml or
-xmltype column in a database table can contain XML data as text or in a binary serialized format.
+        <para>Virtuoso supports extraction of XML documents from SQL datasets. A SQL long varchar, long xml
+or xmltype column in a database table can contain XML data as text or in a binary serialized format.
  A string representing a well-formed XML entity can be converted into an entity object representing
 the root node.</para>
         <para>While Sponger cartridges will not normally concern themselves with handling XML extracted
@@ -13237,14 +13292,14 @@ GRANT SELECT ON tpcd.DBA.orders    TO "SPARQL";
 GRANT SELECT ON tpcd.DBA.nation    TO "SPARQL";
 GRANT SELECT ON tpcd.DBA.region    TO "SPARQL";
 
-SPARQL
-prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-drop quad map graph iri("http://^{URIQADefaultHost}^/tpcd") .
-;
+--SPARQL
+--prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
+--prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+--prefix sioc: <http://rdfs.org/sioc/ns#>
+--prefix foaf: <http://xmlns.com/foaf/0.1/>
+--prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+--drop quad map graph iri("http://^{URIQADefaultHost}^/tpcd") .
+--;
 
 SPARQL
 prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
@@ -13252,7 +13307,7 @@ prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-drop quad map virtrdf:TpcdDemo .
+drop silent quad map virtrdf:TpcdDemo .
 ;
 
 SPARQL
@@ -13278,23 +13333,26 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 alter quad storage virtrdf:DefaultQuadStorage
-FROM tpcd.DBA.lineitem as lineitems
-FROM tpcd.DBA.customer as customers
-FROM tpcd.DBA.nation as nations
-FROM tpcd.DBA.orders as orders
-FROM tpcd.DBA.part as parts
-FROM tpcd.DBA.partsupp as partsupps
-FROM tpcd.DBA.region as regions
-FROM tpcd.DBA.supplier as suppliers
+from tpcd.DBA.lineitem as lineitems
+from tpcd.DBA.customer as customers
+from tpcd.DBA.nation as nations
+from tpcd.DBA.orders as orders
+from tpcd.DBA.part as parts
+from tpcd.DBA.partsupp as partsupps
+from tpcd.DBA.region as regions
+from tpcd.DBA.supplier as suppliers
 where (^{suppliers.}^.s_nationkey = ^{nations.}^.n_nationkey)
 where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
 {
     create virtrdf:TpcdDemo as graph iri ("http://^{URIQADefaultHost}^/tpcd") option (exclusive)
     {
+# Customers
         tpcd:customer (customers.c_custkey)
             a  tpcd:customer
-                as virtrdf:tpcdcustomer-c_custkey2 ;
+                as virtrdf:tpcdcustomer-type ;
             a  foaf:Organization
+                as virtrdf:tpcdcustomer-foaf-type ;
+            tpcd:custkey customers.c_custkey
                 as virtrdf:tpcdcustomer-c_custkey ;
             foaf:name customers.c_name
                 as virtrdf:tpcdcustomer-foaf_name ;
@@ -13308,14 +13366,18 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
                 as virtrdf:tpcdcustomer-foaf_phone ;
             tpcd:phone customers.c_phone
                 as virtrdf:tpcdcustomer-phone ;
+            tpcd:acctbal customers.c_acctbal
+                as virtrdf:tpcdcustomer-acctbal ;
             tpcd:mktsegment customers.c_mktsegment
                 as virtrdf:tpcdcustomer-c_mktsegment ;
             tpcd:comment customers.c_comment
                 as virtrdf:tpcdcustomer-c_comment .
 
+# Nations
         tpcd:nation (customers.c_nationkey)
             tpcd:nation_of tpcd:customer (customers.c_custkey) as virtrdf:tpcdcustomer-nation_of .
 
+# Lineitems
         tpcd:lineitem (lineitems.l_orderkey, lineitems.l_linenumber)
             a tpcd:lineitem
                 as virtrdf:tpcdlineitem-lineitems ;
@@ -13327,6 +13389,14 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
                 as virtrdf:tpcdlineitem-l_suppkey ;
             tpcd:linenumber lineitems.l_linenumber
                 as virtrdf:tpcdlineitem-l_linenumber ;
+            tpcd:linequantity lineitems.l_quantity
+                as virtrdf:tpcdlineitem-l_linequantity ;
+            tpcd:lineextendedprice lineitems.l_extendedprice
+                as virtrdf:tpcdlineitem-l_lineextendedprice ;
+            tpcd:linediscount lineitems.l_discount
+                as virtrdf:tpcdlineitem-l_linediscount ;
+            tpcd:linetax lineitems.l_tax
+                as virtrdf:tpcdlineitem-l_linetax ;
             tpcd:returnflag lineitems.l_returnflag
                 as virtrdf:tpcdlineitem-l_returnflag ;
             tpcd:linestatus lineitems.l_linestatus
@@ -13353,6 +13423,7 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
         tpcd:supplier (lineitems.l_suppkey)
             tpcd:supplier_of tpcd:lineitem (lineitems.l_orderkey, lineitems.l_linenumber) as virtrdf:tpcdlineitem-supplier_of .
 
+# Nation
         tpcd:nation (nations.n_nationkey)
             a tpcd:nation
                 as virtrdf:tpcdnation-nations ;
@@ -13366,13 +13437,18 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
         tpcd:region (nations.n_regionkey)
             tpcd:region_of tpcd:nation (nations.n_nationkey) as virtrdf:tpcdnation-region_of .
 
+# Order
         tpcd:order (orders.o_orderkey)
             a tpcd:order
                 as virtrdf:tpcdorder-orders ;
+            tpcd:orderkey orders.o_orderkey
+                as virtrdf:tpcdorder-o_orderkey ;
             tpcd:has_customer tpcd:customer (orders.o_custkey)
                 as virtrdf:tpcdorder-o_custkey ;
             tpcd:orderstatus orders.o_orderstatus
                 as virtrdf:tpcdorder-o_orderstatus ;
+            tpcd:ordertotalprice orders.o_totalprice
+                as virtrdf:tpcdorder-o_totalprice ;
             tpcd:orderdate orders.o_orderdate
                 as virtrdf:tpcdorder-o_orderdate ;
             tpcd:orderpriority orders.o_orderpriority
@@ -13387,9 +13463,12 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
         tpcd:customer (orders.o_custkey)
             tpcd:customer_of tpcd:order (orders.o_orderkey) as virtrdf:tpcdorder-customer_of .
 
+# Part
         tpcd:part (parts.p_partkey)
             a tpcd:part
                 as virtrdf:tpcdpart-parts ;
+            tpcd:partkey parts.p_partkey
+                as virtrdf:tpcdpart-p_partkey ;
             tpcd:name parts.p_name
                 as virtrdf:tpcdpart-p_name ;
             tpcd:mfgr parts.p_mfgr
@@ -13405,6 +13484,7 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
             tpcd:comment parts.p_comment
                 as virtrdf:tpcdpart-p_comment .
 
+# Partsupp
         tpcd:partsupp (partsupps.ps_partkey, partsupps.ps_suppkey)
             a tpcd:partsupp
                 as virtrdf:tpcdpartsupp-partsupps ;
@@ -13414,6 +13494,8 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
                 as virtrdf:tpcdpartsupp-ps_suppkey ;
             tpcd:availqty partsupps.ps_availqty
                 as virtrdf:tpcdpartsupp-ps_availqty ;
+            tpcd:supplycost partsupps.ps_supplycost
+                as virtrdf:tpcdpartsupp-ps_supplycost ;
             tpcd:comment partsupps.ps_comment
                 as virtrdf:tpcdpartsupp-ps_comment .
 
@@ -13423,6 +13505,7 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
         tpcd:supplier (partsupps.ps_suppkey)
             tpcd:supplier_of tpcd:partsupp (partsupps.ps_partkey, partsupps.ps_suppkey) as virtrdf:tpcdpartsupp-supplier_of .
 
+# Region
         tpcd:region (regions.r_regionkey)
             a tpcd:region
                 as virtrdf:tpcdregion-regions ;
@@ -13431,6 +13514,7 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
             tpcd:comment regions.r_comment
                 as virtrdf:tpcdregion-r_comment .
 
+# Supplier
         tpcd:supplier (suppliers.s_suppkey)
             a tpcd:supplier
                 as virtrdf:tpcdsupplier-suppliers ;
@@ -13440,17 +13524,19 @@ where (^{customers.}^.c_nationkey = ^{nations.}^.n_nationkey)
                 as virtrdf:tpcdsupplier-s_address ;
             tpcd:has_nation tpcd:nation (suppliers.s_nationkey)
                 as virtrdf:tpcdsupplier-s_nationkey ;
-            foaf:phone customers.c_phone
+            foaf:phone suppliers.s_phone
                 as virtrdf:tpcdsupplier-foaf_phone ;
             tpcd:phone suppliers.s_phone
                 as virtrdf:tpcdsupplier-s_phone ;
+            tpcd:acctbal suppliers.s_acctbal
+                as virtrdf:tpcdsupplier-s_acctbal ;
             tpcd:comment suppliers.s_comment
                 as virtrdf:tpcdsupplier-s_comment .
 
         tpcd:nation (suppliers.s_nationkey)
             tpcd:nation_of tpcd:supplier (suppliers.s_suppkey) as virtrdf:tpcdsupplier-nation_of .
-  } .
-} .
+    }
+}
 ;
 
 create procedure tcpd_rdf_doc (in path varchar)
@@ -13546,13 +13632,38 @@ VHOST_REMOVE (lpath=>'/tpcd');
 DB.DBA.VHOST_DEFINE (lpath=>'/tpcd', ppath=>'/DAV/home/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
     is_brws=>0, opts=>vector ('url_rewrite', 'tpcd_rule_list1'));
 
-DB.DBA.XML_SET_NS_DECL ('tpcd', 'http://demo.openlinksw.com/schemas/tpcd#', 2);
+create procedure DB.DBA.LOAD_TPCD_ONTOLOGY_FROM_DAV()
+{
+	declare content, urihost varchar;
+	select cast (RES_CONTENT as varchar) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/tpcd/tpcd.owl';
+	DB.DBA.RDF_LOAD_RDFXML (content, 'http://demo.openlinksw.com/schemas/tpcd#', 'http://demo.openlinksw.com/schemas/TPCDOntology/1.0/');
+	urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	if (urihost = 'demo.openlinksw.com')
+	{
+		DB.DBA.VHOST_REMOVE (lpath=>'/schemas/tpcd');
+		DB.DBA.VHOST_DEFINE (lpath=>'/schemas/tpcd', ppath=>'/DAV/VAD/tpcd/tpcd.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+	}
+}
+;
+DB.DBA.LOAD_TPCD_ONTOLOGY_FROM_DAV()
+;
+drop procedure DB.DBA.LOAD_TPCD_ONTOLOGY_FROM_DAV
+;
+
+XML_SET_NS_DECL ('virt-tpcd', 'http://demo.openlinksw.com/schemas/tpcd#', 2)
+;
+
 ]]></programlisting>
     </sect4>
     <sect4 id="rdfviewsbusintthalia">
       <title>Thalia to RDF</title>
 <programlisting><![CDATA[
-use DB;
+
+use DB
+;
+
+SPARQL drop quad map virtrdf:ThaliaDemo
+;
 
 create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
 {
@@ -13564,38 +13675,41 @@ create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
   msg := '';
   rowset := null;
   exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  --result ('STATE=' || stat || ': ' || msg);
-  --if (rowset is not null)
-  --  {
-  --    foreach (any r in rowset) do
-  --      result (r[0] || ': ' || r[1]);
-  --  }
 }
 ;
 
-use thalia;
+create procedure DB.DBA.exec_no_error(in expr varchar)
+{
+	declare state, message, meta, result any;
+	exec(expr, state, message, vector(), 0, meta, result);
+}
+;
 
 DB.DBA.exec_no_error('drop View thalia.Demo.asu_v');
-create View thalia.Demo.asu_v as select left(Title,3) code,* FROM thalia.Demo.asu;
+DB.DBA.exec_no_error('create View thalia.Demo.asu_v as select left(Title,3) code,* from thalia.Demo.asu');
 DB.DBA.exec_no_error('drop View thalia.Demo.gatech_v');
-create View thalia.Demo.gatech_v as select *, Room||' '||Building Place FROM thalia.Demo.gatech;
-
-use DB;
-
-DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"');
-GRANT SELECT ON thalia.Demo.asu TO "SPARQL";
-GRANT SELECT ON thalia.Demo.asu_v TO "SPARQL";
-GRANT SELECT ON thalia.Demo.brown TO "SPARQL";
-GRANT SELECT ON thalia.Demo.cmu TO "SPARQL";
-GRANT SELECT ON thalia.Demo.gatech TO "SPARQL";
-GRANT SELECT ON thalia.Demo.gatech_v TO "SPARQL";
-GRANT SELECT ON thalia.Demo.toronto TO "SPARQL";
-GRANT SELECT ON thalia.Demo.ucsd TO "SPARQL";
-GRANT SELECT ON thalia.Demo.umd TO "SPARQL";
-
-
+DB.DBA.exec_no_error('create View thalia.Demo.gatech_v as select *, Room||\' \'||Building Place from thalia.Demo.gatech');
 DB.DBA.SPARQL_THALIA_RUN('drop quad map graph iri("http://^{URIQADefaultHost}^/Thalia") .
 ')
+;
+
+GRANT SELECT ON thalia.Demo.asu TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.asu_v TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.brown TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.cmu TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.gatech TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.gatech_v TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.toronto TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.ucsd TO "SPARQL"
+;
+GRANT SELECT ON thalia.Demo.umd TO "SPARQL"
 ;
 
 DB.DBA.SPARQL_THALIA_RUN('drop quad map graph iri("http://^{URIQADefaultHost}^/thalia") .
@@ -13618,7 +13732,7 @@ prefix event: <http://purl.org/NET/c4dm/event.owl#>
 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
-prefix th: <http://purl.org/ontology/thalia/1.0/>
+prefix th: <http://demo.openlinksw.com/schemas/thalia#>
 
 create iri class th:Asu "http://^{URIQADefaultHost}^/thalia/asu/course/%U#this" (in code varchar not null) .
 create iri class th:Brown "http://^{URIQADefaultHost}^/thalia/brown/course/%U#this" (in Code varchar not null) .
@@ -13657,9 +13771,6 @@ create iri class th:UmdDatetime "http://^{URIQADefaultHost}^/thalia/umd/datetime
 ')
 ;
 
-
-DB.DBA.RDF_AUDIT_METADATA (1, '*');
-
 DB.DBA.SPARQL_THALIA_RUN('prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -13672,15 +13783,15 @@ prefix event: <http://purl.org/NET/c4dm/event.owl#>
 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
-prefix th: <http://purl.org/ontology/thalia/1.0/>
+prefix th: <http://demo.openlinksw.com/schemas/thalia#>
 alter quad storage virtrdf:DefaultQuadStorage
-FROM thalia.demo.asu_v as asus
-FROM thalia.demo.brown as browns
-FROM thalia.demo.cmu as cmus
-FROM thalia.demo.gatech_v as gatechs
-FROM thalia.demo.toronto as torontos
-FROM thalia.demo.ucsd as ucsds
-FROM thalia.demo.umd as umds
+from thalia.demo.asu_v as asus
+from thalia.demo.brown as browns
+from thalia.demo.cmu as cmus
+from thalia.demo.gatech_v as gatechs
+from thalia.demo.toronto as torontos
+from thalia.demo.ucsd as ucsds
+from thalia.demo.umd as umds
 {
         create virtrdf:ThaliaDemo as graph iri ("http://^{URIQADefaultHost}^/thalia") option (exclusive)
         {
@@ -13693,7 +13804,7 @@ FROM thalia.demo.umd as umds
                 		as virtrdf:Asu-Description ;
                 	rdfs:seeAlso asus.MoreInfoURL
                 		as virtrdf:Asu-MoreInfoURL ;
-                        th:forUniversity "http://purl.org/thalia/university/asu"
+                        th:forUniversity "http://purl.org/thalia/university/asu/university/asu"
                         	as virtrdf:Asu-University ;
                         skos:subject "http://purl.org/subject/thalia/ComputerScience"
                         	as virtrdf:Asu-Subject
@@ -13949,44 +14060,16 @@ FROM thalia.demo.umd as umds
 ')
 ;
 
-DB.DBA.RDF_AUDIT_METADATA (1, '*');
-
-
-create procedure tut_th_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
-
-create procedure tut_th_html_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*#', path);
-  return subseq (r, 0, length (r)-1);
-};
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tut_th_rule2',
-    1,
-    '(/[^#]*)\x24',
-    vector('path'),
-    1,
-    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/Thalia%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
-    vector('path', 'path', '*accept*'),
-    null,
-    '(text/rdf.n3)|(application/rdf.xml)',
-    0,
-    303
-    );
+delete from db.dba.url_rewrite_rule_list where urrl_list like 'tut_th_%';
+delete from db.dba.url_rewrite_rule where urr_rule like 'tut_th_%';
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_th_rule1',
     1,
-    '(/[^#]*)\x24',
+    '([^#]*)',
     vector('path'),
     1,
-    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20FROM%%20%%3Chttp%%3A//^{URIQADefaultHost}^/Thalia%%3E%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql',
+    '/about/html/http/^{URIQADefaultHost}^%s%%01this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -13994,19 +14077,118 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_th_rule2',
+    1,
+    '([^#]*)',
+    vector('path'),
+    1,
+    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/thalia%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
+    vector('path', 'path', '*accept*'),
+    null,
+    '(text/rdf.n3)|(application/rdf.xml)',
+    0,
+    null
+    );
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_th_rule3',
+    1,
+    '(/[^#]*)/\x24',
+    vector('path'),
+    1,
+    '%U',
+    vector('path'),
+    null,
+    null,
+    0,
+    null
+    );
+
+create procedure DB.DBA.REMOVE_THALIA_RDF_DET()
+{
+  declare colid int;
+  colid := DAV_SEARCH_ID('/DAV/Thalia', 'C');
+  if (colid < 0)
+    return;
+  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
+}
+;
+
+DB.DBA.REMOVE_THALIA_RDF_DET();
+
+drop procedure DB.DBA.REMOVE_THALIA_RDF_DET;
+
+create procedure DB.DBA.THALIA_MAKE_RDF_DET()
+{
+    declare uriqa_str varchar;
+    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    uriqa_str := 'http://' || uriqa_str || '/thalia';
+    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/Thalia/RDFData/', uriqa_str, NULL);
+    VHOST_REMOVE (lpath=>'/thalia/data/rdf');
+    DB.DBA.VHOST_DEFINE (lpath=>'/thalia/data/rdf', ppath=>'/DAV/Thalia/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+}
+;
+
+DB.DBA.THALIA_MAKE_RDF_DET();
+
+drop procedure DB.DBA.THALIA_MAKE_RDF_DET;
+
+-- procedure to convert path to DET resource name
+create procedure DB.DBA.THALIA_DET_REF (in par varchar, in fmt varchar, in val varchar)
+{
+  declare res, iri any;
+  declare uriqa_str varchar;
+  uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  uriqa_str := 'http://' || uriqa_str || '/thalia';
+  iri := uriqa_str || replace(val, '/', '_');
+  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
+  return sprintf (fmt, res);
+}
+;
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('tut_th_rdf', 1,
+    '/thalia/(.*)', vector('path'), 1,
+    '/thalia/data/rdf/%U', vector('path'),
+    'DB.DBA.THALIA_DET_REF',
+    'application/rdf.xml',
+    2,
+    303);
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'tut_th_rule_list1',
     1,
     vector (
                 'tut_th_rule1',
-                'tut_th_rule2'
+                'tut_th_rule2',
+                'tut_th_rule3',
+                'tut_th_rdf'
           ));
 
-
 DB.DBA.VHOST_REMOVE (lpath=>'/thalia');
-DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/Thalia/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
+DB.DBA.VHOST_DEFINE (lpath=>'/thalia', ppath=>'/DAV/Thalia/', vsp_user=>'dba', is_dav=>1,
+           is_brws=>0, opts=>vector ('url_rewrite', 'tut_th_rule_list1'));
 
-DB.DBA.XML_SET_NS_DECL ('th', 'http://purl.org/ontology/thalia/1.0/', 2);
+create procedure DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV()
+{
+	declare content, urihost varchar;
+	select cast (RES_CONTENT as varchar) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/Thalia/thalia.owl';
+	DB.DBA.RDF_LOAD_RDFXML (content, 'http://demo.openlinksw.com/schemas/thalia#', 'http://demo.openlinksw.com/schemas/ThaliaOntology/1.0/');
+	urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	if (urihost = 'demo.openlinksw.com')
+	{
+		DB.DBA.VHOST_REMOVE (lpath=>'/schemas/thalia');
+		DB.DBA.VHOST_DEFINE (lpath=>'/schemas/thalia', ppath=>'/DAV/Thalia/thalia.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+	}
+}
+;
+DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV()
+;
+drop procedure DB.DBA.LOAD_THALIA_ONTOLOGY_FROM_DAV
+;
+
+DB.DBA.XML_SET_NS_DECL ('thalia', 'http://demo.openlinksw.com/schemas/thalia#', 2)
+;
 
 
     * Demo : Thalia test queries
@@ -30436,7 +30618,7 @@ Connection: close
 Content-Type: text/html; charset=ISO-8859-1
 Date: Tue, 14 Aug 2007 13:30:02 GMT
 Accept-Ranges: bytes
-Location:  /isparql/execute.html?query=SELECT%20%3Fp%20%3Fo%20FROM%20%3Chttp%3A//demo.openlinksw.com/Northwind%3E%20WHERE%20{%20%3Chttp%3A//demo.openlinksw.com/Northwind/Customer/ALFKI%23this%3E%20%3Fp%20%3Fo%20}&endpoint=/sparql
+Location: http://demo.openlinksw.com/about/html/http/demo.openlinksw.com/Northwind/Customer/ALFKI
 Content-Length: 0
 ]]></programlisting>
 <para><emphasis>Example 2:</emphasis></para>
@@ -31273,6 +31455,24 @@ RDF subject where the text occurs. The entity rank of the subject is defined by 
 to it, weighed by the rank of the referrers and the outbound link count of referrers. Such techniques
 are used in text based information retrieval.
 </para>
+<para><emphasis>Example with Entity Ranking and Score</emphasis></para>
+<programlisting><![CDATA[
+## Searching over labels, with text match
+## scores and additional ranks for each
+## iri / resource:
+
+SELECT ?s ?page ?label
+  ?textScore AS ?Text_Score_Rank
+  ( <LONG::IRI_RANK> (?s) ) AS ?Entity_Rank
+WHERE
+  {
+    ?s foaf:page ?page ;
+     rdfs:label ?label .
+    FILTER( lang( ?label ) = "en" ) .
+    ?label bif:contains 'adobe and flash'
+    OPTION (score ?textScore ) .
+  }
+]]></programlisting>
 <para>One interesting application of entity rank and inference on IFPs and <emphasis>owl:sameAs</emphasis> is in locating
 URIs for reuse. We can easily list synonym URIs in order of popularity as well as locate URIs based
 on associated text. This can serve in application such as the Entity Name Server
@@ -31324,6 +31524,9 @@ greatly benefit from Virtuoso being a general purpose DBMS, as we can create app
 data structures and control flows where these are efficient. For example, it would make little
 sense to store entity ranks as triples due to space consumption and locality considerations. With
 these tools, the whole ranking functionality took under a week to develop.
+</para>
+<para><emphasis>Note:</emphasis> In order to use the IRI_RANK feature you need to have the
+Facet (fct) vad package installed as the procedure is part of this vad.
 </para>
   </sect3>
   <sect3 id="rdfiridereferencingfacetqel"><title>Query Evaluation Time Limits</title>
@@ -32265,7 +32468,7 @@ http://dbpedia.org/resource/BMW_R75
 4 Rows. -- 26 msec.
 ]]></programlisting>
 </sect3>
-<sect3 id="rdfsparqlruleexamples6"><title>Example for finding celebrities which are not fans if their own fans</title>
+<sect3 id="rdfsparqlruleexamples6"><title>Example for finding celebrities which are not fans of their own fans</title>
 <programlisting><![CDATA[
 SQL>SPARQL
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -32407,9 +32610,225 @@ No. of rows in result: 10
   John does not change.</para>
   </sect2>
   <sect2 id="rdfsparqlruletransoption"><title>Inference Rules and SPARQL with Transitivity Option</title>
-    <para>See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an
-inference rule to cater data being skos:broader based, which is no long transitive.
-    </para>
+<itemizedlist mark="bullet">
+  <listitem>See <link linkend="rdfsparqlimplementatiotransexamples7">example</link> with an
+inference rule to cater data being skos:broader based, which is no long transitive.</listitem>
+  <listitem>See <link linkend="rdfsparqlimplementatiotransexamples8">example</link> with an
+inference rule to find entities that are subcategories of Protestant Churches, no deeper
+than 3 levels within the concept scheme hierarchy, filtered by a specific subcategory.</listitem>
+</itemizedlist>
+  </sect2>
+  <sect2 id="rdfsparqlruleowlrelation"><title>Inference Rules, OWL Support and Relationship Ontology</title>
+    <para>This section provides queries usage for inference rules, owl support and Relationship Vocabulary.</para>
+    <sect3 id="rdfsparqlruleowlrelationexample1"><title>Example 1</title>
+<para>Example based on Relationship Vocab:</para>
+<programlisting><![CDATA[
+## Verify Ontology Data is in Quad Store
+## Ontology: <http://vocab.org/relationship/> (Relationship Ontology)
+## Use pragma to put latest in Quad store.
+
+DEFINE get:soft "replace"
+SELECT *
+FROM <http://vocab.org/relationship/>
+WHERE {?s ?p ?o}
+
+## Clean up
+
+CLEAR GRAPH <urn:owl.tests>
+
+## Create Instance Data for Relationship Ontology
+PREFIX rel: <http://purl.org/vocab/relationship/>
+
+INSERT into GRAPH <urn:owl.tests>
+  {
+    <http://dbpedia.org/resource/Prince_William_of_Wales> rel:siblingOf <http://dbpedia.org/resource/Prince_Harry_of_Wales>.
+    <http://dbpedia.org/resource/Elizabeth_Bowes-Lyon> rel:ancestorOf <http://dbpedia.org/resource/Elizabeth_II_of_the_United_Kingdom>.
+    <http://dbpedia.org/resource/Elizabeth_II_of_the_United_Kingdom> rel:ancestorOf
+    <http://dbpedia.org/resource/Charles%2C_Prince_of_Wales>.
+    <http://dbpedia.org/resource/Charles%2C_Prince_of_Wales> rel:ancestorOf <http://dbpedia.org/resource/Prince_William_of_Wales>.
+  };
+
+## Verify
+
+SELECT *
+FROM  <urn:owl.tests>
+WHERE
+  {
+    ?s ?p ?o
+  }
+
+## Create an  Inference Rule that references the Relationship Ontology Named Graph
+
+rdfs_rule_set ('urn:owl.tests', 'http://vocab.org/relationship') ;
+
+## Verify Rule's existence
+
+SELECT * FROM sys_rdf_schema ;
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlruleowlrelationexample2"><title>Example 2</title>
+<programlisting><![CDATA[
+## Test owl:TransitiveProperty Reasoning
+## Start with a specific URI
+## Goal: See inferred Triples
+## In this case, relationship between: <http://dbpedia.org/resource/Elizabeth_Bowes-Lyon>
+## and her descendants: Queen Elizabeth, Prince Charles, Prince William, and Prince Harry)
+
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    <http://dbpedia.org/resource/Elizabeth_Bowes-Lyon> rel:ancestorOf ?o
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlruleowlrelationexample3"><title>Example 3</title>
+<programlisting><![CDATA[
+## Test owl:SymmetricalProperty Reasoning
+## Should show same result irrespective of rel:siblingOf URI in Subject or Object slots of Triple
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    <http://dbpedia.org/resource/Prince_William_of_Wales> rel:siblingOf ?o
+  }
+
+## OR
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    ?s rel:siblingOf <http://dbpedia.org/resource/Prince_William_of_Wales>
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlruleowlrelationexample4"><title>Example 4</title>
+<programlisting><![CDATA[
+## Test owl:inverseOf Reasoning
+## Should show triples exposing the inverseOf relation.
+## In this case rel:ancestorOf instance data triples exist,so the system must infer rel:descendant Of triples
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    <http://dbpedia.org/resource/Elizabeth_II_of_the_United_Kingdom> rel:descendantOf ?o
+  }
+
+## OR with Transitivity Option applied
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    <http://dbpedia.org/resource/Prince_William_of_Wales> rel:descendantOf ?o
+    OPTION (T_DISTINCT)
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlruleowlrelationexample5"><title>Example 5</title>
+<programlisting><![CDATA[
+## Test owl:inverseOf Reasoning
+## Should show triples exposing the inverseOf relation.
+## In this case rel:employedBy instance data triples exist,
+## the system must infer rel:employerOf triples.
+
+DEFINE input:inference 'urn:owl.tests'
+PREFIX rel: <http://purl.org/vocab/relationship/>
+
+SELECT *
+FROM <urn:owl.tests>
+WHERE
+  {
+    ?s rel:employerOf ?o
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlruleowlrelationexample6"><title>Example 6</title>
+<para>Example based on Relationship Vocab and SKOS</para>
+<programlisting><![CDATA[
+## Graph Cleanup
+CLEAR GRAPH <urn:owl.test2.tbox>
+CLEAR GRAPH <http://turnguard.com/virtuoso/test10.rdf>
+
+## Load Instance Data into Quad Store
+## PL Procedure
+
+## SQL realm
+DB.DBA.RDF_LOAD_RDFXML
+  (
+    http_get('http://www.w3.org/2009/08/skos-reference/skos-owl1-dl.rdf'),
+    'no',
+    'urn:owl.test2.tbox'
+  );
+DB.DBA.RDF_LOAD_RDFXML
+  (
+    http_get ('http://www.w3.org/2002/07/owl.rdf'),
+    'no',
+    'urn:owl.test2.tbox'
+  );
+DB.DBA.RDF_LOAD_RDFXML
+  (
+    http_get ('http://turnguard.com/virtuoso/test10.rdf'),
+    'no',
+    'http://turnguard.com/virtuoso/test10.rdf'
+  );
+
+
+
+SELECT *
+FROM <http://www.w3.org/2004/02/skos/core>
+WHERE
+  {
+    {
+      <http://www.w3.org/2004/02/skos/core#related> ?p ?o
+    }
+    UNION
+    {
+      ?s ?p <http://www.w3.org/2004/02/skos/core#related>
+    }
+  }
+
+
+## Create Rules
+## SQL Realm
+
+rdfs_rule_set ('urn:owl.test2.rules', 'urn:owl.test2.tbox');
+
+
+## Transitivity Query re. SKOS concept hierarchy
+
+DEFINE input:inference "urn:owl.test2.rules"
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT *
+FROM <http://turnguard.com/virtuoso/test10.rdf>
+WHERE
+  {
+    <http://www.turnguard.com/ElectroPop> skos:broaderTransitive ?o
+    OPTION  (T_DISTINCT).
+  }
+]]></programlisting>
+    </sect3>
   </sect2>
 </sect1>
 
@@ -33376,6 +33795,100 @@ http://linkedgeodata.org/triplify/node/303732953#id	                      -85	 -
 http://linkedgeodata.org/triplify/node/276208684#id	                      -85	 -166
 ]]></programlisting>
     </sect3>
+    <sect3 id="rdfsparqlgeospatexmp19"><title>Example 19</title>
+<programlisting><![CDATA[
+## "Find things within 20km of New York City":
+
+SELECT DISTINCT ?resource ?label ?location
+WHERE
+  {
+    <http://dbpedia.org/resource/New_York_City>
+        geo:geometry ?sourcegeo                   .
+    ?resource geo:geometry ?location              ;
+                rdfs:label ?label .
+    FILTER( bif:st_intersects( ?location, ?sourcegeo, 20 ) ) .
+    FILTER( lang(?label) = "en" )
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp20"><title>Example 20</title>
+<programlisting><![CDATA[
+## "Find Distance between New York City
+## and London, England":
+
+SELECT ( bif:st_distance( ?nyl,?ln ) )
+      AS ?distanceBetweenNewYorkCityAndLondon
+WHERE
+  {
+    <http://dbpedia.org/resource/New_York_City>
+        geo:geometry ?nyl .
+    <http://dbpedia.org/resource/London>
+        geo:geometry ?ln  .
+  }
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp21"><title>Example 21</title>
+<programlisting><![CDATA[
+## "Find "All Educational Institutions
+## within 10km of Oxford, UK; ordered by
+## date of establishment":
+
+SELECT DISTINCT ?thing AS ?uri
+      ?thingLabel AS ?name
+      ?date AS ?established
+      ?matchgeo AS ?location
+WHERE
+  {
+    <http://dbpedia.org/resource/Oxford>
+             geo:geometry ?sourcegeo .
+    ?resource geo:geometry ?matchgeo .
+    FILTER( bif:st_intersects( ?matchgeo, ?sourcegeo, 5 ) ) .
+       ?thing ?somelink ?resource                           ;
+       <http://dbpedia.org/ontology/established> ?date      ;
+       rdfs:label ?thingLabel                               .
+    FILTER( lang(?thingLabel) = "en" )
+  }
+ORDER BY ASC( ?date )
+]]></programlisting>
+    </sect3>
+    <sect3 id="rdfsparqlgeospatexmp22"><title>Example 22</title>
+<programlisting><![CDATA[
+## "Find Historical cross section of events related
+## to Edinburgh and the surrounding area (within 30km)
+## during the 19th century":
+
+SELECT DISTINCT ?thing ?thingLabel
+      ?dateMeaningLabel ?date ?matchgeo
+WHERE
+  {
+    {
+      SELECT DISTINCT ?thing ?matchgeo
+      WHERE
+        {
+          <http://dbpedia.org/resource/Edinburgh>
+              geo:geometry ?sourcegeo .
+            ?resource geo:geometry ?matchgeo .
+            FILTER( bif:st_intersects (
+                ?matchgeo, ?sourcegeo, 30 ) ) .
+            ?thing ?somelink ?resource
+        }
+    }
+    {
+      ?property rdf:type owl:DatatypeProperty ;
+                          rdfs:range xsd:date
+    } .
+    ?thing ?dateMeaning ?date .
+    FILTER( ?dateMeaning IN ( ?property ) ) .
+    FILTER( ?date >= xsd:gYear("1800")
+         && ?date <= xsd:gYear("1900") )
+    ?dateMeaning rdfs:label ?dateMeaningLabel .
+  FILTER( lang(?dateMeaningLabel) = "en" ) .
+  ?thing rdfs:label ?thingLabel .
+  FILTER( lang(?thingLabel) = "en" )
+  }
+ORDER BY ASC ( ?date )
+]]></programlisting>
+    </sect3>
   </sect2>
 </sect1>
 
@@ -33430,12 +33943,12 @@ create table DB.DBA.RDF_QUAD (
   O any,
   primary key (P, S, O, G)
   )
-alter index RDF_QUAD on DB.DBA.RDF_QUAD partition (S int (0hexffff00))
+alter index RDF_QUAD on DB.DBA.RDF_QUAD partition (S int (0hexffff00));
 
-create distinct no primary key ref bitmap index RDF_QUAD_SP on RDF_QUAD (S, P) partition (S int (0hexffff00))
-create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff))
-create distinct no primary key ref bitmap index RDF_QUAD_GS on RDF_QUAD (G, S) partition (S int (0hexffff00))
-create distinct no primary key ref index RDF_QUAD_OP on RDF_QUAD (O, P) partition (O varchar (-1, 0hexffff))
+create distinct no primary key ref bitmap index RDF_QUAD_SP on RDF_QUAD (S, P) partition (S int (0hexffff00));
+create bitmap index RDF_QUAD_POGS on RDF_QUAD (P, O, G, S) partition (O varchar (-1, 0hexffff));
+create distinct no primary key ref bitmap index RDF_QUAD_GS on RDF_QUAD (G, S) partition (S int (0hexffff00));
+create distinct no primary key ref index RDF_QUAD_OP on RDF_QUAD (O, P) partition (O varchar (-1, 0hexffff));
 ;
 ]]></programlisting>
 
