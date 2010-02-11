@@ -1313,7 +1313,7 @@ ws_path_and_params (ws_connection_t * ws)
       else if (ch == '%')
 	{
 	  name[n_fill++] = char_hex_digit (ws->ws_req_line[inx + 0]) * 16 /*1 and 2*/
-	    + char_hex_digit (ws->ws_req_line[inx + 1]);
+	      + char_hex_digit (ws->ws_req_line[inx + 1]);
 	  inx += 2;
 	}
       else
@@ -6014,7 +6014,7 @@ http_read_chunked_content (dk_session_t *ses, caddr_t *err_ret, char *uri, int a
 	  if (!icnk && readed)
 	    {
 	      readed = dks_read_line (ses, line, sizeof (line));
-	    break;
+	      break;
 	    }
 	  while (icnk > 0)
 	    {
