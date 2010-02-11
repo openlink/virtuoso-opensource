@@ -168,7 +168,7 @@
           return 0;
         return 1;
       }
-      if (cmd = 'upload')
+      if ((cmd = 'upload') or (cmd = 'create'))
       {
         if (not (self.command_mode in (0, 1)))
           return 0;
@@ -340,7 +340,7 @@
         return tmp;
       if (get_keyword ('formRight', params) <> '')
         return tmp;
-      if ((self.command = 10) and ((self.command_mode = 0) or (self.command_mode = 5)))
+      if ((self.command = 10) and (self.command_mode in (0, 5, 6)))
         return defaultValue;
       return ODRIVE.WA.DAV_PROP_GET (path, davPropertyName, defaultValue);
     ]]>
@@ -394,6 +394,10 @@
         else if (self.command_mode = 5)
         {
             msg := 'Can not upload file. ';
+        }
+        else if (self.command_mode = 6)
+        {
+          msg := 'Can not create file. ';
         }
         else if (self.command_mode = 10)
         {
@@ -568,6 +572,10 @@
             if (not (dav_mime like '%/%' or dav_mime like 'link:%'))
               dav_mime := http_mime_type(dav_name);
           }
+          if (self.command_mode = 6)
+          {
+            dav_file := get_keyword (case when dav_mime = 'text/html' then 'dav_content_html' else 'dav_content_plain' end, params, '');
+          }
 
           dav_owner := ODRIVE.WA.odrive_user_id(trim(get_keyword('dav_owner', params, '')));
           if (dav_owner < 0)
@@ -735,7 +743,7 @@
           -- File
           if (self.dav_type = 'R')
           {
-            if (self.command_mode = 5)
+            if (self.command_mode in (5, 6))
             {
               retValue := DB.DBA.DAV_SEARCH_ID(dav_fullPath, self.dav_type);
               if (not ODRIVE.WA.DAV_ERROR (retValue))
@@ -952,6 +960,7 @@
           http ('<img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />');
 
           self.toolbarShow ('upload', 'Upload', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'upload\');"', 'upld_32.png', 'grey_upld_32.png', 0);
+          self.toolbarShow ('create', 'Create', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'create\');"', 'filenew_32.png', 'gray_filenew_32.png', 0);
 
           if (self.account_role <> 'public')
           {
@@ -1044,6 +1053,11 @@
                 else if (_action = 'upload')
                 {
                   self.command_push (10, 5);
+                  self.dav_source := 0;
+                }
+                else if (_action = 'create')
+                {
+                  self.command_push (10, 6);
                   self.dav_source := 0;
                 }
                 else if (_action = 'update')
@@ -1351,9 +1365,14 @@
                   self.dav_propEnable := 0;
               self.dav_category := coalesce (ODRIVE.WA.det_category (self.dav_path, ODRIVE.WA.DAV_GET (self.dav_item, 'type')) , '');
             }
-            else if (self.command_mode = 5)
+            else if (self.command_mode in (5, 6))
             {
-              self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
+              declare V any;
+
+              V := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
+              if (self.command_mode = 6)
+                aset (V, 9, 'text/html');
+              self.dav_item := V;
               self.dav_category := coalesce (ODRIVE.WA.det_category (ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C'), 'C') , '');
             }
             else
@@ -1399,7 +1418,7 @@
                 {
                   control.ufl_value := 'Properties of ' || self.source;
                 } else {
-                  control.ufl_value := case when (self.command_mode = 5) then 'Upload file into ' else 'Create folder in ' end || ODRIVE.WA.path_show (self.dir_path);
+                  control.ufl_value := case when (self.command_mode = 5) then 'Upload file into ' when (self.command_mode = 6) then 'Create file into ' else 'Create folder in ' end || ODRIVE.WA.path_show (self.dir_path);
                 }
               ]]>
             </v:before-data-bind>
@@ -1497,10 +1516,31 @@
                       <v:label for="dav_mime" value="--'File Mime Type'" />
                     </th>
                     <td>
-                      <v:text name="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                      <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onchange="javascript: ODRIVE.toggleEditor();" />
                       <v:template name="tform_11" type="simple" enabled="--self.dav_enable">
                         <input type="button" value="Select" onclick="javascript: windowShow('mimes_select.vspx?params=dav_mime:s1;')" disabled="disabled" class="button" />
                       </v:template>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_90" type="simple" enabled="-- equ(self.command_mode, 6)">
+                  <tr>
+                    <th valign="top">
+                      File Content
+                    </th>
+                    <td>
+                      <div id="dav_plain" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then 'none' else '' end ?>;">
+  			                <textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%; height: 170px"><?vsp http (get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')); ?></textarea>
+                      </div>
+                      <div id="dav_html" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then '' else 'none' end ?>;">
+  			                <textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;"><?vsp http (get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')); ?></textarea>
+                        <![CDATA[
+                          <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                          <script type="text/javascript">
+                            var oEditor = CKEDITOR.replace('dav_content_html');
+                          </script>
+                        ]]>
+                      </div>
                     </td>
                   </tr>
                 </v:template>
