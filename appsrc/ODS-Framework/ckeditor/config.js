@@ -41,6 +41,8 @@ CKEDITOR.editorConfig = function( config )
                           ['TextColor','BGColor']
                          ];
   config.toolbar = 'Basic';
+  config.removePlugins = 'elementspath';
+  config.resize_enabled = false;
   config.on = { instanceReady : function( ev )
                   {
                       this.dataProcessor.writer.lineBreakChars = '';
