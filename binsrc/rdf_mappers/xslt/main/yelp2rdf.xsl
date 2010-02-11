@@ -62,6 +62,7 @@
 				<owl:sameAs rdf:resource="{$docIRI}" />
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
+				<rdf:type rdf:resource="&gr;BusinessEntity"/>
 				<rdf:type rdf:resource="&sioc;Thread"/>
 				<dc:title>
 					<xsl:value-of select="title" />
