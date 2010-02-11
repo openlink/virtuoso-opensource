@@ -84,6 +84,7 @@ basket_t ws_queue;
 dk_mutex_t * ws_queue_mtx;
 dk_mutex_t * ws_http_log_mtx = NULL;
 dk_mutex_t * ftp_log_mtx = NULL;
+dk_mutex_t * http_acl_mtx = NULL;
 int http_n_keep_alives;
 caddr_t ws_default_charset_name = NULL;
 wcharset_t * ws_default_charset = NULL;
@@ -296,6 +297,7 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
       get_real_time (&tv);
       now = ((int64)tv.to_sec * 1000000) + (int64) tv.to_usec;
       /*now = get_msec_real_time ();*/
+      mutex_enter (http_acl_mtx);
       loc_hash = elm->ha_hits;
 #ifdef DEBUG
       if (!loc_hash)
@@ -331,7 +333,9 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 	}
       if (!hit->ah_initial) hit->ah_initial = now;
       hit->ah_count ++;
-      if (hit_ret) *hit_ret = hit;
+      if (hit_ret)
+	*hit_ret = hit;
+      mutex_leave (http_acl_mtx);
     }
   else /* ACL_CHECK_MPS */
     {
@@ -9825,6 +9829,7 @@ http_init_part_one ()
     }
   ws_queue_mtx = mutex_allocate ();
   ws_http_log_mtx = mutex_allocate (); /* for HTTP log writing */
+  http_acl_mtx = mutex_allocate (); /* for HTTP log writing */
   ftp_log_mtx = mutex_allocate (); /* for FTP log writing */
   if (http_threads)
     ws_dbcs = resource_allocate (http_threads, NULL, NULL, NULL, NULL);
