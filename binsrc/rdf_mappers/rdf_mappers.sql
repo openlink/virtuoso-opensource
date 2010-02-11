@@ -5959,7 +5959,7 @@ try_grddl:
   -- brute force attack, scan w/o profile
   if (xt_xml is not null)
     xt := xt_xml;
-  if (mdta = 0)
+  if (mdta < 2)
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
       for select GM_XSLT, GM_PROFILE, GM_FLAG from DB.DBA.SYS_GRDDL_MAPPING do
@@ -5967,7 +5967,7 @@ try_grddl:
           if (position (GM_PROFILE, profs_done) > 0)
 	    goto try_next1;
           declare exit handler for sqlstate '*' { goto try_next1; };
-          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
+          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', DB.DBA.RDF_PROXY_ENTITY_IRI (coalesce (dest, graph_iri)), 'nss', nss));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	    {
 	      mdta := mdta + 1;
