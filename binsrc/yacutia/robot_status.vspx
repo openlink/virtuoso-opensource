@@ -147,7 +147,6 @@
 	      <?vsp
           }
 	  http ('</table>');
-          http_header ('Refresh: 5\r\n');
             }
             else
         {
@@ -162,6 +161,7 @@
       </p>
       <?vsp
         }
+	http_header ('Refresh: 5\r\n');
       ?>
                       </td>
                     </tr>
