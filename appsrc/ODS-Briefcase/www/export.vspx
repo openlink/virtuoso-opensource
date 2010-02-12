@@ -128,17 +128,14 @@
             if (_params[N] like 'f%_0')
             {
               M := replace (replace (_params[N], 'f', ''), '_0', '');
-            dbg_obj_print ('M: ', M);
               f0 := get_keyword (sprintf ('f%s_0', M), _params);
               f1 := get_keyword (sprintf ('f%s_1', M), _params);
               f2 := get_keyword (sprintf ('f%s_2', M), _params);
               f3 := get_keyword (sprintf ('f%s_3', M), _params);
               f4 := get_keyword (sprintf ('f%s_4', M), _params);
             ODRIVE.WA.dc_set_criteria (data, M, f0, f3, f4, f1, f2);
-            dbg_obj_print ('',  M, f0, f3, f4, f1, f2);
           }
         }
-        dbg_obj_print ('data', data);
         params := vector (get_keyword('path', _params, ''), 3, data, '', ODRIVE.WA.account_name (self.account_id));
 
         sql := 'select <MAX> rs.* from ODRIVE.WA.odrive_proc(rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';

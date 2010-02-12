@@ -127,7 +127,7 @@
     <![CDATA[
       declare exit handler for SQLSTATE '*'
       {
-        dbg_obj_print ('__SQL_MESSAGE', __SQL_MESSAGE);
+        -- dbg_obj_print ('__SQL_MESSAGE', __SQL_MESSAGE);
         if (__SQL_STATE = 'TEST')
         {
           self.vc_error_message := ODRIVE.WA.test_clear (__SQL_MESSAGE);

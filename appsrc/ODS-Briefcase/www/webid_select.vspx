@@ -101,8 +101,8 @@
         <div class="boxHeader">
           Show
           <v:select-list name="filter" value="--self.v_filter" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
-            <v:item name="Users & Groups" value="" />
-            <v:item name="Users" value="u" />
+            <v:item name="Persons & Groups" value="" />
+            <v:item name="Persons" value="p" />
             <v:item name="Groups" value="g" />
           </v:select-list>
         </div>
@@ -113,19 +113,29 @@
 
               user_sql := '';
               group_sql := '';
-              if (self.v_filter <> 'u')
+              if (self.v_filter <> 'p')
               {
                 group_sql := sprintf ('select ''Group'' F1, SIOC..waGroup(%d, FG_NAME) F2, FG_DESCRIPTION F3 from ODRIVE.WA.FOAF_GROUPS where FG_USER_ID = %d', self.account_id, self.account_id);
               }
               if (self.v_filter <> 'g')
               {
-                user_sql := '';
+                if (ODRIVE.WA.check_app ('AddressBook', self.account_id))
+                {
+                  user_sql := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1', self.account_id);
+                } else {
+                  user_sql := 'select ''Person'' F1, '''' F2, '''' F3 from DB.DBA.SYS_USERS where 0 = 1';
               }
-              if (user_sql = '') {
+              }
+              if (user_sql = '')
+              {
                 control.ds_sql := group_sql;
-              } else if (group_sql = '') {
+              }
+              else if (group_sql = '')
+              {
                 control.ds_sql := user_sql;
-              } else {
+              }
+              else
+              {
                 control.ds_sql := concat('select F1, F2, F3 from (', user_sql, ' union ' , group_sql, ') x ');
               }
               self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
