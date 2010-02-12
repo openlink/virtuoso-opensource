@@ -1329,8 +1329,20 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any) -- DEPRECATED
 
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
-  if (__tag of rdf_box <> __tag(longobj))
+  declare t int;
+  t := __tag (longobj);
+  if (__tag of rdf_box <> t)
+    {
+      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
     return longobj;
+      if (__tag of nvarchar = t)
+        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
+      else if (t in (126, 217))
+        longobj := cast (longobj as varchar);
+      else if (bit_and (1, __box_flags (longobj)))
+        return iri_to_id (longobj);
+      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
+    }
   if (0 = rdf_box_needs_digest (longobj))
     return longobj;
   return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
@@ -1342,12 +1354,16 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
   declare t int;
   t := __tag (v);
   if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+    {
+      if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
+        return DB.DBA.RDF_OBJ_ADD (257, v, 257);
     return v;
+    }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
-  else if (1 = __box_flags (v))
+  else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1367,7 +1383,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
-  else if (1 = __box_flags (v))
+  else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
   res := rdf_box (v, 257, 257, 0, 1);
   return res;
