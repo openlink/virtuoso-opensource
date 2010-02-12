@@ -178,7 +178,7 @@ create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any)
 --!AWK PUBLIC
 create procedure SPARQL_RSET_NT_WRITE_NS (inout ses any)
 {
-  http ('_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#ResultSet> .\n', ses);
+  http ('_:ResultSet2053 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#ResultSet> .\n', ses);
 }
 ;
 
@@ -189,7 +189,7 @@ create procedure DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (inout ses any, in colnames an
   col_count := length (colnames);
   for (i := 0; i < col_count; i := i + 1)
     {
-      http ('_:_ <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
+      http ('_:ResultSet2053 <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
       http_escape (colnames[i], 11, ses, 0, 1);
       http ('" .\n', ses);
     }
@@ -662,7 +662,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
               http ('</uri></binding>', ses);
 	    }
 	}
-      else if (isstring (_val) and (1 = __box_flags (_val)))
+      else if (isstring (_val) and (bit_and (1, __box_flags (_val))))
         {
           if (_val like 'nodeID://%')
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
@@ -917,7 +917,7 @@ create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout
 
 create procedure SPARQL_RESULTS_NT_WRITE_NS (inout ses any)
 {
-  http ('_:_ rdf:type <http://www.w3.org/1999/02/22-rdf-syntax-ns#res:ResultSet> .\n', ses);
+  http ('_:ResultSet2053 rdf:type <http://www.w3.org/1999/02/22-rdf-syntax-ns#res:ResultSet> .\n', ses);
 }
 ;
 
@@ -936,7 +936,7 @@ create procedure SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
         nill := mdta[i][4];
       else
         nill := 0;
-      http ('_:_ <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
+      http ('_:ResultSet2053 <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
       http_escape (_name, 11, ses, 0, 1);
       http ('" .\n', ses);
       i := i + 1;

@@ -2769,7 +2769,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   caddr_t *row = (caddr_t *)bif_arg (qst, args, 2, "sparql_rset_nt_write_row");
   dk_session_t *ses;
   int rowctr, colctr, colcount;
-  char rowid_label[20], colid_label[30];
+  char rowid_label[40], colid_label[50];
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (nt_env_t) != box_length ((caddr_t)env)) ||
     (DV_LONG_INT != DV_TYPE_OF (env->ne_rowctr)) ||
@@ -2788,7 +2788,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	    "Function sparql_rset_nt_write_row() outside of HTTP context and no stream specified");
     }
   rowctr = unbox (env->ne_rowctr);
-  sprintf (rowid_label, "_:_r%d", rowctr);
+  sprintf (rowid_label, "_:ResultSet2053r%d", rowctr);
   dk_free_box (env->ne_rowctr);
   env->ne_rowctr = box_num (rowctr+1);
   colcount = box_length ((caddr_t)(env->ne_cols)) / sizeof (ttl_iriref_t);
@@ -2817,7 +2817,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       else
         http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, col_ti);
     }
-  SES_PRINT (ses, "_:_ <http://www.w3.org/2005/sparql-results#solution> "); SES_PRINT (ses, rowid_label); SES_PRINT (ses, " .\n");
+  SES_PRINT (ses, "_:ResultSet2053 <http://www.w3.org/2005/sparql-results#solution> "); SES_PRINT (ses, rowid_label); SES_PRINT (ses, " .\n");
   for (colctr = 0; colctr < colcount; colctr++)
     {
       ttl_iriref_t *col_ti = env->ne_cols + colctr;
