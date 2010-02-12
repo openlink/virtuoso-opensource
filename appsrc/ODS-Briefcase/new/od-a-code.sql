@@ -1251,6 +1251,7 @@ create procedure ODRIVE.WA.odrive_proc(
   }
   if (isarray(dirList))
   {
+    -- dbg_obj_print ('dirList', dirList);
     dirHiddens := ODRIVE.WA.hiddens_prepare (dir_hiddens);
     user_id := -1;
     group_id := -1;

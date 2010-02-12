@@ -479,13 +479,19 @@ function confirmAction(confirmMsq, form, txt, selectionMsq) {
   return false;
 }
 
+function webidShow(obj, width, height)
+{
+  var S = $v(obj.id.replace('fld_2', 'fld_1'));
+  windowShow('webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;', width, height);
+}
+
 function windowShow(sPage, width, height)
 {
-  if (width == null)
-    width = 500;
-  if (height == null)
+  if (!width)
+    width = 700;
+  if (!height)
     height = 420;
-  sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  sPage += '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
   win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }

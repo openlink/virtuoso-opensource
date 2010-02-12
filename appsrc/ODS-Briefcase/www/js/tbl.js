@@ -68,13 +68,11 @@ TBL.createCell42 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  if (fldOptions.readOnly)
-    fld.readOnly = fldOptions.readOnly;
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.image('image/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
-  img.onclick = function (){windowShow('webid_select.vspx?mode=g&dst=sc&params='+fldName+':s1;',700)};
+  img.onclick = function (){webidShow(fld)};
   if (fldOptions.imgCssText)
     img.style.cssText = fldOptions.imgCssText;
 
@@ -148,9 +146,9 @@ TBL.changeCell42 = function (srcFld) {
       dstFld.value = '';
     dstFld.readOnly = false;
   }
-  if (srcValue == 'group') {
-    OAT.Dom.show(dstImg);
-  } else {
+  if (srcValue == 'public') {
     OAT.Dom.hide(dstImg);
+  } else {
+    OAT.Dom.show(dstImg);
   }
 }

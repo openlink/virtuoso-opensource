@@ -1886,7 +1886,7 @@
                                   M := M + 1;
                                   if (self.dav_enable)
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'group' then '' else 'display: none;' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
@@ -1899,7 +1899,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, imgCssText: 'display: none;'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
