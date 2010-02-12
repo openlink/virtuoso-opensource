@@ -630,10 +630,10 @@ self.vc_data_bind (e);
             </v:template>
             <v:template name="temp_crfold"
                         type="simple"
-                        enabled="-- case when (self.crfolder_mode = 1 or self.crfolder_mode = 2 or self.crfolder_mode = 5) then 1 else 0 end">
+                        enabled="-- case when self.crfolder_mode in (1, 2, 5, 299) then 1 else 0 end">
               <v:template name="temp_crfold12"
                           type="simple"
-                          enabled="-- case when (self.crfolder_mode = 1 or self.crfolder_mode = 2) then 1 else 0 end">
+                          enabled="-- case when self.crfolder_mode in (1, 2, 299) then 1 else 0 end">
               <table border="0" cellspacing="0" cellpadding="3">
                 <tr>
                   <th colspan="2">
@@ -642,6 +642,8 @@ self.vc_data_bind (e);
                         http('Create folder in ');
                       if (self.crfolder_mode = 2)
                         http('Upload file into ');
+                      if (self.crfolder_mode = 299)
+                        http('Create file into ');
                     ?>
                     <v:label name="current_folder_label" value="--self.curpath" format="%s"/>:
                   </th>
@@ -654,7 +656,7 @@ self.vc_data_bind (e);
                     </td>
                   </tr>
                 </v:template>
-                <v:template name="dav_template002" type="simple" enabled="-- equ(self.crfolder_mode, 2)">
+                <v:template name="dav_template002" type="simple" enabled="-- case when self.crfolder_mode in (2, 299) then 1 else 0 end">
                   <!--<script type="text/javascript">
                     var toolkitPath="toolkit"; var featureList=["combolist"];
                   </script>
@@ -665,6 +667,7 @@ self.vc_data_bind (e);
             		      init_upload();
                     }
             		  </script>
+                  <v:template name="dav_template0021" type="simple" enabled="-- case when self.crfolder_mode = 2 then 1 else 0 end">
             		  <tr>
             		    <td>Destination</td>
             		    <td>
@@ -718,6 +721,8 @@ self.vc_data_bind (e);
                       <input type="file" name="t_newfolder" onBlur="javascript:getFileName();"></input>
                     </td>
                   </tr>
+                    </v:template>
+		              </v:template>
                   <tr id="fi2">
                     <td nowrap="nowrap">DAV Resource Name<span class="redstar">*</span></td>
                     <td>
@@ -734,7 +739,7 @@ self.vc_data_bind (e);
                           for(select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE)do
                             http(sprintf('mime_types.push("%s");',T_TYPE));
 
-                          http(sprintf('var cur_mime_type = "%s"',get_keyword('mime_type', self.vc_page.vc_event.ve_params, '')));
+                          http(sprintf('var cur_mime_type = "%s"',get_keyword('mime_type', self.vc_page.vc_event.ve_params, case when self.crfolder_mode = 2 then '' else 'text/plain' end)));
                         ?>
                       </script>
                       <!--
@@ -743,6 +748,13 @@ self.vc_data_bind (e);
                     </td>
                   </tr>
 		              </v:template>
+                <v:template name="dav_template00299" type="simple" enabled="-- equ(self.crfolder_mode, 299)">
+                  <tr>
+                    <td>File Content</td>
+                    <td>
+ 			                <textarea id="dav_content" name="dav_content" style="width: 500px; height: 170px"><?vsp http (get_keyword ('dav_content', self.vc_page.vc_event.ve_params, '')); ?></textarea>
+                    </td>
+                  </tr>
                 </v:template>
 		            <v:template type="simple" name="sw3" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
                 <tr id="fi4">
@@ -955,6 +967,8 @@ self.vc_data_bind (e);
                               control.ufl_value := 'Create';
                             if (self.crfolder_mode = 2)
                               control.ufl_value := 'Upload';
+                            if (self.crfolder_mode = 299)
+                              control.ufl_value := 'Create';
                           ]]>
                         </v:script>
                       </v:before-render>
@@ -1019,9 +1033,12 @@ self.vc_data_bind (e);
                   			  }
                           if (self.crfolder_mode = 1)
                             cname := get_keyword('t_newfolder', self.vc_page.vc_event.ve_params, '');
-                          if (self.crfolder_mode = 2)
+                          if ((self.crfolder_mode = 2) or (self.crfolder_mode = 299))
                           {
+                            if (self.crfolder_mode = 2)
                             _file := get_keyword_ucase('t_newfolder', self.vc_page.vc_event.ve_params, null);
+                            else
+                              _file := get_keyword_ucase('dav_content', self.vc_page.vc_event.ve_params, null);
                             cname := get_keyword('resname', self.vc_page.vc_event.ve_params, '');
                             mimetype := get_keyword('mime_type', self.vc_page.vc_event.ve_params, '');
                           }
@@ -1102,7 +1119,7 @@ self.vc_data_bind (e);
 			                        set triggers on;
                             }
                           }
-                          if (self.crfolder_mode = 2)
+                          if ((self.crfolder_mode = 2) or (self.crfolder_mode = 299))
                           {
                             if (isstring(mimetype) and (mimetype like '%/%' or mimetype like 'link:%'))
                               mimetype := mimetype;
@@ -3839,6 +3856,17 @@ self.vc_data_bind (e);
                         </v:on-post>
                       </v:button>
                     </v:template>
+                    <v:button name="create" action="simple" value="Create" enabled="-- neq(self.crfolder_mode, 3)">
+                      <v:on-post>
+                        <v:script>
+                          <![CDATA[
+                            self.item_permissions := '';
+                            self.crfolder_mode := case when self.crfolder_mode<>0 then 0 else 299 end;
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:script>
+                      </v:on-post>
+                    </v:button>
                     <v:button name="copy" action="simple" value="Copy">
                       <v:on-post>
                         <v:script>
