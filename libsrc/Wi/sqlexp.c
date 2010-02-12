@@ -170,8 +170,8 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
       dtp = DV_TYPE_OF (arg);
       if (DV_LONG_INT == dtp)
 	{
-	  if (BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t)arg) - 1 || unbox (arg) < 1)
-	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "t_step  argument not an index  to a column in the selection");
+	  if (BOX_ELEMENTS (sc->sc_trans->tn_input) <= unbox ((caddr_t)arg) - 1 || unbox (arg) < 1)
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "t_step argument not an index to a column in the selection");
 	  if (!sc->sc_trans->tn_step_out)
 	    {
 	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
