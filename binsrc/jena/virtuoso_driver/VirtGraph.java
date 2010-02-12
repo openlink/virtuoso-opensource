@@ -656,7 +656,7 @@ public class VirtGraph extends GraphBase
       if (o instanceof ExtendedString) 
         {
           ExtendedString vs = (ExtendedString) o;
-          if (vs.getIriType() == ExtendedString.IRI && vs.getStrType() == 1) {
+          if (vs.getIriType() == ExtendedString.IRI && (vs.getStrType() & 0x01)== 0x01) {
             if (vs.toString().indexOf ("_:") == 0)
               return Node.createAnon(AnonId.create(vs.toString().substring(2))); // _:
             else
