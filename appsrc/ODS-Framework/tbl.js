@@ -151,8 +151,7 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions)
   fld.type = (fldOptions.type)? (fldOptions.type): 'text';
   fld.id = fldName;
   fld.name = fld.id;
-  if (fldOptions.value)
-  {
+  if (fldOptions.value) {
     fld.value = fldOptions.value;
     fld.defaultValue = fld.value;
   }
@@ -163,6 +162,8 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions)
   fld.style.width = '95%';
   if (fldOptions.cssText)
     fld.style.cssText = fldOptions.cssText;
+  if (fldOptions.readOnly)
+    fld.readOnly = fldOptions.readOnly;
 
   td.appendChild(fld);
   return fld;
