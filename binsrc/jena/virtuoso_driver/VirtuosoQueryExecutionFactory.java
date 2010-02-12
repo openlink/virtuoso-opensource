@@ -40,6 +40,7 @@ import com.hp.hpl.jena.sparql.engine.QueryEngineRegistry;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.sparql.core.DataSourceImpl;
+import com.hp.hpl.jena.sparql.core.DatasetImpl;
 import com.hp.hpl.jena.sparql.util.Context;
 
 public class VirtuosoQueryExecutionFactory
@@ -63,13 +64,23 @@ public class VirtuosoQueryExecutionFactory
 
 /* TODO */
 
+    static public QueryExecution create(Query query, Dataset dataset)
+    {
+	if (dataset instanceof VirtDataSource) {
+	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query.toString(), (VirtGraph)dataset);
+          return ret;
+	} else {
+          return make(query, dataset) ;
+	}
+    }
+
     static public QueryExecution create(String queryStr, Dataset dataset)
     {
 	if (dataset instanceof VirtDataSource) {
 	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (queryStr, (VirtGraph)dataset);
           return ret;
 	} else {
-          throw new IllegalArgumentException("Only VirtDataSource is supported");
+          return make(makeQuery(queryStr), dataset) ;
 	}
     }
 
@@ -99,7 +110,7 @@ public class VirtuosoQueryExecutionFactory
 	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (query.toString(), (VirtGraph)model.getGraph());
           return ret;
 	} else {
-          throw new IllegalArgumentException("Only VirtModel is supported");
+          return make(query, new DatasetImpl(model)) ;
 	}
     }
 
@@ -111,7 +122,7 @@ public class VirtuosoQueryExecutionFactory
 	  VirtuosoQueryExecution ret = new VirtuosoQueryExecution (queryStr, (VirtGraph)model.getGraph());
           return ret;
 	} else {
-          throw new IllegalArgumentException("Only VirtModel is supported");
+          return create(makeQuery(queryStr), model) ;
 	}
     }
 
@@ -130,6 +141,7 @@ public class VirtuosoQueryExecutionFactory
         return create(makeQuery(queryStr), initialBinding) ;
     }
 
+//??
     static public QueryExecution create(Query query, Dataset dataset, QuerySolution initialBinding)
     {
         checkArg(query) ;
@@ -139,6 +151,7 @@ public class VirtuosoQueryExecutionFactory
         return qe ;
     }
 
+//??
     static public QueryExecution create(String queryStr, Dataset dataset, QuerySolution initialBinding)
     {
         checkArg(queryStr) ;

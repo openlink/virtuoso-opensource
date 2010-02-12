@@ -2128,7 +2128,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (val instanceof ExtendedString) {
 			ExtendedString ves = (ExtendedString) val;
 			String valueString = ves.toString();
-			if (ves.getIriType() == ExtendedString.IRI) {
+			if (ves.getIriType() == ExtendedString.IRI && ves.getStrType()==1) {
 				if (valueString.startsWith("_:")) {
 					valueString = valueString.substring(2);
 					return getRepository().getValueFactory().createBNode(valueString);

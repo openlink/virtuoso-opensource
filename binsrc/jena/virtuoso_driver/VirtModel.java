@@ -39,14 +39,14 @@ public class VirtModel extends ModelCom {
     }
 	
 	
-    public static VirtModel createDefaultModel(String url, String user, 
+    public static VirtModel openDefaultModel(String url, String user, 
 	String password) 
     {
     	return new VirtModel(new VirtGraph(url, user, password));
     }
 
 
-    public static Model createDatabaseModel(String graphName, String url, 
+    public static Model openDatabaseModel(String graphName, String url, 
     	String user, String password) 
     {
 	return new VirtModel(new VirtGraph(graphName, url, user, password));
