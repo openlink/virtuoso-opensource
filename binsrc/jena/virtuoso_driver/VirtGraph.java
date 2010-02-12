@@ -24,30 +24,26 @@
 package virtuoso.jena.driver;
 
 import java.sql.*;
-import java.io.*;
 import java.util.*;
 
 import virtuoso.sql.*;
 
 import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.graph.impl.*;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
-import com.hp.hpl.jena.util.iterator.ExtendedIterator;
-import com.hp.hpl.jena.util.iterator.NiceIterator;
-import com.hp.hpl.jena.db.impl.ResultSetIterator;
 import com.hp.hpl.jena.shared.*;
-import com.hp.hpl.jena.db.impl.*;
 import com.hp.hpl.jena.util.iterator.*;
-import com.hp.hpl.jena.graph.query.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 
+
 public class VirtGraph extends GraphBase
 {
+
     static public final String DEFAULT = "virt:DEFAULT";
     private String graphName;
+    private boolean readFromAllGraphs = false;
     private String url_hostlist;
     private String user;
     private String password;
@@ -189,6 +185,17 @@ public class VirtGraph extends GraphBase
     }
 
 
+    public boolean getReadFromAllGraphs() 
+    {
+      return readFromAllGraphs;
+    }
+
+    public void setReadFromAllGraphs(boolean val) 
+    {
+      readFromAllGraphs = val;
+    }
+
+
 
 // GraphBase overrides
     String Node2Str(Node n)
@@ -199,7 +206,6 @@ public class VirtGraph extends GraphBase
         return "<_:"+n+">"; 
       } else if (n.isLiteral()) {
         String s;
-//??        StringBuilder sb = new StringBuilder();
         StringBuffer sb = new StringBuffer();
         sb.append("\"");
         sb.append(n.getLiteralValue());
@@ -328,6 +334,9 @@ public class VirtGraph extends GraphBase
 //--java5 or newer    @Override
     protected int graphBaseSize() {
 	String query = "select count(*) from (sparql define input:storage \"\" select * where { graph `iri(??)` { ?s ?p ?o }})f";
+	if ( readFromAllGraphs )
+		query = "select count(*) from (sparql define input:storage \"\" select * where {?s ?p ?o })f";
+
 	ResultSet rs = null;
 	int ret = 0;
 
@@ -335,7 +344,10 @@ public class VirtGraph extends GraphBase
 
 	try {
 		java.sql.PreparedStatement ps = connection.prepareStatement(query);
-		ps.setString(1, graphName);
+
+		if ( readFromAllGraphs == false )
+			ps.setString(1, graphName);
+
 		rs = ps.executeQuery();
 		if (rs.next())
 		  ret = rs.getInt(1);
@@ -374,6 +386,10 @@ public class VirtGraph extends GraphBase
 	exec_text = "sparql define input:storage \"\" select * where { graph <"+ 
 			this.graphName +"> { " + S +" "+ P +" "+ O +" }} limit 1";
 
+	if ( readFromAllGraphs )
+		exec_text = "sparql define input:storage \"\" select * where { " + 
+			S +" "+ P +" "+ O +" } limit 1";
+
 	try {
 		java.sql.Statement stmt = connection.createStatement();
 		rs = stmt.executeQuery(exec_text);
@@ -407,6 +423,8 @@ public class VirtGraph extends GraphBase
 	exec_text = "sparql select * from <" + this.graphName + "> where { " 
 			+ S +" "+ P +" "+ O + " }";
 
+	if ( readFromAllGraphs )
+		exec_text = "sparql select * where { "+ S +" "+ P +" "+ O + " }";
 	try {
 		java.sql.PreparedStatement stmt = connection
 				.prepareStatement(exec_text);
@@ -638,7 +656,7 @@ public class VirtGraph extends GraphBase
       if (o instanceof ExtendedString) 
         {
           ExtendedString vs = (ExtendedString) o;
-          if (vs.getIriType() == ExtendedString.IRI) {
+          if (vs.getIriType() == ExtendedString.IRI && vs.getStrType() == 1) {
             if (vs.toString().indexOf ("_:") == 0)
               return Node.createAnon(AnonId.create(vs.toString().substring(2))); // _:
             else
