@@ -88,7 +88,7 @@ create procedure ODRIVE.WA.session_domain (
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'oDrive'))
     domain_id := -1;
 
 _end:;
@@ -123,7 +123,7 @@ create procedure ODRIVE.WA.session_restore (
       user_role := ODRIVE.WA.access_role (domain_id, U_ID);
     }
 
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
+  if ((user_id = -1) and (domain_id >= 0) and (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'oDrive' and WAI_IS_PUBLIC = 1)))
     domain_id := -1;
 
   if (user_id = -1)
@@ -2582,7 +2582,6 @@ create procedure ODRIVE.WA.det_action_enable(
 
   retValue := 1;
   det_category := ODRIVE.WA.det_category (path, either (equ (right (path, 1), '/'), 'C', 'R'));
-  -- dbg_obj_print ('', det_category, action);
   if ((det_category <> '') and (action in ('share', 'version')))
       {
         retValue := 0;
@@ -4334,7 +4333,6 @@ create procedure ODRIVE.WA.aci_load (
     if (not isnull (V))
       retValue := vector_concat (retValue, vector (V));
   }
-  -- dbg_obj_print ('retValue: ', retValue);
   return retValue;
 }
 ;
@@ -4365,7 +4363,6 @@ create procedure ODRIVE.WA.aci_params (
       M := M + 1;
     }
   }
-  -- dbg_obj_print ('retValue: ', retValue);
   return retValue;
 }
 ;
@@ -4410,7 +4407,6 @@ create procedure ODRIVE.WA.aci_n3 (
       retValue := retValue || '.\n';
     }
   }
-  -- dbg_obj_print ('retValue: ', retValue);
   return retValue;
 }
 ;
