@@ -157,7 +157,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
     return;
   DO_SET (dbe_key_t *, k1, &tb->tb_keys)
     {
-      if (k1 != tb->tb_primary_key)
+      if (k1 != tb->tb_primary_key && !k1->key_no_pk_ref)
 	{
 	  dk_set_t group = NULL, eq_cols = NULL;;
 	  n_eqs = sqlo_leading_eqs (k1, col_preds);
@@ -166,7 +166,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
 	  sqlo_inx_int_eq_distinct_cols (k1, n_eqs, &eq_cols);
 	  DO_SET (dbe_key_t *, k2, &tb->tb_keys)
 	    {
-	      if (k1 != k2 && !k2->key_is_primary
+	      if (k1 != k2 && !k2->key_is_primary && !k2->key_no_pk_ref
 		  && sqlo_key_is_intersectable (col_preds, k1, k2, n_eqs, &eq_cols))
 		{
 		  if (!group)
@@ -422,6 +422,8 @@ sqlo_tb_inx_intersectable (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * joined, in
   tb_dfe->dfe_is_placed = 0; /* consider only preds that do not depend on the first table */
   DO_SET (dbe_key_t *, key, &joined->_.table.ot->ot_table->tb_keys)
     {
+      if (key->key_no_pk_ref)
+	continue;
       if (dk_set_is_subset (key->key_parts, joined->_.table.ot->ot_table_refd_cols))
 	{
 	  int n_eqs2 = sqlo_leading_eqs (key, joined->_.table.col_preds);
@@ -511,7 +513,8 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
   if (!inx_int_join)
     return;
   if (tb_dfe->_.table.is_unique
-      || tb_dfe->_.table.ot->ot_rds)
+      || tb_dfe->_.table.ot->ot_rds
+      || tb_dfe->_.table.index_path)
     return;
   n_eqs = sqlo_leading_eqs (tb_dfe->_.table.key, tb_dfe->_.table.col_preds);
   if (!n_eqs
