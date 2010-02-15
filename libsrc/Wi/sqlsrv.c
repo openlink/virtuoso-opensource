@@ -863,10 +863,12 @@ srv_client_connection_died (client_connection_t *cli)
   if (cli->cli_tp_data)
     {
       if (lt && lt->lt_2pc._2pc_type != cli->cli_tp_data->cli_trx_type)
+        {
 	lt_log_debug (("srv_client_connection_died diff trx_type cli=%p cli_trx_type=%d, 2pc_type=%d, enlisted=%d",
 	    cli, cli->cli_tp_data->cli_trx_type,
 	    lt->lt_2pc._2pc_type,
 	    cli->cli_tp_data->cli_tp_enlisted));
+	}
 
       lt_log_debug (("srv_client_connection_died no lt cli=%p type=%d, enlisted=%d",
 	  cli, cli->cli_tp_data->cli_trx_type,

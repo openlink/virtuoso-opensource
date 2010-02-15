@@ -391,7 +391,9 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       waiting = waiting->itc_next_on_lock;
     }
   if (itc->itc_ltrx->lt_status != LT_PENDING)
+    {
     rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    }
 
   pl->pl_n_row_locks++;
   /* rdbg_printf (("       rl insert at %d on %ld\n", pos, pl->pl_page)); */
@@ -402,7 +404,9 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       || (not_own = !pl_lt_is_owner (pl, itc->itc_ltrx)))
     {
       if (not_own)
+        {
 	rdbg_printf (("would be miss insert pl T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+	}
       lt_add_pl (itc->itc_ltrx, pl, 0);
     }
 }

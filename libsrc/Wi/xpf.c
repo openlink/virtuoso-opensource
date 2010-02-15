@@ -4886,11 +4886,9 @@ xpf_define_builtin (
       caddr_t *old_rev_name_ptr = (caddr_t *)id_hash_get (xpf_reveng, (caddr_t)(&xpfm_executable));
       if (NULL == old_rev_name_ptr)
 	id_hash_set (xpf_reveng, (caddr_t)(&xpfm_executable), (caddr_t)(&(metas->xpfm_name)));
-      else
 #ifdef XPATH_DEBUG
+      else
 	printf ("\n%s is an alias for %s!\n", xpfm_name, old_rev_name_ptr[0]);
-#else
-       ;
 #endif
     }
   dk_check_tree (metas);

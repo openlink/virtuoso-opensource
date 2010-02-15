@@ -86,7 +86,9 @@ buf_cancel_write (buffer_desc_t * buf)
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
   if (buf->bd_tree)
+    {
     ASSERT_OUTSIDE_MAP (buf->bd_tree, buf->bd_page);
+    }
 
   /* Note that this can block waiting for IQ which is owned by another
   thread in iq_schedule. The thread in iq_schedule can block on this
@@ -173,9 +175,11 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	}
       LEAVE_IOQ (iq);
       if (n_added && !is_reads)
-	idbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
+        {
+	  dbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
 		      n_added, is_reads ? "reads" : "writes",
 		      was_empty ? "starting" : "running"));
+	}
       if (n_added && was_empty)
 	semaphore_leave (iq->iq_sem);
 

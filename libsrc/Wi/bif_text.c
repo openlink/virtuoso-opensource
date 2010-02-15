@@ -1361,11 +1361,17 @@ process_as_text:
     {
       encoding_handler_t *eh = (is_wide ? &eh__WIDE_121 : vtb->vtb_default_eh);
       if ((&eh__UTF8 == eh) || (&eh__UTF8_QR == eh))
+        {
         ASSERT_BOX_UTF8 (str);
+	}
       else if (&eh__WIDE_121 == eh)
+        {
         ASSERT_BOX_WCHAR (str);
+	}
       else
+        {
         ASSERT_BOX_8BIT (str);
+	}
       lh_iterate_patched_words (
          eh, lh,
          str, box_length(str),
