@@ -110,7 +110,7 @@ dbs_seg_extend (dbe_storage_t * dbs, int n)
 	  for (inx2 = 0; inx2 < inx; inx2++)
 	    {
 	      fd = dst_fd (ds->ds_stripes[inx2]);
-	      ftruncate (fd, org_sz);
+	      FTRUNCATE (fd, org_sz);
 	      dst_fd_done (ds->ds_stripes[inx2], fd);
 	    }
 	  return 0;
