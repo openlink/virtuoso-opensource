@@ -3655,7 +3655,6 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
-  MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
@@ -3664,6 +3663,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text");
       sparqre.sparqre_exec_user = sec_name_to_user (uname);
     }
+  MP_START ();
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
