@@ -37,12 +37,18 @@
     auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
 
   uri := ODRIVE.WA.http_escape (ODRIVE.WA.dav_url(file), 7);
-  req_header := '';
-  req_header := concat(req_header, 'Accept-Charset: UTF-8,*\n');
-  req_header := concat(req_header, 'Keep-Alive: 300\n');
-  req_header := concat(req_header, 'Connection: keep-alive\n');
-  req_header := concat(req_header, 'Accept: image/png,*/*;q=0.5\n');
-  req_header := concat(req_header, sprintf('Authorization: Basic %s\n', encode_base64(concat(auth_uid, ':', auth_pwd))));
+  if (auth_uid = '')
+  {
+    http_rewrite ();
+    http_request_status ('HTTP/1.1 302 Found');
+    http_header (sprintf ('Location: %s\r\n', uri));
+    return;
+  }
+  req_header := 'Accept-Charset: UTF-8,*\n'     ||
+                'Keep-Alive: 300\n'             ||
+                'Connection: keep-alive\n'      ||
+                'Accept: image/png,*/*;q=0.5\n' ||
+                sprintf('Authorization: Basic %s\n', encode_base64(concat(auth_uid, ':', auth_pwd)));
 
   N := 0;
 _again:
