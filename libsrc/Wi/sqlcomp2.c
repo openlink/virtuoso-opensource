@@ -1466,7 +1466,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		}
 	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
-	      semaphore_leave (parse_sem);
+	      if (inside_sem)
+	        semaphore_leave (parse_sem);
 	      POP_CATCH;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
