@@ -146,7 +146,7 @@
 			<!-- OpenLink GoogleBase schema declares a class for each supported item type -->
 			<rdf:type rdf:resource="&oplgb;{$itemType}" />
 	   		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
-			<owl:sameAs><xsl:value-of select="a:id"/></owl:sameAs>
+			<!--owl:sameAs><xsl:value-of select="a:id"/></owl:sameAs-->
 	    	<dcterms:publisher>Google Inc.</dcterms:publisher>
 	    	<xsl:apply-templates select="g:*"/>
 	    	<xsl:apply-templates select="a:*"/>
