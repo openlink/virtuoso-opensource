@@ -261,7 +261,7 @@
         </xsl:variable> <!-- ============================================================ -->
         <xsl:if test="$fn != 0">
             <xsl:attribute name="rdf:about">
-                <xsl:value-of select="concat('#', .)" />
+                <xsl:value-of select="concat('#', urlify (.))" />
             </xsl:attribute>
             <v:fn>
                 <xsl:value-of select="." />
