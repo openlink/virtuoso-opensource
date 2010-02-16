@@ -148,6 +148,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_SLIDESHARE', null, 'Slideshare', vector ('SharedSecret', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://.*slidesix.com/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_SLIDESIX', null, 'Slidesix');
+        
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://.*revyu.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_REVYU', null, 'Revyu');
 
@@ -1972,6 +1976,7 @@ create procedure DB.DBA.RDF_LOAD_SALESFORCE(in graph_iri varchar, in new_origin_
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/sf2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (new_origin_uri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -1992,6 +1997,7 @@ create procedure DB.DBA.RDF_LOAD_TWITTER2(in url varchar, in id varchar, in new_
 		return 0;
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/twitter2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (new_origin_uri), 'id', id, 'what', what_));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -2298,6 +2304,7 @@ create procedure DB.DBA.RDF_LOAD_GETSATISFATION(in graph_iri varchar, in new_ori
 			vector ('baseUri', RDF_SPONGE_DOC_IRI (base_uri), 'what', what_));
 	}
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, base_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -2314,6 +2321,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLEBASE (in graph_iri varchar, in new_origin
   xd := xtree_doc (_ret_body);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/googlebase2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -2380,6 +2388,7 @@ create procedure DB.DBA.RDF_LOAD_CRUNCHBASE(in graph_iri varchar, in new_origin_
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/crunchbase2rdf.xsl', xt,
 	  vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'base', base, 'suffix', suffix));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -2549,6 +2558,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       	vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'wpUri', sa));
       sa := '';
       xd := serialize_to_UTF8_xml (xt);
+      delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
       DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
       have_rdf := 1;
     }
@@ -2824,6 +2834,7 @@ create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri
 
     xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/zillow2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar) ));
     xd := serialize_to_UTF8_xml (xd);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
 	-- GetUpdatedPropertyDetails often returns error code 501:
@@ -2881,6 +2892,7 @@ create procedure DB.DBA.RDF_LOAD_FRIENDFEED (in graph_iri varchar, in new_origin
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/friendfeed2rdf.xsl', xt, vector ('baseUri', graph_iri, 'isDiscussion', 1));
     xd := serialize_to_UTF8_xml (xd);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
 }
@@ -2933,6 +2945,46 @@ create procedure DB.DBA.RDF_LOAD_TWFY (in graph_iri varchar, in new_origin_uri v
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_SLIDESIX (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xt, xd any;
+    declare developer_key_, username_, password_, url, tmp, ses, query varchar;
+    username_ := get_keyword ('username', opts);
+    password_ := get_keyword ('password', opts);
+    developer_key_ := get_keyword ('developerKey', opts);
+    if (not isstring (username_) and isstring (password_) and isstring (developer_key_))
+        return 0;        
+    declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+            return 0;
+    };
+    url := sprintf ('http://slidesix.com/api/SlideSix.cfc?method=authenticateUser&APIKEY=%s&LOGINUSER=%s&LOGINPASSWORD=%s&RETURNTYPE=XML', developer_key_, username_, md5(password_));
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    xd := xml_tree_doc(tmp);
+    ses := cast(xpath_eval('/USER/REMOTESESSIONTOKEN', xd) as varchar);
+    if (ses is null)
+        return 0;
+    if (new_origin_uri like 'http://slidesix.com/view/%')
+    {
+        tmp := sprintf_inverse (new_origin_uri, 'http://slidesix.com/view/%s', 0);
+        query := tmp[0];
+        if (query is null)
+            return 0;
+        url := sprintf ('http://slidesix.com/api/SlideSix.cfc?method=getSlideShows&APIKEY=%U&REMOTESESSIONTOKEN=%U&RETURNTYPE=XML&SEARCHSTRING=%U', developer_key_, ses, query);
+    }
+    else
+        return 0;
+    tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/slidesix2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    return 1;
 }
 ;
 
@@ -3163,6 +3215,7 @@ create procedure DB.DBA.RDF_LOAD_RHAPSODY (in graph_iri varchar, in new_origin_u
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/rhapsody2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -3215,6 +3268,7 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
 	style=>21));
     xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/tesco2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
     xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
 }
@@ -3274,6 +3328,7 @@ create procedure DB.DBA.RDF_LOAD_RADIOPOP (in graph_iri varchar, in new_origin_u
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/radiopop2rdf.xsl', xd,
 		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'user', id ));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
       }
@@ -3386,6 +3441,7 @@ create procedure DB.DBA.RDF_LOAD_LIBRARYTHING (in graph_iri varchar, in new_orig
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/lt2rdf.xsl', xd,
   	vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -3498,6 +3554,7 @@ create procedure DB.DBA.RDF_LOAD_ISBN (in graph_iri varchar, in new_origin_uri v
 	}
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/isbn2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4053,6 +4110,7 @@ create procedure DB.DBA.RDF_LOAD_GEONAMES (in graph_iri varchar, in new_origin_u
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/geonames2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4167,6 +4225,7 @@ create procedure DB.DBA.RDF_LOAD_DIGG (in graph_iri varchar, in new_origin_uri v
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/digg2rdf.xsl', xd,
       		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'storyUrl', story_url));
       xd := serialize_to_UTF8_xml (xt);
+      delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
       DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
       return 1;
     }
@@ -4316,6 +4375,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT (in graph_iri varchar, in new_o
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_document2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4371,6 +4431,7 @@ create procedure DB.DBA.RDF_LOAD_GOOGLE_SPREADSHEET (in graph_iri varchar, in ne
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/google_spreadsheet2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', 'doc'));
 	xd2 := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd2, new_origin_uri, coalesce (dest, graph_iri));
 
 	ids := xpath_eval ('/feed/entry/link[@rel="http://schemas.google.com/spreadsheets/2006#cellsfeed"]/@href', xd, 0);
@@ -4425,6 +4486,7 @@ create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_ur
 	xd := xtree_doc (tmp, 2);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/oreilly2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4503,6 +4565,7 @@ create procedure DB.DBA.RDF_LOAD_CNET (in graph_iri varchar, in new_origin_uri v
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/cnet2rdf.xsl', xd,
 	    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4534,6 +4597,7 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/yelp2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4566,6 +4630,7 @@ create procedure DB.DBA.RDF_LOAD_REVYU (in graph_iri varchar, in new_origin_uri 
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/revyu2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
+        delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
@@ -4594,6 +4659,7 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bugzilla2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -4626,6 +4692,7 @@ create procedure DB.DBA.RDF_LOAD_OPENLIBRARY (in graph_iri varchar, in new_origi
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/openlibrary2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -4648,6 +4715,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
   xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/sg2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -4716,6 +4784,7 @@ create procedure DB.DBA.RDF_LOAD_SVG (in graph_iri varchar, in new_origin_uri va
   xd := xtree_doc (_ret_body);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/svg2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -4738,6 +4807,7 @@ create procedure DB.DBA.RDF_LOAD_MS_DOCUMENT (in graph_iri varchar, in new_origi
   xt := xtree_doc (meta);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ms_doc2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
   string_to_file (tmp, _ret_body, -2);
@@ -4770,6 +4840,7 @@ create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origi
   xt := xtree_doc (meta);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/oo2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -4874,6 +4945,7 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bestbuy2rdf.xsl', xd,
     vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
   xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri); 
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
