@@ -872,6 +872,7 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
       if (strstr (ret_content_type, 'application/rdf+xml') is not null)
         return 'application/rdf+xml';
       if (
+        strstr (ret_content_type, 'text/n3') is not null or
         strstr (ret_content_type, 'text/rdf+n3') is not null or
         strstr (ret_content_type, 'text/rdf+ttl') is not null or
         strstr (ret_content_type, 'text/rdf+turtle') is not null or
@@ -908,7 +909,11 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
           -- dbg_obj_princ ('l = ', l);
           if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
             return 'text/rdf+n3';
-          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and ("RIGHT" (origin_uri, 4) in ('.ttl', '.TTL', '.n3', '.N3')))
+          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and
+	      (
+	       "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL') or
+	       "RIGHT" (origin_uri, 3) in ('.n3', '.N3', '.nt', '.NT')
+	      ))
             return 'text/rdf+n3';
           if (not ((l like '#%') or (l='')))
             return 'text/plain';
@@ -1112,6 +1117,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     }
   else if (
        strstr (ret_content_type, 'text/rdf+n3') is not null or
+       strstr (ret_content_type, 'text/n3') is not null or
        strstr (ret_content_type, 'text/rdf+ttl') is not null or
        strstr (ret_content_type, 'text/rdf+turtle') is not null or
        strstr (ret_content_type, 'text/turtle') is not null or
@@ -1124,7 +1130,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri), 255);
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
