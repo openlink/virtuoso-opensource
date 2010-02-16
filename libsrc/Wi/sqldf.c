@@ -3004,8 +3004,10 @@ sqlo_need_index_path (df_elt_t * tb_dfe)
 	  int op;
 	  if (dfe_is_o_ro2sq_range (pred, tb_dfe, &l, &r, &op))
 	    return 1;
+#if 0
 	  if (sqlo_in_list (pred, NULL, NULL))
 	    return 0;
+#endif
 	}
       END_DO_SET();
       pred = sqlo_key_part_best ( p_col, tb_dfe->_.table.col_preds, 0);

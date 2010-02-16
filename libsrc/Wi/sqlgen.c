@@ -224,34 +224,50 @@ dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
 
 
 void
-sqlg_in_list (sqlo_t * so, key_source_t * ks, dbe_column_t * col, df_elt_t ** in_list)
+sqlg_in_list (sqlo_t * so, key_source_t * ks, dbe_column_t * col, df_elt_t ** in_list, df_elt_t * pred)
 {
-  sql_comp_t * sc = so->so_sc;
+  sql_comp_t *sc = so->so_sc;
   dk_set_t code = NULL;
-  dbe_col_loc_t * cl;
-  search_spec_t * spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
+  dbe_col_loc_t *cl;
+  search_spec_t *spec = (search_spec_t *) dk_alloc (sizeof (search_spec_t));
   int inx;
-  SQL_NODE_INIT (in_iter_node_t, ii, in_iter_input, in_iter_free);
+  in_iter_node_t *ii_found = NULL;
+  DO_SET (in_iter_node_t *, ii_prev, &so->so_all_list_nodes)
+  {
+    if (ii_prev->ii_dfe == pred)
+      {
+	ii_found = ii_prev;
+	break;
+      }
+  }
+  END_DO_SET ();
   memset (spec, 0, sizeof (search_spec_t));
   spec->sp_col = col;
   spec->sp_collation = spec->sp_col->col_sqt.sqt_collation;
   spec->sp_max_op = CMP_NONE;
   spec->sp_min_op = CMP_EQ;
-  spec->sp_min_ssl = ssl_new_inst_variable (so->so_sc->sc_cc, "in_iter", col->col_sqt.sqt_dtp);
+  spec->sp_min_ssl = (ii_found ? ii_found->ii_output : ssl_new_inst_variable (so->so_sc->sc_cc, "in_iter", col->col_sqt.sqt_dtp));
   cl = key_find_cl (ks->ks_key, spec->sp_col->col_id);
   memcpy (&(spec->sp_cl), cl, sizeof (dbe_col_loc_t));
-  ii->ii_output = spec->sp_min_ssl;
   ks_spec_add (&ks->ks_spec.ksp_spec_array, spec);
-  ii->ii_nth_value = cc_new_instance_slot (so->so_sc->sc_cc);
-  ii->ii_values_array = ssl_new_inst_variable (so->so_sc->sc_cc, "values_list", DV_ARRAY_OF_POINTER);
-  ii->ii_values = (state_slot_t **) dk_alloc_box_zero (sizeof (caddr_t) * (BOX_ELEMENTS (in_list) - 1), DV_BIN);
-  for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+
+  if (!ii_found)
     {
-      ii->ii_values[inx - 1] = scalar_exp_generate (so->so_sc, in_list[inx]->dfe_tree, &code);
+      SQL_NODE_INIT (in_iter_node_t, ii, in_iter_input, in_iter_free);
+      ii->ii_output = spec->sp_min_ssl;
+      ii->ii_nth_value = cc_new_instance_slot (so->so_sc->sc_cc);
+      ii->ii_values_array = ssl_new_inst_variable (so->so_sc->sc_cc, "values_list", DV_ARRAY_OF_POINTER);
+      ii->ii_values = (state_slot_t **) dk_alloc_box_zero (sizeof (caddr_t) * (BOX_ELEMENTS (in_list) - 1), DV_BIN);
+      ii->ii_dfe = pred;
+      for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+	{
+	  ii->ii_values[inx - 1] = scalar_exp_generate (so->so_sc, in_list[inx]->dfe_tree, &code);
+	}
+      sqlg_pre_code_dpipe (so, &code, (data_source_t *) ii);
+      ii->src_gen.src_pre_code = code_to_cv (so->so_sc, code);
+      t_set_push (&so->so_all_list_nodes, (void *) ii);
+      t_set_push (&so->so_in_list_nodes, (void *) ii);
     }
-  sqlg_pre_code_dpipe (so, &code, (data_source_t *)ii);
-  ii->src_gen.src_pre_code = code_to_cv (so->so_sc, code);
-  t_set_push (&so->so_in_list_nodes, (void*) ii);
 }
 
 
@@ -320,7 +336,7 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	}
       else if ((in_list = sqlo_in_list (cp, NULL, NULL)))
 	{
-	  sqlg_in_list (so, ks, col, in_list);
+	  sqlg_in_list (so, ks, col, in_list, cp);
 	  goto next_part;
 	}
       else

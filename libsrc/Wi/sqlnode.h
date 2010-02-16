@@ -637,6 +637,7 @@ typedef struct  in_iter_node_s
   state_slot_t *	ii_values_array;
   state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   int		ii_nth_value;
+  void 	       *	ii_dfe;
 } in_iter_node_t;
 
 

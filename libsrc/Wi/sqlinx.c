@@ -291,8 +291,9 @@ sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * 
 int
 dfe_is_eq_pred (df_elt_t * pred)
 {
-  return (pred && (DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type)
-	  && BOP_EQ == pred->_.bin.op);
+  return (pred && (
+		((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)
+		|| sqlo_in_list (pred, NULL, NULL))) ;
 }
 
 
@@ -876,7 +877,7 @@ table_source_input_rdf_range (table_source_t * ts, caddr_t * inst, caddr_t * sta
 }
 
 
-data_source_t * sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic);
+data_source_t * sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, int last);
 
 
 table_source_t *
@@ -890,7 +891,7 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
   r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range);
   r_ts->ts_is_alternate = TS_ALT_PRE;
   dfe_list_set_placed (ic->ic_o_range_ref_ic->ic_col_preds, DFE_PLACED);
-  range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic);
+  range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic, 0);
   range_ref_ts->ts_is_alternate = TS_ALT_POST;
   ref_ks = range_ref_ts->ts_order_ks;
   ref_ks->ks_out_cols = dk_set_copy (org_ts->ts_order_ks->ks_out_cols);
@@ -906,9 +907,9 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
 
 
 df_elt_t **
-sqlo_and_list_body_from_positions (sqlo_t * so, locus_t * loc, df_elt_t * tb, dk_set_t pred_pos)
+sqlo_and_list_body_from_positions (sqlo_t * so, locus_t * loc, df_elt_t * tb, dk_set_t pred_pos, dk_set_t in_list)
 {
-  int len = dk_set_length (pred_pos);
+  int len = dk_set_length (pred_pos) + (in_list ? dk_set_length (in_list) : 0);
   if (len)
     {
       int inx = 1;
@@ -919,6 +920,14 @@ sqlo_and_list_body_from_positions (sqlo_t * so, locus_t * loc, df_elt_t * tb, dk
 	  terms[inx++] = tb->_.table.join_test[pos + 1];
 	}
       END_DO_SET();
+      if (in_list)
+	{
+	  DO_SET (df_elt_t *, in, &in_list)
+	    {
+	      terms[inx++] = (df_elt_t*) t_list (2, DFE_PRED_BODY, in);
+	    }
+	  END_DO_SET();
+	}
       return terms;
     }
   else
@@ -937,9 +946,48 @@ sqlg_ic_tsa_out_cols (df_elt_t * tb_dfe, index_choice_t * ic)
   END_DO_SET();
 }
 
+void
+sqlg_get_non_index_ins (df_elt_t * tb_dfe, dk_set_t * set)
+{
+  /* get the in preds that are not indexed in the after test */
+  DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
+    {
+      if (DFE_GEN != cp->dfe_is_placed && sqlo_in_list (cp, NULL, NULL))
+	{
+	  t_set_push (set, (void *)cp);
+	}
+    }
+  END_DO_SET();
+}
+
+
+void
+sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t * ks)
+{
+  /* videte et credite.  A fucking in iter over a key of a previous ks. If no pk ref inx, got to recheck the fucking col of the in pred. cause not joined on a unique key between inxes. */
+  DO_SET (in_iter_node_t *, ii, &prev_in_iters)
+    {
+      df_elt_t ** in_list = sqlo_in_list (ii->ii_dfe, NULL, NULL);
+      DO_SET (dbe_column_t *, col, &ks->ks_key->key_parts)
+	{
+	  if (col == in_list[0]->_.col.col)
+	    {
+	      NEW_VARZ (search_spec_t, sp);
+	      sp->sp_min_ssl = ii->ii_output;
+	      sp->sp_min_op = CMP_EQ;
+	      sp->sp_next = ks->ks_row_spec;
+	      ks->ks_row_spec = sp;
+	      sp->sp_cl = *key_find_cl (ks->ks_key, col->col_id);
+	    }
+	}
+      END_DO_SET();
+    }
+  END_DO_SET();
+}
+
 
 data_source_t *
-sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
+sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, int last)
 {
   sql_comp_t * sc = so->so_sc;
   comp_context_t *cc = so->so_sc->sc_cc;
@@ -948,12 +996,13 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
   op_table_t * ot = tb_dfe->_.table.ot;
   dbe_table_t *table = ot->ot_table;
   dbe_key_t *order_key = ic->ic_key;
+  dk_set_t in_list = NULL;
+  dk_set_t prev_in_iters = so->so_in_list_nodes;
   SQL_NODE_INIT (table_source_t, ts, table_source_input, ts_free);
   sqlg_ic_tsa_out_cols (tb_dfe, ic);
   tb_dfe->_.table.col_preds = ic->ic_col_preds;
   if (HR_FILL == tb_dfe->_.table.hash_role)
     so->so_sc->sc_order = TS_ORDER_NONE;
-  so->so_in_list_nodes = NULL;
   DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
     {
       df_elt_t *vc_dfe =  sqlo_df_virt_col (so, vc);
@@ -993,6 +1042,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     }
   ts->ts_order_cursor = ssl_new_itc (cc);
 
+  if (!last)
   sqlg_non_index_ins (tb_dfe);
 
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
@@ -1001,6 +1051,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     ts->ts_is_unique = ic->ic_is_unique;
 
   if (order_ks)
+  sqlg_in_iter_add_after_test (so, prev_in_iters, order_ks);
     ks_set_search_params (cc, NULL, order_ks);
   if (ic->ic_text_pred)
     {
@@ -1013,8 +1064,12 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     }
   if (tb_dfe->_.table.xpath_node)
     sql_node_append ((data_source_t**) &ts, tb_dfe->_.table.xpath_node);
+  /* list of all ins that are not iterators */
+  if (last)
+    sqlg_get_non_index_ins (tb_dfe, &in_list);
+  else
   sqlg_non_index_ins (tb_dfe);
-  ts->src_gen.src_after_test = sqlg_pred_body (so, sqlo_and_list_body_from_positions (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, ic->ic_after_preds));
+  ts->src_gen.src_after_test = sqlg_pred_body (so, sqlo_and_list_body_from_positions (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, ic->ic_after_preds, in_list));
   if (ts->ts_is_unique)
     ts->src_gen.src_input = (qn_input_fn) table_source_input_unique;
 
@@ -1054,9 +1109,10 @@ sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe)
   table_source_t * last_ts = NULL;
   char ord =so->so_sc->sc_order;
   so->so_sc->sc_order = ord;
+  so->so_in_list_nodes = NULL;
   DO_SET (index_choice_t *, ic, &tb_dfe->_.table.index_path)
     {
-      ts = sqlg_make_1_ts (so, tb_dfe, ic);
+      ts = sqlg_make_1_ts (so, tb_dfe, ic, nxt ? 0 : 1);
       last_ts = (table_source_t *) ts;
       if (!ret_ts)
 	ret_ts = ts;
