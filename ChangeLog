@@ -1,3 +1,296 @@
+2010-02-16 13:49  source
+
+	* Added slidesix cartridge
+	* Fixed run microformats independent of rdfa
+
+2010-02-16 13:48  source
+
+	* Fixed owl:sameAS is not a:id
+
+2010-02-16 13:48  source
+
+	* Fixed minor issues
+
+2010-02-16 13:48  source
+
+	* Rolled back fix for GR data
+
+2010-02-16 13:46  source
+
+	file slidesix2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-02-16 13:49:30 +0000
+
+2010-02-16 12:47  source
+
+	* Fixed leave semaphore before jump
+
+2010-02-16 11:58  source
+
+	* Fixed detection of n3 and nt formats
+
+2010-02-15 21:23  source
+
+	* Fixed use macro
+
+2010-02-15 19:46  source
+
+	* FIxed GPF when 2nd argument is not a string
+
+2010-02-15 19:46  source
+
+	* Fixed inx int not applicable to keys with no pk ref
+
+2010-02-15 10:05  source
+
+	* Fixed problem with shared files
+
+2010-02-12 22:14  source
+
+	* Fixed bad array index check
+
+2010-02-12 22:13  source
+
+	* Added option for user WebID
+
+2010-02-12 22:12  source
+
+	* Fixed table editing fields
+
+2010-02-12 20:05  source
+
+	* Fixed NT serializations (_:_ is not a valid bnode in NT so it is
+	  replaced with _:ResultSet2053 )
+
+2010-02-12 13:00  source
+
+	* Updated version to 3127
+
+2010-02-12 12:56  source
+
+	* Rebuild driver
+
+2010-02-12 12:56  source
+
+	* Fixed use bitmask check
+
+2010-02-12 11:53  source
+
+	* Fixed combination of RDF_OBJ_OF_LONG(RDF_LONG_OF_SQLVAL(string))
+	  that screwed up RDF_DELETE_TRIPLES_AGG()
+
+2010-02-12 11:20  source
+
+	* Added "Create New Resource" option
+
+2010-02-12 11:20  source
+
+	* Fixed always refresh robot status
+
+2010-02-12 10:34  source
+
+	* Regenerated drivers
+
+2010-02-12 10:26  source
+
+	* Fixed issues with Literal data
+	* Small bugfixes
+
+2010-02-11 23:23  source
+
+	* Updated documentation
+
+2010-02-11 23:17  source
+
+	* Fixed serialize ha_hits hash lookups
+
+2010-02-11 16:25  source
+
+	* Fixed bug with ITF-8 encoded strings in box
+
+2010-02-11 14:00  source
+
+	* Fixed codegen in LIMIT ?:global-variable and OFFSET ?:global-variable
+
+2010-02-11 13:19  source
+
+	* Added new demo queries
+
+2010-02-11 13:16  source
+
+	* Added 'create file' action
+
+2010-02-11 13:16  source
+
+	file filenew_32.png was added on branch V6_0_0-DEVEL on 2010-02-11 13:17:24 +0000
+
+2010-02-11 13:16  source
+
+	file gray_filenew_32.png was added on branch V6_0_0-DEVEL on 2010-02-11 13:17:24 +0000
+
+2010-02-11 13:15  source
+
+	* Fixed removed status bar
+
+2010-02-10 22:18  source
+
+	* Fixed DAV path normalize
+	* Fixed Feeds rights
+	* Fixed UI Profile JS
+	* Fixed UI Profile pages
+
+2010-02-10 22:17  source
+
+	* Fixed WebID selection
+	* Fixed calling proc from packages other than Framework
+
+2010-02-10 22:11  source
+
+	file tbl.js was added on branch V6_0_0-DEVEL on 2010-02-10 22:17:52 +0000
+
+2010-02-10 22:11  source
+
+	file webid_select.vspx was added on branch V6_0_0-DEVEL on 2010-02-10 22:17:52 +0000
+
+2010-02-10 22:09  source
+
+	* Fixed Anotea, CSS
+	* Fixed Annotation SIOC Data
+
+2010-02-10 22:06  source
+
+	file tbl.js was added on branch V6_0_0-DEVEL on 2010-02-10 22:18:53 +0000
+
+2010-02-10 16:10  source
+
+	* Fixed move assignment of oplval_len before jump since we know
+	  oplval_strval is a string box already
+
+2010-02-10 16:09  source
+
+	* Fixed whitespace
+
+2010-02-10 16:08  source
+
+	* Fixed compiler warning about possible uninitialized vars
+
+2010-02-10 16:05  source
+
+	* Fixed typo in if expression
+
+2010-02-10 16:05  source
+
+	* Fixed use err_ret
+
+2010-02-10 16:04  source
+
+	* Fixed should use int64 type
+
+2010-02-10 14:05  source
+
+	* Fixed SPARQL_SELECT_KNOWN_GRAPHS
+
+2010-02-10 14:04  source
+
+	* Fixed define dpipe before anything else is called
+
+2010-02-10 12:58  source
+
+	* Fixed check for array boundary
+
+2010-02-10 12:57  source
+
+	* Fixed compiler warnings
+
+2010-02-10 11:03  source
+
+	* Added DKS box serialization flag DKS_TO_HA_DISK_ROW to preserve
+	  box flags in procedure views temp tables
+
+2010-02-10 11:03  source
+
+	* Fixed missing initialization in calculation of cost and cardinality
+
+2010-02-09 17:38  source
+
+	* Fixed workaround for non-iri g1
+
+2010-02-09 17:37  source
+
+	* Fixed check to include iri_to_id
+
+2010-02-09 16:11  source
+
+	* Fixed bug with UTF-8 encoded strings
+
+2010-02-09 15:13  source
+
+	* Added new SPARQL endpoints
+	* Added missing file
+	* FIxed missing execute permalink
+	* Fixed css to make tab effect more consistent
+
+2010-02-09 15:11  source
+
+	* Fixed do not make an artm op 0-n for neg literal -n
+
+2010-02-09 14:47  source
+
+	* Fixed check against abnormally big number of distinct datatypes
+	  or languages
+
+2010-02-09 14:46  source
+
+	file defaults.vsp was added on branch V6_0_0-DEVEL on 2010-02-09 15:13:31 +0000
+
+2010-02-09 14:34  source
+
+	* Fixed version number in http headers
+
+2010-02-09 14:33  source
+
+	* Fixed check trans node max mem when reading rows
+
+2010-02-09 14:23  source
+
+	* Fixed mem leaks in client
+
+2010-02-09 11:39  source
+
+	* Fixed memory leak in trans node compilation
+
+2010-02-08 21:24  source
+
+	* Added protection against abnormally bif number of distinct datatypes
+	  or languages
+
+2010-02-08 21:22  source
+
+	* Fixed SQL codegen for NOT() retval expression
+
+2010-02-08 21:22  source
+
+	* Fixed memory leak
+
+2010-02-08 12:38  source
+
+	* FIxed gpf in serializer when using default constand
+	* Fixed gpf when type is bad or zero
+
+2010-02-08 12:34  source
+
+	* Fixed log replay for rdfs_load_schema on cluster
+
+2010-02-08 12:33  source
+
+	* Fixed loading literals of type xsd:Token
+
+2010-02-03 20:49  source
+
+	* Updated version to 6.1.0 for final release
+
+2010-02-03 20:37  source
+
+	* Removed deprecated directory
+
 2010-02-03 19:39  source
 
 	* Updated version to 06.01
