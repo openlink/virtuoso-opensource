@@ -6236,8 +6236,12 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
 	  char szPort[10];
 	  if (!getsockname (tcpses_get_fd (ws->ws_session->dks_session), (struct sockaddr *)&sa, &len))
 	    {
-	      snprintf (szPort, sizeof (szPort), ":%u", ntohs (sa.sin_port));
-	      SES_PRINT (out, szPort);
+	      uint16 port = ntohs (sa.sin_port);
+	      if ((is_https && port != 443) || (!is_https && port != 80))
+		{
+		  snprintf (szPort, sizeof (szPort), ":%u", port);
+	          SES_PRINT (out, szPort);
+	        }
 	    }
 	}
       if (szHost != szHostBuffer)
