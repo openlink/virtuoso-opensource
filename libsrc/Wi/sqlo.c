@@ -1955,6 +1955,15 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 	  res ++;
 	}
     }
+  else if (ST_P (tree, CALL_STMT))
+    {
+      int inx;
+      DO_BOX (ST *, par, inx, tree->_.call.params)
+	{
+	  res += sqlo_expand_jts (so, &par, select_stmt, was_top);
+	}
+      END_DO_BOX;
+    }
   else if (ARRAYP (tree))
     {
       int inx;
@@ -2291,11 +2300,24 @@ sqlo_bop_expand_or_exp (sqlo_t *so, ST *tree)
 static void
 sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST *** group, op_table_t *dt_ot)
 {
-  int inx;
+  int inx, has_nulls = 0;
+  dk_set_t non_null_gb_cols = NULL;
+
   if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
   else if (ST_P (tree, FUN_REF))
     return;
+  /* when NULLs are in group by list we remove them as they not affect the grouping */
+  DO_BOX (ST *, spec, inx, group[0])
+    {
+      if (ST_P (spec, ORDER_BY) && DV_DB_NULL == DV_TYPE_OF (spec->_.o_spec.col))
+	has_nulls += 1;
+      else
+	non_null_gb_cols = dk_set_conc (non_null_gb_cols, t_cons ((void *) spec, NULL));
+    }
+  END_DO_BOX;
+  if (has_nulls)
+    *group = (ST **) t_list_to_array (non_null_gb_cols);
   DO_BOX (ST *, spec, inx, (*group))
     {
       if (box_equal ((box_t) tree, (box_t) spec->_.o_spec.col))
