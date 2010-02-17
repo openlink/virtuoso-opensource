@@ -51,7 +51,8 @@
         ?>
       </table>
     </div><!--  #content -->
-    <div>You may also use the <a href="/sparql">SPARQL endpoint</a> and the <a href="/isparql">iSPARQL Query Editor</a>.<br/>
+<!-- # and the <a href="/isparql">iSPARQL Query Editor</a>.-->
+    <div>You may also use the <a href="/sparql">SPARQL endpoint</a>.<br/>
 For your convenience we have a set of <a href="nspref.vsp">predefined name space prefixes</a>.</div>
     <div id="footer">
       <div id="ft_b">

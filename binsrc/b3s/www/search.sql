@@ -210,8 +210,8 @@ create procedure head_get (in num varchar)
     vector ('Geometry URI', 'Latitude', 'Longitude'),
     vector ('SKOS Broader', 'SKOS Narrower', 'SKOS Level', 'Entity URI', 'Entity Name', 'Geo Point'),
     vector ('Resource URI', 'Name', 'Location'),
-    vector ('First City Location', 'Second City Location', 'Distance'),
-    vector ('Institution URI', 'Name', 'Established' ,'Location')
+    vector ('First City Name', 'First City Location', 'Second City Name', 'Second City Location', 'Distance'),
+    vector ('Institution URI', 'Name', 'Established' ,'Latitude', 'Longitude')
   );
   t2 := vector (
     vector (),
@@ -990,7 +990,7 @@ s3 := '\')) .
     validate_input(val);
     validate_input(val2);
 
-    s1 := 'sparql SELECT ?nyl ?ln ( bif:st_distance( ?nyl, ?ln ) ) AS ?distanceBetweenNewYorkCityAndLondon ' ||
+    s1 := 'sparql SELECT ?nylLabel ?nyl ?lnLabel ?ln (bif:round ( bif:st_distance( ?nyl, ?ln ) ) ) AS ?distanceBetweenNewYorkCityAndLondon ' ||
           ' FROM <http://dbpedia.org> ' ||
           ' WHERE ' ||
           '  { ' ||
@@ -999,7 +999,7 @@ s3 := '\')) .
     s3 := '> geo:geometry ?nyl . ' ||
          '<';
     s4 := val2;
-    s5 := '>  geo:geometry ?ln } ';
+    s5 := concaT('>  geo:geometry ?ln .  <', s2, '> rdfs:label ?nylLabel .  <', s4, '> rdfs:label ?lnLabel } ');
     query := concat('', s1, s2, s3, s4, s5, '');
   }
   else if ( smode='20' )
@@ -1014,16 +1014,18 @@ s3 := '\')) .
     validate_input(val3);
     validate_input(val4);
 
-    s1 := 'sparql SELECT DISTINCT ?thing AS ?uri ?thingLabel AS ?name ?date AS ?established ?matchgeo AS ?location ' ||
+    s1 := 'sparql SELECT DISTINCT ?thing AS ?uri ?thingLabel AS ?name ?date AS ?established ?lat ?long  ' ||
           'WHERE ' ||
           ' { ' ||
           '   <';
     s2 := val;
     s3 := '> geo:geometry ?sourcegeo . ' ||
           ' ?resource geo:geometry ?matchgeo . ' ||
+          ' ?resource geo:lat ?lat . ' ||
+          ' ?resource geo:long ?long . ' ||
           ' FILTER( bif:st_intersects( ?matchgeo, ?sourcegeo, ';
     s4 := concat (val2, ' ) ) . ?thing ?somelink ?resource . ?thing <', val3);
-    s5 := concat('> ?date . ?thing rdfs:label ?thingLabel . FILTER( lang( ?thingLabel ) = "', val4, '" ) } ORDER BY ASC( ?date )');
+    s5 := concat('> ?date . ?thing rdfs:label ?thingLabel . FILTER( lang( ?thingLabel ) = "', val4, '" ) } ');
     query := concat('', s1, s2, s3, s4, s5, '');
   }
   --smode > 99 is reserved for drill-down queries

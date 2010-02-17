@@ -351,6 +351,21 @@
           </tr>
       </table>
     </div><!--  #content -->
+    <div id="isparql-results">
+      <table class="description">
+        <tr>
+          <td>
+            <?vsp
+               if (squery <> '' and squery is not null){
+                 squery := ltrim(squery, 'sparql ');
+                 http (sprintf('&nbsp;<b><a href="/isparql/view/?query=%U&endpoint=/sparql&maxrows=50&default-graph-uri=" target="_blank">View iSPARQL Result</a></b>',squery));
+               }
+            ?>
+          </td>
+       </tr>
+     </table>
+    </div>
+
     <div id="homelink">
       <table class="description">
         <tr>
