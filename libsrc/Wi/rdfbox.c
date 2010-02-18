@@ -1263,15 +1263,12 @@ rdf_box_hash (caddr_t box)
 {
   rdf_box_t *rb = (rdf_box_t *)box;
   rdf_box_audit (rb);
+  if (0 != rb->rb_ro_id)
+    return rb->rb_ro_id + (rb->rb_ro_id << 16);
   if (rb->rb_is_complete && rb->rb_type >= RDF_BOX_DEFAULT_TYPE)
     {
       if ((RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
         return box_hash (rb->rb_box);
-    }
-  else
-    {
-      if (0 != rb->rb_ro_id)
-        return rb->rb_ro_id + (rb->rb_ro_id << 16);
     }
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +
     (rb->rb_chksum_tail ?
