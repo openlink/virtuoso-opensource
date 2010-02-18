@@ -1729,7 +1729,7 @@ dbs_cpt_backup (void)
 	continue;
       cpt_bkp = hash_table_allocate (101);
       cpt_log_fd = fd_open (dbs->dbs_cpt_file_name, OPEN_FLAGS);
-      ftruncate (cpt_log_fd, 0);
+      FTRUNCATE (cpt_log_fd, 0);
       LSEEK (cpt_log_fd, 0, SEEK_SET);
       tcpses_set_fd (ses->dks_session, cpt_log_fd);
       dbs->dbs_cpt_recov_ses = ses;

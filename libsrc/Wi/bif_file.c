@@ -1197,7 +1197,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
                   char path [PATH_MAX];
 		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
-		  stat (path, &st);
+		  V_STAT (path, &st);
 		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
 		    hit = 1; /* Different values of \c hit are solely for debugging purposes */
 		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
@@ -2620,7 +2620,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef WIN32
   strcat_ck (full_exe_name, ".exe");
 #endif
-  if (-1 == stat (full_exe_name, &st))
+  if (-1 == V_STAT (full_exe_name, &st))
     {
       sqlr_new_error ("42000", "SR408",
 	  "Required executable '%s' does not exist, error %d", full_exe_name,

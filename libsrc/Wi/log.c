@@ -496,7 +496,7 @@ log_final_transact(lock_trx_t* lt, int is_commit)
     {
       struct stat st;
       int fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
-      fstat (fd, &st);
+      V_FSTAT (fd, &st);
       LSEEK (fd, lt->lt_2pc._2pc_logged, SEEK_SET);
       write (fd, is_commit ? LOG_2PC_COMMIT_S : LOG_2PC_ABORT_S ,1);
       LSEEK (fd, 0, SEEK_END);
@@ -654,7 +654,7 @@ log_cl_final(lock_trx_t* lt, int is_commit)
 	{
 	  OFF_T end;
 	  fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
-	  fstat(fd,&st);
+	  V_FSTAT(fd,&st);
 	  if (lt->lt_commit_flag_offset !=  LSEEK(fd,lt->lt_commit_flag_offset,SEEK_SET))
 	    GPF_T1 ("failed lseek in cl commit final");
 	  write(fd, &s, 1);

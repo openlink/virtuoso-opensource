@@ -842,7 +842,7 @@ backup_prepare (query_instance_t * qi, char * file)
         }
     }
 
-  ftruncate (fd, 0);
+  FTRUNCATE (fd, 0);
   tcpses_set_fd (ses->dks_session, fd);
 
   log_info ("Backup to %s started", fname);

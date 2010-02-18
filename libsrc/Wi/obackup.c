@@ -2234,7 +2234,7 @@ caddr_t * ob_file_list (char * fname)
 	      if (strlen (fname) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
 		{
 		  snprintf (path, sizeof (path), "%s/%s", fname, DIRNAME (de));
-		  stat (path, &st);
+		  V_STAT (path, &st);
 		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
 		    dk_set_push (&dir_list,
 			box_dv_short_string (DIRNAME (de)));
