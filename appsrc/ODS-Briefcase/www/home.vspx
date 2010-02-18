@@ -921,6 +921,7 @@
           }
           else if (get_keyword ('URI', _params, '') <> '')
           {
+            self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, 'public');
             self.command_push (10, 5);
             self.dav_source := 1;
           }
@@ -1834,7 +1835,7 @@
                       acl := acl_values[N];
                                 if (self.dav_enable and (acl[1] <> 3))
                                 {
-                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s"}, fld_2: {mode: 45, value: %d}, fld_3: {mode: 44, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s"}, fld_2: {mode: 45, value: %d, objectType: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 } else {
                                   http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 }
@@ -1847,7 +1848,7 @@
                       </td>
                       <td valign="top" nowrap="nowrap">
                         <vm:if test="self.dav_enable">
-                          <span class="button3 pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 45, value: 1}, fld_3: {mode: 44, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 44,  suffix: '_deny', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button3 pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 45, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 44, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 44,  suffix: '_deny', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </vm:if>
                       </td>
                     </tr>
@@ -1861,7 +1862,7 @@
                         <td width="100%">
                           <table id="f_tbl" class="form-list" style="width: 100%;" cellspacing="0">
                             <tr>
-                              <th width="1%" nowrap="nowrap">Acces Type</th>
+                              <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
                               <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
                               <vm:if test="self.dav_enable">
