@@ -1211,39 +1211,32 @@ again:
   else
   {
     -- SIOC channel
-    declare is_xml integer;
-    declare sql, st, msg, meta, rows any;
-    {
-      declare continue handler for SQLSTATE '*' {
-        is_xml := 0;
-      };
-      is_xml := 1;
-      if (isentity (xt))
-        DB.DBA.RDF_LOAD_RDFXML (ENEWS.WA.xml2string (xt), '', uri);
-    }
-    if (is_xml) {
+    declare graph, sql, rows varchar;
+
+    set_user_id ('dba');
+    graph := ENEWS.WA.graph_create ();
+    sql := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%s> where { ?s ?p ?o }', graph, uri);
+    -- sql := sprintf ('sparql load <%s> into graph <%s>', uri, graph);
+    ENEWS.WA.exec_sparql (sql, 1);
+
       sql := sprintf(
              'SPARQL
-              PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-              PREFIX sioc: <http://rdfs.org/sioc/ns#>
+            define input:storage ""
+            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            prefix sioc: <http://rdfs.org/sioc/ns#>
               SELECT distinct ?channel, ?post
               FROM <%s>
               WHERE {
                       ?channel sioc:container_of ?post .
-                    }
-             ', uri);
-      st := '00000';
-      exec (sql, st, msg, vector (), 0, meta, rows);
-      if ('00000' = st)
-      {
+                  }', graph);
+    rows := ENEWS.WA.exec_sparql (sql, 1);
         L := length (rows);
         foreach (any row in rows) do
-          ENEWS.WA.process_sioc_item(uri, row[1], id);
-      }
-      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (uri);
+    {
+      ENEWS.WA.process_sioc_item (graph, row[1], id);
     }
+    ENEWS.WA.graph_clear (graph);
   }
-
   return L;
 }
 ;
@@ -1254,15 +1247,7 @@ create procedure ENEWS.WA.process_rss_item(
   inout xt any,
   inout feed_id integer)
 {
-  declare
-    title,
-    description,
-    link,
-    guid,
-    pubdate,
-    comment_api,
-    comment_rss,
-    author varchar;
+  declare title, description, link, guid, pubdate, comment_api, comment_rss, author varchar;
 
   title := serialize_to_UTF8_xml (xpath_eval ('string(/item/title)', xt, 1));
   description := xpath_eval ('[ xmlns:content="http://purl.org/rss/1.0/modules/content/" ] string(/item/content:encoded)', xt, 1);
@@ -1297,24 +1282,15 @@ create procedure ENEWS.WA.process_atom_item(
   inout xt any,
   inout feed_id integer)
 {
-  declare
-    title,
-    description,
-    link,
-    guid,
-    pubdate,
-    comment_api,
-    comment_rss,
-    author varchar;
-  declare
-    content,
-    contents any;
+  declare title, description, link, guid, pubdate, comment_api, comment_rss, author varchar;
+  declare content, contents any;
 
   title := serialize_to_UTF8_xml (xpath_eval ('string(/entry/title)', xt, 1));
   if (xpath_eval ('/entry/content[@type = "application/xhtml+xml" or @type="xhtml"]', xt) is not null)
   {
     contents := xpath_eval ('/entry/content/*', xt, 0);
-    if (length(contents) = 1) {
+    if (length (contents) = 1)
+    {
       description := ENEWS.WA.xml2string(contents[0]);
     } else {
       description := '<div>';
@@ -1354,43 +1330,45 @@ create procedure ENEWS.WA.process_atom_item(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.process_sioc_item (
-  inout channel any,
+  inout graph any,
   inout post any,
   inout feed_id integer)
 {
   declare N integer;
   declare postUri, title, description, link, created, author, comment_api, comment_rss, tags varchar;
   declare content any;
-  declare S, sql, st, msg, meta, rows any;
+  declare S, sql, rows any;
 
   if (exists (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and EFI_GUID = post))
     return;
 
-  S := 'SPARQL
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX sioc: <http://rdfs.org/sioc/ns#>
-        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-        PREFIX dct: <http://purl.org/dc/elements/1.1/>
-        PREFIX dcc: <http://purl.org/dc/terms/>
-        SELECT distinct ?link, ?title, ?author, ?created, ?content, ?tag %s
+  sql := sprintf ('SPARQL
+                   define input:storage ""
+                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                   prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                   prefix sioc: <http://rdfs.org/sioc/ns#>
+                   prefix skos: <http://www.w3.org/2004/02/skos/core#>
+                   prefix dct: <http://purl.org/dc/elements/1.1/>
+                   prefix dcc: <http://purl.org/dc/terms/>
+                   SELECT distinct ?link, ?title, ?author, ?created, ?content, ?tag, ?seeAlso
         FROM <%s>
         WHERE {
-                %s
+                           OPTIONAL{ <%s> rdfs:seeAlso ?seeAlso }.
                 OPTIONAL{ <%s> sioc:link ?link }.
                 OPTIONAL{ <%s> dct:title ?title }.
                 OPTIONAL{ <%s> sioc:has_creator ?author }.
                 OPTIONAL{ <%s> dcc:created ?created }.
                 OPTIONAL{ <%s> sioc:content ?content }.
-                OPTIONAL{ <%s> sioc:topic ?topic }.
-                OPTIONAL{ ?topic skos:prefLabel ?tag }.
-              }';
-  sql := sprintf (S, ', ?seeAlso', channel, sprintf ('OPTIONAL{ <%s> rdfs:seeAlso ?seeAlso }.', post), post, post, post, post, post, post);
-  st  := '00000';
-  exec (sql, st, msg, vector (), 0, meta, rows);
-  if (('00000' = st) and (length (rows) > 0)) {
-    for (N := 0; N < length (rows); N := N + 1) {
-      if (N = 0) {
+                           OPTIONAL{ <%s> sioc:topic ?topic.
+                                     ?topic skos:prefLabel ?tag }.
+                         }', graph, post, post, post, post, post, post, post);
+  rows := ENEWS.WA.exec_sparql (sql, 1);
+  if (length (rows) > 0)
+  {
+    for (N := 0; N < length (rows); N := N + 1)
+    {
+      if (N = 0)
+      {
         link        := rows[N][0];
         title       := rows[N][1];
         author      := rows[N][2];
@@ -1401,49 +1379,12 @@ create procedure ENEWS.WA.process_sioc_item (
       if (not is_empty_or_null (rows[N][5]))
         tags := ENEWS.WA.tags_join(tags, rows[N][5]);
     }
-    if (not isnull(postUri)) {
-      -- SIOC channel
-
-      declare is_xml integer;
-      declare xt any;
-
-      commit work;
-      ENEWS.WA.channel_retrieve (postUri, xt);
-      {
-        declare continue handler for SQLSTATE '*' {
-          is_xml := 0;
-        };
-        is_xml := 1;
-        if (isentity (xt))
-          DB.DBA.RDF_LOAD_RDFXML (ENEWS.WA.xml2string (xt), postUri, postUri);
-      }
-      if (is_xml) {
-        sql := sprintf(S, '', postUri, '', post, post, post, post, post, post);
-        st := '00000';
-        exec (sql, st, msg, vector (), 0, meta, rows);
-        if (('00000' = st) and (length (rows) > 0)) {
-          for (N := 0; N < length (rows); N := N + 1) {
-            if (N = 0) {
-              link        := coalesce (link,        rows[N][0]);
-              title       := coalesce (title,       rows[N][1]);
-              author      := coalesce (author,      rows[N][2]);
-              created     := coalesce (created,     rows[N][3]);
-              description := coalesce (description, rows[N][4]);
-            }
-            if (not is_empty_or_null (rows[N][5]))
-              tags := ENEWS.WA.tags_join(tags, rows[N][5]);
-          }
-        }
-        delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (postUri);
-      }
-    }
-
     comment_api := null;
     comment_rss := null;
     content := null;
-    created := ENEWS.WA.dt_convert (created);
+    created := ENEWS.WA.dt_convert (coalesce (created, now()));
 
-    ENEWS.WA.process_insert(feed_id, title, description, link, link, created, comment_api, comment_rss, author, content, tags);
+    ENEWS.WA.process_insert(feed_id, title, description, post, post, created, comment_api, comment_rss, author, content, tags);
   }
   return;
 }
@@ -1464,9 +1405,8 @@ create procedure ENEWS.WA.process_insert(
   inout data any,
   in    tags any := null)
 {
-  declare errorCount, item_id, enclosure integer;
+  declare errorCount, item_id integer;
   declare item_tags varchar;
-
   declare exit handler for SQLSTATE '40001' {
     rollback work;
     if (errorCount > 5)
@@ -1474,7 +1414,7 @@ create procedure ENEWS.WA.process_insert(
     errorCount := errorCount + 1;
     goto _start;
   };
-
+  errorCount := 0;
 _start:
   if (isnull(guid) and not isnull(link))
     guid := link;
@@ -1486,20 +1426,11 @@ _start:
   if (exists (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and EFI_GUID = guid))
     return;
 
-  enclosure := 0;
-  --if (not isnull (data) and isentity (data) and not is_empty_or_null(cast (xpath_eval ('//enclosure/@url', data, 1) as varchar)))
-  --  enclosure := 1;
   insert into ENEWS.WA.FEED_ITEM(EFI_FEED_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_GUID, EFI_PUBLISH_DATE, EFI_COMMENT_API, EFI_COMMENT_RSS, EFI_AUTHOR, EFI_LAST_UPDATE, EFI_ENCLOSURE, EFI_DATA)
-    values(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, now(), enclosure, data);
+    values(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, now(), 0, data);
 
   item_id := (select EFI_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and EFI_GUID = guid);
-
-  -- post tags
-  if (isnull (tags)) {
-  item_tags := ENEWS.WA.tags_item (item_id);
-  } else {
-    item_tags := tags;
-  }
+  item_tags := case when isnull (tags) then ENEWS.WA.tags_item (item_id) else tags end;
 
   -- domain tags
   for (select EFD_DOMAIN_ID, EFD_TAGS from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id) do
@@ -1735,39 +1666,34 @@ create procedure ENEWS.WA.channels_get (
   else
   {
     -- SIOC channel
-    declare is_xml integer;
-    declare sql, st, msg, meta, rows any;
+    declare sql, graph, rows any;
 
-    {
-      declare continue handler for SQLSTATE '*' {
-        is_xml := 0;
-      };
-      is_xml := 1;
-      if (isentity (xt))
-        DB.DBA.RDF_LOAD_RDFXML (ENEWS.WA.xml2string (xt), uri, uri);
-    }
-    if (is_xml = 0)
-      goto _end;
+    set_user_id ('dba');
+    graph := ENEWS.WA.graph_create ();
+    -- sql := sprintf ('sparql define get:soft "soft" define input:grab-destination <%s> select * from <%s> where { ?s ?p ?o }', graph, uri);
+    sql := sprintf ('sparql load <%s> into graph <%s>', uri, graph);
+    ENEWS.WA.exec_sparql (sql, 1);
 
     sql := sprintf(
            'SPARQL
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            PREFIX sioc: <http://rdfs.org/sioc/ns#>
-            SELECT distinct ?channel
+            define input:storage ""
+            prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            prefix sioc: <http://rdfs.org/sioc/ns#>
+            SELECT distinct ?channel, ?label
             FROM <%s>
             WHERE {
-                    ?channel sioc:container_of ?post .
-                  }
-           ', uri);
-    st := '00000';
-    exec (sql, st, msg, vector (), 0, meta, rows);
-    if (('00000' = st) and length (rows))
+                    ?channel sioc:container_of ?post;
+                             rdfs:label ?label.
+                  }', graph);
+    rows := ENEWS.WA.exec_sparql (sql, 1);
+    if (length (rows))
     {
       vectorbld_acc (channels, 'channel');
         foreach (any row in rows) do
-        vectorbld_acc (channels, vector ('title', row[0], 'home', uri, 'rss', uri, 'format', 'SIOC'));
+        vectorbld_acc (channels, vector ('title', row[1], 'home', uri, 'rss', row[0], 'format', 'SIOC'));
       }
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (uri);
+    ENEWS.WA.graph_clear (graph);
   }
 _end:
   vectorbld_final (channels);
@@ -5872,6 +5798,8 @@ _end:
 create procedure ENEWS.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (isnull(dt))
+    return dt;
   return soap_print_box (dt, '', 1);
 }
 ;
@@ -5881,6 +5809,8 @@ create procedure ENEWS.WA.dt_rfc1123 (
 create procedure ENEWS.WA.dt_iso8601 (
   in dt datetime)
 {
+  if (isnull(dt))
+    return dt;
   return soap_print_box (dt, '', 0);
 }
 ;
@@ -6210,6 +6140,43 @@ create procedure ENEWS.WA.validate_tags (
     if (not ENEWS.WA.validate_tag(V[N]))
       return 0;
   return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.exec_sparql (
+  in S varchar,
+  in debug any := null)
+{
+  declare st, msg, meta, rows any;
+
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, rows);
+  if (not isnull (debug) and ('00000' <> st))
+    dbg_obj_print ('debug: ', S, st, msg);
+  if ('00000' = st)
+    return rows;
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.graph_clear (
+  in graph varchar,
+  in debug any := null)
+{
+  ENEWS.WA.exec_sparql (sprintf ('SPARQL clear graph <%s>', graph), debug);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.graph_create ()
+{
+  return 'http://local.virt/feeds/' || cast (rnd (1000) as varchar);
 }
 ;
 
