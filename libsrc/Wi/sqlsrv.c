@@ -2013,7 +2013,14 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	tpd->cli_tp_enlisted = CONNECTION_PREPARED;
 	tpd->cli_tp_trx = xid;
 	tpd->tpd_trx_cookie = (caddr_t) xid;
+	/* must see if trx already has xid */
+	if (cli->cli_trx->lt_2pc._2pc_xid && cli->cli_trx->lt_2pc._2pc_xid != xid)
+	  {
+	    cli->cli_trx = NULL;
+	    cli_set_new_trx (cli);
+	  }
 	tpd->cli_tp_lt = cli->cli_trx;
+	cli->cli_trx->lt_2pc._2pc_xid = xid;
 
 	tpd->cli_tp_sem2 = semaphore_allocate (0);
 	cli->cli_tp_data = tpd;
@@ -2167,9 +2174,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	      }
 	    if (op==SQL_XA_COMMIT)
 	      {
-		mutex_enter (global_xa_map->xm_mtx);
 		txa_remove_entry (xid, 1);
-		mutex_leave (global_xa_map->xm_mtx);
 	      }
 	    semaphore_free(future->ft_sem);
 	    dk_free(future,sizeof(tp_future_t));
@@ -2192,9 +2197,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    msg = mq_create_xa_message (TP_ABORT,future,tpd);
 	    mq_add_message(tp_main_queue,msg);
 	  }
-	mutex_enter (global_xa_map->xm_mtx);
 	txa_remove_entry (xid, 0);
-	mutex_leave (global_xa_map->xm_mtx);
 	dk_free_box ((box_t) xid);
       } break;
     case SQL_XA_WAIT:

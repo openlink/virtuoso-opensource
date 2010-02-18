@@ -137,6 +137,10 @@ cpt_rollback (int may_freeze)
 	case LT_BLOWN_OFF:
 	case LT_CLOSING:
 	case LT_COMMITTED:
+#ifdef VIRTTP
+	  if (stat == LT_COMMITTED && lt->lt_2pc._2pc_wait_commit)
+	    break;
+#endif
 	  rdbg_printf (("trx %lx killed by checkpoint while closing\n", lt));
 	  lt_kill_other_trx (lt, NULL, NULL, may_freeze);
 	  goto next;

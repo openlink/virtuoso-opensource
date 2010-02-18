@@ -339,8 +339,8 @@ log_commit (lock_trx_t * lt)
 	    + log_ses->dks_out_fill - 1;
 	if (lt->lt_2pc._2pc_log)
 	  print_object ((caddr_t) lt->lt_2pc._2pc_log, log_ses, NULL, NULL);
-	dk_free_box(lt->lt_2pc._2pc_log);
-	lt->lt_2pc._2pc_log = 0;
+	/* dk_free_box(lt->lt_2pc._2pc_log);
+	lt->lt_2pc._2pc_log = 0; */
 	if (lt->lt_2pc._2pc_type == TP_XA_TYPE)
 	  {
 	    mutex_enter (global_xa_map->xm_mtx);
@@ -1643,6 +1643,7 @@ try_again:
 	  /*session_buffered_read(in,transact,in->dks_in_fill - in->dks_in_read);
 	  id_hash_set (global_xa_map->xm_log_xids, (caddr_t) & xid, (caddr_t) & transact);*/
 	  virt_xa_add_trx (xid, lt);
+	  lt->lt_replicate = REPL_LOG;
 	  is_xa = 1;
 	  _xa_log_ctr++;
 	}
@@ -1728,6 +1729,7 @@ try_again:
     {
       cli->cli_trx = NULL;
       lt->lt_client = NULL;
+      lt->lt_2pc._2pc_wait_commit = 1;
       cli_set_new_trx (cli);
       rc = LTE_OK;
     }
@@ -2180,9 +2182,10 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
     }
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if ((LT_CL_PREPARED == lt->lt_status || LT_2PC_PENDING == lt->lt_status)
+      if (((LT_PREPARED == lt->lt_status && lt->lt_2pc._2pc_wait_commit) || LT_2PC_PENDING == lt->lt_status)
 	  && strses_length (lt->lt_log))
 	{
+	  int status = lt->lt_status;
 	  int rc;
 	  if (!dbs->dbs_log_length)
 	    {
@@ -2190,7 +2193,10 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	      log_set_server_version_check (1);
 	    }
 	  mutex_enter (log_write_mtx);
+	  if (LT_PREPARED == status && lt->lt_2pc._2pc_wait_commit)
+	    lt->lt_status = LT_PREPARE_PENDING;
 	  rc = log_commit (lt);
+	  lt->lt_status = status;
 	  if (LTE_OK != rc)
 	    log_error ("Checkpoint interrupted 2pc transaction between prepare and final.  The log of the prepared state could not be written to the post-checkpoint transaction log.  This means that, if the transaction commits and ought to be replayed from log, the transaction will be lost. trx no %d:%d", QFID_HOST (lt->lt_w_id), (uint32)lt->lt_w_id);
 	  mutex_leave (log_write_mtx);

@@ -526,6 +526,7 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
       lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
 	    (int) lt->lt_error, lt, lt->lt_client));
     }
+  lt->lt_2pc._2pc_wait_commit = 0;
   LEAVE_TXN;
   return lt->lt_error;
 }
@@ -551,6 +552,7 @@ lt_2pc_prepare (lock_trx_t * lt)
     }
 
   lt->lt_status = LT_COMMITTED;
+  lt->lt_2pc._2pc_wait_commit = 1;
   if (lt->lt_2pc._2pc_prepared)
     {
       *((unsigned long *) lt->lt_2pc._2pc_prepared) = LT_PREPARED;
@@ -1289,15 +1291,17 @@ virt_xa_add_trx (void *xid, lock_trx_t * lt)
     {
       xa_id_t *xx = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
       tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));;
+      memset (tpd, 0, sizeof (tp_data_t));
       memcpy (&xx->xid, xid, sizeof (virtXID));
+      tpd->cli_tp_trx = xid;
+      tpd->tpd_trx_cookie = (caddr_t) xid;
+      lt->lt_2pc._2pc_log = box_copy (xid);
+      lt->lt_2pc._2pc_xid = xid;
       xid = (void *) &xx->xid;
       xx->xid_sem = 0;
       xx->xid_cli = NULL;
-      memset (tpd, 0, sizeof (tp_data_t));
       tpd->cli_tp_enlisted = CONNECTION_PREPARED;
       tpd->cli_tp_sem2 = semaphore_allocate (0);
-      tpd->cli_tp_trx = xid;
-      tpd->tpd_trx_cookie = (caddr_t) xid;
       tpd->cli_tp_lt = lt;
       tpd->cli_trx_type = lt->lt_2pc._2pc_type = TP_XA_TYPE;
       xx->xid_tp_data = tpd;
@@ -1781,25 +1785,25 @@ txa_add_entry (txa_entry_t * e)
 void
 txa_remove_entry (void *xid, int check)
 {
-  if (txa_search_trx (xid))
+  txa_entry_t * e;
+  mutex_enter (global_xa_map->xm_mtx);
+  if (NULL != (e = txa_search_trx (xid)))
     {
       uint32 sz = box_length (txi.txi_parsed_info) - sizeof (txa_entry_t *);
-      txa_entry_t **new_v =
-	  (txa_entry_t **) dk_alloc_box (sz, DV_ARRAY_OF_POINTER);
+      txa_entry_t **new_v = (txa_entry_t **) dk_alloc_box (sz, DV_ARRAY_OF_POINTER);
       int idx, nidx = 0;
       for (idx = 0; idx < (int) (sz / sizeof (txa_entry_t *) + 1); idx++)
 	{
-	  if (memcmp (xid, txi.txi_parsed_info[idx]->txe_id,
-		  box_length (xid)))
+	  if (memcmp (xid, txi.txi_parsed_info[idx]->txe_id, box_length (xid)))
 	    {
-	      memcpy (new_v + nidx, txi.txi_parsed_info + idx,
-		  sizeof (txa_entry_t *));
+	      memcpy (new_v + nidx, txi.txi_parsed_info + idx, sizeof (txa_entry_t *));
 	      nidx++;
 	    }
 	}
       if (nidx != (idx - 1))
-	GPF_T;
+	GPF_T1 ("Inconsistent XA info");
       dk_free_box ((box_t) txi.txi_parsed_info);
+      txa_free_entry (e);
       txi.txi_parsed_info = new_v;
     }
 #if 0
@@ -1810,6 +1814,8 @@ txa_remove_entry (void *xid, int check)
       dk_free_box (xid_str);
     }
 #endif
+  txa_write ();
+  mutex_leave (global_xa_map->xm_mtx);
 }
 
 caddr_t *
@@ -1863,6 +1869,8 @@ txa_write ()
       fd_close (fd, txi.txi_trx_file);
       return 0;
     }
+  else
+    log_error ("Can not open %s file", txi.txi_trx_file);
   return -1;
 }
 
@@ -1887,14 +1895,10 @@ void
 txa_from_trx (lock_trx_t * lt, char *log_file_name)
 {
   txa_entry_t *e;
-  client_connection_t *cli = lt->lt_client;
-  tp_data_t *tpd = cli->cli_tp_data;
-
-  e = txa_search_trx (tpd->cli_tp_trx);
+  e = txa_search_trx (lt->lt_2pc._2pc_xid);
   if (!e)
     {
-      e = txa_create_entry (tpd->cli_tp_trx,
-	  log_file_name, (ptrlong) lt->lt_2pc._2pc_logged, (char *) "PRP");
+      e = txa_create_entry (lt->lt_2pc._2pc_xid, log_file_name, (ptrlong) lt->lt_2pc._2pc_logged, (char *) "PRP");
       if (e)
 	{
 	  txa_add_entry (e);
@@ -1902,7 +1906,11 @@ txa_from_trx (lock_trx_t * lt, char *log_file_name)
 	}
     }
   else
-    GPF_T;
+    {
+      dk_free_box (e->txe_offset);
+      e->txe_offset = box_num (lt->lt_2pc._2pc_logged);
+      txa_write ();
+    }
 }
 
 static caddr_t

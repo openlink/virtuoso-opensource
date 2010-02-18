@@ -242,6 +242,8 @@ typedef struct lock_trx_s
       caddr_t		_2pc_prepared;
       dk_set_t		_2pc_remotes;
       int		_2pc_invalid; /* is set if one of branches in unreachable  */
+      box_t             _2pc_xid;
+      char              _2pc_wait_commit;
     } lt_2pc;
 #endif
 
