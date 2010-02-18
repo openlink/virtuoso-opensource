@@ -4731,8 +4731,7 @@ create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri va
     };
     declare cur, docproxyIRI, resourceURL, baseUri, docIRI varchar;
     declare xml_entity, myparams, xml1, xml2, xml3 any;
-    
-    xml1 := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/1.csv');
+    xml1 := _ret_body;
     xml2 := split_and_decode(cast(xml1 as varchar), 0, '\0\r\n');
     baseUri := RDF_SPONGE_DOC_IRI (dest, graph_iri);
     docproxyIRI := DB.DBA.RDF_SPONGE_PROXY_IRI(baseUri);
