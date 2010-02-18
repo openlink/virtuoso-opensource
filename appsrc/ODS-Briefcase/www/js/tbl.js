@@ -108,8 +108,10 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
 	fld.name = fldName;
 	fld.id = fldName;
 	TBL.selectOption(fld, fldOptions.value, 'This object only', 0);
+	if (fldOptions.objectType == 'C') {
 	TBL.selectOption(fld, fldOptions.value, 'This object, subfolders and files', 1);
 	TBL.selectOption(fld, fldOptions.value, 'Subfolders and files', 2);
+  }
 
   td.appendChild(fld);
   return fld;

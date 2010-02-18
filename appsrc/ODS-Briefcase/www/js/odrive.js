@@ -481,7 +481,10 @@ function confirmAction(confirmMsq, form, txt, selectionMsq) {
 
 function webidShow(obj, width, height)
 {
-  var S = $v(obj.id.replace('fld_2', 'fld_1'));
+  var S = 'p';
+  if (obj.id.replace('fld_2', 'fld_1') != obj.id)
+    S = $v(obj.id.replace('fld_2', 'fld_1'));
+
   windowShow('webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;', width, height);
 }
 

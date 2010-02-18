@@ -360,7 +360,7 @@
                 <?vsp
                 		      declare N varchar;
 
-             		          if (length(self.v_members) = 0)
+                          if ((self.v_mode = 'create') and (length(self.v_members) = 0))
              		            self.v_members := vector (ODRIVE.WA.account_name (self.account_id));
 
                           for (N := 0; N < length (self.v_members); N := N + 1)
@@ -371,7 +371,7 @@
                 ?>
                 		    </script>
                 		  ]]>
-                      <tr id="x_tr_no" style="display: none;"><td colspan="2"><b>No Members</b></td></tr>
+                      <tr id="x_tr_no"><td colspan="2"><b>No Members</b></td></tr>
                     </table>
                   </td>
                   <td valign="top" nowrap="nowrap">
@@ -433,7 +433,7 @@
                 {
                   if ((params [N] like 'x_fld_1_%') and (trim (params [N+1]) <> ''))
                   {
-                    tmp := vector_concat (tmp, vector (trim (params [N+1])));
+                    tmp := vector_concat (tmp, split_and_decode (trim (trim (params [N+1]), ','), 0, '\0\0,'));
                   }
                 }
 
@@ -532,22 +532,22 @@
                 		      declare N varchar;
 
              		          self.v_members := split_and_decode (self.v_members, 0, '\0\0\n');
-             		          if (length(self.v_members) = 0)
+                          if ((self.v_mode = 'fgCreate') and (length(self.v_members) = 0))
              		            self.v_members := vector (SIOC..person_iri (SIOC..user_iri (self.account_id)));
 
                           for (N := 0; N < length (self.v_members); N := N + 1)
                           {
                             if (length (self.v_members[N]))
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("x", null, {fld_1: {mode: 0, value: "%s"}, btn_1: {mode: 2}});});', self.v_members[N]));
+                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("x", null, {fld_1: {mode: 43, value: "%s"}, btn_1: {mode: 2}});});', self.v_members[N]));
                           }
                         ?>
                 		    </script>
                 		  ]]>
-                      <tr id="x_tr_no" style="display: none;"><td colspan="2"><b>No Personal WebIDs</b></td></tr>
+                      <tr id="x_tr_no"><td colspan="2"><b>No Personal WebIDs</b></td></tr>
                     </table>
                   </td>
                   <td valign="top" nowrap="nowrap">
-                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 0}, btn_1: {mode: 2}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
+                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 43}, btn_1: {mode: 2}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                   </td>
                 </tr>
               </table>
@@ -561,8 +561,10 @@
               <![CDATA[
                 declare N integer;
                 declare tmp, params any;
-                declare exit handler for SQLSTATE '*' {
-                  if (__SQL_STATE = 'TEST') {
+                declare exit handler for SQLSTATE '*'
+                {
+                  if (__SQL_STATE = 'TEST')
+                  {
                     self.vc_error_message := ODRIVE.WA.test_clear(__SQL_MESSAGE);
                     self.vc_is_valid := 0;
                     return;
