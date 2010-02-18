@@ -127,6 +127,7 @@
               http('</div');
               http('<div style="clear: both;"></div>');
               http('<div id="feed_body">');
+            if (isentity (description))
               xml_tree_doc_set_ns_output(description, 1);
               http_value(description);
               http('</div>');
@@ -295,6 +296,7 @@
               http('</div');
               http('<div style="clear: both;"></div>');
               http('<div id="feed_body">');
+            if (isentity (description))
               xml_tree_doc_set_ns_output(description, 1);
               http_value(description);
               http('</div>');
