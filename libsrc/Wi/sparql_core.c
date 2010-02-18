@@ -1186,7 +1186,6 @@ check_optionals:
                   SPART *memb = t_set_pop (&membs);
                   if ((SPAR_TRIPLE == SPART_TYPE(memb)) && (memb->_.triple.ft_type))
                     {
-                      SPART *ft_filt = NULL;
                       DO_SET (SPART *, filt, &filts)
                         {
                           if (!spar_filter_is_freetext (sparp, filt, memb))
@@ -1999,8 +1998,8 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if (NULL != sparp->sparp_env->spare_output_maxrows)
     {
       boxint hard_lim = unbox (sparp->sparp_env->spare_output_maxrows);
-      if (unbox (limit) > hard_lim)
-        limit = t_box_num_nonull (hard_lim);
+      if (unbox ((caddr_t) limit) > hard_lim)
+        limit = (SPART *) t_box_num_nonull (hard_lim);
     }
   return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
@@ -2084,7 +2083,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
     spar_selid_pop (sparp), where_gp,
-    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, t_box_num (SPARP_MAXLIMIT), t_box_num_nonull (0));
+    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)t_box_num (SPARP_MAXLIMIT), (SPART *) t_box_num_nonull (0));
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
   spar_env_pop (sparp);
   t_check_tree (options);

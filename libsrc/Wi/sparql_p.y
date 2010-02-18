@@ -642,7 +642,7 @@ spar_ask_query		/* [8]	AskQuery	 ::=  'ASK' DatasetClause* WhereClause	*/
 	    spar_where_clause {
 		SPART * where_gp = spar_gp_finalize (sparp_arg, NULL);
 		$$ = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
-		  where_gp, NULL, NULL, NULL, t_box_num(1), t_box_num(0) ); }
+		  where_gp, NULL, NULL, NULL, (SPART *) t_box_num(1), (SPART *) t_box_num(0) ); }
 	;
 
 spar_dataset_clauses_opt
@@ -710,7 +710,7 @@ spar_where_clause	/* [13]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 
 spar_solution_modifier	/* [14]*	SolutionModifier	 ::=  GroupClause? HavingClause? OrderClause? */
 			/*... ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
-	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), t_box_num (SPARP_MAXLIMIT), t_box_num (0)); }
+	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), (SPART *) t_box_num (SPARP_MAXLIMIT), (SPART *) t_box_num (0)); }
 	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $4, $5); }
 	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $5, $4); }
 	;
@@ -781,7 +781,7 @@ spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
 	;
 
 spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
-	: /* empty */ { $$ = t_box_num (SPARP_MAXLIMIT); }
+	: /* empty */ { $$ = (SPART *) t_box_num (SPARP_MAXLIMIT); }
 	| spar_limit_clause
 	;
 
@@ -790,7 +790,7 @@ spar_limit_clause	/* [17*]	LimitClause	 ::=  'LIMIT' PrecodeExpn	*/
 	;
 
 spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
-	: /* empty */ { $$ = t_box_num (0); }
+	: /* empty */ { $$ = (SPART *) t_box_num (0); }
 	| spar_offset_clause
 	;
 
@@ -896,11 +896,11 @@ spar_service_options_list_opt	/* [Virt]	ServiceOptionList ::=  '(' ( 'DEFINE'? I
 
 spar_service_options
 	: QNAME spar_define_val_commalist		{ $$ = NULL; t_set_push (&($$), $1); t_set_push (&($$), $2); }
-	| DEFINE_L QNAME spar_define_val_commalist		{ $$ = NULL; t_set_push (&($$), DEFINE_L); t_set_push (&($$), t_list (2, $2, t_revlist_to_array($3))); }
-	| IN_L spar_triple_option_var_commalist		{ $$ = NULL; t_set_push (&($$), IN_L); t_set_push (&($$), $2); }
+	| DEFINE_L QNAME spar_define_val_commalist		{ $$ = NULL; t_set_push (&($$), (SPART *) t_box_num (DEFINE_L)); t_set_push (&($$), t_list (2, $2, t_revlist_to_array($3))); }
+	| IN_L spar_triple_option_var_commalist		{ $$ = NULL; t_set_push (&($$), (SPART *) t_box_num(IN_L)); t_set_push (&($$), $2); }
 	| spar_service_options QNAME spar_define_val_commalist	{ $$ = $1; t_set_push (&($$), $2); t_set_push (&($$), t_revlist_to_array($3)); }
-	| spar_service_options DEFINE_L QNAME spar_define_val_commalist	{ $$ = $1; t_set_push (&($$), DEFINE_L); t_set_push (&($$), t_list (2, $3, t_revlist_to_array($4))); }
-	| spar_service_options IN_L spar_triple_option_var_commalist	{ $$ = $1; t_set_push (&($$), IN_L); t_set_push (&($$), $3); }
+	| spar_service_options DEFINE_L QNAME spar_define_val_commalist	{ $$ = $1; t_set_push (&($$), (SPART *) t_box_num (DEFINE_L)); t_set_push (&($$), t_list (2, $3, t_revlist_to_array($4))); }
+	| spar_service_options IN_L spar_triple_option_var_commalist	{ $$ = $1; t_set_push (&($$), (SPART *) t_box_num(IN_L)); t_set_push (&($$), $3); }
 	;
 
 spar_ctor_template	/* [26]*	ConstructTemplate	 ::=  '{' ConstructTriples '}'	*/
@@ -1218,7 +1218,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		  else
 		    {
 		      t_set_push (&args, $1);
-		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L,
+		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL,  (SPART *) t_box_num(IN_L),
 		        t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
 		    }
 		}
@@ -1238,7 +1238,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec UPLUS	{
 		SPAR_BIN_OP ($$, BOP_PLUS,
-		  spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
+		  spartlist (sparp_arg, 4, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
 	| _MINUS spar_expn	%prec UMINUS	{
 		caddr_t *val_ptr = NULL;
 		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) {
@@ -1258,7 +1258,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		      val_ptr = NULL; }
 		if (NULL == val_ptr)
 		  SPAR_BIN_OP ($$, BOP_MINUS,
-		    spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL),
+		    spartlist (sparp_arg, 4, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL),
 		  $2 );
 		else
 		  $$ = $2; }
@@ -1278,7 +1278,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg, NULL);
 		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
-		  where_gp, NULL, NULL, NULL, t_box_num(1), t_box_num(0) );
+		  where_gp, NULL, NULL, NULL, (SPART *) t_box_num(1), (SPART *) t_box_num(0) );
 		spar_env_pop (sparp_arg);
 		$$ = spar_gp_finalize_with_subquery (sparp_arg, $7, subselect_top); }
 	| _LPAR spar_select_query_mode {
@@ -1810,13 +1810,13 @@ spar_qm_drop_quad_map_mapping		/* [Virt]	QmDropQuadMap	 ::=  'DROP' 'SILENT'? 'Q
 	: DROP_L spar_silent_opt QUAD_L MAP_L spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                   (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
-                  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $5, t_box_dv_uname_string ("SILENT"), t_box_num_nonull ($2)) );
+                  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $5, t_box_dv_uname_string ("SILENT"), (SPART *) t_box_num_nonull ($2)) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	| DROP_L spar_silent_opt QUAD_L MAP_L spar_graph_identified_by spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
-                    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $6, t_box_dv_uname_string ("SILENT"), t_box_num_nonull ($2)) );
+                    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $6, t_box_dv_uname_string ("SILENT"), (SPART *) t_box_num_nonull ($2)) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
         ;
@@ -1825,13 +1825,13 @@ spar_qm_drop_mapping		/* [Virt]	QmDrop	 ::=  'DROP' 'SLIENT'? ('GRAPH' ('IDENTIF
 	: DROP_L spar_silent_opt spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                   (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
-                  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $3, t_box_dv_uname_string ("SILENT"), t_box_num_nonull ($2)) );
+                  (SPART **)t_list (4, t_box_dv_uname_string ("ID"), $3, t_box_dv_uname_string ("SILENT"), (SPART *) t_box_num_nonull ($2)) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
 	| DROP_L spar_silent_opt spar_graph_identified_by spar_qm_iriref_const_expn	{
 		$$ = spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_DROP_MAPPING",
                     (SPART **)t_list (1, t_box_copy (sparp_env()->spare_storage_name)),
-                    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $4, t_box_dv_uname_string ("SILENT"), t_box_num_nonull ($2)) );
+                    (SPART **)t_list (4, t_box_dv_uname_string ("GRAPH"), $4, t_box_dv_uname_string ("SILENT"), (SPART *) t_box_num_nonull ($2)) );
 		if (NULL == sparp_env()->spare_storage_name)
                   sparp_jso_push_affected (sparp_arg, uname_virtrdf_ns_uri_QuadStorage); }
         ;

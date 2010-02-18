@@ -2579,7 +2579,7 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
   if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
     return NULL;
   strg = SPAR_LIT_OR_QNAME_VAL (tree);
-  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (caddr_t) val_dtp_strg);
+  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (unsigned char *) val_dtp_strg);
   if (NULL != err)
     {
       dk_free_tree (err);
@@ -5198,11 +5198,11 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
                 ~(SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL ) );
               if ((SPART_VARR_FIXED & restrs_not_filtered_in_subqs) &&
                 (SPART_VARR_FIXED & sub_eq->e_rvr.rvrRestrictions) &&
-                (DVC_MATCH == cmp_boxes_safe (eq->e_rvr.rvrFixedValue, sub_eq->e_rvr.rvrFixedValue, NULL, NULL)) )
+                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrFixedValue, (caddr_t) sub_eq->e_rvr.rvrFixedValue, NULL, NULL)) )
                 restrs_not_filtered_in_subqs &= ~SPART_VARR_FIXED;
               if ((SPART_VARR_TYPED & restrs_not_filtered_in_subqs) &&
                 (SPART_VARR_TYPED & sub_eq->e_rvr.rvrRestrictions) &&
-                (DVC_MATCH == cmp_boxes_safe (eq->e_rvr.rvrDatatype, sub_eq->e_rvr.rvrDatatype, NULL, NULL)) )
+                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrDatatype, (caddr_t) sub_eq->e_rvr.rvrDatatype, NULL, NULL)) )
                 restrs_not_filtered_in_subqs &= ~SPART_VARR_TYPED;
             }
           END_DO_BOX_FAST;

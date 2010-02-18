@@ -620,7 +620,9 @@ itc_make_rl (it_cursor_t * itc)
     GPF_T1 ("itc has itc_pl of a different page");
 
   if (itc->itc_ltrx->lt_status != LT_PENDING)
+    {
     rdbg_printf (("*** making posthumous lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+    }
   assert (itc->itc_position);
   rl->rl_pos = itc->itc_position;
   rl->rl_next = PL_RLS (pl, itc->itc_position);
