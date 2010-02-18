@@ -668,7 +668,7 @@ ptrlong sqlo_select_top_cnt (sqlo_t *so, ST *top_exp);
    ST_P (view, INTERSECT_ALL_ST))
 
 #define DFE_IS_PARAM(dfe) \
-	(dfe->dfe_type == DFE_CONST && (SYMBOLP (dfe->dfe_tree) || ST_P (dfe->dfe_tree, COL_DOTTED)))
+	(dfe->dfe_type == DFE_CONST && (SYMBOLP (dfe->dfe_tree) || ST_COLUMN (dfe->dfe_tree, COL_DOTTED)))
 
 #define DFE_IS_CONST(dfe) \
 	(dfe->dfe_type == DFE_CONST && !DFE_IS_PARAM (dfe))

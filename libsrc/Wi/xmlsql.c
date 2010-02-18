@@ -201,7 +201,7 @@ sqlc_xj_prefixes (sql_comp_t * sc, ST * tree)
     }
   if (ST_P (tree, QUOTE))
     return;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       col_ref_rec_t *cr = sqlc_col_or_param (sc, tree, 0);
       if (!cr->crr_ct)
@@ -529,7 +529,7 @@ xmls_view_def (char *name)
 int
 xmlg_join_col (sql_comp_t * sc, comp_table_t * ct, ST * tree, char *text, size_t tlen, int *fill)
 {
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       dk_set_t map = (dk_set_t) sc->sc_exp_print_cd;
       while (map)
@@ -802,7 +802,7 @@ xmlg_join_attribute (xv_context_t * xvc, xj_col_t * xc, int nth, dk_set_t map,
   xmlg_printf (xvc, ";\n  declare ");
   snprintf (name, sizeof (name), "v_attr%u_%u", nth, inx);
   xmlg_printf (xvc, "%s varchar;", name);
-  if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
+  if (ST_COLUMN (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
     exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
   t_set_push (&map, (void *) t_box_string (name));
   t_set_push (&map, exp);
@@ -1354,7 +1354,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
         ST * col_ref = (ST *) list (3, COL_DOTTED, NULL, box_string (xj->xj_pk[inx]));
 	XVC_COMMA (xvc, first);
 	xmlg_exp_print (xvc, col_ref);
-	if (ST_P (col_ref, COL_DOTTED) && !col_ref->_.col_ref.prefix)
+	if (ST_COLUMN (col_ref, COL_DOTTED) && !col_ref->_.col_ref.prefix)
 	  col_ref->_.col_ref.prefix = box_copy (xj->xj_prefix);
 	dk_set_push (&key_fields_map, col_ref);
       }
@@ -1404,7 +1404,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	XVC_COMMA (xvc, first);
 	snprintf (name, sizeof (name), "v%u_%u", nth, inx);
 	xmlg_printf (xvc, "%s", name);
-	if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
+	if (ST_COLUMN (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
 	  exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
 	t_set_push (&map, (void *) t_box_string (name));
 	t_set_push (&map, exp);
@@ -1425,7 +1425,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
           XVC_COMMA (xvc, first);
           snprintf (name, sizeof (name), "v%u_%u", nth,   count_addition++);
           xmlg_printf (xvc, " %s ", name);
-          if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
+          if (ST_COLUMN (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
             exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
           t_set_push (&map, (void *) t_box_string (name));
           t_set_push (&map, exp);
@@ -1441,7 +1441,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	  XVC_COMMA (xvc, first);
 	  snprintf (name, sizeof (name), "v%u_%u", nth, count_addition);
 	  xmlg_printf (xvc, " %s ", name);
-	  if (ST_P (col, COL_DOTTED) && !col->_.col_ref.prefix)
+	  if (ST_COLUMN (col, COL_DOTTED) && !col->_.col_ref.prefix)
 	    col->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
 	  t_set_push (&map, (void *) t_box_string (name));
 	  t_set_push (&map, col);
@@ -1450,7 +1450,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	  xmlg_printf (xvc, ", ");
 	  snprintf (name, sizeof (name), "v%u_%u", nth,   count_addition);
 	  xmlg_printf (xvc, " %s ", name);
-	  if (ST_P (limit_field, COL_DOTTED) && !limit_field->_.col_ref.prefix)
+	  if (ST_COLUMN (limit_field, COL_DOTTED) && !limit_field->_.col_ref.prefix)
 	    limit_field->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
 	  t_set_push (&map, (void *) t_box_string (name));
 	  t_set_push (&map, limit_field);
@@ -1464,7 +1464,7 @@ xmlg_join_loop (xv_context_t * xvc, xv_join_elt_t * xj, int nth, dk_set_t map,
 	XVC_COMMA (xvc, first);
 	snprintf (name, sizeof (name), "v%u_%u", nth, count_addition++);
 	xmlg_printf (xvc, " %s ", name);
-	if (ST_P (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
+	if (ST_COLUMN (exp, COL_DOTTED) && !exp->_.col_ref.prefix)
 	  exp->_.col_ref.prefix = t_box_copy (xj->xj_prefix);
 	t_set_push (&map, (void *) t_box_string (name));
 	t_set_push (&map, exp);
@@ -3291,7 +3291,7 @@ sqlo_xr_auto_meta_data (sqlo_t * so, ST * tree)
 	    real_name = (caddr_t) exp->_.as_exp.right;
 	  exp = exp->_.as_exp.left;
 	}
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	{
 	  op_table_t * ot = sqlo_cname_ot (so, exp->_.col_ref.prefix);
 	  if (!real_name)
@@ -3319,7 +3319,7 @@ sqlo_xr_auto_meta_data (sqlo_t * so, ST * tree)
 		real_name = (caddr_t) exp->_.as_exp.right;
 	      exp = exp->_.as_exp.left;
 	    }
-	  if (ST_P (exp, COL_DOTTED))
+	  if (ST_COLUMN (exp, COL_DOTTED))
 	    {
 	      op_table_t *ot_found = sqlo_cname_ot (so, exp->_.col_ref.prefix);
 	      if (!real_name)
@@ -3388,7 +3388,7 @@ xr_auto_meta_data (sql_comp_t * sc, ST * tree)
     return;
   DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
     {
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	{
 	  col_ref_rec_t * crr = sqlc_col_ref_rec (sc, exp, 0);
 	  comp_table_t * ct = crr->crr_ct;
@@ -3410,7 +3410,7 @@ xr_auto_meta_data (sql_comp_t * sc, ST * tree)
       col_list = NULL;
       DO_BOX (ST *, exp, expinx, tree->_.select_stmt.selection)
 	{
-	  if (ST_P (exp, COL_DOTTED))
+	  if (ST_COLUMN (exp, COL_DOTTED))
 	    {
 	      col_ref_rec_t * crr = sqlc_col_ref_rec (sc, exp, 0);
 	      if (crr->crr_ct == ct)

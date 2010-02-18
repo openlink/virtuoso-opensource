@@ -1332,7 +1332,7 @@ xp_add_as (ST ** selection)
       if (!ST_P (col, BOP_AS))
 	{
 	  caddr_t name;
-	  if (ST_P (col, COL_DOTTED))
+	  if (ST_COLUMN (col, COL_DOTTED))
 	    name = t_box_string (col->_.col_ref.name);
 	  else
 	    name = t_box_string ("__");
@@ -2008,7 +2008,7 @@ xv_attr_paths (xpp_t *xpp, xv_join_elt_t * start, XT * step,  dk_set_t * paths)
       if (xt_node_test_match (step->_.step.node, xc->xc_xml_name))
 	{
     	  char * col_name;
-	  if (!ST_P (xc->xc_exp, COL_DOTTED))
+	  if (!ST_COLUMN (xc->xc_exp, COL_DOTTED))
 	    xe_error ("S0002", "The column in an XML view must correspond to a SQL column, not an expression");
 	  col_name = xc->xc_exp->_.col_ref.name;
           if (!IS_BOX_POINTER(xc->xc_relationship)) /*mapping schema*/
@@ -2101,7 +2101,7 @@ xv_paths (xpp_t *xpp, xv_join_elt_t * start, XT * step, XT * end_step, xv_step_t
       else / * child is a column of the start table* /
         {
  	  char * col_name;
-	  if (!ST_P (child->xj_mp_schema->xj_column, COL_DOTTED))
+	  if (!ST_COLUMN (child->xj_mp_schema->xj_column, COL_DOTTED))
 	    xe_error ("S0002", "The column in an XML view must correspond to a SQL column, not an expression");
 	  col_name = child->xj_mp_schema->xj_column->_.col_ref.name;
 	  NCONCF1 (*paths, xtlist (xpp, 6, XP_STEP, NULL, XP_CHILD,
@@ -3436,7 +3436,7 @@ xp_debug_col (sql_comp_t * sc, comp_table_t * ct, ST * tree, char * text, size_t
       sprintf_more (text, tlen, fill, " %s ", (caddr_t) tree);
       return 1;
     }
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       sprintf_more (text, tlen, fill, " %s.%s ", tree->_.col_ref.prefix, tree->_.col_ref.name);
       return 1;

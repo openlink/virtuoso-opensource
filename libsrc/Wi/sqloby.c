@@ -62,7 +62,7 @@ sqlo_oby_exp_cols (sqlo_t * so, ST * dt, ST** oby)
 	  while (ST_P (spec->_.o_spec.col, BOP_AS))
 	    spec->_.o_spec.col = spec->_.o_spec.col->_.as_exp.left;
 	}
-      if (!ST_P (spec->_.o_spec.col, COL_DOTTED))
+      if (!ST_COLUMN (spec->_.o_spec.col, COL_DOTTED))
 	res = SPEC_MIXED;
     }
   END_DO_BOX;
@@ -174,7 +174,7 @@ sqlo_ot_oby_seq (sqlo_t * so, op_table_t * top_ot)
 
   DO_BOX (ST *, spec, inx, oby)
     {
-      if (!ST_P (spec->_.o_spec.col, COL_DOTTED))
+      if (!ST_COLUMN (spec->_.o_spec.col, COL_DOTTED))
 	return;
       col = spec->_.o_spec.col;
       col_ot = sqlo_cname_ot (so, col->_.col_ref.prefix);
@@ -816,7 +816,7 @@ sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret
 {
   /* traverse exp and return all cols that exp depends on which are defined in dt_dfe */
   int inx;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       df_elt_t * pt, *col_dfe = sqlo_df (so, tree);
       for (pt = dt_dfe->_.sub.last; pt; pt = pt->dfe_prev)

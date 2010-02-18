@@ -812,7 +812,7 @@ extern long sqlp_bin_op_serial;
     FN_REF_1 (target, n, all_dist, argp);
 
 #define FN_REF(target, n, all_dist, argp) \
-  if (ST_P (((ST *) (argp)), COL_DOTTED) && ((ST *) (argp))->_.col_ref.prefix == NULL && ((ST *) (argp))->_.col_ref.name == STAR) \
+  if (ST_COLUMN (((ST *) (argp)), COL_DOTTED) && ((ST *) (argp))->_.col_ref.prefix == NULL && ((ST *) (argp))->_.col_ref.name == STAR) \
     { \
       FN_REF_2 (target, n, all_dist, NULL); \
     } \
@@ -855,6 +855,11 @@ extern long sqlp_bin_op_serial;
 
 #define ST_P(s, tp) \
   (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp)
+
+#define ST_COLUMN(s, tp) \
+  (ARRAYP (s) && BOX_ELEMENTS (s) == 3 && (s)->type == COL_DOTTED && \
+   	( IS_STRING_ALIGN_DTP (DV_TYPE_OF (((caddr_t *)(s))[2])) || STAR == ((caddr_t *)(s))[2] )  && \
+   	( IS_STRING_ALIGN_DTP (DV_TYPE_OF (((caddr_t *)(s))[1])) || NULL == ((caddr_t *)(s))[1]) )
 
 #define BIN_EXP_P(q) \
   (ARRAYP (q) && (q)->type >= BOP_MIN && (q)->type <= BOP_MAX)

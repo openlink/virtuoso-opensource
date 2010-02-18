@@ -129,7 +129,7 @@ sqlg_dfe_ssl (sqlo_t * so, df_elt_t * dfe)
 	  bif_type_set (bt, dfe->dfe_ssl, args);
 	}
     }
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       if (dfe != sqlo_df (so, dfe->dfe_tree))
 	SQL_GPF_T1 (so->so_sc->sc_cc, "There are 2 different dfes for the same col ref. Not really supposed to");
@@ -1258,7 +1258,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 	{
 	  if (IS_STRING_DTP (name_dtp) || name_dtp == DV_SYMBOL)
 	    {
-	      if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 		{
@@ -1266,7 +1266,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 		  colp_dfe->dfe_is_placed = DFE_GEN;
 		  goto next_arg;
 		}
-	      else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	      else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 		{
@@ -1281,7 +1281,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 	{
 	  if (IS_STRING_DTP (name_dtp) || name_dtp == DV_SYMBOL)
 	    {
-	      if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 		{
@@ -1289,7 +1289,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 		  colp_dfe->dfe_is_placed = DFE_GEN;
 		  goto next_arg;
 		}
-	      else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	      else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 		{
@@ -1304,7 +1304,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 	{
 	  if (IS_STRING_DTP (name_dtp) || name_dtp == DV_SYMBOL)
 	    {
-	      if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	      if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 		{
@@ -1312,7 +1312,7 @@ sqlg_proc_table_params (sqlo_t * so, df_elt_t * dt_dfe, dk_set_t *precompute)
 		  colp_dfe->dfe_is_placed = DFE_GEN;
 		  goto next_arg;
 		}
-	      else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	      else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		  (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		   || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 		{
@@ -3007,7 +3007,7 @@ make_grouping_bitmap_set (ST ** sel_cols, ST * col, ST **etalon, ptrlong * bitma
 
   if (col)
     {
-      if (!ST_P (col, COL_DOTTED))
+      if (!ST_COLUMN (col, COL_DOTTED))
         GPF_T;
       DO_BOX (ST *, st, inx, sorted_etalon)
         {

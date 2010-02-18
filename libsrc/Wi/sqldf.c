@@ -148,7 +148,7 @@ sqlo_df_elt (sqlo_t * so, ST * tree)
     {
       place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
       /* if this is not a leaf like col, literal or param, then do not use the global one even if there is one.  Except when there is an aggregate, they must be shared over the whole tree */
-      if (! (ST_P (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF)))
+      if (! (ST_COLUMN (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF)))
 	return place ? *place : NULL;
     }
   if (!place)
@@ -1635,7 +1635,7 @@ dfe_latest_by_ot (sqlo_t * so, int n_ots, op_table_t ** ots, int default_to_top)
 void
 sqlo_place_control_cols (sqlo_t * so, df_elt_t * super, ST * tree)
 {
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     sqlo_place_exp (so, super, sqlo_df (so, tree));
   else if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
     {
@@ -1702,7 +1702,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
     {
     case DFE_CONST:
       /* GK: set the locus of the params */
-      if (ST_P (dfe->dfe_tree, COL_DOTTED))
+      if (ST_COLUMN (dfe->dfe_tree, COL_DOTTED))
 	dfe->dfe_locus = pref_loc;
       return NULL;
     case DFE_COLUMN:
@@ -2036,7 +2036,7 @@ sqlo_import (ST * tree, df_elt_t * tb_dfe, df_elt_t * target_dfe)
   dtp_t dtp = DV_TYPE_OF (tree);
   if (DV_ARRAY_OF_POINTER != dtp)
     return tree;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       if (!ST_P (tb_dfe->_.sub.ot->ot_dt, PROC_TABLE) &&
 	  tree->_.col_ref.prefix && 0 == strcmp (tree->_.col_ref.prefix, tb_dfe->_.sub.ot->ot_new_prefix))
@@ -2165,9 +2165,9 @@ sqlo_place_dt_leaf (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t 
       DO_SET (df_elt_t *, pred, &joined_preds)
 	{
 	  caddr_t col_name = NULL;
-	  if (ST_P (pred->dfe_tree->_.bin_exp.left, COL_DOTTED))
+	  if (ST_COLUMN (pred->dfe_tree->_.bin_exp.left, COL_DOTTED))
 	     col_name = pred->dfe_tree->_.bin_exp.left->_.col_ref.name;
-	  else if (ST_P (pred->dfe_tree->_.bin_exp.right, COL_DOTTED))
+	  else if (ST_COLUMN (pred->dfe_tree->_.bin_exp.right, COL_DOTTED))
 	     col_name = pred->dfe_tree->_.bin_exp.right->_.col_ref.name;
 	  if (col_name)
 	    {
@@ -2289,7 +2289,7 @@ sqlo_dt_imp_pred_cols (sqlo_t * so, df_elt_t * tb_dfe, ST * tree)
   dtp_t dtp = DV_TYPE_OF (tree);
   if (DV_ARRAY_OF_POINTER != dtp || BOX_ELEMENTS (tree) < 1)
     return;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       if (tree->_.col_ref.prefix && 0 == strcmp (tree->_.col_ref.prefix, tb_dfe->_.sub.ot->ot_new_prefix))
 	{
@@ -3248,7 +3248,7 @@ is_call_only_dep_on (df_elt_t * dfe, op_table_t * ot)
     return 0;
   DO_BOX (ST *, arg, inx, dfe->dfe_tree->_.call.params)
     {
-      if (!ST_P (arg, COL_DOTTED))
+      if (!ST_COLUMN (arg, COL_DOTTED))
 	return 0;
     }
   END_DO_BOX;
@@ -4797,7 +4797,7 @@ sqlo_strip_in_join (ST* tree, caddr_t joined_table_prefix, caddr_t * joined_col_
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
   if (ST_P (tree, BOP_EQ)
-      && ST_P (tree->_.bin_exp.left, COL_DOTTED) && ST_P (tree->_.bin_exp.right, COL_DOTTED)
+      && ST_COLUMN (tree->_.bin_exp.left, COL_DOTTED) && ST_COLUMN (tree->_.bin_exp.right, COL_DOTTED)
       && tree->_.bin_exp.left->_.col_ref.prefix && tree->_.bin_exp.right->_.col_ref.prefix)
     {
       if (0 == strcmp (tree->_.bin_exp.left->_.col_ref.prefix, joined_table_prefix))
@@ -4839,7 +4839,7 @@ sqlo_all_refs_stripped (ST* tree, caddr_t joined_table_prefix)
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return 1;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     return (tree->_.col_ref.prefix ? 0 != strcmp (tree->_.col_ref.prefix, joined_table_prefix) : 1);
   DO_BOX (ST *, sub, inx, tree)
     {
@@ -6483,11 +6483,11 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
   ST * left_sel = (ST *) left->_.select_stmt.selection;
   if (DV_TYPE_OF (*orig_sel) != DV_ARRAY_OF_POINTER)
     return;
-  else if (ST_P (*orig_sel, COL_DOTTED))
+  else if (ST_COLUMN (*orig_sel, COL_DOTTED))
     {
       DO_BOX (ST *, elt, inx, left_sel)
 	{
-	  if (ST_P (elt, COL_DOTTED))
+	  if (ST_COLUMN (elt, COL_DOTTED))
 	    {
 	      if (!(*orig_sel)->_.col_ref.prefix)
 		SQL_GPF_T (so->so_sc->sc_cc);
@@ -6500,7 +6500,7 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
 		  ST * new_place = (((ST **)new_sel)[inx]);
 		  while (ST_P (new_place, BOP_AS))
 		    new_place = new_place->_.as_exp.left;
-		  if (ST_P (new_place, COL_DOTTED))
+		  if (ST_COLUMN (new_place, COL_DOTTED))
 		    *orig_sel = (ST *) t_box_copy_tree ((caddr_t) new_place);
 		  else
 		    SQL_GPF_T (so->so_sc->sc_cc);

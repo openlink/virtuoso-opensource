@@ -3152,7 +3152,7 @@ sqlo_udt_check_observer (sqlo_t * so, sql_comp_t * sc, ST * tree)
 ST *
 sqlo_udt_is_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue)
 { /* from ASG_STMT */
-  if (ST_P (lvalue, COL_DOTTED))
+  if (ST_COLUMN (lvalue, COL_DOTTED))
     {
       if (lvalue->_.col_ref.prefix)
 	{
@@ -3182,7 +3182,7 @@ sqlo_udt_is_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue)
 ST *
 sqlo_udt_make_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue, ST *rvalue, ST *var_to_be)
 {
-  if (ST_P (lvalue, COL_DOTTED) && var_to_be)
+  if (ST_COLUMN (lvalue, COL_DOTTED) && var_to_be)
     {
       ST *new_tree =
 	  t_listst (3, CALL_STMT, lvalue->_.col_ref.name, t_list (2, var_to_be, rvalue));

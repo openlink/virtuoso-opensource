@@ -819,7 +819,7 @@ sqlp_infoschema_redirect_tbs (ST **tree, ST **where_cond)
     return;
   if (DV_TYPE_OF (*tree) != DV_ARRAY_OF_POINTER)
     return;
-  if (ST_P ((*tree), COL_DOTTED) && (*tree)->_.col_ref.prefix)
+  if (ST_COLUMN ((*tree), COL_DOTTED) && (*tree)->_.col_ref.prefix)
     {
       (*tree)->_.col_ref.prefix = sqlp_infoschema_redirect_tb (
  	(*tree)->_.col_ref.prefix, NULL, 0, NULL);
@@ -1076,7 +1076,7 @@ sqlp_view_def (ST ** names, ST * exp, int generate_col_names)
       names = (ST **) t_box_copy ((caddr_t) exp2->_.select_stmt.selection);
       DO_BOX (ST *, col, inx, exp2->_.select_stmt.selection)
       {
-	if (ST_P (col, COL_DOTTED))
+	if (ST_COLUMN (col, COL_DOTTED))
 	  names[inx] = (ST *) t_box_copy (col->_.col_ref.name);
 	else if (ST_P (col, BOP_AS))
 	  names[inx] = (ST *) t_box_copy (col->_.as_exp.name);
@@ -1291,7 +1291,7 @@ sqlp_stars (ST ** selection, ST ** from)
   int inx, star = 0;
   DO_BOX (ST *, col, inx, selection)
   {
-    if (ST_P (col, COL_DOTTED))
+    if (ST_COLUMN (col, COL_DOTTED))
       if (col->_.col_ref.name == STAR)
 	{
 	  star = 1;
@@ -1303,7 +1303,7 @@ sqlp_stars (ST ** selection, ST ** from)
     return selection;
   DO_BOX (ST *, col, inx, selection)
   {
-    if (ST_P (col, COL_DOTTED) && col->_.col_ref.name == STAR)
+    if (ST_COLUMN (col, COL_DOTTED) && col->_.col_ref.name == STAR)
       {
 	dk_set_t prev_last = dk_set_last (exp_list);
 	sqlp_expand_1_star (col, from, &exp_list);
@@ -1584,7 +1584,7 @@ sqlp_cr_vars (ST * sel)
   ST ** res = (ST **) t_box_copy ((caddr_t) sel->_.select_stmt.selection);
   DO_BOX (ST *, exp, inx, res)
     {
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	res[inx] = (ST*) t_list (4, LOCAL_VAR,IN_MODE,
 	    t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.col_ref.name)),
 	    t_list (3, (ptrlong)DV_ANY, (ptrlong)0, (ptrlong)0));
@@ -1606,7 +1606,7 @@ sqlp_cr_fetch_vars (ST * sel)
   ST ** res = (ST **) t_box_copy ((caddr_t) sel->_.select_stmt.selection);
   DO_BOX (ST *, exp, inx, res)
     {
-      if (ST_P (exp, COL_DOTTED))
+      if (ST_COLUMN (exp, COL_DOTTED))
 	res[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.col_ref.name));
       else if (ST_P (exp, BOP_AS))
 	res[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy (exp->_.as_exp.name));
@@ -1841,7 +1841,7 @@ sqlp_contains_opts (ST * tree)
 	{
 	  if (inx < 2)
 	    continue;
-	  if (ST_P (arg, COL_DOTTED))
+	  if (ST_COLUMN (arg, COL_DOTTED))
 	    {
 	      caddr_t name = arg->_.col_ref.name;
 	      if (0 == stricmp (name, "offband")
@@ -1875,7 +1875,7 @@ sqlp_check_arg (ST * tree)
 	{
 	  if ( /* This is Bug 7585 workaround */
 	    !stricmp (tree->_.call.name, "XMLELEMENT") &&
-	    ST_P (arg->_.as_exp.left, COL_DOTTED) &&
+	    ST_COLUMN (arg->_.as_exp.left, COL_DOTTED) &&
 	    (NULL == arg->_.as_exp.left->_.col_ref.prefix) &&
 	    !stricmp (arg->_.as_exp.left->_.col_ref.name, "NAME") )
 	    {
@@ -1913,7 +1913,7 @@ sqlp_sqlxml (ST * tree)
       if (0 == BOX_ELEMENTS (tree->_.call.params))
 	yyerror ("Function XMLELEMENT should have at least one argument that is element name");
       arg = tree->_.call.params[0];
-      if (ST_P (arg, COL_DOTTED))
+      if (ST_COLUMN (arg, COL_DOTTED))
 	tree->_.call.params[0] = (ST *) t_box_string (arg->_.col_ref.name);
       return;
     }
@@ -1931,7 +1931,7 @@ sqlp_sqlxml (ST * tree)
 	      new_params[inx*2+1] = (ST *) t_box_copy_tree ((caddr_t)arg->_.as_exp.left);
 	      continue;
 	    }
-	  if (ST_P (arg, COL_DOTTED))
+	  if (ST_COLUMN (arg, COL_DOTTED))
 	    {
 	      new_params[inx*2] = (ST *) t_box_string((caddr_t) arg->_.col_ref.name);
 	      new_params[inx*2+1] = (ST *) t_box_copy_tree((box_t) arg);

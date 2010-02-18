@@ -119,12 +119,12 @@ sqlc_find_crr (sql_comp_t * sc, ST * ref)
    * 2. the crr partially matched is a column, not a proc variable (i.e. crr_ct != NULL). */
   col_ref_rec_t * found = NULL;
   int many_found = 0;
-  if (ST_P (ref, COL_DOTTED) && STAR == ref->_.col_ref.name)
+  if (ST_COLUMN (ref, COL_DOTTED) && STAR == ref->_.col_ref.name)
     sqlc_new_error (sc->sc_cc, "37000", ".....", " A * is not allowed in a variable's place in an expression");
   DO_SET (col_ref_rec_t *, crr, &sc->sc_col_ref_recs)
     {
-      if (ST_P (crr->crr_col_ref, COL_DOTTED)
-	  && ST_P (ref, COL_DOTTED))
+      if (ST_COLUMN (crr->crr_col_ref, COL_DOTTED)
+	  && ST_COLUMN (ref, COL_DOTTED))
 	{
 	  if (0 == CASEMODESTRCMP (ref->_.col_ref.name, crr->crr_col_ref->_.col_ref.name))
 	    {
@@ -290,11 +290,11 @@ sqlc_col_or_param (sql_comp_t * sc, ST * tree, int is_recursive)
 	      cr->crr_col_ref = tree;
 	      t_set_push (&sc->sc_col_ref_recs, (void *) cr);
 	      super_cr = sqlc_col_or_param (sc->sc_scroll_super, tree, 1);
-	      if (ST_P (tree, COL_DOTTED))
+	      if (ST_COLUMN (tree, COL_DOTTED))
 		{
 		  DO_SET (ST *, var, sc->sc_scroll_param_cols)
 		    {
-		      if (!ST_P (var, COL_DOTTED))
+		      if (!ST_COLUMN (var, COL_DOTTED))
 			goto next;
 		      if (var->_.col_ref.prefix && tree->_.col_ref.prefix &&
 			  strcmp (var->_.col_ref.prefix, tree->_.col_ref.prefix))
@@ -402,7 +402,7 @@ sqlc_mark_pred_deps (sql_comp_t * sc, predicate_t * pred, sql_tree_t * tree)
     }
   if (ST_P (tree, QUOTE))
     return;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       ST *new_tree = sqlo_udt_check_observer (sc->sc_so, sc, tree);
       if (new_tree != tree)
@@ -538,7 +538,7 @@ sqlc_table_refd_p (sql_comp_t * sc, sql_tree_t * tree, comp_table_t * ct)
 {
   if (!ARRAYP (tree))
     return 0;
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       col_ref_rec_t *c_ref = sqlc_col_ref_rec (sc, tree, 1);
       if (c_ref->crr_ct == ct)

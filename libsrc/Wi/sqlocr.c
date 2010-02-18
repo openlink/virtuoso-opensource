@@ -257,7 +257,7 @@ sqlo_qc_make_update (sqlo_t * so, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_P (col_ref, COL_DOTTED))
+    if (!ST_COLUMN (col_ref, COL_DOTTED))
       {
 	return NULL;
       }

@@ -2082,11 +2082,11 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
 
       DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.dt_preds)
 	{
-	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	  if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 	    goto next_arg;
-	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	  else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 	    goto next_arg;
@@ -2094,11 +2094,11 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
       END_DO_SET();
       DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.dt_imp_preds)
 	{
-	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	  if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 	    goto next_arg;
-	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	  else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 	    goto next_arg;
@@ -2106,11 +2106,11 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
       END_DO_SET();
       DO_SET (df_elt_t *, colp_dfe, &dt_dfe->_.sub.ot->ot_join_preds)
 	{
-	  if (ST_P (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
+	  if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.left, COL_DOTTED) &&
 	      (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)
 	       || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.left->_.col_ref.name)))
 	    goto next_arg;
-	  else if (ST_P (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
+	  else if (ST_COLUMN (colp_dfe->dfe_tree->_.bin_exp.right, COL_DOTTED) &&
 		   (!CASEMODESTRCMP (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)
 		    || box_equal (name, colp_dfe->dfe_tree->_.bin_exp.right->_.col_ref.name)))
 	    goto next_arg;

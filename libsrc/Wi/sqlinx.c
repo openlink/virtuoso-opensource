@@ -85,7 +85,7 @@ int
 sqlo_after_test_placeable (df_elt_t * tb, dk_set_t path, ST * tree)
 {
   /* true if all cols of the table concerned in the tree are covered in the inxes on the path */
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       df_elt_t * col;
       if (!tree->_.col_ref.prefix || strcmp (tree->_.col_ref.prefix, tb->_.table.ot->ot_new_prefix))

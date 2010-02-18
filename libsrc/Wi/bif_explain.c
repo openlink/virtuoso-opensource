@@ -1306,7 +1306,7 @@ xsql_print_stmt (sql_comp_t * sc, comp_table_t * ct, ST * tree, char * text, siz
       sprintf_more (text, tlen, fill, " %s ", (caddr_t) tree);
       return 1;
     }
-  if (ST_P (tree, COL_DOTTED))
+  if (ST_COLUMN (tree, COL_DOTTED))
     {
       caddr_t pref = tree->_.col_ref.prefix;
       sprintf_more (text, tlen, fill, " ");

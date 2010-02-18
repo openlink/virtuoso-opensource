@@ -450,7 +450,7 @@ qc_make_update (sql_comp_t * sc, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_P (col_ref, COL_DOTTED))
+    if (!ST_COLUMN (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/
@@ -488,7 +488,7 @@ qc_make_insert (sql_comp_t * sc, query_cursor_t * qc)
   memset (cols, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_P (col_ref, COL_DOTTED))
+    if (!ST_COLUMN (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/
