@@ -540,6 +540,8 @@ bop_text (int bop)
       return (" UNION ALL ");
     case BOP_LIKE:
       return (" LIKE ");
+    case BOP_NOT:
+      return "not";
     case BOP_NULL:
       return (" IS NULL ");
     }
