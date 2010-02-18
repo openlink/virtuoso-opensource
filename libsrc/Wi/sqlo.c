@@ -1908,6 +1908,15 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 	  res ++;
 	}
     }
+  else if (ST_P (tree, CALL_STMT))
+    {
+      int inx;
+      DO_BOX (ST *, par, inx, tree->_.call.params)
+	{
+	  res += sqlo_expand_jts (so, &par, select_stmt, was_top);
+	}
+      END_DO_BOX;
+    }
   else if (ARRAYP (tree))
     {
       int inx;
