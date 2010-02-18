@@ -12004,8 +12004,10 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             }
           if (NULL == err)
             qr = (query_t *)(shc->shcompo_data);
+	  dk_free_tree (cache_b);
           goto qr_set;
         }
+      dk_free_tree (cache_b);
     }
   if (pt)
     qr = sql_compile_1 ("", qi->qi_client, &err, SQLC_DEFAULT, pt, NULL);
