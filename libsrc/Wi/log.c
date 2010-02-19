@@ -494,7 +494,7 @@ log_final_transact(lock_trx_t* lt, int is_commit)
   dbe_storage_t * dbs = wi_inst.wi_master;
   if (lt->lt_2pc._2pc_logged)
     {
-      struct stat st;
+      STAT_T st;
       int fd = tcpses_get_fd(dbs->dbs_log_session->dks_session);
       V_FSTAT (fd, &st);
       LSEEK (fd, lt->lt_2pc._2pc_logged, SEEK_SET);
@@ -644,7 +644,7 @@ log_cl_final(lock_trx_t* lt, int is_commit)
   dbe_storage_t * dbs = wi_inst.wi_master;
   if (lt->lt_commit_flag_offset)
     {
-      struct stat st;
+      STAT_T st;
       int fd;
       char s = SQL_COMMIT == is_commit ? LOG_2PC_COMMIT : LOG_2PC_ABORT;
       ASSERT_OUTSIDE_MTX (wi_inst.wi_txn_mtx);

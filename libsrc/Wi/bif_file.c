@@ -1146,7 +1146,7 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef WIN32
   DIR *df = 0;
   struct dirent *de;
-  struct stat st;
+  STAT_T st;
 #else
   ptrlong rc = 0;
   WIN32_FIND_DATA fd, *de;
@@ -2570,7 +2570,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   pid_t child_pid;
   int status;
 #endif
-  struct stat st;
+  STAT_T st;
 
 
   if (2 + MAXARGS < argc)

@@ -2192,7 +2192,7 @@ caddr_t * ob_file_list (char * fname)
   struct _finddata_t fd, *de;
 #endif
   char path[PATH_MAX + 1];
-  struct stat st;
+  STAT_T st;
   caddr_t lst;
 
 #ifndef HAVE_DIRECT_H
