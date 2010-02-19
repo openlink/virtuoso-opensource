@@ -293,7 +293,7 @@ log_commit (lock_trx_t * lt)
     }
   else
     cbox[LOGH_CL_2PC] = 0;
-  if (!lt->lt_branch_of && lt->lt_client->cli_user)
+  if (!lt->lt_branch_of && lt->lt_client && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
   else
     cbox[LOGH_USER] = box_string ("");
@@ -1729,6 +1729,7 @@ try_again:
     {
       cli->cli_trx = NULL;
       lt->lt_client = NULL;
+      lt->lt_status = LT_PREPARED;
       lt->lt_2pc._2pc_wait_commit = 1;
       cli_set_new_trx (cli);
       rc = LTE_OK;
