@@ -964,6 +964,7 @@ extern void (*dbs_read_cfg) (caddr_t * dbs, char *file);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
 extern dk_set_t (*dbs_read_storages) (caddr_t **temp_file);
 extern int freeing_unfreeable;
+caddr_t dbs_log_derived_name (dbe_storage_t * dbs, char * ext);
 void dbs_unfreeable (dbe_storage_t * dbs, dp_addr_t dp, int flag);
 void page_set_check (db_buf_t page);
 
