@@ -375,13 +375,15 @@ alter index RDF_META_CARTRIDGES_LOG on DB.DBA.RDF_META_CARTRIDGES_LOG partition 
 
 create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
 {
-  declare sid any;
+  declare sid, pname any;
   sid := connection_get ('__rdf_sponge_sid');
   if (registry_get ('__rdf_sponge_debug') <> '1')
     return;
   if (sid is null)
     return;
-  insert into DB.DBA.RDF_META_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, rtrim (proc, '2'));
+  pname := rtrim (proc, '2');
+  pname := rtrim (pname, '_REST');
+  insert into DB.DBA.RDF_META_CARTRIDGES_LOG (ML_KEYWORDS, ML_REQUEST, ML_SESSION, ML_PROC) values (kwd, url, sid, pname);
   connection_set ('__rdf_sponge_idn', identity_value ());
 }
 ;
@@ -5368,16 +5370,6 @@ create procedure DB.DBA.RDF_LOAD_DAV_META (in graph_iri varchar, in new_origin_u
   return 1;
 }
 ;
-
-create procedure DB.DBA.RDF_CALAIS_OPTS (in mime varchar)
-{
-  return sprintf (
-'<c:params xmlns:c="http://s.opencalais.com/1/pred/">' ||
-'    <c:processingDirectives c:contentType="%s" c:outputFormat="xml/rdf"/><c:externalMetadata/>' ||
-'</c:params>', mime);
-}
-;
-
 
 create procedure DB.DBA.RDF_MAPPER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
 {
