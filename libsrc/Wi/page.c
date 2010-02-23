@@ -1063,7 +1063,7 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
     case DV_IRI_ID:
       {
 	iri_id_t i1;
-	iri_id_t i2 =  unbox_iri_id (value);
+	iri_id_t i2 = ((DV_TYPE_OF (value) == DV_IRI_ID) ? unbox_iri_id (value) : (iri_id_t)0);
 	ROW_INT_COL (buf, row, rv, *cl, LONG_REF, i1);
 	res = NUM_COMPARE (i1, i2);
 	return res;
@@ -1071,7 +1071,7 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
     case DV_IRI_ID_8:
       {
 	iri_id_t i1;
-	iri_id_t i2 =  unbox_iri_id (value);
+	iri_id_t i2 = ((DV_TYPE_OF (value) == DV_IRI_ID) ? unbox_iri_id (value) : (iri_id_t)0);
 	ROW_INT_COL (buf, row, rv, *cl, INT64_REF, i1);
 	res = NUM_COMPARE (i1, i2);
 	return res;
