@@ -731,6 +731,35 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
 }
 
 
+caddr_t
+dbs_log_derived_name (dbe_storage_t * dbs, char * ext)
+{
+  char *szExt, szNewName[255];
+  int n, name_len;
+  szExt = strrchr(dbs->dbs_log_name, '.');
+  name_len = (int) (ptrlong) szExt ? (int) (ptrlong) (szExt - dbs->dbs_log_name)
+      : (int) (ptrlong) strlen(dbs->dbs_log_name);
+
+  if (name_len >= 14)
+  {
+    for (n = 0; n < 14; n++)
+      if (!isdigit(dbs->dbs_log_name[name_len - n - 1]))
+	break;
+    if (n == 14)
+      name_len -= 14;
+  }
+
+  if (name_len > 0)
+    {
+      strncpy(szNewName, dbs->dbs_log_name, name_len);
+      szNewName[name_len] = 0;
+    }
+  else
+    szNewName[0] = 0;
+  strcat_ck(szNewName, ext);
+  return box_dv_short_string (szNewName);
+}
+
 
 void
 _dbs_read_cfg (dbe_storage_t * dbs, char *file)
@@ -780,7 +809,7 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
       dbs->dbs_log_name = log_file;
       dbs->dbs_cpt_file_name = box_string (setext (log_file, "cpt", EXT_SET));
       if (CL_RUN_LOCAL != cl_run_local_only)
-	dbs->dbs_2pc_file_name = box_string (setext (log_file, "2pc", EXT_SET));
+	dbs->dbs_2pc_file_name = dbs_log_derived_name (dbs, ".2pc");
     }
 
   file_extend = (long) (ptrlong) cfg_get_parm (wholefile, "\nfile_extend:", 0);
