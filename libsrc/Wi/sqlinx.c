@@ -407,6 +407,8 @@ sqlo_tb_pk_given (df_elt_t * tb_dfe)
     {
       DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
 	{
+	  if (cp->_.bin.left->dfe_type != DFE_COLUMN)
+	    continue;
 	  if (cp->_.bin.left->_.col.col == part)
 	    goto found;
 	}
