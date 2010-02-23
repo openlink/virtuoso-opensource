@@ -557,8 +557,10 @@ Restrictions on variables of \c new_filters should be propagated across the tree
 This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls. */
 extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filters, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
+extern void sparp_gp_tighten_by_eq_replaced_filters (sparp_t *sparp, SPART *dest, SPART *orig, int remove_origin);
+
 /*! This makes the gp and all its sub-gps unusable and marks 'deprecated' all equivs that belong to these gps. */
-extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
+extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp, int suppress_eq_check);
 
 /*! This calls sparp_gp_deprecate() for all gps ofa subquery. */
 extern void sparp_req_top_deprecate (sparp_t *sparp, SPART *top);
@@ -746,6 +748,7 @@ typedef struct spar_sqlgen_s
   sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_sg->sg_equivs */
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
   struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
+  struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
   SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
@@ -770,6 +773,8 @@ typedef struct spar_sqlgen_s
   int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
 } spar_sqlgen_t;
 
+/*!< Releases non-mempooled internals of \c ssg (currently the ssg_out) but does not free \c ssg itself (it's supposed to be on stack (if top-level) or in mem pool (if top-level or nested) */
+void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
@@ -898,12 +903,15 @@ An occurrence of a non-blocking feature provides some hint to the optimizer of t
 #define SSG_SD_RVR		0x0010	/*!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION */
 #define SSG_SD_IN		0x0020	/*!< Allows the use of IN operator, non-blocking because can be replaced with '=' */
 #define SSG_SD_LIKE		0x0040	/*!< Allows the use of LIKE operator, blocking */
-#define SSG_SD_BI		0x0080	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
-#define SSG_SD_VOS_509		0x00FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
-#define SSG_SD_SERVICE		0x0100	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_TRANSIT		0x0200	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_VOS6		0x0FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
-#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_509	/*!< Allows everything that is supported by current version of Virtuoso */
+#define SSG_SD_GLOBALS		0x0080	/*!< Allows the use of global variables (with colon at the front of the name), blocking in most of cases */
+#define SSG_SD_BI		0x0100	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
+#define SSG_SD_VIRTSPECIFIC	0x0200	/*!< Allows the use of Virtuoso-specific features not listed above, say DEFINE, blocking in most of cases */
+#define SSG_SD_VOS_509		0x03FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
+#define SSG_SD_SERVICE		0x0400	/*!< Allows the use of SERVICE extension, blocking */
+#define SSG_SD_VOS_5_LATEST	0x0FFF	/*!< Allows everything that is supported by CVS had of Virtuoso Open Source 5.x.x */
+#define SSG_SD_TRANSIT		0x1000	/*!< Allows the use of transitivity extension, blocking */
+#define SSG_SD_VOS_6		0x1FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
+#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso */
 
 extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);

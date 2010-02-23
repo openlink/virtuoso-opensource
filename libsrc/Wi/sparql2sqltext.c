@@ -382,6 +382,44 @@ ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl)
 
 /* Printer */
 
+void
+ssg_free_internals (spar_sqlgen_t *ssg)
+{
+  if (NULL != ssg->ssg_nested_ssg)
+    ssg_free_internals (ssg->ssg_nested_ssg);
+  if (
+      ((NULL != ssg->ssg_out) && (NULL != ssg->ssg_parent_ssg) && (ssg->ssg_out != ssg->ssg_parent_ssg->ssg_out)) ||
+      ((NULL != ssg->ssg_out) && (NULL == ssg->ssg_parent_ssg))
+     )
+    {
+      strses_free (ssg->ssg_out);
+      ssg->ssg_out = NULL;
+    }
+  if (
+    ((NULL != ssg->ssg_sd_used_namespaces) && (NULL != ssg->ssg_parent_ssg) && (ssg->ssg_sd_used_namespaces != ssg->ssg_parent_ssg->ssg_sd_used_namespaces)) ||
+    ((NULL != ssg->ssg_sd_used_namespaces) && (NULL == ssg->ssg_parent_ssg))
+    )
+    {
+      id_hash_iterator_t dict_hit;
+      char **dict_key;		/* Current key to zap */
+      char **dict_val;		/* Current value to zap */
+      for (id_hash_iterator (&dict_hit, ssg->ssg_sd_used_namespaces);
+          hit_next (&dict_hit, (char **) (&dict_key), (char **) (&dict_val));
+      /*no step */ )
+        {
+          dk_free_box (dict_key[0]);
+          dk_free_box (dict_val[0]);
+        }
+      id_hash_free (ssg->ssg_sd_used_namespaces);
+      ssg->ssg_sd_used_namespaces = NULL;
+    }
+  if (NULL != ssg->ssg_parent_ssg)
+    {
+      ssg->ssg_parent_ssg->ssg_nested_ssg = NULL;
+      ssg->ssg_parent_ssg = NULL;
+    }
+}
+
 ccaddr_t ssg_id_of_gp_or_triple (SPART *tree)
 {
   switch (tree->type)
@@ -1567,7 +1605,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
       else
         {
           SPART *gp = tree->_.retval.gp;
-          sparp_equiv_t *eq;
+          sparp_equiv_t *eq = NULL;
           ssg_valmode_t eq_valmode;
           if (NULL == gp)
             gp = sparp_find_gp_by_alias (sparp, tree->_.retval.selid);
@@ -4390,7 +4428,7 @@ print_asname:
 #ifdef NDEBUG
       ssg_puts (" AS ");
 #else
-      ssg_puts (" AS /*scalar*/ ");
+      ssg_puts (" AS /*retval*/ ");
 #endif
       ssg_prin_id (ssg, asname);
     }
@@ -5265,6 +5303,14 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
               SPART *builtin = spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(BOUND_L), t_list (1, sample_var));
               ssg_print_where_or_and (ssg, "value of equiv class, BOUND check by replaced filter");
               ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL);
+            }
+          else if (SPART_VARR_ALWAYS_NULL & restrs_not_filtered_in_subqs)
+            {
+              SPART *not_builtin = spartlist (ssg->ssg_sparp, 3, BOP_NOT,
+                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)(BOUND_L), t_list (1, sample_var)),
+                NULL );
+              ssg_print_where_or_and (ssg, "value of equiv class, !BOUND check by replaced filter");
+              ssg_print_scalar_expn (ssg, not_builtin, SSG_VALMODE_BOOL, NULL_ASNAME);
             }
           sample_var->_.var.rvr.rvrRestrictions = saved_var_restr;
           eq->e_rvr.rvrRestrictions = saved_eq_restr;

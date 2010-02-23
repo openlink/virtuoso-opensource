@@ -100,6 +100,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
 void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree)
 {
   caddr_t str;
+  unsigned char *tail, *end;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree))
     {
       if (SPAR_QNAME != tree->type)
@@ -108,9 +109,17 @@ void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree)
     }
   else
     str = (caddr_t)tree;
+  end = (unsigned char *)str + (box_length (str) - 1);
+  for (tail = (unsigned char *)str; tail < end; tail++)
+    if ((tail[0] < 0x20) || strchr ("<>\"{}|^`\\", tail[0]))
+      spar_sqlprint_error ("Unable to print a QName that contain illegal characters as an IRI_REF");
 /*!!!TBD: pretty-print with namespaces */
   ssg_putchar ('<');
+#if 0
   dks_esc_write (ssg->ssg_out, str, box_length (str)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+#else
+  ssg_puts (str);
+#endif
   ssg_putchar ('>');
 }
 
@@ -251,9 +260,12 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
       ssg_puts (vname);
       return;
     }
-  if ((':' == vname[0]) && !(SSG_SD_BI & ssg->ssg_sd_flags))
+  if (':' == vname[0])
+    {
+      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-  if ((strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
+    }
+  else if ((strchr (vname, '_') || strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
   ssg_putchar ('?');
   ssg_puts (vname);
@@ -659,6 +671,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         ssg->ssg_sd_graph_gp_nesting = 0;
         if (NULL != tree->_.req_top.storage_name)
           {
+            if (!(SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags))
+              spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
             ssg_puts ("define input:storage <");
             ssg_puts (tree->_.req_top.storage_name);
             ssg_puts ("> ");
@@ -704,12 +718,11 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             if (SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype)
               continue;
             from_count++;
-            if ((0 == from_count) && (SPART_GRAPH_FROM == src->_.graph.subtype))
+            if ((1 == from_count) && (SPART_GRAPH_FROM == src->_.graph.subtype))
               ssg->ssg_sd_single_from = src->_.graph.iri;
             else
               ssg->ssg_sd_single_from = NULL;
           }
-        ssg_newline (0);
         ssg_sdprint_tree (ssg, tree->_.req_top.pattern);
         if (ASK_L != tree->_.req_top.subtype)
           {
@@ -759,6 +772,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         SPART *curr_graph = tree->_.triple.tr_graph;
         int new_g_is_dflt = 0;
         int should_close_graph, need_new_graph, place_qm;
+        int option_ctr, option_count;
         if (ssg->ssg_sd_graph_gp_nesting <= ssg->ssg_sd_forgotten_graph)
           {
             switch (SPART_TYPE (curr_graph))
@@ -853,7 +867,6 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg_sdprint_tree (ssg, tree->_.triple.tr_predicate);
             ssg->ssg_sd_prev_pred = tree->_.triple.tr_predicate;
             ssg->ssg_indent += 2;
-            ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
           }
         else if (!ssg_fields_are_equal (ssg->ssg_sd_prev_pred, tree->_.triple.tr_predicate))
           {
@@ -863,13 +876,19 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg_sdprint_tree (ssg, tree->_.triple.tr_predicate);
             ssg->ssg_sd_prev_pred = tree->_.triple.tr_predicate;
             ssg->ssg_indent += 2;
-            ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
           }
         else
           {
             ssg_puts (" ,");
             ssg_newline (0);
+          }
             ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
+        option_count = BOX_ELEMENTS_0 (tree->_.triple.options);
+        if (0 != option_count)
+          {
+            if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
+              spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+/*@@@*/
           }
         ssg->ssg_sd_forgotten_dot = 1;
         if (place_qm || (OPTIONAL_L == tree->_.triple.subtype))

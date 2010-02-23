@@ -52,11 +52,11 @@ extern "C" {
 #define SPAR_ALIAS		(ptrlong)1001
 #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002
 #define SPAR_BUILT_IN_CALL	(ptrlong)1003
-#define SPAR_CONV		(ptrlong)1004	/*!< temporary use in SQL printer */
+#define SPAR_CONV		(ptrlong)1004	/*!< Tree type for temporary use in SQL printer (conversion from one format to other) */
 #define SPAR_FUNCALL		(ptrlong)1005
 #define SPAR_GP			(ptrlong)1006
 #define SPAR_REQ_TOP		(ptrlong)1007
-#define SPAR_RETVAL		(ptrlong)1008	/*!< temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
+#define SPAR_RETVAL		(ptrlong)1008	/*!< Tree type for temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
 #define SPAR_LIT		(ptrlong)1009
 #define SPAR_QNAME		(ptrlong)1011
 #define SPAR_SQLCOL		(ptrlong)1012
@@ -157,6 +157,29 @@ typedef struct rdf_grab_config_s {
 #define SPARE_GLOBALS_ARE_COLONUMBERED	1	/*!< Global parameters are numbered in output so ?:a ?:b ?:a ?:c becomes :0 :1 :0 :2 */
 #define SPARE_GLOBALS_ARE_COLONAMED	2	/*!< Global parameters are named parameters in output so ?:a ?:b ?:a ?:c becomes :a :b :a :c */
 
+/*!< Description of query sources (all input graphs, their status, automatic data loading) */
+typedef struct sparp_sources_s
+  {
+    rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
+    dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
+    dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
+    dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
+    int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
+    int			ssrc_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
+    int			ssrc_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
+    int			ssrc_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
+  } sparp_sources_t;
+
+#define spare_grab			spare_src.ssrc_grab
+#define spare_common_sponge_options	spare_src.ssrc_common_sponge_options
+#define spare_default_graphs		spare_src.ssrc_default_graphs
+#define spare_named_graphs		spare_src.ssrc_named_graphs
+#define spare_default_graphs_listed	spare_src.ssrc_default_graphs_listed
+#define spare_named_graphs_listed	spare_src.ssrc_named_graphs_listed
+#define spare_default_graphs_locked	spare_src.ssrc_default_graphs_locked
+#define spare_named_graphs_locked	spare_src.ssrc_named_graphs_locked
+
+
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
@@ -186,14 +209,7 @@ typedef struct sparp_env_s
     id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
     id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
 #endif
-    rdf_grab_config_t	spare_grab;			/*!< Grabber configuration */
-    dk_set_t		spare_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
-    dk_set_t		spare_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
-    dk_set_t		spare_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
-    int			spare_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
-    int			spare_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
-    int			spare_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
-    int			spare_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
+    sparp_sources_t	spare_src;			/*!< Query sources, temporarily reset to all zeroes when entering SERVICE with nonempty set of sources */
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
     dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
@@ -236,7 +252,7 @@ typedef struct sparp_env_s
 
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
-  ptrlong sg_equiv_count;		/*!< A pointer to the count of used items in the beginning of \c spare_equivs[0] buffer */
+  ptrlong sg_equiv_count;		/*!< A count of used items in the beginning of \c sg_equivs buffer */
   ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
 } sparp_globals_t;
 
@@ -257,6 +273,7 @@ typedef struct sparp_s {
   int sparp_yydebug;
 #endif
   caddr_t sparp_text;
+  int sparp_permitted_syntax;		/*!< Bitmask of permitted syntax extensions, 0 for default */
   int sparp_unictr;			/*!< Unique counter for objects */
 /* Environment of yacc */
   sparp_env_t * sparp_env;
@@ -312,6 +329,11 @@ extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
 extern caddr_t spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld);
 extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);
 extern void sparyyerror_impl_1 (sparp_t *xpp, char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
+extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const char *feature_name);
+#define SPAR_ERROR_IF_UNSUPPORTED_SYNTAX(feat,name) do { \
+  if (!((feat) & sparp_arg->sparp_permitted_syntax)) \
+    spar_error_if_unsupported_syntax_imp (sparp_arg, (feat), (name)); \
+    } while (0)
 
 #define SPART_HEAD 2 /* number of elements before \c _ union in spar_tree_t */
 #define SPART_TYPE(st) ((DV_ARRAY_OF_POINTER == DV_TYPE_OF(st)) ? (st)->type : SPAR_LIT)

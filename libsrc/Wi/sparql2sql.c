@@ -3256,6 +3256,7 @@ do_detach_or_zap:
         }
 do_detach_memb:
       sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
+      sparp_gp_deprecate (sparp, memb, 1);
     }
   END_DO_BOX_FAST_REV;
   return 0;
@@ -3295,6 +3296,7 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
             }
           memb_ctr += sub_count;
           sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
+          sparp_gp_deprecate (sparp, memb, 0);
         }
     }
 }
@@ -3398,7 +3400,9 @@ just_remove_braces:
       if (0 != memb_filters_count)
         sparp_gp_attach_many_filters (sparp, parent_gp, memb_filters /*!!! should it be sparp_treelist_full_copy (sparp, memb_filters, NULL) ? */, 0, NULL);
       memb_ctr += sub_count;
+      sparp_gp_tighten_by_eq_replaced_filters (sparp, parent_gp, memb, 1);
       sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
+      sparp_gp_deprecate (sparp, memb, 0);
     }
 }
 
@@ -3737,12 +3741,17 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
           sparp_equiv_disconnect (sparp, recv_eq, eq);
         }
       END_DO_BOX_FAST;
+      eq->e_replaces_filter = 0;
     }
   END_SPARP_REVFOREACH_GP_EQUIV;
   curr->_.gp.glued_filters_count = 0; /* The (now redundand) glue may prevent us from detaching some filters */
   sparp_gp_detach_all_filters (sparp, curr, NULL);
   while (0 < BOX_ELEMENTS (curr->_.gp.members))
-    sparp_gp_detach_member (sparp, curr, 0, NULL);
+    {
+      SPART *memb = sparp_gp_detach_member (sparp, curr, 0, NULL);
+      if (SPAR_GP == memb->type)
+        sparp_gp_deprecate (sparp, memb, 1);
+    }
 }
 
 int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
@@ -4128,7 +4137,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
           sparp_equiv_audit_all (sparp, 0);
         }
       sparp->sparp_rewrite_dirty += 10;
-      sparp_gp_deprecate (sparp, sub_union);
+      sparp_gp_deprecate (sparp, sub_union, 0);
       sparp_equiv_audit_all (sparp, 0);
     }
   return 0;

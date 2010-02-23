@@ -2962,14 +2962,13 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
 	{
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  err = thr_get_error_code (self);
-	  strses_free (ssg.ssg_out);
+          ssg_free_internals (&ssg);
 	  POP_QR_RESET;
 	  sqlr_resignal (err);
 	}
       END_QR_RESET;
-
       action_sql = t_strses_string (ssg.ssg_out);
-      strses_free (ssg.ssg_out);
+      ssg_free_internals (&ssg);
       action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
       sparp->sparp_expr = NULL;
     }
@@ -3222,6 +3221,7 @@ spar_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
       sparp->sparp_sparqre = &sparqre;
       sparp->sparp_text = t_box_copy (str);
       sparp->sparp_env = se;
+      sparp->sparp_permitted_syntax = ~0;
       sparp->sparp_synthighlight = 1;
       sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL analyzer");
       if (NULL == query_charset)
@@ -3297,6 +3297,7 @@ sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all)
   if ((NULL == sparqre->sparqre_exec_user) && (NULL != sparqre->sparqre_cli))
     sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   sparp->sparp_env = spare;
+  sparp->sparp_permitted_syntax = ~0;
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
     {
@@ -3525,8 +3526,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
     {
-      strses_free (ssg.ssg_out);
-      ssg.ssg_out = NULL;
+      ssg_free_internals (&ssg);
       return;
     }
   session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
@@ -3536,8 +3536,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() done: %s", res);
 #endif
-  strses_free (ssg.ssg_out);
-  ssg.ssg_out = NULL;
+  ssg_free_internals (&ssg);
   sparqre->sparqre_compiled_text = res;
 }
 
@@ -3590,6 +3589,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
+  dk_session_t *res;
   str = bif_string_arg (qst, args, 0, "sparql_detalize");
   flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
   MP_START ();
@@ -3624,25 +3624,15 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_QR_RESET
   if (NULL != sparqre.sparqre_catched_error)
     {
-      id_hash_iterator_t dict_hit;
-      char **dict_key;		/* Current key to zap */
-      char **dict_val;		/* Current value to zap, unused */
-      for (id_hash_iterator (&dict_hit, ssg.ssg_sd_used_namespaces);
-          hit_next (&dict_hit, (char **) (&dict_key), (char **) (&dict_val));
-      /*no step */ )
-        {
-          dk_free_box (dict_key[0]);
-          dk_free_box (dict_val[0]);
-        }
-      id_hash_free (ssg.ssg_sd_used_namespaces);
-      strses_free (ssg.ssg_out);
-      ssg.ssg_out = NULL;
+      ssg_free_internals (&ssg);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
-  id_hash_free (ssg.ssg_sd_used_namespaces);
+  res = ssg.ssg_out;
+  ssg.ssg_out = NULL;
+  ssg_free_internals (&ssg);
   MP_DONE ();
-  return (caddr_t)(ssg.ssg_out);
+  return (caddr_t)(res);
 }
 
 caddr_t
@@ -3654,7 +3644,9 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str;
   spar_sqlgen_t ssg;
   sql_comp_t sc;
+  dk_session_t *res;
   str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
+  MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
@@ -3663,7 +3655,6 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text");
       sparqre.sparqre_exec_user = sec_name_to_user (uname);
     }
-  MP_START ();
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
@@ -3680,15 +3671,16 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre.sparqre_catched_error)
     {
-      strses_free (ssg.ssg_out);
-      ssg.ssg_out = NULL;
+      ssg_free_internals (&ssg);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
+  res = ssg.ssg_out;
+  ssg.ssg_out = NULL;
+  ssg_free_internals (&ssg);
   MP_DONE ();
-  return (caddr_t)(ssg.ssg_out);
+  return (caddr_t)(res);
 }
-
 
 caddr_t
 bif_sparql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3788,6 +3780,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   sparqre.sparqre_param_ctr = &param_ctr_for_sparqre;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp.sparp_sparqre = &sparqre;
+  sparp.sparp_permitted_syntax = ~0;
   sparp.sparp_env = &spare;
   sparp.sparp_sg = &sparp_globals;
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
@@ -3947,10 +3940,12 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       sparqre.sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
+      ssg_free_internals (&ssg);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
   END_QR_RESET
+  ssg_free_internals (&ssg);
   MP_DONE ();
   return (caddr_t)res;
 }
