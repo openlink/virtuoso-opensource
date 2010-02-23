@@ -1,5 +1,4 @@
 --
---
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -528,6 +527,12 @@ again:
      {
        http (sprintf ('<span %s>', rdfa));
        http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http ('</span>');
+     }
+   else if (__tag (_object) = 238)
+     {
+       http (sprintf ('<span %s>', rdfa));
+       http (st_astext (_object));
        http ('</span>');
      }
    else
