@@ -5652,7 +5652,7 @@ sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
   /* every so often, see if the best plan's time is less than the time to compile so far. If so, no point in further scenarios */
   uint32 now;
   static int ctr;
-  if (sqlo_compiler_exceeds_run_factor && 0 == ++ctr % 2)
+  if (sqlo_compiler_exceeds_run_factor /*&& 0 == ++ctr % 2 */)
     {
       if (!so->so_best)
 	return 0;
@@ -5736,14 +5736,13 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  if (ot->ot_layouts_tried >= 0)
 	    {
 	      ot->ot_layouts_tried += 1;
-	      if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
+	      if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts
+		  || sqlo_no_more_time (so, ot))
 		{
 		  if (sqlo_print_debug_output)
 		    sqlo_print (("Max layouts (%d) exceeded. Taking the best so far\n", sqlo_max_layouts));
-		  so->so_gen_pt = dfe->dfe_prev;
-		  sqlo_dt_unplace (so, dfe);
 		  ot->ot_layouts_tried = -1;
-		  return;
+		  LAYOUT_ABORT;
 		}
 	    }
 	  if (sqlo_print_debug_output)
