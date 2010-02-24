@@ -251,8 +251,8 @@ typedef unsigned char * db_buf_t;
 #define INT64_REF(p) \
     ( \
       (  ((int64)((short*)(p))[0]) << 48) \
-      | (((int64)((unsigned short*)(p))[1]) << 32) \
-      | (((int32)((unsigned short*)(p))[2]) << 16) \
+      | (((unsigned int64)((unsigned short*)(p))[1]) << 32) \
+      | (((uint32)((unsigned short*)(p))[2]) << 16) \
       | (((unsigned short*)(p))[3]) \
     )
 
