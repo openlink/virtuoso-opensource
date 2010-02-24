@@ -4134,9 +4134,13 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
               sparp_equiv_audit_all (sparp, 0);
             }
           sparp_gp_attach_many_filters (sparp, new_join, new_join_filts, 0, NULL);
+          sparp_gp_tighten_by_eq_replaced_filters (sparp, new_join, sub_union, 0);
+          sparp_gp_tighten_by_eq_replaced_filters (sparp, new_join, curr, 0);
           sparp_equiv_audit_all (sparp, 0);
         }
       sparp->sparp_rewrite_dirty += 10;
+      sparp_gp_tighten_by_eq_replaced_filters (sparp, NULL, sub_union, 1);
+      sparp_gp_tighten_by_eq_replaced_filters (sparp, NULL, curr, 1);
       sparp_gp_deprecate (sparp, sub_union, 0);
       sparp_equiv_audit_all (sparp, 0);
     }

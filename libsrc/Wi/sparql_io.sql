@@ -273,12 +273,12 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
     req_hdr := concat (req_hdr, '\r\n', local_req_hdr );
   else
     req_hdr := local_req_hdr;
-  -- dbg_obj_princ ('Request: ', req_method, req_uri);
-  -- dbg_obj_princ ('Request: ', req_hdr);
-  -- dbg_obj_princ ('Request: ', req_body);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_method, req_uri);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_hdr);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_body);
   ret_body := http_get (req_uri, ret_hdr, req_method, req_hdr, req_body);
-  -- dbg_obj_princ ('Returned header: ', ret_hdr);
-  -- dbg_obj_princ ('Returned body: ', ret_body);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned header: ', ret_hdr);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
   ret_known_content_type := http_sys_find_best_sparql_accept (ret_content_type, 0, ret_format);
   if (ret_format is null or not (ret_format in ('XML', 'RDFXML', 'TTL')))
@@ -1204,7 +1204,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' add_http_headers=', add_http_headers);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
@@ -1229,8 +1229,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       else if (ret_format = 'TTL')
         {
-          http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-          @prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
+          http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
           http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (length (rset)) when 0 then 'false' else 'true' end), ses);
         }
       else
@@ -1238,24 +1237,6 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           ret_mime := 'text/html';
           http (case (length (rset)) when 0 then 'false' else 'true' end, ses); --- stub
         }
-      goto body_complete;
-    }
-  if ('fmtaggret-0' = singlefield)
-    {
-      if (strstr (accept, 'application/sparql-results+json') is not null or strstr (accept, 'application/json') is not null)
-        {
-          if (strstr (accept, 'application/sparql-results+json') is not null)
-            ret_mime := 'application/sparql-results+json';
-          else
-            ret_mime := 'application/json';
-        }
-      else if (strstr (accept, 'application/sparql-results+xml'))
-        {
-          ret_mime := 'application/sparql-results+xml';
-        }
-      else
-        ret_mime := accept;
-      http (rset[0][0], ses);
       goto body_complete;
     }
   if ((1 = length (rset)) and
@@ -1313,7 +1294,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
   if (ret_format in ('JSON', 'JSON;RES'))
     {
-      if (('callretRDF/XML-0' = singlefield) or ('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+      if ((singlefield like 'fmtaggret-HTTP+RDF/XML%') or (singlefield like 'fmtaggret-HTTP+TURTLE-0%') or (singlefield like 'fmtaggret-HTTP+TTL-0%'))
         {
           http('"', ses);
           http_escape (cast (rset[0][0] as varchar), 11, ses, 1, 1);
@@ -1323,13 +1304,13 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         SPARQL_RESULTS_JSON_WRITE (ses, metas, rset);
       goto body_complete;
     }
-  if (('callretRDF/XML-0' = singlefield) and ('auto' = accept))
+  if ((singlefield like 'fmtaggret-HTTP+RDF/XML%') and ('auto' = accept))
     {
       ret_mime := 'application/rdf+xml';
       http (rset[0][0], ses);
       goto body_complete;
     }
-  if (('callretTURTLE-0' = singlefield) or ('callretTTL-0' = singlefield))
+  if ((singlefield like 'fmtaggret-HTTP+TURTLE%') or (singlefield like 'fmtaggret-HTTP+TTL%'))
     {
       if ((ret_format = 'TTL') or (ret_format is null))
         {
@@ -1339,6 +1320,17 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       http (rset[0][0], ses);
       if (status is not null)
         SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
+      goto body_complete;
+    }
+  if (singlefield like 'fmtaggret-%')
+    {
+      declare ws_pos integer;
+      ws_pos := strchr (singlefield, ' ');
+      if (ws_pos is not null)
+        ret_mime := subseq (singlefield, ws_pos + 1);
+      -- dbg_obj_princ ('fmtaggret selected ', ret_mime, ret_format, ' for ', rset[0][0]);
+--      if (not (singlefield like 'fmtaggret-HTTP+%'))
+        http (rset[0][0], ses);
       goto body_complete;
     }
   if (ret_format = 'HTML')

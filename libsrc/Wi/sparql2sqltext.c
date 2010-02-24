@@ -7637,22 +7637,10 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       if (NULL != formatter)
         {
           const char *fmname = tree->_.req_top.formatmode_name;
-          ssg_puts (" ) AS \"callret");
+          ssg_puts (" ) AS \"fmtaggret-");
           if (NULL != fmname)
-            {
-              if (strncmp (fmname, "HTTP+", 5))
                 ssg_puts (fmname);
-              else
-                {
-                  const char *fmname_head = fmname + 5;
-                  const char *fmname_tail = strchr (fmname_head, ' ');
-                  if (NULL == fmname_tail)
-                    ssg_puts (fmname_head);
-                  else
-                    ssg_putbuf (fmname_head, fmname_tail - fmname_head);
-                }
-            }
-          ssg_puts ("-0\" LONG VARCHAR");
+          ssg_puts ("\" LONG VARCHAR");
           ssg->ssg_indent -= 1;
           ssg_newline (0);
         }
@@ -7670,9 +7658,13 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case ASK_L:
       if (NULL != formatter)
         {
+          const char *fmname = tree->_.req_top.formatmode_name;
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
-          ssg_puts (".__ask_retval) AS \"fmtaggret-0\" LONG VARCHAR \nFROM (");
+          ssg_puts (".__ask_retval) AS \"fmtaggret-");
+          if (NULL != fmname)
+            ssg_puts (fmname);
+          ssg_puts ("\" LONG VARCHAR \nFROM (");
           ssg->ssg_indent += 1;
         }
       ssg_puts ("SELECT TOP 1 1 AS __ask_retval");

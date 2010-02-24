@@ -10045,6 +10045,16 @@ create table DB.DBA.RDF_GRAPH_USER (
 alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
 ;
 
+create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
+  jso_mark_affected (group_iri);
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet integer, in member_pattern varchar := null, in comment varchar := null)
 {
   declare group_iid IRI_ID;
@@ -10062,9 +10072,26 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
   insert into DB.DBA.RDF_GRAPH_GROUP (
     RGG_IID, RGG_IRI, RGG_MEMBER_PATTERN, RGG_COMMENT )
   values (group_iid, group_iri, member_pattern, comment);
-  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (?, ?)', vector (group_iri, group_iid));
+}
+;
+
+create procedure DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
+{
+  group_iri := cast (group_iri as varchar);
+  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
+  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid, vector ());
+  dict_remove (__rdf_graph_group_dict(), group_iid);
   jso_mark_affected (group_iri);
+  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
+      declare privates any;
+      privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
+      foreach (IRI_ID iid in privates) do
+        jso_mark_affected (id_to_iri (iid));
+    }
 }
 ;
 
@@ -10087,15 +10114,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DROP (in group_iri varchar, in quiet int
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = group_iid;
   delete from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = group_iid;
   commit work;
-  dict_remove (__rdf_graph_group_dict(), group_iid);
-  jso_mark_affected (group_iri);
-  if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
-    {
-      declare privates any;
-      privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
-      foreach (IRI_ID iid in privates) do
-        jso_mark_affected (id_to_iri (iid));
-    }
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (?, ?)', vector (group_iri, group_iid));
 }
 ;
 
@@ -10131,11 +10150,15 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (in group_iri varchar, in gr
 {
   group_iri := cast (group_iri as varchar);
   memb_iri := cast (memb_iri as varchar);
-  jso_mark_affected (group_iri);
   dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
   dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
   dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
   dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid,
+    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+     where RGGM_GROUP_IID = group_iid
+     order by RGGM_MEMBER_IID ) );
+  jso_mark_affected (group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
       dict_put (__rdf_graph_group_of_privates_dict(), memb_iid, 1);
@@ -10159,10 +10182,6 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
     DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
   insert soft DB.DBA.RDF_GRAPH_GROUP_MEMBER (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   values (group_iid, memb_iid);
-  dict_put (__rdf_graph_group_dict(), group_iid,
-    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
-     where RGGM_GROUP_IID = group_iid
-     order by RGGM_MEMBER_IID ) );
   commit work;
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (?, ?, ?, ?)', vector (group_iri, group_iid, memb_iri, memb_iid));
 }
@@ -10176,6 +10195,11 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (in group_iri varchar, in gr
   dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
   dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
   dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
+  dict_put (__rdf_graph_group_dict(), group_iid,
+    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+     where RGGM_GROUP_IID = group_iid
+     order by RGGM_MEMBER_IID ) );
+  jso_mark_affected (group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
       dict_remove (__rdf_graph_group_of_privates_dict(), memb_iid);
@@ -10199,10 +10223,6 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri v
     DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i0);
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER
   where RGGM_GROUP_IID = group_iid and RGGM_MEMBER_IID = memb_iid;
-  dict_put (__rdf_graph_group_dict(), group_iid,
-    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
-     where RGGM_GROUP_IID = group_iid
-     order by RGGM_MEMBER_IID ) );
   commit work;
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (?, ?, ?, ?)', vector (group_iri, group_iid, memb_iri, memb_iid));
 }
@@ -11166,16 +11186,26 @@ create procedure rdfs_pn (in is_class int)
 ;
 
 
-create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_i, in visited any, inout supers any, in pos int)
+create procedure rdf_owl_sas_p (in gr iri_id, in name varchar, in super_c iri_id, in c iri_id, in visited any, inout supers any, in pos int)
 {
-  for select o from rdf_quad where g = gr and p = rdf_sas_iri () and s = c do
+  declare txt varchar;
+  declare meta, cc, res any;
+  txt := sprintf ('sparql define output:valmode "LONG"  define input:storage ""select ?o from <%s> where { <%s> <http://www.w3.org/2002/07/owl#sameAs> ?o }',
+    id_to_iri(gr), id_to_iri(c) );
+  exec (txt, null, null,  vector (), 0, meta, null, cc);
+  while (0 = exec_next (cc, null, null, res))
     {
-      rdfs_closure_1 (gr, name, super_c, o, 0, visited, supers, pos);
+      rdfs_closure_1 (gr, name, super_c, res[0], 0, visited, supers, pos);
     }
-  for select s from rdf_quad where g = gr and p = rdf_sas_iri () and o = c do
+  exec_close (cc);
+  txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s from <%s> where { ?s <http://www.w3.org/2002/07/owl#sameAs> <%s> }',
+    id_to_iri(gr), id_to_iri(c) );
+  exec (txt, null, null,  vector (), 0, meta, null, cc);
+  while (0 = exec_next (cc, null, null, res))
     {
-      rdfs_closure_1 (gr, name, super_c, s, 0, visited, supers, pos);
+      rdfs_closure_1 (gr, name, super_c, res[0], 0, visited, supers, pos);
     }
+  exec_close (cc);
 }
 ;
 
@@ -11192,6 +11222,8 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
   declare visited any;
   declare supers any;
   declare eq_c, eq_p iri_id;
+  declare txt varchar;
+  declare idx integer;
   declare cc, res, st, msg, meta  any;
   declare v any;
   declare inx int;
@@ -11200,25 +11232,31 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
   if (isinteger (gr))
     return;
 
-  exec (sprintf ('select S, P, O from DB.DBA.RDF_QUAD where G = __i2idn (''%S'')  and (P = rdf_owl_iri (1) or P = rdf_owl_iri (0) or P = rdf_owl_iri (2) or P = rdf_owl_iri (3) or P = rdf_sas_iri ()) option (QUIETCAST)', gn),
-	null, null,  vector (), 0, meta, null, cc);
-
+  for (idx := 0; idx <= 4; idx := idx + 1)
+    {
+      txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s ?o from <%s> where { ?s <%s> ?o . filter (!isLITERAL (?o)) }',
+        id_to_iri (gr), id_to_iri (case (idx) when 4 then rdf_sas_iri () else rdf_owl_iri (idx) end) );
+      exec (txt, null, null, vector (), 0, meta, null, cc);
   while (0 = exec_next (cc, null, null, res))
     {
-      declare s, p, o any;
-      s := res[0]; p := res[1]; o := res[2];
-      if (p = rdf_sas_iri ())
+          declare s, o any;
+          s := res[0]; o := res[1];
+          if (idx = 4)
 	{
 	  rdf_inf_dir (ri_name, s, o, 2);
 	  rdf_inf_dir (ri_name, s, o, 3);
 	}
       else
-	rdf_inf_dir (ri_name, o, s, case when p = rdf_owl_iri (0) then 0 when p = rdf_owl_iri (1) then 1
-		     when p = rdf_owl_iri (2) then 2 else 3 end);
+            rdf_inf_dir (ri_name, o, s, idx);
+        }
     }
   exec_close (cc);
 -- Loading inverse functional properties
-  v := (select vector_agg (S) from RDF_QUAD where G = gr and O = iri_to_id ('http://www.w3.org/2002/07/owl#InverseFunctionalProperty') and P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') option (QUIETCAST));
+  txt := sprintf ('select DB.DBA.VECTOR_AGG (sub."s") from
+  (sparql define output:valmode "LONG" select ?s from <%s> where { ?s a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> }) sub option (QUIETCAST)',
+    id_to_iri (gr) );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
   if (0 < length (v))
     {
       rdf_inf_set_ifp_list (ri_name, v);
@@ -11231,22 +11269,32 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
         }
     }
 -- Loading inverse functions
-  v := (select DB.DBA.VECTOR_CONCAT_AGG (vector (id_to_iri (q1.S), id_to_iri (q1.O), id_to_iri (q1.O), id_to_iri (q1.S))) from DB.DBA.RDF_QUAD as q1 where
-    q1.G = gr and q1.P = iri_to_id ('http://www.w3.org/2002/07/owl#inverseOf') and
-    isiri_id (q1.O) and
-    ((id_to_iri (q1.S) <= id_to_iri (q1.O)) or not exists
-      (select top 1 1 from DB.DBA.RDF_QUAD as q2 where
-    q2.G = gr and q2.P = iri_to_id ('http://www.w3.org/2002/07/owl#inverseOf') and q2.S = q1.O and q2.O = q1.S) )
-    option (QUIETCAST));
-  v := vector_concat (v,
-    (select DB.DBA.VECTOR_CONCAT_AGG (vector (id_to_iri (q1.S), id_to_iri (q1.S))) from RDF_QUAD as q1 where q1.G = gr and q1.O = iri_to_id ('http://www.w3.org/2002/07/owl#SymmetricProperty') and q1.P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') option (QUIETCAST)) );
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."o", sub."o", sub."s")) from
+  (sparql define input:storage "" select ?s ?o from <%s> where {
+    ?s <http://www.w3.org/2002/07/owl#inverseOf> ?o .
+    optional { ?o <http://www.w3.org/2002/07/owl#inverseOf> ?s2 . filter (?s2 = ?s ) }
+    filter ((str (?s) <= str (?o)) || !BOUND(?s2)) }) sub option (QUIETCAST)',
+    id_to_iri (gr) );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."s")) from
+  (sparql define input:storage "" select ?s from <%s> where {
+    ?s a <http://www.w3.org/2002/07/owl#SymmetricProperty> }) sub option (QUIETCAST)',
+    id_to_iri (gr) );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := vector_concat (v, res[0][0]);
   if (0 < length (v))
     {
       gvector_sort (v, 2, 0, 1);
       rdf_inf_set_inverses (ri_name, v);
     }
 -- Loading bitmask properties of functions
-  v := (select DB.DBA.VECTOR_CONCAT_AGG (vector (id_to_iri (q1.S), 1)) from RDF_QUAD as q1 where q1.G = gr and q1.O = iri_to_id ('http://www.w3.org/2002/07/owl#TransitiveProperty') and q1.P = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') option (QUIETCAST));
+  txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", 1)) from
+  (sparql define input:storage "" select ?s from <%s> where {
+    ?s a <http://www.w3.org/2002/07/owl#TransitiveProperty> }) sub option (QUIETCAST)',
+    id_to_iri (gr) );
+  exec (txt, null, null, vector (), 0, meta, res);
+  v := res[0][0];
   if (0 < length (v))
     {
       gvector_sort (v, 2, 0, 1);
