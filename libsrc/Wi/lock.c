@@ -1853,21 +1853,36 @@ unsigned long checkpointed_last_time = 0;
 #include <sys/resource.h>
 #endif
 
-
-int last_majflt;
+int last_majflt = 0;
+int32 swap_guard_on = 0;
+int process_is_swapping = 0;
 
 void
 the_grim_swap_guard ()
 {
 #ifdef HAVE_GETRUSAGE
   struct rusage ru;
-  if (wi_inst.wi_is_checkpoint_pending)
+  if (!swap_guard_on)
     return;
+  if (wi_inst.wi_is_checkpoint_pending)
   return;
   getrusage (RUSAGE_SELF, &ru);
+#ifdef GPF_ON_SWAPPING
   if (ru.ru_majflt - last_majflt > 300)
     GPF_T1 ("started swapping");
+#endif
+  if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > 300)
+    {
+      if (!process_is_swapping)
+	log_error ("The process started swapping, all pending transactions will be killed");
+      process_is_swapping = 1;
+    }
+  else
+    {
+      if (process_is_swapping)
+	process_is_swapping = 0;
   last_majflt = ru.ru_majflt;
+    }
 #endif
 }
 
@@ -1902,13 +1917,16 @@ the_grim_lock_reaper (void)
       client_connection_t * cli = lt->lt_client;
       CHECK_DK_MEM_RESERVE (lt);
       if (lt->lt_started &&
-	  lt->lt_timeout &&
-	  now - lt->lt_started > lt->lt_timeout &&
+	  ( (lt->lt_timeout && now - lt->lt_started > lt->lt_timeout) || (process_is_swapping && LT_IS_RUNNING (lt)) ) &&
 	  lt->lt_status == LT_PENDING)
 	{
 	  lt->lt_error = LTE_TIMEOUT;
 	  dbg_printf (("  Trx %s timed out after %ld msec.\n",
 		       LT_NAME (lt), now - lt->lt_started));
+#ifndef NDEBUG
+	  if (process_is_swapping)
+	    ws_lt_trace (lt);
+#endif
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 	  LEAVE_TXN;
 	  goto kill_next_txn;

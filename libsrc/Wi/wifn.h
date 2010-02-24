@@ -463,6 +463,7 @@ void it_cache_check (index_tree_t * it, int mode);
 
 void lt_new_w_id (lock_trx_t * lt);
 extern resource_t * idp_rc;
+extern int32 swap_guard_on;
 
 
 /* page.c */
@@ -1192,4 +1193,7 @@ extern dk_mutex_t * extent_map_create_mtx;
 extern int32 sql_const_cond_opt;
 extern int aq_max_threads;
 extern int in_log_replay;
+#ifndef NDEBUG
+void ws_lt_trace (lock_trx_t * lt);
+#endif
 #endif /* _WIFN_H */

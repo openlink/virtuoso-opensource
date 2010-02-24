@@ -4730,6 +4730,49 @@ bif_http_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+void
+ws_lt_trace (lock_trx_t * lt)
+{
+  static char * fname = "http_trace.txt";
+  dk_session_t * ses;
+  int to_read, fd = -1;
+  char buffer[4096];
+  int64 len, ofs;
+
+  ASSERT_IN_TXN;
+  if (!lt || !lt->lt_client || !lt->lt_client->cli_ws || !lt->lt_client->cli_ws->ws_req_log)
+    return;
+  ses = lt->lt_client->cli_ws->ws_req_log;
+  len = strses_length (ses), ofs = 0;
+  fd = fd_open (fname, OPEN_FLAGS);
+  if (fd == -1)
+    {
+      log_error ("Can not open ws trace file %s", fname);
+      goto err;
+    }
+  if (LSEEK (fd, 0, SEEK_END) == -1)
+    {
+      log_error ("Can not seek in ws trace file %s", fname);
+      goto err;
+    }
+  while (ofs < len)
+    {
+      int readed;
+      to_read = MIN (sizeof (buffer), len - ofs);
+      if (0 != (readed = strses_get_part (ses, buffer, ofs, to_read)))
+	GPF_T;
+      if (to_read != write (fd, buffer, to_read))
+	{
+	  log_error ("Can not write in ws trace file %s", fname);
+	  goto err;
+	}
+      ofs += to_read;
+    }
+err:
+  fd_close (fd, fname);
+  return;
+}
+
 caddr_t
 bif_http_pending_req (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
