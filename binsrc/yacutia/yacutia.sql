@@ -6374,3 +6374,14 @@ y_trunc_uri (in s varchar, in maxlen int := 80)
 }
 ;
 
+create procedure y_rdf_api_type (in t int)
+{
+  if (t = 0)
+    return 'content';
+  else if (t = 1)
+    return 'URL';
+  else if (t = 2)
+    return 'keywords';
+  return '';
+}
+;
