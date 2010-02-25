@@ -1510,6 +1510,15 @@ ODRIVE.validateURL = function (fld)
   return true;
 }
 
+ODRIVE.validateURI = function (fld)
+{
+  var regex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  if (!regex.test(fld.value))
+    return ODRIVE.validateError(fld, 'Invalid URI address');
+
+  return true;
+}
+
 ODRIVE.validateField = function (fld)
 {
   if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
@@ -1518,6 +1527,8 @@ ODRIVE.validateField = function (fld)
     return ODRIVE.validateMail(fld);
   if (OAT.Dom.isClass(fld, '_url_'))
     return ODRIVE.validateURL(fld);
+  if (OAT.Dom.isClass(fld, '_uri_'))
+    return ODRIVE.validateURI(fld);
   return true;
 }
 
@@ -1528,7 +1539,7 @@ ODRIVE.validateInputs = function (fld)
   for (i = 0; i < form.elements.length; i++)
   {
     var fld = form.elements[i];
-    if (OAT.Dom.isClass(fld, '_validate_'))
+    if (!fld.readOnly && OAT.Dom.isClass(fld, '_validate_'))
     {
       retValue = ODRIVE.validateField(fld);
       if (!retValue)
