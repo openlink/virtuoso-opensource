@@ -538,7 +538,7 @@
                           for (N := 0; N < length (self.v_members); N := N + 1)
                           {
                             if (length (self.v_members[N]))
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("x", null, {fld_1: {mode: 43, value: "%s"}, btn_1: {mode: 2}});});', self.v_members[N]));
+                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("x", null, {fld_1: {mode: 43, className: "_validate_ _uri_", value: "%s"}, btn_1: {mode: 2}});});', self.v_members[N]));
                           }
                         ?>
                 		    </script>
@@ -547,7 +547,7 @@
                     </table>
                   </td>
                   <td valign="top" nowrap="nowrap">
-                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 43}, btn_1: {mode: 2}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
+                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 43, className: '_validate_ _uri_'}, btn_1: {mode: 2}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                   </td>
                 </tr>
               </table>
@@ -556,7 +556,7 @@
         </div>
 
         <div class="new-form-footer">
-          <v:button action="simple" value="--initcap (subseq (self.v_mode, 2))" xhtml_class="form-button">
+          <v:button action="simple" value="--initcap (subseq (self.v_mode, 2))" xhtml_class="form-button" xhtml_onclick="return ODRIVE.validateInputs(this);">
             <v:on-post>
               <![CDATA[
                 declare N integer;

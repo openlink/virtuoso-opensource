@@ -1146,7 +1146,7 @@
         <div class="boxHeader" style="text-align: center;">
           <b>Search </b>
           <v:text name="simple" value="--self.search_simple" fmt-function="ODRIVE.WA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
-          <xsl:call-template name="nbsp" />
+          &amp;nbsp;
           |
           <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>
           |
@@ -1461,7 +1461,7 @@
                       <table cellspacing="0" cellpadding="0">
                         <tr>
                           <td>
-                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_0" value="0" %s title="File" />', case when self.dav_source = 0 then 'checked="checked"' else '' end)); ?><xsl:call-template name="nbsp" />
+                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_0" value="0" %s title="File" />', case when self.dav_source = 0 then 'checked="checked"' else '' end)); ?>&amp;nbsp;
                           </td>
                           <td>
                             <b><vm:label for="dav_source_0" value="--'File'" /></b>
@@ -1472,7 +1472,7 @@
                         </tr>
                         <tr>
                           <td>
-                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_1" value="1" %s title="URL" />', case when self.dav_source = 1 then 'checked="checked"' else '' end)); ?><xsl:call-template name="nbsp" />
+                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_1" value="1" %s title="URL" />', case when self.dav_source = 1 then 'checked="checked"' else '' end)); ?>&amp;nbsp;
                           </td>
                           <td>
                             <b><vm:label for="dav_source_1" value="--'URL'" /></b>
@@ -1483,7 +1483,7 @@
                         </tr>
                         <tr id="rdf_store">
                           <td>
-                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_2" value="2" %s title="RDF Store" />', case when self.dav_source = 2 then 'checked="checked"' else '' end)); ?><xsl:call-template name="nbsp" />
+                            <?vsp http (sprintf ('<input type="radio" name="dav_source" id="dav_source_2" value="2" %s title="RDF Store" />', case when self.dav_source = 2 then 'checked="checked"' else '' end)); ?>&amp;nbsp;
                           </td>
                           <td>
                             <b><vm:label for="dav_source_2" value="--'RDF Store'" /></b>
@@ -1730,7 +1730,7 @@
                       <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
                     </th>
                     <td>
-                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" xhtml_disabled="disabled" /><xsl:call-template name="nbsp" />
+                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
                       <v:template name="tform_18_1" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_public').value = ''" class="button" />
                       </v:template>
@@ -1741,7 +1741,7 @@
                       <v:label for="f_tags_private" value="Private tags (comma-separated)"/>
                     </th>
                     <td>
-                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" xhtml_disabled="disabled" /><xsl:call-template name="nbsp" />
+                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
                       <v:template name="tform_18_2" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_private').value = ''" class="button" />
                       </v:template>
@@ -1882,7 +1882,7 @@
                                   M := M + 1;
                                   if (self.dav_enable)
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
@@ -1895,7 +1895,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button3 pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: '_validate_ _uri_'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
@@ -2004,7 +2004,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--self.dav_enable" />
+          <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--self.dav_enable" xhtml_onclick="return ODRIVE.validateInputs(this);"/>
           <v:button action="simple" name="cCancel" value="Cancel" >
             <v:on-post>
               <![CDATA[
