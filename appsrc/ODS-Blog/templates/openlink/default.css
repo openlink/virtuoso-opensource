@@ -1154,3 +1154,9 @@ a.collapsed {
     padding-left: 15px;
     background: url(/weblog/public/images/collapsed.gif) 5px 75% no-repeat;
 }
+
+
+.tweetmeme_button {
+      float:left;
+      padding: 0 5pt 0 0; 
+}

@@ -12248,6 +12248,15 @@ window.onload = function (e)
       </xsl:attribute>
   </xsl:template>
 
+  <xsl:template match="vm:external-link">
+      <xsl:attribute name="{@name}">
+	  <xsl:choose>
+	      <xsl:when test="@value = 'permalink-iri'"><xsl:value-of select="@url"/><![CDATA[<?U concat(self.blog_iri, '/', t_post_id) ?>]]></xsl:when>
+	      <xsl:when test="@value = 'blog-iri'"><xsl:value-of select="@url"/><![CDATA[<?U self.blog_iri ?>]]></xsl:when>
+	  </xsl:choose>
+      </xsl:attribute>
+  </xsl:template>
+
   <xsl:template match="vm:keep-variable"/>
 
   <xsl:template match="vm:*">
