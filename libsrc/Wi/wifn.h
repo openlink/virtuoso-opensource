@@ -427,6 +427,7 @@ void it_cache_check (index_tree_t * it);
 
 
 extern resource_t * idp_rc;
+extern int32 swap_guard_on;
 
 
 /* row.c */

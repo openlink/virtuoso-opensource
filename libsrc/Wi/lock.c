@@ -1716,6 +1716,7 @@ dk_mutex_t *time_mtx;
 unsigned long checkpointed_last_time = 0;
 
 unsigned long cfg_resources_clear_interval = 0;
+int32 swap_guard_on;
 
 void
 the_grim_lock_reaper (void)
