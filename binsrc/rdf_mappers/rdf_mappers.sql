@@ -4725,7 +4725,7 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
 
 create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-    declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+    declare xd, xt, url, tmp, api_key, img_id, hdr, exif, header any;
     declare exit handler for sqlstate '*'
     {
         DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -4747,26 +4747,32 @@ create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri va
     DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://purl.org/dc/terms/subject', resourceURL);
     DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://www.w3.org/2002/07/owl#sameAs', docIRI);
     DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/Document');
-
+    header := vector();
     for (declare i int, i := 0; i < length (xml2); i := i + 1)
     {
         cur := trim(cast(xml2[i] as varchar), '\r\n');
         xml3 := split_and_decode(cur, 0, '\0\0,');
         for (declare j int, j := 0; j < length (xml3); j := j + 1)
         {
-            DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))));
             if (i = 0)
             {
-                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
+                header := vector_concat(header, vector(xml3[j]));
+                --DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
+                --DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
+                --DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
+                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://www.w3.org/2000/01/rdf-schema#label', concat('Column: ', xml3[j]));
             }
             else
             {
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#has_container', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#has_container', resourceURL);
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))), 'http://purl.org/ontology/bibo/content', xml3[j]);
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('row', cast(i as varchar), 'col', cast(j as varchar))));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://rdfs.org/sioc/ns#has_container', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j])));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://rdfs.org/sioc/ns#has_container', resourceURL);
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://purl.org/ontology/bibo/content', xml3[j]);
+                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://www.w3.org/2000/01/rdf-schema#label', concat('Column: ', header[j], ', Row: ', cast(i as varchar)));
+                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j])), 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))));
+                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))));
             }
         }
     }
@@ -7204,13 +7210,36 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
   declare new_opts any;
-  declare dummy any;
+  declare dummy, spmode, triples, graph, tmp any;
   declare rc int;
 
   dummy := null;
   RM_LOG_CLEAR ();
   RM_GRAPH_PT_CK (graph_iri, dest);
-  for select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
+  graph := coalesce (dest, graph_iri);
+  spmode := get_keyword ('meta-cartridges-mode', options, '');
+  if (spmode = 'none')
+    return 0;
+  if (spmode <> '')
+    {
+      triples := (select vector_agg (vector (S,P,O)) from RDF_QUAD where g = iri_to_id (graph));
+      tmp := split_and_decode (spmode, 0, '\0\0,');
+      if (length (tmp) = 1 and atoi (tmp[0]) <= 0)
+	spmode := abs (atoi (tmp[0]));
+      else
+        {
+	  declare inx any;
+	  inx := 0;
+	  foreach (varchar x in tmp) do
+	     {
+	       tmp[inx] := atoi (tmp[inx]);
+	       inx := inx + 1;
+	     }  
+	  spmode := tmp;
+        }	  
+    }  
+  for select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS, MC_API_TYPE 
+    from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
       declare val_match, st any;
 
@@ -7224,6 +7253,11 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	}
       else
 	val_match := null;
+
+      if (spmode <> '' and isinteger (spmode) and spmode <> MC_API_TYPE)
+        goto try_next_mapper;	
+      if (spmode <> '' and isvector (spmode) and not position (MC_ID, spmode))
+        goto try_next_mapper;	
 
       if (registry_get ('__sparql_mappers_debug') = '1')
 	dbg_obj_prin1 ('Trying PP ', MC_HOOK);
@@ -7257,6 +7291,8 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	}
       try_next_mapper:;
     }
+  if (spmode <> '')
+    DB.DBA.RDF_DELETE_TRIPLES (graph, triples);
   if (registry_get ('__sparql_mappers_debug') = '1')
     dbg_obj_prin1 ('END of PP mappings');
 }
@@ -7351,10 +7387,10 @@ DB.DBA.RM_LOAD_ONTOLOGIES ();
 
 drop procedure DB.DBA.RM_LOAD_ONTOLOGIES;
 
-create procedure RM_DO_SPONGE (in _G any)
+create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '')
 {
   set_user_id ('SPARQL');
-  DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft' ,  'refresh_free_text' ,  1));
+  DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft' ,  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type));
 }
 ;
 
