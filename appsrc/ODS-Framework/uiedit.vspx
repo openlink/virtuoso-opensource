@@ -128,21 +128,6 @@ function checkRest (form, sel)
 	}
     }
 }
-            function selectAllCheckboxes (obj, prefix)
-              {
-              var objForm = obj.form;
-              for (var i = 0; i < objForm.elements.length; i++)
-                {
-                var o = objForm.elements[i];
-                if (o != null && o.type == "checkbox" && !o.disabled && (!prefix || o.name.indexOf (prefix) != -1))
-                  o.checked = (obj.value == 'Select All');
-  }
-              if (obj.value == 'Select All')
-                obj.value = 'Unselect All';
-  else
-                obj.value = 'Select All';
-              obj.focus();
-}
             ODSInitArray.push ( function () {
               OAT.Loader.loadFeatures(["json", "ws", "calendar", "combolist"], function(){});
             });

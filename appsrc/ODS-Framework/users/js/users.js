@@ -23,7 +23,7 @@
 // publics
 var lfTab;
 var ufTab;
-var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2']];
+var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2']];
 
 var setupWin;
 var cRDF;
@@ -147,6 +147,7 @@ function myInit() {
     OAT.Event.attach("pf_tab_0_3", 'click', function(){pfTabSelect('pf_tab_0_', 3);});
     OAT.Event.attach("pf_tab_0_4", 'click', function(){pfTabSelect('pf_tab_0_', 4);});
     OAT.Event.attach("pf_tab_0_5", 'click', function(){pfTabSelect('pf_tab_0_', 5);});
+    OAT.Event.attach("pf_tab_0_6", 'click', function(){pfTabSelect('pf_tab_0_', 6);});
     pfTabInit('pf_tab_0_', $v('formSubtab'));
 
     OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 0);});
@@ -160,7 +161,7 @@ function myInit() {
 function myBeforeSubmit ()
 {
   needToConfirm = false;
-  if ($v('formTab') == '0' && $v('formSubtab') == '5' && $('favorites'))
+  if ($v('formTab') == '0' && $v('formSubtab') == '6' && $('favorites'))
     $('favorites').value = prepareFavorites();
 }
 
@@ -173,7 +174,7 @@ function myCheckLeave (form)
   var dirty = false;
   var retValue = true;
 
-  if (formTab == 0 && formSubtab == 5 && $('favorites'))
+  if (formTab == 0 && formSubtab == 6 && $('favorites'))
     $('favorites').value = prepareFavorites();
 
   if (needToConfirm && (formTab < 2))
@@ -883,6 +884,7 @@ function ufProfileLoad(No) {
     $('formTab').value = "" + formTab;
     $('formSubtab').value = "" + formSubtab;
   }
+  pfCleanFOAFData();
   ufCleanTablesData("x1");
   ufCleanTablesData("x2");
   ufCleanTablesData("x3");
@@ -1167,17 +1169,17 @@ function pfUpdateSubmit(No) {
 
   var formTab = parseInt($v('formTab'));
   var formSubtab = parseInt($v('formSubtab'));
-  if ((formTab == 0) && (formSubtab == 2))
+  if ((formTab == 0) && (formSubtab == 3))
   {
     updateOnlineAccounts('x4', 'P');
     ufProfileLoad(No);
   }
-  else if ((formTab == 0) && (formSubtab == 3))
+  else if ((formTab == 0) && (formSubtab == 4))
   {
     updateBioEvents('x5');
     ufProfileLoad(No);
   }
-  else if ((formTab == 0) && (formSubtab == 5))
+  else if ((formTab == 0) && (formSubtab == 6))
   {
     updateFavorites('x6');
     ufProfileLoad(No);
@@ -1193,6 +1195,56 @@ function pfUpdateSubmit(No) {
     if (formTab == 0)
     {
       if (formSubtab == 0)
+      {
+        // Import
+        if ($v('cb_item_i_name') == '1')
+          S += '&nickName=' + encodeURIComponent($v('i_nickName'));
+        if ($v('cb_item_i_title') == '1')
+          S += '&title=' + encodeURIComponent($v('i_title'));
+        if ($v('cb_item_i_firstName') == '1')
+          S += '&firstName=' + encodeURIComponent($v('i_firstName'));
+        if ($v('cb_item_i_lastName') == '1')
+          S += '&lastName=' + encodeURIComponent($v('i_lastName'));
+        if ($v('cb_item_i_fullName') == '1')
+          S += '&fullName=' + encodeURIComponent($v('i_fullName'));
+        if ($v('cb_item_i_gender') == '1')
+          S += '&gender=' + encodeURIComponent($v('i_gender'));
+        if ($v('cb_item_i_mail') == '1')
+          S += '&mail=' + encodeURIComponent($v('i_mail'));
+        if ($v('cb_item_i_birthday') == '1')
+          S += '&birthday=' + encodeURIComponent($v('i_birthday'));
+        if ($v('cb_item_i_homepage') == '1')
+          S += '&homepage=' + encodeURIComponent($v('i_homepage'));
+        if ($v('cb_item_i_icq') == '1')
+          S += '&icq=' + encodeURIComponent($v('i_icq'));
+        if ($v('cb_item_i_aim') == '1')
+          S += '&aim=' + encodeURIComponent($v('i_aim'));
+        if ($v('cb_item_i_yahoo') == '1')
+          S += '&yahoo=' + encodeURIComponent($v('i_yahoo'));
+        if ($v('cb_item_i_msn') == '1')
+          S += '&msn=' + encodeURIComponent($v('i_msn'));
+        if ($v('cb_item_i_skype') == '1')
+          S += '&skype=' + encodeURIComponent($v('i_skype'));
+        if ($v('cb_item_i_homelat') == '1')
+          S += '&homeLatitude=' + encodeURIComponent($v('i_homelat'));
+        if ($v('cb_item_i_homelng') == '1')
+          S += '&homeLongitude=' + encodeURIComponent($v('i_homelng'));
+        if ($v('cb_item_i_homelng') == '1')
+          S += '&homePhone=' + encodeURIComponent($v('i_homePhone'));
+        if ($v('cb_item_i_businessOrganization') == '1')
+          S += '&businessOrganization=' + encodeURIComponent($v('i_businessOrganization'));
+        if ($v('cb_item_i_businessHomePage') == '1')
+          S += '&businessHomePage=' + encodeURIComponent($v('i_businessHomePage'));
+        if ($v('cb_item_i_sumary') == '1')
+          S += '&sumary=' + encodeURIComponent($v('i_sumary'));
+        if ($v('cb_item_i_tags') == '1')
+          S += '&tags=' + encodeURIComponent($v('i_tags'));
+        if ($v('cb_item_i_interests') == '1')
+          S += '&interests=' + encodeURIComponent($v('i_interests'));
+        if ($v('cb_item_i_topicInterests') == '1')
+          S += '&topicInterests=' + encodeURIComponent($v('i_topicInterests'));
+      }
+      if (formSubtab == 1)
       {
         S = S
         + '&nickName=' + encodeURIComponent($v('pf_nickName'))
@@ -1210,7 +1262,7 @@ function pfUpdateSubmit(No) {
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);
       }
-      if (formSubtab == 1)
+      if (formSubtab == 2)
       {
         S = S
         + '&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation'))
@@ -1226,7 +1278,7 @@ function pfUpdateSubmit(No) {
 			+ '&homePhone=' + encodeURIComponent($v('pf_homePhone'))
   			+ '&homeMobile=' + encodeURIComponent($v('pf_homeMobile'));
   	  }
-      if (formSubtab == 4)
+      if (formSubtab == 5)
       {
         S = S
         + '&icq=' + encodeURIComponent($v('pf_icq'))
@@ -1333,6 +1385,136 @@ function pfCancelSubmit() {
   OAT.Dom.hide("pf");
   selectProfile()
 	return false;
+}
+
+function pfCleanFOAFData() {
+  $('pf_foaf').value = '';
+  $('pf_foaf').defaultValue = '';
+  $('cb_all').checked = false;
+  $('cb_all').defaultChecked = false;
+	$('i_tbody').innerHTML = '';
+	OAT.Dom.hide('i_tbl');
+}
+
+function pfGetFOAFData(iri) {
+	var S = '/ods/api/user.getFOAFData?foafIRI=' + encodeURIComponent(iri);
+	var x = function(data) {
+		var o = null;
+		try {
+			o = OAT.JSON.parse(data);
+		} catch (e) {
+			o = null;
+		}
+		if (o && o.iri) {
+  	  OAT.Dom.show('i_tbl');
+  	  var tbody = $('i_tbody');
+
+			pfSetFOAFValue(tbody, o.iri,                  'Personal WebID',        'i_iri');
+			pfSetFOAFValue(tbody, o.nick,                 'Nick Name',             'i_nickName');
+			pfSetFOAFValue(tbody, o.title,                'Title',                 'i_title');
+			pfSetFOAFValue(tbody, o.firstName,            'First Name',            'i_firstName');
+			pfSetFOAFValue(tbody, o.family_name,          'Last Name',             'i_lastName');
+			pfSetFOAFValue(tbody, o.name,                 'Full Name',             'i_fullName');
+			pfSetFOAFValue(tbody, o.gender,               'Gender',                'i_gender');
+			pfSetFOAFValue(tbody, o.mbox,                 'E-mail',                'i_mail');
+			pfSetFOAFValue(tbody, o.birthday,             'Birthday',              'i_birthday');
+			pfSetFOAFValue(tbody, o.homepage,             'Personal Webpage',      'i_homepage');
+			pfSetFOAFValue(tbody, o.icqChatID,            'Icq',                   'i_icq');
+			pfSetFOAFValue(tbody, o.skypeChatID,          'Skype ID',              'i_skype');
+			pfSetFOAFValue(tbody, o.aimChatID,            'AIM Name',              'i_aim');
+			pfSetFOAFValue(tbody, o.yahooChatID,          'Yahoo! ID',             'i_yahoo');
+			pfSetFOAFValue(tbody, o.msnChatID,            'MSN Messenger',         'i_msn');
+			pfSetFOAFValue(tbody, o.phone,                'Phone',                 'i_homePhone');
+			pfSetFOAFValue(tbody, o.lat,                  'Latitude',              'i_homelat');
+			pfSetFOAFValue(tbody, o.lng,                  'Longitude',             'i_homelng');
+			pfSetFOAFValue(tbody, o.organizationTitle,    'Organization',          'i_businessOrganization');
+			pfSetFOAFValue(tbody, o.organizationHomepage, 'Organization Homepage', 'i_businessHomePage');
+			pfSetFOAFValue(tbody, o.resume,               'Resume',                'i_sumary');
+			pfSetFOAFValue(tbody, o.tags,                 'Tags',                  'i_tags');
+			pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',     'i_interests', ['URL', 'Label'], ['\n', ';']);
+			pfSetFOAFValue(tbody, o.topic_interest,       'Thing of Interest',     'i_topicInterests', ['URI', 'Label'], ['\n', ';']);
+		} else {
+			alert('No data founded for \'' + iri + '\'');
+		}
+	}
+	$('i_tbody').innerHTML = '';
+	OAT.Dom.hide('i_tbl');
+	OAT.AJAX.GET(S, '', x, {
+		onstart : function() {
+			OAT.Dom.show('pf_import_image')
+		},
+		onend : function() {
+			OAT.Dom.hide('pf_import_image')
+		}
+	});
+}
+
+function pfSetFOAFValue(tbody, fValue, fTitle, fName, fHeaders, fDelimiters) {
+  if (fValue) {
+    var tr = OAT.Dom.create('tr');
+    tbody.appendChild(tr);
+
+    var td = OAT.Dom.create('td');
+    td.vAlign = 'top';
+    var fld = OAT.Dom.create('input');
+    fld.type = 'checkbox';
+    fld.id = 'cb_item_'+fName;
+    fld.name = fld.id;
+    fld.value = '1';
+    td.appendChild(fld);
+    tr.appendChild(td);
+
+    var td = OAT.Dom.create('td');
+    td.vAlign = 'top';
+    td.appendChild(OAT.Dom.text(fTitle));
+    tr.appendChild(td);
+
+    var td = OAT.Dom.create('td');
+    td.vAlign = 'top';
+    if (fHeaders) {
+      var tbl = OAT.Dom.create('table');
+      tbl.id = fName+'_tbl';
+      tbl.className = 'listing';
+      td.appendChild(tbl);
+      var thead = OAT.Dom.create('thead');
+      tbl.appendChild(thead);
+      var trx = OAT.Dom.create('tr');
+      trx.className = 'listing_header_row';
+      thead.appendChild(trx);
+    	for ( var N = 0; N < fHeaders.length; N++) {
+        var thx = OAT.Dom.create('th');
+        thx.appendChild(OAT.Dom.text(fHeaders[N]));
+        trx.appendChild(thx);
+      }
+    	var lines = fValue.split(fDelimiters[0]);
+    	for ( var N = 0; N < lines.length; N++) {
+    	  if (lines[N] != '') {
+    	    var V;
+      		if (fDelimiters.length == 1) {
+      			V = [lines[N]];
+      		} else {
+      			V = lines[N].split(fDelimiters[1]);
+      		}
+          var trx = OAT.Dom.create('tr');
+          tbl.appendChild(trx);
+        	for ( var M = 0; M < V.length; M++) {
+            var tdx = OAT.Dom.create('td');
+            tdx.appendChild(OAT.Dom.text(V[M]));
+            trx.appendChild(tdx);
+          }
+      	}
+    	}
+    } else {
+      td.appendChild(OAT.Dom.text(fValue));
+    }
+    var fld = OAT.Dom.create('input');
+    fld.type = 'hidden';
+    fld.id = fName;
+    fld.name = fld.id;
+    fld.value = fValue;
+    td.appendChild(fld);
+    tr.appendChild(td);
+  }
 }
 
 function setDefaultMapLocation(from, to) {

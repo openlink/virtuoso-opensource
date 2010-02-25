@@ -7024,10 +7024,10 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
 -- !!! not so common to use same host_port for vhost & listener value, see above for common case.
 -- !!! FIXME: the insert/select would not bring up the values in memory so this would work after restart only,
 ---           and in addition this will copy EVERYTHING from A to B including any system related directories be patient!
-create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav integer := 1)
+create procedure wa_redefine_vhosts (in host_port varchar := '*sslini*', in interface varchar := '*sslini*', in isdav integer := 1)
 {
 
-  ods_define_common_vd (host_port, host_port, isdav);
+  ods_define_common_vd (host_port, interface, isdav);
 
   for select
       HP_LPATH as LPATH,
@@ -7070,7 +7070,7 @@ create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav
 	 values
 	 (
 	  host_port,
-	  host_port,
+	  interface,
 	  LPATH,
 	  PPATH,
 	  STORE_AS_DAV,
@@ -7089,7 +7089,7 @@ create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav
 	  IS_DEFAULT_HOST)
   ;
      if (row_count())
-       DB.DBA.VHOST_MAP_RELOAD (host_port, host_port, LPATH);
+       DB.DBA.VHOST_MAP_RELOAD (host_port, interface, LPATH);
    }
 }
 ;

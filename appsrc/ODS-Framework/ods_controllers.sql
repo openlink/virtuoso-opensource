@@ -348,8 +348,6 @@ create procedure params2json (in o any)
 }
 ;
 
--------------------------------------------------------------------------------
---
 create procedure dav_path_normalize (
   in path varchar,
   in path_type varchar := 'P')
@@ -2710,7 +2708,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   declare V, st, msg, data, meta any;
   declare certLogin any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
-  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
+  declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "skypeChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
   declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
   declare "vInterest", "vTopic_interest", "vOnlineAccounts", "vSameAs" any;
   declare host, port, arr any;
@@ -2787,7 +2785,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       goto _exit;
   }
   }
-  S := sprintf ('sparql define input:storage ""
+  S := sprintf ('sparql
+                 define input:storage ""
                   prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                   prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                   prefix dc: <http://purl.org/dc/elements/1.1/>
@@ -2810,6 +2809,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                          ?msnChatID
                          ?aimChatID
                          ?yahooChatID
+                        ?skypeChatID
                          ?workplaceHomepage
                          ?homepage
                          ?phone
@@ -2843,6 +2843,11 @@ create procedure ODS.ODS_API.get_foaf_data_array (
                              optional { ?person foaf:msnChatID ?msnChatID } .
                              optional { ?person foaf:aimChatID ?aimChatID } .
                              optional { ?person foaf:yahooChatID ?yahooChatID } .
+  	                        optional { ?person foaf:holdsAccount ?holdsAccount .
+  	                                   ?holdsAccount foaf:accountServiceHomepage ?accountServiceHomepage ;
+  	                                                 foaf:accountName ?skypeChatID.
+                                       filter (str(?accountServiceHomepage) like ''skype%%'').
+                                     } .
                              optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
                              optional { ?person foaf:homepage ?homepage } .
                              optional { ?person foaf:phone ?phone } .
@@ -2896,13 +2901,14 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "msnChatID" := data[N][13];
         "aimChatID" := data[N][14];
         "yahooChatID" := data[N][15];
-        "workplaceHomepage" := data[N][16];
-        "homepage" := data[N][17];
-        "phone" := data[N][18];
-        "organizationTitle" := data[N][19];
-        "keywords" := data[N][20];
-        "depiction" := data[N][21];
-        "resume" := data[N][22];
+        "skypeChatID" := data[N][16];
+        "workplaceHomepage" := data[N][17];
+        "homepage" := data[N][18];
+        "phone" := data[N][19];
+        "organizationTitle" := data[N][20];
+        "keywords" := data[N][21];
+        "depiction" := data[N][22];
+        "resume" := data[N][23];
 
         if (sslLoginCheck)
           appendProperty (V, 'certLogin', certLogin);
@@ -2921,6 +2927,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     appendProperty (V, 'msnChatID', "msnChatID");	   -- WAUI_MSN
     appendProperty (V, 'aimChatID', "aimChatID");	   -- WAUI_AIM
     appendProperty (V, 'yahooChatID', "yahooChatID");	   -- WAUI_YAHOO
+        appendProperty (V, 'skypeChatID', "skypeChatID");	                    -- WAUI_SKYPE
     appendProperty (V, 'workplaceHomepage', "workplaceHomepage"); -- WAUI_BORG_HOMEPAGE
     appendProperty (V, 'homepage', "homepage");		   -- WAUI_WEBPAGE
     appendProperty (V, 'phone', "phone", 'tel:');	   -- WAUI_HPHONE
@@ -2929,25 +2936,25 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       appendProperty (V, 'tags', "keywords");                               -- WAUI_
       appendProperty (V, 'depiction', "depiction");                         -- WAUI_
     }
-      if (data[N][23] is not null and data[N][23] <> '' and not ODS.ODS_API.vector_contains ("vInterest", data[N][23]))
+      if (data[N][24] is not null and data[N][24] <> '' and not ODS.ODS_API.vector_contains ("vInterest", data[N][24]))
       {
-        "interest" := "interest" || data[N][23] || ';' || data[N][24] || '\n';
-        "vInterest" := vector_concat ("vInterest", vector (data[N][23]));
+        "interest" := "interest" || data[N][24] || ';' || data[N][25] || '\n';
+        "vInterest" := vector_concat ("vInterest", vector (data[N][24]));
       }
-      if (data[N][25] is not null and data[N][25] <> '' and not ODS.ODS_API.vector_contains ("vTopic_interest", data[N][25]))
+      if (data[N][26] is not null and data[N][26] <> '' and not ODS.ODS_API.vector_contains ("vTopic_interest", data[N][26]))
       {
-        "topic_interest" := "topic_interest" || data[N][25] || ';' || data[N][26] || '\n';
-        "vTopic_interest" := vector_concat ("vTopic_interest", vector (data[N][25]));
+        "topic_interest" := "topic_interest" || data[N][26] || ';' || data[N][27] || '\n';
+        "vTopic_interest" := vector_concat ("vTopic_interest", vector (data[N][26]));
       }
-      if (data[N][27] is not null and data[N][27] <> '' and not ODS.ODS_API.vector_contains ("vOnlineAccounts", data[N][27]))
+      if (data[N][28] is not null and data[N][28] <> '' and not ODS.ODS_API.vector_contains ("vOnlineAccounts", data[N][28]))
       {
-        "onlineAccounts" := "onlineAccounts" || data[N][27] || ';' || data[N][28] || '\n';
-        "vOnlineAccounts" := vector_concat ("vOnlineAccounts", vector (data[N][27]));
+        "onlineAccounts" := "onlineAccounts" || data[N][28] || ';' || data[N][29] || '\n';
+        "vOnlineAccounts" := vector_concat ("vOnlineAccounts", vector (data[N][28]));
       }
-      if (data[N][29] is not null and data[N][29] <> '' and not ODS.ODS_API.vector_contains ("vSameAs", data[N][29]))
+      if (data[N][30] is not null and data[N][30] <> '' and not ODS.ODS_API.vector_contains ("vSameAs", data[N][30]))
       {
-        "sameAs" := "sameAs" || data[N][29] || '\n';
-        "vSameAs" := vector_concat ("vSameAs", vector (data[N][29]));
+        "sameAs" := "sameAs" || data[N][30] || '\n';
+        "vSameAs" := vector_concat ("vSameAs", vector (data[N][30]));
       }
   }
   }
