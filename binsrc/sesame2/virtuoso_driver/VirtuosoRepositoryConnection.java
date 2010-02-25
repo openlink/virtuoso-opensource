@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2010 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -151,13 +151,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String S_INSERT = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+	static final String S_INSERT = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
         static final String S_DELETE = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
 	static final int BATCH_SIZE = 5000;
 	private PreparedStatement psInsert;
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+	private String ruleSet;
 
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
@@ -165,6 +166,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
+		this.ruleSet = repository.ruleSet;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		this.repository.initialize();
 
@@ -1794,17 +1796,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
 
+/*****
 		while(tok.hasMoreTokens()) {
 		    s = tok.nextToken().toLowerCase();
-		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
+		    if (s.equals("describe") || s.equals("construct") || s.equals("ask") || s.equals("select")) 
 			break;
 		}
 
-		StringBuffer ret = new StringBuffer();
+		StringBuffer ret = new StringBuffer("sparql\n ");
 		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			ret.append("sparql\n define output:format '_JAVA_'\n ");
-		else 
-			ret.append("sparql\n ");
+			ret.append("define output:format '_JAVA_'\n ");
+*******/
+		StringBuffer ret = new StringBuffer("sparql\n ");
+
+		if (ruleSet!=null && ruleSet.length() > 0)
+		  ret.append("define input:inference '"+ruleSet+"'\n ");
+
+		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{
@@ -1940,7 +1948,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		if (object != null) 
 			o = stringForValue(object);
 
-		StringBuffer query = new StringBuffer("sparql select * ");
+		StringBuffer query = new StringBuffer("sparql ");
+
+		if (includeInferred && ruleSet != null && ruleSet.length() > 0)
+		  query.append("define input:inference '"+ruleSet+"' ");
+
+		query.append("select * ");
 
 		for (int i = 0; i < contexts.length; i++) {
 
