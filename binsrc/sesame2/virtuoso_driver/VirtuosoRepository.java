@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2010 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -66,6 +66,7 @@ public class VirtuosoRepository implements Repository {
 	boolean useLazyAdd = false;
 	String defGraph;
 	int prefetchSize = 200;
+	String ruleSet;
 	
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
@@ -95,7 +96,6 @@ public class VirtuosoRepository implements Repository {
          *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
-
 	        super();
 		this.url_hostlist = url_hostlist.trim();
 		this.user = user;
@@ -279,6 +279,26 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public boolean getRoundrobin() {
 		return this.roundrobin;
+	}
+
+	
+	/**
+	 * Set inference RuleSet name
+	 * 
+	 * @param name
+	 *        RuleSet name.
+	 */
+	public void setRuleSet(String name) {
+		if (name != null && name.equals("null"))
+		  	name = null;
+		this.ruleSet = name;
+	}
+
+	/**
+	 * Get the RoundRobin state for connection
+	 */
+	public String getRuleSet() {
+		return this.ruleSet;
 	}
 
 	
