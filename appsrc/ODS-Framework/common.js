@@ -137,6 +137,22 @@ function submitenter(fld, btn, e)
     return true;
 }
 
+function selectAllCheckboxes (obj, prefix)
+{
+  var objForm = obj.form;
+  for (var i = 0; i < objForm.elements.length; i++)
+  {
+    var o = objForm.elements[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && (!prefix || o.name.indexOf (prefix) != -1))
+      o.checked = (obj.value == 'Select All');
+  }
+  if (obj.value == 'Select All')
+    obj.value = 'Unselect All';
+  else
+    obj.value = 'Select All';
+  obj.focus();
+}
+
 var sflag = false;
 var def_btn = null;
 function checkPageLeave (form)

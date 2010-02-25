@@ -121,10 +121,7 @@
           (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))
          )
       {
-        if (
-            (($_formTab == 0) && ($_formSubtab == 2)) ||
-            (($_formTab == 1) && ($_formSubtab == 2))
-           )
+        if ((($_formTab == 0) && ($_formSubtab == 3)) || (($_formTab == 1) && ($_formSubtab == 2)))
         {
           $_prefix = "x4";
           $_accountType = "P";
@@ -161,7 +158,7 @@
             }
           }
         }
-        else if (($_formTab == 0) && ($_formSubtab == 3))
+        else if (($_formTab == 0) && ($_formSubtab == 4))
         {
           $_prefix = "x5";
           $_url = apiURL()."/user.bioEvents.delete?sid=".$_sid."&realm=".$_realm;
@@ -192,7 +189,7 @@
             }
           }
         }
-        else if (($_formTab == 0) && ($_formSubtab == 5))
+        else if (($_formTab == 0) && ($_formSubtab == 6))
         {
           $_url = apiURL()."/user.favorites.delete?sid=".$_sid."&realm=".$_realm;
           $_result = file_get_contents($_url);
@@ -221,6 +218,57 @@
           {
             if ($_formSubtab == 0)
             {
+              // Import
+              if ($_REQUEST['cb_item_i_name'] = '1')
+                $_url .= '&nickName' . urlencode ($_REQUEST['i_nickName']);
+              if ($_REQUEST['cb_item_i_title'] = '1')
+                $_url .= '&title=' . urlencode ($_REQUEST['i_title']);
+              if ($_REQUEST['cb_item_i_firstName'] = '1')
+                $_url .= '&firstName=' . urlencode ($_REQUEST['i_firstName']);
+              if ($_REQUEST['cb_item_i_lastName'] = '1')
+                $_url .= '&lastName=' . urlencode ($_REQUEST['i_lastName']);
+              if ($_REQUEST['cb_item_i_fullName'] = '1')
+                $_url .= '&fullName=' . urlencode ($_REQUEST['i_fullName']);
+              if ($_REQUEST['cb_item_i_gender'] = '1')
+                $_url .= '&gender=' . urlencode ($_REQUEST['i_gender']);
+              if ($_REQUEST['cb_item_i_mail'] = '1')
+                $_url .= '&mail=' . urlencode ($_REQUEST['i_mail']);
+              if ($_REQUEST['cb_item_i_birthday'] = '1')
+                $_url .= '&birthday=' . urlencode ($_REQUEST['i_birthday']);
+              if ($_REQUEST['cb_item_i_homepage'] = '1')
+                $_url .= '&homepage=' . urlencode ($_REQUEST['i_homepage']);
+              if ($_REQUEST['cb_item_i_icq'] = '1')
+                $_url .= '&icq=' . urlencode ($_REQUEST['i_icq']);
+              if ($_REQUEST['cb_item_i_aim'] = '1')
+                $_url .= '&aim=' . urlencode ($_REQUEST['i_aim']);
+              if ($_REQUEST['cb_item_i_yahoo'] = '1')
+                $_url .= '&yahoo=' . urlencode ($_REQUEST['i_yahoo']);
+              if ($_REQUEST['cb_item_i_msn'] = '1')
+                $_url .= '&msn=' . urlencode ($_REQUEST['i_msn']);
+              if ($_REQUEST['cb_item_i_skype'] = '1')
+                $_url .= '&skype=' . urlencode ($_REQUEST['i_skype']);
+              if ($_REQUEST['cb_item_i_homelat'] = '1')
+                $_url .= '&homeLatitude=' . urlencode ($_REQUEST['i_homelat']);
+              if ($_REQUEST['cb_item_i_homelng'] = '1')
+                $_url .= '&homeLongitude=' . urlencode ($_REQUEST['i_homelng']);
+              if ($_REQUEST['cb_item_i_homelng'] = '1')
+                $_url .= '&homePhone=' . urlencode ($_REQUEST['i_homePhone']);
+              if ($_REQUEST['cb_item_i_businessOrganization'] = '1')
+                $_url .= '&businessOrganization=' . urlencode ($_REQUEST['i_businessOrganization']);
+              if ($_REQUEST['cb_item_i_businessHomePage'] = '1')
+                $_url .= '&businessHomePage=' . urlencode ($_REQUEST['i_businessHomePage']);
+              if ($_REQUEST['cb_item_i_sumary'] = '1')
+                $_url .= '&sumary=' . urlencode ($_REQUEST['i_sumary']);
+              if ($_REQUEST['cb_item_i_tags'] = '1')
+                $_url .= '&tags=' . urlencode ($_REQUEST['i_tags']);
+              if ($_REQUEST['cb_item_i_interests'] = '1')
+                $_url .= '&interests=' . urlencode ($_REQUEST['i_interests']);
+              if ($_REQUEST['cb_item_i_topicInterests'] = '1')
+                $_url .= '&topicInterests=' . urlencode ($_REQUEST['i_topicInterests']);
+            }
+            else if ($_formSubtab == 1)
+            {
+              // Main
               $_url .=
                   "&nickName=".               urlencode ($_REQUEST['pf_nickName']).
                   "&mail=".                   urlencode ($_REQUEST['pf_mail']).
@@ -261,7 +309,7 @@
               }
               $_url .= "&topicInterests=" . urlencode ($_tmp);
             }
-            if ($_formSubtab == 1)
+            if ($_formSubtab == 2)
             {
               $_url .=
                   "&homeDefaultMapLocation=". urlencode ($_REQUEST['pf_homeDefaultMapLocation']).
@@ -277,7 +325,7 @@
                   "&homePhone=".              urlencode ($_REQUEST['pf_homePhone']).
                   "&homeMobile=".             urlencode ($_REQUEST['pf_homeMobile']);
             }
-            if ($_formSubtab == 4)
+            if ($_formSubtab == 5)
             {
               $_url .=
                   "&icq=".                    urlencode ($_REQUEST['pf_icq']).
@@ -602,17 +650,43 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Main">Main</li>
-                      <li id="pf_tab_0_1" title="Address">Address</li>
-                      <li id="pf_tab_0_2" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_3" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
-                      <li id="pf_tab_0_5" title="Favorite Things">Favorite Things</li>
+                      <li id="pf_tab_0_0" title="Import">Import</li>
+                      <li id="pf_tab_0_1" title="Main">Main</li>
+                      <li id="pf_tab_0_2" title="Address">Address</li>
+                      <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
+                      <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
+                      <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
                     </ul>
                     <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
+                            <th>
+                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
+                              <input type="button" value="Import" onclick="javascript: pfGetFOAFData($v('pf_foaf')); return false;" class="button" />
+                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                            </td>
+                          </tr>
+                        </table>
+                        <table id="i_tbl" class="listing" style="display: none;">
+                          <thead>
+                            <tr class="listing_header_row">
+                              <th width="1%"><input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" /></th>
+                              <th>Field</th>
+                              <th>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody id="i_tbody">
+                          </tbody>
+                        </table>
+                      </div>
+                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                          <tr>
                             <th>
                               <label for="pf_loginName">Login Name</label>
                             </th>
@@ -827,7 +901,7 @@
                     </table>
                   </div>
 
-                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
@@ -939,7 +1013,7 @@
                     </table>
                   </div>
 
-                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -970,7 +1044,7 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1004,7 +1078,7 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
                         <table id="x6_tbl" class="form" cellspacing="5">
                           <tr>
                             <th width="30%">
@@ -1055,7 +1129,7 @@
                         <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                       </div>
 
-                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">

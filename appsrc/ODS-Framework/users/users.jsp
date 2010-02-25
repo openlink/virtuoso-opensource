@@ -43,6 +43,8 @@
 <%@ page import="org.xml.sax.InputSource" %>
 
 <%@ page import="org.w3c.dom.*" %>
+
+<%@ page import="org.apache.log4j.*" %>
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
@@ -274,17 +276,14 @@
 
       if ($_form.equals("profile"))
       {
-        if (
-            (request.getParameter("pf_update") != null) ||
-            (request.getParameter("pf_next") != null)
-           )
+        if ((request.getParameter("pf_update") != null) || (request.getParameter("pf_next") != null))
         {
           String tmp = "";
           String prefix = "";
           String suffix = "";
           Enumeration keys;
           try {
-            if ((($_formTab == 0) && ($_formSubtab == 2)) || (($_formTab == 1) && ($_formSubtab == 2)))
+            if ((($_formTab == 0) && ($_formSubtab == 3)) || (($_formTab == 1) && ($_formSubtab == 2)))
             {
               String accountType = "P";
               prefix = "x4";
@@ -321,7 +320,7 @@
                 }
       		    }
             }
-            else if (($_formTab == 0) && ($_formSubtab == 3))
+            else if (($_formTab == 0) && ($_formSubtab == 4))
             {
               prefix = "x5";
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
@@ -352,7 +351,7 @@
                 }
       		    }
             }
-            else if (($_formTab == 0) && ($_formSubtab == 5))
+            else if (($_formTab == 0) && ($_formSubtab == 6))
             {
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
               $_retValue = httpRequest ("POST", "user.favorites.delete", params);
@@ -375,6 +374,56 @@
               if ($_formTab == 0)
               {
                 if ($_formSubtab == 0)
+                {
+                  // Import
+                  if ("1".equals(request.getParameter("cb_item_i_name")))
+                    params += httpParam ("&", "nickName", request.getParameter("i_nickName"));
+                  if ("1".equals(request.getParameter("cb_item_i_title")))
+                    params += httpParam ("&", "title=", request.getParameter("i_title"));
+                  if ("1".equals(request.getParameter("cb_item_i_firstName")))
+                    params += httpParam ("&", "firstName", request.getParameter("i_firstName"));
+                  if ("1".equals(request.getParameter("cb_item_i_lastName")))
+                    params += httpParam ("&", "lastName", request.getParameter("i_lastName"));
+                  if ("1".equals(request.getParameter("cb_item_i_fullName")))
+                    params += httpParam ("&", "fullName", request.getParameter("i_fullName"));
+                  if ("1".equals(request.getParameter("cb_item_i_gender")))
+                    params += httpParam ("&", "gender", request.getParameter("i_gender"));
+                  if ("1".equals(request.getParameter("cb_item_i_mail")))
+                    params += httpParam ("&", "mail", request.getParameter("i_mail"));
+                  if ("1".equals(request.getParameter("cb_item_i_birthday")))
+                    params += httpParam ("&", "birthday", request.getParameter("i_birthday"));
+                  if ("1".equals(request.getParameter("cb_item_i_homepage")))
+                    params += httpParam ("&", "homepage", request.getParameter("i_homepage"));
+                  if ("1".equals(request.getParameter("cb_item_i_icq")))
+                    params += httpParam ("&", "icq", request.getParameter("i_icq"));
+                  if ("1".equals(request.getParameter("cb_item_i_aim")))
+                    params += httpParam ("&", "aim", request.getParameter("i_aim"));
+                  if ("1".equals(request.getParameter("cb_item_i_yahoo")))
+                    params += httpParam ("&", "yahoo", request.getParameter("i_yahoo"));
+                  if ("1".equals(request.getParameter("cb_item_i_msn")))
+                    params += httpParam ("&", "msn", request.getParameter("i_msn"));
+                  if ("1".equals(request.getParameter("cb_item_i_skype")))
+                    params += httpParam ("&", "skype", request.getParameter("i_skype"));
+                  if ("1".equals(request.getParameter("cb_item_i_homelat")))
+                    params += httpParam ("&", "homeLatitude", request.getParameter("i_homelat"));
+                  if ("1".equals(request.getParameter("cb_item_i_homelng")))
+                    params += httpParam ("&", "homeLongitude", request.getParameter("i_homelng"));
+                  if ("1".equals(request.getParameter("cb_item_i_homelng")))
+                    params += httpParam ("&", "homePhone", request.getParameter("i_homePhone"));
+                  if ("1".equals(request.getParameter("cb_item_i_businessOrganization")))
+                    params += httpParam ("&", "businessOrganization", request.getParameter("i_businessOrganization"));
+                  if ("1".equals(request.getParameter("cb_item_i_businessHomePage")))
+                    params += httpParam ("&", "businessHomePage", request.getParameter("i_businessHomePage"));
+                  if ("1".equals(request.getParameter("cb_item_i_sumary")))
+                    params += httpParam ("&", "sumary", request.getParameter("i_sumary"));
+                  if ("1".equals(request.getParameter("cb_item_i_tags")))
+                    params += httpParam ("&", "tags", request.getParameter("i_tags"));
+                  if ("1".equals(request.getParameter("cb_item_i_interests")))
+                    params += httpParam ("&", "interests", request.getParameter("i_interests"));
+                  if ("1".equals(request.getParameter("cb_item_i_topicInterests")))
+                    params += httpParam ("&", "topicInterests", request.getParameter("i_topicInterests"));
+                }
+                else if ($_formSubtab == 1)
                 {
                   params +=
                        httpParam ("&", "nickName"              , request.getParameter("pf_nickName")) +
@@ -423,7 +472,7 @@
           		    }
                   params += httpParam ("&", "topicInterests", tmp);
                 }
-                if ($_formSubtab == 1)
+                if ($_formSubtab == 2)
                 {
                   params +=
                      httpParam ("&", "homeDefaultMapLocation", request.getParameter("pf_homeDefaultMapLocation")) +
@@ -439,7 +488,7 @@
                      httpParam ("&", "homePhone"             , request.getParameter("pf_homePhone")) +
                        httpParam ("&", "homeMobile"            , request.getParameter("pf_homeMobile"));
                 }
-                if ($_formSubtab == 4)
+                if ($_formSubtab == 5)
                 {
                   params +=
                        httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
@@ -461,7 +510,7 @@
                   params += httpParam ("&", "messaging", tmp);
                 }
               }
-              if ($_formTab == 0)
+              if ($_formTab == 1)
               {
                 if ($_formSubtab == 0)
                 {
@@ -497,11 +546,11 @@
                 if ($_formSubtab == 3)
                 {
                   params +=
-                       httpParam ("&", "businessIcq="          , request.getParameter("pf_businessIcq")) +
-                       httpParam ("&", "businessSkype="        , request.getParameter("pf_businessSkype")) +
-                       httpParam ("&", "businessYahoo="        , request.getParameter("pf_businessYahoo")) +
-                       httpParam ("&", "businessAim="          , request.getParameter("pf_businessAim")) +
-                       httpParam ("&", "businessMsn="          , request.getParameter("pf_businessMsn"));
+                       httpParam ("&", "businessIcq"          , request.getParameter("pf_businessIcq")) +
+                       httpParam ("&", "businessSkype"        , request.getParameter("pf_businessSkype")) +
+                       httpParam ("&", "businessYahoo"        , request.getParameter("pf_businessYahoo")) +
+                       httpParam ("&", "businessAim"          , request.getParameter("pf_businessAim")) +
+                       httpParam ("&", "businessMsn"          , request.getParameter("pf_businessMsn"));
                   keys = request.getParameterNames();
                   tmp = "";
           		    while (keys.hasMoreElements() )
@@ -605,7 +654,7 @@
     }
     catch (Exception e)
     {
-      $_error = "Failure to connect to JDBC. " + e.getMessage();
+      $_error = "Failure: " + e.getMessage();
     }
   %>
   <body>
@@ -788,18 +837,44 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Main">Main</li>
-                      <li id="pf_tab_0_1" title="Address">Address</li>
-                      <li id="pf_tab_0_2" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_3" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
-                      <li id="pf_tab_0_5" title="Favorite Things">Favorite Things</li>
+                      <li id="pf_tab_0_0" title="Import">Import</li>
+                      <li id="pf_tab_0_1" title="Main">Main</li>
+                      <li id="pf_tab_0_2" title="Address">Address</li>
+                      <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
+                      <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
+                      <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
                     </ul>
                     <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th>
+                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                            </th>
+                            <td>
+                              <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
+                              <input type="button" value="Import" onclick="javascript: pfGetFOAFData($v('pf_foaf')); return false;" class="button" />
+                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                            </td>
+                          </tr>
+                        </table>
+                        <table id="i_tbl" class="listing" style="display: none;">
+                          <thead>
+                            <tr class="listing_header_row">
+                              <th width="1%"><input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" /></th>
+                              <th>Field</th>
+                              <th>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody id="i_tbody">
+                          </tbody>
+                        </table>
+                      </div>
+                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                          <tr>
+                            <th>
                               <label for="pf_loginName">Login Name</label>
                             </th>
                             <td>
@@ -1020,7 +1095,7 @@
                     </table>
                   </div>
 
-                      <div id="pf_page_0_1" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
@@ -1137,7 +1212,7 @@
                     </table>
                   </div>
 
-                      <div id="pf_page_0_2" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">
@@ -1168,7 +1243,7 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">
@@ -1202,7 +1277,7 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_4" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
                         <table id="x6_tbl" class="form" cellspacing="5">
                       <tr>
                             <th width="30%">
@@ -1253,7 +1328,7 @@
                         <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                       </div>
 
-                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">
