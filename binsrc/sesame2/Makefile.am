@@ -33,7 +33,6 @@ endif
 
 
 SESAME_SRC= \
-	virtuoso_driver/NamespaceResult.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
 	virtuoso_driver/VirtuosoQuery.java \
@@ -47,7 +46,7 @@ SESAME_SRC= \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH=lib/slf4j-api-1.5.11.jar:lib/slf4j-simple-1.5.11.jar:lib/openrdf-sesame-2.2.4-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
+SESAME_CLASSPATH=lib/slf4j-api-1.5.11.jar:lib/slf4j-simple-1.5.11.jar:lib/openrdf-sesame-2.3.1-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
 
 all-am:	$(TARGETS)
 
