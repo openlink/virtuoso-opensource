@@ -621,16 +621,6 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
       db_buf_t ptr;
       int fill = rd->rd_temp_fill;
       int bytes = 8 + ALIGN_8 (len);
-#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
-      if (0 == fill)
-        {
-	  fill = (uptrlong) rd->rd_temp % 8;
-	  if (fill)
-	    fill = 8 - fill;
-	  rd->rd_temp_max -= fill;
-	  rd->rd_temp_fill += fill;
-        }
-#endif
       if (fill + bytes > rd->rd_temp_max)
 	{
 	  rd->rd_allocated = RD_ALLOCATED_VALUES;

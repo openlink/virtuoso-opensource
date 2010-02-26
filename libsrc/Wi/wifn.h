@@ -503,11 +503,14 @@ void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_c
 
 #define LOCAL_COPY_RD(rd) \
   caddr_t rd##__vs[TB_MAX_COLS]; \
+  union { \
+  void * dummy; \
   dtp_t rd##temp [2 * MAX_ROW_BYTES]; \
+  } rd##temp_un; \
   row_delta_t rd;\
   memset (&rd, 0, sizeof (row_delta_t)); \
-  rd.rd_temp = &rd##temp[0]; \
-rd.rd_temp_max = sizeof (rd##temp); \
+  rd.rd_temp = &(rd##temp_un.rd##temp[0]); \
+  rd.rd_temp_max = sizeof (rd##temp_un.rd##temp); \
   rd.rd_values = rd##__vs; \
   rd.rd_allocated = RD_AUTO;
 

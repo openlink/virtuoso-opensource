@@ -476,7 +476,10 @@ key_is_recoverable (key_id_t key_id)
 void
 row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd)
 {
+  union {
+  void * dummy;
   dtp_t temp[4096];
+  } temp_un;
   if (row_key->key_is_bitmap)
     {
       db_buf_t bm;
@@ -491,8 +494,8 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
       pl_set_at_bit ((placeholder_t *) itc, bm, bm_len, bm_start, BITNO_MIN, 0);
       itc->itc_bp.bp_at_end = 0;
       do {
-	rd->rd_temp = temp;
-	rd->rd_temp_max = sizeof (temp);
+	rd->rd_temp = &(temp_un.temp[0]);
+	rd->rd_temp_max = sizeof (temp_un.temp);
 	page_row_bm (buf, map_pos, rd, RO_ROW, itc);
 	rd->rd_n_values--; /*no bitmap string */
 	log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
@@ -503,8 +506,8 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
     }
   else
     {
-	rd->rd_temp = temp;
-	rd->rd_temp_max = sizeof (temp);
+	rd->rd_temp = &(temp_un.temp[0]);
+	rd->rd_temp_max = sizeof (temp_un.temp);
       page_row (buf, map_pos, rd, RO_ROW);
       log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
       log_rd_blobs (itc, rd);

@@ -1068,13 +1068,8 @@ dbe_key_layout_1 (dbe_key_t * key)
       key_null_area = kf_fill;
       kf_fill += ALIGN_8 (key_nullables) / 8;
     }
-#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
-  kf_fill = ALIGN_8 (kf_fill);
-  key->key_length_area[0] = kf_fill;
-#else
   kf_fill = ALIGN_2 (kf_fill);
   key->key_length_area[0] = ALIGN_2 (kf_fill);
-#endif
   kv_fill = 0;
   key_place_var (key, &kv_fill, &null_fill, &key_var, keys);
 #ifdef DEBUG
@@ -1094,11 +1089,7 @@ dbe_key_layout_1 (dbe_key_t * key)
 #ifdef DEBUG
   n_placed += dk_set_length (row_var);
 #endif
-#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
-  rf_fill = ALIGN_8 (kf_fill + kv_fill);
-#else
   rf_fill = ALIGN_2 (kf_fill + kv_fill);
-#endif
   key->key_row_compressed_start[0] = rf_fill;
   key_place_fixed (key, &rf_fill, &null_fill, &row_fixed, deps);
 #ifdef DEBUG

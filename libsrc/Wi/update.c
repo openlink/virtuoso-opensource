@@ -477,10 +477,13 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
   int res;
   placeholder_t *pl = (placeholder_t *) qst_place_get (state, upd->upd_place);
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (state);
+  union {
+  void * dummy;
   dtp_t temp [2000];
+  } temp_un;
   LOCAL_RD (rd);
-  rd.rd_temp = temp;
-  rd.rd_temp_max = sizeof (temp);
+  rd.rd_temp = &(temp_un.temp[0]);
+  rd.rd_temp_max = sizeof (temp_un.temp);
   if (!pl)
     sqlr_new_error ("24000", "SR250", "Cursor not positioned on update. %s",
 		    upd->upd_place->ssl_name);
@@ -535,8 +538,8 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    new_rd.rd_non_comp_max = MAX_ROW_BYTES;
 	    new_rd.rd_key = cr_itc->itc_insert_key;
 	    upd_hi_pre (upd, qi);
-	    new_rd.rd_temp = temp;
-	    new_rd.rd_temp_max = sizeof (temp);
+	    new_rd.rd_temp = &(temp_un.temp[0]);
+	    new_rd.rd_temp_max = sizeof (temp_un.temp);
 	    update_quick (upd, state, cr_buf, &new_rd, &row_err);
 	    if (row_err)
 	      sqlr_resignal (row_err);
