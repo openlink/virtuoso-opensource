@@ -27,13 +27,12 @@ import org.openrdf.model.Value;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.Dataset;
 import org.openrdf.query.TupleQueryResultHandler;
-import org.openrdf.query.algebra.evaluation.QueryBindingSet;
-import org.openrdf.query.resultio.TupleQueryResultWriter;
 import org.openrdf.query.Query;
+import org.openrdf.query.impl.MapBindingSet;
 
 public class VirtuosoQuery implements Query {
 
-	QueryBindingSet bindingSet = new QueryBindingSet();
+	MapBindingSet bindingSet = new MapBindingSet();
 	boolean includeInferred = false;
 	Dataset dataset = null;
 	int maxQueryTime = 0;
@@ -48,7 +47,7 @@ public class VirtuosoQuery implements Query {
 	 *        The (new) value for the specified variable.
 	 */
 	public void setBinding(String name, Value value) {
-		this.bindingSet.setBinding(name, value);
+		bindingSet.addBinding(name, value);
 	}
 
 	/**
@@ -59,7 +58,14 @@ public class VirtuosoQuery implements Query {
 	 *        The name of the variable from which the binding is to be removed.
 	 */
 	public void removeBinding(String name) {
-		this.bindingSet.removeBinding(name);
+		bindingSet.removeBinding(name);
+	}
+
+	/**
+	 * Removes all previously set bindings.
+	 */
+	public void clearBindings() {
+		bindingSet.clear();
 	}
 
 	/**
@@ -69,7 +75,7 @@ public class VirtuosoQuery implements Query {
 	 * @see #setBinding(String, Value)
 	 */
 	public BindingSet getBindings() {
-		return this.bindingSet;
+		return bindingSet;
 	}
 
 

@@ -337,11 +337,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForTupleResult(query, getDataset());
+				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred());
 			}
 
 			public void evaluate(TupleQueryResultHandler handler) throws QueryEvaluationException, TupleQueryResultHandlerException {
-				executeSPARQLForHandler(handler, query, getDataset());
+				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred());
 			}
 		};
 		return q;
@@ -389,11 +389,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForGraphResult(query, getDataset());
+				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred());
 			}
 
 			public void evaluate(RDFHandler handler) throws QueryEvaluationException, RDFHandlerException {
-				executeSPARQLForHandler(handler, query, getDataset());
+				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred());
 			}
 		};
 		return q;
@@ -441,7 +441,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
-				return executeSPARQLForBooleanResult(query, getDataset());
+				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred());
 			}
 		};
 		return q;
@@ -692,7 +692,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         rs.close();
 		}
 		catch (Exception e) {
-			throw new RepositoryException(e);
+			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 		return ret;
 	}
@@ -719,7 +719,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         return result;
 		}
 		catch (Exception e) {
-			throw new RepositoryException("Problem executing query: " + query, e);
+			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
@@ -1581,7 +1581,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleQueryResult executeSPARQLForTupleResult(String query, Dataset dataset) throws QueryEvaluationException {
+	protected TupleQueryResult executeSPARQLForTupleResult(String query, Dataset dataset, boolean includeInferred) throws QueryEvaluationException {
 
 		Vector<String> names = new Vector<String>();
 		try {
@@ -1589,7 +1589,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1603,11 +1603,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new TupleQueryResultImpl(names, new CloseableIterationBindingSet(rs));
 		}
 		catch (Exception e) {
-			throw new QueryEvaluationException(e);
+			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 	
-	protected GraphQueryResult executeSPARQLForGraphResult(String query, Dataset dataset) throws QueryEvaluationException {
+	protected GraphQueryResult executeSPARQLForGraphResult(String query, Dataset dataset, boolean includeInferred) throws QueryEvaluationException {
 
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
 
@@ -1616,7 +1616,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1626,12 +1626,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new GraphQueryResultImpl(new HashMap<String,String>(), new CloseableIterationGraphResult(rs));
 		}
 		catch (Exception e) {
-			throw new QueryEvaluationException(e);
+			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) throws QueryEvaluationException {
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset, boolean includeInferred) throws QueryEvaluationException {
 		Vector<String> names = new Vector<String>();
 		Vector<BindingSet> bindings = new Vector<BindingSet>();
 		boolean result = false;
@@ -1639,7 +1639,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred));
 
 			while(rs.next())
 			{
@@ -1651,19 +1651,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return result;
 		}
 		catch (Exception e) {
-			throw new QueryEvaluationException(e);
+			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
 
-	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query, Dataset dataset) throws QueryEvaluationException, TupleQueryResultHandlerException {
+	protected void executeSPARQLForHandler(TupleQueryResultHandler tqrh, String query, Dataset dataset, boolean includeInferred) throws QueryEvaluationException, TupleQueryResultHandlerException {
 		LinkedList<String> names = new LinkedList<String>();
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 			// begin at onset one
@@ -1687,18 +1687,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         stmt.close();
 		}
 		catch (Exception e) {
-			throw new QueryEvaluationException(e);
+			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
 
-	protected void executeSPARQLForHandler(RDFHandler tqrh, String query, Dataset dataset) throws QueryEvaluationException, RDFHandlerException {
+	protected void executeSPARQLForHandler(RDFHandler tqrh, String query, Dataset dataset, boolean includeInferred) throws QueryEvaluationException, RDFHandlerException {
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred));
 			ResultSetMetaData rsmd = rs.getMetaData();
 	                int col_g = -1;
         	        int col_s = -1;
@@ -1745,7 +1745,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			stmt.close();
 		}
 		catch (Exception e) {
-			throw new QueryEvaluationException(e);
+			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 	
@@ -1769,7 +1769,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return stmt.getUpdateCount();
 		}
 		catch (SQLException e) {
-			throw new RepositoryException(e);
+			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
@@ -1792,7 +1792,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
-	private String fixQuery(String query, Dataset dataset) {
+	private String fixQuery(String query, Dataset dataset, boolean includeInferred) {
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
 
@@ -1809,7 +1809,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 *******/
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
-		if (ruleSet!=null && ruleSet.length() > 0)
+		if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
 		  ret.append("define input:inference '"+ruleSet+"'\n ");
 
 		ret.append("define output:format '_JAVA_'\n ");
