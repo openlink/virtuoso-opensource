@@ -432,7 +432,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
   if (!proc)
     {
       dk_free_tree ((caddr_t) params);
-      *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure in aq %s", full_name ? full_name : "<no name>");
+      *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure %.300s in aq_request()", full_name ? full_name : ((DV_STRING == DV_TYPE_OF (fn)) ? fn : "<no name>"));
       return NULL;
     }
   if (proc->qr_to_recompile)
@@ -445,9 +445,15 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!cli || !cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (!cli || !cli->cli_user)
     {
-      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
+      *err_ret = srv_make_new_error ("42000", "AQ005", "Bad context to execute %.300s in aq_request(), like a log replay", full_name);
+      dk_free_tree ((caddr_t) params);
+      return NULL;
+    }
+  if (!sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+    {
+      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %.300s in aq_request(), user ID %ld, group ID %ld", full_name, (long)(cli->cli_user->usr_id), (long)(cli->cli_user->usr_g_id));
       dk_free_tree ((caddr_t) params);
       return NULL;
     }
@@ -455,7 +461,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
     {
       if (SSL_REF_PARAMETER == ssl->ssl_type)
 	{
-	  *err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request");
+	  *err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request(), procedure %.300s", full_name);
 	  dk_free_tree ((caddr_t) params);
 	  return NULL;
 	}
