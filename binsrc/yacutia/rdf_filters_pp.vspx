@@ -101,10 +101,12 @@
                               		  <col/>
                               		  <col/>
                               		  <col/>
+                              		  <col/>
                           	      </colgroup>
                           	      <tr class="listing_header_row">
   		                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
                               		  <th>Seq#</th>
+                              		  <th>ID</th>
                               		  <th colspan="2">Description</th>
                               		  <th>Pattern</th>
                               		  <th>API type</th>
@@ -160,6 +162,9 @@
                                           </td>
                                           <td>
                                             <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[8]" />
+                                          </td>
+                                          <td>
+                                            <v:label name="lan1" format="%d" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
                                           </td>
                                           <td>
                                             <v:url name="ur1"
