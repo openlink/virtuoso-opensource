@@ -1146,7 +1146,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			return;
 		}
 	if (typeof(pointResource == "string")) { // handle geo:geometry coords
-	    var cmatches = pointResource.match (/POINT\((\d+\.*\d*) (\d+\.*\d*)/)
+	    var cmatches = pointResource.match (/POINT\((-?\d+\.*\d*) (-?\d+\.*\d*)/)
 	    if (cmatches.length == 3) {
 		coords[0] = cmatches[2];
 		coords[1] = cmatches[1];
