@@ -6,7 +6,7 @@
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
    declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr varchar;
-   declare do_sponge, local_lookup, sponge_type, proxy_iri_fn int;
+   declare do_sponge, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
 
    set http_charset='utf-8';
    label := '';
@@ -14,6 +14,7 @@
    _subject := '';
    error_message := null;
    odd_position := 0;
+   do_refresh := null;
    sponge_type := '';
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
@@ -27,6 +28,9 @@
        tmp := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 2);
        tmp := split_and_decode (ltrim (tmp, '?&'));
        sponge_type := get_keyword ('@Lookup@', tmp, '');
+       do_refresh := atoi (get_keyword ('refresh', tmp, '-1'));
+       if (do_refresh < 0)
+         do_refresh := null;
        gr := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 1); 
      } 
    arr := rfc1808_parse_uri (gr);
@@ -149,7 +153,7 @@
        --DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
        --DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
        -- temporary work around to stop sponging twice
-       DB.DBA.RM_DO_SPONGE (_G, sponge_type);
+       DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh);
        commit work;
      }
    else if (_S like 'nodeID://%' or local_lookup = 1)
