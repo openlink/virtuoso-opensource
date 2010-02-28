@@ -2244,16 +2244,32 @@ DAV_RES_UPLOAD_STRSES_INT (
              return -38;
         }
        -- dbg_obj_princ ('UPDATE ', name);
-      update WS.WS.SYS_DAV_RES
-         set RES_OWNER = ouid,
-             RES_GROUP = ogid,
-             RES_PERMS = permissions,
-             RES_CR_TIME = cr_time,
-             RES_MOD_TIME = mod_time,
-             RES_TYPE = type,
-             RES_CONTENT = content,
-             ROWGUID = _rowguid
-       where current of res_cr;
+      if (sys_stat ('cl_run_local_only') = 1) 
+	{
+	  update WS.WS.SYS_DAV_RES
+	     set RES_OWNER = ouid,
+		 RES_GROUP = ogid,
+		 RES_PERMS = permissions,
+		 RES_CR_TIME = cr_time,
+		 RES_MOD_TIME = mod_time,
+		 RES_TYPE = type,
+		 RES_CONTENT = content,
+		 ROWGUID = _rowguid
+	   where current of res_cr;
+	}
+      else -- when it is cluster do it by PK for now
+	{
+	  update WS.WS.SYS_DAV_RES
+	     set RES_OWNER = ouid,
+		 RES_GROUP = ogid,
+		 RES_PERMS = permissions,
+		 RES_CR_TIME = cr_time,
+		 RES_MOD_TIME = mod_time,
+		 RES_TYPE = type,
+		 RES_CONTENT = content,
+		 ROWGUID = _rowguid
+	  where RES_ID = id;
+	}
       if (_is_xper_res)
         update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
     }
