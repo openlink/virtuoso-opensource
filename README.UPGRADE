@@ -83,7 +83,7 @@ the new RDF_QUAD table is installed. The steps for this are:
 
   5. Start up the database
 
-  6. Connect with isql to your database and run the libsrc/Wi/sqlrdf23.sql
+  6. Connect with isql to your database and run the libsrc/Wi/clrdf23.sql
      script. Depending on the number of quad records this can take
      several hours. Once the conversion is complete, the database 
      will shutdown itself.
