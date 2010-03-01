@@ -115,7 +115,7 @@
 &secureodbc;
 
   <sect2 id="virtmanconfodbcdsnunix"><title>Manually configuring a Virtuoso ODBC DSN on Unix</title>
-<para>If you have [[http://www.iodbc.org][iODBC]] installed, you can configure Virtuoso data sources by
+<para>If you have <ulink url="http://www.iodbc.org">iODBC</ulink> installed, you can configure Virtuoso data sources by
 adding the following entry into the relevant .odbc.ini file. Usually it is the value of the ODBCINI
 environment variable or $HOME/.odbc.ini:
 </para>

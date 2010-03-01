@@ -3006,7 +3006,7 @@ DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
 <para>To set the text index to follow the triples in real time, use:
 </para>
 <programlisting>
-DB.DBA.VT_BATCH_UPDATE ('DB.DBA.RDF_OBJ', 'ON', null);
+DB.DBA.VT_BATCH_UPDATE ('DB.DBA.RDF_OBJ', 'OFF', null);    
 </programlisting>
 <para>To set the text index to be updated every 10 minutes, use:
 </para>
@@ -4135,6 +4135,15 @@ Delete from <http://BookStore.com>, 6 triples -- done
 <para>The next snippet copies records from one named graph to another based on a pattern:
 </para>
 <programlisting><![CDATA[
+SQL>SPARQL clear graph <http://BookStore.com>;
+SQL>SPARQL clear graph <http://NewBookStore.com>;
+SQL>SPARQL
+insert in graph <http://BookStore.com>
+  {
+    <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
+    <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
+    <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00>
+  };
 SQL>SPARQL
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
@@ -4459,7 +4468,7 @@ ORDER BY
 ]]></programlisting>
 </sect5>
 <sect5 id="rdfsparqlaggregateexamples"><title>Examples</title>
-<para><emphasis>Example for count of physical triples in http://mygraph.com</emphasis></para>
+<sect6 id="rdfsparqlaggregateexamples1"><title>Example for count of physical triples in http://mygraph.com</title>
 <programlisting><![CDATA[
 SPARQL
 SELECT COUNT (*)
@@ -4473,23 +4482,25 @@ SELECT ?p COUNT (?o)
   FROM <http://mygraph.com>
  WHERE {?s ?p ?o}
 ]]></programlisting>
-<para><emphasis>Example for count of triples, including inferred triples and the count of
-distinct O values.</emphasis></para>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples2"><title>Example for count of triples, including inferred triples and the count of
+distinct O values</title>
 <programlisting><![CDATA[
 SPARQL define input:inference "http://mygraph.com"
 SELECT COUNT (?p) COUNT (?o) COUNT (DISTINCT ?o)
  FROM <http://mygraph.com>
 WHERE {?s ?p ?o}
 ]]></programlisting>
-<para><emphasis>Example for get number of distinct bindings of ?s ?p ?o.</emphasis></para>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples3"><title>Example for get number of distinct bindings of ?s ?p ?o</title>
 <programlisting><![CDATA[
 SPARQL define input:inference "http://mygraph.com"
 SELECT count distinct ?s ?p ?o
   FROM <http://mygraph.com>
  WHERE {?s ?p ?o}
 ]]></programlisting>
-<para><emphasis>Example for get counts and total prices of ordered items, grouped by item status.
-</emphasis></para>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples4"><title>Example for get counts and total prices of ordered items, grouped by item status</title>
 <programlisting><![CDATA[
 SPARQL
 prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
@@ -4501,6 +4512,8 @@ WHERE {
       tpch:linestatus ?status .
   }
 ]]></programlisting>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples5"><title>Example for get counts and total prices of ordered items, grouped by item status</title>
    <para><emphasis>Example: A dataset of people, some duplicated</emphasis></para>
    <para>Suppose there is a dataset with many people, some of them sharing the same name. To list them we would, ideally, execute the query:
    </para>
@@ -4566,7 +4579,8 @@ SELECT
            ?person2 foaf:mbox_sha1sum ?mail2 } }
  }
 ]]></programlisting>
-<para><emphasis>Example quering dbpedia</emphasis></para>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples6"><title>Example quering dbpedia</title>
 <para>The following example demonstrate how to query dbpedia. Suppose there is local onotlogy,
 which has a datatype property hasLocation with a string containing city names. The query below finds
 which of those cities are in dbpedia:</para>
@@ -4584,6 +4598,37 @@ WHERE
     FILTER(bif:exists(( ASK { ?subdb a dbo:City . ?subdb dbpprop:officialName ?city })))
   }
 ]]></programlisting>
+</sect6>
+<sect6 id="rdfsparqlaggregateexamples7"><title>Example for MAX with HACING and GROOP BY</title>
+<programlisting><![CDATA[
+## Example "Find which town or city in
+## the UK has the largest proportion of students.
+
+PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>
+PREFIX dbpedia-owl-uni: <http://dbpedia.org/ontology/University/>
+PREFIX dbpedia-owl-inst: <http://dbpedia.org/ontology/EducationalInstitution/>
+
+SELECT ?town COUNT(?uni)
+       ?pgrad ?ugrad
+       MAX(?population)
+       ( ((?pgrad+?ugrad)/ MAX(?population))*100 ) AS ?percentage
+WHERE
+  {
+    ?uni dbpedia-owl-inst:country dbpedia:United_Kingdom ;
+                         dbpedia-owl-uni:postgrad ?pgrad ;
+                        dbpedia-owl-uni:undergrad ?ugrad ;
+                             dbpedia-owl-inst:city ?town .
+    OPTIONAL
+        {
+          ?town dbpedia-owl:populationTotal ?population .
+          FILTER (?population > 0 )
+        }
+  }
+GROUP BY ?town ?pgrad ?ugrad
+HAVING ( ( ( (?pgrad+?ugrad)/ MAX(?population) )*100 ) > 0 )
+ORDER BY DESC 6
+]]></programlisting>
+</sect6>
 </sect5>
 <sect5 id="rdfsparqlaggregatenote"><title>Note on Aggregates and Inference</title>
 <para>Inferencing is added to a SPARQL query only for those variables whose value is actually used. Thus,
@@ -5788,7 +5833,7 @@ where
   counted for paths of length 1, then again as steps on paths that reach
   to their aliases and so on.</para>
 </sect4>
-<sect4 id="rdfsparqlimplementatiotransexamples2"><title>Example for query that takes all the people known by kidehen, to a depth between 1 and 4 applications of the subquery</title>
+<sect4 id="rdfsparqlimplementatiotransexamples2"><title>Example for query that takes all the people known by Tim Berners-Lee, to a depth between 1 and 4 applications of the subquery</title>
   <para>This query takes all the people known by kidehen, to a depth between 1
   and 4 applications of the subquery. It then sorts them by the
   distance and the descending count of connections of each found connection. This is
@@ -5805,7 +5850,7 @@ where
             ?s foaf:knows ?o
           }
       } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
-      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
+      FILTER (?s= <http://www.w3.org/People/Berners-Lee/card#i>)
     }
   ORDER BY ?dist DESC 3
   LIMIT 50
@@ -5826,7 +5871,7 @@ where
           }
       } OPTION (TRANSITIVE, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only,
       t_step (?s) as ?link, t_step ('path_id') as ?path, t_step ('step_no') as ?step, t_direction 3) .
-      FILTER (?s= <http://myopenlink.net/dataspace/person/kidehen#this>
+      FILTER (?s= <http://www.w3.org/People/Berners-Lee/card#i>
       && ?o = <http://www.advogato.org/person/mparaz/foaf.rdf#me>)
     }
     LIMIT 20
@@ -5945,8 +5990,7 @@ transitive properties from SKOS vocabulary: Variant II</title>
 <p>This example shows how to find entities that are subcategories of Protestant Churches, no deeper
 than 3 levels within the concept scheme hierarchy, filtered by a specific subcategory. It demonstrates
 use of inference rules, sub-queries, and filter to obtain entities associated with category:
-Protestant_churches combined with the use of the transitivitve closure, sets to a maximum of
-3-steps  down a SKOS based concept scheme hierarchy:</p>
+Protestant_churches combined with the use of the transitivitve closure, sets to a maximum of 3 steps down a SKOS based concept scheme hierarchy:</p>
 <orderedlist>
   <listitem>Make sure the inference rule "skos-trans" is created as described in the previous <link linkend="rdfsparqlimplementatiotransexamples7">example</link></listitem>
   <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
@@ -35266,11 +35310,15 @@ users will not indicate specific graphs then should be done: </para>
        <listitem>or load everything into single graph and specify it somewhere in querying application.</listitem>
     </itemizedlist>
     <para>Both methods do not require any changes in query texts</para>
-    <para>Strongly recommended is the usage of additional bitmap indexes:</para>
+<itemizedlist mark="bullet">
+  <listitem>For users using Virtuoso 5 is strongly recommended is the usage of additional bitmap indexes:
 <programlisting><![CDATA[
 SQL> create bitmap index RDF_QUAD_POGS on DB.DBA.RDF_QUAD (P,O,G,S);
 SQL> create bitmap index RDF_QUAD_PSOG on DB.DBA.RDF_QUAD (P,S,O,G);
 ]]></programlisting>
+</listitem>
+  <listitem>For users using Virtuoso 6 or higher, see the new layout <link linkend="rdfperfrdfscheme">here</link>.</listitem>
+</itemizedlist>
     <para>You can create other indexes as well. Bitmap indexes are preferable, but
 if O is the last column, then the index can not be bitmap, so it could be, for e.g.:</para>
 <programlisting><![CDATA[

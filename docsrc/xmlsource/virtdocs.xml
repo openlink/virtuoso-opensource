@@ -304,6 +304,7 @@
 <!ENTITY rdf_restore_metadata           	SYSTEM "funcref/rdf_restore_metadata.xml">
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
+<!ENTITY isref                                  SYSTEM  "funcref/isref.xml">
 
 <!--
 - Uncommented for Virtuoso 6 Release-->
@@ -558,6 +559,7 @@
 <!ENTITY vt_is_noise				SYSTEM "funcref/vt_is_noise.xml">
 <!ENTITY week					SYSTEM "funcref/week.xml">
 <!ENTITY wsdl_import_udt			SYSTEM "funcref/wsdl_import_udt.xml">
+<!ENTITY user_key_load					SYSTEM	"funcref/user_key_load.xml">
 <!ENTITY wst_cli                        	SYSTEM "funcref/wst_cli.xml">
 <!-- ENTITY xcontains				SYSTEM "funcref/xcontains.xml" -->
 <!ENTITY XMLAGG					SYSTEM "funcref/XMLAGG.xml">

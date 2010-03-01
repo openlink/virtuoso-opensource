@@ -164,6 +164,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;&ttlp_mt_local_file;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
 &rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;&rdfs_rule_set;
+&isref;
 
 &ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;
 
@@ -244,7 +245,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &vt_batch_d_id; &vt_batch_feed; &vt_batch_feed_offband; &vt_batch_update;
 &vt_create_text_index; &vt_drop_ftt; &vt_is_noise;
 
-&week; &wsdl_import_udt; &wst_cli;
+&week; &wsdl_import_udt; &wst_cli; &user_key_load;
 
 &dsig_template_ext; &x509_certificate_verify; &xenc_X509_certificate_serialize; &xenc_decrypt_soap;
 &xenc_delete_temp_keys; &xenc_encrypt; &xenc_get_key_algo; &xenc_get_key_identifier; &xenc_key_3DES_read;

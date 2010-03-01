@@ -405,7 +405,7 @@ the Virtuoso server running on the same computer on port 1111:</para>
 		if (o instanceof VirtuosoExtendedString) // String representing an IRI
 		  {
 		    VirtuosoExtendedString vs = (VirtuosoExtendedString) o;
-		    if (vs.iriType == VirtuosoExtendedString.IRI)
+                    if (vs.iriType == VirtuosoExtendedString.IRI && (vs.strType & 0x01) == 0x01)
 			System.out.println ("<" + vs.str +">");  
 		    else if (vs.iriType == VirtuosoExtendedString.BNODE)
 			System.out.println ("<" + vs.str +">");  
