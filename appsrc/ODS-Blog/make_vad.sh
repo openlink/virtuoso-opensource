@@ -100,7 +100,7 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=250 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=290 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi

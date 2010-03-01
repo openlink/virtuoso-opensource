@@ -176,14 +176,16 @@
 		      </div>
 		      <div class="post-content" property="sioc:content">
 			  <vm:trackback-discovery/>
+			  <vm:if test="post-view">
 			  <div class="tweetmeme_button" style="">
-			      <iframe height="61" width="50" frameborder="0" scrolling="no">
-				  <vm:external-link name="src" value="permalink-iri" url="http://api.tweetmeme.com/button.js?url=" />
-			      </iframe>
+				  <script type="text/javascript">
+				      tweetmeme_url = "<vm:post-uri />";
+				  </script>
+				  <script type="text/javascript" src="http://tweetmeme.com/i/scripts/button.js">
+				  </script>
 			  </div>
-			  <div class="content-wrapper">
+			  </vm:if>
 			  <vm:post-body />
-		      </div>
 		      </div>
 		      <vm:if test="summary-post-view">
 			  <vm:if test="have_tags">
