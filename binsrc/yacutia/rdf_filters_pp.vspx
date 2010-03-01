@@ -100,16 +100,20 @@
                               		  <col/>
                               		  <col/>
                               		  <col/>
+                              		  <col/>
+                              		  <col/>
                           	      </colgroup>
                           	      <tr class="listing_header_row">
   		                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
                               		  <th>Seq#</th>
+                              		  <th>ID</th>
                               		  <th colspan="2">Description</th>
                               		  <th>Pattern</th>
+                              		  <th>API type</th>
                               		  <th>Action</th>
                           	      </tr>
                           	      <v:data-set name="maps"
-                          	                  sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
+                          	                  sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
                           		                scrollable="1"
                           		                editable="1"
                           		                nrows="1000">
@@ -160,6 +164,9 @@
                                             <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[8]" />
                                           </td>
                                           <td>
+                                            <v:label name="lan1" format="%d" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
+                                          </td>
+                                          <td>
                                             <v:url name="ur1"
                                                    value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
                                                    format="%s"
@@ -173,6 +180,9 @@
                                           </td>
                                           <td>
                                             <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+                                          </td>
+                                          <td>
+					      <v:label name="la4" format="%s" value="--y_rdf_api_type ((control.vc_parent as vspx_row_template).te_rowset[9])" />
                                           </td>
                                           <td>
                                             &#160;
@@ -246,7 +256,7 @@
                                     </v:template>
                                     <v:template name="maps_footer" type="simple">
                                       <tr>
-                                        <td colspan="5" class="listing_col_action">
+                                        <td colspan="7" class="listing_col_action">
                                           <vm:ds-navigation data-set="maps" type="set" />
                                         </td>
                                       </tr>
