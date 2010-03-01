@@ -54,6 +54,7 @@ namespace OpenLink.Data.Virtuoso
             bool b = PersistSecurityInfo;
             b = Enlist;
             b = Pooling;
+            b = RoundRobin;
             uint i = ConnectTimeout;
             i = MinPoolSize;
             i = MaxPoolSize;
@@ -412,6 +413,29 @@ namespace OpenLink.Data.Virtuoso
 
         }
         set { this[ConnectionOptions.ENLIST] = value; }
+    }
+
+    public bool RoundRobin
+    {
+        get
+        {
+            object value;
+            if (base.TryGetValue(ConnectionOptions.ROUNDROBIN, out value))
+            {
+                if (value is bool)
+                    return (bool)value;
+
+				bool bVal;
+				if (!bool.TryParse(value.ToString(), out bVal))
+				    bVal = ConnectionOptions.DEFAULT_ROUND_ROBIN;
+				// Change the stored value type to bool.
+				this[ConnectionOptions.ROUNDROBIN] = bVal;
+				return bVal;
+			}
+           return ConnectionOptions.DEFAULT_ROUND_ROBIN;
+
+        }
+        set { this[ConnectionOptions.ROUNDROBIN] = value; }
     }
 
 #endregion

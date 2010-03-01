@@ -168,6 +168,7 @@ namespace OpenLink.Data.Virtuoso
 		internal const bool DEFAULT_PERSIST_SECURITY_INFO = false;
 		internal const bool DEFAULT_POOLING = true;
 		internal const bool DEFAULT_ENLIST = true;
+		internal const bool DEFAULT_ROUND_ROBIN = false;
 
 		internal const string ODBC = "ODBC";
 		internal const string HOST = "HOST";
