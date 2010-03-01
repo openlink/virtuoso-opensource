@@ -1065,6 +1065,7 @@ extern caddr_t uname_swap_reify_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri_statement;
 extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
 extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 extern caddr_t uname_virtrdf_ns_uri_QuadMap;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
