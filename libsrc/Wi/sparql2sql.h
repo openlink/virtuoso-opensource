@@ -621,6 +621,9 @@ extern void sparp_make_aliases (sparp_t *sparp);
 /*! Label variables as EXTERNAL. */
 extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
 
+/*! Visits all subtres and subqueries of \c tree and places all distinct names of global and external variables to \c set_set[0] */
+extern void sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret);
+
 /*! Removes equivalence classes that are no longer in any sort of use (neither pure connections nor equivs of actual variables */
 extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 
@@ -749,7 +752,8 @@ typedef struct spar_sqlgen_s
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
   struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
-  SPART			*ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L that contains the current subquery */
+  SPART *		ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
+  SPART *		ssg_wrapping_sinv;	/*!< service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */
@@ -771,6 +775,7 @@ typedef struct spar_sqlgen_s
   SPART *		ssg_sd_prev_pred;	/*!< Predicate of the previous triple in a group, to make a decision about using ',' shorthand */
   caddr_t		ssg_sd_single_from;	/*!< The IRI in FROM clause, if there's only one FROM clause, NULL otherwise */
   int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
+  dk_set_t		ssg_param_pos_set;	/*!< revlist of byte offsets of params in text and numbers of params in question, for sinv templates with unsupported named params */
 } spar_sqlgen_t;
 
 /*!< Releases non-mempooled internals of \c ssg (currently the ssg_out) but does not free \c ssg itself (it's supposed to be on stack (if top-level) or in mem pool (if top-level or nested) */
@@ -864,9 +869,13 @@ extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *
 extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr);
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
-extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
 
+#define	SSG_TABLE_SELECT_PASS		1
+#define	SSG_TABLE_WHERE_PASS		2
+#define	SSG_TABLE_PVIEW_PARAM_PASS	3
+extern void ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass);
 extern void ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp);
+extern void ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass);
 extern void ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed);
 
 #define SSG_PRINT_UNION_NOFIRSTHEAD	0x01	/*!< Flag to suppress printing of 'SELECT retvallist' of the first member of the union */

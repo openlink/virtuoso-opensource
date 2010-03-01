@@ -1204,11 +1204,8 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
         {
           if (__tag of XML = __tag (parsed))
             {
-              insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-              values (g_iid, iri_to_id (s_uri), p_iid,
-                DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
-                  parsed, iri_to_id (o_type), null ) );
-              return;
+              return DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (
+                parsed, iri_to_id (o_type), null );
             }
           if (__tag of rdf_box = __tag (parsed))
             {
@@ -10626,7 +10623,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2010-01-19 0001v6g';
+  ver := '2010-02-27 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {

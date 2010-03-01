@@ -67,6 +67,7 @@ extern "C" {
 #define SPAR_LIST		(ptrlong)1017
 #define SPAR_GRAPH		(ptrlong)1018
 #define SPAR_WHERE_MODIFS	(ptrlong)1019
+#define SPAR_SERVICE_INV	(ptrlong)1020	/*!< Tree type for details of invocation of an external service endpoint */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -214,6 +215,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
     caddr_t		spare_describe_mode;		/*!< Version of DESCRIBE SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
+    dk_set_t		spare_context_sinvs;		/*!< Stack of not yet closed service invocations */
     dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
     dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
     dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
@@ -254,6 +256,8 @@ typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
   ptrlong sg_equiv_count;		/*!< A count of used items in the beginning of \c sg_equivs buffer */
   ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
+  struct spar_tree_s **sg_sinvs;	/*!< All descriptions of service invocations, in pointer to a growing buffer */
+  ptrlong sg_sinv_count;		/*!< A count of used items in the beginning of \c sg_sinvs buffer */
 } sparp_globals_t;
 
 typedef struct sparp_s {
@@ -284,6 +288,7 @@ typedef struct sparp_s {
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions or HAVING but not HAVING SELECT ... */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
+  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.retval_varnames lists */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
 /* Environment of lex */
   size_t sparp_text_ofs;
@@ -359,6 +364,7 @@ extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in
 #define SPART_GRAPH_NOT_NAMED		0x190
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
+#define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
 
 #ifdef DEBUG
 #define ASSERT_EQUIV_INDEX(f,l,sparp,eq_inx) do { \
@@ -501,7 +507,7 @@ typedef struct spar_tree_s
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
         ptrlong subtype;
         SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
-        caddr_t qm_iri;
+        caddr_t qm_iri_or_pair;	/* !< This is one of the following: DEFAULT_L for built-in mapping or _STAR for no restriction or an UNAME of top quad map or a pair of one listed before and a serial number of a sinv */
         caddr_t selid;
         caddr_t tabid;
         triple_case_t **tc_list;
@@ -566,6 +572,18 @@ typedef struct spar_tree_s
         SPART *lim;		/*!< Boxed LIMIT value or an expression tree */
         SPART *ofs;		/*!< Boxed OFFSET value or an expression tree */
       } wm;
+    struct {
+        /* define SPAR_SERVICE_INV	(ptrlong)1020 */
+        ptrlong own_idx;	/*!< Boxed serial of the sinv in the parser */
+        caddr_t endpoint;	/*!< An IRI of web service endpoint without static parameters */
+        SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
+        caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
+        caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
+        caddr_t *rset_varnames;	/*!< Names of variables that are returned in the result set from the endpoint, in the order in the rset */
+        SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
+        SPART **sources;	/*!< List of sources, similar to one in req_top. If NULL then sources of parent req_top are used */
+        caddr_t storage_uri;	/*!< Storage to use: JSO UNAME if specified explicitly for a service IRI, uname_virtrdf_ns_uri_DefaultServiceStorage if unknown service */
+      } sinv;
   } _;
 } sparp_tree_t;
 
@@ -688,6 +706,7 @@ extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, in
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 extern SPART *spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong from_group_subtype, ptrlong from2_subtype, ptrlong req_perms, SPART *needle_in);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
+extern SPART *spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage_uri);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
@@ -700,9 +719,10 @@ extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **r
 extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
+extern SPART **spar_make_sources_like_top (sparp_t *sparp);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
-extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);

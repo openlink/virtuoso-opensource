@@ -228,6 +228,7 @@ create aggregate DB.DBA.SPARQL_RSET_NT_HTTP (inout colnames any, inout row any) 
 
 create procedure DB.DBA.SPARQL_REXEC_INT (
   in res_mode integer,
+  in res_make_obj integer,
   in service varchar,
   in query varchar,
   in dflt_graph varchar,
@@ -416,6 +417,10 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
                       declare lang, dt varchar;
                       lang := charset_recode (xpath_eval ('*/@xml:lang', ret_col), '_WIDE_', 'UTF-8');
                       dt := charset_recode (xpath_eval ('*/@datatype', ret_col), '_WIDE_', 'UTF-8');
+                      if (res_make_obj)
+                        out_fields [var_pos] := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
+                          var_strval, dt, lang );
+                      else
                       out_fields [var_pos] := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
                         var_strval, dt, lang );
                     }
@@ -503,7 +508,7 @@ create procedure DB.DBA.SPARQL_REXEC (
   )
 {
   declare metas any;
-  DB.DBA.SPARQL_REXEC_INT (0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
+  DB.DBA.SPARQL_REXEC_INT (0, 0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
 }
 ;
 
@@ -518,7 +523,22 @@ create function DB.DBA.SPARQL_REXEC_TO_ARRAY (
   ) returns any
 {
   declare metas any;
-  return DB.DBA.SPARQL_REXEC_INT (1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
+  return DB.DBA.SPARQL_REXEC_INT (1, 0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
+}
+;
+
+create function DB.DBA.SPARQL_REXEC_TO_ARRAY_OF_OBJ (
+  in service varchar,
+  in query varchar,
+  in dflt_graph varchar,
+  in named_graphs any,
+  in req_hdr any,
+  in maxrows integer,
+  in bnode_dict any
+  ) returns any
+{
+  declare metas any;
+  return DB.DBA.SPARQL_REXEC_INT (1, 1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
 }
 ;
 
@@ -534,11 +554,53 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
   out resultset any
   )
 {
-  resultset := DB.DBA.SPARQL_REXEC_INT (1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metadata, bnode_dict);
+  resultset := DB.DBA.SPARQL_REXEC_INT (1, 0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metadata, bnode_dict);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_WITH_META (): metadata = ', metadata, ' resultset = ', resultset);
 }
 ;
 
+
+create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params any, in qtext_template varchar, in qtext_posmap nvarchar, in param_row any)
+{
+  declare RSET, retarray any;
+  result_names (RSET);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, ')');
+  if (N'' <> qtext_posmap)
+    {
+      declare qtext_ses any;
+      declare prev_pos, qctr integer;
+      qtext_ses := string_output ();
+      prev_pos := 0;
+      for (qctr := length (qtext_posmap); qctr > 0; qctr := qctr-2)
+        {
+          declare qpos integer;
+          qpos := qtext_posmap[qctr-2];
+          http (subseq (qtext_template, prev_pos, qpos), qtext_ses);
+          http_nt_object (param_row[qtext_posmap[qctr-1]-1], qtext_ses);
+          prev_pos := qpos+8;
+        }
+      http (subseq (qtext_template, prev_pos), qtext_ses);
+      qtext_template := string_output_string (qtext_ses);
+    }
+  retarray := DB.DBA.SPARQL_REXEC_TO_ARRAY_OF_OBJ (
+    ws_endpoint,
+    qtext_template,
+    NULL, --in dflt_graph varchar,
+    NULL, --in named_graphs any,
+    NULL, -- in req_hdr any,
+    10000000,
+    NULL --  in bnode_dict any
+  );
+  foreach (any retrow in retarray) do
+    {
+      -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP returns ', retrow);
+      result (retrow);
+    }
+}
+;
+
+create procedure view DB.DBA.SPARQL_SINV as DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row)(RSET any)
+;
 
 -----
 -- SPARQL SOAP web service (incomplete, do not try to use in applications!)

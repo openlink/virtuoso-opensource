@@ -255,6 +255,30 @@ ssg_fields_are_equal (SPART *tree1, SPART *tree2)
 void
 ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
 {
+  if (NULL != ssg->ssg_wrapping_sinv)
+    {
+      int paramctr;
+      DO_BOX_FAST (caddr_t, param_vname, paramctr, ssg->ssg_wrapping_sinv->_.sinv.param_varnames)
+        {
+          char buf[20];
+          if (strcmp (vname, param_vname))
+            continue;
+          if (SSG_SD_BI & ssg->ssg_sd_flags)
+            {
+              sprintf (buf, "?:%d", paramctr+1);
+              ssg_puts (buf);
+            }
+          else
+            {
+              t_set_push (&(ssg->ssg_param_pos_set), (void *)((ptrlong)(strses_length (ssg->ssg_out))));
+              t_set_push (&(ssg->ssg_param_pos_set), (void *)((ptrlong)(paramctr)));
+              sprintf (buf, "?!%06d", paramctr);
+              ssg_puts (buf);
+            }
+          return;
+        }
+      END_DO_BOX_FAST;
+    }
   if (('_' == vname[0]) && ':' == vname[1])
     {
       ssg_puts (vname);
@@ -572,6 +596,30 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             return;
           case OPTIONAL_L: ssg_puts (" OPTIONAL "); break;
           case WHERE_L: ssg_puts (" WHERE "); break;
+          case SERVICE_L:
+            {
+              SPART *sinv = sparp_get_option (ssg->ssg_sparp, tree->_.gp.options, SPAR_SERVICE_INV);
+              int ctr, count;
+              ssg_puts (" SERVICE ");
+              ssg_sdprin_qname (ssg, (SPART *)(sinv->_.sinv.endpoint));
+              ssg_puts (" (");
+              DO_BOX_FAST (SPART *, var, ctr, sinv->_.sinv.param_varnames)
+                {
+                  ssg_puts (" IN ");
+                  ssg_sdprint_tree (ssg, var);
+                }
+              END_DO_BOX_FAST;
+              count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
+              for (ctr = 0; ctr < count; ctr += 2)
+                {
+                  ssg_puts (" DEFINE ");
+                  ssg_puts ((caddr_t)(sinv->_.sinv.defines[ctr]));
+                  ssg_putchar (' ');
+                  ssg_sdprint_tree (ssg, sinv->_.sinv.defines[ctr+1]);
+                }
+              ssg_puts (") ");
+              break;
+            }
           case 0: break;
           }
         ssg_putchar ('{');

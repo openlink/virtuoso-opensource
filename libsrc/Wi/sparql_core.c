@@ -78,6 +78,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case SPAR_LIST:		return sizeof (sample._.list);
     case SPAR_GRAPH:		return sizeof (sample._.graph);
     case SPAR_WHERE_MODIFS:	return sizeof (sample._.wm);
+    case SPAR_SERVICE_INV:	return sizeof (sample._.sinv);
     case ORDER_L:		return sizeof (sample._.oby);
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
@@ -343,6 +344,19 @@ spar_internal_error (sparp_t *sparp, const char *msg)
     "%.400s: Internal error: %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
 #endif
+}
+
+void
+spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const char *feature_name)
+{
+  if (NULL != sparp->sparp_env->spare_context_sinvs)
+    {
+      SPART *sinv = (SPART *)(sparp->sparp_env->spare_context_sinvs->data);
+      spar_error (sparp, "The support of %.200s syntax is not enabled for the SERVICE %.300s (bit 0x%x is not set)",
+        feature_name, sinv->_.sinv.endpoint, feature_in_use );
+    }
+  spar_error (sparp, "The support of %.200s syntax is disabled for debugging or security purpose by disabling bit 0x%x of define lang:dialect",
+    feature_name, feature_in_use );
 }
 
 #ifdef MALLOC_DEBUG
@@ -1203,7 +1217,6 @@ check_optionals:
                   SPART *memb = t_set_pop (&membs);
                   if ((SPAR_TRIPLE == SPART_TYPE(memb)) && (memb->_.triple.ft_type))
                     {
-                      SPART *ft_filt = NULL;
                       DO_SET (SPART *, filt, &filts)
                         {
                           if (!spar_filter_is_freetext (sparp, filt, memb))
@@ -1628,6 +1641,63 @@ in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
 }
 
+SPART *
+spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage)
+{
+  dk_set_t iri_params = NULL;
+  dk_set_t param_varnames = NULL;
+  dk_set_t rset_varnames = NULL;
+  dk_set_t defines = NULL;
+  ptrlong sinvcount = sparp->sparp_sg->sg_sinv_count;
+  SPART **sinvs = sparp->sparp_sg->sg_sinvs;
+  SPART *sinv;
+  while (NULL != all_options)
+    {
+      caddr_t optvalue = t_set_pop (&all_options);
+      caddr_t optname = t_set_pop (&all_options);
+      if (DEFINE_L == (ptrlong)optname)
+        {
+          t_set_push (&defines, ((SPART **)optvalue)[0]);
+          t_set_push (&defines, ((SPART **)optvalue)[1]);
+        }
+      else if (IN_L == (ptrlong)optname)
+        {
+          DO_SET (SPART *, var, (dk_set_t *)(&optvalue))
+            {
+              caddr_t vname = var->_.var.vname;
+              if (0 <= dk_set_position_of_string (param_varnames, vname))
+                spar_error (sparp, "Duplicate IN variable name \"%.100s\" in OPTIONs of SERVICE invocation", vname);
+              t_set_push (&param_varnames, vname);
+            }
+          END_DO_SET()
+        }
+/*! TBD: add other cases */
+    }
+  if (BOX_ELEMENTS_INT_0 (sinvs) == sinvcount)
+    {
+      size_t new_size = ((NULL == sinvs) ? 4 * sizeof (SPART *) : 2 * box_length (sinvs));
+      SPART **new_sinvs = (SPART **)t_alloc_box (new_size, DV_ARRAY_OF_POINTER);
+      if (NULL != sinvs)
+        memcpy (new_sinvs, sinvs, box_length (sinvs));
+#ifdef DEBUG
+      if (NULL != sinvs)
+        memset (sinvs, -1, box_length (sinvs));
+#endif
+      sparp->sparp_sg->sg_sinvs = sinvs = new_sinvs;
+    }
+  sinv = spartlist (sparp, 10, SPAR_SERVICE_INV,
+    sparp->sparp_sg->sg_sinv_count,
+    endpoint,
+    t_revlist_to_array (iri_params),
+    t_box_num (permitted_syntax),
+    t_revlist_to_array (param_varnames),
+    t_revlist_to_array (rset_varnames),
+    t_revlist_to_array (defines),
+    sources,
+    sinv_storage );
+  sinvs[sparp->sparp_sg->sg_sinv_count++] = sinv;
+  return sinv;
+}
 
 int
 spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
@@ -1939,14 +2009,12 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   return spar_make_top (sparp, subtype, retvals, retselid, pattern, groupings, having, order, limit, offset);
 }
 
-SPART *
-spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
+SPART **
+spar_make_sources_like_top (sparp_t *sparp)
 {
-  dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
+  dk_set_t src = NULL;
   SPART **sources;
-  caddr_t final_output_format_name;
   DO_SET(SPART *, g, &(env->spare_default_graphs))
     {
       t_set_push (&src, sparp_tree_full_copy (sparp, g, NULL));
@@ -1961,6 +2029,16 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
+  return sources;
+}
+
+SPART *
+spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  caddr_t final_output_format_name;
+  SPART **sources = spar_make_sources_like_top (sparp);
   switch (subtype)
     {
     case CONSTRUCT_L: case DESCRIBE_L:
@@ -1994,7 +2072,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
 }
 
 SPART *
-spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks, dk_set_t inv_props)
+spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks, dk_set_t inv_props)
 {
   SPART *triple, *gp, *union_gp;
   rdf_inf_ctx_t *saved_inf = sparp->sparp_env->spare_inference_ctx;
@@ -2004,7 +2082,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
     spar_error (sparp, "Options are not supported for a triple pattern with property name \"%.200s\" that is declared in inference rules \"%.200s\" as a property with inverse",
       predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
   sparp->sparp_env->spare_inference_ctx = NULL;
-  triple = spar_gp_add_triple_or_special_filter (sparp, graph, subject, predicate, object, qm_iri, options, banned_tricks & 0x2);
+  triple = spar_gp_add_triple_or_special_filter (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, banned_tricks & 0x2);
   if (SPAR_TRIPLE != SPART_TYPE (triple))
     spar_error (sparp, "Property name \"%.200s\" has special meaning that conflicts with its declaration in inference rules \"%.200s\" as a property with inverse",
       predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
@@ -2022,7 +2100,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
         (SPART *)t_full_box_copy_tree ((caddr_t)object), /* object is swapped with subject*/
         (SPART *)t_full_box_copy_tree ((caddr_t)predicate),
         (SPART *)t_full_box_copy_tree ((caddr_t)subject),
-        t_full_box_copy_tree (qm_iri),
+        t_full_box_copy_tree (qm_iri_or_pair),
         (SPART **)t_full_box_copy_tree ((caddr_t)options),
         banned_tricks & 0x2 );
       if (SPAR_TRIPLE != SPART_TYPE (triple))
@@ -2042,7 +2120,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
 }
 
 SPART *
-spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks)
+spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks)
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
@@ -2104,7 +2182,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
       if (SPAR_IS_BLANK_OR_VAR (fields[fld_ctr]))
         fields[fld_ctr]->_.var.selid = gp_selid;
     }
-  spar_gp_add_triple_or_special_filter (sparp, graph, subj_var, predicate, obj_var, qm_iri, NULL, 0x1);
+  spar_gp_add_triple_or_special_filter (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, 0x1);
   sparp_set_option (sparp, &options, T_IN_L,
     spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
     SPARP_SET_OPTION_REPLACING );
@@ -2150,7 +2228,7 @@ static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
   SPART_VARR_NOT_NULL };					/* object	*/
 
 SPART *
-spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks)
+spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks)
 {
   sparp_env_t *env = sparp->sparp_env;
   rdf_inf_ctx_t *inf_ctx = sparp->sparp_env->spare_inference_ctx;
@@ -2161,6 +2239,26 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     predicate = (SPART *)t_box_copy_tree (env->spare_context_predicates->data);
   if (NULL == object)
     object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
+#if 1
+  if (NULL == qm_iri_or_pair)
+    {
+      if (NULL == env->spare_context_qms)
+        qm_iri_or_pair = (caddr_t)(_STAR);
+      else
+        {
+          SPART *ctx_qm = env->spare_context_qms->data;
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (ctx_qm))
+            qm_iri_or_pair = ctx_qm->_.lit.val;
+          else
+            qm_iri_or_pair = (caddr_t)ctx_qm;
+        }
+      if (NULL != env->spare_context_sinvs)
+        {
+          SPART *inner_sinv = (SPART *)(env->spare_context_sinvs->data);
+          qm_iri_or_pair = (caddr_t)t_list (2, qm_iri_or_pair, t_box_num (inner_sinv->_.sinv.own_idx));
+        }
+    }
+#else
   for (;;)
     {
       SPART *ctx_qm;
@@ -2180,6 +2278,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
       ctx_qm = (SPART *)qm_iri;
       break;
     }
+#endif
   if (NULL != options)
     {
       caddr_t inf_name = (caddr_t)sparp_get_option (sparp, options, INFERENCE_L);
@@ -2200,7 +2299,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     {
       SPART *trans = sparp_get_option (sparp, options, TRANSITIVE_L);
       if ((NULL != trans) && !(0x1 & banned_tricks))
-        return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options, 0x1 | banned_tricks);
+        return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, 0x1 | banned_tricks);
     }
   if ((NULL != inf_ctx) && (SPAR_QNAME == SPART_TYPE (predicate)))
         {
@@ -2217,7 +2316,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
               if ((1 & flags) && !(0x1 & banned_tricks))
                 {
                   sparp_set_option (sparp, &options, TRANSITIVE_L, (SPART *)((ptrlong)1), SPARP_SET_OPTION_REPLACING);
-                  return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri, options, 0x1 | banned_tricks);
+                  return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, 0x1 | banned_tricks);
                 }
             }
         }
@@ -2233,7 +2332,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
               t_set_push (&inv_names, invlist [1 + 2 * inv_pos]);
               while ((((inv_pos+1) * 2) < invlistlen) && !strcmp (invlist[(inv_pos+1) * 2], p_name))
                 t_set_push (&inv_names, invlist [1 + 2 * ++inv_pos]);
-              return spar_gp_add_union_of_triple_and_inverses (sparp, graph, subject, predicate, object, qm_iri, options, 0x2 | banned_tricks, inv_names);
+              return spar_gp_add_union_of_triple_and_inverses (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, 0x2 | banned_tricks, inv_names);
             }
         }
     }
@@ -2309,7 +2408,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     }
   if (SPAR_IS_BLANK_OR_VAR (graph))
     graph->_.var.selid = env->spare_selids->data;
-  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri, options);
+  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options);
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, triple, options);
   spar_gp_add_member (sparp, triple);
@@ -2317,7 +2416,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
 }
 
 SPART *
-spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
+spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t key;
@@ -2327,7 +2426,7 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   sparp->sparp_key_gen += 1;
   triple = spartlist (sparp, 17, SPAR_TRIPLE,
     (ptrlong)0,
-    graph, subject, predicate, object, qm_iri,
+    graph, subject, predicate, object, qm_iri_or_pair,
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,
     options, (ptrlong)0, (ptrlong)((sparp->sparp_unictr)++) );
@@ -2584,6 +2683,8 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
           mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
         }
     }
+  else
+    group_members_ptr = NULL;
   if (NULL != group_members_ptr)
     {
       switch (subtype)

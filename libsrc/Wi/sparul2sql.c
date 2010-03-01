@@ -142,7 +142,9 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
         return SPAR_GPT_COMPLETED;
       return SPAR_GPT_NODOWN;
     case SPAR_GP:
-      if (SELECT_L == curr->_.gp.subtype)
+      switch (curr->_.gp.subtype)
+        {
+        case SELECT_L:
         {
 #if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
           return SPAR_GPT_COMPLETED;
@@ -155,6 +157,9 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
             return SPAR_GPT_COMPLETED;
           return SPAR_GPT_NODOWN;
 #endif
+        }
+        case SERVICE_L:
+          return 0; /* remote triples can not interfere with local data manipulations. This may change in the future if SERVICE group ctor template is added in SPARUL */
         }
       break;
     }
@@ -347,6 +352,12 @@ bnode_found_or_added_for_big_ssl:
           switch (fld_type)
             {
             case SPAR_VARIABLE:
+              if (SPART_VARNAME_IS_GLOB (fld->_.var.vname))
+                {
+                  tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+                  tvector_args [(fld_ctr-1)*2 + 1] = fld;
+                  break;
+                }
               var_ctr = spar_cve_find_or_add_variable (sparp, cve, fld);
               tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
               tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);

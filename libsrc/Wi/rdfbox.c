@@ -2410,6 +2410,44 @@ fail:
   return (caddr_t)(ptrlong)(status);
 }
 
+caddr_t
+bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  nt_env_t env;
+  caddr_t obj = bif_arg (qst, args, 0, "http_nt_object");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_ttl_triple");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  ttl_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  env.ne_out_ses = ses;
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.loc, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
+  else
+    {
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+    }
+  if (obj_is_iri)
+    nt_http_write_ref (ses, &env, &(tii.o), obj);
+  else
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt);
+fail:
+  dk_free_box (tii.dt.loc);
+  return (caddr_t)(ptrlong)(status);
+}
+
 /*! Environment of Talis JSON serializer */
 typedef struct talis_json_env_s {
   caddr_t tje_prev_subj;		/*!< Item 1 is the string value of previous subject. It is DV_STRING except the very beginning of the serialization when it can be of any type except DV_STRING (non-string will be freed and replaced with NULL pointer inside the printing procedure) */
@@ -3830,6 +3868,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_nt_triple);
   bif_define ("http_talis_json_triple", bif_http_talis_json_triple);
   bif_set_uses_index (bif_http_talis_json_triple);
+  bif_define ("http_nt_object", bif_http_nt_object);
+  bif_set_uses_index (bif_http_nt_triple);
   bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
   bif_set_uses_index (bif_sparql_rset_ttl_write_row);
   bif_define ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row);

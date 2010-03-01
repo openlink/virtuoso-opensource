@@ -3365,6 +3365,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
   int has_inference = 0;
   int has_transitive = 0;
   int needs_transitive = 0;
+  int has_service = 0;
   SPART **subq_orig_retvals = NULL;
   SPART **in_list = NULL;
   SPART **out_list = NULL;
@@ -3445,6 +3446,9 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
                 (caddr_t)(val->_.alias.aname) );
             continue;
           }
+        case SERVICE_L:
+          has_service = 1;
+          continue;
         default: spar_internal_error (sparp, "sparp_" "validate_options_of_tree(): unsupported option");
         }
     }
@@ -3463,12 +3467,16 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         spar_error (sparp, "Transitive-specific options can be specified only for group patterns, not for triple patterns");
       if (has_ft || has_geo)
         spar_error (sparp, "%s options can be specified only for triple patterns with special predicates, not for plain patterns", (has_ft ? "Free-text" : "Spatial"));
+      if (has_service)
+        spar_internal_error (sparp, "Triple pattern has SERVICE invocation options, probably due to invalid optimization");
       break;
     default:
       if (has_inference)
         spar_error (sparp, "Inference options can be specified only for plain triple patterns");
       if (needs_transitive || has_transitive)
         spar_error (sparp, "Transitive-specific options can be specified only for group patterns");
+      if (has_service)
+        spar_internal_error (sparp, "misplaced SERVICE invocation options");
       break;
     }
   if (has_transitive)
@@ -3480,6 +3488,8 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
       if (BOX_ELEMENTS (in_list) != BOX_ELEMENTS (out_list))
         spar_error (sparp, "Mismatch in length of T_IN and T_OUT lists of names");
     }
+  if (has_service && (has_inference || has_transitive || needs_transitive ))
+    spar_error (sparp, "SERVICE invocation can not have inference or transitivity options, consider using nested groups");
 }
 
 SPART *
@@ -4084,6 +4094,18 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
 	      break;
 	    }
+          case SPAR_SERVICE_INV:
+            {
+              sprintf (buf, "SERVICE INV:");
+              SES_PRINT (ses, buf);
+              spart_dump (tree->_.sinv.endpoint, ses, indent+2, "ENDPOINT", -1);
+              spart_dump (tree->_.sinv.iri_params, ses, indent+2, "IRI PARAMS", -2);
+              spart_dump (tree->_.sinv.syntax, ses, indent+2, "SYNTAX", -1);
+              spart_dump (tree->_.sinv.param_varnames, ses, indent+2, "PARAM VARNAMES", -2);
+              spart_dump (tree->_.sinv.rset_varnames, ses, indent+2, "RSET VARNAMES", -2);
+              spart_dump (tree->_.sinv.defines, ses, indent+2, "DEFINES", -2);
+              break;
+            }
 	  case BOP_EQ: case BOP_NEQ:
 	  case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
 	  /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */

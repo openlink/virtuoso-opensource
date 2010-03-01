@@ -3021,10 +3021,32 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
 triple_case_t **
 sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type)
 {
+  caddr_t triple_qm_iri = triple->_.triple.qm_iri_or_pair;
+  caddr_t triple_storage_iri;
+  SPART *sinv = NULL;
+  quad_storage_t *triple_storage;
   int ctr, fld_ctr, source_ctr;
   triple_case_t **res_list;
   tc_context_t tmp_tcc;
-  if (NULL == sparp->sparp_storage)
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (triple_qm_iri))
+    {
+      sinv = SPARP_SINV (sparp, unbox (((caddr_t *)triple_qm_iri)[1]));
+      triple_storage_iri = sinv->_.sinv.storage_uri;
+      triple_qm_iri = ((caddr_t *)triple_qm_iri)[0];
+      triple_storage = sparp_find_storage_by_name (triple_storage_iri);
+      if (NULL == triple_storage)
+        spar_internal_error (sparp, "quad storage metadata are lost");
+      if ((SPART **)((ptrlong)(_STAR)) == sources)
+        sources = sinv->_.sinv.sources;
+    }
+  else
+    {
+      triple_storage_iri = sparp->sparp_env->spare_storage_name;
+      triple_storage = sparp->sparp_storage;
+      if ((SPART **)((ptrlong)(_STAR)) == sources)
+        sources = sparp->sparp_expr->_.req_top.sources;
+    }
+  if (NULL == triple_storage)
     {
       triple_case_t **res_list = (triple_case_t **)t_list (1, tc_default);
       mp_box_tag_modify (res_list, DV_ARRAY_OF_LONG);
@@ -3032,7 +3054,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
     }
   memset (&tmp_tcc, 0, sizeof (tc_context_t));
   tmp_tcc.tcc_triple = triple;
-  tmp_tcc.tcc_qs = sparp->sparp_storage;
+  tmp_tcc.tcc_qs = triple_storage;
   tmp_tcc.tcc_sources = sources;
   tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
   DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
@@ -3047,42 +3069,42 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
-  if (((caddr_t)DEFAULT_L) == triple->_.triple.qm_iri)
+  if (((caddr_t)DEFAULT_L) == triple_qm_iri)
     {
-      if (NULL == sparp->sparp_storage->qsDefaultMap)
-        spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage that has no default quad map");
-      tmp_tcc.tcc_top_allowed_qm = sparp->sparp_storage->qsDefaultMap;
+      if (NULL == triple_storage->qsDefaultMap)
+        spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage '%.200s' that has no default quad map", triple_storage_iri);
+      tmp_tcc.tcc_top_allowed_qm = triple_storage->qsDefaultMap;
     }
-  else if (((caddr_t)_STAR) == triple->_.triple.qm_iri)
+  else if (((caddr_t)_STAR) == triple_qm_iri)
     tmp_tcc.tcc_top_allowed_qm = NULL;
   else
     {
-      quad_map_t *top_qm = sparp_find_quad_map_by_name (triple->_.triple.qm_iri);
+      quad_map_t *top_qm = sparp_find_quad_map_by_name (triple_qm_iri);
       if (NULL == top_qm)
-        spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple->_.triple.qm_iri);
+        spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple_qm_iri);
       tmp_tcc.tcc_top_allowed_qm = top_qm;
     }
-  DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsMjvMaps)
+  DO_BOX_FAST (quad_map_t *, qm, ctr, triple_storage->qsMjvMaps)
     {
       int status;
       if (0 != BOX_ELEMENTS_0 (qm->qmUserSubMaps))
-        spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV has submaps; the quad storage used in the query should be configured again");
+        spar_error (sparp, "RDF quad mapping metadata are corrupted: MJV has submaps; the quad storage '%.200s' used in the query should be configured again", triple_storage_iri);
       if (SPART_QM_EMPTY & qm->qmMatchingFlags)
-        spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV is declared as empty; the quad storage used in the query should be configured again");
+        spar_error (sparp, "RDF quad mapping metadata are corrupted: MJV is declared as empty; the quad storage '%.200s' used in the query should be configured again", triple_storage_iri);
       status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0, 1);
       if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
-  DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsUserMaps)
+  DO_BOX_FAST (quad_map_t *, qm, ctr, triple_storage->qsUserMaps)
     {
       int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0, 1);
       if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
-  if (NULL != sparp->sparp_storage->qsDefaultMap)
-    sparp_qm_find_triple_cases (sparp, &tmp_tcc, sparp->sparp_storage->qsDefaultMap, 0, 1);
+  if (NULL != triple_storage->qsDefaultMap)
+    sparp_qm_find_triple_cases (sparp, &tmp_tcc, triple_storage->qsDefaultMap, 0, 1);
 
 full_exclusive_match_detected:
 #if 0
@@ -3093,7 +3115,7 @@ full_exclusive_match_detected:
   if (NULL == tmp_tcc.tcc_found_cases)
     {
       printf ("Empty quad map list:");
-      printf ("\nStorage : "); dbg_print_box (sparp->sparp_env->spare_storage_name, stdout);
+      printf ("\nStorage : "); dbg_print_box (triple_storage_iri, stdout);
       printf ("\nGraph   : "); dbg_print_box ((caddr_t)(triple->_.triple.tr_graph), stdout);
       printf ("\nSubj    : "); dbg_print_box ((caddr_t)(triple->_.triple.tr_subject), stdout);
       printf ("\nPred    : "); dbg_print_box ((caddr_t)(triple->_.triple.tr_predicate), stdout);
@@ -3862,6 +3884,14 @@ int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_thi
   return SPAR_GPT_NODOWN;
 }
 
+#if 0 /*!!!TBD: support of filter localization for services */
+typedef struct sparp_filter_relocation_details_s {
+  SPART **sfrd_var;		/*!< A non-global non-external variable used in filter */
+  ptrlong sfrd_var_count;	/*!< Count of distinct non-global non-external variables found in filter */
+  ptrlong sfrd_syntax;		/*!< Syntax features found in filter */
+} sparp_filter_relocation_details_t;
+#endif
+
 int
 sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -3875,7 +3905,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
       SPART *single_var = NULL;
       sparp_equiv_t *sv_eq;
       int filt_is_detached = 0;
-      int subval_ctr, subval_count;
+      int subval_ctr, subval_count, subval_unions_count, subval_in_unions_count, localize_in_unions, localizations_left;
       sparp_gp_trav_int (sparp, filt, sts_this, &(single_var),
         NULL, NULL,
         sparp_gp_trav_1var, NULL, NULL,
@@ -3883,41 +3913,76 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
       if (!IS_BOX_POINTER (single_var))
         continue;
       sv_eq = SPARP_EQUIV(sparp, single_var->_.var.equiv_idx);
-      if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
-        continue; /* It's unsafe to localize a filter on nullable variable. Consider { ... optional {<s> <p> ?o} filter (!bound(?o))}} */
       if (0 != sv_eq->e_gspo_uses)
         continue; /* The filter can not be detached here so it may be localized on every loop, resulting in redundant localized filters */
       subval_count = BOX_ELEMENTS_0 (sv_eq->e_subvalue_idxs);
-      if (0 == subval_count)
-        continue; /* No subvalues -- can't localize because this either have no effect or drop the filter */
-      if (10 < subval_count)
-        continue; /* Too many subvalues -- unsafe to localize, too many filter conditions may kill SQL compiler */
+      subval_unions_count = 0;
+      subval_in_unions_count = 0;
+      localize_in_unions = 1;
       DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
           SPART *sub_gp = sub_eq->e_gp;
-          if (UNION_L == sub_gp->_.gp.subtype)
-            subval_count += (BOX_ELEMENTS (sub_gp->_.gp.members) - 1);
+          switch (sub_gp->_.gp.subtype)
+            {
+            case UNION_L:
+              if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
+                subval_count --; /* It's too hard to safely localize a filter on nullable variable in UNION, too many checks for too little effect */
+              /* In case of union, we can't place filter right in UNION gp, because nobody expects it there.
+              Instead, we place a copy of the filter in each branch of the union. This can be unsafe if there are too many branches */
+              subval_unions_count++;
+              subval_in_unions_count += BOX_ELEMENTS (sub_gp->_.gp.members);
+              break;
+            case SELECT_L: subval_count --; break;  /*!!!TBD now HAVING is supported so filter can be moved inside subselect if there's no LIMIT/OFFSET */
+            case SERVICE_L: subval_count --; break;
+            case OPTIONAL_L:
+              {
+                if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
+                  subval_count --; /* It's unsafe to localize a filter on nullable variable. Consider { ... optional {<s> <p> ?o} filter (!bound(?o))}} */
+                break;
+              }
+            }
         }
       END_DO_BOX_FAST_REV;
-      if (10 < subval_count)
-        continue; /* Too many subvalues found after correction for member unions */
+      if (10 < subval_in_unions_count)
+        {
+          localize_in_unions = 0; /* Too many subvalues in unions -- unsafe to localize there, too many filter conditions may kill SQL compiler */
+          subval_count -= subval_unions_count; /* Nevertheless we can try to localize in non-unions */
+        }
+      if (0 == subval_count)
+        continue; /* No subvalues -- can't localize because this either have no effect or drop the filter */
+      localizations_left = 5; /* With too many subvalues, only few can be used for localization, too many filter conditions may kill SQL compiler */
       /* Now it's safe to localize the filter in each place where a subvalue comes from */
       DO_BOX_FAST_REV (ptrlong, subval_eq_idx, subval_ctr, sv_eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, subval_eq_idx);
           SPART *sub_gp = sub_eq->e_gp;
           SPART *filter_clone;
-          if (SELECT_L == sub_gp->_.gp.subtype)
-            continue; /*!!!TBD remove when HAVING is supported so filter can be moved inside subselect safely. Now that is impossible for e.g. { select count (...) as ?x ... } filter (?x < 10) */
-/* In case of union, we can't place filter right in UNION gp, because nobody expects it there.
-Instead, we place a copy of the filter in each branch of the union. */
+          switch (sub_gp->_.gp.subtype)
+            {
+            case UNION_L:
+              if (!localize_in_unions)
+                continue;
+              if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
+                continue;
+              break;
+            case SELECT_L: continue; /*!!!TBD see comment above */
+            case SERVICE_L: continue;
+            case OPTIONAL_L:
+              {
+                if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
+                  continue;
+                break;
+              }
+            }
+          if (0 >= localizations_left--)
+            break;
           if (UNION_L == sub_gp->_.gp.subtype)
             {
               int sub_memb_ctr, bad_subcase_found = 0;
               if (!filt_is_detached)
                 {
-/* If some branches are inappropriate for that trick then we don't detach the external filter in order to guarantee that results of all bracnes are filtered somewhere outside. */
+/* If some branches are inappropriate for that trick then we don't detach the external filter in order to guarantee that results of all branches are filtered somewhere outside. */
                   DO_BOX_FAST_REV (SPART *, sub_memb, sub_memb_ctr, sub_gp->_.gp.members)
                     {
                       if ((SPAR_GP != SPART_TYPE (sub_memb)) || (0 != sub_memb->_.gp.subtype))
@@ -5548,6 +5613,147 @@ sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree)
   return 0;
 }
 
+int
+sparp_gp_trav_list_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if ((SPAR_GP == SPART_TYPE (curr)) && (SELECT_L == curr->_.gp.subtype))
+    {
+      sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+      sparp_list_external_vars (sub_sparp, curr->_.gp.subquery, common_env);
+      sparp_up_from_sub (sparp, curr, sub_sparp);
+    }
+  return 0;
+}
+
+int
+sparp_gp_trav_list_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  if (SPAR_IS_BLANK_OR_VAR (curr) && (curr->_.var.rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)))
+    t_set_push_new_string (common_env, curr->_.var.vname);
+  return 0;
+}
+
+int
+sparp_gp_trav_list_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+  sparp_list_external_vars (sub_sparp, curr->_.gp.subquery, common_env);
+  sparp_up_from_sub (sparp, curr, sub_sparp);
+  return 0;
+}
+
+void
+sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret)
+{
+  SPART *top,*top_pattern;
+  if (SPAR_REQ_TOP == SPART_TYPE (tree))
+    {
+      top = tree;
+      top_pattern = top->_.req_top.pattern;
+    }
+  else
+    {
+      top = NULL;
+      top_pattern = tree;
+    }
+  if (NULL != top)
+    sparp_trav_out_clauses (sparp, top, set_ret,
+      NULL, NULL,
+      sparp_gp_trav_list_external_vars_expn_in, NULL, sparp_gp_trav_list_external_vars_expn_subq,
+      NULL );
+  sparp_gp_trav (sparp, top_pattern, set_ret,
+    sparp_gp_trav_list_external_vars_gp_in, NULL,
+    sparp_gp_trav_list_external_vars_expn_in, NULL, sparp_gp_trav_list_external_vars_expn_subq,
+    NULL );
+}
+
+void
+sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
+{
+  int equiv_ctr, equiv_count = sparp->sparp_sg->sg_equiv_count;
+  dk_set_t all_sinvs = NULL;
+  for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
+    {
+      sparp_equiv_t *eq = sparp->sparp_sg->sg_equivs[equiv_ctr];
+      SPART *gp;
+      if ((NULL == eq) || !SPARP_EQ_IS_USED(eq))
+        continue;
+      gp = eq->e_gp;
+      if (SERVICE_L == gp->_.gp.subtype)
+        t_set_pushnew (&all_sinvs, gp);
+    }
+  DO_SET (SPART *, gp, &(all_sinvs))
+    {
+      SPART *sinv = sparp_get_option (sparp, gp->_.gp.options, SPAR_SERVICE_INV);
+      int varctr, eqctr;
+      caddr_t **param_varnames_ptr = &(sinv->_.sinv.param_varnames);
+      dk_set_t used_globals = NULL;
+      dk_set_t new_used_globals_as_params = NULL;
+      dk_set_t rset_varnames = NULL;
+      sparp_list_external_vars (sparp, gp, &used_globals);
+      /* Check if all IN variables are adequate (or adequate but disconnected by the optimizer for a good reason).
+         Disconnected non-externals are silently removed from the IN list. */
+      DO_BOX_FAST_REV (caddr_t, param_var_name, varctr, param_varnames_ptr[0])
+        { /* The loop directoin is important due to possible removals */
+          sparp_equiv_t *param_xfer_equiv = sparp_equiv_get (sparp, gp, (SPART *)param_var_name, SPARP_EQUIV_GET_NAMESAKES);
+          if ((NULL == param_xfer_equiv) || (0 == BOX_ELEMENTS_0 (param_xfer_equiv->e_receiver_idxs)))
+            {
+              if ((NULL != param_xfer_equiv) &&
+                ((SPART_VARR_FIXED | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & param_xfer_equiv->e_rvr.rvrRestrictions) )
+                {
+                  if (!((SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL) & param_xfer_equiv->e_rvr.rvrRestrictions))
+                    param_varnames_ptr[0] = t_list_remove_nth ((caddr_t)(param_varnames_ptr[0]), varctr);
+                  continue;
+                }
+              if (0 > dk_set_position_of_string (used_globals, param_var_name))
+                spar_error (sparp, "SERVICE <%.200s> (...) declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
+                  sinv->_.sinv.endpoint, param_var_name );
+            }
+        }
+      END_DO_BOX_FAST_REV;
+      /* Now we try to extend list of IN vars with externals. Used externals are alwais passed, even if fixed, because the service can be the only place in the query where equality between external and fixed value is tested */
+      DO_SET (caddr_t, globname, &used_globals)
+        {
+          int found = 0;
+          DO_BOX_FAST_REV (caddr_t, param_var_name, varctr, sinv->_.sinv.param_varnames)
+            {
+              if (strcmp (param_var_name, globname))
+                continue;
+              found = 1;
+              break;
+            }
+          END_DO_BOX_FAST_REV;
+          if (!found)
+            t_set_push (&new_used_globals_as_params, globname);
+        }
+      END_DO_SET()
+      if (NULL != new_used_globals_as_params)
+        sinv->_.sinv.param_varnames = t_list_concat ((caddr_t)(sinv->_.sinv.param_varnames), (caddr_t)t_revlist_to_array (new_used_globals_as_params));
+      /* Finally what's not in extended list of param vars but in equivs of the SERVICE gp and has relations to the parent should become retvals */
+      SPARP_FOREACH_GP_EQUIV (sparp, gp, eqctr, eq)
+        {
+          int eq_varname_ctr;
+          if (0 == BOX_ELEMENTS_0 (eq->e_receiver_idxs))
+            continue; /* The eq is used only internally, no need to return values */
+          DO_BOX_FAST_REV (caddr_t, eq_var_name, eq_varname_ctr, eq->e_varnames)
+            {
+              DO_BOX_FAST_REV (caddr_t, param_var_name, varctr, sinv->_.sinv.param_varnames)
+                {
+                  if (!strcmp (param_var_name, eq_var_name))
+                    goto name_from_eq_is_found_in_params; /* see below */
+                }
+              END_DO_BOX_FAST_REV;
+            }
+          END_DO_BOX_FAST_REV;
+          t_set_push (&rset_varnames, eq->e_varnames[0]);
+name_from_eq_is_found_in_params: ;
+        }
+      END_SPARP_FOREACH_GP_EQUIV;
+      sinv->_.sinv.rset_varnames = t_revlist_to_array (rset_varnames);
+    }
+  END_DO_SET()
+}
+
 void
 sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
 {
@@ -5704,6 +5910,8 @@ end_of_equiv_checks:
       END_DO_SET();
     }
   END_DO_BOX_FAST;
+  if (sparp->sparp_query_uses_sinvs)
+    sparp_fill_sinv_varlists (sparp, root);
 }
 
 
@@ -5722,7 +5930,6 @@ sparp_rewrite_grab (sparp_t *sparp)
   ptrlong top_subtype;
   dk_set_t new_vars = NULL;
   dk_set_t sa_graphs = NULL;
-  spar_sqlgen_t ssg;
   sql_comp_t sc;
   int sub_sparp_ctr;
   ptrlong rgc_flags = 0;
@@ -5784,6 +5991,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /*!!! TBD: relax graph conditions in sparp_of_final */
   for (sub_sparp_ctr = 3; sub_sparp_ctr--; /* no step */)
     {
+      spar_sqlgen_t ssg;
       sparp_t *sub_sparp = sub_sparps [sub_sparp_ctr];
       sparp_rewrite_qm (sub_sparp);
       memset (&ssg, 0, sizeof (spar_sqlgen_t));
@@ -5798,7 +6006,7 @@ sparp_rewrite_grab (sparp_t *sparp)
       ssg_make_sql_query_text (&ssg);
       ssg.ssg_seealso_enabled = 0;
       sql_texts [sub_sparp_ctr] = t_strses_string (ssg.ssg_out);
-      strses_free (ssg.ssg_out);
+      ssg_free_internals (&ssg);
     }
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
