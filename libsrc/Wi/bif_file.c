@@ -5996,6 +5996,69 @@ signal_error:
   return NULL;
 }
 
+
+#include "zlib/contrib/minizip/unzip.h"
+#include "zlib/contrib/minizip/ioapi.c"
+#include "zlib/contrib/minizip/unzip.c"
+
+static caddr_t
+bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "unzip_file";
+  caddr_t fname = bif_string_arg (qst, args, 0, szMe);
+  caddr_t zname = bif_string_arg (qst, args, 1, szMe);
+  caddr_t fname_cvt;
+  char buffer [0x8000];
+  caddr_t err = NULL;
+  unzFile uf = NULL;
+  dk_session_t * ses = NULL;
+  int rc = 0;
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
+    {
+      dk_free_box (fname_cvt);
+      sqlr_resignal (err);
+    }
+  uf = unzOpen (fname);
+  if (unzLocateFile (uf, zname, 0) != UNZ_OK)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP01", "Can not locate the file in archive");
+      goto err_end;
+    }
+
+  rc = unzOpenCurrentFilePassword (uf, NULL /* password */);
+  if (rc != UNZ_OK)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP01", "Can not open file from archive");
+      goto err_end;
+    }
+
+  ses = strses_allocate ();
+
+  do
+    {
+      rc = unzReadCurrentFile (uf, buffer, sizeof (buffer));
+      if (rc < 0)
+	break;
+      if (rc > 0)
+	{
+	  session_buffered_write (ses, buffer, rc);
+	}
+    }
+  while (rc > 0);
+
+err_end:
+  unzCloseCurrentFile (uf);
+  dk_free_box (fname_cvt);
+  return (caddr_t) ses;
+}
+
+
+
 void
 bif_file_init (void)
 {
@@ -6037,6 +6100,7 @@ bif_file_init (void)
   bif_define ("gzip_uncompress", bif_gzip_uncompress);
   bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
   bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
+  bif_define ("unzip_file", bif_unzip_file);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
   bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
