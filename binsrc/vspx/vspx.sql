@@ -6311,28 +6311,36 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
   name := replace (name, ':', '_');
   name := replace (name, '/', '_');
   name := replace (name, '.', '_');
-  name := concat ('/DAV/sys_http_recording/', name);
   -- collect HTTP header block
   content := http_full_request (0);
-  -- check if necessary DAV path exists
-  result := cast (DB.DBA.DAV_SEARCH_ID ('/DAV/sys_http_recording/', 'c') as integer);
-  if (result < 0) 
+  if (registry_get ('__save_http_history_on_disk') = '1')
     {
-    -- create DAV collection
-      result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null, 
-      0, 0, 0, http_dav_uid (), http_admin_gid ()) as integer);
-      if(result < 0) 
-	{
-	  signal ('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
-      return;
+      if (file_stat ('./sys_http_recording') = 0)
+	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
+      string_to_file ('./sys_http_recording/' || name, content, -2);
     }
-  }
-  result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null, 
-    0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
-  if (result < 0) 
+  else
     {
-      signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
-  }
+      name := concat ('/DAV/sys_http_recording/', name);
+      -- check if necessary DAV path exists
+      result := cast (DB.DBA.DAV_SEARCH_ID ('/DAV/sys_http_recording/', 'c') as integer);
+      if (result < 0) 
+	{
+	-- create DAV collection
+	  result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null, 
+	  0, 0, 0, http_dav_uid (), http_admin_gid ()) as integer);
+	  if(result < 0) 
+	    {
+	      signal ('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
+	      return;
+	    }
+	}
+      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN', 'dav','dav', 'dav', null, 0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
+      if (result < 0) 
+	{
+	  signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
+	}
+    }
 }
 ;
 
