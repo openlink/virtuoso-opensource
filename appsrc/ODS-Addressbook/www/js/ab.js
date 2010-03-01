@@ -777,7 +777,7 @@ AB.getFOAFData = function(iri) {
 			if (confirm('New data for \'' + o.iri + '\' is founded. Do you like to fill in the corresponding fields?')) {
         AB.setFOAFValue(o.iri, 'ab_iri');
         AB.setFOAFValue(o.nick, 'ab_name');
-        AB.setFOAFValue(o.tirle, 'ab_title');
+				AB.setFOAFValue(o.title, 'ab_title');
         AB.setFOAFValue(o.name, 'ab_fullName');
         AB.setFOAFValue(o.firstName, 'ab_fName');
         AB.setFOAFValue(o.family_name, 'ab_lName');
@@ -788,6 +788,7 @@ AB.getFOAFData = function(iri) {
         AB.setFOAFValue(o.msnChatID, 'ab_msn');
         AB.setFOAFValue(o.aimChatID, 'ab_aim');
         AB.setFOAFValue(o.yahooChatID, 'ab_yahoo');
+				AB.setFOAFValue(o.skypeChatID, 'ab_skype');
         AB.setFOAFValue(o.workplaceHomepage, 'ab_web');
         AB.setFOAFValue(o.homepage, 'ab_hWeb');
         AB.setFOAFValue(o.lat, 'ab_hLat');
@@ -812,15 +813,17 @@ AB.getFOAFData = function(iri) {
 						if (T.length > 0 && T[0].length > 0) {
               if (T.length == 1)
                 T.push('');
-							AB.updateRow('a', null, {
+							TBL.createRow('a', null, {
 								fld1 : {
+								  mode : 0,
 									value : T[0],
-									className : '_validate_ _url_ _canEmpty_',
+									className : '_validate_ _url_',
 									onBlur : function() {
-										validateField(this);
+										AB.validateField(this);
 									}
 								},
 								fld2 : {
+								  mode : 0,
 									value : T[1]
 								}
 							});
