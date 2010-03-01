@@ -49,6 +49,7 @@ import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterSingleton;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIteratorResultSet;
 import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.core.ResultBinding;
 import com.hp.hpl.jena.sparql.util.Context;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
 import com.hp.hpl.jena.util.FileManager;
@@ -67,7 +68,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
     java.sql.Statement stmt = null;
 
 
-
     public VirtuosoQueryExecution (String query, VirtGraph _graph)
     {
 	graph = _graph;
@@ -79,7 +79,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	while (tok.hasMoreTokens()) {
 	  s = tok.nextToken().toLowerCase();
-	  if (s.equals("describe") || s.equals("construct") || s.equals("ask"))
+		  if (s.equals("describe") || s.equals("construct") || s.equals("ask"))
               break;
 	}
 
@@ -101,59 +101,16 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 	    stmt = connection.createStatement();
 	    stmt.setFetchSize(prefetchSize);
-	    java.sql.ResultSet result_set = stmt.executeQuery(virt_query);
+	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
 
-	    ret = ViruosoResultBindingsToJenaResults (result_set);
-
-	    stmt.close();
-	    stmt = null;
-	    return ret;
+	    return new VResultSet(graph, rs);
 	}
 	catch(Exception e)
 	{
-            throw new JenaException("Convert results are FAILED.:"+e);
+            throw new JenaException("Can not create ResultSet.:"+e);
 	}
     }
 
-
-    public com.hp.hpl.jena.query.ResultSet ViruosoResultBindingsToJenaResults (java.sql.ResultSet VirtuosoRes)
-    {
-	try
-	{
-	    ResultSetMetaData rsmd = VirtuosoRes.getMetaData();
-
-	    while(VirtuosoRes.next())
-	    {
-		Binding b = new BindingMap();
-		for(int i = 1; i <= rsmd.getColumnCount(); i++)
-		{
-		    b.add(Var.alloc(rsmd.getColumnLabel(i)), 
-		       VirtGraph.Object2Node(VirtuosoRes.getObject(i)));
-		}
-		if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
-		    b.add(Var.alloc("graph"), Node.createURI(virt_graph));
-		AddToRes (b);
-	    }
-
-	}
-	catch(Exception e)
-	{
-            throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:"+e);
-	}
-
-	return new ResultSetStream(null, null, output);
-    }
-
-
-    private void AddToRes (Binding b)
-    {
-	QueryIterator qIter = new QueryIterSingleton(b, null);
-
-	if (output == null)
-	  output = new QueryIterConcat(null);
-
-	output.add(qIter);
-    }
 
 
     public void setFileManager(FileManager arg)
@@ -292,6 +249,143 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	  try {
 	      stmt.cancel();
 	  } catch (Exception e) {}
+    }
+
+
+    ///=== Inner class ===========================================
+    public class VResultSet implements com.hp.hpl.jena.query.ResultSet {
+                                           
+	ResultSetMetaData rsmd;
+        java.sql.ResultSet rs;
+	boolean	  v_finished = false;
+	boolean	  v_prefetched = false;
+	VirtModel m;
+	Binding v_row;
+	List<String> resVars;
+	int row_id = 0;
+
+
+	protected VResultSet(VirtGraph _g, java.sql.ResultSet _rs) 
+	{
+	  super();
+	  rs = _rs;
+	  m = new VirtModel(_g);
+
+          try {
+            rsmd = rs.getMetaData();
+
+	    for(int i = 1; i <= rsmd.getColumnCount(); i++)
+	      resVars.add(rsmd.getColumnLabel(i));
+
+	    if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
+	      resVars.add("graph");
+	  } 
+	  catch(Exception e)
+	  {
+            throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:"+e);
+	  }
+	}
+        
+        public boolean hasNext()
+        {
+       	  if (!v_finished && !v_prefetched) 
+       	    moveForward();
+	  return !v_finished;
+        }
+    
+        public QuerySolution next()
+        {
+          Binding binding = nextBinding() ;
+
+	  if (v_finished)
+	    throw new NoSuchElementException();
+  
+          return new ResultBinding(m, binding) ;
+        }
+
+        public QuerySolution nextSolution()
+        {
+          return next();
+        }
+
+        public Binding nextBinding()
+        {
+          if (!v_finished && !v_prefetched)
+	    moveForward();
+
+	  v_prefetched = false;
+
+	  if (v_finished)
+	    throw new NoSuchElementException();
+  
+          return v_row;
+        }
+    
+        public int getRowNumber()
+        {
+          return row_id;
+        }
+    
+        public List<String> getResultVars()
+        {
+          return resVars;
+        }
+
+        public Model getResourceModel()
+        {
+          return m;
+        }
+
+	protected void finalize() throws Throwable
+	{
+	  if (!v_finished) 
+	    try {
+	      close();
+	    } catch (Exception e) {}
+	}
+
+	protected void moveForward() throws JenaException
+	{
+	  try
+	  {
+	    if (!v_finished && rs.next())
+	    {
+		extractRow();
+		v_prefetched = true;
+	    }
+	    else
+		close();
+	    }
+	    catch (Exception e)
+	    {
+              throw new JenaException("Convert results are FAILED.:"+e);
+	    }
+	}
+
+	protected void extractRow() throws Exception 
+	{
+          v_row = new BindingMap();
+          row_id++;
+
+          try {
+	    for(int i = 1; i <= rsmd.getColumnCount(); i++)
+	      v_row.add(Var.alloc(rsmd.getColumnLabel(i)), 
+	        VirtGraph.Object2Node(rs.getObject(i)));
+
+	    if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
+	      v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
+	  } 
+	  catch(Exception e)
+	  {
+            throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:"+e);
+	  }
+	}
+
+        public void remove() throws java.lang.UnsupportedOperationException
+        {
+          throw new UnsupportedOperationException(this.getClass().getName()+".remove") ;
+        }
+
     }
 
 }

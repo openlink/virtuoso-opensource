@@ -42,14 +42,14 @@ public class VirtGraph extends GraphBase
 {
 
     static public final String DEFAULT = "virt:DEFAULT";
-    private String graphName;
-    private boolean readFromAllGraphs = false;
-    private String url_hostlist;
-    private String user;
-    private String password;
-    private boolean roundrobin = false;
-    private int prefetchSize = 200;
-    private Connection connection = null;
+    protected String graphName;
+    protected boolean readFromAllGraphs = false;
+    protected String url_hostlist;
+    protected String user;
+    protected String password;
+    protected boolean roundrobin = false;
+    protected int prefetchSize = 200;
+    protected Connection connection = null;
     static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -401,7 +401,7 @@ public class VirtGraph extends GraphBase
 
 
 //--java5 or newer    @Override
-    public ExtendedIterator graphBaseFind(TripleMatch tm) {
+    public ExtendedIterator<Triple> graphBaseFind(TripleMatch tm) {
 	String S, P, O;
 	String exec_text;
 
@@ -477,7 +477,7 @@ public class VirtGraph extends GraphBase
 
 
 //--java5 or newer    @SuppressWarnings("unchecked")
-    void add(Iterator it, List list) 
+    void add(Iterator<Triple> it, List<Triple> list) 
     {
 	try
 	{
@@ -519,7 +519,7 @@ public class VirtGraph extends GraphBase
 
 
 
-    void delete(Iterator it, List list)
+    void delete(Iterator<Triple> it, List<Triple> list)
     {
 	try
 	{
@@ -617,7 +617,7 @@ public class VirtGraph extends GraphBase
 
 
     public ExtendedIterator reifierTriples( TripleMatch m )
-        { return NullIterator.instance; }
+        { return NiceIterator.emptyIterator(); }
 
     public int reifierSize()
         { return 0; }

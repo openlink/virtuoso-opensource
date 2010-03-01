@@ -33,7 +33,7 @@ import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
 
-public class VirtResSetIter implements ExtendedIterator
+public class VirtResSetIter extends NiceIterator<Triple>
 {
     protected ResultSet 	v_resultSet;
     protected Triple 		v_row;
@@ -68,14 +68,14 @@ public class VirtResSetIter implements ExtendedIterator
         return !v_finished;
     }
 
-    public Object removeNext()
+    public Triple removeNext()
         {
-            Object ret = next();
+            Triple ret = next();
             remove();
 	    return ret;
 	}
 
-    public Object next()
+    public Triple next()
     {
         if (!v_finished && !v_prefetched)
 	    moveForward();
@@ -138,7 +138,7 @@ public class VirtResSetIter implements ExtendedIterator
        v_row = new Triple(NodeS, NodeP, NodeO);
     }
 
-    protected Object getRow()
+    protected Triple getRow()
     {
         return v_row;
     }
@@ -163,46 +163,10 @@ public class VirtResSetIter implements ExtendedIterator
 	v_finished = true;
     }
 
-    public Object getSingleton() throws SQLException
-    {
-        List row = (List) next();
-        close();
-        return row.get(0);
-    }
 
     protected void finalize() throws SQLException
     {
 	if (!v_finished && v_resultSet != null) close();
-    }
-
-    public ExtendedIterator andThen(ClosableIterator other)
-    {
-	return NiceIterator.andThen (this, other);
-    }
-
-    public Set toSet()
-    {
-	return NiceIterator.asSet (this);
-    }
-
-    public List toList()
-    {
-	return NiceIterator.asList (this);
-    }
-
-    public ExtendedIterator filterKeep (Filter f)
-    {
-	return new FilterIterator (f, this);
-    }
-
-    public ExtendedIterator filterDrop (final Filter f)
-    {
-	return new FilterIterator (null, this);
-    }
-
-    public ExtendedIterator mapWith (Map1 map1)
-    {
-	return new Map1Iterator (map1, this);
     }
 
 }
