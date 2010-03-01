@@ -12257,6 +12257,8 @@ window.onload = function (e)
       </xsl:attribute>
   </xsl:template>
 
+  <xsl:template match="vm:post-uri"><![CDATA[<?vsp http (concat(self.blog_iri, '/', t_post_id)); ?>]]></xsl:template>
+
   <xsl:template match="vm:keep-variable"/>
 
   <xsl:template match="vm:*">
