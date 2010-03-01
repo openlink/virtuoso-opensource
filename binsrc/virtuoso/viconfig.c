@@ -886,6 +886,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
     malloc_bufs = 0;
 
+  if (cfg_getlong (pconfig, section, "SwapGuard", &swap_guard_on) == -1)
+    swap_guard_on = 0;
+
   {
     int nbdirs;
     dk_set_t bd = NULL;
