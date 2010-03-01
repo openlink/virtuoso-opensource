@@ -214,7 +214,7 @@ OAT.Xml = {
 	},
 	
 	removeDefaultNamespace:function(xmlText) {
-		var xml = xmlText.replace(/xmlns="[^"]*"/g,"");
+		var xml = xmlText.replace(/xmlns=['"][^"']*["']/g,"");
 		return xml;
 	},
 	
