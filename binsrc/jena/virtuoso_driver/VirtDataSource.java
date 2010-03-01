@@ -26,6 +26,7 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.List;
 
 
 import com.hp.hpl.jena.shared.*;
@@ -33,12 +34,13 @@ import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.DataSource;
+import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.LabelExistsException;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.shared.Lock;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 
-public class VirtDataSource extends VirtGraph implements DataSource {
+public class VirtDataSource extends VirtGraph implements DataSource, Dataset {
 
     /**
      * Default model - may be null - according to Javadoc
@@ -49,6 +51,19 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public VirtDataSource()
     {
 	super();
+    }
+
+    protected VirtDataSource(VirtGraph g)
+    {
+	super();
+        this.graphName = g.getGraphName();
+        setReadFromAllGraphs(g.getReadFromAllGraphs());
+        this.url_hostlist = g.getGraphUrl();
+    	this.user = g.getGraphUser();
+    	this.password = g.getGraphPassword();
+    	this.roundrobin = g.roundrobin;
+        setFetchSize(g.getFetchSize());
+        this.connection = g.getConnection();
     }
 
     public VirtDataSource(String url_hostlist, String user, String password)
@@ -188,14 +203,14 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 
 
     /** List the names */
-    public Iterator listNames() {
+    public Iterator<String> listNames() {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
  	ResultSet rs = null;
 	int ret = 0;
 
         checkOpen();
         try {
-	    Vector names=new Vector(); 
+	    List<String> names=new Vector(); 
 
   	    java.sql.Statement stmt = getConnection().createStatement();
 	    rs = stmt.executeQuery(exec_text);

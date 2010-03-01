@@ -20,10 +20,10 @@
 #  
 
 
-if WITH_JDK3
+if WITH_JDK4
 TARGETS		= lib virt_jena.jar
-JDK		= @ac_jdk3_path@
-JDK_FLAGS	= -O -g:none
+JDK		= @ac_jdk4_path@
+JDK_FLAGS	= -O -g:none -source 1.5 -target 1.5
 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
@@ -49,7 +49,7 @@ JENA_SRC= \
 TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
-JENA_CLASSPATH=lib/arq.jar:lib/iri.jar:lib/jena.jar:lib/jenatest.jar:lib/junit.jar:lib/xml-apis.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/arq-2.8.1.jar:lib/iri-0.7.jar:lib/jena-2.6.2.jar:lib/jena-2.6.2-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am: $(TARGETS)
 
@@ -71,6 +71,7 @@ virt_jena.jar: $(JENA_SRC)
 		$(JENA_SRC)
 	$(JAR) cvf virt_jena.jar -C out.driver virtuoso
 
+.PHONY: doc
 doc:
 	$(JAVADOC) -d doc \
 		-classpath "$(JENA_CLASSPATH)" \
