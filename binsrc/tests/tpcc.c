@@ -323,11 +323,13 @@ usage ()
   exit (1);
 }
 
+char *uid = "dba", *pwd = "dba";
+int speed_limit = 0;
+
 
 int
 main (int argc, char **argv)
 {
-  char *uid = "dba", *pwd = "dba";
   long del_start, del_total;
 
   printf ("Virtuoso TPC C Benchmark.\n"
@@ -341,7 +343,7 @@ main (int argc, char **argv)
       printf ("Usage:\n"
 	  "  tpcc <host:port> user pass i <n>\n"
 	  "       - Create a database of n warehouses. Approx 100MB / warehouse.\n"
-	  "  tpcc <host:port> user pass r <n> [<local_w> <n_ware>]]\n"
+	  "  tpcc <host:port> user pass r <n> [<local_w> <n_ware>]] [max-tpm]\n"
 	  "       - Run n sets of 10 transactions, print results\n"
 	  "   Running the benchmark requires the procedures in tpcc.sql and tpccddk.sql\n"
 	  "   to be loaded\n into the database.\n");
@@ -354,7 +356,7 @@ main (int argc, char **argv)
 
   login (&henv, &hdbc, argv[1], dbms, sizeof (dbms), &misc_stmt, uid, pwd);
   if (*argv[4] == 'S')
-    printf ("Connected trough SOAP to DBMS %s\n", dbms);
+    printf ("Connected through SOAP to DBMS %s\n", dbms);
   else
     printf ("Connected to DBMS %s\n", dbms);
   init_globals ();

@@ -193,19 +193,7 @@ create procedure payment (
         from customer
 	where c_last = _c_last
 	  and c_d_id = _d_id
-	  and c_w_id = _w_id;
-
-
-
-      select count(C_ID) into namecnt2
-        from customer
-	where c_last = _c_last
-	  and c_d_id = _d_id
-	  and c_w_id = _w_id;
-
-
-	if (namecnt <> namecnt2)
-	  dbg_printf ('Bad count for last %s d %d c1 %d c2 %d', _c_last, _d_id, namecnt, namecnt2);
+	  and c_w_id = _c_w_id;
 	      declare c_byname cursor for
 	select c_id
 	  from customer
@@ -466,7 +454,8 @@ create procedure ol_insert (
 }
 
 
--- cust_info - part of New Order transaction. Return customer info.
+
+
 create procedure cust_info (
     in w_id integer,
     in d_id integer,

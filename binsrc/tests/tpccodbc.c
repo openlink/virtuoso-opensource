@@ -43,6 +43,10 @@
 #include "timeacct.h"
 
 #include "tpcc.h"
+#ifdef unix
+#include <signal.h>
+#endif
+
 
 int n_deadlocks;
 
@@ -52,10 +56,12 @@ int n_deadlocks;
     { \
       while (SQL_NO_DATA_FOUND != SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, stmt, (UCHAR *) state, NULL, \
 					    (UCHAR *) & message, sizeof (message), (SWORD *) & len)) { \
-	if (0 == strcmp(state, "40001") || 0 == strncmp(state, "S1T00", 5) || 0 == strncmp(state, "08C02", 5)) \
+	if (0 == strcmp(state, "40001") || 0 == strncmp(state, "S1T00", 5) || 0 == strncmp(state, "08C01", 5) || 0 == strncmp(state, "08C02", 5) || 0 == strncmp(state, "4000X", 5)) \
 	  { n_deadlocks++; if (0 == n_deadlocks % 10) rnd_wait (); printf ("retry=%s %s\n", op, state);  goto deadlocktag;} \
+	else if (0 == strncmp(state, "XXXXX", 5)) \
+	  { printf ("copies out of sync\n"); exit (-1); } \
 	else if (0 == strncmp(state, "08", 2)) \
-	    { printf ("disconnected\n"); error_exit (); }			\
+	  { printf ("disconnected\n"); reconnect (); goto deadlocktag; }	\
 	else  \
 	  { \
 	    if (0 == strncmp(state, "40003", 5) && (try_out_of_disk++) < TRYS) \
@@ -141,15 +147,61 @@ HSTMT payment_stmt;
 HSTMT delivery_stmt;
 HSTMT slevel_stmt;
 HSTMT ostat_stmt;
+#define MAX_DSNS 100
+int n_dsns;
+char * dsns[MAX_DSNS];
+int current_dsn = -1;
+
+char *
+any_dsn ()
+{
+  int tries = 0;
+  if (1 == n_dsns)
+    return dsns[0];
+  do {
+    int nth = RandomNumber (0, n_dsns - 1);
+    if (nth != current_dsn)
+      {
+	current_dsn = nth;
+	return dsns[nth];
+      }
+    tries++;
+  } while (tries < 10);
+  return dsns[current_dsn];
+}
+
+
+void
+parse_dsns (char * list)
+{
+  int fill = 1;
+  dsns[0] = strtok (list, " ,");
+  while ((dsns[fill++] = strtok (NULL, " ,")) && fill < MAX_DSNS);
+  n_dsns = fill - 1;
+}
+
+extern char * uid, *pwd;
 
 void
 login (HENV * henv_, HDBC * hdbc_, char *argv_, char *dbms_, int dbms_sz,
     HSTMT * misc_stmt, char *uid, char *pwd)
 {
+  char * dsn;
   SWORD ignore;
   SQLAllocEnv (henv_);
   SQLAllocConnect (*henv_, hdbc_);
-  if (SQL_ERROR == SQLConnect (*hdbc_, (UCHAR *) argv_, SQL_NTS,
+  parse_dsns (argv_);
+  if (n_dsns > 1)
+    {
+      set_rnd_seed (getpid ());
+#ifdef unix
+            signal (SIGPIPE, SIG_IGN);
+#endif
+    }
+  dsn = any_dsn ();
+  if (n_dsns > 1)
+    printf ("Initial dsn %s\n", dsn);
+  if (SQL_ERROR == SQLConnect (*hdbc_, (UCHAR *) dsn, SQL_NTS,
 	  (UCHAR *) uid, SQL_NTS, (UCHAR *) pwd, SQL_NTS))
     {
       print_error (SQL_NULL_HENV, *hdbc_, SQL_NULL_HSTMT);
@@ -161,6 +213,51 @@ login (HENV * henv_, HDBC * hdbc_, char *argv_, char *dbms_, int dbms_sz,
   SQLGetInfo (*hdbc_, SQL_DBMS_NAME, dbms_, dbms_sz, &ignore);
 
 }
+
+
+void
+reconnect ()
+{
+  payment_stmt = new_order_stmt = delivery_stmt = ostat_stmt = slevel_stmt = NULL;
+  if (n_dsns < 2)
+    exit (-1);
+  SQLDisconnect (hdbc);
+  for (;;)
+    {
+      char * dsn;
+      current_dsn++;
+      if (current_dsn >= n_dsns)
+	current_dsn = 0;
+      dsn = dsns[current_dsn];
+      printf ("Alternate dsn %s\n", dsn);
+      if (SQL_ERROR == SQLConnect (hdbc, (UCHAR *) dsn, SQL_NTS,
+				   (UCHAR *) uid, SQL_NTS, (UCHAR *) pwd, SQL_NTS))
+	{
+	  printf ("Missed reconnect to %s.  Will retry\n", dsns[current_dsn]);
+	  sleep (1);
+	  continue;
+	}
+      return;
+    }
+}
+
+
+void
+check_reconnect ()
+{
+  static long prev_time;
+  long now = get_msec_count ();
+  if (n_dsns < 2)
+    return;
+  if (!prev_time)
+    {
+      prev_time = now;
+      return;
+    }
+  if (now - prev_time > 20000)
+    reconnect ();
+}
+
 
 int
 stmt_result_sets (HSTMT stmt, char * op)
@@ -217,7 +314,6 @@ new_order ()
   char * op = "new order";
   RETCODE rc;
   int n;
-  static struct timeval tv;
   static olines_t ols;
   static int i;
   static long d_id;
@@ -233,9 +329,7 @@ new_order ()
   d_id = rnd_district ();
   c_id = random_c_id ();
 
-  memset (c_last, 0, sizeof (c_last));
-  gettimestamp (&tv);
-
+  c_last[0] = 0;
   for (i = 0; i < 10; i++)
     {
       ols.ol_i_id[i] = random_i_id ();
@@ -284,6 +378,7 @@ payment ()
   char * op = "payment";
   RETCODE rc;
   long w_id = local_w_id;
+  long c_w_id;
   long d_id = RandomNumber (1, DIST_PER_WARE);
   long c_id = random_c_id ();
   char c_last[50];
@@ -301,8 +396,13 @@ deadlock_pay:
       c_id = 0;
       Lastname (RandomNumber (0, 999), c_last);
     }
+  if (RandomNumber (0, 100) < 85)
+    c_w_id = w_id;
+  else 
+    c_w_id = other_w_id ();
+
   IBINDL (payment_stmt, 1, w_id);
-  IBINDL (payment_stmt, 2, w_id);
+  IBINDL (payment_stmt, 2, c_w_id);
   IBINDF (payment_stmt, 3, amount);
   IBINDL (payment_stmt, 4, d_id);
   IBINDL (payment_stmt, 5, d_id);

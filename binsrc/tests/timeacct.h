@@ -62,6 +62,7 @@ void ta_enter (timer_account_t * ta);
 void ta_leave (timer_account_t * ta);
 void ta_add_sample (timer_account_t * ta, long this_time);
 void ta_disable (timer_account_t * ta);
+void sleep_msec (int msec);
 void set_rnd_seed (long seedval);
 long rnd (void);
 long random_1 (long scale);
