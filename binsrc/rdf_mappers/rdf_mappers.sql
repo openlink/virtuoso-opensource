@@ -4802,12 +4802,12 @@ create procedure DB.DBA.RDF_LOAD_MS_DOCUMENT (in graph_iri varchar, in new_origi
 {
   declare meta, tmp varchar;
   declare xt, xd any;
-  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+  if (__proc_exists ('unzip_file', 2) is null)
     return 0;
   tmp := tmp_file_name ('rdfm', 'doc');
 
   string_to_file (tmp, _ret_body, -2);
-  meta := UNZIP_UnzipFileFromArchive (tmp, 'docProps/app.xml');
+  meta := unzip_file (tmp, 'docProps/app.xml');
   file_delete (tmp, 1);
   if (meta is null)
     return 0;
@@ -4818,7 +4818,7 @@ create procedure DB.DBA.RDF_LOAD_MS_DOCUMENT (in graph_iri varchar, in new_origi
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
   string_to_file (tmp, _ret_body, -2);
-  meta := UNZIP_UnzipFileFromArchive (tmp, 'docProps/core.xml');
+  meta := unzip_file (tmp, 'docProps/core.xml');
   file_delete (tmp, 1);
   if (meta is null)
     return 0;
@@ -4836,11 +4836,11 @@ create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origi
 {
   declare meta, tmp varchar;
   declare xt, xd any;
-  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+  if (__proc_exists ('unzip_file', 2) is null)
     return 0;
   tmp := tmp_file_name ('rdfm', 'odt');
   string_to_file (tmp, _ret_body, -2);
-  meta := UNZIP_UnzipFileFromArchive (tmp, 'meta.xml');
+  meta := unzip_file (tmp, 'meta.xml');
   file_delete (tmp, 1);
   if (meta is null)
     return 0;
@@ -6773,22 +6773,17 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
     DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
     return 0;
   };
-
-  if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
+  if (__proc_exists ('unzip_file', 2) is null)
     return 0;
-
   -- Create a tmp file from input stream
   tmpFile := tmp_file_name ('rdfm', 'pptx');
   string_to_file (tmpFile, _ret_body, -2);
-
   -- Extract the required meta-data from the PPTX file
-  core_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'docProps/core.xml');
-  app_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'docProps/app.xml');
-  slides_meta := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/_rels/presentation.xml.rels');
-
+  core_meta := unzip_file (tmpFile, 'docProps/core.xml');
+  app_meta := unzip_file (tmpFile, 'docProps/app.xml');
+  slides_meta := unzip_file (tmpFile, 'ppt/_rels/presentation.xml.rels');
   if (core_meta is null or app_meta is null or slides_meta is null)
     return 0;
-
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   fileExt := regexp_substr('.*(\.pptx|\.PPTX)\$', new_origin_uri, 1);
   fileName := subseq(new_origin_uri, strrchr(new_origin_uri, '/') + 1);
@@ -6867,7 +6862,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
       -- slide path takes form 'slides/slide<n>.xml'
       slide_basename := subseq(slide_path2, 7);
       slide_num := regexp_substr('[0-9]+', slide_basename, 0);
-      slide_rels := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/slides/_rels/' || slide_basename || '.rels');
+      slide_rels := unzip_file (tmpFile, 'ppt/slides/_rels/' || slide_basename || '.rels'); 
 
       -- Generate RDF description of each embedded image
       xt := xtree_doc (slide_rels);
@@ -6935,7 +6930,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
 	if (image_basename is not null and image_mime_type is not null)
 	{
-          image_str := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/media/' || image_basename);
+          image_str := unzip_file (tmpFile, 'ppt/media/' || image_basename);
 	  if (image_str is not null)
 	  {
 	    declare rc int;
@@ -6987,7 +6982,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
       -- slide path takes form 'slides/slide<n>.xml'
       slide_basename := subseq(slide_path3, 7);
       slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
-      slide_content := UNZIP_UnzipFileFromArchive (tmpFile, 'ppt/' || slide_path3);
+      slide_content := unzip_file (tmpFile, 'ppt/' || slide_path3); 
       if (slide_content is null)
       {
         --dbg_printf('.PPTX Cartridge - Error: slide content is null for slide %s\n', slide_path3);
