@@ -84,7 +84,12 @@ bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
     rdfdf:sql-integer-literal-fn ,		rdfdf:sql-integer-literal-fn-nullable ,
     rdfdf:sql-numeric-literal-fn ,		rdfdf:sql-numeric-literal-fn-nullable ,
     virtrdf:DefaultQuadStorage ,		virtrdf:DefaultQuadStorage-UserMaps ,
-    virtrdf:DefaultQuadMap
+    virtrdf:DefaultQuadMap,
+    rdfdf:sinv-iid ,				rdfdf:sinv-iid-nullable ,
+    rdfdf:sinv-iid-nonblank ,			rdfdf:sinv-iid-nonblank-nullable ,
+    rdfdf:sinv ,				rdfdf:sinv-nullable ,
+    virtrdf:DefaultServiceStorage ,		virtrdf:DefaultServiceStorage-UserMaps ,
+    virtrdf:DefaultServiceMap
 .
 
 rdfdf:default-iid

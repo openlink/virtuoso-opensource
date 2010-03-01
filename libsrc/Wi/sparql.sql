@@ -460,6 +460,14 @@ virtrdf:DefaultQuadStorage
   virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
 virtrdf:DefaultQuadStorage-UserMaps
       rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:DefaultServiceStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
+  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+virtrdf:DefaultServiceStorage-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
   ', '', 'http://www.openlinksw.com/schemas/virtrdf#' );
   delete from SYS_HTTP_SPONGE where HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
   commit work;
@@ -10646,6 +10654,14 @@ virtrdf:DefaultQuadStorage
   virtrdf:qsDefaultMap virtrdf:DefaultQuadMap ;
   virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
 virtrdf:DefaultQuadStorage-UserMaps
+  rdf:type virtrdf:array-of-QuadMap .
+
+virtrdf:DefaultServiceStorage
+  rdf:type virtrdf:QuadStorage ;
+  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
+  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
+  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+virtrdf:DefaultServiceStorage-UserMaps
   rdf:type virtrdf:array-of-QuadMap .
       ';
       jso_sys_g_iid := iri_to_id (JSO_SYS_GRAPH ());
