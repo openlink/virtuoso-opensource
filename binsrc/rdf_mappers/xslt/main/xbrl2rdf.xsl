@@ -178,10 +178,16 @@
 					</xsl:element>
 				</xsl:if>
 				<sioc:has_container rdf:resource="{$contextRef}" />
+				<rdfs:label>
+					<xsl:value-of select="$canonical_name"/>
+				</rdfs:label>	
 			</rdf:Description>
 
 			<rdf:Description rdf:about="{$contextRef}">
 				<sioc:container_of rdf:resource="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}" />
+				<rdfs:label>
+					<xsl:value-of select="@contextRef"/>
+				</rdfs:label>
 			</rdf:Description>
 		</xsl:if>
 	</xsl:template>
