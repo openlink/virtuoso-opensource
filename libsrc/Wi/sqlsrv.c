@@ -2006,6 +2006,8 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	/* must see if trx already has xid */
 	if (cli->cli_trx->lt_2pc._2pc_xid && cli->cli_trx->lt_2pc._2pc_xid != xid)
 	  {
+	    if (!cli->cli_trx->lt_2pc._2pc_wait_commit)
+	      lt_done (cli->cli_trx);
 	    cli->cli_trx = NULL;
 	    cli_set_new_trx (cli);
 	  }
@@ -2052,6 +2054,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    err = srv_make_new_error ("TP109", "XA007", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
+	    dk_free_box (xid);
 	    dk_free_tree (err);
 	    return;
 	  }
@@ -2065,6 +2068,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  }
 	cli_set_new_trx (cli);
 	LEAVE_TXN;
+	dk_free_box (xid);
       } break;
     case SQL_XA_PREPARE:
     case SQL_XA_COMMIT:
@@ -2200,10 +2204,12 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
+	    dk_free_box (xid);
 	    return;
 	  }
 	xa_wait_commit (tpd);
 	virt_xa_remove_xid (xid);
+	dk_free_box (xid);
       } break;
     }
   DKST_RPC_DONE (client);

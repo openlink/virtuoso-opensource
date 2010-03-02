@@ -1290,12 +1290,13 @@ virt_xa_add_trx (void *xid, lock_trx_t * lt)
   if (x == 0)
     {
       xa_id_t *xx = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
-      tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));;
+      tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));
       memset (tpd, 0, sizeof (tp_data_t));
       memcpy (&xx->xid, xid, sizeof (virtXID));
       tpd->cli_tp_trx = xid;
       tpd->tpd_trx_cookie = (caddr_t) xid;
       lt->lt_2pc._2pc_log = box_copy (xid);
+      dk_free_tree (lt->lt_2pc._2pc_xid);
       lt->lt_2pc._2pc_xid = xid;
       xid = (void *) &xx->xid;
       xx->xid_sem = 0;
@@ -1425,6 +1426,7 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
   if (cli->cli_trx != xx[0]->xid_tp_data->cli_tp_lt)
     {
       lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
+      lt_done (cli->cli_trx);
       cli->cli_trx = NULL;
       cli_set_trx (cli, xx[0]->xid_tp_data->cli_tp_lt);
     }
@@ -1446,8 +1448,8 @@ virt_xa_remove_xid (void *xid)
   xx = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
   if (xx)
     {
-      id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
       dk_free (xx[0], sizeof (xa_id_t));
+      id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
     }
   mutex_leave (global_xa_map->xm_mtx);
 }
