@@ -72,11 +72,6 @@ int last_errno;
 
 /*#define _USE_CACHED_SES from http.h */
 
-char* http_cli_meth[] = { "NONE", "GET",  "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
-  			  "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
-			  "MGET", "MPUT", "MDELETE" };	/* URIQA */
-#define HC_MAX_METHOD (sizeof (http_cli_meth)/sizeof (char*))
-
 #define FREE_BOX_IF(box) \
 if (box) \
   dk_free_box (box);
@@ -902,7 +897,7 @@ error_in_ssl:
 HC_RET
 http_cli_set_method (http_cli_ctx * ctx, int method)
 {
-  if (ctx)
+  if (ctx && method > 0)
     ctx->hcctx_method = method;
   return (HC_RET_OK);
 }
@@ -910,7 +905,7 @@ http_cli_set_method (http_cli_ctx * ctx, int method)
 char*
 http_cli_get_method_string (http_cli_ctx * ctx)
 {
-  return (http_cli_meth [ctx->hcctx_method]);
+  return (http_get_method_string (ctx->hcctx_method));
 }
 
 char*
@@ -2181,16 +2176,8 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
 
   if (method)
     {
-      int inx;
-      for (inx = 1; inx < HC_MAX_METHOD; inx ++)
-	{
-	  if (!stricmp (method, http_cli_meth[inx]))
-	    {
-	      meth = inx;
-	      http_cli_set_method (ctx, inx);
-	      break;
-	    }
-	}
+      meth = http_method_id (method);
+      http_cli_set_method (ctx, meth);
     }
 
   if (http_hdr)
@@ -2393,15 +2380,7 @@ bif_http_pipeline (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t method = bif_string_or_null_arg (qst, args, 1, me);
       if (method)
 	{
-	  int inx;
-	  for (inx = 1; inx < HC_MAX_METHOD; inx ++)
-	    {
-	      if (!stricmp (method, http_cli_meth[inx]))
-		{
-		  meth = inx;
-		  break;
-		}
-	    }
+	  meth = http_method_id (method);
 	}
     }
   if (BOX_ELEMENTS (args) > 2)
