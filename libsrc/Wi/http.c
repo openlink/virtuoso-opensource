@@ -79,6 +79,10 @@
 #define closesocket close
 #endif
 
+char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
+  			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
+			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
+			 "TRACE", NULL };
 resource_t *ws_dbcs;
 basket_t ws_queue;
 dk_mutex_t * ws_queue_mtx;
@@ -1248,6 +1252,8 @@ ws_path_and_params (ws_connection_t * ws)
     case 7:
       if (0 == memcmp (ws->ws_req_line, "MDELETE", 7))
         ws->ws_method = WM_URIQA_MDELETE;
+      else if (0 == memcmp (ws->ws_req_line, "OPTIONS", 7))
+        ws->ws_method = WM_OPTIONS;
       break;
     /* no default */
     }
@@ -1437,6 +1443,60 @@ ws_path_and_params (ws_connection_t * ws)
     ws_http_body_read (ws, &ws->ws_req_body);
 }
 
+int
+http_method_id (char * method)
+{
+  int inx, meth = 0;
+  if (!method)
+    return 0;
+  for (inx = 1; NULL != http_methods[inx]; inx ++)
+    {
+      if (!stricmp (method, http_methods[inx]))
+	{
+	  meth = inx;
+	  break;
+	}
+    }
+  return meth;
+}
+
+void
+http_set_default_options (ws_connection_t * ws)
+{
+  static char * defs[] = { "GET", "HEAD", "POST", "OPTIONS", NULL };
+  int inx, m;
+  memset (ws->ws_options, 0, sizeof (ws->ws_options));
+  for (inx = 0; NULL != defs[inx]; inx ++)
+    {
+      m = http_method_id (defs[inx]);
+      ws->ws_options [m] = '\x1';
+    }
+}
+
+char *
+http_get_method_string (int id)
+{
+  return http_methods [id];
+}
+
+void
+http_options_print (ws_connection_t * ws, dk_session_t * ses)
+{
+  int inx, ndone = 0;
+  for (inx = 1; NULL != http_methods[inx]; inx ++)
+    {
+      if (ws->ws_options[inx])
+	{
+	  if (ndone)
+	    SES_PRINT (ses, ",");
+	  SES_PRINT (ses, http_methods[inx]);
+	  ndone++;
+	}
+    }
+  if (0 == ndone)
+    SES_PRINT (ses, "GET,HEAD,POST,OPTIONS");
+}
+
 
 long http_keep_hosting = 0;
 
@@ -1514,6 +1574,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
   ws->ws_proxy_request = 0;
+  http_set_default_options (ws);
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
@@ -1864,6 +1925,16 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       dk_free_tree (media_type);
       dk_free_tree (xsl_encoding);
 #endif
+
+      if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400 &&
+	  (NULL == ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Allow:")))
+	{
+	  len = 0;
+	  strses_flush (ws->ws_strses);
+	  SES_PRINT (ws->ws_session, "Allow: ");
+	  http_options_print (ws, ws->ws_session);
+	  SES_PRINT (ws->ws_session, "\r\n");
+	}
 
       /* timestamp */
       if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Date:"))
@@ -2409,7 +2480,7 @@ ws_file (ws_connection_t * ws)
       (OFF_T_PRINTF_DTP) off, (OFF_T_PRINTF_DTP) st.st_mtime, md5_etag);
   dk_free_tree (md5_etag);
 
-  if (ws->ws_method != WM_HEAD)
+  if (ws->ws_method != WM_HEAD && ws->ws_method != WM_OPTIONS)
     {
       char *if_range = ws_get_packed_hf (ws, "If-Range:", "");
 
@@ -2477,6 +2548,12 @@ ws_file (ws_connection_t * ws)
   else
     strcpy_ck (last_modify, date_now);
 
+  if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400)
+    {
+      off = 0;
+      n_ranges = 0;
+    }
+
   CATCH_WRITE_FAIL (ws->ws_session)
     {
       if (n_ranges > 1)
@@ -2506,8 +2583,7 @@ ws_file (ws_connection_t * ws)
 	      "Date: %s\r\n"
 	      "Server: %.1000s\r\n"
 	      "Connection: %s\r\n"
-	      "%s"
-	      "\r\n",
+	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
 	      ctype, charset ? "; charset=" : "", CHARSET_NAME (charset, ""),
@@ -2519,10 +2595,17 @@ ws_file (ws_connection_t * ws)
 	      ranges_buffer
 	      );
 	  SES_PRINT (ws->ws_session, head);
+	  if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400)
+	    {
+	      SES_PRINT (ws->ws_session, "Allow: ");
+	      http_options_print (ws, ws->ws_session);
+	      SES_PRINT (ws->ws_session, "\r\n");
+	    }
+	  SES_PRINT (ws->ws_session, "\r\n");
 	}
       if (n_ranges == 1)
 	LSEEK (fd, ranges[0], SEEK_SET);
-      if (ws->ws_method != WM_HEAD)
+      if (ws->ws_method != WM_HEAD && ws->ws_method != WM_OPTIONS)
 	send_chunk (ws, fd, off);
       else if (ws->ws_method == WM_HEAD && !ws->ws_header)
 	SES_PRINT (ws->ws_session, "\r\n");
@@ -6931,7 +7014,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           case 2 : go_direct = 1; break;
 	}
 
-      if (ws->ws_method != WM_HEAD && ws->ws_proto_no > 10)
+      if (ws->ws_method != WM_HEAD && ws->ws_method != WM_OPTIONS && ws->ws_proto_no > 10)
 	is_chunked = try_chunked;
     }
 
@@ -6967,7 +7050,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       PrpcDisconnect (ws->ws_session);
     }
 
-  if (go_direct && WM_HEAD != ws->ws_method)
+  if (go_direct && WM_HEAD != ws->ws_method && WM_OPTIONS != ws->ws_method)
     {
       caddr_t *res = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
       res[0] = (caddr_t) ws->ws_session;
@@ -9656,6 +9739,26 @@ bif_http_status_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return new_stat;
 }
 
+caddr_t
+bif_http_methods_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  ws_connection_t * ws;
+  int inx, m;
+  if (!qi->qi_client->cli_http_ses)
+    sqlr_new_error ("42000", "HT012", "http_methods_set function is allowed only inside HTTP request");
+  ws = qi->qi_client->cli_ws;
+  http_set_default_options (ws);
+  DO_BOX (state_slot_t *, arg, inx, args)
+    {
+      caddr_t v = bif_string_or_null_arg (qst, args, inx, "http_methods_set");
+      m = http_method_id (v);
+      ws->ws_options [m] = '\x1';
+    }
+  END_DO_BOX;
+  return NULL;
+}
+
 caddr_t *
 box_tpcip_get_interfaces ()
 {
@@ -9841,6 +9944,7 @@ http_init_part_one ()
   bif_define ("http_recall_session", bif_http_recall_session);
   bif_define ("http_current_charset", bif_http_current_charset);
   bif_define_typed ("http_status_set", bif_http_status_set, &bt_varchar);
+  bif_define_typed ("http_methods_set", bif_http_methods_set, &bt_any);
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR

@@ -80,6 +80,7 @@ typedef struct ws_http_map_s
   } ws_http_map_t;
 #endif
 
+#define HTTP_MAX_METHOD 20
 
 typedef struct ws_connection_s
   {
@@ -129,6 +130,7 @@ typedef struct ws_connection_s
 #ifdef _SSL
     SSL_CTX *		ws_ssl_ctx;
 #endif
+    char  		ws_options[HTTP_MAX_METHOD];
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -175,6 +177,7 @@ extern long  tws_bad_request;
 #define WM_UNKNOWN 3
 #define WM_ERROR 4 /* comment out this definition to stop sending 401 Bad request */
 #define WM_HEAD 5
+#define WM_OPTIONS 6
 
 #define WM_URIQA_FIRST 100
 #define WM_URIQA_MGET 100
@@ -190,6 +193,8 @@ long ws_content_length (caddr_t * head);
 char * ws_header_field (caddr_t * head, const char * f, char * deflt);
 caddr_t ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode);
 void ws_keep_alive_ready (dk_session_t * ses);
+int http_method_id (char * method);
+char * http_get_method_string (int id);
 
 
 

@@ -107,6 +107,7 @@ typedef struct http_resp_evt_q_s
   dk_set_t hreq_evt_q;
 } http_resp_evt_q_t;
 
+/* offsets from http_methods described in http.c */
 #define HC_METHOD_NONE 0
 #define HC_METHOD_GET  1
 #define HC_METHOD_HEAD 2
