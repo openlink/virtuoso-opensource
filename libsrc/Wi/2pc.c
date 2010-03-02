@@ -1446,8 +1446,8 @@ virt_xa_remove_xid (void *xid)
   xx = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
   if (xx)
     {
-      dk_free (xx[0], sizeof (xa_id_t));
       id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
+      dk_free (xx[0], sizeof (xa_id_t));
     }
   mutex_leave (global_xa_map->xm_mtx);
 }
