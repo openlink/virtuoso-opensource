@@ -6767,6 +6767,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
   declare meta_xml, tmpFile, fileName, fileExt varchar;
   declare xt, xd any;
   declare extracted_image_collection_dav_root, extracted_image_collection_dav_path varchar;
+  declare dav_uid, dav_pwd varchar;
 
   declare exit handler for sqlstate '*'
   {
@@ -6775,6 +6776,10 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
   };
   if (__proc_exists ('unzip_file', 2) is null)
     return 0;
+
+  dav_uid := 'dav';
+  dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME=dav_uid);
+
   -- Create a tmp file from input stream
   tmpFile := tmp_file_name ('rdfm', 'pptx');
   string_to_file (tmpFile, _ret_body, -2);
@@ -6792,10 +6797,13 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
   -- Override dest so graph URI doesn't refer to original location of the source .PPTX file
   -- Using a fixed URL, instead of the source document URL, as the graph name makes
-  -- creating rewrite rules easier. The same rewrite rules can be used for alll sponged .PPTX files.
+  -- creating rewrite rules easier. The same rewrite rules can be used for all sponged .PPTX files.
   original_dest := coalesce(dest, graph_iri);
-  dest := 'http://' || urihost || '/PPTX';
-  baseUri := dest || '/' || fileName;
+  -- Disabled - Breaks description.vsp
+  -- dest := 'http://' || urihost || '/PPTX';
+  -- baseUri := dest || '/' || fileName;
+  dest := original_dest;
+  baseUri := original_dest;
 
   -- Construct graph $original_dest which contains link to graph $dest created solely for sponged PPTX metadata
   {
@@ -6937,11 +6945,11 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
             if (create_dav_col)
 	    {
-              rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_root, '110110110R', 'dav','dav','dav','dav');
+              rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_root, '110110110R', 'dav','dav', dav_uid, dav_pwd);
 	      if (rc >= 0 or rc = (-3) )
 	      {
-		DB.DBA.DAV_DELETE(extracted_image_collection_dav_path, 1, 'dav', 'dav');
-                rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_path, '110110110R', 'dav','dav','dav','dav');
+		DB.DBA.DAV_DELETE(extracted_image_collection_dav_path, 1, dav_uid, dav_pwd);
+                rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_path, '110110110R', 'dav','dav', dav_uid, dav_pwd);
 	      }
 	      if (rc >= 0)
 	        create_dav_col := 0;
@@ -6951,7 +6959,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
 	    if (create_dav_col = 0)
 	    {
-              rc := DB.DBA.DAV_RES_UPLOAD (extracted_image_collection_dav_path || image_basename, image_str, image_mime_type,'110110110R','dav','dav','dav','dav');
+              rc := DB.DBA.DAV_RES_UPLOAD (extracted_image_collection_dav_path || image_basename, image_str, image_mime_type,'110110110R','dav','dav', dav_uid, dav_pwd);
 	      if (rc < 0)
 	        dbg_printf('.PPTX Cartridge - DAV_RES_UPLOAD failed (%d) with file %s', rc, extracted_image_collection_dav_path || image_basename);
 	    }
@@ -6981,7 +6989,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
       -- slide path takes form 'slides/slide<n>.xml'
       slide_basename := subseq(slide_path3, 7);
-      slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
+      slideUri :=  baseUri || '#' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
       slide_content := unzip_file (tmpFile, 'ppt/' || slide_path3); 
       if (slide_content is null)
       {
