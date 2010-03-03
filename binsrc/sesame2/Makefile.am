@@ -69,7 +69,7 @@ virt_sesame2.jar: $(SESAME_SRC)
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
-	$(JAR) cvf virt_sesame2.jar -C out.driver virtuoso
+	$(JAR) cvf virt_sesame2.jar -C out.driver .
 
 
 .PHONY: doc
