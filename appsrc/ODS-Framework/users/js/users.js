@@ -23,7 +23,7 @@
 // publics
 var lfTab;
 var ufTab;
-var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2']];
+var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2']];
 
 var setupWin;
 var cRDF;
@@ -148,6 +148,9 @@ function myInit() {
     OAT.Event.attach("pf_tab_0_4", 'click', function(){pfTabSelect('pf_tab_0_', 4);});
     OAT.Event.attach("pf_tab_0_5", 'click', function(){pfTabSelect('pf_tab_0_', 5);});
     OAT.Event.attach("pf_tab_0_6", 'click', function(){pfTabSelect('pf_tab_0_', 6);});
+    OAT.Event.attach("pf_tab_0_7", 'click', function(){pfTabSelect('pf_tab_0_', 7);});
+    OAT.Event.attach("pf_tab_0_8", 'click', function(){pfTabSelect('pf_tab_0_', 8);});
+    OAT.Event.attach("pf_tab_0_9", 'click', function(){pfTabSelect('pf_tab_0_', 9);});
     pfTabInit('pf_tab_0_', $v('formSubtab'));
 
     OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 0);});
@@ -158,11 +161,61 @@ function myInit() {
 	}
 }
 
+function myCancel(prefix)
+{
+  needToConfirm = false;
+  OAT.Dom.show(prefix+'_list');
+  OAT.Dom.hide(prefix+'_form');
+  $('formMode').value = '';
+  return false;
+}
+
+function mySubmit(prefix)
+{
+  needToConfirm = false;
+  if (validateInputs($(prefix+'_id'), prefix)) {
+    if (prefix == 'pf07') {
+    	var S = '/ods/api/user.mades.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf07_id'))
+              + '&property=' + encodeURIComponent($v('pf07_property'))
+              + '&url=' + encodeURIComponent($v('pf07_url'))
+              + '&description=' + encodeURIComponent($v('pf07_description'));
+    	OAT.AJAX.GET(S, '', function(data){pfShowMades();});
+    }
+    if (prefix == 'pf08') {
+    	var S = '/ods/api/user.offers.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf08_id'))
+              + '&name=' + encodeURIComponent($v('pf08_name'))
+              + '&comment=' + encodeURIComponent($v('pf08_comment'))
+              + '&properties=' + encodeURIComponent(prepareItems('ol'));
+    	OAT.AJAX.GET(S, '', function(data){pfShowOffers();});
+    }
+    if (prefix == 'pf09') {
+    	var S = '/ods/api/user.seeks.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf09_id'))
+              + '&name=' + encodeURIComponent($v('pf09_name'))
+              + '&comment=' + encodeURIComponent($v('pf09_comment'))
+              + '&properties=' + encodeURIComponent(prepareItems('wl'));
+    	OAT.AJAX.GET(S, '', function(data){pfShowSeeks();});
+    }
+    OAT.Dom.show(prefix+'_list');
+    OAT.Dom.hide(prefix+'_form');
+    $('formMode').value = '';
+  }
+  return false;
+}
+
 function myBeforeSubmit ()
 {
   needToConfirm = false;
-  if ($v('formTab') == '0' && $v('formSubtab') == '6' && $('favorites'))
-    $('favorites').value = prepareFavorites();
+  if ($('items')) {
+    if ($v('formTab') == '0' && $v('formSubtab') == '6')
+      $('items').value = prepareItems('r');
+    if ($v('formTab') == '0' && $v('formSubtab') == '8' && $v('formMode') != '')
+      $('items').value = prepareItems('ol');
+    if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
+      $('items').value = prepareItems('wl');
+  }
 }
 
 var needToConfirm = true;
@@ -174,8 +227,14 @@ function myCheckLeave (form)
   var dirty = false;
   var retValue = true;
 
-  if (formTab == 0 && formSubtab == 6 && $('favorites'))
-    $('favorites').value = prepareFavorites();
+  if ($('items')) {
+    if ($v('formTab') == '0' && $v('formSubtab') == '6')
+      $('items').value = prepareItems('r');
+    if ($v('formTab') == '0' && $v('formSubtab') == '8' && $v('formMode') != '')
+      $('items').value = prepareItems('ol');
+    if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
+      $('items').value = prepareItems('wl');
+  }
 
   if (needToConfirm && (formTab < 2))
   {
@@ -248,6 +307,7 @@ function pfParam(fldName)
 }
 
 function pfTabSelect(tabPrefix, newIndex, subtabPrefix) {
+  $('formMode').value = '';
   if (subtabPrefix) {
     if ($v('formTab') == newIndex) {return;}
   } else {
@@ -372,6 +432,164 @@ function pfShowFavorites() {
 	OAT.AJAX.GET('/ods/api/user.favorites.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
 }
 
+function pfShowItem(api, prefix, names, cb) {
+  var x = function (data)
+  {
+		var o = null;
+		try {
+			o = OAT.JSON.parse(data);
+		} catch (e) {
+			o = null;
+		}
+		if (o) {
+    	for (var N = 0; N < names.length; N++) {
+    	  var name = names[N];
+    	  var fld = $(prefix+'_'+name);
+    	  if (fld && (o[name] != null))
+    	    fld.value = o[name];
+    	}
+    	if (cb) {cb(o);}
+    }
+  }
+  OAT.AJAX.GET('/ods/api/'+api+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&id='+$v(prefix+'_id'), '', x);
+}
+
+function pfShowList(api, prefix, noMsg, cols, idIndex, cb) {
+  var x = function (data)
+  {
+    function buttonShow (elm, actionButton, srcButton, textButton) {
+      var span = OAT.Dom.create('span');
+      span.className = 'button pointer';
+      span.onclick = actionButton;
+
+      var img = OAT.Dom.create('img');
+      img.className = 'button';
+      img.src = '/ods/images/icons/' + srcButton;
+   		span.appendChild(img);
+      span.appendChild(OAT.Dom.text(textButton));
+
+   		elm.appendChild(span);
+    }
+    var rowCount = 0;
+		var o = null;
+		try {
+			o = OAT.JSON.parse(data);
+		} catch (e) {
+			o = null;
+		}
+		var tbody = $(prefix+'_tbody');
+		tbody.innerHTML = '';
+		if (o) {
+    	for (var N = 0; N < o.length; N++) {
+    	  var id = o[N][idIndex];
+    	  var tr = OAT.Dom.create('tr');
+    	  for (var M = 0; M < cols.length; M++) {
+      	  var td = OAT.Dom.create('td');
+      		td.innerHTML = o[N][cols[M]];
+      		tr.appendChild(td);
+        }
+    	  var td = OAT.Dom.create('td');
+    	  td.noWrap = true;
+        buttonShow(td, function(){pfEditListObject(prefix, id);}, 'confg_16.png', ' Edit');
+        td.appendChild(OAT.Dom.text(' '));
+        buttonShow(td, function(){pfDeleteListObject(api, id, cb);}, 'trash_16.png', ' Delete');
+      	tr.appendChild(td);
+
+    		tbody.appendChild(tr);
+        rowCount++;
+    	}
+    }
+  	if (rowCount == 0) {
+  	  var tr = OAT.Dom.create('tr');
+  	  var td = OAT.Dom.create('td');
+  		td.colSpan = cols.length + 1;
+  		td.innerHTML = noMsg;
+  		tr.appendChild(td);
+
+  		tbody.appendChild(tr);
+  	}
+  }
+	OAT.AJAX.GET('/ods/api/'+api+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
+}
+
+function pfDeleteListObject(api, id, cb) {
+  if (confirm('Are you sure you want to delete this record?')) {
+    var deleteApi = api.replace('list', 'delete');
+	  OAT.AJAX.GET('/ods/api/'+deleteApi+'?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&id='+id, '', cb);
+	}
+}
+
+function pfEditListObject(prefix, id) {
+  hiddenCreate(prefix+'_id', $('page_form'), id);
+  $('formMode').value = 'edit';
+  if ($v('mode') == 'html') {
+    if (prefix == 'pf07')
+      pfShowMade('edit', id);
+    if (prefix == 'pf08')
+      pfShowOffer('edit', id);
+    if (prefix == 'pf09')
+      pfShowSeek('edit', id);
+    return false;
+  }
+  $('page_form').submit();
+}
+
+function pfShowMade(mode, id) {
+  if (mode) {
+    OAT.Dom.hide('pf07_list');
+    OAT.Dom.show('pf07_form');
+    hiddenCreate('pf07_id', $('page_form'), id);
+    $('formMode').value = mode;
+  }
+  pfShowItem('user.mades.get', 'pf07', ['property', 'uri', 'description']);
+}
+
+function pfShowOffer(mode, id) {
+  if (mode) {
+    OAT.Dom.hide('pf08_list');
+    OAT.Dom.show('pf08_form');
+    hiddenCreate('pf08_id', $('page_form'), id);
+    $('formMode').value = mode;
+  }
+  var x = function (obj) {
+    $('ol_tbody').innerHTML = '';
+    RDF.tablePrefix = 'ol';
+    RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+    RDF.itemTypes = obj.properties;
+    RDF.showItemTypes();
+  }
+  pfShowItem('user.offers.get', 'pf08', ['name', 'comment'], x);
+}
+
+function pfShowSeek(mode, id) {
+  if (mode) {
+    OAT.Dom.hide('pf09_list');
+    OAT.Dom.show('pf09_form');
+    hiddenCreate('pf09_id', $('page_form'), id);
+    $('formMode').value = mode;
+  }
+  var x = function(obj) {
+    $('wl_tbody').innerHTML = '';
+    RDF.tablePrefix = 'wl';
+    RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+    RDF.itemTypes = obj.properties;
+    RDF.showItemTypes();
+  }
+  pfShowItem('user.seeks.get', 'pf09', ['name', 'comment'], x);
+}
+
+function pfShowMades() {
+  pfShowList('user.mades.list', 'pf07', 'No Items', [1, 3], 0, function (data){pfShowMades();});
+}
+
+function pfShowOffers() {
+  pfShowList('user.offers.list', 'pf08', 'No Items', [1, 2], 0, function (data){pfShowOffers();});
+}
+
+function pfShowSeeks() {
+  pfShowList('user.seeks.list', 'pf09', 'No Items', [1, 2], 0, function (data){pfShowSeeks();});
+}
+
 function isShow(element) {
 	var elm = $(element);
 	if (elm && elm.style.display == "none")
@@ -426,7 +644,7 @@ function hideFacebookData() {
 }
 
 function hiddenCreate(objName, objForm, objValue) {
-	var obj = $('objName');
+	var obj = $(objName);
 	if (!obj) {
 		obj = OAT.Dom.create("input");
 		obj.setAttribute("type", "hidden");
@@ -866,13 +1084,11 @@ function ufProfileSubmit() {
 }
 
 function ufProfileLoad(No) {
-  if (No == 1) {
     var formTab = parseInt($v('formTab'));
     var formSubtab = parseInt($v('formSubtab'));
-
+  if (No == 1) {
     formSubtab++;
     if (
-        ((formTab == 0) && (formSubtab > 5)) ||
         ((formTab == 1) && (formSubtab > 3)) ||
         (formTab > 1)
        )
@@ -883,6 +1099,11 @@ function ufProfileLoad(No) {
     }
     $('formTab').value = "" + formTab;
     $('formSubtab').value = "" + formSubtab;
+  }
+  if ((formTab == 0) && (formSubtab > 6)) {
+    OAT.Dom.hide('pf_footer_0');
+  } else {
+    OAT.Dom.show('pf_footer_0');
   }
   pfCleanFOAFData();
   ufCleanTablesData("x1");
@@ -942,6 +1163,18 @@ function ufProfileCallback(data) {
 
       // bio events
       pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 4, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});
+
+      // made
+      if (($v('formTab') == "0") && ($v('formSubtab') == "7"))
+        pfShowMades();
+
+      // offer
+      if (($v('formTab') == "0") && ($v('formSubtab') == "8"))
+        pfShowOffers();
+
+      // seek
+      if (($v('formTab') == "0") && ($v('formSubtab') == "9"))
+        pfShowSeeks();
 
 			// contact
 			fieldUpdate(user, 'icq', 'pf_icq');
@@ -1094,9 +1327,9 @@ function updateBioEvents(prefix)
   }
 }
 
-function prepareFavorites() {
+function prepareItems(prefix) {
   var ontologies = [];
-  var form = document.forms[0];
+  var form = $('page_form');
   for (var N = 0; N < form.elements.length; N++)
   {
     if (!form.elements[N])
@@ -1106,10 +1339,10 @@ function prepareFavorites() {
     if (typeof(ctrl.type) == 'undefined')
       continue;
 
-    if (ctrl.name.indexOf("r_fld_2_") != 0)
+    if (ctrl.name.indexOf(prefix+"_fld_2_") != 0)
       continue;
 
-    var ontologyNo = ctrl.name.replace("r_fld_2_", "");
+    var ontologyNo = ctrl.name.replace(prefix+"_fld_2_", "");
     var ontologyName = ctrl.value;
     var ontologyItems = [];
     for (var M = 0; M < form.elements.length; M++)
@@ -1121,11 +1354,11 @@ function prepareFavorites() {
       if (typeof(ctrl.type) == 'undefined')
         continue;
 
-      if (ctrl.name.indexOf("r_item_"+ontologyNo+"_fld_2_") != 0)
+      if (ctrl.name.indexOf(prefix+"_item_"+ontologyNo+"_fld_2_") != 0)
         continue;
 
-      var itemID = $v("r_item_"+ontologyNo+"_fld_1_"+itemNo);
-      var itemNo = ctrl.name.replace("r_item_"+ontologyNo+"_fld_2_", "");
+      var itemID = $v(prefix+"_item_"+ontologyNo+"_fld_1_"+itemNo);
+      var itemNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_fld_2_", "");
       var itemName = ctrl.value;
       var itemProperties = [];
       for (var L = 0; L < form.elements.length; L++)
@@ -1137,16 +1370,16 @@ function prepareFavorites() {
         if (typeof(ctrl.type) == 'undefined')
           continue;
 
-        if (ctrl.name.indexOf("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_") != 0)
+        if (ctrl.name.indexOf(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_") != 0)
           continue;
 
-        var propertyNo = ctrl.name.replace("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_", "");
+        var propertyNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_", "");
         var propertyName = ctrl.value;
-        var propertyValue = $v("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
-        var propertyType = $v("r_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+        var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
+        var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
         itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType});
       }
-      ontologyItems.push(["id", itemID, "className", itemName, "properties", itemProperties]);
+      ontologyItems.push({"id": itemID, "className": itemName, "properties": itemProperties});
     }
     ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
   }
@@ -1158,7 +1391,7 @@ function updateFavorites(prefix)
 	var S = '/ods/api/user.favorites.delete?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
 	OAT.AJAX.GET(S,null,null,{async:false});
 
-  S = '/ods/api/user.favorites.new?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&favorites=' + encodeURIComponent(prepareFavorites());
+  S = '/ods/api/user.favorites.new?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&favorites=' + encodeURIComponent(prepareItems('r'));
   OAT.AJAX.GET(S,null,null,{async:false});
 }
 

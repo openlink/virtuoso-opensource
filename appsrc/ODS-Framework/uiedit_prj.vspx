@@ -34,7 +34,7 @@
 	<v:variable name="m_id" type="integer" default="null" />
 	<v:variable name="m_name" type="varchar" default="null" />
 	<v:form name="usr_personal_7" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>Made</h3>
+    <h3>Creator Of</h3>
     <vm:if test="self.m_mode = 'M/browse'">
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="m_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
@@ -57,7 +57,7 @@
       </div>
 
 	    <v:data-set name="m_ds"
-	                sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
+	                sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
 		              nrows="10">
@@ -65,7 +65,7 @@
         <v:template name="m_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
 	  <table class="listing" rules="groups">
 	      <tr class="listing_header_row">
-      		    <th>Made Property</th>
+      		    <th>Property</th>
 		  <th>Description</th>
       		    <th width="1%" nowrap="nowrap">Action</th>
 	      </tr>
@@ -108,7 +108,7 @@
                           into self.m_name,
                                self.m_url.ufl_value,
                                self.m_desc.ufl_value
-                          from WA_USER_PROJECTS
+                          from DB.DBA.WA_USER_PROJECTS
                          where WUP_ID = self.m_id;
 
                         self.vc_data_bind (e);
@@ -123,7 +123,7 @@
                     </v:before-render>
                     <v:on-post>
                       <![CDATA[
-                        delete from WA_USER_PROJECTS where WUP_ID = (control.vc_parent as vspx_row_template).te_column_value('WUP_ID') and WUP_U_ID = self.u_id;
+                        delete from DB.DBA.WA_USER_PROJECTS where WUP_ID = (control.vc_parent as vspx_row_template).te_column_value('WUP_ID') and WUP_U_ID = self.u_id;
                         self.vc_data_bind (e);
                       ]]>
                     </v:on-post>
@@ -184,7 +184,7 @@
   		      <v:button name="user_s_personal_7" value="--case when self.m_mode = 'M/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
   		        <v:on-post>
   		          <![CDATA[
-declare xt, xp, tmp, descr, iri, name, url varchar;
+                  declare tmp, descr, iri, name, url varchar;
                   declare stat, msg, dta, mdta, qrs, params any;
 
 if (not self.vc_is_valid)
@@ -261,10 +261,10 @@ if (not length (name))
   }
                   if (self.m_mode = 'M/add')
   {
-                    insert into WA_USER_PROJECTS (WUP_U_ID, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI)
+                    insert into DB.DBA.WA_USER_PROJECTS (WUP_U_ID, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI)
                       values (self.u_id, name, url, descr, iri);
                   } else {
-                    update WA_USER_PROJECTS
+                    update DB.DBA.WA_USER_PROJECTS
                        set WUP_NAME = name,
                            WUP_URL = url,
                            WUP_DESC = descr,

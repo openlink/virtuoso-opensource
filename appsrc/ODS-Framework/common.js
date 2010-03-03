@@ -1155,13 +1155,15 @@ function validateField(fld)
   return true;
 }
 
-function validateInputs(fld)
+function validateInputs(fld, prefix)
 {
   var retValue = true;
   var form = fld.form;
   for (i = 0; i < form.elements.length; i++)
   {
     var fld = form.elements[i];
+    if (prefix && (fld.name.indexOf(prefix) != 0))
+      continue;
     if (OAT.Dom.isClass(fld, '_validate_'))
     {
       retValue = validateField(fld);

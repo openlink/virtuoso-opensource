@@ -36,7 +36,7 @@
 	<v:variable name="wl_newProperties" type="any" default="null" />
 
 	<v:form name="usr_personal_9" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>Seeks (GoodRelations Ontologies)</h3>
+    <h3>Offers I Seek (GoodRelations Ontologies)</h3>
     <vm:if test="self.wl_mode = 'WL/browse'">
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="wl_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
@@ -60,7 +60,7 @@
       </div>
 
 	    <v:data-set name="wl_ds"
-	                sql="select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from WA_USER_WISHLIST where WUWL_U_ID = :self.u_id"
+	                sql="select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
 		              nrows="10">
@@ -107,7 +107,7 @@
                           into self.wl_offer.ufl_value,
                                self.wl_comment.ufl_value,
                                self.wl_properties
-                          from WA_USER_WISHLIST
+                          from DB.DBA.WA_USER_WISHLIST
                          where WUWL_ID = self.wl_id;
 
                         self.wl_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.wl_properties, vector ()))));
@@ -123,7 +123,7 @@
                     </v:before-render>
                     <v:on-post>
                       <![CDATA[
-                        delete from WA_USER_WISHLIST where WUWL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUWL_ID') and WUWL_U_ID = self.u_id;
+                        delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUWL_ID') and WUWL_U_ID = self.u_id;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -222,12 +222,12 @@
                 self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.wl_mode = 'WL/add')
               {
-                insert into WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
+                  insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
                   values (self.u_id, self.wl_offer.ufl_value, self.wl_comment.ufl_value, serialize (self.wl_properties));
               }
               else
               {
-                update WA_USER_WISHLIST
+                  update DB.DBA.WA_USER_WISHLIST
                    set WUWL_BARTER = self.wl_offer.ufl_value,
                        WUWL_COMMENT = self.wl_comment.ufl_value,
                        WUWL_PROPERTIES = serialize (self.wl_properties)

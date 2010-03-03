@@ -47,7 +47,7 @@
   <?vsp
     declare N integer;
     declare vHostUrl, vUrl, vResult, vRequest, vRespond any;
-    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vXml, vLists, vList, items any;
+    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vFormMode, vXml, vLists, vList, items any;
 
       vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
       if (isstring (vHostUrl) and strchr (vHostUrl , ':') is null)
@@ -83,6 +83,7 @@
     vForm := get_keyword ('form', params, 'login');
     vFormTab := atoi(get_keyword ('formTab', params, '0'));
     vFormSubtab := atoi(get_keyword ('formSubtab', params, '0'));
+    vFormMode := get_keyword ('formMode', params, '');
     vSid := get_keyword ('sid', params);
     vRealm := 'wa';
 
@@ -125,8 +126,106 @@
 
     if (vForm = 'profile')
     {
-      if ((get_keyword ('pf_update', params, '') <> '') or (get_keyword ('pf_next', params, '') <> ''))
+      if (get_keyword ('pf_update07', params, '') <> '')
       {
+        vUrl := sprintf (
+                         '%s/user.mades.%s?sid=%U&realm=%U&id=%U&property=%U&url=%U&description=%U',
+                         vHostUrl,
+                         vFormMode,
+                         vSid,
+                         vRealm,
+                         get_keyword ('pf07_id', params, ''),
+                         get_keyword ('pf07_property', params, ''),
+                         get_keyword ('pf07_url', params, ''),
+                         get_keyword ('pf07_description', params, '')
+                        );
+        commit work;
+        vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            vForm := 'login';
+          }
+        }
+        vFormMode := '';
+      }
+      else if (get_keyword ('pf_update08', params, '') <> '')
+      {
+        vUrl := sprintf (
+                         '%s/user.offers.%s?sid=%U&realm=%U&id=%U&name=%U&comment=%U&properties=%U',
+                         vHostUrl,
+                         vFormMode,
+                         vSid,
+                         vRealm,
+                         get_keyword ('pf08_id', params, ''),
+                         get_keyword ('pf08_name', params, ''),
+                         get_keyword ('pf08_comment', params, ''),
+                         get_keyword ('items', params, '')
+                        );
+        commit work;
+        vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            vForm := 'login';
+          }
+        }
+        vFormMode := '';
+      }
+      else if (get_keyword ('pf_update09', params, '') <> '')
+      {
+        vUrl := sprintf (
+                         '%s/user.seeks.%s?sid=%U&realm=%U&id=%U&name=%U&comment=%U&properties=%U',
+                         vHostUrl,
+                         vFormMode,
+                         vSid,
+                         vRealm,
+                         get_keyword ('pf09_id', params, ''),
+                         get_keyword ('pf09_name', params, ''),
+                         get_keyword ('pf09_comment', params, ''),
+                         get_keyword ('items', params, '')
+                        );
+        commit work;
+        vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            vForm := 'login';
+          }
+        }
+        vFormMode := '';
+      }
+      else if (get_keyword ('pf_cancel2', params, '') <> '')
+      {
+        vFormMode := '';
+      }
+      else if ((get_keyword ('pf_update', params, '') <> '') or (get_keyword ('pf_next', params, '') <> ''))
+      {
+        vFormMode := '';
         if (((vFormTab = 0) and (vFormSubtab = 3)) or ((vFormTab = 1) and (vFormSubtab = 2)))
         {
           declare accountType, prefix any;
@@ -253,7 +352,7 @@
           }
           if (vForm <> 'login')
           {
-            vUrl := vHostUrl || '/user.favorites.new?sid=' || vSid || '&realm=' || vRealm || '&favorites=' || sprintf ('%U', get_keyword ('favorites', params, ''));
+            vUrl := vHostUrl || '/user.favorites.new?sid=' || vSid || '&realm=' || vRealm || '&favorites=' || sprintf ('%U', get_keyword ('items', params, ''));
             commit work;
             vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
             if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
@@ -507,7 +606,6 @@
         {
           vFormSubtab := vFormSubtab + 1;
           if (
-              ((vFormTab = 0) and (vFormSubtab > 5)) or
               ((vFormTab = 1) and (vFormSubtab > 3)) or
               (vFormTab > 1)
              )
@@ -603,13 +701,15 @@
     }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" method="post" action="users.vsp">
+    <form name="page_form" id="page_form" method="post" action="users.vsp">
+      <input type="hidden" name="mode" id="mode" value="vsp" />
       <input type="hidden" name="sid" id="sid" value="<?V vSid ?>" />
       <input type="hidden" name="realm" id="realm" value="<?V vRealm ?>" />
       <input type="hidden" name="form" id="form" value="<?V vForm ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?V vFormTab ?>" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="<?V vFormSubtab ?>" />
-      <input type="hidden" name="favorites" id="favorites" value="" />
+      <input type="hidden" name="formMode" id="formMode" value="<?V vFormMode ?>" />
+      <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><?V case when vForm = 'user' then 'View Profile' else case when vForm = 'profile' then 'User Profile' else 'Login' end end ?></div>
@@ -625,13 +725,8 @@
       <div id="MD">
         <table cellspacing="0">
           <tr>
-            <td>
-              <img style="margin: 60px;" src="/ods/images/odslogo_200.png" /><br />
-              <div id="ob_links" style="display: none; margin-left: 60px;">
-                <a id="ob_links_foaf" href="#">
-                  <img border="0" alt="FOAF" src="/ods/images/foaf.gif"/>
-                </a>
-              </div>
+            <td valign="top">
+              <img class="logo" src="/ods/images/odslogo_200.png" />
             </td>
             <td>
               <?vsp
@@ -762,7 +857,7 @@
               if (vForm = 'profile')
               {
               ?>
-              <div id="pf" class="form" style="width: 800px;">
+              <div id="pf" class="form" style="width: 100%;">
                 <?vsp
                   if (vError <> '')
                     http ('<div class="error">' || vError || '</div>');
@@ -785,6 +880,9 @@
                       <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
                       <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
                       <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
+                      <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
+                      <li id="pf_tab_0_8" title="My Offers">My Offers</li>
+                      <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
                     </ul>
                     <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
@@ -1293,12 +1391,269 @@
                           </tr>
                         </table>
                       </div>
-
+                      <?vsp
+                      if (vFormTab = 0)
+                      {
+                        if (vFormSubtab = 7)
+                        {
+                      ?>
+                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+                        <h3>Creator Of</h3>
+                        <?vsp
+                          if (vFormMode = '')
+                          {
+                        ?>
+                        <div id="pf07_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Creator Of'" alt="Add 'Creator Of'" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf07_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Made Property</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf07_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowMades();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?vsp
+                          }
+                          else
+                          {
+                            if (vFormMode = 'edit')
+                              http (sprintf ('<input type="hidden" id="pf07_id" name="pf07_id" value="%s" />', get_keyword ('pf07_id', params, '')));
+                        ?>
+                        <div id="pf07_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Property
+                              </th>
+                              <td id="if_opt">
+                                <script type="text/javascript">
+                                  function p_init ()
+                                  {
+                                    var fld = new OAT.Combolist([]);
+                                    fld.input.name = 'pf07_property';
+                                    fld.input.id = fld.input.name;
+                                    fld.input.className = '_validate_';
+                                    fld.input.style.width = "400px";
+                                    $("if_opt").appendChild(fld.div);
+                                    fld.addOption("foaf:made");
+                                    fld.addOption("dc:creator");
+                                    fld.addOption("sioc:owner");
+                                  }
+                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){OAT.Loader.loadFeatures(["combolist"], p_init);});
+                                </script>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
+                              </th>
+                              <td>
+                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Description
+                              </th>
+                              <td>
+                                <textarea name="pf07_description" id="pf07_description" class="_validate_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowMade();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
+                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?vsp
+                          }
+                        ?>
+                      </div>
+                      <?vsp
+                        }
+                        else if (vFormSubtab = 8)
+                        {
+                      ?>
+                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+                        <h3>My Offers</h3>
+                        <?vsp
+                          if (vFormMode = '')
+                          {
+                        ?>
+                        <div id="pf08_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf08_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Name</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf08_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOffers();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?vsp
+                          }
+                          else
+                          {
+                            http (sprintf ('<input type="hidden" id="pf08_id" name="pf08_id" value="%s" />', get_keyword ('pf08_id', params, '0')));
+                        ?>
+                        <div id="pf08_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Name
+                              </th>
+                              <td>
+                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+                  		          Products
+                  		        </th>
+                  		        <td width="800px">
+                                <table id="ol_tbl" class="listing">
+                                  <tbody id="ol_tbody">
+                                  </tbody>
+                                </table>
+                                <input type="hidden" id="ol_no" name="ol_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOffer();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?vsp
+                          }
+                        ?>
+                      </div>
+                      <?vsp
+                        }
+                        else if (vFormSubtab = 9)
+                        {
+                      ?>
+                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+                        <h3>Offers I Seek</h3>
+                        <?vsp
+                          if (vFormMode = '')
+                          {
+                        ?>
+                        <div id="pf09_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf09_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Name</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf09_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowSeeks();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?vsp
+                          }
+                          else
+                          {
+                            http (sprintf ('<input type="hidden" id="pf09_id" name="pf09_id" value="%s" />', get_keyword ('pf09_id', params, '0')));
+                        ?>
+                        <div id="pf09_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Name
+                              </th>
+                              <td>
+                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+                  		          Products
+                  		        </th>
+                  		        <td width="800px">
+                                <table id="wl_tbl" class="listing">
+                                  <tbody id="wl_tbody">
+                                  </tbody>
+                                </table>
+                                <input type="hidden" id="wl_no" name="wl_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowSeek();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?vsp
+                          }
+                        ?>
+                      </div>
+                      <?vsp
+                        }
+                        else
+                        {
+                      ?>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
+                      <?vsp
+                        }
+                      }
+                      ?>
                     </div>
                   </div>
 

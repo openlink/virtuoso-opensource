@@ -8,6 +8,10 @@
   text-align: center;
 }
 
+.logo {
+  margin: 40px;
+}
+
 #ob {
   float: left;
   background-color: #85B9D2;
@@ -68,6 +72,7 @@ table.form td {
 	margin-top: 24px;
 	list-style-type: none;
 	padding-bottom: 1px;
+	padding-left: 0.5em;
 }
 
 .tabs li {
@@ -78,6 +83,10 @@ table.form td {
   border-top: 1px solid #aaa;
   border-left: 1px solid #aaa;
   border-right: 1px solid #aaa;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
 	background-color: #F6F6F6;
 	z-index: 10;
 }
@@ -97,4 +106,28 @@ table.form td {
 input.openID {
   background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
   padding-left: 18px;
+}
+
+span.button {
+  background: none repeat scroll 0 0 #99B3C5;
+  border: 1px solid #7F94A5;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  color: #FFFFFF;
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 5px 5px 2px;
+  text-decoration:none;
+}
+
+img.button {
+  margin-bottom: -2px;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+table.listing td, table.listing th {
+  border-spacing: 0px;
 }

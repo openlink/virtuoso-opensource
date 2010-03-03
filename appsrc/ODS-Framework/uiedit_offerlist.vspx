@@ -36,7 +36,7 @@
 	<v:variable name="ol_newProperties" type="any" default="null" />
 
 	<v:form name="usr_personal_8" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>Offers (GoodRelations Ontologies)</h3>
+    <h3>My Offers (GoodRelations Ontologies)</h3>
     <vm:if test="self.ol_mode = 'OL/browse'">
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="ol_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
@@ -60,7 +60,7 @@
       </div>
 
 	    <v:data-set name="ol_ds"
-	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id"
+	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
 		              nrows="10">
@@ -107,7 +107,7 @@
                           into self.ol_offer.ufl_value,
                                self.ol_comment.ufl_value,
                                self.ol_properties
-                          from WA_USER_OFFERLIST
+                          from DB.DBA.WA_USER_OFFERLIST
                          where WUOL_ID = self.ol_id;
 
                         self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
@@ -124,7 +124,7 @@
                     </v:before-render>
                     <v:on-post>
                       <![CDATA[
-                        delete from WA_USER_OFFERLIST where WUOL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUOL_ID') and WUOL_U_ID = self.u_id;
+                        delete from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUOL_ID') and WUOL_U_ID = self.u_id;
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -222,12 +222,12 @@
                 self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.ol_mode = 'OL/add')
               {
-                insert into WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+                  insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
                   values (self.u_id, self.ol_offer.ufl_value, self.ol_comment.ufl_value, serialize (self.ol_properties));
               }
               else
               {
-                update WA_USER_OFFERLIST
+                  update DB.DBA.WA_USER_OFFERLIST
                    set WUOL_OFFER = self.ol_offer.ufl_value,
                        WUOL_COMMENT = self.ol_comment.ufl_value,
                        WUOL_PROPERTIES = serialize (self.ol_properties)
