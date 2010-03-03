@@ -1433,7 +1433,7 @@ ws_path_and_params (ws_connection_t * ws)
 #endif
   if (!path1)
     path1 = "";
-  if (IS_DAV_DOMAIN(ws, path1) && ws->ws_method != WM_HEAD)
+  if (IS_DAV_DOMAIN(ws, path1) && ws->ws_method != WM_HEAD && ws->ws_method != WM_OPTIONS)
     ws->ws_method = WM_UNKNOWN;
 #if 1
   else if (ws->ws_method == WM_UNKNOWN)
