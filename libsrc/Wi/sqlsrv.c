@@ -1918,6 +1918,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
+      dk_free_tree (xid_str);
       return;
     }
 
@@ -1951,7 +1952,9 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	dk_free(future,sizeof(tp_future_t));
 	_2pc_printf(("tp pre/comm 4 =%x cli %p\n",op,cli));
 
-      } return;
+      }
+      dk_free_tree (xid_str);
+      return;
     case SQL_TP_ABORT:
       {
 	tp_message_t* msg = mq_create_message (TP_ABORT,0,cli);
@@ -1963,6 +1966,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	DKST_RPC_DONE (client);
 	PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	dk_free_tree (err);
+	dk_free_tree (xid_str);
 	return;
       }
     case SQL_XA_ENLIST:
@@ -1978,6 +1982,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
@@ -1997,6 +2002,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    dk_free_tree (err);
 	    cli->cli_tp_data = 0;
 	    dk_free (tpd, sizeof (tp_data_t));
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
@@ -2032,6 +2038,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 	if (virt_xa_client (xid, cli, &tpd, SQL_XA_RESUME) == -1)
@@ -2040,6 +2047,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
       } break;
@@ -2056,6 +2064,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_box (xid);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
@@ -2123,6 +2132,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		DKST_RPC_DONE (client);
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
+		dk_free_tree (xid_str);
 		return;
 	      }
 
@@ -2143,6 +2153,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		    dk_free_tree (err);
 		    dk_free_box ((box_t) xid);
+		    dk_free_tree (xid_str);
 		    return;
 		  }
 	      }
@@ -2164,6 +2175,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
 		dk_free_box ((box_t) xid);
+		dk_free_tree (xid_str);
 		return;
 	      }
 	    if (op==SQL_XA_COMMIT)
@@ -2177,6 +2189,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  }
 	dk_free_box ((box_t) xid);
 	DKST_RPC_DONE (client);
+	dk_free_tree (xid_str);
 	return;
       }
     case SQL_XA_ROLLBACK:
@@ -2205,6 +2218,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
 	    dk_free_box (xid);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 	xa_wait_commit (tpd);
@@ -2214,6 +2228,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
     }
   DKST_RPC_DONE (client);
   PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, 1, 1);
+  dk_free_tree (xid_str);
 }
 
 #ifdef SERIAL_CLI

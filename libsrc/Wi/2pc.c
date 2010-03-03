@@ -1451,8 +1451,12 @@ virt_xa_remove_xid (void *xid)
       xa_id_t * x = xx[0];
       tp_data_t * tpd = x->xid_cli->cli_tp_data;
       x->xid_cli->cli_tp_data = NULL;
+      if (tpd->cli_tp_sem2)
+	semaphore_free (tpd->cli_tp_sem2);
       dk_free (tpd, sizeof (tp_data_t));
       id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
+      if (x->xid_sem)
+	semaphore_free (x->xid_sem);
       dk_free (x, sizeof (xa_id_t));
     }
   mutex_leave (global_xa_map->xm_mtx);
