@@ -2011,10 +2011,12 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	/* must see if trx already has xid */
 	if (cli->cli_trx->lt_2pc._2pc_xid && cli->cli_trx->lt_2pc._2pc_xid != xid)
 	  {
+	    IN_TXN;
 	    if (!cli->cli_trx->lt_2pc._2pc_wait_commit)
 	      lt_done (cli->cli_trx);
 	    cli->cli_trx = NULL;
 	    cli_set_new_trx (cli);
+	    LEAVE_TXN;
 	  }
 	tpd->cli_tp_lt = cli->cli_trx;
 	cli->cli_trx->lt_2pc._2pc_xid = xid;
