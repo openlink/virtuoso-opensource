@@ -2226,6 +2226,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	xa_wait_commit (tpd);
 	virt_xa_remove_xid (xid);
 	dk_free_box (xid);
+	cli->cli_tp_data = NULL;
       } break;
     }
   DKST_RPC_DONE (client);

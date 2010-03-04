@@ -771,7 +771,8 @@ tp_data_free (tp_data_t * tpd)
     }
 
   dk_free_box (tpd->tpd_trx_cookie);
-  semaphore_free (tpd->cli_tp_sem2);
+  if (tpd->cli_tp_sem2)
+    semaphore_free (tpd->cli_tp_sem2);
   dk_free (tpd, sizeof (tp_data_t));
 }
 
@@ -1453,6 +1454,15 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
       cli_set_trx (cli, x->xid_tp_data->cli_tp_lt);
     }
   cli->cli_tp_data = x->xid_tp_data;
+  if (x->xid_cli && x->xid_cli != cli)
+    {
+      x->xid_cli->cli_tp_data = NULL;
+      if (x->xid_cli->cli_trx == cli->cli_trx)
+	{
+	  x->xid_cli->cli_trx = NULL;
+	  cli_set_new_trx (x->xid_cli);
+	}
+    }
   x->xid_cli = cli;
   LEAVE_TXN;
   return 0;
