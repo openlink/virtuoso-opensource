@@ -2716,7 +2716,8 @@ Without the special optimization it becomes iri_to_id ('graph iri string from vi
     }
 /* There is no "symmetric" check like "if (!bop_is_comparison && (IS_BOX_POINTER (right_vmode) && right_vmode->qmfIsBijection))" because tree is rotated so the constant is supposed to be at right */
 /* Valmode of global expressions does not really matter because they're calculated only once, hence the comparison prefers valmode of the non-global expression argument */
-  if (!bop_is_comparison && (SSG_VALMODE_SQLVAL == right_vmode) &&
+  if (!bop_is_comparison &&
+    ((SSG_VALMODE_LONG == right_vmode) || (SSG_VALMODE_SQLVAL == right_vmode)) && /* case (SSG_VALMODE_LONG == right_vmode) happens for IRI(?::0) and the like */
     ((SSG_VALMODE_LONG == left_vmode) ||
       (IS_BOX_POINTER (left_vmode) && left_vmode->qmfIsBijection) ) &&
     sparp_tree_is_global_expn (ssg->ssg_sparp, right) )
