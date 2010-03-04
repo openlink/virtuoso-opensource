@@ -1247,7 +1247,7 @@ TDAV_META_CHECK ('industry_news.opml', 'http://www.openlinksw.com/schemas/OPML#o
 TDAV_META_CHECK ('industry_news.opml', 'http://www.openlinksw.com/schemas/OPML#title', 'Untitled OPML');
 TDAV_META_CHECK ('industry_news.opml', 'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application^2fopml+xml');
 TDAV_META_CHECK ('kingsley_rss.xml', 'http://purl.org/rss/1.0/description', 'Knowledge, Information, and Data Dispatch Outlet');
-TDAV_META_CHECK ('kingsley_rss.xml', 'http://purl.org/rss/1.0/lastBuildDate', '2005-04-25T21^3a12^3a20.000000');
+TDAV_META_CHECK ('kingsley_rss.xml', 'http://purl.org/rss/1.0/lastBuildDate', '2005-04-25T21^3a12^3a20');
 TDAV_META_CHECK ('kingsley_rss.xml', 'http://purl.org/rss/1.0/link', 'http^3a^2f^2fwww.openlinksw.com^3a80^2fblog^2f~kidehen^2f');
 TDAV_META_CHECK ('kingsley_rss.xml', 'http://purl.org/rss/1.0/title', 'Kingsley Idehen''s Weblog');
 TDAV_META_CHECK ('microsoft_bloggers.opml', 'http://www.openlinksw.com/schemas/OPML#ownerName', 'Unknown OPML owner');
