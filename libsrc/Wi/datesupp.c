@@ -396,12 +396,13 @@ void
 ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
 {
   int dummy;
-  int32 day, sec;
+  int32 day, sec, frac;
   int oyear, omonth, oday, ohour, ominute, osecond;
   if (0 == n)
     return;
   day = date2num (ts->year, ts->month, ts->day);
   sec = time2sec (0, ts->hour, ts->minute, ts->second);
+  frac = ts->fraction;
   if (0 == stricmp (unit, "year"))
     {
       ts->year += n;
@@ -423,14 +424,32 @@ ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
       return;
     }
 
-  if (0 == stricmp (unit, "second"))
-    sec += n;
-  else if (0 == stricmp (unit, "minute"))
-    sec += 60 * n;
-  else if (0 == stricmp (unit, "hour"))
-    sec += 60 * 60 * n;
-  else if (0 == stricmp (unit, "day"))
-    day += n;
+  do {
+      if (0 == stricmp (unit, "second")) { sec += n; break; }
+      if (0 == stricmp (unit, "day")) { day += n; break; }
+      if (0 == stricmp (unit, "minute")) { sec += 60 * n; break; }
+      if (0 == stricmp (unit, "hour")) { sec += 60 * 60 * n; break; }
+      if (0 == stricmp (unit, "millisecond"))
+        {
+          sec += (n/1000);
+          frac += (n%1000)*1000000;
+        }
+      else if (0 == stricmp (unit, "microsecond"))
+        {
+          sec += (n/1000000);
+          frac += (n%1000000)*1000;
+        }
+      else if (0 == stricmp (unit, "nanosecond"))
+        {
+          sec += (n/1000000000);
+          frac += (n%1000000000);
+        }
+      if ((frac >= 1000000000) || (frac < 0))
+        {
+          sec += (frac / 1000000000);
+          frac = (frac % 1000000000);
+        }
+    } while (0);
 
   if (sec < 0)
     {
@@ -456,6 +475,7 @@ ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
   ts->hour = ohour;
   ts->minute = ominute;
   ts->second = osecond;
+  ts->fraction = frac;
 }
 
 
