@@ -304,6 +304,7 @@ public class VirtuosoXAResource implements XAResource
 
         transact(ctx, SQL_XA_COMMIT);
         ctx.changeStatus(XATransaction.COMMITTED, onePhase);
+        manager.removeTransaction(xid);
     }
 
 
@@ -324,6 +325,7 @@ public class VirtuosoXAResource implements XAResource
 
         transact(ctx, SQL_XA_ROLLBACK);
         ctx.changeStatus(XATransaction.ROLLEDBACK);
+        manager.removeTransaction(xid);
     }
 
 
