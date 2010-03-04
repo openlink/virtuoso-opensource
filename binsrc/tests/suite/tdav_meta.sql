@@ -79,7 +79,7 @@ create procedure TDAV_META_CHECK (in resname varchar, in propuri varchar, in pro
     result (sprintf ('PASSED: triplet S=%s P=%s V=%s', resname, propuri, propval));
   else
     {
-      declare actual_value integer;
+      declare actual_value any;
       actual_value := coalesce ((
     select top 1 DRI_CATVALUE
     from WS.WS.SYS_DAV_RDF_INVERSE, WS.WS.SYS_DAV_RES, WS.WS.SYS_RDF_PROP_NAME
