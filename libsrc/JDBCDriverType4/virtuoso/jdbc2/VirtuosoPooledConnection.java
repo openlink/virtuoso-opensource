@@ -260,6 +260,14 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
     return conn;
   }
 
+  public boolean isConnectionLost()
+  {
+    if (conn == null) {
+       return true;
+    }
+    return conn.isConnectionLost();
+  }
+
 #if JDK_VER >= 16
 	/**
 	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that

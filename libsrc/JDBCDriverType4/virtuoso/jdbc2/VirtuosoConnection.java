@@ -166,6 +166,8 @@ public class VirtuosoConnection implements Connection
 #endif
 
   private boolean useRoundRobin;
+  // The pingStatement to know if the connection is still available
+  private PreparedStatement pingStatement = null;
 
 
    protected class VhostRec
@@ -341,6 +343,18 @@ public class VirtuosoConnection implements Connection
 
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
+
+      pingStatement = prepareStatement("select 1");
+   }
+
+   public boolean isConnectionLost() 
+   {
+     try{
+        pingStatement.execute();
+        return false;
+     } catch (Exception e ) {
+        return true;
+     } 
    }
 
    protected int getIntAttr(java.util.Properties info, String key, int def)
