@@ -65,7 +65,7 @@ release:
 #
 #  Generate ChangeLog
 #
-.Phony: changelog
+.PHONY: changelog
 changelog:
 	cvs2cl -F V6_0_0-DEVEL --no-ancestors --no-wrap --utc --hide-filenames --prune --window 86400
 
