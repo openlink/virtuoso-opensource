@@ -2200,6 +2200,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t* msg;
 	    future->ft_sem = semaphore_allocate(0);
+	    future->ft_release = 1; /* will not wait tp thread to finish, so mark it to release once done */
 	    msg = mq_create_xa_message (TP_ABORT,future,tpd);
 	    mq_add_message(tp_main_queue,msg);
 	  }
