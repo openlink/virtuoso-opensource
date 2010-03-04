@@ -2501,6 +2501,7 @@ AC_CONFIG_FILES([
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/driver/Makefile
+	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile
 	binsrc/hosting/mono/tests/Makefile
