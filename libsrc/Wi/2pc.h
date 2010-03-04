@@ -419,6 +419,7 @@ void txa_from_trx (struct lock_trx_s *lt, char *log_file_name);
 void txa_remove_entry (void *xid, int check);
 txa_entry_t *txa_search_trx (void *xid);
 int lt_2pc_commit (struct lock_trx_s *lt);
+void virt_xa_tp_set_xid (tp_data_t * tpd, void *xid);
 
 #define IS_ENLISTED_TXN(qi) \
     ( ((TP_MTS_TYPE == (qi)->qi_trx->lt_2pc._2pc_type)) || \

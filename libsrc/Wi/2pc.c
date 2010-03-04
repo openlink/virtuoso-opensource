@@ -746,7 +746,6 @@ tp_data_free (tp_data_t * tpd)
 	    break;
 	  }
 	case TP_XA_TYPE:
-	  dk_free_box ((box_t) tpd->cli_tp_trx);
 	  break;
 	case TP_VIRT_TYPE:
 	  break;
@@ -1279,6 +1278,13 @@ global_xa_init ()
 
 }
 
+void
+virt_xa_tp_set_xid (tp_data_t * tpd, void *xid)
+{
+  tpd->cli_tp_trx = xid;
+  tpd->tpd_trx_cookie = box_copy ((caddr_t) xid);
+}
+
 int
 virt_xa_add_trx (void *xid, lock_trx_t * lt)
 {
@@ -1293,8 +1299,7 @@ virt_xa_add_trx (void *xid, lock_trx_t * lt)
       tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));
       memset (tpd, 0, sizeof (tp_data_t));
       memcpy (&xx->xid, xid, sizeof (virtXID));
-      tpd->cli_tp_trx = xid;
-      tpd->tpd_trx_cookie = (caddr_t) xid;
+      virt_xa_tp_set_xid (tpd, xid);
       lt->lt_2pc._2pc_log = box_copy (xid);
       dk_free_tree (lt->lt_2pc._2pc_xid);
       lt->lt_2pc._2pc_xid = xid;
@@ -1453,6 +1458,7 @@ virt_xa_remove_xid (void *xid)
       x->xid_cli->cli_tp_data = NULL;
       if (tpd->cli_tp_sem2)
 	semaphore_free (tpd->cli_tp_sem2);
+      dk_free_tree (tpd->tpd_trx_cookie);
       dk_free (tpd, sizeof (tp_data_t));
       id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
       if (x->xid_sem)
