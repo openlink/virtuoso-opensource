@@ -132,12 +132,21 @@ def_commit_done (void *res, int trx_status)
   semaphore_leave (future->ft_sem);
   return 0;
 }
+
 static unsigned long
 def_abort_done (void *res, int trx_status)
 {
   tp_future_t *future = (tp_future_t *) res;
   if (res)
-    semaphore_leave (future->ft_sem);
+    {
+      if (!future->ft_release)
+	semaphore_leave (future->ft_sem);
+      else			/* the other end marked to be release as it will not wait for it */
+	{
+	  semaphore_free (future->ft_sem);
+	  dk_free (future, sizeof (tp_future_t));
+	}
+    }
   _2pc_printf (("abort_done... %d\n", trx_status));
   return 0;
 }
@@ -215,7 +224,7 @@ mq_create_message (int type, void *resource, void *client_v)
   NEW_VARZ (tp_message_t, mm);
 
   mm->mm_type = type;
-  mm->mm_resource = resource;
+  mm->mm_resource = (tp_future_t *)resource;
   mm->mm_trx = client->cli_trx;
   mm->mm_tp_data = client->cli_tp_data;
   mm->vtbl = &tp_vtbl;
@@ -241,7 +250,7 @@ mq_create_xa_message (int type, void *resource, void *tp_data)
   NEW_VARZ (tp_message_t, mm);
 
   mm->mm_type = type;
-  mm->mm_resource = resource;
+  mm->mm_resource = (tp_future_t *)resource;
   mm->mm_trx = tpd->cli_tp_lt;
   mm->mm_tp_data = tpd;
   mm->vtbl = &xa_tp_vtbl;
@@ -531,6 +540,8 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
   return lt->lt_error;
 }
 
+extern dk_mutex_t * log_write_mtx;
+
 int
 lt_2pc_prepare (lock_trx_t * lt)
 {
@@ -545,11 +556,17 @@ lt_2pc_prepare (lock_trx_t * lt)
       goto failed;
     }
 
+  LEAVE_TXN;
+  mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
     {
       rc = LTE_LOG_FAILED;
+      mutex_leave (log_write_mtx);
+      IN_TXN;
       goto failed;
     }
+  mutex_leave (log_write_mtx);
+  IN_TXN;
 
   lt->lt_status = LT_COMMITTED;
   lt->lt_2pc._2pc_wait_commit = 1;
@@ -665,7 +682,7 @@ xa_wait_commit (tp_data_t * tpd)
   if (tpd)
     {
       semaphore_enter (tpd->cli_tp_sem2);
-      /* tp_data_free (tpd); */
+      tp_data_free (tpd);
     }
   return 0;
 }
@@ -746,7 +763,6 @@ tp_data_free (tp_data_t * tpd)
 	    break;
 	  }
 	case TP_XA_TYPE:
-	  dk_free_box ((box_t) tpd->cli_tp_trx);
 	  break;
 	case TP_VIRT_TYPE:
 	  break;
@@ -756,7 +772,8 @@ tp_data_free (tp_data_t * tpd)
     }
 
   dk_free_box (tpd->tpd_trx_cookie);
-  semaphore_free (tpd->cli_tp_sem2);
+  if (tpd->cli_tp_sem2)
+    semaphore_free (tpd->cli_tp_sem2);
   dk_free (tpd, sizeof (tp_data_t));
 }
 
@@ -1279,6 +1296,13 @@ global_xa_init ()
 
 }
 
+void
+virt_xa_tp_set_xid (tp_data_t * tpd, void *xid)
+{
+  tpd->cli_tp_trx = xid;
+  tpd->tpd_trx_cookie = box_copy ((caddr_t) xid);
+}
+
 int
 virt_xa_add_trx (void *xid, lock_trx_t * lt)
 {
@@ -1290,12 +1314,12 @@ virt_xa_add_trx (void *xid, lock_trx_t * lt)
   if (x == 0)
     {
       xa_id_t *xx = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
-      tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));;
+      tp_data_t * tpd = (tp_data_t*)dk_alloc (sizeof (tp_data_t));
       memset (tpd, 0, sizeof (tp_data_t));
       memcpy (&xx->xid, xid, sizeof (virtXID));
-      tpd->cli_tp_trx = xid;
-      tpd->tpd_trx_cookie = (caddr_t) xid;
+      virt_xa_tp_set_xid (tpd, xid);
       lt->lt_2pc._2pc_log = box_copy (xid);
+      dk_free_tree (lt->lt_2pc._2pc_xid);
       lt->lt_2pc._2pc_xid = xid;
       xid = (void *) &xx->xid;
       xx->xid_sem = 0;
@@ -1381,7 +1405,7 @@ virt_xa_suspend_lt (void *xid, struct client_connection_s *cli)
 int
 virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, int op)
 {
-  xa_id_t **xx;
+  xa_id_t **xx, *x;
 
   if (!xid)
     return -1;
@@ -1398,7 +1422,7 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
 	}
       else
 	{
-	  xa_id_t *x = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
+	  x = (xa_id_t *) dk_alloc (sizeof (xa_id_t));
 	  memcpy (&x->xid, xid, sizeof (virtXID));
 	  xid = (void *) &x->xid;
 	  x->xid_sem = semaphore_allocate (0);
@@ -1414,22 +1438,33 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
 	}
       return 0;
     }
+  x = xx[0];
 
   if (op == SQL_XA_ROLLBACK)
-    xx[0]->xid_op = SQL_XA_ROLLBACK;
+    x->xid_op = SQL_XA_ROLLBACK;
 
-  tpd[0] = xx[0]->xid_tp_data;
+  tpd[0] = x->xid_tp_data;
   mutex_leave (global_xa_map->xm_mtx);
 
   IN_TXN;
-  if (cli->cli_trx != xx[0]->xid_tp_data->cli_tp_lt)
+  if (cli->cli_trx != x->xid_tp_data->cli_tp_lt)
     {
       lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
+      lt_done (cli->cli_trx);
       cli->cli_trx = NULL;
-      cli_set_trx (cli, xx[0]->xid_tp_data->cli_tp_lt);
+      cli_set_trx (cli, x->xid_tp_data->cli_tp_lt);
     }
-  cli->cli_tp_data = xx[0]->xid_tp_data;
-  xx[0]->xid_cli = cli;
+  cli->cli_tp_data = x->xid_tp_data;
+  if (x->xid_cli && x->xid_cli != cli)
+    {
+      x->xid_cli->cli_tp_data = NULL;
+      if (x->xid_cli->cli_trx == cli->cli_trx)
+	{
+	  x->xid_cli->cli_trx = NULL;
+	  cli_set_new_trx (x->xid_cli);
+	}
+    }
+  x->xid_cli = cli;
   LEAVE_TXN;
   return 0;
 }
@@ -1446,8 +1481,12 @@ virt_xa_remove_xid (void *xid)
   xx = (xa_id_t **) id_hash_get (global_xa_map->xm_xids, (caddr_t) & xid);
   if (xx)
     {
-      dk_free (xx[0], sizeof (xa_id_t));
+      xa_id_t * x = xx[0];
+      x->xid_cli->cli_tp_data = NULL;
       id_hash_remove (global_xa_map->xm_xids, (caddr_t) & xid);
+      if (x->xid_sem)
+	semaphore_free (x->xid_sem);
+      dk_free (x, sizeof (xa_id_t));
     }
   mutex_leave (global_xa_map->xm_mtx);
 }

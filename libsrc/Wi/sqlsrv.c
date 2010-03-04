@@ -1928,6 +1928,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
+      dk_free_tree (xid_str);
       return;
     }
 
@@ -1961,7 +1962,9 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	dk_free(future,sizeof(tp_future_t));
 	_2pc_printf(("tp pre/comm 4 =%x cli %p\n",op,cli));
 
-      } return;
+      }
+      dk_free_tree (xid_str);
+      return;
     case SQL_TP_ABORT:
       {
 	tp_message_t* msg = mq_create_message (TP_ABORT,0,cli);
@@ -1973,6 +1976,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	DKST_RPC_DONE (client);
 	PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	dk_free_tree (err);
+	dk_free_tree (xid_str);
 	return;
       }
     case SQL_XA_ENLIST:
@@ -1988,6 +1992,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
@@ -2007,17 +2012,21 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    dk_free_tree (err);
 	    cli->cli_tp_data = 0;
 	    dk_free (tpd, sizeof (tp_data_t));
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
 	tpd->cli_tp_enlisted = CONNECTION_PREPARED;
-	tpd->cli_tp_trx = xid;
-	tpd->tpd_trx_cookie = (caddr_t) xid;
+	virt_xa_tp_set_xid (tpd, xid);
 	/* must see if trx already has xid */
 	if (cli->cli_trx->lt_2pc._2pc_xid && cli->cli_trx->lt_2pc._2pc_xid != xid)
 	  {
+	    IN_TXN;
+	    if (!cli->cli_trx->lt_2pc._2pc_wait_commit)
+	      lt_done (cli->cli_trx);
 	    cli->cli_trx = NULL;
 	    cli_set_new_trx (cli);
+	    LEAVE_TXN;
 	  }
 	tpd->cli_tp_lt = cli->cli_trx;
 	cli->cli_trx->lt_2pc._2pc_xid = xid;
@@ -2040,6 +2049,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 	if (virt_xa_client (xid, cli, &tpd, SQL_XA_RESUME) == -1)
@@ -2048,6 +2058,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
       } break;
@@ -2062,7 +2073,9 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    err = srv_make_new_error ("TP109", "XA007", "XID identifier can not be decoded");
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
+	    dk_free_box (xid);
 	    dk_free_tree (err);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 
@@ -2075,6 +2088,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  }
 	cli_set_new_trx (cli);
 	LEAVE_TXN;
+	dk_free_box (xid);
       } break;
     case SQL_XA_PREPARE:
     case SQL_XA_COMMIT:
@@ -2129,6 +2143,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		DKST_RPC_DONE (client);
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
+		dk_free_tree (xid_str);
 		return;
 	      }
 
@@ -2149,6 +2164,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		    dk_free_tree (err);
 		    dk_free_box ((box_t) xid);
+		    dk_free_tree (xid_str);
 		    return;
 		  }
 	      }
@@ -2170,6 +2186,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 		PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 		dk_free_tree (err);
 		dk_free_box ((box_t) xid);
+		dk_free_tree (xid_str);
 		return;
 	      }
 	    if (op==SQL_XA_COMMIT)
@@ -2183,6 +2200,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	  }
 	dk_free_box ((box_t) xid);
 	DKST_RPC_DONE (client);
+	dk_free_tree (xid_str);
 	return;
       }
     case SQL_XA_ROLLBACK:
@@ -2194,6 +2212,7 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    NEW_VAR(tp_future_t,future);
 	    tp_message_t* msg;
 	    future->ft_sem = semaphore_allocate(0);
+	    future->ft_release = 1; /* will not wait tp thread to finish, so mark it to release once done */
 	    msg = mq_create_xa_message (TP_ABORT,future,tpd);
 	    mq_add_message(tp_main_queue,msg);
 	  }
@@ -2210,14 +2229,19 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    DKST_RPC_DONE (client);
 	    PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1,1);
 	    dk_free_tree (err);
+	    dk_free_box (xid);
+	    dk_free_tree (xid_str);
 	    return;
 	  }
 	xa_wait_commit (tpd);
 	virt_xa_remove_xid (xid);
+	dk_free_box (xid);
+	cli->cli_tp_data = NULL;
       } break;
     }
   DKST_RPC_DONE (client);
   PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, 1, 1);
+  dk_free_tree (xid_str);
 }
 
 #ifdef SERIAL_CLI

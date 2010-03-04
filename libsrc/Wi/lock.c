@@ -165,6 +165,10 @@ lt_free (lock_trx_t * lt)
 #endif
   hash_table_destroy (&lt->lt_lock);
   hash_table_free (lt->lt_rb_hash);
+#ifdef VIRTTP
+  dk_free_tree (lt->lt_2pc._2pc_xid);
+  dk_free_tree (lt->lt_2pc._2pc_log);
+#endif
   dk_free ((caddr_t) lt, sizeof (lock_trx_t));
 }
 
@@ -209,6 +213,10 @@ lt_clear (lock_trx_t * lt)
   LT_ERROR_DETAIL_SET (lt, NULL);
   if (lt->lt_wait_end)
     GPF_T1 ("lt going clear but somebody still waiting for its end");
+#ifdef VIRTTP
+  dk_free_tree (lt->lt_2pc._2pc_xid);
+  dk_free_tree (lt->lt_2pc._2pc_log);
+#endif
   memset (&lt->LT_DATA_AREA_FIRST, 0, sizeof (lock_trx_t) - (size_t) &((lock_trx_t*) 0)->LT_DATA_AREA_FIRST);
   LT_ENTER_SAVE (lt);
   LT_THREADS_REPORT (lt, "LT_CLEAR");

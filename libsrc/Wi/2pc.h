@@ -196,22 +196,23 @@ tp_data_t;
 #define CFAU_NONE	0
 #define CFAU_DIED	1
 
+typedef struct tp_future_s
+{
+  ptrlong ft_result;
+  semaphore_t *ft_sem;
+  char ft_release;
+}
+tp_future_t;
+
 typedef struct tp_message_s
 {
   int mm_type;			/* abort or commit */
-  void *mm_resource;
+  tp_future_t * mm_resource;
   struct lock_trx_s *mm_trx;
   struct tp_data_s *mm_tp_data;
   queue_vtbl_t *vtbl;
 }
 tp_message_t;
-
-typedef struct tp_future_s
-{
-  ptrlong ft_result;
-  semaphore_t *ft_sem;
-}
-tp_future_t;
 
 /* temporary solution, should be changed to real UUID */
 #define DTRX_IP 0
@@ -419,6 +420,7 @@ void txa_from_trx (struct lock_trx_s *lt, char *log_file_name);
 void txa_remove_entry (void *xid, int check);
 txa_entry_t *txa_search_trx (void *xid);
 int lt_2pc_commit (struct lock_trx_s *lt);
+void virt_xa_tp_set_xid (tp_data_t * tpd, void *xid);
 
 #define IS_ENLISTED_TXN(qi) \
     ( ((TP_MTS_TYPE == (qi)->qi_trx->lt_2pc._2pc_type)) || \
