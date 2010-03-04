@@ -1,3 +1,365 @@
+2010-03-04 20:45  source
+
+	* Updated docs
+
+2010-03-04 16:39  source
+
+	* Fixed memory leaks
+	* Fixed read memory after free
+	* Fixed when one connection does prepare and then uses another
+	  connection to commit/rollback, must reset 1st cli's trx
+	* Fixed when writing to log enter mutex to avoid concurrent writing
+
+2010-03-04 14:15  source
+
+	* Fixed typo
+
+2010-03-04 14:14  source
+
+	file virt_dialect.jar was added on branch V6_0_0-DEVEL on 2010-03-04 14:14:39 +0000
+
+2010-03-04 13:39  source
+
+	* Added initial support for JDBC hibernate
+
+2010-03-04 13:39  source
+
+	file .cvsignore was added on branch V6_0_0-DEVEL on 2010-03-04 14:12:58 +0000
+
+2010-03-04 13:39  source
+
+	file Makefile.am was added on branch V6_0_0-DEVEL on 2010-03-04 14:12:58 +0000
+
+2010-03-04 13:39  source
+
+	file README.hibernate was added on branch V6_0_0-DEVEL on 2010-03-04 14:12:57 +0000
+
+2010-03-04 13:39  source
+
+	file VirtuosoDialect.java was added on branch V6_0_0-DEVEL on 2010-03-04 14:12:58 +0000
+
+2010-03-04 12:18  source
+
+	* Rebuild driver
+
+2010-03-04 12:18  source
+
+	* Fixed driver version
+
+2010-03-04 12:12  source
+
+	* Fixed connection pooling
+
+2010-03-04 12:11  source
+
+	* Fixed remove xa transaction
+
+2010-03-03 22:55  source
+
+	* Fixed do not setup unknown for special methods
+
+2010-03-03 09:21  source
+
+	* Rebuild driver
+
+2010-03-03 09:20  source
+
+	* Fixed problem with jar packaging
+
+2010-03-02 10:01  source
+
+	* Added OPTIONS support for http server
+
+2010-03-01 21:05  source
+
+	* Added initial support for basic SPARQL federation
+
+2010-03-01 20:46  source
+
+	* Added DefaultServiceMap and DefaultServiceStorage
+
+2010-03-01 20:42  source
+
+	* Fixed support for positional and named parameters from exec() or
+	  similar in SPARQL, as if they where global variables of other
+	  sorts
+
+2010-03-01 10:26  source
+
+	* Fixed use unzip_file function
+
+2010-03-01 10:18  source
+
+	* Fixed Import
+
+2010-03-01 10:16  source
+
+	* Fixed CSS
+
+2010-03-01 10:15  source
+
+	* Fixed minor issues
+
+2010-03-01 10:12  source
+
+	* Fixed compatiblity with jdk1.5
+
+2010-03-01 10:07  source
+
+	* Upgraded to Jena 2.6.2
+	* Fixed backward compatiblity with jdk 1.5
+
+2010-03-01 10:06  source
+
+	* Fixed make sesame2 backward compatible with jdk1.5
+
+2010-03-01 09:31  source
+
+	* Regenerated driver
+
+2010-03-01 09:17  source
+
+	* Rebuild driver
+
+2010-03-01 01:03  source
+
+	* Added immortal IRI for uname_virtrdf_ns_uri_DefaultServiceStorage
+
+2010-03-01 01:01  source
+
+	* Added support for unzip_file ()
+
+2010-03-01 00:50  source
+
+	* Updated documentation
+
+2010-03-01 00:39  source
+
+	* Upgraded to Sesame 2.3.1
+
+2010-03-01 00:38  source
+
+	* Fixed typo
+
+2010-03-01 00:35  source
+
+	* Added swapguard option
+
+2010-03-01 00:28  source
+
+	* Added columns for api type and id
+
+2010-03-01 00:03  source
+
+	* Added support for saving history to disk
+
+2010-02-28 23:58  source
+
+	* Fixed geo:point matching
+	* Fixed regex to remove default ns from XML - single quotes are valid
+	  for enclosed attribute values
+
+2010-02-28 23:57  source
+
+	* Fixed positioned update problem on cluster
+
+2010-02-28 23:55  source
+
+	* Added refresh parameter
+
+2010-02-28 23:52  source
+
+	* Added setting for RoundRobin scheduling
+
+2010-02-27 22:21  source
+
+	* Fixed diagnosics of async_queue specific errors like aq invocation
+	  on log replay or security issues
+
+2010-02-26 17:31  source
+
+	* Fixed missing label
+
+2010-02-26 17:28  source
+
+	* Fixed use union for local automatic variables to avoid alignment
+	  problems
+
+2010-02-26 10:24  source
+
+	* Regenerated driver
+
+2010-02-26 10:05  source
+
+	* Upgraded to Sesame 2.3.1
+	* Removed deprecated file
+	* Fixed inference support
+
+2010-02-25 20:24  source
+
+	* Updated to Sesame 2.2.4
+
+2010-02-25 20:23  source
+
+	* Added support for Sesame 2 HTTP respository
+	* Updated toSesame 2.2.4
+
+2010-02-25 20:21  source
+
+	* Rebuild driver
+
+2010-02-25 20:20  source
+
+	file VirtuosoRepositoryConfig.java was added on branch V6_0_0-DEVEL on 2010-02-25 20:23:04 +0000
+
+2010-02-25 20:20  source
+
+	file VirtuosoRepositoryFactory.java was added on branch V6_0_0-DEVEL on 2010-02-25 20:23:05 +0000
+
+2010-02-25 20:20  source
+
+	file VirtuosoRepositorySchema.java was added on branch V6_0_0-DEVEL on 2010-02-25 20:23:05 +0000
+
+2010-02-25 20:20  source
+
+	file org.openrdf.repository.config.RepositoryFactory was added on branch V6_0_0-DEVEL on 2010-02-25 20:23:02 +0000
+
+2010-02-25 20:20  source
+
+	file virtuoso.ttl was added on branch V6_0_0-DEVEL on 2010-02-25 20:23:02 +0000
+
+2010-02-25 16:09  source
+
+	* FIxed url param for metadata selection
+
+2010-02-25 16:09  source
+
+	* Added 'Import' to user pages (vsp, php etc)
+	* Fixed pass interface too
+
+2010-02-25 16:08  source
+
+	* Added tweet gizmo
+
+2010-02-25 16:07  source
+
+	* Fixed groups
+
+2010-02-24 20:55  source
+
+	* Added proper ASK support in web service endpoing
+	* Fixed faster loading of inference sets
+	* Fixed loading of inference sets from graph groups, not only from
+	  single graphs
+	* Fixed creation of graph groups on cluster
+
+2010-02-24 20:53  source
+
+	* Added swap guard to kill trx and log ws when swapping is over 300 pages
+
+2010-02-24 13:02  source
+
+	* Fixed use unsigned for lower parts else we risk sign extent on large
+	  numbers
+
+2010-02-23 22:35  source
+
+	* Fixed metadata
+
+2010-02-23 14:50  source
+
+	* Fixed when looking at col_preds and seeking for column, make sure cp
+	  dfe is a column
+
+2010-02-23 14:49  source
+
+	* Added prototype
+
+2010-02-23 14:49  source
+
+	* Fixed when unbox iri make sure value is of type DV_IRI_ID
+
+2010-02-23 14:48  source
+
+	* FIxed 2pc file name does not change with log file if log trail on
+
+2010-02-23 10:44  source
+
+	* Fixed rewriting of group patterns with filters replaced with restrictions on
+	  equivs
+
+2010-02-23 10:21  source
+
+	* Fixed stop compilation where comp time over run time
+
+2010-02-19 00:22  source
+
+	* Fixed when doing a log replay, mark prepared XA trx as such
+
+2010-02-19 00:22  source
+
+	* Fixed more macros for 64bit fs
+
+2010-02-18 21:37  source
+
+	* Use macros for file calls for 64bit fs
+
+2010-02-18 21:36  source
+
+	* Merged XA fixes from HEAD
+
+2010-02-18 20:46  source
+
+	* FIxed mem leak
+
+2010-02-18 14:22  source
+
+	* Fixed minor issue
+
+2010-02-18 14:13  source
+
+	* Fixed if avail always use ro_id for hash
+
+2010-02-18 14:12  source
+
+	* Fixed text for NOT pred
+
+2010-02-18 10:57  source
+
+	* Fixed use separate macro for COL_DOTTED
+
+2010-02-18 10:01  source
+
+	* Fixed SIOC subscriptions
+	* Fixed bad item descriptions
+
+2010-02-18 10:00  source
+
+	* Fixed groups
+	* Fixed bookmarklet
+	* Fixed typo
+
+2010-02-17 22:06  source
+
+	* Fixed order must be greater than 0
+
+2010-02-17 16:58  source
+
+	* Fixed remove null in gby as it is not needed
+	* Fixed jts to check for call
+
+2010-02-17 16:56  source
+
+	* Fixed do not print default port for http and https in urls
+
+2010-02-17 10:21  source
+
+	* Fixed labels and added new columns
+
+2010-02-16 15:03  source
+
+	* Fixed IN pred as iterator before index path
+
 2010-02-16 13:49  source
 
 	* Added slidesix cartridge
