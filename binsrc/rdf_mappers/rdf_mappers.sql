@@ -80,6 +80,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.ustream.tv/channel/.*)|'||
+    '(http://www.ustream.tv/user/.*)|'||
+    '(http://www.ustream.tv/recorded/.*)',
+    'URL', 'DB.DBA.RDF_LOAD_USTREAM', null, 'Ustream');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*openstreetmap.org/.*',
     'URL', 'DB.DBA.RDF_LOAD_OPENSTREETMAP', null, 'OpenStreetMap');
 
@@ -5228,6 +5234,67 @@ create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_ori
 	tmp := http_client(url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	xd := xtree_doc (tmp);
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/openstreet2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'lon', lon1, 'lat', lat1));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_USTREAM (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, img_id, hdr, what, pos any;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	api_key := _key;
+	if (not isstring (api_key))
+		return 0;
+	if (new_origin_uri like 'http://www.ustream.tv/channel/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/channel/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/channel/%s/getInfo?key=%s', img_id, api_key);
+                what := 'channel';
+	}
+	else if (new_origin_uri like 'http://www.ustream.tv/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/user/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/user/%s/getInfo?key=%s', img_id, api_key);
+                what := 'user';
+	}
+	else if (new_origin_uri like 'http://www.ustream.tv/recorded/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/recorded/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/video/%s/getInfo?key=%s', img_id, api_key);
+                what := 'video';
+	}
+	else
+	    return 0;
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ustream2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', what));
 	xd := serialize_to_UTF8_xml (xt);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
