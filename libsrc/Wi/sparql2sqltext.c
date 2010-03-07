@@ -1654,6 +1654,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         sparp_t *sub_sparp;
         SPART *subq = tree->_.gp.subquery;
         ssg_valmode_t res;
+        if (ASK_L != tree->_.gp.subtype)
+          return SSG_VALMODE_SQLVAL;
         if (SELECT_L != tree->_.gp.subtype)
           break;
         if (1 != BOX_ELEMENTS (subq->_.req_top.retvals))

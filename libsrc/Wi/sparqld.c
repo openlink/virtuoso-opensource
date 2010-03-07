@@ -271,8 +271,8 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
           else
             {
               t_set_push (&(ssg->ssg_param_pos_set), (void *)((ptrlong)(strses_length (ssg->ssg_out))));
-              t_set_push (&(ssg->ssg_param_pos_set), (void *)((ptrlong)(paramctr)));
-              sprintf (buf, "?!%06d", paramctr);
+              t_set_push (&(ssg->ssg_param_pos_set), (void *)((ptrlong)(paramctr+1)));
+              sprintf (buf, "?!%06d", paramctr+1);
               ssg_puts (buf);
             }
           return;
