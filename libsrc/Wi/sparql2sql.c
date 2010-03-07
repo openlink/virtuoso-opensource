@@ -5069,7 +5069,7 @@ sparp_try_reduce_trivial_optional_via_eq (sparp_t *sparp, SPART *opt, SPART *key
           if (1 < fld_eq->e_gspo_uses)
             return 0; /* two vars inside equiv implies the equality condition in the OPTIONAL, can't optimize after that */
           if ((NULL != fld_qmv) && (SPART_VARR_FIXED & fld_eq->e_rvr.rvrRestrictions))
-            return 0; /* a fiexed value for a var implies the equality condition in the OPTIONAL, can't optimize after that */
+            return 0; /* a fixed value for a var implies the equality condition in the OPTIONAL, can't optimize after that */
           DO_BOX_FAST (ptrlong, recv_idx, recv_ctr, fld_eq->e_receiver_idxs)
             {
               sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_idx);
@@ -5694,7 +5694,7 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
       /* Check if all IN variables are adequate (or adequate but disconnected by the optimizer for a good reason).
          Disconnected non-externals are silently removed from the IN list. */
       DO_BOX_FAST_REV (caddr_t, param_var_name, varctr, param_varnames_ptr[0])
-        { /* The loop directoin is important due to possible removals */
+        { /* The loop direction is important due to possible removals */
           sparp_equiv_t *param_xfer_equiv = sparp_equiv_get (sparp, gp, (SPART *)param_var_name, SPARP_EQUIV_GET_NAMESAKES);
           if ((NULL == param_xfer_equiv) || (0 == BOX_ELEMENTS_0 (param_xfer_equiv->e_receiver_idxs)))
             {
@@ -5711,7 +5711,7 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
             }
         }
       END_DO_BOX_FAST_REV;
-      /* Now we try to extend list of IN vars with externals. Used externals are alwais passed, even if fixed, because the service can be the only place in the query where equality between external and fixed value is tested */
+      /* Now we try to extend list of IN vars with externals. Used externals are always passed, even if fixed, because the service can be the only place in the query where equality between external and fixed value is tested */
       DO_SET (caddr_t, globname, &used_globals)
         {
           int found = 0;

@@ -157,7 +157,7 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 	  if (is_to_extend)
 	    {
 	      if (ITC_AT_END == to)
-		log_info ("Mildly suspect to shift a deleted rl to the rihgt side of a split");
+		log_info ("Mildly suspect to shift a deleted rl to the right side of a split");
 	      rl_add_pl_to_owners (itc, rl, pl_to);
 	    }
 	  return;

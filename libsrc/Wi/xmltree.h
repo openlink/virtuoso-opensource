@@ -825,7 +825,7 @@ typedef struct xslt_sheet_s
     xqi_binding_t *	xsh_globals;
     dk_set_t		xsh_formats;
     xml_ns_2dict_t	xsh_ns_2dict;		/*!< Dictionary of namespace that are declared in the stylesheet (or imported) and will extend the xd_ns_2dict of the resulting tree */
-    caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressins in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
+    caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressions in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
     XOUT_MEMBERS
     xslt_sheet_stats_t	xsh_total_uses;
     xslt_sheet_stats_t	xsh_new_uses;
@@ -841,7 +841,7 @@ extern xslt_number_format_t *xsnf_default;
 typedef struct xparse_ctx_s
 {
   struct xparse_ctx_s *	xp_parent;	/*!< Context of parent parser (not-NULL when a parser reads GE (generic entity) nested in other document) */
-  xp_node_t *		xp_top;		/*!< Topmost node of the (curently incomplete) tree */
+  xp_node_t *		xp_top;		/*!< Topmost node of the (currently incomplete) tree */
   xp_node_t *		xp_current;	/*!< Current node (innermost not-yet-closed tag) */
   xp_node_t *		xp_free_list;	/*!< Free-list, to avoid costly dk_alloc() overhead for every node */
   long			xp_bytes;
