@@ -1293,6 +1293,8 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   if (content)
     {
       dk_free_tree (ctx->hcctx_resp_body);
+      if (strses_length (content) > 10000000L)
+	ctx->hcctx_resp_content_is_strses = (char) 1;
       if (ctx->hcctx_resp_content_is_strses)
 	ctx->hcctx_resp_body = (caddr_t) content;
       else
