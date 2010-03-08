@@ -74,7 +74,10 @@ int last_errno;
 
 #define FREE_BOX_IF(box) \
 if (box) \
-  dk_free_box (box);
+  { \
+    dk_free_box (box); \
+    box = NULL; \
+  }
 
 #define STANDARD_HANDLER(name, errcode, errmsg) \
 int name (http_cli_ctx * ctx, caddr_t parm, caddr_t ret, caddr_t err) \
@@ -214,6 +217,7 @@ http_cli_ctx_free (http_cli_ctx * ctx)
 	      END_DO_SET();
 	      dk_set_free (evt_q2->hreq_evt_q);
 	    }
+	  dk_free (evt_q2, sizeof (http_resp_evt_q_t));
 	}
       END_DO_SET ();
       dk_set_free (ctx->hcctx_resp_evts);
@@ -282,6 +286,14 @@ http_cli_ctx_free (http_cli_ctx * ctx)
   dk_free_tree ((box_t) ctx->hcctx_req_body);
   dk_free_tree (ctx->hcctx_resp_body);
   dk_free_tree ((box_t) ctx->hcctx_ua_id);
+
+  dk_free_box (ctx->hcctx_realm);
+  dk_free_box (ctx->hcctx_domain);
+  dk_free_box (ctx->hcctx_nonce);
+  dk_free_box (ctx->hcctx_cnonce);
+  dk_free_box (ctx->hcctx_opaque);
+  dk_free_box (ctx->hcctx_stale);
+  dk_free_box (ctx->hcctx_qop);
 
   dk_free (ctx, sizeof (http_cli_ctx));
   return 0;
@@ -1281,6 +1293,8 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   if (content)
     {
       dk_free_tree (ctx->hcctx_resp_body);
+      if (strses_length (content) > 10000000L)
+	ctx->hcctx_resp_content_is_strses = (char) 1;
       if (ctx->hcctx_resp_content_is_strses)
 	ctx->hcctx_resp_body = (caddr_t) content;
       else
