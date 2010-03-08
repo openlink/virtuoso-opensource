@@ -550,9 +550,9 @@ rdf_view_create_void_view (in qualifier varchar, in _tbls any, in gen_stat int :
 				    pref_l, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
 	   ret := ret || rdf_view_sp (6) || sprintf ('rdf:value %s.cnt as %s:statitem-cnt-%s-%s ; \n',
 						    rdf_view_tb (tbl_name||'Count') || suffix, qualifier, qual_l, tbl_name_l);
-	   ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention void:numberOfResources as %s:statitem-type-1-%s-%s ; \n',
+	   ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimension void:numberOfResources as %s:statitem-type-1-%s-%s ; \n',
 						    qualifier, qual_l, tbl_name_l);
-	   ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimention %s:%s as %s:statitem-type-2-%s-%s .\n\n',
+	   ret := ret || rdf_view_sp (6) || sprintf ('scovo:dimension %s:%s as %s:statitem-type-2-%s-%s .\n\n',
 						    qualifier, rdf_view_cls_name (tbl_name), qualifier, qual_l, tbl_name_l);
       }
 
