@@ -2633,14 +2633,14 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
     {
     case SPAR_QNAME:
       if (NULL == fmt->qmfShortOfUriTmpl)
-        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfUriTmpl, so there are corrupted medatada");
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfUriTmpl, so there are corrupted metadata");
       tmpl = fmt->qmfShortOfUriTmpl;
       break;
     case SPAR_LIT:
       if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && ((NULL != tree->_.lit.language) || (NULL != tree->_.lit.datatype)))
         return NULL;
       if (NULL == fmt->qmfShortOfSqlvalTmpl)
-        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfSqlvalTmpl, so there are corrupted medatada");
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "const_is_good_for_split_into_short(): NULL == qmfShortOfSqlvalTmpl, so there are corrupted metadata");
       tmpl = fmt->qmfShortOfSqlvalTmpl;
       break;
     default:

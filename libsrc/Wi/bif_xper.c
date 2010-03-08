@@ -4329,7 +4329,7 @@ DBG_NAME(xp_string_value) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dt
 		    if (XI_RESULT == xp_down ((xml_entity_t *) ref_xpe, (XT *) XP_NODE))
 		      {
 		        caddr_t ref_val = NULL;
-/* There's no transit allowed in the following line, thus it clibms up to the root of the referenced doc */
+/* There's no transit allowed in the following line, thus it climbs up to the root of the referenced doc */
 			ref_xpe->_->xe_up ((xml_entity_t *) ref_xpe, (XT *) XP_NODE, 0);
 		        ref_xpe->_->xe_string_value ((xml_entity_t *) ref_xpe, &ref_val, DV_STRING);
 		        session_buffered_write (ses, ref_val, box_length (ref_val) - 1);
@@ -4836,7 +4836,7 @@ struct xper_vtbf_env_s
   long xve_closing_pos;		/*!< Position of closing tag where this environment will end */
   caddr_t xve_vtb_name;		/*!< Tag name to be indexed, in form '<'[ns_uri]':'localname */
   lang_handler_t *xve_outer_lh;	/*!< Language outside the environment */
-  struct xper_vtbf_env_s *xve_outer;	/*!< Poitner to outer (ascendant) environment, or NULL */
+  struct xper_vtbf_env_s *xve_outer;	/*!< Pointer to outer (ascendant) environment, or NULL */
 };
 
 typedef struct xper_vtbf_env_s xper_vtbf_env_t;

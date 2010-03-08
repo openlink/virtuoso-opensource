@@ -1580,7 +1580,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	}
       next_link = HA_FILL == ha->ha_op ? 1 : 0;
       hmk.hmk_var_len = var_len;
-      hmk.hmk_ha = ha; /* after the store is done, the hash cabn be retained and theese will be refs to free mem */
+      hmk.hmk_ha = ha; /* after the store is done, the hash can be retained and these will be refs to free mem */
       if (hi->hi_pool)
 	{
 	  hmk.hmk_data = (caddr_t *) mp_full_box_copy_tree (hi->hi_pool, (caddr_t) hmk.hmk_data);

@@ -1809,7 +1809,7 @@ delete_node_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 	{
 	  itc_page_leave (cr_itc, cr_buf);
 	  itc_free (cr_itc);
-	  sqlr_new_error ("42000", "SR...", "Position of single key delete is notr on the right key");
+	  sqlr_new_error ("42000", "SR...", "Position of single key delete is not on the right key");
 	}
 
       page_row_bm (cr_buf, cr_itc->itc_map_pos, &rd, RO_ROW, cr_itc);

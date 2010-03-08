@@ -5166,7 +5166,7 @@ sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
       next = dfe->dfe_next;
       if (DFE_DT != super->dfe_type && DFE_EXISTS != super->dfe_type
 	  && DFE_VALUE_SUBQ != super->dfe_type)
-	SQL_GPF_T1 (so->so_sc->sc_cc, "unplace dfe without dt as super.   As work around, can try to eliminate common subexpressions between the query in general and control expressions like colaesce or case.");
+	SQL_GPF_T1 (so->so_sc->sc_cc, "unplace dfe without dt as super.   As work around, can try to eliminate common subexpressions between the query in general and control expressions like coalesce or case.");
       L2_DELETE (super->_.sub.first, super->_.sub.last, dfe, dfe_);
       sqlo_dfe_unplace (so, dfe);
     }

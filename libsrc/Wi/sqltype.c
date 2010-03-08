@@ -2727,7 +2727,7 @@ static int sqlc_udt_find_best_method_to_call (
       int score;
       if (CASEMODESTRCMP (method_name, method->scm_name))	 /* Name does not match. */
 	continue;
-      if (method->scm_type != method_type)	/* instance instead of static or vica versum */
+      if (method->scm_type != method_type)	/* instance instead of static or vice versa */
 	{
           wrong_count ++;
 	  continue;

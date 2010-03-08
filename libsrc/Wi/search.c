@@ -1909,7 +1909,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	    }
 	  if (res == DVC_LESS)
 	    {
-		  /*  column is too small.  If there is a leaf, go ther else search at end */
+		  /*  column is too small.  If there is a leaf, go there else search at end */
 	      if (ITC_NULL_CK(it, sp->sp_cl))
 		{
 		  if (!leaf)
@@ -2655,7 +2655,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
       mutex_enter (em->em_dbs->dbs_extent_map->em_mtx);
       ext = EM_DP_TO_EXT (em->em_dbs->dbs_extent_map, ext_dp);
       if (!ext)
-	log_error ("in read aside, ext for dp %d not in the ext mapand not in sys ext map ", ext_dp);
+	log_error ("in read aside, ext for dp %d not in the ext map and not in sys ext map ", ext_dp);
       mutex_leave (em->em_dbs->dbs_extent_map->em_mtx);
       return NULL;
     }

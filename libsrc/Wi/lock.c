@@ -1284,7 +1284,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   if (it->itc_page != it->itc_pl->pl_page)
     GPF_T1 ("different itc_oage and pl_page in lock_wait");
   lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
-  lt->lt_wait_since = approx_msec_real_time (); /* first set approx inside the mtxm, then get real time outsid of the mtx */
+  lt->lt_wait_since = approx_msec_real_time (); /* first set approx inside the mtxm, then get real time outside of the mtx */
   if (!pl->pl_waiting)
     {
       pl->pl_waiting = it;

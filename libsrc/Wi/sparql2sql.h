@@ -487,7 +487,7 @@ The function will substitute all selids and tabids of all graph patterns and tri
 substitute equiv indexes with indexes of cloned equivs (except SPART_BAD_EQUIV_IDX index that persists). */
 extern SPART *sparp_gp_full_clone (sparp_t *sparp, SPART *gp);
 
-/*! This makes a full clone of \c origs. As a result, triples and variables outside any GPs are copied, inside GPs thay're changed like in case of sparp_gp_full_clone. */
+/*! This makes a full clone of \c origs. As a result, triples and variables outside any GPs are copied, inside GPs they're changed like in case of sparp_gp_full_clone. */
 extern SPART **sparp_treelist_full_clone (sparp_t *sparp, SPART **origs);
 
 /*! This creates a full copy of \c orig subtree without cloning equivs.
@@ -634,7 +634,7 @@ extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
 /*! Given an OPTIONAL_L right side of loj (specified by combination of \c parent and \c pos_of_curr_memb) and an equiv \c eq,
 this finds the most restrictive variable or retval at left side, and fills in \c ret_parent_eq[0] and \c ret_tree_in_parent[0].
 If \c eq->e_replaces_filter and eq is not assigned locally then a condition with ret_tree_in_parent[0] instead of \c eq will act as a filter.
-The repated expression can be placed in ON (...) clause of the generated LEFT OUTER JOIN and thus preserved from being lost due to lack of
+The repeated expression can be placed in ON (...) clause of the generated LEFT OUTER JOIN and thus preserved from being lost due to lack of
 appropriated variables in scope of WHERE clause of SELECT at the right size of loj. */
 extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent);
 

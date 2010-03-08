@@ -1435,7 +1435,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       if (!strcmp (local_name, "base"))
         {
           if (RDFA_IN_BASE & outer_place_bits)
-            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"base\" can not appear inside other \"base\" elelent");
+            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"base\" can not appear inside other \"base\" element");
           inner_place_bits |= RDFA_IN_BASE;
           need_rdfa_local = 1;
         }
@@ -1445,7 +1445,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       if (!strcmp (local_name, "head"))
         {
           if ((RDFA_IN_HEAD | RDFA_IN_BODY) & outer_place_bits)
-            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"head\" can not appear inside %s elelent", (RDFA_IN_HEAD & outer_place_bits) ? "other \"head\"" : "\"body\"");
+            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"head\" can not appear inside %s element", (RDFA_IN_HEAD & outer_place_bits) ? "other \"head\"" : "\"body\"");
           else
             inner_place_bits |= RDFA_IN_HEAD;
           need_rdfa_local = 1;
@@ -1453,7 +1453,7 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
       else if (!strcmp (local_name, "body"))
         {
           if ((RDFA_IN_HEAD | RDFA_IN_BODY) & outer_place_bits)
-            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"body\" can not appear inside %s elelent", (RDFA_IN_BODY & outer_place_bits) ? "other \"body\"" : "\"head\"");
+            xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Element \"body\" can not appear inside %s element", (RDFA_IN_BODY & outer_place_bits) ? "other \"body\"" : "\"head\"");
           else
             inner_place_bits |= RDFA_IN_BODY;
           need_rdfa_local = 1;

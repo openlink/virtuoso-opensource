@@ -3766,7 +3766,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
       eq->e_replaces_filter = 0;
     }
   END_SPARP_REVFOREACH_GP_EQUIV;
-  curr->_.gp.glued_filters_count = 0; /* The (now redundand) glue may prevent us from detaching some filters */
+  curr->_.gp.glued_filters_count = 0; /* The (now redundant) glue may prevent us from detaching some filters */
   sparp_gp_detach_all_filters (sparp, curr, NULL);
   while (0 < BOX_ELEMENTS (curr->_.gp.members))
     {
@@ -5108,7 +5108,7 @@ because both variable outside and variable inside will produce identical SQL cod
           optimizable_field_count++;
         }
       if (optimization_blocked_by_filters || ((0 != really_nullable_count) && (1 < optimizable_field_count)))
-        continue; /* If more than one variable is not known outside as NOT_NULL then the optimized variant may produce a sulution with one optional variable bound and one NULL */
+        continue; /* If more than one variable is not known outside as NOT_NULL then the optimized variant may produce a solution with one optional variable bound and one NULL */
       /* Glory, glory, hallelujah; we can cut optional triple reuse the tabid so the final SQL query will have one join less. */
       sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
       key_field_eq = SPARP_EQUIV (sparp, key_field->_.var.equiv_idx);
@@ -5209,7 +5209,7 @@ sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp
   if (SPAR_GP != SPART_TYPE (curr))
     return SPAR_GPT_NODOWN;
   if (SELECT_L != curr->_.gp.subtype)
-    return SPAR_GPT_ENV_PUSH; /* SPAR_GPT_ENV_PUSH is not realy required for this callback by itself,
+    return SPAR_GPT_ENV_PUSH; /* SPAR_GPT_ENV_PUSH is not really required for this callback by itself,
 because parent gp can be obtained as an ancestor_gp, but it is required for \c sparp_gp_trav_add_graph_perm_read_filters() that can be
 used in one iteration with sparp_gp_trav_restore_filters_for_weird_subq(). Permission processing is a postorder callback whereas
 restoring filters is a preorder one, the postorder needs a complete stack of things */

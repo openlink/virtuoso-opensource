@@ -1321,7 +1321,7 @@ ts_free (table_source_t * ts)
 {
   if (TS_ALT_POST == ts->ts_is_alternate)
     {
-      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to nulll */
+      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to null */
       ts->src_gen.src_after_test = NULL;
       ts->src_gen.src_after_code = NULL;
       if (ts->ts_order_ks)

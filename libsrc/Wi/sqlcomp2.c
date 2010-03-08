@@ -63,7 +63,7 @@ sqlc_mark_last_ts_in_join (sql_comp_t * sc, comp_table_t * ct)
 void
 sqlc_opt_last_joins (sql_comp_t * sc)
 {
-  /* tha last table and all tables right of the
+  /* the last table and all tables right of the
      last table generating multiple rows need no
      reference counts for output cols */
   comp_table_t **cts = sc->sc_tables;

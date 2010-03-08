@@ -1463,7 +1463,7 @@ void
 dbs_cpt_extents (dbe_storage_t * dbs, dk_set_t free_trees)
 {
   /* compact the extent maps.  Put them in the registry.
-  * Deled go first because drop-create-drop-create would otherwise leave the dropped state in effect.*/
+  * Deleted go first because drop-create-drop-create would otherwise leave the dropped state in effect.*/
   DO_SET (index_tree_t *, free_it, &free_trees)
     {
       if (free_it->it_extent_map != dbs->dbs_extent_map

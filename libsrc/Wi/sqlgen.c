@@ -3798,7 +3798,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 		}
 	      else if (DFE_VALUE_SUBQ == dfe->dfe_type)
 		{
-		  /* a value subq on a remote generates only if there is nothing else in the same locus. Otherwise it is assumed that the subq will generate as a rresult of reference from the locus top */
+		  /* a value subq on a remote generates only if there is nothing else in the same locus. Otherwise it is assumed that the subq will generate as a result of reference from the locus top */
 		  if (!sqlg_any_in_locus (so, dfe->dfe_next, dfe->dfe_locus))
 		    sqlg_dfe_code (so, dfe, &pre_code, 0, 0, 0);
 		}

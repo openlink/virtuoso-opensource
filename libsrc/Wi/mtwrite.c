@@ -315,7 +315,7 @@ iq_write_merge (struct aiocb ** list, int n, char * temp)
 void
 iq_listio (struct aiocb ** list, int fill)
 {
-  /* like lio_listio with LIO_WAIT , but merges reads that are close enough together, only PAGE_SZ chunks donw  */
+  /* like lio_listio with LIO_WAIT , but merges reads that are close enough together, only PAGE_SZ chunks down  */
   char temp_space [(MAX_MERGE + 1) * PAGE_SZ];
   char * temp = ALIGN_8K (&temp_space[0]);
   int inx;

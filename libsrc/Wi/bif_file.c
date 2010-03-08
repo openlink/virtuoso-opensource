@@ -4669,7 +4669,7 @@ strses_write_out_gz (dk_session_t * ses, dk_session_t * out, strses_chunked_out_
   strses_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   strses_file_map (ses, strses_chunked_out_buf, (caddr_t)outd);
   gzwrite_ses (outd, ses->dks_out_buffer, (unsigned) ses->dks_out_fill);
-  gzclose_ses (outd); /* free of the stream and set outd->sc_buff to null as next flush on output may jump ouside with dead memory in outd members */
+  gzclose_ses (outd); /* free of the stream and set outd->sc_buff to null as next flush on output may jump outside with dead memory in outd members */
   session_flush_1 (out);
   outd->sc_bytes_sent = out->dks_bytes_sent - start;
 }

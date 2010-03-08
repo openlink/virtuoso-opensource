@@ -239,7 +239,7 @@ EXE_EXPORT (struct wi_inst_s *, wi_instance_get, (void));
 
 struct wi_db_s
 {
-  /* Logical database.  Can in principle have nmultiple file groups , although now only one is supported */  caddr_t		wd_qualifier;
+  /* Logical database.  Can in principle have multiple file groups , although now only one is supported */  caddr_t		wd_qualifier;
   dbe_storage_t *	wd_primary_dbs;
   dk_set_t 		wd_storage;
   dbe_schema_t *	wd_schema;
@@ -534,7 +534,7 @@ typedef struct out_map_s
 #define ITC_STORAGE(itc) (itc)->itc_space->isp_tree->it_storage
 
 #define ITC_AT_END -1 /* itc_map_pos when at end of buffer in derection of read */
-#define ITC_DELETED -2 /* during page rewrite, just deld, goes to next non-delfd or to end if none */
+#define ITC_DELETED -2 /* during page rewrite, just delete, goes to next non-delete or to end if none */
 
     /* placeholder_t i the common superclass of a placeholder, a bookmark whose position survives index updates, and of the index tree cursor */
 
@@ -666,7 +666,7 @@ struct it_cursor_s
     char		itc_bm_spec_replaced; /* true if bm inx dive set the key_spec */
     char		itc_cl_org_desc;
     dp_addr_t		itc_ra_root[RA_MAX_ROOTS];
-    buffer_desc_t *	itc_buf_entered; /* this is set to the entered buf when another thread enters this itc into a buf as a reult of of page_leave_inner on that other thread */
+    buffer_desc_t *	itc_buf_entered; /* this is set to the entered buf when another thread enters this itc into a buf as a result of page_leave_inner on that other thread */
     key_spec_t 	itc_cl_org_spec;
 
     struct {
@@ -1196,7 +1196,7 @@ struct row_fill_s
   row_size_t	rf_fill;
   short		rf_map_pos;
   dbe_key_t *	rf_key;
-  pf_hash_t *	rf_pf_hash; /* if doing compressing copy, mark the palces that have full values here */
+  pf_hash_t *	rf_pf_hash; /* if doing compressing copy, mark the places that have full values here */
   char		rf_is_leaf;
   char		rf_no_compress; /* do not try col compression */
 };

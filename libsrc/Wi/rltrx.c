@@ -914,7 +914,7 @@ buf_bm_transact (buffer_desc_t * buf, int pos)
 #define PAGE_UPDATED 1
 #define PAGE_DELETED 2
 #define LEAF_CHG_MASK 4
-/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  Thhis means that the leaf ptr should begin with the key of the first row.
+/* LEAF_CHG_MASK is on in the rc if the first row was deleted.  This means that the leaf ptr should begin with the key of the first row.
  * This is nice to have in order to avoid inserts to non leaf and in order not to miss follow locks on previous pages.  The point is that the seek must land beside the next smaller and if leaf ptrs are out of whack this is not always so */
 
 void

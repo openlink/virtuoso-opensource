@@ -242,7 +242,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
 	  return NULL;
 	}
       if (5 == n_tries)
-	log_info ("Failed to get a buffer for a new page. Retrying.  If the failure repeats, an out of disk error will be signnalled.  The cause of this is having too many buffers wired down for preread, flush or group by/hash join temp space.  To correct, increase the number of buffers in the configuration file.  If this repeats in spite of having hundreds of thousands  of buffers, please report to support.");
+	log_info ("Failed to get a buffer for a new page. Retrying.  If the failure repeats, an out of disk error will be signalled.  The cause of this is having too many buffers wired down for preread, flush or group by/hash join temp space.  To correct, increase the number of buffers in the configuration file.  If this repeats in spite of having hundreds of thousands  of buffers, please report to support.");
       if (n_tries > 4)
 	virtuoso_sleep (0, 50000 * (n_tries - 4));
     }

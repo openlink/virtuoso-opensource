@@ -446,7 +446,7 @@ page_leave_inner (buffer_desc_t * buf)
 	    page_release_read (buf);
 	}
     }
-  /* set the space to nnull for deld buffer after all else.  This is so that buffer replacement will wait for the page map so it does not do dirty reads on intermediate states of releasing the buffer */
+  /* set the space to null for deld buffer after all else.  This is so that buffer replacement will wait for the page map so it does not do dirty reads on intermediate states of releasing the buffer */
 }
 
 
@@ -989,7 +989,7 @@ up_again:
     parent_buf = NULL;
   page_wait_access (itc, up, *buf_ret, &parent_buf, PA_WRITE, RWG_WAIT_NO_ENTRY_IF_WAIT);
   /* the no entry case applies only to a wait. Also, if there is a wait, the original buffer will stay occupied by this itc.
-  * So if wegot no buffer, there was a wait and if we got one the transit had no wait but could have disk read. */
+  * So if we got no buffer, there was a wait and if we got one the transit had no wait but could have disk read. */
   if (!parent_buf)
     {
       up_ctr ++;

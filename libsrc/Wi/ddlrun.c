@@ -1135,7 +1135,7 @@ ddl_commit_trx (query_instance_t *qi)
 {
   caddr_t repl;
   int rc;
-  /* for 2pc, this is done really out of whakc.  Not proper sequence.  So remove the mark that this w id is gone cause there'll be ops with the id from the coordinator */
+  /* for 2pc, this is done really out of whack.  Not proper sequence.  So remove the mark that this w id is gone cause there'll be ops with the id from the coordinator */
   IN_TXN;
   repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate); /* if logging is off, keep it off */
   rc = lt_commit (qi->qi_trx, TRX_CONT);

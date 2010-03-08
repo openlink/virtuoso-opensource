@@ -300,7 +300,7 @@ See where the document is created and put an appropriate breakpoint */
 'xd_type' is unused and I have no idea what was the initial intention, will kill it;
 'xd_qi' is the creator of the document: neither XML document nor XML entity can survive the end of query or be passed from one query instance to other;
 'xd_xqi' is the creator of the document if it is composed or loaded to memory by XPath or XQuery expression;
-'xd_ref_count' is the reference counter of the document to freee it when the last user disappears, users are entities in the document and members of 'xd_referenced_entities' or 'xd_cached_docs';
+'xd_ref_count' is the reference counter of the document to free it when the last user disappears, users are entities in the document and members of 'xd_referenced_entities' or 'xd_cached_docs';
 'xd_cost' is the cost of the reloading of the document; the more it costs the later it should be removed from cache;
 'xd_weight' is the estimate of the size of the document in memory, in kbytes; note that this includes referenced entities.
 'xd_top_doc' is a pointer to document that references to this one;
@@ -718,7 +718,7 @@ typedef struct xp_rdfa_locals_s
   caddr_t	xrdfal_language;	/*!< Language label */
   rdfa_ict_t *	xrdfal_ict_buffer;	/*!< Storage for incomplete triples, may contain NULLs at the end */
   int		xrdfal_ict_count;	/*!< Count of stored incomplete triples */
-  int		xrdfal_boring_opened_elts;	/*!< Number of opend but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
+  int		xrdfal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
 } xp_rdfa_locals_t;
 
 #define RDFA_ATTR_ABOUT		101
@@ -845,7 +845,7 @@ typedef struct xparse_ctx_s
   xp_node_t *		xp_current;	/*!< Current node (innermost not-yet-closed tag) */
   xp_node_t *		xp_free_list;	/*!< Free-list, to avoid costly dk_alloc() overhead for every node */
   long			xp_bytes;
-  query_instance_t *	 xp_qi;		/*!< Query that lauched the parser */
+  query_instance_t *	 xp_qi;		/*!< Query that launched the parser */
   dk_session_t *	xp_strses;
   caddr_t		xp_id;
   caddr_t		xp_id_limit;

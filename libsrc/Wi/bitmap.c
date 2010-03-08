@@ -419,7 +419,7 @@ itc_bm_insert_single (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, 
     upd_rd = *rd;
     upd_rd.rd_values = upd_vals;
     upd_rd.rd_allocated = RD_AUTO;
-    if (rd->rd_n_values > 15) GPF_T1 ("bm inx of over 16 parts notrt allowed");
+    if (rd->rd_n_values > 15) GPF_T1 ("bm inx of over 16 parts not allowed");
     memcpy (&upd_vals, rd->rd_values, sizeof (caddr_t) * rd->rd_n_values);
     LONG_SET_NA (&bmstr[0], 0x80000000 | (value - bm_start));
     itc->itc_search_params[key->key_n_significant - 1] = box;

@@ -366,7 +366,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 		tb_found = 1;
 	    }
 	}
-      /* not allow tables to be placed in index order if no tables were palced
+      /* not allow tables to be placed in index order if no tables were placed
 	 and the table does not have the first oby col */
       if (!tb_found && oby_nth > 0)
 	return 0;

@@ -451,7 +451,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 	case IOP_TARGET:
 	  itc->itc_search_mode = SM_READ;
-	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init speczs may have been the specs for next */
+	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init specs may have been the specs for next */
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
 	  if (DVC_LESS == rc)

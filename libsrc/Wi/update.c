@@ -889,7 +889,7 @@ update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
    If the  upd_keyset is set and both inst and state are
    given, will remember the values in the ssls upd_place, upd_values,
    upd_trigger_args.  The placeholder is taken from the ssl and the ssl is set to
-   null withouot free. QST_GET_V () = NULL.
+   null without free. QST_GET_V () = NULL.
 
    If the node remembers states, do SRC_IN_STATE (upd, inst) = inst to mark
    this.  This means the will be continued later.  Means the update is done

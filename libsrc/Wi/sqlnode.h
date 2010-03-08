@@ -555,7 +555,7 @@ typedef struct inx_locality_s
 #define IOP_ON_ROW 1
 #define IOP_AT_END 2
 #define IOP_NEW_VAL 4
-#define IOP_READ_INDEX 5 /*for a bitmap iop, means must read inx because the cached bm does nothave the range */
+#define IOP_READ_INDEX 5 /*for a bitmap iop, means must read inx because the cached bm does not have the range */
 
 typedef struct inx_op_s
 {
@@ -839,7 +839,7 @@ typedef struct union_node_s
     data_source_t	src_gen;
     state_slot_t *	uni_nth_output;
     dk_set_t		uni_successors;
-    char		uni_sequential; /* finish each branch before starting nexct.  Needed in except and intersect */
+    char		uni_sequential; /* finish each branch before starting next.  Needed in except and intersect */
   } union_node_t;
 
 
@@ -891,7 +891,7 @@ typedef struct insert_node_s
 typedef struct cl_mod_state_s
 {
   state_slot_t *	cms_clrg;
-  query_frag_t *	cms_qf; /* a cluster del/upd, if on criving node, referes to enclosing qf */
+  query_frag_t *	cms_qf; /* a cluster del/upd, if on criving node, refers to enclosing qf */
   int			cms_n_sets;
   int			cms_n_received;
   char			cms_is_cl_frag; /* true if containing upd/del is a part of a remote query frag execd as part of clustered upd/del */
@@ -949,7 +949,7 @@ typedef struct code_node_s
   data_source_t	src_gen;
   cl_buffer_t	clb;
   code_vec_t	cn_code;
-  dk_set_t	cn_continuable; /* value subq or existence tests, nmultistate */
+  dk_set_t	cn_continuable; /* value subq or existence tests, multistate */
   char		cn_is_order;
   char		cn_is_test;
   state_slot_t *	cn_set_no;

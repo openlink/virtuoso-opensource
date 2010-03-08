@@ -1869,7 +1869,7 @@ SPART *
 spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset)
 {
   if ((NULL != having) && (NULL == groupings))
-    spar_error (sparp, "HAVING clause should be preceeded by a GROUP BY clause");
+    spar_error (sparp, "HAVING clause should be preceded by a GROUP BY clause");
   if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (limit)) && (SPAR_LIT == limit->type) && (DV_LONG_INT == DV_TYPE_OF (limit->_.lit.val)))
     limit = (SPART *)(limit->_.lit.val);
   if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (offset)) && (SPAR_LIT == offset->type) && (DV_LONG_INT == DV_TYPE_OF (offset->_.lit.val)))
@@ -3239,7 +3239,7 @@ static caddr_t boxed_8192_iid = NULL;
         {
           caddr_t uname = spar_immortal_exec_uname (sparp);
           qr_uses_jso (query_with_deps, uname);
-          if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significally and in unsafe direction... */
+          if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significantly and in unsafe direction... */
             {
               caddr_t dep_graph_uname = (NULL != graph_iri) ? box_dv_uname_string (graph_iri) : uname_virtrdf_ns_uri_PrivateGraphs;
               qr_uses_jso (query_with_deps, dep_graph_uname); /* ...then adding dep on graph is required, so changing graph from world to provate or back will trigger re-compilation */
@@ -3257,7 +3257,7 @@ static caddr_t boxed_8192_iid = NULL;
   else res = RDF_GRAPH_PERM_DEFAULT;
   if (NULL != query_with_deps)
     {
-      if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significally and in unsafe direction... */
+      if ((0 != ((res & req_perms) & ~(potential_res & req_perms)))) /* If world and private perms differ significantly and in unsafe direction... */
         {
           caddr_t dep_graph_uname;
           if (potential_res_is_user_specific)

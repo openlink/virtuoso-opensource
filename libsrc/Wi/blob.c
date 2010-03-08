@@ -1343,7 +1343,7 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
       if (0 != add_jobs)
 	{
 /* If some jobs should be added, hashtable should be created, if missing, and either old
-   hastable item should be updated or new one should be created. */
+   hashtable item should be updated or new one should be created. */
 	  if (NULL == hash_ptr[0])	/* If it's the first call in trx... */
 	    hash_ptr[0] = hash_table_allocate (61);	/* ...then new table should be created... */
 	  else

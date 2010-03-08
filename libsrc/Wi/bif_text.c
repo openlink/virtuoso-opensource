@@ -1496,7 +1496,7 @@ whereas wb_offband_string will not, so a separate FREE_WBP_BUF is needed for off
 	    strg = wb_word_string (wb);
 	  dk_set_push (&wb->wb_word_recs, (void*) strg);
 	}
-      else /* if not releassed or reused above we must free */
+      else /* if not released or reused above we must free */
 	{
 	  FREE_WBP_BUF (wb->wb_attr_positions);
 	  FREE_WBP_BUF (wb->wb_main_positions);

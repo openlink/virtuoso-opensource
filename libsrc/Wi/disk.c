@@ -1329,7 +1329,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 }
 
 int32 malloc_bufs = 0;
-#define MIN_BUFS_FOR_ALLOC 100000 /* bellow 1gig buffer space */
+#define MIN_BUFS_FOR_ALLOC 100000 /* below 1gig buffer space */
 
 buffer_pool_t *
 bp_make_buffer_list (int n)
@@ -3383,7 +3383,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
   	    /* we could not get a lock, so who owns it? */
 	    fcntl (fd, F_GETLK, &fl);
 
-	    log_error ("Virtuoso is already runnning (pid %ld)", fl.l_pid);
+	    log_error ("Virtuoso is already running (pid %ld)", fl.l_pid);
  	    call_exit(1);
 	  }
       }

@@ -1179,7 +1179,7 @@ load_grddl:;
           npars := 8;
           if (isarray (pcols))
 	    npars := length (pcols);
-	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
+	  --!!!TBD: Carefully check what happens when dest is NULL vs dest is not NULL, then add support for groupdest.
           if (registry_get ('__sparql_mappers_debug') = '1')
             dbg_obj_prin1 ('Match ', RM_HOOK);
 	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type, 'charset', cset));

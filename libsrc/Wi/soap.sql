@@ -663,7 +663,7 @@ WS_SOAP (in path any, in params any, in lines any)
       _fwd := xpath_eval ('fwd', rp, 1);
       _rev := xpath_eval ('rev', rp, 1);
       --this_host := http_request_header (lines, 'Host', null, 'localhost');
-      --this_host := 'imitko:6666'; -- findout how to get port if not supplied
+      --this_host := 'imitko:6666'; -- find out how to get port if not supplied
       --this_path := http_path();
       --this_point := sprintf ('http://%s%s', this_host, this_path);
       this_point := soap_current_url ();

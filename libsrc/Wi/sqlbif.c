@@ -6983,7 +6983,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
 		continue;
 	      boxed_plineno = box_num (scn3_plineno);
 	      /* if use_strval is given this means names etc. are expected to be in proper casemode,
-	         so must check for DV_SYMBOL otherwise stored proce with lower case would fail on startup
+	         so must check for DV_SYMBOL otherwise stored procedure with lower case would fail on startup
 	         when cm_upper is set  */
 	      boxed_text = ((use_strval && (DV_STRINGP (yylval.strval) || DV_SYMBOL == DV_TYPE_OF (yylval.strval))) ?
 		  box_dv_short_string (yylval.strval) : box_dv_short_nchars (yytext, get_yyleng ()));

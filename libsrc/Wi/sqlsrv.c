@@ -351,7 +351,7 @@ lt_leave (lock_trx_t * lt)
 #endif
     )
     {
-      rdbg_printf (("Trx T=%ld close ach in lt_leave\n", TRX_NO (lt)));
+      rdbg_printf (("Trx T=%ld close ack in lt_leave\n", TRX_NO (lt)));
       lt_ack_close (lt);
     }
 
@@ -383,7 +383,7 @@ void
 cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
     lock_trx_t * this_trx_only)
 {
-  /* Kiull cursors of this client except the one <except.
+  /* Kill cursors of this client except the one <except.
    * If this_trx_only is non-NULL, only kill cursors of that transaction */
   int rc;
   id_hash_iterator_t it;
@@ -4106,7 +4106,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_REMOTE_DISCONNECT:
 	  err = srv_make_new_error ("08U01", "SR324",
 	      "Remote server has disconnected making the transaction "
-	      "uncomittable. Transaction has been rolled back%s%s",
+	      "uncommittable. Transaction has been rolled back%s%s",
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_CHECKPOINT:

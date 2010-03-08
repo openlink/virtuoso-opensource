@@ -1402,7 +1402,7 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
    __stop_cpt (0,1,2,3)
    for testing cpt recovery only,
    the flag == 1 will cause server to exit after cpt recov file is done
-   flag == 2 will exit before recov file is markd as complete
+   flag == 2 will exit before recov file is marked as complete
    flag == 3 will simulate out of space
  */
 static caddr_t

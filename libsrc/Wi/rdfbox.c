@@ -663,7 +663,7 @@ rbs_length (db_buf_t rbs)
 void
 rbs_hash_range (dtp_t ** buf, int * len, int * is_string)
 {
-  /* the partition hash of a any typpe col with an rdf box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
+  /* the partition hash of a any type col with an rdf box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
   long l, hl;
   dtp_t * rbs = *buf;
   dtp_t flags = rbs[1];
@@ -1151,7 +1151,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
     return DVC_GREATER;
   data1 = rb1->rb_box;
   data_dtp1 = DV_TYPE_OF (data1);
-  /* if stringg and non-string */
+  /* if string and non-string */
   if ((DV_STRING != data_dtp1) && !rb1->rb_chksum_tail)
     {
       return cmp_boxes (data1, (caddr_t) a2, NULL, NULL);
@@ -1737,7 +1737,7 @@ iri_cast_nt_absname (query_instance_t *qi, caddr_t iri, caddr_t *iri_ret, ptrlon
             return 1;
           }
         iri_ret[0] = iri;
-        is_bnode_ret[0] = 0 /* Maybe this would be more accurate, but there are qwuestions with named bnodes: ((('_' == iri[0]) && (':' == iri[1])) ? 1 : 0) */;
+        is_bnode_ret[0] = 0 /* Maybe this would be more accurate, but there are questions with named bnodes: ((('_' == iri[0]) && (':' == iri[1])) ? 1 : 0) */;
         return 1;
       }
     case DV_IRI_ID: case DV_IRI_ID_8:
@@ -3314,7 +3314,7 @@ rdf_graph_configured_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user
             break;
         }
       else if (u_id != U_ID_NOBODY)
-        { /* No need to check default perms of nobody if defauld perms of the user are checked already, because user's are surely not more restrictive */
+        { /* No need to check default perms of nobody if default perms of the user are checked already, because user's are surely not more restrictive */
           hit = (caddr_t *)id_hash_get (dict, (caddr_t)(&boxed_nobody_uid));
           if (NULL != hit)
             {
@@ -3730,7 +3730,7 @@ bif_rdf_range_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t ro_id_arg;
   int res = 1;
   /* prefix_str, ro_id, lower, lower_op, upper, upper_op, completed_box_ret */
-  /* check if prefix is between uppoer and lower as per lower_op and upper_op.  If prefix is too short to know, get the full text using ro_id.  If fetching the full text, put it in complete_box_ret if this is a writable ssl */
+  /* check if prefix is between upper and lower as per lower_op and upper_op.  If prefix is too short to know, get the full text using ro_id.  If fetching the full text, put it in complete_box_ret if this is a writable ssl */
   ro_id_arg = bif_arg (qst, args, 1, "__rdf_range_check");
   switch (DV_TYPE_OF (ro_id_arg))
     {
