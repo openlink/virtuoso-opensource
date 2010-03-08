@@ -369,7 +369,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMinPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_minPoolSize);
+      Field fld = getClass().getField(this.n_minPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -402,7 +402,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxPoolSize);
+      Field fld = getClass().getField(this.n_maxPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -433,7 +433,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setInitialPoolSize(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_initialPoolSize);
+      Field fld = getClass().getField(this.n_initialPoolSize);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -465,7 +465,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxIdleTime(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxIdleTime);
+      Field fld = getClass().getField(this.n_maxIdleTime);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
@@ -519,7 +519,7 @@ public class VirtuosoConnectionPoolDataSource
   public void setMaxStatements(int parm) throws SQLException
   {
     try {
-      Field fld = getClass().getDeclaredField(this.n_maxStatements);
+      Field fld = getClass().getField(this.n_maxStatements);
       setField(fld, parm);
     } catch (Exception e) {
       throw new VirtuosoException("Error: "+e.toString(), VirtuosoException.OK);
