@@ -9845,9 +9845,24 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *msg;
   query_instance_t *qi = (query_instance_t *)qst;
-  caddr_t q = box_string (bif_string_arg (qst, args, 0, "set_qualifier"));
+  caddr_t qual = bif_string_or_wide_or_null_arg (qst, args, 0, "set_qualifier");
+  caddr_t q;
   caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  dtp_t dtp = DV_TYPE_OF (qual);
+
+  switch (dtp)
+    {
+      case DV_STRING:
+	  q = box_string (qual);
+	  break;
+      case DV_WIDE:
+	  q = box_wide_as_utf8_char (qual, box_length (qual) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+	  break;
+      default:
+	  sqlr_new_error ("22023", "SR484", "Function set_qualifier needs a string as argument 0, not an arg of type %s (%d)",
+	      dv_type_title (dtp), dtp);
+    }
 
   if (box_length (q) >= MAX_NAME_LEN || strlen (q) < 1)
     {
