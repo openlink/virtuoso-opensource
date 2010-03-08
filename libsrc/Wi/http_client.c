@@ -1221,15 +1221,15 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 	{
 	  dk_free_tree (ctx->hcctx_resp_body);
 	  ctx->hcctx_resp_body =
-	    http_read_chunked_content (ctx->hcctx_http_out,
-				       &ctx->hcctx_err,
-				       ctx->hcctx_url, (int)ctx->hcctx_resp_content_is_strses);
+	    http_read_chunked_content (ctx->hcctx_http_out, &ctx->hcctx_err, ctx->hcctx_url, 1 /* allow string session to be returned */);
 	  if (!ctx->hcctx_resp_body)
 	    {
 	      ret = http_cli_hook_dispatch (ctx, HC_HTTP_READ_ERR);
 	      if (ret == HC_RET_ERR_ABORT)
 		return (ret);
 	    }
+	  if (DV_STRING_SESSION == DV_TYPE_OF (ctx->hcctx_resp_body))
+	    ctx->hcctx_resp_content_is_strses = (char) 1;
 	}
       else if (!ctx->hcctx_resp_content_length && ctx->hcctx_close)
 	{
