@@ -1701,15 +1701,15 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                           S := sprintf (' sparql define input:storage "" ' ||
                                         ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
                                         ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                                        ' select ?exp_val ' ||
-                                        '        ?mod_val ' ||
+                                        ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
+                                        '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
                                         '   from <%s> ' ||
                                         '  where { ' ||
                                         '          ?id cert:identity <%s> ; ' ||
                                         '              rsa:public_exponent ?exp ; ' ||
                                         '              rsa:modulus ?mod . ' ||
-                                        '          ?exp cert:decimal ?exp_val . ' ||
-                                        '          ?mod cert:hex ?mod_val . ' ||
+                                        '          optional { ?exp cert:decimal ?exp_val . ' ||
+                                        '          ?mod cert:hex ?mod_val . } ' ||
                                         '        }',
                                         foafGraph,
                                         localIRI);
