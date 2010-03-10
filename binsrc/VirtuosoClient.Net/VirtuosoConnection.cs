@@ -2067,18 +2067,22 @@ namespace OpenLink.Data.Virtuoso
             VirtuosoParameter p1 = (VirtuosoParameter) cmd.CreateParameter();
             p1.Value = catalog;
             p1.ParameterName = ("@catalog");
+            p1.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p1);
             VirtuosoParameter p2 = (VirtuosoParameter) cmd.CreateParameter();
             p2.Value = schema;
             p2.ParameterName = ("@schema");
+            p2.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p2);
             VirtuosoParameter p3 = (VirtuosoParameter) cmd.CreateParameter();
             p3.Value = procedure;
             p3.ParameterName = ("@procedure");
+            p3.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p3);
             VirtuosoParameter p4 = (VirtuosoParameter) cmd.CreateParameter();
             p4.Value = (column);
             p4.ParameterName = ("@column");
+            p4.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p4);
             VirtuosoParameter p5 = (VirtuosoParameter) cmd.CreateParameter();
             if (innerConnection.IdentCase == CLI.IdentCase.SQL_IC_MIXED)
@@ -2152,22 +2156,29 @@ namespace OpenLink.Data.Virtuoso
             string cmdText = "DB.DBA.SQL_PROCEDURE_COLUMNSW (?, ?, ?, ?, ?, ?)";
    
             VirtuosoCommand cmd = new VirtuosoCommand(cmdText ,this);
-   
+
+            // Arguments to SQL_PROCEDURE_COLUMNSW must be narrow so change 
+            // the parameter type to AnsiString
+              
             VirtuosoParameter p1 = (VirtuosoParameter) cmd.CreateParameter();
             p1.Value = catalog;
             p1.ParameterName = ("@catalog");
+            p1.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p1);
             VirtuosoParameter p2 = (VirtuosoParameter) cmd.CreateParameter();
             p2.Value = schema;
             p2.ParameterName = ("@schema");
+            p2.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p2);
             VirtuosoParameter p3 = (VirtuosoParameter) cmd.CreateParameter();
             p3.Value = procedure;
             p3.ParameterName = ("@procedure");
+            p3.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p3);
             VirtuosoParameter p4 = (VirtuosoParameter) cmd.CreateParameter();
             p4.Value = column;
             p4.ParameterName = ("@column");
+            p4.DbType = DbType.AnsiString;
             cmd.Parameters.Add (p4);
             VirtuosoParameter p5 = (VirtuosoParameter) cmd.CreateParameter();
             if (innerConnection.IdentCase == CLI.IdentCase.SQL_IC_MIXED)
