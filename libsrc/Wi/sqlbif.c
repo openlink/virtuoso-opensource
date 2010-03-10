@@ -4642,28 +4642,27 @@ bif_like_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len;
   caddr_t res;
-  caddr_t string_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_min");
-  caddr_t str, str_in;
-  dtp_t dtp = DV_TYPE_OF (string_in);
+  caddr_t str_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_min");
+  caddr_t str;
+  dtp_t dtp = DV_TYPE_OF (str_in);
   char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_min") : 0);
   char * ctr = NULL;
 
+  if (!str_in)
+    return dk_alloc_box (0, DV_DB_NULL);
   switch (dtp)
     {
       case DV_STRING:
-	  str_in = box_string (string_in);
+      case DV_C_STRING:
+	  str = box_copy (str_in);
 	  break;
       case DV_WIDE:
-	  str_in = box_wide_as_utf8_char (string_in, box_length (string_in) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+	  str = box_wide_as_utf8_char (str_in, box_length (str_in) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
 	  break;
       default:
 	  sqlr_new_error ("22023", "SR484", "Function __like_min needs a string as argument 0, not an arg of type %s (%d)",
 	      dv_type_title (dtp), dtp);
     }
-
-  if (!str_in)
-    return dk_alloc_box (0, DV_DB_NULL);
-  str = box_copy (str_in);
   if (esc != '\0' && NULL != strchr (str, esc))
     {
       char * ptr = str, * end = str + strlen (str);
@@ -4699,28 +4698,27 @@ bif_like_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int len;
   caddr_t res;
-  caddr_t string_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_max");
-  caddr_t str, str_in;
-  dtp_t dtp = DV_TYPE_OF (string_in);
+  caddr_t str_in = bif_string_or_wide_or_null_arg (qst, args, 0, "__like_max");
+  caddr_t str;
+  dtp_t dtp = DV_TYPE_OF (str_in);
   char esc = (char) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__like_max") : 0);
   char * ctr;
 
+  if (!str_in)
+    return dk_alloc_box (0, DV_DB_NULL);
   switch (dtp)
     {
       case DV_STRING:
-	  str_in = box_string (string_in);
+      case DV_C_STRING:
+	  str = box_copy (str_in);
 	  break;
       case DV_WIDE:
-	  str_in = box_wide_as_utf8_char (string_in, box_length (string_in) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+	  str = box_wide_as_utf8_char (str_in, box_length (str_in) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
 	  break;
       default:
 	  sqlr_new_error ("22023", "SR484", "Function __like_max needs a string as argument 0, not an arg of type %s (%d)",
 	      dv_type_title (dtp), dtp);
     }
-
-  if (!str_in)
-    return dk_alloc_box (0, DV_DB_NULL);
-  str = box_copy (str_in);
   if (esc != '\0' && NULL != strchr (str, esc))
     {
       char * ptr = str, * end = str + strlen (str);
