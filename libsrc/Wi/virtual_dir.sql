@@ -1070,6 +1070,8 @@ end_loop:;
 		accept := 'text/rdf+n3';
               else if ("output-format" = 'nt' or "output-format" = 'txt')
                 accept := 'text/n3';
+              else if ("output-format" = 'json')
+                accept := 'application/json';
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
