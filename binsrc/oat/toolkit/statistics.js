@@ -34,7 +34,7 @@ OAT.Statistics = {
 		{longDesc:"Median", shortDesc:"MEDIAN", func:"median"},
 		{longDesc:"Mode", shortDesc:"MODE", func:"mode"}
 	],
-	
+
 	count:function(arr) {
 		return arr.length;
 	},
@@ -44,32 +44,32 @@ OAT.Statistics = {
 		for (var i=0;i<arr.length;i++) { value += arr[i]; }
 		return value;
 	},
-	
+
 	product:function(arr) {
 		var value = 1;
 		for (var i=0;i<arr.length;i++) { value *= arr[i]; }
 		return value;
 	},
-	
+
 	amean:function(arr) {
 		var value = 0;
 		for (var i=0;i<arr.length;i++) { value += arr[i]; }
 		value = (arr.length ? value / arr.length : 0);
 		return value;
 	},
-	
+
 	max:function(arr) {
 		var value = Number.MIN_VALUE;
 		for (var i=0;i<arr.length;i++) if (arr[i] > value) { value = arr[i]; }
 		return value;
 	},
-	
+
 	min:function(arr) {
 		var value = Number.MAX_VALUE;
 		for (var i=0;i<arr.length;i++) if (arr[i] < value) { value = arr[i]; }
 		return value;
 	},
-	
+
 	distinct:function(arr) {
 		var value = 0;
 		var values = {};
@@ -77,12 +77,12 @@ OAT.Statistics = {
 		for (p in values) { value++; }
 		return value;
 	},
-	
+
 	deviation:function(arr) {
 		var v = OAT.Statistics.variance(arr);
 		return Math.sqrt(v);
 	},
-	
+
 	variance:function(arr) {
 		if (arr.length < 2) { return 0; }
 		var value = 0;
@@ -90,13 +90,13 @@ OAT.Statistics = {
 		for (var i=0;i<arr.length;i++) { value += (arr[i]-avg)*(arr[i]-avg); }
 		return (value / (arr.length-1));
 	},
-	
+
 	median:function(arr) {
 		var sorted = arr.sort(function(a,b){return a-b;});
 		var i = Math.floor(arr.length/2);
 		return sorted[i];
 	},
-	
+
 	mode:function(arr) {
 		var conversion = {};
 		for (var i=0;i<arr.length;i++) {

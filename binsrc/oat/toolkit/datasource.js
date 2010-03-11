@@ -11,18 +11,18 @@
 	var d = new OAT.DataSource(type);
 	d.connection = ...
 	d.options.xxx = yyy
-	
+
 	d.reset();
-	
+
 	d.bindRecord(simpleCallback);
 	d.bindPage(multiCallback);
 	d.bindFile(fileCallback);
 	d.bindEmpty(emptyCallback);
 	d.bindHeader(headerCallback);
-	
+
 	d.advanceRecord(something, ignoreDups);   something: "-1","+1",number
 */
- 
+
 OAT.DataSourceData = {
 	TYPE_NONE:0,
 	TYPE_SQL:1,
@@ -37,12 +37,12 @@ OAT.DataSource = function(type) {
 	this.name = "";
 	this.type = type; /* 0 none, 1 sql, 2 wsdl, 3 rest, 4 sparql, 5 gdata */
 	this.options = {};
-	
+
 	/* design features */
 	this.inputFields = []; /* for binding */
 	this.outputFields = []; /* provides data to controls */
 	this.outputLabels = []; /* alternative labels for outputFields */
-	
+
 	this.connection = false; /* connection object */
 	this.transport = false; /* transport object */
 
@@ -52,18 +52,18 @@ OAT.DataSource = function(type) {
 	this.boundFiles = [];
 	this.boundEmpties = [];
 	this.boundHeaders = [];
-	
+
 	/* data */
 	this.dataRows = [];
 	this.recordIndex = -1; /* 0 .. self.dataRows.length */
 	this.pageIndex = -1; /* 0 .. self.dataRows.length */
 	this.pageSize = 0; /* if 0 then fetch all */
-	
+
 	switch (self.type) {
 		case OAT.DataSourceData.TYPE_SQL: self.transport = OAT.DSTransport.SQL; break;
 		case OAT.DataSourceData.TYPE_SOAP: self.transport = OAT.DSTransport.WSDL; break;
 		case OAT.DataSourceData.TYPE_REST: self.transport = OAT.DSTransport.REST; break;
-		case OAT.DataSourceData.TYPE_SPARQL: self.transport = OAT.DSTransport.REST; break;
+		case OAT.DataSourceData.TYPE_SPARQL: self.transport = OAT.DSTransport.SPARQL; break;
 		case OAT.DataSourceData.TYPE_GDATA:	self.transport = OAT.DSTransport.REST; break;
 	}
 	for (var p in self.transport.options) { self.options[p] = self.transport.options[p]; } /* read options */
@@ -105,7 +105,7 @@ OAT.DataSource = function(type) {
 		self.boundEmpties.push(callback);
 		return index;
 	}
-	
+
 	this.bindFile = function(callback) {
 		var index = self.boundFiles.length;
 		self.boundFiles.push(callback);
@@ -117,24 +117,24 @@ OAT.DataSource = function(type) {
 		self.boundRecords.push(callback);
 		return index;
 	}
-	
+
 	this.bindPage = function(callback) {
 		/* page == set of records */
 		var index = self.boundPages.length;
 		self.boundPages.push(callback);
 		return index;
 	}
-	
+
 	this.bindHeader = function(callback) {
 		var index = self.boundHeaders.length;
 		self.boundHeaders.push(callback);
 		return index;
 	}
-	
+
 	this.unBindEmpty = function(index) {
 		self.boundEmpties.splice(index,1);
 	}
-	
+
 	this.unBindFile = function(index) {
 		self.boundFiles.splice(index,1);
 	}
@@ -142,11 +142,11 @@ OAT.DataSource = function(type) {
 	this.unBindRecord = function(index) {
 		self.boundRecords.splice(index,1);
 	}
-	
+
 	this.unBindPage = function(index) {
 		self.boundPages.splice(index,1);
 	}
-	
+
 	this.unBindHeader = function(index) {
 		self.boundHeaders.splice(index,1);
 	}
@@ -156,7 +156,7 @@ OAT.DataSource = function(type) {
 		self.pageIndex = -1;
 		self.dataRows = [];
 	}
-		
+
 	this.checkAvailability = function(index,strict) { /* test data for presence */
 		/* we want PAGE starting at 'index'. is it possible? */
 		/*
@@ -179,7 +179,7 @@ OAT.DataSource = function(type) {
 	this.processData = function(data,index) {
 		self.header = data[0];
 		var d = data[1];
-		for (var i=0;i<d.length;i++) { 
+		for (var i=0;i<d.length;i++) {
 			self.dataRows[i+index] = d[i];
 		}
 		if (self.recordIndex == -1) {
@@ -191,12 +191,12 @@ OAT.DataSource = function(type) {
 			}
 		}
 	}
-	
+
 	this.fetchRecord = function(index,callback) {  /* retrieve one record from cache */
 		/* never sends queries, since appropriate page has to be received first! */
 		if (self.dataRows[index]) { callback(); }
 	}
-	
+
 	this.fetchPage = function(index,callback) { /* retrieve one page; either from cache or db */
 		if (self.checkAvailability(index,true)) { callback(); return; }
 		var ref = function(data) {
@@ -232,12 +232,12 @@ OAT.DataSource = function(type) {
 		if (newIndex == -1 || newIndex == self.recordIndex) { return false; } /* do nothing if is not correct or the present one */
 		var newPageIndex = (self.pageSize ? Math.floor(newIndex / self.pageSize) : 0) * self.pageSize;
 		/* sometimes we also have to change page */
-		OAT.MSG.send(self,OAT.MSG.DS_RECORD_PREADVANCE,newIndex);
+		OAT.MSG.send(self,"DS_RECORD_PREADVANCE",newIndex);
 		var callback = function() {
 			self.recordIndex = newIndex;
 			/* populate objects based on current index */
 			var data = self.dataRows[self.recordIndex];
-			OAT.MSG.send(self,OAT.MSG.DS_RECORD_ADVANCE,[data,self.recordIndex]);
+			OAT.MSG.send(self,"DS_RECORD_ADVANCE",[data,self.recordIndex]);
 			for (var i=0;i<self.boundRecords.length;i++) {
 				/* notify all receiving objects */
 				self.boundRecords[i](data,self.recordIndex);
@@ -249,9 +249,9 @@ OAT.DataSource = function(type) {
 		}
 		return true;
 	}
-	
+
 	this.advancePage = function(newIndex,command) { /* go to page #, not to be directly called! */
-		OAT.MSG.send(self,OAT.MSG.DS_PAGE_PREADVANCE,newIndex);
+		OAT.MSG.send(self,"DS_PAGE_PREADVANCE",newIndex);
 		/* get the page we want */
 		var callback = function() {
 			var data = [];
@@ -260,7 +260,7 @@ OAT.DataSource = function(type) {
 			for (var j=self.pageIndex;j<l;j++) {
 				data.push(self.dataRows[j]);
 			}
-			OAT.MSG.send(self,OAT.MSG.DS_PAGE_ADVANCE,[data,self.pageIndex]);
+			OAT.MSG.send(self,"DS_PAGE_ADVANCE",[data,self.pageIndex]);
 			for (var i=0;i<self.boundPages.length;i++) {
 				self.boundPages[i](data,self.pageIndex);
 			} /* all page requesting objects */
@@ -268,7 +268,7 @@ OAT.DataSource = function(type) {
 		}
 		self.fetchPage(newIndex,callback);
 	}
-	
+
 	this.typeToString = function() {
 		switch (self.type) {
 			case OAT.DataSourceData.TYPE_NONE: return "NONE"; break;
@@ -287,7 +287,7 @@ OAT.DataSource = function(type) {
 		masterFields:[], /* indexes */
 		types:[] /* types: 0 - value, 1 - foreign column, 2 - ask at runtime, 3 - user input */
 	}
-	
+
 	this.loadSaved = function(savedURL,callback) {
 		var qRef = function(data) {
 			switch (self.type) {
@@ -304,7 +304,7 @@ OAT.DataSource = function(type) {
 		}
 		OAT.AJAX.GET(savedURL,false,qRef);
 	}
-	
+
 	this.refresh = function(callback,do_links,datasources) {
 		/* we know binding type. let's create columns, relations etc */
 		switch (self.type) {
@@ -313,7 +313,7 @@ OAT.DataSource = function(type) {
 				if (self.options.table) { /* table */
 					if (do_links) {
 						var spl = self.options.table.split(".");
-						if (spl.length == 3) { 
+						if (spl.length == 3) {
 							var catalog = spl[0];
 							var schema = spl[1];
 							var table = spl[2];
@@ -344,18 +344,18 @@ OAT.DataSource = function(type) {
 						self.outputLabels = [];
 						var queryObj = new OAT.SqlQuery();
 						queryObj.fromString(self.options.query);
-						for (var i=0;i<queryObj.columns.count;i++) { 
+						for (var i=0;i<queryObj.columns.count;i++) {
 							var name = OAT.SqlQueryData.deQualifyMulti(queryObj.columns.getResult(i));
 							self.inputFields.push(name);
 							self.outputFields.push(name);
 							self.outputLabels.push("");
 						}
 						self.heuristicBind(datasources);
-					} 
+					}
 					callback();
 				}
 				break;
-			
+
 			case OAT.DataSourceData.TYPE_SOAP: /* wsdl */
 				self.inputFields = [];
 				self.outputFields = [];
@@ -406,7 +406,7 @@ OAT.DataSource = function(type) {
 				}
 				callback();
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_SPARQL: /* sparql */
 				var sq = new OAT.SparqlQuery();
 				sq.fromString(self.options.query);
@@ -417,16 +417,16 @@ OAT.DataSource = function(type) {
 				}
 				callback();
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_GDATA:
 				callback();
 			break;
 		} /* type switch */
 	}
-	
+
 	this.heuristicBind = function(datasources) {
 		if (self.fieldBinding.selfFields.length != 0) { return; }
-		
+
 		function relationAllowed(secondDS) {
 			/* relation is allowed only with other datasource, which has no relation to us */
 			if (secondDS == self) { return false; }
@@ -436,10 +436,10 @@ OAT.DataSource = function(type) {
 			}
 			return true;
 		}
-		
+
 		/* heuristic - automatic binding to parent form */
 		for (var i=0;i<self.inputFields.length;i++) {
-			var parts = self.inputFields[i].split("."); 
+			var parts = self.inputFields[i].split(".");
 			var sCol = parts.pop();
 			/* try to find appropriate column with same name elsewhere: that would be a good masterCol */
 			for (var j=0;j<datasources.length;j++) if (relationAllowed(datasources[j])) {
@@ -456,7 +456,7 @@ OAT.DataSource = function(type) {
 			} /* all other forms */
 		} /* all our columns */
 	} /* tryParents */
-	
+
 	this.relationalBind = function(datasources,catalog,schema,table,callback) { /* xxx */
 		if (self.fieldBinding.selfFields.length != 0) { return; }
 
@@ -466,7 +466,7 @@ OAT.DataSource = function(type) {
 				/* key = object w/ catalog,schema,table,column */
 				var pk = pole[i][0];
 				var fk = pole[i][1];
-				if (fk.catalog == catalog && fk.schema == schema && fk.table == table) { 
+				if (fk.catalog == catalog && fk.schema == schema && fk.table == table) {
 					for (var j=0;j<datasources.length;j++) {
 						var ds=datasources[j];
 						var fq = (pk.catalog == "" ? pk.table : pk.catalog+"."+pk.schema+"."+pk.table);
@@ -486,7 +486,7 @@ OAT.DataSource = function(type) {
 		}
 		OAT.Xmla.foreignKeys(catalog,schema,table,fkRef);
 	}
-	
+
 	this.toXML = function(uid,datasources,objects,nocred) {
 		var xml = '';
 		var fb = self.fieldBinding;
@@ -548,12 +548,12 @@ OAT.DataSource = function(type) {
 		xml += '\t</ds>\n';
 		return xml;
 	} /* toXML() */
-	
+
 	this.fromXML = function(node) {
 		var fb = self.fieldBinding;
 		self.name = node.getAttribute("name"); /* name */
 		self.pageSize = parseInt(node.getAttribute("pagesize")); /* name */
-		
+
 		if (node.getAttribute("subtype")) {
 			/* compatibility mode */
 			for (var p in self.options) { self.options[p] = node.getAttribute(p); }
@@ -568,8 +568,8 @@ OAT.DataSource = function(type) {
 		} else {
 			/* standard mode */
 			var opts = node.getElementsByTagName("options")[0];
-			for (var p in self.options) { 
-				self.options[p] = opts.getAttribute(p); 
+			for (var p in self.options) {
+				self.options[p] = opts.getAttribute(p);
 				if (p == "table" && self.options[p] == "false") { self.options[p] = false; }
 			}
 		}
@@ -577,12 +577,12 @@ OAT.DataSource = function(type) {
 			var qnode = node.getElementsByTagName("query")[0];
 			self.options.query = OAT.Xml.textValue(qnode);
 		}
-		
+
 		var cnode = node.getElementsByTagName("connection")[0];
 		var ctype = parseInt(cnode.getAttribute("type"));
 		self.connection = new OAT.Connection(ctype);
 		self.connection.fromXML(cnode);
-		
+
 		var tmp = node.getElementsByTagName("inputField");
 		self.inputFields = [];
 		for (var j=0;j<tmp.length;j++) {

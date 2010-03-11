@@ -17,7 +17,7 @@
 
 OAT.WS = {
 	cache:{},
-	
+
 	obj2xml:function(obj) {
 		var xml = "";
 		for (var p in obj) {
@@ -46,7 +46,7 @@ OAT.WS = {
 		}
 		OAT.WS.getEndpoint(url,cback);
 	},
-	
+
 	getEndpoint:function(url,callback) {
 		var ref = function(xmlDoc) {
 			var result = [];
@@ -59,7 +59,7 @@ OAT.WS = {
 		}
 		OAT.WS.retrieveWSDL(url,ref);
 	},
-	
+
 	listServices:function(url,callback) { /* list of available services from wsdl */
 		var ref = function(xmlDoc) {
 			var result = [];
@@ -71,7 +71,7 @@ OAT.WS = {
 		}
 		OAT.WS.retrieveWSDL(url,ref);
 	},
-	
+
 	listParameters:function(url,service,callback) { /* list of input & output parameters for service */
 		var ref = function(xmlDoc) {
 			/* init */
@@ -79,7 +79,7 @@ OAT.WS = {
 			var params_out = {};
 			var opnames = [];
 			var msgnames = [];
-			
+
 			/* find proper port */
 			var root = xmlDoc.documentElement;
 			var port = OAT.Xml.getElementsByLocalName(root,"portType");
@@ -87,13 +87,13 @@ OAT.WS = {
 			for (var i=0;i<ops.length;i++) { opnames.push(ops[i].getAttribute("name")); }
 			var index = opnames.find(service);
 			if (index == -1) { return; } /* service does not exist */
-			
+
 			/* get input & output message names */
 			var input = OAT.Xml.getElementsByLocalName(ops[index],"input")[0];
 			var output = OAT.Xml.getElementsByLocalName(ops[index],"output")[0];
 			var inmsg = input.getAttribute("message").split(":").pop(); /* last part after colon */
 			var outmsg = output.getAttribute("message").split(":").pop(); /* last part after colon */
-			
+
 			/* message nodes */
 			var messages = OAT.Xml.getElementsByLocalName(root,"message");
 			for (var i=0;i<messages.length;i++) { msgnames.push(messages[i].getAttribute("name")); }
@@ -101,27 +101,27 @@ OAT.WS = {
 			var inmessage = messages[index];
 			index = msgnames.find(outmsg);
 			var outmessage = messages[index];
-			
-			
+
+
 			/* message parts */
 			var params_in = OAT.WS.analyzeType(root,inmessage);
 			var params_out = OAT.WS.analyzeType(root,outmessage);
-			
+
 			/* done */
 			callback(params_in,params_out);
 		}
 		OAT.WS.retrieveWSDL(url,ref);
 	},
-	
+
 	parseResponse:function(url,xmlDoc,service,callback) { /* parse response from wsdl-compliant ws */
 		var parseObject = function(obj,node) {
 			if (typeof(obj) == "object") {
 				if (obj instanceof Array) {
 					var a = [];
 					var elms = OAT.Xml.childElements(node);
-					for (var i=0;i<elms.length;i++) { 
+					for (var i=0;i<elms.length;i++) {
 						var oneValue = parseObject(obj[0],elms[i])
-						a.push(oneValue); 
+						a.push(oneValue);
 					}
 					return a;
 				} else {
@@ -136,7 +136,7 @@ OAT.WS = {
 				return OAT.Xml.textValue(node);
 			}
 		}
-	
+
 		var root = xmlDoc.documentElement;
 		var obj = {};
 		var ref = function(inp,outp) {
@@ -145,7 +145,7 @@ OAT.WS = {
 				var elm = OAT.Xml.getElementsByLocalName(root,p)[0];
 				obj[p] = parseObject(outp[p],elm);
 			} /* for all expected returned nodes */
-			
+
 			callback(obj);
 		}
 		OAT.WS.listParameters(url,service,ref);
@@ -175,10 +175,10 @@ OAT.WS = {
 		}
 		return result;
 	},
-	
+
 	retrieveWSDL:function(url,callback) { /* internal routine to retrieve wsdl; either from url or cache */
-		if (url in OAT.WS.cache) { 
-			callback(OAT.WS.cache[url]); 
+		if (url in OAT.WS.cache) {
+			callback(OAT.WS.cache[url]);
 		} else {
 			var ref = function(xmlDoc) {
 				OAT.WS.cache[url] = xmlDoc;
@@ -187,7 +187,7 @@ OAT.WS = {
 			OAT.AJAX.GET(url,'',ref,{type:OAT.AJAX.TYPE_XML});
 		}
 	}
-	
+
 }
 
 OAT.Loader.featureLoaded("ws");

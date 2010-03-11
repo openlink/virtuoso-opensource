@@ -10,19 +10,19 @@
 
 /*
 	rb = new OAT.RDFBrowser("div",optObj);
-	
+
 	rb.toXML();
 	rb.fromXML();
 	rb.getTitle(item);
 	rb.getContent(value);
 	rb.getURI(item);
 	rb.processLink(domNode, href, disabledActions);
-	
+
 	#rdf_side #rdf_cache #rdf_filter #rdf_tabs #rdf_content
-	
+
 	data.triples
 	data.structured
-	
+
 */
 
 OAT.RDFBrowser = function(div,optObj) {
@@ -38,12 +38,12 @@ OAT.RDFBrowser = function(div,optObj) {
 		endpoint:"/sparql?query="
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
-	
+
 	this.parent = $(div);
 	this.tabs = [];
 	this.tree = false;
 	this.uri = false;
-	
+
 	this.throbber = false;
 	this.throbberElm = false;
 	this.ajaxEnd = function() {
@@ -61,10 +61,10 @@ OAT.RDFBrowser = function(div,optObj) {
 
 	this.bookmarks = {
 		items:[],
-		
+
 		init:function() {
 			self.bookmarks.redraw();
-			
+
 			var obj = OAT.Dom.uriParams();
 			if (!("bmURI" in obj)) { return; }
 			var uris = obj.bmURI;
@@ -75,7 +75,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				self.bookmarks.add(uri,label);
 			}
 		},
-		
+
 		add:function(uri,label) {
 			var query = "CONSTRUCT { ?property ?hasValue ?isValueOf } FROM <{graph}> WHERE { {  <{uri}> ?property ?hasValue . } UNION {   ?isValueOf ?property <{uri}> . } }";
 			query = query.replace(/{uri}/g,uri).replace(/{graph}/g,self.uri);
@@ -117,7 +117,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 			OAT.Dom.append([self.bookmarkDiv,h,d]);
 		},
-		
+
 		toURL:function() {
 			var result = "";
 			for (var i=0;i<self.bookmarks.items.length;i++) {
@@ -128,16 +128,16 @@ OAT.RDFBrowser = function(div,optObj) {
 			return result;
 		}
 	}
-	
+
 	this.reset = function(hard) { /* triples were changed */
 		for (var i=0;i<self.tabs.length;i++) { self.tabs[i].reset(hard); }
 		self.redraw(); /* redraw global elements */
 	}
-	
+
 	this.store = new OAT.RDFStore(self.reset,{onend:self.ajaxEnd});
 	this.store.div = OAT.Dom.create("div");
 	this.data = self.store.data;
-	
+
 	this.store.redraw = function() {
 		OAT.Dom.clear(self.store.div);
 		var total = 0;
@@ -156,17 +156,17 @@ OAT.RDFBrowser = function(div,optObj) {
 		tperm.innerHTML = "permalink";
 		var base = window.location.toString().match(/^[^?#]+/)[0];
 		var th = base+"?";
-		
+
 		for (var i=0;i<self.store.items.length;i++) {
 			var d = OAT.Dom.create("div");
 			var item = self.store.items[i];
 			total += item.triples.length;
-			
+
 			var ch = OAT.Dom.create("input");
 			ch.type = "checkbox";
 			ch.checked = item.enabled;
 			ch.defaultChecked = item.enabled;
-			
+
 			var a = OAT.Dom.create("a");
 //			a.href = item.href;
 			var label = (item.href.length > self.options.maxURILength ? item.href.substring(0,self.options.maxURILength) + "..." : item.href);
@@ -175,22 +175,22 @@ OAT.RDFBrowser = function(div,optObj) {
 			var t = OAT.Dom.text(" - "+item.triples.length+" triples - ");
 			OAT.Dom.append([d,ch,OAT.Dom.text(" "),a,t]);
 			self.processLink(a,item.href,OAT.RDFData.DISABLE_DEREFERENCE);
-			
-			
+
+
 			var remove = OAT.Dom.create("a");
 			remove.href = "#";
 			remove.innerHTML = "Remove from storage";
 			removeRef(remove,item.href);
 			checkRef(ch,item.href);
-			
+
 			var perm = OAT.Dom.create("a");
 			perm.innerHTML = "permalink";
 			perm.href = base+"?uri="+encodeURIComponent(item.href);
 			th += encodeURIComponent("uri[]")+"="+encodeURIComponent(item.href)+"&";
-			
+
 			OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm],[self.store.div,d]);
 		}
-		
+
 		tperm.href = th + self.bookmarks.toURL();
 		var d = OAT.Dom.create("div");
 		d.innerHTML = "TOTAL: "+total+" triples";
@@ -204,7 +204,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		var url = self.options.endpoint+encodeURIComponent(q)+"&format=rdf";
 		self.store.addURL(url);
 	}
-	
+
 	this.throbberReplace = function(elm,replace) {
 		return function(xhr) {
 			var t = OAT.Dom.create("img",{cursor:"pointer"});
@@ -230,10 +230,10 @@ OAT.RDFBrowser = function(div,optObj) {
 		url.type = "text";
 		url.value = self.options.defaultURL;
 		self.store.url = url;
-		
+
 		var btn1 = OAT.Dom.button("Query");
 		self.btnStart = self.throbberReplace(self.store.div,false);
-		
+
 		var h = OAT.Dom.create("h3");
 		h.innerHTML = "Data Source (URL):";
 		h.title = "RDF Data Source (URL):";
@@ -242,7 +242,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			if (event.keyCode == 13) { self.store.loadFromInput(); }
 		});
 		OAT.Event.attach(btn1,"click",self.store.loadFromInput);
-		
+
 		/* querystring url */
 		var obj = OAT.Dom.uriParams();
 		if (!("uri" in obj)) { return; }
@@ -280,7 +280,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 			return ul;
 		}
-			
+
 		var obj = {
 			title:"URL",
 			content:genRef,
@@ -291,7 +291,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			activation:self.options.appActivation
 		};
 		OAT.Anchor.assign(domNode,obj);
-		
+
 		/* maybe image links */
 		var node = $(domNode);
 		if (!node.parentNode) { return; } /* cannot append images when no parent is available */
@@ -301,10 +301,10 @@ OAT.RDFBrowser = function(div,optObj) {
 			node.parentNode.insertBefore(images[i],next);
 		}
 	}
-	
+
 	this.generateURIActions = function(href,disabledActions) {
 		var list = [];
-		
+
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Data Link";
@@ -334,7 +334,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			});
 			list.push(a);
 		}
-			
+
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Data Link - permalink";
@@ -379,7 +379,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		}
 		return list;
 	},
-	
+
 	this.generateImageActions = function(href,disabledActions) {
 		var list = [];
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
@@ -394,7 +394,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			list.push(img1);
 		}
 
-		
+
 		if (!(disabledActions & OAT.RDFData.DISABLE_HTML)) {
 			var a = OAT.Dom.create("a",{paddingLeft:"3px"});
 			var img2 = OAT.Dom.create("img",{border:"none"});
@@ -407,7 +407,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		}
 		return list;
 	}
-	
+
 	this.drawCategories = function() { /* category tree */
 		OAT.Dom.clear(self.categoryDiv);
 		var h = OAT.Dom.create("h3");
@@ -431,7 +431,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				}
 			}
 		}
-		/* 
+		/*
 			filter out some categories:
 			* if there is only 1 element with such property
 			* property count is > self.options.maxDistinctValues
@@ -448,14 +448,14 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 			if ((!atLeastOne && pred != "type") || (count <= 1 && pred != "type") || count > self.options.maxDistinctValues) { delete cats[p]; }
 		}
-		
+
 		function assign(node,p,o) {
 			var ref = function() {
 				self.store.addFilter(OAT.RDFStoreData.FILTER_PROPERTY,p,o);
 			}
 			OAT.Event.attach(node,"click",ref);
 		}
-		
+
 		var ul = OAT.Dom.create("ul");
 		var bigTotal = 0;
 		for (var p in cats) {
@@ -499,13 +499,13 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.tree.assign(ul,true);
 		self.categoryDiv.appendChild(ul);
 	}
-	
+
 	this.drawFilters = function() { /* list of applied filters */
 		OAT.Dom.clear(self.filterDiv);
 		var h = OAT.Dom.create("h3");
 		h.innerHTML = "Filters";
 		self.filterDiv.appendChild(h);
-		
+
 		function assignP(link,index) {
 			var ref = function() {
 				var f = self.store.filtersProperty[index];
@@ -513,7 +513,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 			OAT.Event.attach(link,"click",ref);
 		}
-		
+
 		function assignU(link,index) {
 			var ref = function() {
 				var f = self.store.filtersURI[index];
@@ -538,7 +538,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			div.appendChild(remove);
 			self.filterDiv.appendChild(div);
 		}
-		
+
 		for (var i=0;i<self.store.filtersURI.length;i++) {
 			var value = self.store.filtersURI[i];
 			var div = OAT.Dom.create("div");
@@ -560,7 +560,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			div.innerHTML = "No filters are selected. Create some by clicking on values in Categories you want to view.";
 			self.filterDiv.appendChild(div);
 		}
-		
+
 		if (self.store.filtersURI.length + self.store.filtersProperty.length > 1) {
 			var div = OAT.Dom.create("div");
 			var remove = OAT.Dom.create("a");
@@ -572,7 +572,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.filterDiv.appendChild(div);
 		}
 	}
-	
+
 	this.redraw = function() { /* everything */
 		self.drawCategories();
 		self.drawFilters();
@@ -588,7 +588,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		var content = false;
 		var data = (typeof(data_) == "object" ? data_.uri : data_);
 		var type = self.getContentType(data);
-		
+
 		switch (type) {
 			case 3:
 				content = OAT.Dom.create("img");
@@ -620,51 +620,51 @@ OAT.RDFBrowser = function(div,optObj) {
 				for (var j=0;j<anchors.length;j++) {
 					var a = anchors[j];
 					if (a.href.match(/^http/)) {
-						self.processLink(a,a.href); 
+						self.processLink(a,a.href);
 					}
 				}
 			break;
 		} /* switch */
 		return content;
 	}
-	
+
 	this.simplify = self.store.simplify;
 	this.getContentType = self.store.getContentType;
 	this.getTitle = self.store.getTitle;
 	this.getURI = self.store.getURI;
-	
+
 	this.init = function() {
 		/* dom */
 		self.sideDiv = $("rdf_side");
-		if (!self.sideDiv) { 
+		if (!self.sideDiv) {
 			self.sideDiv = OAT.Dom.create("div",{});
 			self.sideDiv.id = "rdf_side";
 			self.parent.appendChild(self.sideDiv);
 		}
 
 		self.cacheDiv = $("rdf_cache");
-		if (!self.cacheDiv) { 
+		if (!self.cacheDiv) {
 			self.cacheDiv = OAT.Dom.create("div",{});
 			self.cacheDiv.id = "rdf_cache";
 			self.parent.appendChild(self.cacheDiv);
 		}
 
 		self.filterDiv = $("rdf_filter");
-		if (!self.filterDiv) { 
+		if (!self.filterDiv) {
 			self.filterDiv = OAT.Dom.create("div",{});
 			self.filterDiv.id = "rdf_filter";
 			self.parent.appendChild(self.filterDiv);
 		}
 
 		self.tabsUL = $("rdf_tabs");
-		if (!self.tabsUL) { 
+		if (!self.tabsUL) {
 			self.tabsUL = OAT.Dom.create("ul",{});
 			self.tabsUL.id = "rdf_tabs";
 			self.parent.appendChild(self.tabsUL);
 		}
 
 		self.tabDiv = $("rdf_content");
-		if (!self.tabDiv) { 
+		if (!self.tabDiv) {
 			self.tabDiv = OAT.Dom.create("div",{});
 			self.tabDiv.id = "rdf_content";
 			self.parent.appendChild(self.tabDiv);
@@ -673,7 +673,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.categoryDiv = OAT.Dom.create("div",{},"rdf_categories");
 		self.bookmarkDiv = OAT.Dom.create("div",{},"rdf_bookmarks");
 		OAT.Dom.append([self.sideDiv,self.categoryDiv,self.bookmarkDiv]);
-		
+
 		self.tab = new OAT.Tab(self.tabDiv,{dockMode:true,dockElement:"rdf_tabs"});
 		self.descDiv = OAT.Dom.create("div");
 		self.tabDiv.insertBefore(self.descDiv,self.tabDiv.firstChild);
@@ -689,12 +689,12 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.tabs[newIndex].redraw();
 			self.descDiv.innerHTML = self.tabs[newIndex].description;
 		}
-		
+
 		self.redraw();
 		self.store.init();
 		self.bookmarks.init();
 	}
-	
+
 	this.toXML = function(xslStr) {
 		var xml = '<?xml version="1.0" ?>\n';
 		if (xslStr) { xml += xslStr+'\n'; }
@@ -707,11 +707,11 @@ OAT.RDFBrowser = function(div,optObj) {
 			var item = self.bookmarks.items[i];
 			xml += '\t<bookmark label="'+OAT.Dom.toSafeXML(item.label)+'">'+OAT.Dom.toSafeXML(item.uri)+'</bookmark>\n';
 		}
-		
+
 		xml += '</rdfbrowser>\n';
 		return xml;
 	}
-	
+
 	this.fromXML = function(xmlDoc) {
 		self.store.clear();
 		self.store.removeAllFilters();
@@ -736,9 +736,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			if (l == label) { index = i; }
 		}
 		if (index != -1) { self.tab.go(index); }
-		
+
 	}
-	
+
 	this.fromRQ = function(data,clear) {
 		if (clear) {
 			self.store.clear();

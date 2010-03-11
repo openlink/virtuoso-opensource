@@ -9,7 +9,7 @@
  */
 /*
 	t = new OAT.Ticker(div,text,options);
-	
+
 	options: {
 		loop:OAT.TickerData.LOOP_NONE,
 		add:OAT.TickerData.ADD_END,
@@ -25,10 +25,10 @@
 	OAT.TickerData.CLEAR_ALL - clear contents when looping
 	OAT.TickerData.CLEAR_START - remove chars from start
 	OAT.TickerData.CLEAR_END - remove chars from end
-	
+
 	OAT.TickerData.TIMING_PERCHAR - specify delay per character
 	OAT.TickerData.TIMING_GLOBAL - specify delay per string
-	
+
 	OAT.TickerData.LOOP_NONE - don't loop
 	OAT.TickerData.LOOP_BACK - show and hide
 	OAT.TickerData.LOOP_FULL - loop infinitely
@@ -41,10 +41,10 @@ OAT.TickerData = {
 	CLEAR_ALL:1,
 	CLEAR_START:2,
 	CLEAR_END:3,
-	
+
 	TIMING_PERCHAR:1,
 	TIMING_GLOBAL:2,
-	
+
 	LOOP_NONE:1,
 	LOOP_BACK:2,
 	LOOP_FULL:3
@@ -64,9 +64,9 @@ OAT.Ticker = function(div,text,optObj) {
 		pause:1000
 	}
 	for (p in optObj) { this.options[p] = optObj[p]; }
-	
+
 	this.setText = function(text) { this.text = text; }
-	
+
 	this.tick = function() {
 		if (obj.stopFlag) { obj.stopFlag = 0; return; }
 		var delay = obj.options.delay;
@@ -80,7 +80,7 @@ OAT.Ticker = function(div,text,optObj) {
 			var n = (obj.options.clear == OAT.TickerData.CLEAR_END ? obj.text.slice(0,obj.index) : obj.text.substr(obj.text.length-obj.index) );
 		}
 		obj.elm.innerHTML = n;
-		
+
 		if (obj.index == obj.text.length) {
 			if (obj.options.loop == OAT.TickerData.LOOP_FULL) {
 				if (obj.options.clear == OAT.TickerData.CLEAR_ALL) {
@@ -94,18 +94,18 @@ OAT.Ticker = function(div,text,optObj) {
 			}
 			delay += obj.options.pause;
 		}
-		
+
 		if (obj.options.loop == OAT.TickerData.LOOP_FULL && obj.index == 0) {
 			obj.direction = 1;
 			delay += obj.options.pause;
 		}
-		
+
 		if (obj.index == obj.text.length && obj.options.loop == OAT.TickerData.LOOP_NONE) { end = 1; }
 		if (obj.index == 0 && obj.options.loop != OAT.TickerData.LOOP_FULL) { end = 1; }
-		
+
 		if (!end) { setTimeout(obj.tick,delay); }
 	}
-	
+
 	this.start = function() {
 		obj.direction = 1;
 		obj.index = 0;
@@ -114,7 +114,7 @@ OAT.Ticker = function(div,text,optObj) {
 		} else { obj.options.delay = obj.options.defDelay; }
 		setTimeout(obj.tick,obj.options.delay);
 	}
-	
+
 	this.stop = function() {
 		obj.stopFlag = 1;
 	}

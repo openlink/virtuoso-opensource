@@ -43,7 +43,7 @@ OAT.PieChart = function(div,optObj) {
 	this.attachData = function(dataArr) { self.data = dataArr; }
 	this.attachColors = function(colorArr) { self.colors = colorArr; }
 	this.attachText = function(textArr) { self.text = textArr; }
-	
+
 	this.drawPie = function(svgNode,value,total,start_angle,cx,cy,color,phase) {
 		/* compute important data */
 		var ycoef = self.options.ycoef;
@@ -110,7 +110,7 @@ OAT.PieChart = function(div,optObj) {
 					y2 = cy;
 					x2 = cx - r;
 					large = 0;
-				}  
+				}
 				var path = "M "+x1+" "+y1+" L "+x1+" "+(y1-d)+" ";
 				path += "A "+r*1+" "+(r*ycoef)+" 0 "+large+" 1 "+x2+" "+(y2-d)+" ";
 				path += "L "+x2+" "+y2+" ";

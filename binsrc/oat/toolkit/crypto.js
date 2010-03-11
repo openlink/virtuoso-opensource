@@ -2,7 +2,7 @@
 	MD5 and SHA routines, along with their supplemental sub-routines are
 	Copyright (C) Paul Johnston 1999 - 2002.
 	Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
-	Distributed under the BSD License	
+	Distributed under the BSD License
 */
 
 /*
@@ -23,7 +23,7 @@ OAT.Crypto = {
 		var chr1, chr2, chr3 = "";
 		var enc1, enc2, enc3, enc4 = "";
 		var i = 0;
-		
+
 		if (!input.length) { return output; }
 
 		do {
@@ -42,17 +42,17 @@ OAT.Crypto = {
 				enc4 = 64;
 			}
 
-			output = output + 
-			keyStr.charAt(enc1) + 
-			keyStr.charAt(enc2) + 
-			keyStr.charAt(enc3) + 
+			output = output +
+			keyStr.charAt(enc1) +
+			keyStr.charAt(enc2) +
+			keyStr.charAt(enc3) +
 			keyStr.charAt(enc4);
 			chr1 = chr2 = chr3 = "";
 			enc1 = enc2 = enc3 = enc4 = "";
 		} while (i < input.length);
 		return output;
 	},
-	
+
 	base64d:function(input) {
 		if (!input) { return ""; }
 		var keyStr = "ABCDEFGHIJKLMNOP" +
@@ -259,10 +259,10 @@ OAT.Crypto = {
 			}
 			return str;
 		}
-		
+
 		return binl2hex(core_md5(str2binl(input), input.length * chrsz));
 	}, /* OAT.Crypto.md5() */
-	
+
 	sha:function(input) {
 		var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
 		var b64pad  = ""; /* base-64 pad character. "=" for strict RFC compliance   */
@@ -371,7 +371,7 @@ OAT.Crypto = {
 			}
 			return str;
 		}
-		
+
 		return binb2hex(core_sha1(str2binb(input),input.length * chrsz));
 	} /* OAT.Crypto.sha(); */
 }

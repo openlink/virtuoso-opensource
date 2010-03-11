@@ -17,7 +17,7 @@ OAT.Geometry = {
 		cx:0,
 		cy:0
 	},
-	
+
 	toSpherical:function(x,y) {
 		var dx = x - OAT.Geometry.sphericalData.cx;
 		var dy = y - OAT.Geometry.sphericalData.cy;
@@ -28,12 +28,12 @@ OAT.Geometry = {
 
 		var coef = Math.sin(pi2*d/OAT.Geometry.sphericalData.R);
 		var new_d = d ? coef * (OAT.Geometry.sphericalData.r/d) : 0
-		
+
 		var new_x = OAT.Geometry.sphericalData.cx + dx * new_d;
 		var new_y = OAT.Geometry.sphericalData.cy + dy * new_d;
 		return [new_x,new_y];
 	},
-	
+
 	fromSpherical:function(x,y) {
 		var dx = x - OAT.Geometry.sphericalData.cx;
 		var dy = y - OAT.Geometry.sphericalData.cy;
@@ -47,7 +47,7 @@ OAT.Geometry = {
 		var new_x = OAT.Geometry.sphericalData.cx + dx * new_d;
 		var new_y = OAT.Geometry.sphericalData.cy + dy * new_d;
 		return [new_x,new_y];	},
-	
+
 	pointVsAbscissa:function(point,abscissa) {
 		/* returns sign of a point against abscissa: -1 left, 1 right */
 		var ax = abscissa[0][0];
@@ -59,7 +59,7 @@ OAT.Geometry = {
 		var result =  ax*(by - cy) + ay*(cx - bx) + bx*cy - cx*by;
 		return (result <= 0 ? -1 : 1);
 	},
-	
+
 	pointVsSet:function(point,pointSet,sign) {
 		/* returns (ordered!) set of indexes from set which have 'sign' against first point */
 		var result = [];
@@ -68,7 +68,7 @@ OAT.Geometry = {
 			var a = pointSet[i];
 			var b = pointSet[i+1 < pointSet.length ? i+1 : 0];
 			var s = OAT.Geometry.pointVsAbscissa(point,[a,b]);
-			if (s == sign) { 
+			if (s == sign) {
 				if (startIndex == -1) { startIndex = i; }
 				result.push(i);
 			} else {
@@ -83,7 +83,7 @@ OAT.Geometry = {
 		}
 		return result;
 	},
-	
+
 	enlargeConvexPolygon:function(point,polygon) {
 		/* tries to add a new point to a polygonal CW oriented border */
 		var subset = OAT.Geometry.pointVsSet(point,polygon,1);
@@ -105,7 +105,7 @@ OAT.Geometry = {
 		}
 		return polygon;
 	},
-	
+
 	createConvexPolygon:function(pointSet) {
 		if (pointSet.length < 3) { return false; }
 		var polygon = [];
@@ -119,7 +119,7 @@ OAT.Geometry = {
 		}
 		return polygon;
 	},
-	
+
 	findCOG:function(polygon) {
 		/* find center of gravity for CW oriented polygon */
 		var last_x, last_y; /* prvni/posledni bod */
@@ -131,20 +131,20 @@ OAT.Geometry = {
 		for (var i=0;i<polygon.length;i++) {
 			var a = polygon[i];
 			var b = polygon[i+1 < polygon.length ? i+1 : 0];
-			
+
 			var m = b[0] * a[1] - a[0] * b[1];
 			t_x += (b[0] + a[0]) * m;
 			t_y += (b[1] + a[1]) * m;
 			t_m += m;
 		}
-	
+
 		t_x /= t_m * 3.0;
 		t_y /= t_m * 3.0;
-		
+
 		return [t_x,t_y];
 	},
-	
-	movePoint:function(point,center,distance) { /* shifts point in direction from center by distance */ 
+
+	movePoint:function(point,center,distance) { /* shifts point in direction from center by distance */
 		var dx = point[0]-center[0];
 		var dy = point[1]-center[1];
 		var a = Math.atan2(dy,dx);
@@ -152,7 +152,7 @@ OAT.Geometry = {
 		var y = point[1] + distance * Math.sin(a);
 		return [x,y];
 	},
-	
+
 	middleVector:function(center,a,b) { /* for center point C and two vectors returns vector which halves angle ACB */
 		var pa = [];
 		var pb = [];
@@ -165,12 +165,12 @@ OAT.Geometry = {
 		v.push(pb[1]-pa[1]);
 		return [v[1],-v[0]];
 	},
-	
+
 	distance:function(a,b) {
 		var dx = b[0]-a[0];
 		var dy = b[1]-a[1];
 		return Math.sqrt(dx*dx+dy*dy);
 	}
-	
+
 }
 OAT.Loader.featureLoaded("geometry");

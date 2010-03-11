@@ -10,7 +10,7 @@
 /*
 	f = new OAT.FishEye(div,optObj);
 	var i = f.addImage(url);
-	
+
 	CSS: .fisheye
 */
 
@@ -26,7 +26,7 @@ OAT.FishEye = function(div,optObj) {
 	var self = this;
 	self.div = $(div);
 	OAT.Dom.addClass(self.div,"fisheye");
-	
+
 	self.addImage = function(url) {
 		var i = OAT.Dom.create("img",{position:"absolute"});
 		i.setAttribute("src",url);
@@ -35,14 +35,14 @@ OAT.FishEye = function(div,optObj) {
 		recount(-1);
 		return i;
 	}
-	
+
 	var sizeFunction = function(dist) {
 		if (dist >= options.limit) { return options.smallSize; }
 //		return Math.round(options.bigSize + dist*(options.smallSize-options.bigSize)/options.limit);
 		return Math.round(Math.cos((dist*Math.PI)/(options.limit*2))*(options.bigSize-options.smallSize)+options.smallSize);
 	}
-	
-	
+
+
 	var recount = function(event_x) {
 		var sizes = [];
 		var dists = [];
@@ -75,23 +75,23 @@ OAT.FishEye = function(div,optObj) {
 			total += size;
 		}
 		self.div.style.width = (total+options.spacing)+"px";
-		
+
 	}
 	self.recount = recount;
-	
+
 	var move = function(event) {
 		var pos = OAT.Event.position(event);
 		recount(pos[0]);
 	}
-	
+
 	var over = function(event) {
 		move(event);
 	}
-	
+
 	var out = function(event) {
 		recount(-1);
 	}
-	
+
 	OAT.Event.attach(self.div,"mouseover",over);
 	OAT.Event.attach(self.div,"mouseout",out);
 	OAT.Event.attach(self.div,"mousemove",move);

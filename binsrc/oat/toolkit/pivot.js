@@ -8,14 +8,14 @@
  *  See LICENSE file for details.
  */
 /*
-	p = new OAT.Pivot(div, chartDiv, filterDiv, headerRow, dataRows, headerRowIndexes, headerColIndexes, filterIndexes, dataColumnIndex, optObj) 
+	p = new OAT.Pivot(div, chartDiv, filterDiv, headerRow, dataRows, headerRowIndexes, headerColIndexes, filterIndexes, dataColumnIndex, optObj)
 	div, filterDiv - dom element
 	headerRow - array
 	dataRows - array of arrays
 	headerRowIndexes, headerColIndexes, filterIndexes - arrays
 	dataColumnIndex - number
 	optObj - options object
-	
+
 	p.toXML(xslStr,saveCredentials,noCredentials,query)  -- if query == false than data is dumped
 
 	var defOpt = {
@@ -32,7 +32,7 @@
 		subtotals:1,
 		totals:1
 	}
-	
+
 	CSS: .pivot_table, .h1, .h2, .odd, .even .subtotal .total .gtotal .pivot_chart .pivot_row_chart .pivot_col_chart
 */
 
@@ -72,8 +72,8 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this.defCArray = ["rgb(153,153,255)","rgb(153,51,205)","rgb(255,255,204)","rgb(204,255,255)","rgb(102,0,102)",
 						"rgb(255,128,128)","rgb(0,102,204)","rgb(204,204,255)","rgb(0,0,128)","rgb(255,0,255)",
 						"rgb(0,255,255)","rgb(255,255,0)"];
-	
-	if (this.chartDiv) { 
+
+	if (this.chartDiv) {
 		OAT.Dom.clear(self.chartDiv);
 		var c1 = OAT.Dom.create("div",{},"pivot_chart");
 		var c2 = OAT.Dom.create("div",{},"pivot_row_chart");
@@ -81,7 +81,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var l1 = OAT.Dom.button("");
 		var l2 = OAT.Dom.button("");
 		var l3 = OAT.Dom.button("");
-		
+
 		OAT.Dom.append([self.chartDiv,l1,c1,l3,c3,l2,c2]);
 		this.charts = {
 			main:new OAT.BarChart(c1,{}),
@@ -103,12 +103,12 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this.allData = dataRows;/* store data */
 	this.filteredData = [];
 	this.tabularData = []; /* result */
-	
+
 	this.dataColumnIndex = dataColumnIndex; /* store data */
 	this.rowConditions = headerRowIndexes; /* indexes of row conditions */
 	this.colConditions = headerColIndexes; /* indexes of column conditions */
 	this.filterIndexes = filterIndexes; /* indexes of column conditions */
-	
+
 	this.conditions = [];
 	this.filterDiv.selects = [];
 	this.rowStructure = {};
@@ -118,7 +118,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this.rowTotals = [];
 	this.colTotals = [];
 	this.gTotal = [];
-	
+
 	/* supplemental routines */
 	this.toXML = function(xslStr,saveCredentials,noCredentials,query) {
 		var xml = '<?xml version="1.0" ?>\n';
@@ -149,7 +149,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		xml += '\t\t</filterIndexes>\n';
 
 		xml += '\t\t<dataColumnIndex>'+self.dataColumnIndex+'</dataColumnIndex>\n';
-		
+
 		if (query) {
 			xml += '\t\t<query>'+query+'</query>\n';
 			xml += OAT.Xmla.connection.toXML(saveCredentials,noCredentials);
@@ -164,18 +164,18 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			}
 			xml += '\t\t</dataRows>\n';
 		}
-		
+
 		xml += '\t</pivot>\n';
 		return xml;
 	}
-	
+
 	this.lightOn = function() {
 		for (var i=0;i<self.gd.targets.length;i++) {
 			var elm = self.gd.targets[i][0];
 			elm.style.color = "#f00";
 		}
 	}
-	
+
 	this.lightOff = function() {
 		for (var i=0;i<self.gd.targets.length;i++) {
 			var elm = self.gd.targets[i][0];
@@ -183,7 +183,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 	}
 	self.gd.onFail = self.lightOff;
-	
+
 	this.process = function(elm) {
 		self.lightOn();
 		elm.style.backgroundColor = "#888";
@@ -191,7 +191,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		elm.style.cursor = "pointer";
 		OAT.Event.attach(elm,"mouseup",function(e) { self.lightOff(); });
 	}
-	
+
 	this.filterOK = function(row) { /* does row pass filters? */
 		for (var i=0;i<self.filterIndexes.length;i++) { /* for all filters */
 			var fi = self.filterIndexes[i]; /* this column is important */
@@ -215,11 +215,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var months = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 		var sortFunc;
 		var coef = cond.sort;
-		var numSort = function(a,b) { 
+		var numSort = function(a,b) {
 			if (a==b) { return 0; }
 			return coef*(parseInt(a) > parseInt(b) ? 1 : -1);
 		}
-		var dictSort = function(a,b) { 
+		var dictSort = function(a,b) {
 			if (a==b) { return 0; }
 			return coef*(a > b ? 1 : -1);
 		}
@@ -232,7 +232,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var testValue = cond.distinctValues[0];
 		if (testValue == parseInt(testValue)) { sortFunc = numSort; } else { sortFunc = dictSort; }
 		if (months.find(testValue.toString().toLowerCase()) != -1) { sortFunc = dateSort; }
-		
+
 		cond.distinctValues.sort(sortFunc);
 	} /* sort */
 
@@ -247,29 +247,29 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		for (var i=0;i<self.allData.length;i++) {
 			var value = self.allData[i][index];
 			if (cond.distinctValues.find(value) == -1) { /* not yet present */
-				cond.distinctValues.push(value); 
+				cond.distinctValues.push(value);
 			} /* if new value */
 		} /* for all rows */
 		self.sort(cond);
 	}
-	
+
 	this.init = function() {
 		self.propPage = OAT.Dom.create("div",{position:"absolute",border:"2px solid #000",padding:"2px",backgroundColor:"#fff"});
 		document.body.appendChild(self.propPage);
 		OAT.Instant.assign(self.propPage);
-		
+
 		self.conditions = [];
-		for (var i=0;i<self.headerRow.length;i++) { 
+		for (var i=0;i<self.headerRow.length;i++) {
 			self.initCondition(i);
 		}
 	} /* init */
-	
+
 	/* callback routines */
 	this.getOrderReference = function(conditionIndex) {
 		return function(target,x,y) {
 			/* somehow reorder conditions */
 			self.lightOff();
-			
+
 			/* filters? */
 			if (target == self.filterDiv) {
 				self.filterIndexes.push(conditionIndex);
@@ -283,7 +283,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				self.go();
 				return;
 			}
-			
+
 			var sourceCI = conditionIndex; /* global index */
 			var targetCI = target.conditionIndex; /* global index */
 			if (sourceCI == targetCI) { return; } /* dragged onto the same */
@@ -329,7 +329,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			self.go();
 		}
 	}
-	
+
 	this.getClickReference = function(cond) {
 		var refresh = function() {
 			self.propPage._Instant_hide();
@@ -344,7 +344,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
 			close.innerHTML = "X";
 			OAT.Event.attach(close,"click",refresh);
-			
+
 			var asc = OAT.Dom.radio("order");
 			asc.id="pivot_order_asc";
 			OAT.Event.attach(asc,"change",function(){cond.sort=1;self.sort(cond);self.go();});
@@ -353,7 +353,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			alabel.htmlFor = "pivot_order_asc";
 			alabel.innerHTML = "Ascending";
 
-			var desc = OAT.Dom.radio("order"); 
+			var desc = OAT.Dom.radio("order");
 			desc.id="pivot_order_desc";
 			OAT.Event.attach(desc,"change",function(){cond.sort=-1;self.sort(cond);self.go();});
 			OAT.Event.attach(desc,"click",function(){cond.sort=-1;self.sort(cond);self.go();});
@@ -363,7 +363,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 
 			var hr1 = OAT.Dom.create("hr",{width:"100px"});
 			var hr2 = OAT.Dom.create("hr",{width:"100px"});
-			
+
 			var subtotals = OAT.Dom.create("div");
 			var sch = OAT.Dom.create("input");
 			sch.id = "pivot_checkbox_subtotals";
@@ -376,13 +376,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			sl.innerHTML = "Subtotals";
 			sl.htmlFor = "pivot_checkbox_subtotals";
 			OAT.Dom.append([subtotals,sch,sl]);
-			
+
 			var distinct = OAT.Dom.create("div");
 			OAT.Dom.append([self.propPage,close,asc,alabel,OAT.Dom.create("br"),desc,dlabel,hr1,subtotals,hr2,distinct]);
 			self.distinctDivs(cond,distinct);
 
 			self.propPage._Instant_show();
-			
+
 			/* this needs to be here because of IE :/ */
 			asc.checked = cond.sort == 1;
 			asc.__checked = asc.checked;
@@ -390,7 +390,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			desc.__checked = desc.checked;
 		}
 	}
-	
+
 	this.getDelFilterReference = function(index) {
 		return function() {
 			var idx = self.filterIndexes.find(index);
@@ -413,7 +413,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			div.appendChild(t);
 			return [div,ch];
 		}
-		
+
 		var getRef = function(ch,value) {
 			return function() {
 				if (ch.checked) {
@@ -425,37 +425,37 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				self.go();
 			}
 		}
-		
+
 		var allRef = function() {
 			cond.blackList = [];
 			self.go();
 			self.distinctDivs(cond,div);
 		}
-		
+
 		var noneRef = function() {
 			cond.blackList = [];
 			for (var i=0;i<cond.distinctValues.length;i++) { cond.blackList.push(cond.distinctValues[i]); }
 			self.go();
 			self.distinctDivs(cond,div);
 		}
-		
+
 		var reverseRef = function() {
 			var newBL = [];
-			for (var i=0;i<cond.distinctValues.length;i++) { 
+			for (var i=0;i<cond.distinctValues.length;i++) {
 				var val = cond.distinctValues[i];
-				if (cond.blackList.find(val) == -1) { newBL.push(val); } 
+				if (cond.blackList.find(val) == -1) { newBL.push(val); }
 			}
 			cond.blackList = newBL;
 			self.go();
 			self.distinctDivs(cond,div);
 		}
-		
+
 		OAT.Dom.clear(div);
 		var d = OAT.Dom.create("div");
-		
+
 		var all = OAT.Dom.button("All");
 		OAT.Event.attach(all,"click",allRef);
-		
+
 		var none = OAT.Dom.button("None");
 		OAT.Event.attach(none,"click",noneRef);
 
@@ -473,7 +473,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			OAT.Event.attach(pair[1],"click",getRef(pair[1],value));
 		}
 	}
-	
+
 	this.drawFilters = function() {
 		var savedValues = [];
 		var div = self.filterDiv;
@@ -513,7 +513,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			OAT.Dom.append([self.filterDiv,d],[d,s,close]);
 		}
 	}
-	
+
 	this.countTotals = function() { /* totals */
 		self.rowTotals = [];
 		self.colTotals = [];
@@ -535,7 +535,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		for (var i=0;i<self.colTotals.length;i++) { self.colTotals[i] = func(self.colTotals[i]); }
 		self.gTotal = func(self.gTotal);
 	}
-	
+
 	this.countSubTotals = function() { /* sub-totals */
 		function clean(ptrArray,count) {
 			for (var i=0;i<ptrArray.length-1;i++) {
@@ -548,7 +548,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 		clean(self.colPointers,self.h);
 		clean(self.rowPointers,self.w);
-	
+
 		function addTotal(arr,arrIndex,totalIndex,value) {
 			if (!arr.length) { return; }
 			var item = arr[arr.length-1][arrIndex].parent;
@@ -564,13 +564,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				addTotal(self.rowPointers,j,i,val);
 			}
 		}
-		
+
 		function apply(ptrArray,func) {
 			for (var i=0;i<ptrArray.length-1;i++) {
 				var stack = ptrArray[i];
 				for (var j=0;j<stack.length;j++) {
 					var totals = stack[j].totals;
-					for (var k=0;k<totals.length;k++) { 
+					for (var k=0;k<totals.length;k++) {
 						totals[k] = {array:totals[k],value:func(totals[k])};
 					}
 				}
@@ -580,7 +580,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		apply(self.colPointers,func);
 		apply(self.rowPointers,func);
 	}
-	
+
 	this.countPointers = function() { /* create arrays of pointers to levels of agg structures */
 		function count(struct,arr,propName) {
 			self[propName] = [];
@@ -597,11 +597,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				self[propName].push(stack.copy());
 			}
 		}
-		
+
 		count(self.rowStructure,self.rowConditions,"rowPointers");
 		count(self.colStructure,self.colConditions,"colPointers");
 	}
-	
+
 	this.countOffsets = function() { /* starting offsets for aggregate structures */
 		function count(ptrArray) {
 			for (var i=0;i<ptrArray.length;i++) {
@@ -614,20 +614,20 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				}
 			}
 		}
-		
+
 		count(self.rowPointers);
 		count(self.colPointers);
 	}
-	
+
 	this.count = function() { /* create tabularData from filteredData */
 		/* compute spans = table dimensions */
 		function spans(ptr,arr) { /* return span for a given aggregate pointer */
 			var s = 0;
 			var sD = 0;
-			if (!ptr.items) { 
+			if (!ptr.items) {
 				ptr.span = 1;
 				ptr.spanData = 1;
-				return [ptr.span,ptr.spanData]; 
+				return [ptr.span,ptr.spanData];
 			}
 			for (var i=0;i<ptr.items.length;i++) {
 				var tmp = spans(ptr.items[i],arr);
@@ -640,27 +640,27 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				var cond = self.conditions[arr[ptr.items[0].depth]];
 				if (cond.subtotals) { ptr.span += ptr.items.length; }
 			}
-			return [ptr.span,ptr.spanData]; 
+			return [ptr.span,ptr.spanData];
 		}
 		spans(self.rowStructure,self.rowConditions);
 		spans(self.colStructure,self.colConditions);
 
-		self.countPointers(); 
-		self.countOffsets(); 
-	
+		self.countPointers();
+		self.countOffsets();
+
 		/* create blank table */
 		self.tabularData = [];
 		self.w = 1;
 		self.h = 1;
 		if (self.colConditions.length) { self.w = self.colPointers[self.colPointers.length-1].length; }
 		if (self.rowConditions.length) { self.h = self.rowPointers[self.rowPointers.length-1].length; }
-		
+
 		for (var i=0;i<self.w;i++) {
 			var col = new Array(self.h);
 			for (var j=0;j<self.h;j++) { col[j] = []; }
 			self.tabularData.push(col);
 		}
-		
+
 		function coords(struct,arr,row) {
 			var pos = 0;
 			var ptr = struct;
@@ -669,7 +669,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				var value = row[rindex];
 				var o = false;
 				for (var j=0;j<ptr.items.length;j++) {
-					if (ptr.items[j].value != value) { 
+					if (ptr.items[j].value != value) {
 						pos += ptr.items[j].spanData;
 					} else {
 						o = ptr.items[j];
@@ -681,7 +681,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			} /* for all conditions */
 			return pos;
 		}
-		
+
 		for (var i=0;i<self.filteredData.length;i++) { /* reposition value array to grid */
 			var row = self.filteredData[i];
 			var x = coords(self.colStructure,self.colConditions,row);
@@ -690,28 +690,28 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			val = val.toString();
 			val = val.replace(/,/g,'.');
 			val = val.replace(/%/g,'');
-			val = val.replace(/ /g,''); 
+			val = val.replace(/ /g,'');
 			val = parseFloat(val);
 			if (isNaN(val)) { val = 0; }
 			self.tabularData[x][y].push(val);
 		}
 		var func = OAT.Statistics[OAT.Statistics.list[self.options.agg].func]; /* statistics */
-		for (var i=0;i<self.w;i++) { 
-			for (var j=0;j<self.h;j++) { 
+		for (var i=0;i<self.w;i++) {
+			for (var j=0;j<self.h;j++) {
 				var result = parseFloat(func(self.tabularData[i][j]));
 				self.tabularData[i][j] = result;
 			}
 		}
-		
+
 		self.options.subtotals = 0;
 		for (var i=0;i<self.conditions.length;i++) {
 			var cond = self.conditions[i];
-			if (cond.subtotals) { self.options.subtotals = true; } 
+			if (cond.subtotals) { self.options.subtotals = true; }
 		}
 		if (self.options.subtotals) { self.countSubTotals(); }
 		if (self.options.totals) { self.countTotals(); }
 	} /* Pivot::count() */
-	
+
 	this.numericalType = function(event) {
 		var coords = OAT.Event.position(event);
 		self.propPage.style.left = coords[0] + "px";
@@ -731,7 +731,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			if (self.options.type == t[0]) { o.selected = true; }
 		}
 		OAT.Event.attach(select,"change",function(){self.options.type=parseInt($v(select));refresh();});
-			
+
 		var showNulls = OAT.Dom.create("div");
 		var ch = OAT.Dom.create("input");
 		ch.id = "pivot_checkbox_empty";
@@ -745,17 +745,17 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		showNulls.appendChild(l);
 		OAT.Event.attach(ch,"change",function(){self.options.showEmpty = ch.checked;refresh();});
 		OAT.Event.attach(ch,"click",function(){self.options.showEmpty = ch.checked;refresh();});
-		
+
 		OAT.Dom.append([self.propPage,select,showNulls]);
 		self.propPage._Instant_show();
 	}
-	
+
 	this._drawGTotal = function(tr) {
 		var td = OAT.Dom.create("td",{},"gtotal");
 		td.innerHTML = self.formatValue(self.gTotal);
 		tr.appendChild(td);
 	}
-	
+
 	this._drawRowTotals = function(tr) {
 		if (self.options.headingBefore && self.colConditions.length) {
 			var th = OAT.Dom.create("th",{border:"none"});
@@ -782,7 +782,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 		self._drawGTotal(tr);
 	}
-	
+
 	this._drawRowSubtotals = function(tr,i,ptr) { /* subtotals for i-th row */
 		var func = OAT.Statistics[OAT.Statistics.list[self.options.aggTotals].func]; /* statistics */
 		for (var k=0;k<self.w;k++) {
@@ -807,13 +807,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		} /* for all regular subtotals */
 		if (self.options.totals && self.colConditions.length) {
 			var tmp = [];
-			for (var l=0;l<ptr.totals.length;l++) { tmp.append(ptr.totals[l].array); } 
+			for (var l=0;l<ptr.totals.length;l++) { tmp.append(ptr.totals[l].array); }
 			var td = OAT.Dom.create("td",{},"total");
 			td.innerHTML = self.formatValue(func(tmp));
 			tr.appendChild(td);
 		}
 	}
-	
+
 	this._drawCorner = function(th,target) {
 		th.innerHTML = self.headerRow[self.dataColumnIndex];
 		th.style.cursor = "pointer";
@@ -821,7 +821,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		if (target) { self.gd.addTarget(th); }
 		OAT.Event.attach(th,"click",self.numericalType);
 	}
-	
+
 	this._drawRowConditionsHeadings = function(tbody) {
 		/* rowConditions headings */
 		var tr = OAT.Dom.create("tr");
@@ -839,7 +839,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			OAT.Dom.append([th,div],[tr,th]);
 		}
 		var th = OAT.Dom.create("th"); /* blank space above */
-		if (!self.colConditions.length) { 
+		if (!self.colConditions.length) {
 			self._drawCorner(th,true);
 			th.conditionIndex = -1;
 		} else { th.style.border = "none"; }
@@ -851,7 +851,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 		tbody.appendChild(tr);
 	}
-	
+
 	this._drawColConditionsHeadings = function(tr,i) {
 		var cond = self.conditions[self.colConditions[i]];
 		var th = OAT.Dom.create("th",{cursor:"pointer"},"h1");
@@ -866,7 +866,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		th.appendChild(div);
 		tr.appendChild(th);
 	}
-	
+
 	this.getClassName = function(i,j) { /* decide odd/even class */
 		var xCounter = 1;
 		var yCounter = 1;
@@ -882,15 +882,15 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 		if (xCounter * yCounter == 1) { return "odd"; } else { return "even"; }
 	}
-	
+
 	this.formatValue = function(value) {
 		var result = "";
 		switch (self.options.type) { /* numeric type */
 			case OAT.PivotData.TYPE_BASIC[0]: result = value.toFixed(2); break;
 			case OAT.PivotData.TYPE_PERCENT[0]: result = value.toFixed(2)+"%"; break;
 			case OAT.PivotData.TYPE_SCI[0]: result = value.toExponential(2); break;
-			case OAT.PivotData.TYPE_SPACE[0]: 
-				result = value.toFixed(2); 
+			case OAT.PivotData.TYPE_SPACE[0]:
+				result = value.toFixed(2);
 				result = result.toString();
 				var parts = result.split('.');
 				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
@@ -904,8 +904,8 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					wholePart += (i==0 ? '' : delimiter) + parts[0].substr(i,3);
 				result = wholePart + decPart;
 			break;
-			case OAT.PivotData.TYPE_COMMA[0]: 
-				result = value.toFixed(2); 
+			case OAT.PivotData.TYPE_COMMA[0]:
+				result = value.toFixed(2);
 				result = result.toString();
 				var parts = result.split('.');
 				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
@@ -920,7 +920,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				result = wholePart + decPart;
 			break;
 			case OAT.PivotData.TYPE_CURRENCY[0]:
-				result = value.toFixed(2); 
+				result = value.toFixed(2);
 				result = result.toString();
 				var parts = result.split('.');
 				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
@@ -938,13 +938,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		} /* switch */
 		return result;
 	}
-	
+
 	this.drawTable = function() { /* this is the crucial part */
-	
+
 		OAT.Dom.clear(self.div);
 		var table = OAT.Dom.create("table",{},"pivot_table");
 		var tbody = OAT.Dom.create("tbody");
-		
+
 		/* upper part */
 		for (var i=0;i<self.colConditions.length;i++) {
 			var tr = OAT.Dom.create("tr");
@@ -984,12 +984,12 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			}
 			tbody.appendChild(tr);
 		}
-		
+
 		/* first connector */
 		if (self.rowConditions.length && self.options.headingBefore) {
 			self._drawRowConditionsHeadings(tbody);
 		}
-		
+
 		/* main part */
 		for (var i=0;i<self.h;i++) {
 			var tr = OAT.Dom.create("tr");
@@ -1002,27 +1002,27 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					ptr = ptr.parent;
 				}
 			}
-			
+
 			for (var j=0;j<self.rowConditions.length;j++) { /* row header values */
 				var item = ptrArray[j];
-				if (item.offset == i) { 
+				if (item.offset == i) {
 					var th = OAT.Dom.create("th",{},"h2");
 					th.rowSpan = ptrArray[j].span;
 					th.innerHTML = item.value;
 					tr.appendChild(th);
 				}
 			}
-			
+
 			if (self.colConditions.length && i==0 && self.options.headingBefore) { /* blank space before */
 				var th = OAT.Dom.create("th");
-				if (!self.rowConditions.length) { 
+				if (!self.rowConditions.length) {
 					self._drawCorner(th,true);
 					th.conditionIndex = -2;
 				} else { th.style.border = "none"; }
 				th.rowSpan = self.rowStructure.span;
 				tr.appendChild(th);
 			}
-			
+
 			for (var j=0;j<self.w;j++) { /* data */
 				var td = OAT.Dom.create("td",{},self.getClassName(i,j));
 				var result = self.tabularData[j][i];
@@ -1033,7 +1033,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					var item = self.colPointers[self.colPointers.length-1][j].parent;
 					while (item.parent) {
 						var cond = self.conditions[self.colConditions[item.depth]];
-						if (item.offset+item.spanData-1 == j && cond.subtotals) { 
+						if (item.offset+item.spanData-1 == j && cond.subtotals) {
 							var td = OAT.Dom.create("td",{},"subtotal");
 							td.innerHTML = self.formatValue(item.totals[i].value);
 							tr.appendChild(td);
@@ -1042,7 +1042,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					}
 				} /* if subtotals */
 			} /* for all rows */
-			
+
 			if (self.options.totals && self.colConditions.length) { /* totals */
 				if (self.rowConditions.length) {
 					var td = OAT.Dom.create("td",{},"total");
@@ -1050,10 +1050,10 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					tr.appendChild(td);
 				} else { self._drawGTotal(tr); }
 			}
-			
+
 			if (self.colConditions.length && i==0 && self.options.headingAfter) { /* blank space after */
 				var th = OAT.Dom.create("th");
-				if (!self.rowConditions.length) { 
+				if (!self.rowConditions.length) {
 					self._drawCorner(th,true);
 					th.conditionIndex = -2;
 				} else { th.style.border = "none"; }
@@ -1061,11 +1061,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				tr.appendChild(th);
 			}
 			tbody.appendChild(tr);
-			
+
 			for (var j=self.rowConditions.length-2;j>=0;j--) { /* subtotal rows */
 				var item = ptrArray[j];
 				var cond = self.conditions[self.rowConditions[item.depth]];
-				if (cond.subtotals && item.offset+item.spanData-1 == i) { 
+				if (cond.subtotals && item.offset+item.spanData-1 == i) {
 					var tr = OAT.Dom.create("tr");
 					var th = OAT.Dom.create("th",{},"h2");
 					th.colSpan = self.rowConditions.length-j;
@@ -1076,9 +1076,9 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				}
 			}
 		} /* for each row */
-		
+
 		/* totals row */
-		if (self.options.totals && self.rowConditions.length) { 
+		if (self.options.totals && self.rowConditions.length) {
 			var tr = OAT.Dom.create("tr");
 			var th = OAT.Dom.create("th",{},"h2");
 			th.innerHTML = "TOTAL";
@@ -1092,17 +1092,17 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		if (self.rowConditions.length && self.options.headingAfter) {
 			self._drawRowConditionsHeadings(tbody);
 		}
-		
+
 		OAT.Dom.append([table,tbody],[self.div,table]);
 	} /* drawTable */
-	
+
 	this.applyFilters = function() { /* create filteredData from allData */
 		self.filteredData = [];
 		for (var i=0;i<self.allData.length;i++) {
 			if (self.filterOK(self.allData[i])) { self.filteredData.push(self.allData[i]); }
 		}
 	}
-	
+
 	this.createAggStructure = function() { /* create a multidimensional aggregation structure */
 		function createPart(struct,arr) {
 			struct.items = false;
@@ -1126,11 +1126,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				stack = newstack;
 			} /* conditions */
 		}
-		
+
 		createPart(self.rowStructure,self.rowConditions);
 		createPart(self.colStructure,self.colConditions);
 	}
-	
+
 	this.fillAggStructure = function() { /* mark used branches of aggregation structure */
 		function fillPart(struct,arr,row) {
 			var ptr = struct;
@@ -1139,7 +1139,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				var value = row[rindex];
 				var o = false;
 				for (var j=0;j<ptr.items.length;j++) {
-					if (ptr.items[j].value == value) { 
+					if (ptr.items[j].value == value) {
 						o = ptr.items[j];
 						break;
 					}
@@ -1149,16 +1149,16 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			} /* for all conditions */
 			ptr.used = true;
 		}
-		
+
 		function fillAllPart(struct) {
 			var ptr = struct;
-			if (!ptr.items) { 
+			if (!ptr.items) {
 				ptr.used = true;
 				return;
 			}
 			for (var i=0;i<ptr.items.length;i++) { fillAllPart(ptr.items[i]); }
 		}
-	
+
 		if (self.options.showEmpty) {
 			fillAllPart(self.rowStructure);
 			fillAllPart(self.colStructure);
@@ -1170,7 +1170,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			}
 		}
 	}
-	
+
 	this.checkAggStructure = function() { /* check structure for empty parts and delete them */
 		function check(ptr) { /* recursive function */
 			if (!ptr.items) { return ptr.used; } /* for leaves, return their usage state */
@@ -1179,11 +1179,11 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			}
 			return (ptr.items.length > 0); /* return children state */
 		}
-		
+
 		check(self.rowStructure);
 		check(self.colStructure);
 	}
-	
+
 	this.getLabels = function(arr,direction,glue) {
 		if (!arr) { return []; }
 		var result = [];
@@ -1206,20 +1206,20 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		for (var i=0;i<self.h;i++) { cArray.push(self.defCArray[i % self.defCArray.length]); }
 		bc.options.colors = cArray;
 		var data = [];
-		for (var i=0;i<self.tabularData.length;i++) { 
+		for (var i=0;i<self.tabularData.length;i++) {
 			var col = [];
 			for (var j=self.tabularData[0].length-1;j>=0;j--) { col.push(self.tabularData[i][j]); }
-			data.push(col); 
+			data.push(col);
 		}
 		bc.attachData(data);
-			
+
 		var textX = self.getLabels(self.colPointers[self.colConditions.length-1],1,"<br/>");
 		var textY = self.getLabels(self.rowPointers[self.rowConditions.length-1],-1," - ").reverse();
 		bc.attachTextX(textX);
 		bc.attachTextY(textY);
 		bc.draw();
 	}
-	
+
 	this._drawRowChart = function() {
 		var bc = self.charts.row;
 		bc.options.colors = [self.defCArray[1]];
@@ -1238,7 +1238,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		bc.attachTextX(textX);
 		bc.draw();
 	}
-	
+
 	this._drawCharts = function() {
 		if (self.options.showChart) {
 			OAT.Dom.show(self.charts.mainDiv);
@@ -1272,13 +1272,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			OAT.Dom.hide(self.charts.colLink);
 		}
 	}
-	
+
 	this.go = function() {
 		self.gd.clearSources();
 		self.gd.clearTargets();
 		self.drawFilters();
 		self.applyFilters();
-		
+
 		self.createAggStructure();
 		self.fillAggStructure();
 		self.checkAggStructure();

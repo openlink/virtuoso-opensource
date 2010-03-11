@@ -16,7 +16,7 @@ OAT.Soap = {
 		var data_ = "";
 		if (wsdlFormat) {
 			data_ += '<?xml version="1.0" ?>\n'+
-				'<env:Envelope env:encodingType="http://schemas.xmlsoap.org/soap/encoding/" ' + 
+				'<env:Envelope env:encodingType="http://schemas.xmlsoap.org/soap/encoding/" ' +
 	 			'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' +
 				'xmlns:xsd="http://www.w3.org/2001/XMLSchema" ' +
 				'xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" ' +

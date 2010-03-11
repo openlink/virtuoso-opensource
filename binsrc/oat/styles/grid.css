@@ -33,7 +33,7 @@ table.grid {
 
 .grid tr.hover {
 	background-color: #feb;
-/*	border: 2px solid #000; */
+	border: 1px solid #000; 
 }
 
 .grid tr.selected {

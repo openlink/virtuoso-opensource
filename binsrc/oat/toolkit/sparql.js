@@ -8,11 +8,11 @@
  *  See LICENSE file for details.
  */
 
-/*	
+/*
 	var sp = new OAT.SparqlQuery();
 	so.fromString(str)
 	so.toString()
-	
+
 	so.prefixes = [{"label": 'foaf',"uri":'http://xmlns.com/foaf/0.1/'}];
 	so.distinct = false;
 	so.variables = ['a','b','c']
@@ -90,7 +90,7 @@ OAT.SparqlQuery = function() {
 	this.from_named = [];
 	this.where = [];
 	self.construct = false;
-	
+
 	this.clear = function() {
 		self.variables = [];
 		self.distinct = false;
@@ -104,12 +104,12 @@ OAT.SparqlQuery = function() {
 		self.where = [];
 		self.construct = false;
 	}
-	
+
 	this.splitPiece = function(string) {
 		var word = string.match(/^(\w+)\s*(.*)/);
 		switch (word[1].toUpperCase()) {
 			case "DESCRIBE":
-				self.mode = "DESCRIBE";	
+				self.mode = "DESCRIBE";
 			case "SELECT":
 				self.mode = "SELECT";
 				var main = word[2];
@@ -134,7 +134,7 @@ OAT.SparqlQuery = function() {
 				var tmp = main.match(/\W*by(.*)/i);
 				var orders = tmp[1].trim();
 				var tmp = orders.match(/((desc)?\W*\(?\W*\w+[^\?\w]*\)?)/ig);
-				for (var i=0;i<tmp.length;i++) { 
+				for (var i=0;i<tmp.length;i++) {
   				var ord = tmp[i].match(/((desc)?\W*\(?\W*(\w+)[^\?\w]*\)?)/i);
 				  var desc = false;
 				  var variable = ord[3];
@@ -164,7 +164,7 @@ OAT.SparqlQuery = function() {
 				  else
 				    if (self.from.trim() != '')
 				      self.from = Array(self.from,self.expandPrefix(tmp[2]));
-				    else 
+				    else
 				      self.from = self.expandPrefix(tmp[2]);
 			break;
 			case "INSERT":
@@ -193,21 +193,21 @@ OAT.SparqlQuery = function() {
 			break;
 		} /* switch */
 	}
-	
+
 	this.parseWhere = function(where) {
 	  self.where = self.parseParts(where,self);
 	}
-	
+
 	this.parseConstruct = function(construct) {
 	  self.construct = self.parseParts(construct,self);
 	}
-	
+
 	this.parseParts = function(str,pobj,prev) {
 	  str = str.trim();
 
-	  // separate the parts 
+	  // separate the parts
 		var parts = self.getParts(str);
-	  // If we have more than one part then this is a group and we process each part separately 
+	  // If we have more than one part then this is a group and we process each part separately
 		if (parts.length > 1)
 		{
 	    var obj = new OAT.SparqlQueryDataGroup(pobj,self);
@@ -245,7 +245,7 @@ OAT.SparqlQuery = function() {
 	      obj.content = self.parseParts(tmp[1],obj)
 	    }
 	    // So we must be pattern
-		  else 
+		  else
 		  {
 		    str = str.trim();
 		    var tmp;
@@ -273,7 +273,7 @@ OAT.SparqlQuery = function() {
 	          obj.filter = tmp[3].trim();
 	          str = tmp[1].trim()
 	        }
-	          
+
 	      }
 	      // We get the pattern reversed - o p s NOT s p o
 	      var ptrparts = self.patternParts(str);
@@ -289,7 +289,7 @@ OAT.SparqlQuery = function() {
 	        obj.s = self.expandPrefix(ptrparts[2]);
 	      }
 	      var o = ptrparts[0];
-	      // object 
+	      // object
 	      // do we have a type?
 	      if ((tmp = o.match(/^"(.*)"\^\^(.*)$/)))
 	      {
@@ -311,14 +311,14 @@ OAT.SparqlQuery = function() {
 	      } else if (o == 'true' || o == 'false') {
 	        obj.o = o;
 	        obj.otype = self.expandPrefix('xsd:boolean');
-	      } else 
+	      } else
 	      // ok then ... I don't know you
 	        obj.o = self.expandPrefix(o);
 	    }
 		}
 		return obj;
 	}
-	
+
 	this.patternParts = function(str)
 	{
 	  var ret = []
@@ -330,7 +330,7 @@ OAT.SparqlQuery = function() {
 	  {
 	    if (str.charAt(i) == ' ')
 	    {
-	      // If cnt is 0 then this is one part 
+	      // If cnt is 0 then this is one part
 	      if (cnt == 0)
 	      {
 	        // if find a space time to break
@@ -345,20 +345,20 @@ OAT.SparqlQuery = function() {
 	    {
 	      if (!inquot)
 	      {
-	        cnt++; 
+	        cnt++;
 	        inquot = true;
 	      } else {
-	        cnt--; 
+	        cnt--;
 	        inquot = false;
 	      }
 	    }
 	  }
-	  // if there is still something left we consider it a part 
+	  // if there is still something left we consider it a part
 	  if (bgn < str.length)
       ret.unshift(str.substring(bgn).trim());
 	  return ret;
 	}
-	
+
 	this.breakUnions = function(str)
 	{
 	  var ret = []
@@ -374,13 +374,13 @@ OAT.SparqlQuery = function() {
 	    else if (str.charAt(i) == '}')
 	    {
 	      cnt--;
-	      // If cnt is 0 then this is one part 
+	      // If cnt is 0 then this is one part
 	      if (cnt == 0)
 	      {
 	        // if we have an union then break the part and start another
 	        if(str.substring(i + 1).match(/^\W*union/i))
 	        {
-	          //So we found 1 union 
+	          //So we found 1 union
 	          isUnion = true;
 	          // We get the string before now remove the brackets and set it as part
 	          var tmp = str.substring(bgn,i + 1);
@@ -398,17 +398,17 @@ OAT.SparqlQuery = function() {
 	    {
 	      if (!inquot)
 	      {
-	        cnt++; 
+	        cnt++;
 	        inquot = true;
 	      } else {
-	        cnt--; 
+	        cnt--;
 	        inquot = false;
 	      }
 	    }
 	  }
 	  // if we are not an union return false
 	  if (!isUnion) return false;
-	  // if we are an union and there is still something left we consider it a part 
+	  // if we are an union and there is still something left we consider it a part
 	  if (bgn < str.length)
 	  {
 	    var tmp = str.substring(bgn);
@@ -436,15 +436,15 @@ OAT.SparqlQuery = function() {
 	    else if (str.charAt(i) == '}' || str.charAt(i) == ')')
 	    {
 	      cnt--;
-	      // If cnt is 0 then this is one part 
+	      // If cnt is 0 then this is one part
 	      if (cnt == 0)
 	      {
 	        // if we have an union after it we leave it as one part and continue
 	        if(str.substring(i + 1).match(/^\s*union/i))
 	          ;
-	        else 
+	        else
 	        {
-	          // We get the ending strings add the part to array and start looking for another 
+	          // We get the ending strings add the part to array and start looking for another
 	          var tmp = str.substring(i + 1).match(/^([\s\.;,]*)/i);
 	          i = i + tmp[1].length;
 	          ret.push(str.substring(bgn,i + 1));
@@ -457,15 +457,15 @@ OAT.SparqlQuery = function() {
 	    {
 	      if (!inquot)
 	      {
-	        cnt++; 
+	        cnt++;
 	        inquot = true;
 	      } else {
-	        cnt--; 
+	        cnt--;
 	        inquot = false;
 	      }
 	    }
       // a part can also be . or ; there can also be GRAPH or OPTIONAL there
-	    else if (cnt == 0 && (str.charAt(i) == '.' || str.charAt(i) == ';' || str.charAt(i) == ',' || 
+	    else if (cnt == 0 && (str.charAt(i) == '.' || str.charAt(i) == ';' || str.charAt(i) == ',' ||
 	             (str.substring(i + 1).match(/^graph/i) && str.charAt(i) != '?')||
 	             (str.substring(i + 1).match(/^optional/i) && str.charAt(i) != '?')))
       {
@@ -476,23 +476,23 @@ OAT.SparqlQuery = function() {
           i = i + tmp[1].length;
           ret.push(str.substring(bgn,i + 1));
           bgn = i + 1;
-        } 
+        }
       }
 	  }
-	  // if there is still something left we consider it a part 
+	  // if there is still something left we consider it a part
 	  if (bgn < str.length)
       ret.push(str.substring(bgn));
 	  return ret;
 	}
 
-  this.putPrefix = function(str) 
+  this.putPrefix = function(str)
   {
     var tmp = '';
     if ((tmp = str.match(/^<(.*)>$/)))
     {
       for(var i = 0;i < self.prefixes.length; i++)
       {
-        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri && 
+        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri &&
             !tmp[1].substring(self.prefixes[i].uri.length,tmp[1].length).match(/\//))
         {
           return self.prefixes[i].label + ':' + tmp[1].substring(self.prefixes[i].uri.length);
@@ -511,7 +511,7 @@ OAT.SparqlQuery = function() {
 	    return '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>';
 	  else if((tmp = str.match(/<(.*)>/)))
 	    return str;
-	  else 
+	  else
 	  {
 	    var idx = str.indexOf(':');
       if (idx != -1)
@@ -526,33 +526,33 @@ OAT.SparqlQuery = function() {
 	  }
 	  return str;
 	}
-	
+
 	this.fromURL = function(url) {
 		var part = url.match(/query=([^&]*)/);
 		var decoded = decodeURIComponent(part[1]);
 		self.fromString(decoded);
 	}
-	
+
 	this.fromString = function(str) {
 		self.clear();
 		try {
 			var keywords = ["PREFIX","SELECT","INSERT INTO GRAPH","DELETE FROM GRAPH","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
 
 			var pieces = self.splitOnKeywords(str,keywords);
-			for (var i=1;i<pieces.length;i++) {	
+			for (var i=1;i<pieces.length;i++) {
 				var piece = pieces[i];
 				/* hack */
 				if (piece == "DELETE ") {
 					piece += pieces[i+1];
 					pieces.splice(i+1,1);
 				}
-				self.splitPiece(piece); 
+				self.splitPiece(piece);
 			}
 		} catch (e) {
 			alert('Invalid query!\nThere was a problem parsing the query. Please, check the syntax.');
 		}
 	}
-	
+
 	this.splitOnKeywords = function (str,keywords) {
 	  var ret = []
 	  var cnt = 0;
@@ -574,7 +574,7 @@ OAT.SparqlQuery = function() {
 	      ;
 	    else if (str.substring(i).search(re) != -1)
 	    {
-	      // If cnt is 0 then this is one part 
+	      // If cnt is 0 then this is one part
 	      if (cnt == 0)
 	      {
 	        // if find a match time to break
@@ -588,25 +588,25 @@ OAT.SparqlQuery = function() {
 	    {
 	      if (!inquot)
 	      {
-	        cnt++; 
+	        cnt++;
 	        inquot = true;
 	      } else {
-	        cnt--; 
+	        cnt--;
 	        inquot = false;
 	      }
 	      part += ch;
 	    }
-	    else 
+	    else
 	      part += ch;
 	  }
-	  // if there is still something left we consider it a part 
+	  // if there is still something left we consider it a part
 	  if (bgn < str.length)
       ret.push(part);
 	  return ret;
 	}
-	
+
 	this.toString = function() {
-		var fullquery = ''; 
+		var fullquery = '';
 
 		// prefixes
 		for (var i = 0;i<self.prefixes.length;i++) { fullquery += 'PREFIX ' + self.prefixes[i].label + ': <' + self.prefixes[i].uri + '>\n'; }
@@ -643,7 +643,7 @@ OAT.SparqlQuery = function() {
 		if (fullquery != '') fullquery += '\n';
 
 		if (self.mode != "INSERT" && self.mode != "DELETE") {
-			// from	    
+			// from
 			if (self.from instanceof Array)  {
 				for (var i = 0;i<self.from.length ;i++) {
 					if (self.from[i]) { fullquery += "FROM " + self.from[i] + '\n'; }
@@ -653,10 +653,10 @@ OAT.SparqlQuery = function() {
 			}
 			for (var i = 0;i<self.from_named.length ;i++) { fullquery += 'FROM NAMED ' + self.from_named[i] + '\n'; }
 
-			// where 
+			// where
 			var where = '';
-			if (self.where.type != 'group') { 
-				where = '{\n' + self.genWhere(self.where,1) + '}'; 
+			if (self.where.type != 'group') {
+				where = '{\n' + self.genWhere(self.where,1) + '}';
 			} else { where = self.genWhere(self.where,0); }
 			fullquery += 'WHERE ' + where;
 
@@ -674,14 +674,14 @@ OAT.SparqlQuery = function() {
 		}
 		return fullquery;
 	}
-	
+
 	this.genWhere = function(obj,depth,next,prev) {
 	  ret = '';
 	  indent = '  ';
 
 	  var tmp = '';
     // Is it union?  {  } union {  } we need another function for this - breakUnions
-    
+
 		switch (obj.type) {
 		  case 'group':
 			if (obj.parent.type != 'graph' && obj.parent.type != 'optional')
@@ -752,7 +752,7 @@ OAT.SparqlQuery = function() {
 			  ret += ' '.repeat(self.putPrefix(obj.p).length);
 			else
 			  ret += self.putPrefix(obj.p);
-			
+
 			ret += ' ';
 			switch (obj.otype) {
 			  case '<http://www.w3.org/2001/XMLSchema#string>':
@@ -791,7 +791,7 @@ OAT.SparqlQuery = function() {
 				ret += ',';
 			  else if (next && obj.s == next.s)
 				ret += ';';
-			  else 
+			  else
 				ret += '.';
 			  ret += ' \n';
 			}

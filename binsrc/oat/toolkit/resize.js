@@ -23,7 +23,7 @@ OAT.Resize = {
 	element:[],
 	mouse_x:0,
 	mouse_y:0,
-	
+
 	move:function(event) {
 		if (!OAT.Resize.element.length) return;
 		var dx = event.clientX - OAT.Resize.mouse_x;
@@ -45,10 +45,10 @@ OAT.Resize = {
 				case -OAT.Resize.TYPE_XY: testdx = -dx; testdy = -dy; break;
 			} /* switch */
 			if (rf(dims[0]+testdx,dims[1]+testdy)) { hope = 0; }
-		} /* for all resizing elements */		
-		
+		} /* for all resizing elements */
+
 		if (!hope) { return; }
-		
+
 		/* ok, so now resize */
 		for (var i=0;i<OAT.Resize.element.length;i++) {
 			var element = OAT.Resize.element[i][0];
@@ -64,7 +64,7 @@ OAT.Resize = {
 		OAT.Resize.mouse_x = event.clientX;
 		OAT.Resize.mouse_y = event.clientY;
 	},
-	
+
 	up:function(event) {
 		for (var i=0;i<OAT.Resize.element.length;i++) {
 			OAT.Resize.element[i][3](); /* endFunction() */
@@ -90,13 +90,13 @@ OAT.Resize = {
 			OAT.Resize.mouse_y = event.clientY;
 			event.cancelBubble = true; // don't drag when resizing
 		}
-		if (!elm._Resize_movers) { 
-			OAT.Event.attach(elm,"mousedown",ref);		
+		if (!elm._Resize_movers) {
+			OAT.Event.attach(elm,"mousedown",ref);
 			elm._Resize_movers = [];
 		}
 		elm._Resize_movers.push([win,type,rf,ef]);
 	},
-	
+
 	remove:function(clicker,mover) {
 		var elm = $(clicker);
 		var win = $(mover);
@@ -108,12 +108,12 @@ OAT.Resize = {
 		if (index == -1) { return; }
 		elm._Resize_movers.splice(index,1);
 	},
-	
+
 	removeAll:function(clicker) {
 		var elm = $(clicker);
 		if (elm._Resize_movers) { elm._Resize_movers = []; }
 	},
-	
+
 	createDefault:function(parent,restrictionFunction,endFunction) {
 		if (!OAT.Preferences.allowDefaultResize) { return; }
 		var bg = "url(" + OAT.Preferences.imagePath + "resize.gif)";

@@ -27,7 +27,7 @@ OAT.QuickEdit = {
 		}
 		OAT.Event.attach(elm,"click",ref);
 	},
-	
+
 	edit:function(elm) {
 		switch (elm._QuickEdit_edit_type) {
 			case OAT.QuickEdit.STRING:
@@ -55,7 +55,7 @@ OAT.QuickEdit = {
 				} else { newelm.selectedIndex = index;	}
 			break;
 		} /* switch */
-		
+
 		/* insert into hierarchy */
 		elm.parentNode.replaceChild(newelm,elm);
 		var callback = function() {
@@ -65,7 +65,7 @@ OAT.QuickEdit = {
 		newelm._Instant_show();
 		newelm.focus();
 	},
-	
+
 	revert:function(elm,oldelm) {
 		oldelm.innerHTML = elm.value;
 		elm.parentNode.replaceChild(oldelm,elm);

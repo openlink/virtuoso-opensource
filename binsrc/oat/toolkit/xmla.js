@@ -19,22 +19,22 @@
 	primaryKeys(catalog,schema,table,callback)
 	foreignKeys(catalog,schema,table,callback)
 	providerTypes(callback)
-	
+
 	execute_array(data)
 	discover_array(data)
 	dbschema_array(data)
 	tables_array(data)
 	columns_array(data)
 	qualifiers_array(data)
-	
-	
+
+
 */
 
 OAT.Xmla = {
 	connection:false,
 	executeHeader:{'Content-Type':'application/soap+xml; action="urn:schemas-microsoft-com:xml-analysis:Execute"'},
 	discoverHeader:{'Content-Type':'application/soap+xml; action="urn:schemas-microsoft-com:xml-analysis:Discover"'},
-	
+
 	parseResponse:function(xmlDoc) {
 		var header = [];
 		var body = [];
@@ -49,7 +49,7 @@ OAT.Xmla = {
 		for (var i=0;i<hvalues.length;i++) {
 			header.push(hvalues[i].getAttribute("name"));
 		}
-		
+
 		var rows = OAT.Xml.getElementsByLocalName(root,"row");
 		if (!rows.length) { return [header,body]; }
 		for (var i=0;i<rows.length;i++) {
@@ -60,10 +60,10 @@ OAT.Xmla = {
 			}
 			body.push(r);
 		}
-		
+
 		return [header,body];
 	},
-	
+
 	execute:function(callback,cursorOptions,ajaxOptions) {
 		var options = {
 			offset:0,
@@ -87,14 +87,14 @@ OAT.Xmla = {
 //				data += '<retrieve-row-count>1</retrieve-row-count>';
 			data += '<n-rows>'+options.limit+'</n-rows>';
 			data += '<skip>'+options.offset+'</skip>';
-		}			
+		}
 		data += '</PropertyList></Properties></Execute>';
-		
+
 		var o = {headers:OAT.Xmla.executeHeader,type:OAT.AJAX.TYPE_XML}
 		if (ajaxOptions) for (var p in ajaxOptions) { o[p] = ajaxOptions[p]; }
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	discover:function(callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.discover_array(data);
@@ -110,13 +110,13 @@ OAT.Xmla = {
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	dbschema:function(callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.dbschema_array(data);
 			callback(result);
 		}
-		
+
 		var data = '<Discover  env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"'+
 			' xmlns="urn:schemas-microsoft-com:xml-analysis" >'+
 			'<RequestType>DBSCHEMA_CATALOGS</RequestType>'+
@@ -130,7 +130,7 @@ OAT.Xmla = {
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	tables:function(catalog,callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.tables_array(data);
@@ -176,11 +176,11 @@ OAT.Xmla = {
 			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
 			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 			'</PropertyList></Properties></Discover>';
-		
+
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	qualifiers:function(callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.qualifiers_array(data);
@@ -199,7 +199,7 @@ OAT.Xmla = {
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	providerTypes:function(callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.providerTypes_array(data);
@@ -214,11 +214,11 @@ OAT.Xmla = {
 			'<Password>'+OAT.Xmla.connection.options.password+'</Password>'+
 			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 			'</PropertyList></Properties></Discover>';
-		
+
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	primaryKeys:function(catalog,schema,table,callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.primaryKeys_array(catalog,schema,table,data);
@@ -245,7 +245,7 @@ OAT.Xmla = {
 		var o = {headers:OAT.Xmla.discoverHeader,type:OAT.AJAX.TYPE_XML}
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
-	
+
 	foreignKeys:function(catalog,schema,table,callback) {
 		var cBack = function(data) {
 			var result = OAT.Xmla.foreignKeys_array(catalog,schema,table,data);
@@ -263,7 +263,7 @@ OAT.Xmla = {
 				data += '<PK_TABLE_SCHEMA>'+schema+'</PK_TABLE_SCHEMA>';
 			}
 			data += '<PK_TABLE_NAME>'+table+'</PK_TABLE_NAME>';
-			data += '</RestrictionList></Restrictions>'+ 
+			data += '</RestrictionList></Restrictions>'+
 			'<Properties><PropertyList>'+
 			'<DataSourceInfo>'+OAT.Xmla.connection.options.dsn+'</DataSourceInfo>'+
 			'<UserName>'+OAT.Xmla.connection.options.user+'</UserName>'+
@@ -274,17 +274,17 @@ OAT.Xmla = {
 		OAT.Soap.command(OAT.Xmla.connection.options.endpoint, data, cBack, o);
 	},
 
-/* --------------------------- */	
-	
+/* --------------------------- */
+
 	execute_array:function(data) {
-		/* 
+		/*
 			query result, return: [array_of_headers,array_of_rows]
 			array_of_headers indexed by numbers
 			array_of_rows indexed by numbers, then by numbers
 		*/
 		return OAT.Xmla.parseResponse(data);
 	},
-	
+
 	discover_array:function(data) {
 		/* list of datasources */
 		var names=[];
@@ -296,7 +296,7 @@ OAT.Xmla = {
 		}
 		return names;
 	},
-	
+
 	dbschema_array:function(data) {
 		/* list of catalogs */
 		var names=[];
@@ -308,7 +308,7 @@ OAT.Xmla = {
 		}
 		return names;
 	},
-	
+
 	tables_array:function(data) {
 		/* list of tables */
 		var names=[];
@@ -322,7 +322,7 @@ OAT.Xmla = {
 			var name = parsed[1][i][nameIndex];
 			var schema = parsed[1][i][schemaIndex];
 			var type = parsed[1][i][typeIndex];
-			if (type == "TABLE" || type == "VIEW") { 
+			if (type == "TABLE" || type == "VIEW") {
 				names.push(name);
 				schema_names.push(schema);
 			}
@@ -351,7 +351,7 @@ OAT.Xmla = {
 		}
 		return columns;
 	},
-	
+
 	qualifiers_array:function(data) {
 		var q = ['"','"'];
 		var parsed = OAT.Xmla.parseResponse(data);
@@ -366,7 +366,7 @@ OAT.Xmla = {
 		}
 		return q;
 	},
-	
+
 	providerTypes_array:function(data) {
 		var types = [];
 		var parsed = OAT.Xmla.parseResponse(data);
@@ -386,7 +386,7 @@ OAT.Xmla = {
 		}
 		return types;
 	},
-	
+
 	primaryKeys_array:function(catalog,schema,table,data) {
 		var columns = [];
 		var result = OAT.Xmla.parseResponse(data);

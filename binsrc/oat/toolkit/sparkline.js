@@ -30,8 +30,8 @@ OAT.Sparkline = function(div,optObj) {
 	}
 	for (var p in optObj) { options[p] = optObj[p]; }
 	this.obj = new OAT.LineChart(div,options);
-	
-	this.attachData = function(arr) { 
+
+	this.attachData = function(arr) {
 		var data = [];
 		var dims = OAT.Dom.getWH(div);
 		var limit = dims[0] - options.paddingLeft - options.paddingRight;
@@ -40,7 +40,7 @@ OAT.Sparkline = function(div,optObj) {
 				data.push(arr[Math.round(i*arr.length/limit)]);
 			}
 		}
-		self.obj.attachData(data); 
+		self.obj.attachData(data);
 	}
 	this.draw = function() { self.obj.draw(); }
 }

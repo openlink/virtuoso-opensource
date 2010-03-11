@@ -11,7 +11,7 @@
 	var pb = new OAT.Panelbar(div,fadeDelayAndSpeed, heightInPixelsOrFalseForAuto, doNotAnimate) ( 0 == no fade )
 	pb.addPanel(clickerDiv,contentDiv)
 	pb.go(0);
-	
+
 	CSS: .panelbar, .panelbar_option, .panelbar_option_selected, .panelbar_option_upper, .panelbar_option_lower, .panelbar_content
 */
 
@@ -42,7 +42,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 					;
 				} else if (!noanim) {
 					self.animA = new OAT.AnimationOpacity(self.panels[i][1],{delay:self.delay,opacity:1});
-					self.animB = new OAT.AnimationSize(self.panels[i][1],{	
+					self.animB = new OAT.AnimationSize(self.panels[i][1],{
 								delay:self.delay,
 								height:self.height,
 								speed:self.delay
@@ -95,7 +95,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 		OAT.Style.opacity(content_elm, 1);
 		content_elm.style.height = '0px';
 	}
-	
-	
+
+
 }
 OAT.Loader.featureLoaded("panelbar");

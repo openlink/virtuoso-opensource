@@ -13,13 +13,13 @@
 OAT.GraphSidebar = function(graph) {
 	var self = this;
 	self.graph = graph;
-	
+
 	this._other = "[unqualified]";
 	this._domain = "domain";
 	this._range = "range";
 	this._indomain = "in-domain-of";
 	this._inrange = "in-range-of";
-	
+
 	this.isClass = function(node) {
 		for (var i=0;i<node.inEdges.length;i++) {
 			var e = node.inEdges[i];
@@ -27,7 +27,7 @@ OAT.GraphSidebar = function(graph) {
 		} /* all inEdges */
 		return false;
 	}
-	
+
 	this.filterResources = function(treeSet,propertyName) { /* do something with a set of nodes to hide */
 		var d = self.graph.data; /* default - mark everything as visible */
 		for (var i=0;i<d.length;i++) {
@@ -41,14 +41,14 @@ OAT.GraphSidebar = function(graph) {
 
 		for (var i=0;i<treeSet.length;i++) { /* analyze unchecked nodes */
 			var node = treeSet[i];
-			var depth = node.depth; 
+			var depth = node.depth;
 			var l = node.getLabel();
 			switch (depth) {
 				case 1: /* resources / classes */
 					/* hide all */
 					for (var j=0;j<d.length;j++) {
 						var n = d[j];
-						if (propertyName == "sidebar1") { 
+						if (propertyName == "sidebar1") {
 							n.visible[propertyName] = 0;
 						} else {
 							if (self.isClass(n)) { e.visible[propertyName] = 0; }
@@ -66,7 +66,7 @@ OAT.GraphSidebar = function(graph) {
 						if (propertyName == "sidebar2" && self.isClass(n) && head == l) { n.visible[propertyName] = 0; }
 					}
 				break;
-				
+
 				case 3: /* resource name */
 					/* hide resources with this name */
 					for (var j=0;j<d.length;j++) {
@@ -76,7 +76,7 @@ OAT.GraphSidebar = function(graph) {
 						if (n.name == longname) { n.visible[propertyName] = 0; }
 					}
 				break;
-				
+
 				case 4: /* in-domain-of / in-range-of */
 					/* hide out/in edges for resource with this name */
 					var l1 = node.parent.getLabel();
@@ -115,7 +115,7 @@ OAT.GraphSidebar = function(graph) {
 
 		self.graph.drawUpdate();
 	}
-	
+
 	this.filterPredicates = function(treeSet) {
 		var d = self.graph.data; /* default - mark everything as visible */
 		for (var i=0;i<d.length;i++) {
@@ -129,7 +129,7 @@ OAT.GraphSidebar = function(graph) {
 
 		for (var i=0;i<treeSet.length;i++) { /* analyze unchecked nodes */
 			var node = treeSet[i];
-			var depth = node.depth; 
+			var depth = node.depth;
 			var l = node.getLabel();
 			switch (depth) {
 				case 1: /* predicates */
@@ -153,7 +153,7 @@ OAT.GraphSidebar = function(graph) {
 						}
 					}
 				break;
-				
+
 				case 3: /* domain/range */
 					/* hide domain/range of predicate */
 					for (var j=0;j<d.length;j++) {
@@ -166,7 +166,7 @@ OAT.GraphSidebar = function(graph) {
 						}
 					}
 				break;
-				
+
 				case 4: /* resource name */
 					/* hide predicate with this resource */
 					for (var j=0;j<d.length;j++) {
@@ -185,7 +185,7 @@ OAT.GraphSidebar = function(graph) {
 
 		self.graph.drawUpdate();
 	}
-	
+
 	this.getResourcesObj = function() { /* return object containing all resources */
 		var obj = {};
 		var data = self.graph.data;
@@ -229,7 +229,7 @@ OAT.GraphSidebar = function(graph) {
 		}
 		return obj;
 	}
-	
+
 	this.createResourceDR = function(resource,type) { /* create a <li> containing domain/range of a resource */
 		var obj = {};
 		var res = false;
@@ -256,7 +256,7 @@ OAT.GraphSidebar = function(graph) {
 		}
 		return li;
 	}
-	
+
 	this.createPredicateDR = function(predicate,type) { /* create a <li> containing domain/range of a predicate */
 		var li = OAT.Dom.create("li");
 		li.innerHTML = (type == 1 ? self._domain : self._range);
@@ -270,7 +270,7 @@ OAT.GraphSidebar = function(graph) {
 		}
 		return li;
 	}
-	
+
 	this.createResources = function() { /* create Resources & Classes filtertrees */
 		var topul_r = OAT.Dom.create("ul");
 		var topul_c = OAT.Dom.create("ul");
@@ -288,7 +288,7 @@ OAT.GraphSidebar = function(graph) {
 		var vertexul_c = OAT.Dom.create("ul");
 		var ress_r = self.getResourcesObj();
 		var ress_c = self.getClassesObj();
-		for (var p in ress_r) {	
+		for (var p in ress_r) {
 			var li = OAT.Dom.create("li");
 			li.innerHTML = p;
 			vertexul_r.appendChild(li);
@@ -305,7 +305,7 @@ OAT.GraphSidebar = function(graph) {
 				ul.appendChild(li);
 			}
 		}
-		for (var p in ress_c) {	
+		for (var p in ress_c) {
 			var li = OAT.Dom.create("li");
 			li.innerHTML = p;
 			vertexul_c.appendChild(li);
@@ -345,7 +345,7 @@ OAT.GraphSidebar = function(graph) {
 		});
 		t.assign(topul_c,true);
 	}
-	
+
 	this.createPredicates = function() { /* create Predicates filtertree */
 		var topul = OAT.Dom.create("ul");
 		var topli = OAT.Dom.create("li");
@@ -383,7 +383,7 @@ OAT.GraphSidebar = function(graph) {
 		self.createResources();
 		self.createPredicates();
 	}
-	
+
 	this.toggle = function() {
 		self.graph.options.sidebarShown = !self.graph.options.sidebarShown;
 		if (self.graph.options.sidebarShown) {

@@ -24,7 +24,7 @@
 	Grid.removeColumn(index); - remove column
 	Grid.clearData();
 	Grid.rows[i].select()/deselect();
-	
+
 	OAT.GridData.LIMIT
 	OAT.GridData.ALIGN_CENTER
 	OAT.GridData.ALIGN_LEFT
@@ -35,7 +35,7 @@
 	OAT.GridData.TYPE_AUTO
 	OAT.GridData.TYPE_STRING
 	OAT.GridData.TYPE_NUMERIC
-	
+
 	CSS: .grid .even, .odd, .hover, .index, .header_value, .row_value, .selected
 */
 
@@ -47,7 +47,7 @@ OAT.GridData = {
 	x:0,            /* actual x */
 	w:0,            /* actual width */
 	forbidSort:0,    /* don't sort now */
-	
+
 	LIMIT:15,       /* minimum width */
 	ALIGN_CENTER:1,
 	ALIGN_LEFT:2,
@@ -58,7 +58,7 @@ OAT.GridData = {
 	TYPE_STRING:1,
 	TYPE_NUMERIC:2,
 	TYPE_AUTO:3,
-	
+
 	up:function(event) {
 		if (OAT.GridData.resizing) {
 			var grid = OAT.GridData.resizing;
@@ -70,12 +70,12 @@ OAT.GridData = {
 
 			OAT.Dom.unlink(grid.tmp_resize);
 			OAT.Dom.unlink(grid.tmp_resize_start);
-			
+
 			OAT.GridData.forbidSort = 1;
 			var ref = function() { OAT.GridData.forbidSort = 0;	}
 			setTimeout(ref,100);
 		}
-		
+
 		if (OAT.GridData.dragging) {
 			var grid = OAT.GridData.dragging;
 			OAT.GridData.dragging = false;
@@ -88,7 +88,7 @@ OAT.GridData = {
 					}
 				}
 				if (index == -1) { return; } /* nothing signaled? wtf? */
-				
+
 				/* we need to move OAT.GridData.index before index */
 				var i1 = OAT.GridData.index;
 				var i2 = index;
@@ -104,9 +104,9 @@ OAT.GridData = {
 					grid.rows[i].cells.splice(i1,1);
 					grid.rows[i].cells.splice(newi,0,cell);
 				}
-				
+
 				for (var i=0;i<grid.header.cells.length;i++) { grid.header.cells[i].number = i; } /* renumber */
-				
+
 				OAT.Dom.unlink(grid.tmp_drag);
 				OAT.GridData.forbidSort = 1;
 				if (grid.options.reorderNotifier && (i1 != i2)) { grid.options.reorderNotifier(i1,i2); }
@@ -115,7 +115,7 @@ OAT.GridData = {
 			}
 		}
 	}, /* OAT.GridData.up() */
-	
+
 	move:function(event) {
 		if (OAT.GridData.resizing) {
 			OAT.Dom.removeSelection(); /* selection removal... */
@@ -131,14 +131,14 @@ OAT.GridData = {
 				elm.style.left = OAT.GridData.x + "px";
 			} /* if > limit */
 		} /* if resizing */
-		
+
 		if (OAT.GridData.dragging) {
 			OAT.Dom.removeSelection(); /* selection removal... */
 			var grid = OAT.GridData.dragging;
 			if (!grid.tmp_drag) { /* just moved - create ghost */
 				var container = grid.header.cells[OAT.GridData.index].container;
 				grid.tmp_drag = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",backgroundColor:"#888"});
-				OAT.Style.opacity(grid.tmp_drag,0.5);
+				OAT.Style.set(grid.tmp_drag,{opacity:0.5});
 				grid.tmp_drag.appendChild(container.cloneNode(true));
 				var dims = OAT.Dom.getWH(grid.header.cells[OAT.GridData.index].html);
 				grid.tmp_drag.firstChild.style.width = dims[0]+"px";
@@ -170,6 +170,11 @@ OAT.GridData = {
 	} /* OAT.GridData.move() */
 } /* GridData */
 
+/**
+ * @class Advanced grid (table) control.
+ * @message GRID_ROWCLICK row clicked
+ * @message GRID_CELLCLICK cell clicked
+ */
 OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 	var self = this;
 	this.options = {
@@ -186,12 +191,15 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		self.options.autoNumber = optObj;
 	}
 	if (allowHiding) { self.options.allowHiding = true; }
-	
+
 	this.div = $(element);
-//	OAT.Dom.clear(self.div);
-	
-	this.init = function() {
-		if (self.options.allowHiding) { /* column hiding */
+
+	/**
+	 * create table, header, initialize properties
+	 */
+	this._init = function() {
+		/* column hiding */
+		if (self.options.allowHiding) {
 			var hide = OAT.Dom.create("a");
 			hide.href = "#";
 			hide.innerHTML = "visible columns";
@@ -201,7 +209,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 							content:self.propPage,
 							result_control:false,
 							activation:"click",
-							type:OAT.WinData.TYPE_RECT,
+							type:OAT.Win.Rect,
 							width:75
 				} );
 			var refresh = function() { self.propPage._Instant_hide(); }
@@ -239,7 +247,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 			} /* clickref */
 			OAT.Event.attach(hide,"click",clickRef);
 		} /* if allowHiding */
-		
+
 		OAT.Dom.makePosition(self.div);
 		self.html = OAT.Dom.create("table");
 		OAT.Dom.addClass(self.html,"grid");
@@ -248,13 +256,21 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		self.rowBlock = OAT.Dom.create("tbody");
 		OAT.Dom.append([self.div,self.html],[self.html,self.header.html,self.rowBlock]);
 	}
-	
+
+	/**
+	 * clears all inner data (preserves headers)
+	 */
 	this.clearData = function() {
 		self.rows = [];
 		OAT.Dom.clear(self.rowBlock);
 	}
-	
-	this.appendHeader = function(paramsObj,index) { /* append one header */
+
+	/**
+	 * adds new table header row
+	 * @param {array} paramsObj column header contents
+	 * @param {integer} index index of the header
+	 */
+	this.appendHeader = function(paramsObj,index) {
 		var i = (!index ? self.header.cells.length : index);
 		var cell = self.header.addCell(paramsObj,i);
 		for (var i=0;i<self.header.cells.length;i++) {
@@ -262,8 +278,25 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		}
 		return cell;
 	}
-	
-	this.ieFix = function() { /* xxx */
+
+	/**
+ 	 * reset css classes after sorting/adding/removing rows
+ 	 */
+	this.redraw = function() {
+		/* redo dom, odd & even */
+		for (var i=0;i<self.rows.length;i++) {
+			self.rowBlock.appendChild(self.rows[i].html);
+			var h = self.rows[i].html;
+			OAT.Dom.removeClass(h,"even");
+			OAT.Dom.removeClass(h,"odd");
+			OAT.Dom.addClass(self.rows[i].html,( i & 1 ? "odd" : "even" ));
+		}
+	}
+
+	/**
+	 * xxx ? :>
+	 */
+	this._ieFix = function() {
 		for (var i=0;i<self.header.cells.length;i++) {
 			var html = self.header.cells[i].html;
 			OAT.Dom.addClass(html,"hover");
@@ -273,7 +306,11 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		}
 	}
 
-	this.createHeader = function(paramsList) { /* add new header */
+	/**
+	 * create header row
+	 * @param {array} paramsList list of column header names
+	 */
+	this.createHeader = function(paramsList) {
 		self.header.clear();
 		if (self.options.autoNumber) {
 			var cell = self.header.addCell({value:"&nbsp;#&nbsp;",align:OAT.GridData.ALIGN_CENTER,type:OAT.GridData.TYPE_NUMERIC,draggable:0,sortable:0});
@@ -283,13 +320,18 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		for (var i=0;i<paramsList.length;i++) {
 			self.appendHeader(paramsList[i]);
 		}
-		if (OAT.Browser.isIE) { self.ieFix(); }
-	} /* Grid::createHeader */
-	
-	this.createRow = function(paramsList, index) { /* add new row */
+		if (OAT.Browser.isIE) { self._ieFix(); }
+	}
+
+	/**
+	 * create new data row
+	 * @param {array} paramsList list of cell contents
+	 * @param {integer} index where to insert the row (end of table if not specified)
+	 */
+	this.createRow = function(paramsList, index) {
 		var number = (!index ? self.rows.length : index);
 		var row = new OAT.GridRow(self,number);
-		if (index == number || number == self.rows.length) { 
+		if (index == number || number == self.rows.length) {
 			self.rowBlock.appendChild(row.html);
 		} else {
 			self.rowBlock.insertBefore(row.html,self.rowBlock.childNodes[number]);
@@ -297,21 +339,42 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		if (self.options.autoNumber) {
 			row.addCell({value:self.options.rowOffset+number+1,align:OAT.GridData.ALIGN_CENTER});
 			OAT.Dom.addClass(row.cells[0].html,"index");
-		} 
+		}
 
 		for (var i=0;i<paramsList.length;i++) {	row.addCell(paramsList[i]);	}
 		self.rows.splice(number,0,row);
 		return row.html;
-	} /* Grid::createRow() */
-	
+	}
+
+	/**
+	 * removes data row from table
+	 * @param {integer} index index of row to remove, last if not specified
+	 */
+	this.removeRow = function(index) {
+		var number = (arguments.length? arguments[0] : self.rows.length-1);
+		var row = self.rows.splice(number,1)[0];
+		/* clear rows cell objects & nodes */
+		row.clear();
+		OAT.Dom.unlink(row.html);
+	}
+
+	/**
+	 * removes column from table
+	 * @param {integer} index index of column to remove
+	 */
 	this.removeColumn = function(index) {
 		self.header.removeColumn(index);
 		for (var i=0;i<self.rows.length;i++) { self.rows[i].removeColumn(index); }
 	}
-	
+
+	/**
+	 * sorts grid data according to specified column
+	 * @param {integer} index index of column according which to sort
+	 * @param {constant} type order of sorting, OAT.GridData.TYPE_ASC/TYPE_DESC for ascending/descending order
+	 */
 	this.sort = function(index,type) {
 		if (OAT.GridData.forbidSort) { return; }
-		
+
 		if (self.options.sortFunc) {
 			self.options.sortFunc(index,type);
 			return;
@@ -340,9 +403,9 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 			return (a > b ? c1 : c2);
 		}
 		var cmp;
-		
+
 		if (!self.rows.length) { return; } /* no work to be done */
-		
+
 		var testValue = self.rows[0].cells[index].value.innerHTML;
 		switch (coltype) {
 			case OAT.GridData.TYPE_STRING: cmp = strCmp; break;
@@ -350,17 +413,13 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 			case OAT.GridData.TYPE_AUTO: cmp = (testValue == parseFloat(testValue) ? numCmp : strCmp); break;
 		}
 		self.rows.sort(cmp);
-		
-		/* redo dom, odd & even */
-		for (var i=0;i<self.rows.length;i++) {
-			self.rowBlock.appendChild(self.rows[i].html);
-			var h = self.rows[i].html;
-			OAT.Dom.removeClass(h,"even");
-			OAT.Dom.removeClass(h,"odd");
-			OAT.Dom.addClass(self.rows[i].html,( i % 2 ? "even" : "odd" ));
-		}
-	} /* Grid::sort() */
+		self.redraw();
+	}
 
+	/**
+	 * creates grid from table element
+	 * @param {elm} something table element
+	 */
 	this.fromTable = function(something) {
 		/* backwards compatibility fix */
 			if (self.reorderNotifier) { self.options.reorderNotifier = self.reorderNotifier; }
@@ -375,9 +434,9 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		var cells = head.getElementsByTagName("td");
 		for (var i=0;i<cells.length;i++) { tmp.push(cells[i].innerHTML); }
 		self.createHeader(tmp);
-		
+
 		var rows = body.getElementsByTagName("tr");
-		for (var i=0;i<rows.length;i++) { 
+		for (var i=0;i<rows.length;i++) {
 			tmp = [];
 			var cells = rows[i].getElementsByTagName("td");
 			for (var j=0;j<cells.length;j++) { tmp.push(cells[j].innerHTML); }
@@ -385,7 +444,11 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		}
 		OAT.Dom.unlink(t);
 	}
-	
+
+	/**
+	 * serializes table to xml file
+	 * @param {boolean} ignoreSelection return only innerHTML
+	 */
 	this.toXML = function(ignoreSelection) {
 		if (ignoreSelection) { return self.div.innerHTML; }
 		var xhtml = '<table class="grid"><thead>';
@@ -398,8 +461,8 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		xhtml += '</tbody></table>';
 		return xhtml;
 	}
-	
-	self.init();
+
+	self._init();
 } /* Grid */
 
 OAT.GridHeader = function(grid) {
@@ -409,24 +472,24 @@ OAT.GridHeader = function(grid) {
 	this.html = OAT.Dom.create("thead");
 	this.container = OAT.Dom.create("tr");
 	this.html.appendChild(self.container);
-	
+
 	this.clear = function() {
 		OAT.Dom.clear(self.container);
 		self.cells = [];
 	}
-	
+
 	this.addCell = function(params,index) {
 		var cell = new OAT.GridHeaderCell(self.grid,params,index);
 		var tds = self.container.childNodes;
-		
+
 		if (tds.length && index < tds.length) {
 			self.container.insertBefore(cell.html,tds[index]);
 		} else { self.container.appendChild(cell.html); }
-		
+
 		self.cells.splice(index,0,cell);
 		return cell;
 	}
-	
+
 	self.removeColumn = function(index) {
 		OAT.Dom.unlink(self.cells[index].html);
 		self.cells.splice(index,1);
@@ -445,36 +508,34 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 		sort:OAT.GridData.SORT_NONE,
 		type:OAT.GridData.TYPE_AUTO
 	}
-	
+
 	var params = (typeof(params_) == "object" ? params_ : {value:params_});
 	for (var p in params) { self.options[p] = params[p]; }
-	
+
 	this.signalStart = function() { /* red line */
 		self.signal = 1;
 		var dims = OAT.Dom.getWH(self.container);
 		self.signalElm = OAT.Dom.create("div",{position:"absolute",width:"2px",height:(dims[1]+2)+"px",left:"-2px",top:"-1px",backgroundColor:"#f00"});
 		self.container.appendChild(self.signalElm);
 	}
-	
+
 	this.signalEnd = function() {
 		self.signal = 0;
 		OAT.Dom.unlink(self.signalElm);
 	}
-	
+
 	this.changeWidth = function(width) {
 		var w = width;
 		if (!w) {
 			self.value.style.width = "";
 			return;
 		}
-		if (!self.value.style.width || self.value.style.width == "auto") {
-			w -= parseInt(OAT.Style.get(self.value,"paddingLeft"));
-			w -= parseInt(OAT.Style.get(self.value,"paddingRight"));
-		}
-		
+
+		w -= parseInt(OAT.Style.get(self.value,"paddingLeft"));
+		w -= parseInt(OAT.Style.get(self.value,"paddingRight"));
 		self.value.style.width = w + "px";
 	}
-	
+
 	this.changeSort = function(type) {
 		self.options.sort = type;
 		self.updateSortImage();
@@ -488,20 +549,20 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 			case OAT.GridData.SORT_ASC: path = "asc"; break;
 			case OAT.GridData.SORT_DESC: path = "desc"; break;
 		}
-		self.sorter.style.backgroundImage = "url("+self.grid.options.imagePath+"Grid_"+path+".gif)";	
+		self.sorter.style.backgroundImage = "url("+self.grid.options.imagePath+"Grid_"+path+".gif)";
 	}
-	
+
 	this.signal = 0;
 	this.number = number;
 	this.grid = grid;
-	
+
 	this.html = OAT.Dom.create("td"); /* cell */
 	this.container = OAT.Dom.create("div",{position:"relative"}); /* cell interior */
 	this.value = OAT.Dom.create("div",{overflow:"hidden"});
 	OAT.Dom.addClass(self.value,"header_value");
 	OAT.Dom.append([self.html,self.container],[self.container,self.value]);
 	this.value.innerHTML = params.value;
-	
+
 	if (self.options.sortable) {
 		self.html.style.cursor = "pointer";
 		self.value.style.paddingRight = "14px";
@@ -528,12 +589,11 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 			var pos = OAT.Event.position(event);
 			var dims_grid = OAT.Dom.getWH(self.grid.html);
 			var dims_container = OAT.Dom.getWH(self.container);
-			var dims_value = OAT.Dom.getWH(self.value);
 
 			OAT.GridData.resizing = self.grid;
 			OAT.GridData.index = self.number;
 			OAT.GridData.mouseX = pos[0];
-			OAT.GridData.w = dims_value[0]; /* total width to be changed */
+			OAT.GridData.w = dims_container[0]; /* total width to be changed */
 			var left1 = -2;
 			var left2 = dims_container[0];
 			if (OAT.Browser.isIE6 && !self.value.style.width) {
@@ -555,7 +615,7 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 		OAT.Event.attach(mover,"mousedown",callback);
 		OAT.Event.attach(mover,"dblclick",nullCallback);
 	}
-	
+
 	if (self.options.draggable) {
 		var callback = function(event) {
 			if (OAT.GridData.resizing) { return; } /* don't drag when resizing */
@@ -572,8 +632,8 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 		case OAT.GridData.ALIGN_LEFT: self.html.style.textAlign = "left"; break;
 		case OAT.GridData.ALIGN_CENTER: self.html.style.textAlign = "center"; break;
 		case OAT.GridData.ALIGN_RIGHT: self.html.style.textAlign = "right"; break;
-	}	
-	
+	}
+
 	var mouseover = function(event) { OAT.Dom.addClass(self.html,"hover"); }
 	var mouseout = function(event) { OAT.Dom.removeClass(self.html,"hover"); }
 	OAT.Event.attach(self.html,"mouseover",mouseover);
@@ -587,7 +647,7 @@ OAT.GridRow = function(grid,number) {
 		OAT.Dom.clear(self.html);
 		self.cells = [];
 	}
-	
+
 	this.removeColumn = function(index) {
 		OAT.Dom.unlink(self.cells[index].html);
 		self.cells.splice(index,1);
@@ -595,34 +655,34 @@ OAT.GridRow = function(grid,number) {
 
 	this.addCell = function(params,index) {
 		var i = (!index ? self.cells.length : index);
-		var cell = new OAT.GridRowCell(params,i);
+		var cell = new OAT.GridRowCell(params,i,this);
 		var tds = self.html.childNodes;
 		if (tds.length && i != tds.length) {
 			self.html.insertBefore(cell.html,tds[i]);
-		} else { 
-			self.html.appendChild(cell.html); 
+		} else {
+			self.html.appendChild(cell.html);
 		}
 		self.cells.splice(i,0,cell);
 		return cell.value;
 	}
-	
+
 	this.select = function() {
 		self.selected = 1;
 		OAT.Dom.addClass(self.html,"selected");
 	}
-	
+
 	this.deselect = function() {
 		self.selected = 0;
 		OAT.Dom.removeClass(self.html,"selected");
 	}
-	
+
 	this.grid = grid; /* parent */
 	this.cells = [];
 	this.html = OAT.Dom.create("tr");
 	this.selected = 0;
-	
+
 	OAT.Dom.addClass(self.html,( number % 2 ? "even" : "odd" ));
-	
+
 	var mouseover = function(event) { OAT.Dom.addClass(self.html,"hover"); }
 	var mouseout = function(event) { OAT.Dom.removeClass(self.html,"hover"); }
 	var click = function(event) {
@@ -640,7 +700,7 @@ OAT.GridRow = function(grid,number) {
 			var done = 0;
 			for (var i=0;i<self.grid.rows.length;i++) {
 				var r = self.grid.rows[i];
-				if (r != self) { 
+				if (r != self) {
 					if (!done && r.selected) { firstAbove = i; } /* first selected above */
 					if (!done && firstAbove != -1) { r.select(); }
 					if (done && r.selected) { lastBelow = i; } /* last selected below */
@@ -658,37 +718,36 @@ OAT.GridRow = function(grid,number) {
 				} /* all rows */
 			} /* below */
 		} /* if shift */
-		OAT.MSG.send(this,OAT.MSG.GRID_ROWCLICK,this);
+		OAT.MSG.send(grid, "GRID_ROWCLICK", self);
 		self.selected ? self.deselect() : self.select();
 	}
-	
+
 	OAT.Event.attach(self.html,"mouseover",mouseover);
 	OAT.Event.attach(self.html,"mouseout",mouseout);
 	OAT.Event.attach(self.html,"click",click);
-	
+
 } /* GridRow */
 
-OAT.GridRowCell = function(params_,number) {
+OAT.GridRowCell = function(params_,number,row) {
 	var self = this;
-	
+
 	this.options = {
 		value:"",
 		align:OAT.GridData.ALIGN_LEFT
 	}
-	
+
 	var params = (typeof(params_) == "object" ? params_ : {value:params_});
 	for (p in params) { self.options[p] = params[p]; }
-	
+
 	this.html = OAT.Dom.create("td");
-	this.container = OAT.Dom.create("div");
 	this.value = OAT.Dom.create("div",{overflow:"hidden"});
 	OAT.Dom.addClass(self.value,"row_value");
 	this.value.innerHTML = self.options.value;
 	this.html.setAttribute("title",self.options.value);
-	OAT.Dom.append([self.html,self.container],[self.container,self.value]);
-	
+	OAT.Dom.append([self.html,self.value]);
+
  	OAT.Event.attach(this.html, "click", function() {
- 		OAT.MSG.send(this,OAT.MSG.GRID_CELLCLICK,this);
+ 		OAT.MSG.send(row.grid, "GRID_CELLCLICK", self);
  	});
 
 	switch (self.options.align) {
@@ -703,15 +762,13 @@ OAT.GridRowCell = function(params_,number) {
 			self.value.style.width = "";
 			return;
 		}
-		if (!self.value.style.width || self.value.style.width == "auto") {
-			w -= parseInt(OAT.Style.get(self.value,"paddingLeft"));
-			w -= parseInt(OAT.Style.get(self.value,"paddingRight"));
-		}
+
+		w -= parseInt(OAT.Style.get(self.value,"paddingLeft"));
+		w -= parseInt(OAT.Style.get(self.value,"paddingRight"));
 		self.value.style.width = w + "px";
 	}
-	
+
 } /* GridRowCell */
 
 OAT.Event.attach(document,"mouseup",OAT.GridData.up);
 OAT.Event.attach(document,"mousemove",OAT.GridData.move);
-OAT.Loader.featureLoaded("grid");

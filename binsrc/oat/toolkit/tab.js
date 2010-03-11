@@ -12,7 +12,7 @@
 	Tab.add(clicker,window)
 	Tab.go(index)
 	Tab.remove(clicker);
-	
+
 	CSS: .tab, .tab_selected
 */
 
@@ -25,23 +25,23 @@ OAT.TabData = {
 		var parent = o.parent.options.dockElement;
 		var is_in = OAT.TabData.inParent(pos,parent);
 		is_in ? OAT.Dom.addClass(parent,"tab_signal") : OAT.Dom.removeClass(parent,"tab_signal");
-	
+
 		if (!OAT.TabData.obj) { return; }
-		
+
 		var x_ = event.clientX;
 		var y_ = event.clientY;
 		var dx = x_ - OAT.TabData.x;
 		var dy = y_ - OAT.TabData.y;
-		
+
 		OAT.Dom.moveBy(o.ghost,dx,dy);
-		
+
 		OAT.TabData.x = x_;
 		OAT.TabData.y = y_;
-		
+
 		/* check for moving out of parent */
 		if (!is_in) { o.undock(event); }
 	},
-	
+
 	up:function(event) {
 		if (!OAT.TabData.obj ) { return; }
 		var o = OAT.TabData.obj;
@@ -49,10 +49,10 @@ OAT.TabData = {
 		OAT.Dom.unlink(o.ghost);
 		OAT.Dom.removeClass(o.parent.options.dockElement,"tab_signal");
 	},
-	
+
 	x:0,
 	y:0,
-	
+
 	checkWin:function(event) {
 		if (!OAT.TabData.win) { return; }
 		var o = OAT.TabData.win;
@@ -62,7 +62,7 @@ OAT.TabData = {
 		var is_in = OAT.TabData.inParent(pos,parent);
 		if (is_in) { o.dock(); }
 	},
-	
+
 	inParent:function(coords,parent) { /* is cursor in parent's rectangle? */
 		var pos = OAT.Dom.position(parent);
 		var dims = OAT.Dom.getWH(parent);
@@ -86,7 +86,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		/**/
 		OAT.Dom.addClass(self.key,"tab_selected");
 	}
-	
+
 	this.deactivate = function() {
 		if (self.window) { return; }
 		// OAT.Dom.unlink(self.value);
@@ -95,17 +95,17 @@ OAT.TabPart = function(clicker, mover, parent) {
 		/**/
 		OAT.Dom.removeClass(self.key,"tab_selected");
 	}
-	
+
 	this.remove = function() {
 		if (self.window) { self.dock(); }
 	}
-	
+
 	this.initDrag = function(event) { /* prepare for ghost creation */
 		if (self.dragStatus) { return; }
 		self.dragStatus = 1;
 		self.eventPos = [event.clientX,event.clientY];
 	}
-	
+
 	this.startDrag = function(event) { /* create ghost */
 		if (self.dragStatus != 1) { return; }
 		self.dragStatus = 0;
@@ -120,12 +120,12 @@ OAT.TabPart = function(clicker, mover, parent) {
 		self.ghost.style.top = (pos[1]+dy)+"px";
 		document.body.appendChild(self.ghost);
 		OAT.Dom.removeSelection();
-		
+
 		OAT.TabData.x = event.clientX;
 		OAT.TabData.y = event.clientY;
 		OAT.TabData.obj = self;
 	}
-	
+
 	this.dock = function() {
 		OAT.TabData.win = false;
 
@@ -136,7 +136,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		document.body.appendChild(self.value);
 
 		OAT.Dom.removeClass(self.parent.options.dockElement,"tab_signal");
-		
+
 		/* try to reconstruct position of self.key */
 		if (self.original.next && self.original.next.parentNode == self.original.parent) { /* next sibling available */
 			self.original.parent.insertBefore(self.key,self.original.next);
@@ -145,15 +145,15 @@ OAT.TabPart = function(clicker, mover, parent) {
 		} else { /* fallback */
 			self.original.parent.appendChild(self.key);
 		}
-		
+
 		self.parent.go(self);
 		self.parent.options.onDock(self.parent.tabs.find(self));
 	}
-	
+
 	this.undock = function(event) {
 		OAT.TabData.obj = false;
 		OAT.Dom.unlink(self.ghost);
-		
+
 		/* remove key */
 		self.original = {
 			parent:self.key.parentNode,
@@ -161,7 +161,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 			next:self.key.nextSibling
 		}
 		OAT.Dom.unlink(self.key);
-		
+
 		/* create window */
 		var pos = OAT.Event.position(event);
 		var w = self.parent.options.dockWindowWidth;
@@ -176,26 +176,26 @@ OAT.TabPart = function(clicker, mover, parent) {
 		OAT.Event.attach(self.window.move,"mousedown",function() { OAT.TabData.win = self; });
 		OAT.Drag.initiate(event,self.window.move);
 		OAT.TabData.win = self;
-		
+
 		/* add to layers */
 		self.parent.layers.addLayer(self.window.div);
-		
+
 		/* tab */
 		var si = self.parent.selectedIndex;
 		var index = -1;
 		if (self.parent.tabs[si] == self) { /* activate any other tab */
 			for (var i=self.parent.tabs.length-1;i>=0;i--) {
 				var t = self.parent.tabs[i];
-				if (index == -1 && !t.window) { index = i; } 
+				if (index == -1 && !t.window) { index = i; }
 			}
 			self.parent.go(index);
 		}
 		self.parent.options.onUnDock(self.parent.tabs.find(self));
 	}
-	
+
 	OAT.Dom.addClass(self.key,"tab");
 	OAT.Event.attach(self.key,"click",function(){ parent.go(self); });
-	
+
 	if (parent.options.dockMode) {
 		OAT.Event.attach(self.key,"mousedown",self.initDrag);
 		OAT.Event.attach(self.key,"mousemove",self.startDrag);
@@ -205,7 +205,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 
 OAT.Tab = function(elm,optObj) {
 	var self = this;
-	
+
 	this.options = {
 		goCallback:function(oldIndex,newIndex){},
 		onDock:function(index){},
@@ -218,12 +218,12 @@ OAT.Tab = function(elm,optObj) {
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	self.options.dockElement = $(self.options.dockElement);
 	/* cannot use dock mode when dock element is not set, or windowing not available */
-	if (!self.options.dockElement || OAT.Loader.loadedLibs.find("window") == -1) { self.options.dockMode = false; } 
+	if (!self.options.dockElement || OAT.Loader.isLoaded("window") == -1) { self.options.dockMode = false; }
 
 	this.tabs = [];
 	this.element = $(elm);
 	this.selectedIndex = -1;
-	
+
 	this.add = function(elm_1,elm_2) {
 		var obj = new OAT.TabPart(elm_1,elm_2,self);
 		self.tabs.push(obj);
@@ -237,21 +237,21 @@ OAT.Tab = function(elm,optObj) {
 			tab.deactivate();
 		}
 	};
-	
+
 	this.go = function(something,forbidCallback) {
 		self.clear();
 		var index = (typeof(something) == "object" ? self.tabs.find(something) : something);
-		if (index != -1) { 		
+		if (index != -1) {
 			self.tabs[index].activate();
 			if (!forbidCallback) { self.options.goCallback(self.selectedIndex,index); }
 		}
 		self.selectedIndex = index;
 	};
-	
+
 	this.remove = function(something) {
 		var index = -1;
-		if (something instanceof OAT.TabPart) { 
-			index = self.tabs.find(something); 
+		if (something instanceof OAT.TabPart) {
+			index = self.tabs.find(something);
 		} else if (typeof(something) == "number") {
 			index = something;
 		} else {
@@ -261,7 +261,7 @@ OAT.Tab = function(elm,optObj) {
 			}
 		}
 		if (index == -1) { return; }
-		
+
 		var decreaseIndex = false;
 		if (index < self.selectedIndex) { decreaseIndex = true; }
 		if (index == self.selectedIndex) {
@@ -277,9 +277,9 @@ OAT.Tab = function(elm,optObj) {
 		self.tabs.splice(index,1);
 		if (decreaseIndex) { self.selectedIndex--; }
 	};
-	
-	OAT.Dom.clear(self.element); 
-	
+
+	OAT.Dom.clear(self.element);
+
 	if (self.options.dockMode) {
 		self.layers = new OAT.Layers(100);
 		OAT.Event.attach(document,"mousemove",OAT.TabData.move);

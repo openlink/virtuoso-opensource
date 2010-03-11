@@ -9,7 +9,7 @@
  */
 /*
 	r = new OAT.Rotator(panelX, panelY, params, callback)
-	
+
 	params: {
 		delay:10,
 		step:2,
@@ -17,17 +17,17 @@
 		pause:1000,
 		type:OAT.RotatorData.TYPE_LEFT
 	}
-	
+
 	document.body.appendChild(rotator.div);
 	r.addPanel(div)
 	r.start();
-	
+
 	OAT.RotatorData.TYPE_LEFT
 	OAT.RotatorData.TYPE_RIGHT
 	OAT.RotatorData.TYPE_TOP
 	OAT.RotatorData.TYPE_BOTTOM
-	
-	
+
+
 
 	CSS: .rotator
 */
@@ -58,43 +58,43 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 	this.callback = callback;
 	this.panelX = panelX;
 	this.panelY = panelY;
-	
+
 	this.addPanel = function(div) {
 		var elm = $(div);
 		this.div.appendChild(elm);
 	}
-	
+
 	this.tick = function() {
 		var delay = obj.options.delay;
 		var size = 0;
 		var cond;
 		switch (obj.options.type) {
-			case OAT.RotatorData.TYPE_LEFT: 
+			case OAT.RotatorData.TYPE_LEFT:
 				size = obj.options.numLeft * obj.panelX;
 				obj.left -= obj.options.step;
 				obj.div.style.left = obj.left+"px";
 				cond = (-obj.left >= size);
 			break;
-			case OAT.RotatorData.TYPE_RIGHT: 
+			case OAT.RotatorData.TYPE_RIGHT:
 				size = obj.options.numLeft * obj.panelX;
 				obj.left += obj.options.step;
 				obj.div.style.left = obj.left+"px";
 				cond = (obj.left >= size);
 			break;
-			case OAT.RotatorData.TYPE_TOP: 
+			case OAT.RotatorData.TYPE_TOP:
 				size = obj.options.numLeft * obj.panelY;
 				obj.top -= obj.options.step;
 				obj.div.style.top = obj.top+"px";
 				cond = (-obj.top >= size);
 			break;
-			case OAT.RotatorData.TYPE_BOTTOM: 
+			case OAT.RotatorData.TYPE_BOTTOM:
 				size = obj.options.numLeft * obj.panelY;
 				obj.top += obj.options.step;
 				obj.div.style.top = obj.top+"px";
 				cond = (obj.top >= size);
 			break;
 		}
-		
+
 		if (cond) {
 			if (obj.options.type == OAT.RotatorData.TYPE_LEFT || obj.options.type == OAT.RotatorData.TYPE_TOP) {
 				obj.div.appendChild(obj.div.firstChild);
@@ -102,19 +102,19 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 				obj.div.insertBefore(obj.div.childNodes[obj.div.childNodes.length-1],obj.div.firstChild);
 			}
 			switch (obj.options.type) {
-				case OAT.RotatorData.TYPE_LEFT: 
+				case OAT.RotatorData.TYPE_LEFT:
 					obj.left += obj.panelX;
 					obj.div.style.left = obj.left+"px";
 				break;
-				case OAT.RotatorData.TYPE_RIGHT: 
+				case OAT.RotatorData.TYPE_RIGHT:
 					obj.left -= obj.panelX;
 					obj.div.style.left = obj.left+"px";
 				break;
-				case OAT.RotatorData.TYPE_TOP: 
+				case OAT.RotatorData.TYPE_TOP:
 					obj.top += obj.panelY;
 					obj.div.style.top = obj.top+"px";
 				break;
-				case OAT.RotatorData.TYPE_BOTTOM: 
+				case OAT.RotatorData.TYPE_BOTTOM:
 					obj.top -= obj.panelY;
 					obj.div.style.top = obj.top+"px";
 				break;
@@ -125,7 +125,7 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 		} /* if moving elements */
 		setTimeout(obj.tick,delay);
 	} /* Rotator::tick() */
-	
+
 	this.start = function() {
 		if (obj.running) { return; }
 		var pos = OAT.Dom.getLT(obj.div);
@@ -134,7 +134,7 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 		obj.running = 1;
 		setTimeout(obj.tick,obj.options.delay);
 	}
-	
+
 	this.stop = function() { this.running = 0; }
 }
 OAT.Loader.featureLoaded("rotator");

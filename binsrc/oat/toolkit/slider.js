@@ -49,39 +49,39 @@ OAT.Slider = function(something,optObj) {
 		direction:OAT.SliderData.DIR_H
 	}
 	this.elm = $(something);
-	
+
 	if (optObj) for (var p in optObj) { this.options[p] = optObj[p]; }
-	
+
 	this.valueToPosition = function(value) {
 		var o = self.options;
 		var pos = o.minPos + (o.maxPos - o.minPos) * (value - o.minValue) / (o.maxValue - o.minValue);
 		return Math.round(pos);
 	}
-	
+
 	this.positionToValue = function(position) {
 		var o = self.options;
 		var val = o.minValue + (o.maxValue - o.minValue) * (position - o.minPos) / (o.maxPos - o.minPos);
 		return Math.round(val);
 	}
-	
+
 	this.slideTo = function(value,forward) {
 		self.value = value;
 		var pos = self.valueToPosition(value);
 		self.elm.style[self.options.cssProperty] = pos + "px";
 		if (forward) { self.onchange(value); }
 	}
-	
+
 	this.onchange = function(value) {}
-	
-	var startRef = function(event) { 
-		OAT.SliderData.obj = self; 
+
+	var startRef = function(event) {
+		OAT.SliderData.obj = self;
 		OAT.SliderData.mouse_x = event.clientX;
 		OAT.SliderData.mouse_y = event.clientY;
 		OAT.SliderData.initPos = parseInt(self.elm.style[self.options.cssProperty]);
 	}
-	
+
 	OAT.Event.attach(self.elm,"mousedown",startRef);
-	
+
 	this.init = function() {
 		self.slideTo(self.options.initValue,true);
 	}

@@ -13,6 +13,9 @@
 	OAT.WebDav.saveDialog(optObj)
 */
 
+/**
+ * @class Displays a WebDav browser window for file picking/opening/saving.
+ */
 OAT.WebDav = {
 	cache:{}, /* visited directories and their content */
 	window:false, /* window object */
@@ -113,7 +116,7 @@ OAT.WebDav = {
 		if (this.mode == 0) { /* open */
 			if (OAT.WebDav.options.foldersOnly) {
 				if (OAT.WebDav.options.callback) {
-					OAT.WebDav.window.hide();
+					OAT.WebDav.window.close();
 					OAT.WebDav.options.callback(p,'');
 				}
 			} else {
@@ -130,7 +133,7 @@ OAT.WebDav = {
 				}
 				OAT.WebDav.updateOptions(o);
 				var response = function(data) {
-					OAT.WebDav.window.hide();
+					OAT.WebDav.window.close();
 					if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f,data); }
 				}
 				OAT.AJAX.GET(url,false,response,o);
@@ -154,7 +157,7 @@ OAT.WebDav = {
 
 			/* ready to save */
 			if (!this.options.dataCallback) {
-				OAT.WebDav.window.hide();
+				OAT.WebDav.window.close();
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
 				return;
 			}
@@ -180,7 +183,7 @@ OAT.WebDav = {
 
 			var response = function() {
 				if (OAT.WebDav.options.isDav) { OAT.WebDav.updatePermissions(p+f); }
-				OAT.WebDav.window.hide();
+				OAT.WebDav.window.close();
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
 			}
 
@@ -224,20 +227,18 @@ OAT.WebDav = {
 
 		/* create window */
 		var wopts = {
-                        visibleButtons:"cr",
-			enabledButtons:"cr",
+			buttons:"cr",
 			outerWidth:this.options.width,
 			outerHeight:this.options.height,
 			imagePath:this.options.imagePath,
 			title:"WebDAV Browser",
-                        stackGroupBase:998
+			stackGroupBase:998
 		}
 		this.window = new OAT.Win(wopts);
 		var div = this.window.dom.content;
 		var content = OAT.Dom.create("div",{paddingLeft:"2px",paddingRight:"5px"});
 
 		this.window.dom.content.appendChild(content);
-		div.style.zIndex = 1001;
 		div.id = "dav_browser";
 
 		/* create toolbar */
@@ -308,8 +309,8 @@ OAT.WebDav = {
 		var bottom = OAT.Dom.create('div');
 		bottom.id = "dav_bottom";
 
-		this.dom.ok = OAT.Dom.button('OK');
-		this.dom.cancel = OAT.Dom.button('Cancel');
+		this.dom.ok = OAT.Dom.create("input",{type:"button",value:'OK'});
+		this.dom.cancel = OAT.Dom.create("input",{type:"button",value:'Cancel'});
 
 		this.dom.file = OAT.Dom.create("input");
 		this.dom.file.type = "text";
@@ -392,19 +393,14 @@ OAT.WebDav = {
 		OAT.Dom.append([ctd_conntype,conntype]);
 
 		var cdialog = new OAT.Dialog("Connection Setup",connectDiv,{width:400,modal:1,buttons:1});
-		cdialog.ok = function() {
+		OAT.MSG.attach(cdialog, "DIALOG_OK", function() {
 			with(OAT.WebDav.options) {
 				user = $v("dav_user");
 				pass = $v("dav_pass");
 				isDav = ($v("dav_login_put_type") == "1");
 				path = pathHome + user + "/";
 			}
-			cdialog.hide();
-		}
-
-		cdialog.cancel = function() {
-			cdialog.hide();
-		}
+		});
 
 		this.connectDialog = cdialog;
 
@@ -424,7 +420,7 @@ OAT.WebDav = {
 
 		with(this.options) {
 			if(user !== false) { path = pathHome + user + "/"; }
-			if(!silentStart || (user === false && pass === false)) { this.connectDialog.show(); }
+			if(!silentStart || (user === false && pass === false)) { this.connectDialog.open(); }
 		}
 
 		if (this.options.hiddenPrefixes)
@@ -620,7 +616,7 @@ OAT.WebDav = {
 					var src = this.options.imagePath+"Dav_"+ico_type+"."+this.options.imageExt;
 					var srcB = this.options.imagePath+"Blank.gif";
 					var ico = OAT.Dom.image(src,srcB,32,32);
-					var cube = OAT.Dom.create('div',{},"dav_item");
+					var cube = OAT.Dom.create('div',{"class":"dav_item"});
 					OAT.Dom.append([cube,ico,OAT.Dom.create("br"),OAT.Dom.text(item.name)],[content,cube]);
 					content.appendChild(cube);
 					attachClick(cube,item,cubez);
@@ -788,7 +784,7 @@ OAT.WebDav = {
 		});
 		OAT.Event.attach(this.dom.ok,"click",useRef);
 		OAT.Event.attach(this.dom.cancel,"click",function(event) {
-			OAT.WebDav.window.hide();
+			OAT.WebDav.window.close();
 		});
 		OAT.Event.attach(this.dom.ext,"change",function(event) {
 			var ext = OAT.WebDav.options.extensionFilters[OAT.WebDav.dom.ext.selectedIndex];
@@ -800,7 +796,7 @@ OAT.WebDav = {
 			OAT.WebDav.redraw();
 		});
 
-		OAT.MSG.attach(this.tree,OAT.MSG.TREE_EXPAND,function(tree,msg,node) {
+		OAT.MSG.attach(this.tree, "TREE_EXPAND", function(tree,msg,node) {
 			var path = node.path;
 			OAT.WebDav.openDirectory(path,true,node);
 		});
@@ -891,7 +887,7 @@ OAT.WebDav = {
 			return;
 		}
 
-		this.window.show();
+		this.window.open();
 		OAT.Dom.center(this.window.dom.container,1,1);
 		OAT.Dom.show("dav_permissions");
 		this.dom.file.value = this.options.file; /* preselected file name */
@@ -1043,7 +1039,7 @@ OAT.WebDav = {
 
 	updateOptions:function(o) {
 		if (!o.headers.Authorization)	{
-			o.auth = OAT.AJAX.AUTH_BASIC;
+//			o.auth = OAT.AJAX.AUTH_BASIC;
 			o.user = OAT.WebDav.options.user;
 			o.password = OAT.WebDav.options.pass;
 		}
@@ -1075,4 +1071,3 @@ OAT.Dav = { /* legacy backwards compatibility! */
 	}
 }
 
-OAT.Loader.featureLoaded("dav");

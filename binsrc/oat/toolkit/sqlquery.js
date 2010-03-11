@@ -11,10 +11,10 @@
 	var sq = new OAT.SqlQuery();
 	sq.fromString(str)
 	sq.toString(type)
-	
+
 	sq.limit
 	sq.offset
-	
+
 	sq.columns.count
 	sq.columns.items[index].column
 	sq.columns.items[index].alias
@@ -22,11 +22,11 @@
 	sq.columns.getResult(index)
 	sq.columns.add()
 	sq.columns.remove(index)
-	
+
 	sq.tablesString
-	
+
 	sq.tables
-	
+
 	sq.joins = [];
 
 	sq.conditions.count
@@ -37,7 +37,7 @@
 	sq.conditions.getFull(index);
 	sq.conditions.add()
 	sq.conditions.remove(index)
-	
+
 	sq.havings.count
 	sq.havings.items[index].column
 	sq.havings.items[index].operator
@@ -46,20 +46,20 @@
 	sq.havings.getFull(index);
 	sq.havings.add()
 	sq.havings.remove(index)
-	
+
 	sq.orders.count
 	sq.orders.items[index].column
 	sq.orders.items[index].type
 	sq.orders.getFull(index)
 	sq.orders.add()
 	sq.orders.remove(index)
-	
+
 	sq.groups.count
 	sq.groups.items[index].column
 	sq.groups.getFull(index)
 	sq.groups.add()
 	sq.groups.remove(index)
-	
+
 */
 
 OAT.SqlQueryData = {
@@ -70,7 +70,7 @@ OAT.SqlQueryData = {
 	TYPE_SQLX_ELEMENTS:5,
 	columnQualifierPre:'"',
 	columnQualifierPost:'"',
-	
+
 	escapedQualifiers:function() {
 		var q1 = OAT.SqlQueryData.columnQualifierPre;
 		var q2 = OAT.SqlQueryData.columnQualifierPost;
@@ -85,12 +85,12 @@ OAT.SqlQueryData = {
 		var l = str.length;
 		return str.substring(1,l-1);
 	},
-	
+
 	qualifyOne:function(str) {
 		var tmp = OAT.SqlQueryData.deQualifyOne(str);
 		return OAT.SqlQueryData.columnQualifierPre+tmp+OAT.SqlQueryData.columnQualifierPost;
 	},
-	
+
 	deQualifyMulti:function(str) {
 		var parts = str.split(".");
 		for (var i=0;i<parts.length;i++) { parts[i] = OAT.SqlQueryData.deQualifyOne(parts[i]); }
@@ -106,13 +106,13 @@ OAT.SqlQueryData = {
 
 OAT.SqlQuery = function() {
 	var self = this;
-	
+
 	this.limit = -1;
 	this.offset = 0;
-	
+
 	this.tablesString = "";
 	this.tables = [];
-	
+
 	this.columns = {
 		count:0,
 		items:[],
@@ -144,7 +144,7 @@ OAT.SqlQuery = function() {
 			self.columns.count--;
 		}
 	}
-	
+
 	this.conditions = {
 		count:0,
 		items:[],
@@ -168,7 +168,7 @@ OAT.SqlQuery = function() {
 			self.conditions.count--;
 		}
 	}
-	
+
 	this.havings = {
 		count:0,
 		items:[],
@@ -192,7 +192,7 @@ OAT.SqlQuery = function() {
 			self.havings.count--;
 		}
 	}
-	
+
 	this.orders = {
 		count:0,
 		items:[],
@@ -218,7 +218,7 @@ OAT.SqlQuery = function() {
 			self.orders.count--;
 		}
 	}
-	
+
 	this.groups = {
 		count:0,
 		items:[],
@@ -239,9 +239,9 @@ OAT.SqlQuery = function() {
 			self.groups.count--;
 		}
 	}
-	
+
 	this.joins = []; /* {table1:"",table2:"",row1:"",row2:""} */
-	
+
 	this.toString = function(type) {
 		var q = "";
 		q += "SELECT ";
@@ -288,12 +288,12 @@ OAT.SqlQuery = function() {
 			}
 			q += " "+tmp.join(", ")+" ";
 		}
-		
+
 		switch (type) {
 			case OAT.SqlQueryData.TYPE_SQL:
 				return q;
 			break;
-			
+
 			case OAT.SqlQueryData.TYPE_FORXML_AUTO:
 				return q + " FOR XML AUTO";
 			break;
@@ -305,7 +305,7 @@ OAT.SqlQuery = function() {
 				var sqlx_post = " ) SUB";
 				return sqlx_pre + "\n" + q + sqlx_post;
 			break;
-			
+
 			case OAT.SqlQueryData.TYPE_SQLX_ELEMENTS:
 				var sqlx_pre = "SELECT XMLELEMENT ('ROW', XMLFOREST (" + coltmp.join(", ") + ")) FROM (";
 				var sqlx_post = " ) SUB";
@@ -314,14 +314,14 @@ OAT.SqlQuery = function() {
 		}
 		return false;
 	}
-	
+
 	this.splitPiece = function(string) {
 		var word = string.match(/^(\w+) (.*)/);
 		switch (word[1]) {
 			case "SELECT":
 				var main = word[2];
 				var tmp = word[2].match(/TOP +([^ ]+) +(.*)/)
-				if (tmp) { 
+				if (tmp) {
 					self.limit = tmp[1];
 					main = tmp[2];
 				}
@@ -340,7 +340,7 @@ OAT.SqlQuery = function() {
 					}
 				}
 			break;
-			
+
 			case "FROM":
 				self.tablesString = word[2];
 				var corr = string+" ";
@@ -365,7 +365,7 @@ OAT.SqlQuery = function() {
 					NAMES[dq] = 1;
 				}
 				for (p in NAMES) { self.tables.push(p); }
-				
+
 				/* also relations */
 				var cat_tablecol = q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1];
 				var noncat_tablecol = q[0]+"[^"+q[1]+"]+"+q[1]+"\."+q[0]+"[^"+q[1]+"]+"+q[1];
@@ -389,7 +389,7 @@ OAT.SqlQuery = function() {
 					self.joins.push(o);
 				}
 			break;
-			
+
 			case "WHERE":
 				/* same technique as before - add newlines, than split by them */
 				var str = word[2];
@@ -408,7 +408,7 @@ OAT.SqlQuery = function() {
 					c.logic = parts[1];
 				}
 			break;
-			
+
 			case "HAVING":
 				/* same technique as before - add newlines, than split by them */
 				var str = word[2];
@@ -416,7 +416,7 @@ OAT.SqlQuery = function() {
 				str = str.replace(/ OR /," \nOR ");
 				var conds = str.split("\n");
 				conds[0] = "AND "+conds[0]; /* add temporary AND */
-				
+
 				for (var i=0;i<conds.length;i++) {
 					var c = self.havings.add();
 					var q = OAT.SqlQueryData.escapedQualifiers();
@@ -455,7 +455,7 @@ OAT.SqlQuery = function() {
 			break;
 		} /* switch */
 	}
-	
+
 	this.fromString = function(str) {
 		var keywords = ["SELECT","FROM","WHERE","ORDER BY","GROUP BY","HAVING"];
 		/* normalize */
@@ -465,15 +465,15 @@ OAT.SqlQuery = function() {
 		if (q.match(/<query/)) { q = q.match(/(SELECT .*)<\/query/)[1]; }
 		if (q.match(/FOR XML/)) { q = q.match(/(SELECT .*)FOR XML/)[1]; }
 		if (q.match(/SUB[ ]*$/)) { q = q.match(/FROM \((.*)\) SUB[ ]*$/)[1]; }
-		
-		for (var i=0;i<keywords.length;i++) { 
+
+		for (var i=0;i<keywords.length;i++) {
 			var re = new RegExp(keywords[i]);
-			q = q.replace(re,"\n"+keywords[i]); 
+			q = q.replace(re,"\n"+keywords[i]);
 		}
-		
+
 		var pieces = q.split("\n");
 		for (var i=1;i<pieces.length;i++) {	self.splitPiece(pieces[i]); }
-		
+
 	}
 }
 OAT.Loader.featureLoaded("sqlquery");

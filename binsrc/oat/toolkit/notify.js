@@ -21,11 +21,11 @@ OAT.Notify = function(parentDiv,optObj) {
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
 	this.parentDiv = parentDiv || document.body;
-	this.container = false; 
+	this.container = false;
 	this.cx = 0;
 	this.cy = 0;
 
-	
+
 	this.update = function() {
 		var scroll = OAT.Dom.getScroll();
 		var dims = OAT.Dom.getViewport();
@@ -34,34 +34,34 @@ OAT.Notify = function(parentDiv,optObj) {
 			top = (self.cy + scroll[1]) + "px";
 		}
 	}
-	
+
 	this.createContainer = function(width,height) {
 		var pos = OAT.Dom.getLT(self.parentDiv);
 		var dim = OAT.Dom.getWH(self.parentDiv);
 
-		if(self.options.x == -1) { 
-			self.cx = Math.round( pos[0] + (dim[0] - width ) / 2 ); 
-		} else { 
-			self.cx = pos[0] + self.options.x; 
+		if(self.options.x == -1) {
+			self.cx = Math.round( pos[0] + (dim[0] - width ) / 2 );
+		} else {
+			self.cx = pos[0] + self.options.x;
 		}
-		
-		if(self.options.y == -1) { 
-			self.cy = Math.round( pos[1] + (dim[1] - height) / 2 ); 
-		} else { 
-			self.cy = pos[1] + self.options.y; 
+
+		if(self.options.y == -1) {
+			self.cy = Math.round( pos[1] + (dim[1] - height) / 2 );
+		} else {
+			self.cy = pos[1] + self.options.y;
 		}
-		
+
 		var c = OAT.Dom.create("div",{position:"fixed", top: self.cy + "px", left: self.cx + "px"});
 		self.container = c;
 		self.parentDiv.appendChild(c);
 
 
-		if (OAT.Browser.isIE6) { 
-			c.style.position = "absolute"; 
-			OAT.Event.attach(window,'resize',self.update); 
-			OAT.Event.attach(window,'scroll',self.update); 
+		if (OAT.Browser.isIE6) {
+			c.style.position = "absolute";
+			OAT.Event.attach(window,'resize',self.update);
+			OAT.Event.attach(window,'scroll',self.update);
 			self.update();
-		} 
+		}
 	}
 
 	this.send = function(content, optObj) {
@@ -81,11 +81,11 @@ OAT.Notify = function(parentDiv,optObj) {
 		for (var p in optObj) { options[p] = optObj[p]; }
 
 		if (!self.container) { self.createContainer(options.width,options.height); }
-		
+
 		var c = $(content);
-		if (!c) { 
+		if (!c) {
 			c = OAT.Dom.create("div");
-			c.innerHTML = content; 
+			c.innerHTML = content;
 		}
 		if (options.style) { OAT.Style.apply(c,options.style); }
 
@@ -93,7 +93,7 @@ OAT.Notify = function(parentDiv,optObj) {
 		if (options.image) { /* image */
 			var img = OAT.Dom.create("img",{cssFloat:"left",styleFloat:"left",marginRight:"2px"});
 			img.src = options.image;
-			div.appendChild(img); 
+			div.appendChild(img);
 		}
 		div.appendChild(c);
 		OAT.Style.opacity(div,0);
@@ -104,15 +104,15 @@ OAT.Notify = function(parentDiv,optObj) {
 				if (div.parentNode) { aDisappear.start(); }
 			},options.timeout);
 		}
-		
+
 		var aAppear = new OAT.AnimationOpacity(div,{opacity:options.opacity,speed:0.1,delay:options.delayIn});
 		var aDisappear = new OAT.AnimationOpacity(div,{opacity:0,speed:0.1,delay:options.delayOut});
 		var aRemove = new OAT.AnimationSize(div,{height:0,speed:10,delay:options.delayOut});
-		OAT.MSG.attach(aRemove.animation,OAT.MSG.ANIMATION_STOP,function(){	OAT.Dom.unlink(div); });
-		OAT.MSG.attach(aAppear.animation,OAT.MSG.ANIMATION_STOP,afterAppear);
-		OAT.MSG.attach(aDisappear.animation,OAT.MSG.ANIMATION_STOP,aRemove.start);
-		
-		
+		OAT.MSG.attach(aRemove.animation,"ANIMATION_STOP",function(){	OAT.Dom.unlink(div); });
+		OAT.MSG.attach(aAppear.animation,"ANIMATION_STOP",afterAppear);
+		OAT.MSG.attach(aDisappear.animation,"ANIMATION_STOP",aRemove.start);
+
+
 		OAT.Event.attach(div,"click",function() {
 			if (options.delayOut) {
 				aRemove.start();
@@ -123,20 +123,20 @@ OAT.Notify = function(parentDiv,optObj) {
 
 		var start = function() {
 			self.container.appendChild(div);
-			if (options.delayIn) { 
-				aAppear.start(); 
-			} else { 
-				OAT.Style.opacity(div,options.opacity); 
+			if (options.delayIn) {
+				aAppear.start();
+			} else {
+				OAT.Style.opacity(div,options.opacity);
 				afterAppear();
 			}
 		}
 		var end = function() {
 			aAppear.stop();
 		}
-		
+
 		start();
 	}
 
-		
+
 }
 OAT.Loader.featureLoaded("notify");

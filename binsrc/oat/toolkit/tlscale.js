@@ -8,14 +8,14 @@
  *  See LICENSE file for details.
  */
 
-OAT.TlScale = {	
+OAT.TlScale = {
 	defWidth:80,
 	findScale:function(t1,t2,oldTime,override) {
 		var name = "_years";
 		var d = (t2.getTime() - t1.getTime()) / 60000; /* in minutes */
 		if (d <= 2) { name = "_fiveseconds"; } else
 		if (d <= 30) { name = "_fiveminutes"; } else
-		if (d <= 60*5) { name = "_hours"; } else 
+		if (d <= 60*5) { name = "_hours"; } else
 		if (d <= 60*24) { name = "_fourhours"; } else
 		if (d <= 3*24*60) { name = "_days"; } else
 		if (d <= 20*24*60) { name = "_weeks"; } else
@@ -25,14 +25,14 @@ OAT.TlScale = {
 		if (oldTime) { s.currentTime = oldTime; }
 		return s;
 	},
-	
+
 	genericElement:function() {
 		var l = OAT.Dom.create("div",{position:"absolute",height:"100%",top:"0px",zIndex:2},"timeline_bar")
 		l.txt = OAT.Dom.create("div",{position:"absolute",left:"3px",bottom:"2px"},"timeline_date");
 		l.appendChild(l.txt);
 		return l;
 	},
-	
+
 	_years:function() {
 		var self = this;
 		this.format = "Y";
@@ -69,7 +69,7 @@ OAT.TlScale = {
 			l.startTime = new Date(self.currentTime.getTime());
 			var y = parseInt(self.currentTime.getFullYear());
 			self.currentTime.setFullYear(y+1);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -78,7 +78,7 @@ OAT.TlScale = {
 			l.elm._format = self.format;
 /*			l.elm.txt.innerHTML = self.currentTime.getFullYear();
 			l.elm.txt.title = self.currentTime.toHumanString(); */
-			
+
 			return [l];
 		}
 	},
@@ -116,11 +116,11 @@ OAT.TlScale = {
 			l.startTime = new Date(self.currentTime.getTime());
 			var m = (self.currentTime.getMonth()+1) % 12;
 			self.currentTime.setMonth(m);
-			if (!m) { 
+			if (!m) {
 				var y = parseInt(self.currentTime.getFullYear());
 				self.currentTime.setFullYear(y+1);
 			}
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -160,7 +160,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 60 * 60 * 24 * 7);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -171,7 +171,7 @@ OAT.TlScale = {
 			return [l];
 		}
 	},
-	
+
 	_days:function() {
 		var self = this;
 		this.format = "j.n."
@@ -201,7 +201,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 60 * 60 * 24);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -240,7 +240,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 60 * 60 * 4);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -279,7 +279,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 60 * 60);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -290,7 +290,7 @@ OAT.TlScale = {
 			return [l];
 		}
 	},
-	
+
 	_fiveminutes:function() {
 		var self = this;
 		this.format = "H:i";
@@ -316,7 +316,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 60 * 5);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -353,7 +353,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 30);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -390,7 +390,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000 * 5);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }
@@ -401,7 +401,7 @@ OAT.TlScale = {
 			return [l];
 		}
 	},
-	
+
 	_seconds:function() {
 		var self = this;
 		this.format = "i:s.x";
@@ -426,7 +426,7 @@ OAT.TlScale = {
 			l.width = OAT.TlScale.defWidth;
 			l.startTime = new Date(self.currentTime.getTime());
 			self.currentTime.setTime(self.currentTime.getTime() + 1000);
-			/* 
+			/*
 				trick: if the date is not 'round' (in our scope), take the first 'round' before
 			*/
 			if (!self.isRound()) { l.elm = self.initBefore(self.currentTime); }

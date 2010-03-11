@@ -7,13 +7,13 @@
  *
  *  See LICENSE file for details.
  */
- 
+
 /*
 	tl = new OAT.Timeline(contentDiv, paramsObj)
 	paramsObj = {
-		lineHeight:16, 
+		lineHeight:16,
 		bandHeight:20,
-		margins:200, 
+		margins:200,
 		sliderHeight:20,
 		resize:true,
 		formatter:true,
@@ -22,7 +22,7 @@
 	tl.addBand(name,color,label)
 	tl.addEvent(bandName,startTime,endTime,content,color)
 	tl.draw()
-	
+
 	.timeline .timeline_port .timeline_slider
 */
 
@@ -64,7 +64,7 @@ OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) 
 		}
 		var t = (options.timeTitleOverride ? options.timeTitleOverride(endTime) : endTime.toHumanString());
 		this.elm.title += " - "+t;
-	} 
+	}
 	this.elm.appendChild(content);
 }
 
@@ -90,31 +90,31 @@ OAT.Timeline = function(contentElm,paramsObj) {
 	}
 
 	for (var p in paramsObj) { self.options[p] = paramsObj[p]; }
-	
+
 	this.formatSelect = OAT.Dom.create("select",{font:"menu"});
-	
+
 	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px"},"timeline"); /* main axis */
 	this.elm.style.zIndex = 3;
 	this.content = $(contentElm);
 	OAT.Dom.makePosition(self.content);
-	
+
 	this.port = OAT.Dom.create("div",{cursor:"w-resize",position:"relative"},"timeline_port");
 	this.port.style.overflow = "hidden"; /* opera sux */
 	this.port.style.overflowX = "hidden";
 	this.port.style.overflowY = "auto";
 	this.sliderElm = OAT.Dom.create("div",{position:"absolute",height:self.options.sliderHeight+"px",left:"0px",bottom:"0px",width:"100%"});
 	this.sliderBtn = OAT.Dom.create("div",{},"timeline_slider");
-	
+
 	OAT.Dom.append([self.content,self.port,self.sliderElm]);
 
 	this.sliderElm.appendChild(OAT.Dom.create("hr",{width:"100%",position:"relative",top:"4px"}));
 	this.sliderElm.appendChild(this.sliderBtn);
-	
+
 	this.slider = new OAT.Slider(this.sliderBtn,{});
-	
+
 	/* dragging */
 	OAT.Event.attach(this.port,"mousedown",function(event){ self.mouse_x = event.clientX; OAT.TimelineData.obj = self; });
-	
+
 	this.reorderEvents = function() {
 		function s(a,b) { /* compare by start times */
 			return a.startTime.getTime() - b.startTime.getTime();
@@ -129,11 +129,11 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		OAT.Dom.clear(self.elm);
 		OAT.Dom.clear(self.port);
 	}
-	
+
 	this.fixDate = function(str) {
 		if (str instanceof Date) { return str; }
 		var r=false;
-		function dt() { 
+		function dt() {
 			var result = new Date();
 			result.setMonth(0);
 			result.setDate(1);
@@ -220,7 +220,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if (isNaN(def)) { return false; }
 		return def;
 	}
-	
+
 	this.addBand = function(name,color,label) {
 		var l = (label ? label : name);
 		self.bands[name] = {
@@ -229,7 +229,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			lines:[]
 		}
 	}
-	
+
 	this.addEvent = function(bandIndex,startTime,endTime,content,color) {
 		var st = self.fixDate(startTime);
 		if (!st) { return; } /* bad format */
@@ -243,7 +243,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		self.events.push(e);
 		return e;
 	}
-	
+
 	this.drawResizer = function() {
 		if (!self.options.resize) { return; }
 		var bg = "url(" + OAT.Preferences.imagePath + "resize.gif)";
@@ -268,24 +268,24 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		OAT.Dom.option("Date","j.n.Y",self.formatSelect);
 		OAT.Dom.option("Date & Time","j.n.Y H:i:s",self.formatSelect);
 	}
-	
+
 	this.drawDateLabels = function() {
 		var val = $v(self.formatSelect);
 		for (var i=0;i<self.dateLabels.length;i++) {
 			var elm = self.dateLabels[i];
 			var f = (val == "" ? elm._format : val);
-			var value = (self.options.timeLabelOverride ? 
-							self.options.timeLabelOverride(elm._date) : 
+			var value = (self.options.timeLabelOverride ?
+							self.options.timeLabelOverride(elm._date) :
 							elm._date.format(f));
 			elm.txt.innerHTML = value;
-			var value = (self.options.timeTitleOverride ? 
-							self.options.timeTitleOverride(elm._date) : 
+			var value = (self.options.timeTitleOverride ?
+							self.options.timeTitleOverride(elm._date) :
 							elm._date.toHumanString());
 			elm.txt.title = value;
 		}
 	}
 	OAT.Event.attach(self.formatSelect,"change",self.drawDateLabels);
-	
+
 	this.positionEvents = function() { /* main thing */
 		var lastPlottedIndex = -1;
 		var candidateIndex = 0;
@@ -304,7 +304,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		/* main loop */
 		do {
 			/* create lineset */
-			var lines = scale.generateSet(); 
+			var lines = scale.generateSet();
 			/* append them to timeline and plot suitable events */
 			for (var i=0;i<lines.length;i++) { /* for all time intervals */
 				var elm = lines[i].elm;
@@ -313,7 +313,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 				var endTime = lines[i].endTime;
 				var width = lines[i].width;
 				var resolution = width / (endTime.getTime() - startTime.getTime());
-				
+
 				/* available events... */
 				while (candidateIndex < self.events.length && self.events[candidateIndex].startTime.getTime() <= endTime.getTime()) {
 					lastPlottedIndex++; /* let's plot this event */
@@ -331,7 +331,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 					}
 					candidateIndex++;
 				}
-				
+
 				var done = 0;
 				for (var j=0;j<pendingEnds.length;j++) {
 					var e = pendingEnds[j];
@@ -347,30 +347,30 @@ OAT.Timeline = function(contentElm,paramsObj) {
 					var e = pendingEnds[j];
 					if (e.x2 != -1) { pendingEnds.splice(j,1); }
 				}
-				
+
 				self.width += width; /* increase total width */
 				elm.style.left = self.width + "px";
 				self.elm.appendChild(elm);
 			}
 			/* if needed, chage scale */
 			var newscale = scale;
-			
+
 			if (lastPlottedIndex != self.events.length-1 && lastPlottedIndex != -1) { /* there are remaining events */
 				newscale = OAT.TlScale.findScale(endTime,self.events[lastPlottedIndex+1].startTime,scale.currentTime,self.options.timeStepOverride);
 			}
-			
+
 			/* if no events need plotting, but there are outstanding ending events, we need to change scale as well */
 			if (lastPlottedIndex == self.events.length-1 && pendingEnds.length) {
 				newscale = OAT.TlScale.findScale(endTime,pendingEnds[0].endTime,scale.currentTime,self.options.timeStepOverride);
 			}
-			
+
 			scale = newscale;
 		/*               there are remaining evens                     timeline is to narrow           there are pending ends    */
 		} while (lastPlottedIndex < self.events.length-1 || self.width + self.options.margins < dims[0] || pendingEnds.length);
 	} /* OAT.Timeline::positionEvents() */
-	
+
 	this.draw = function() {
-		if (!self.events.length) { 
+		if (!self.events.length) {
 			self.drawFormatSelect();
 			self.drawResizer();
 			self.port.style.height = (2*self.options.sliderHeight) + "px";
@@ -388,13 +388,13 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		self.positionEvents();
 		self.width += self.options.margins;
 		self.elm.style.width = self.width + "px";
-		
+
 		/* actualize date labels */
 		self.drawDateLabels();
-		
+
 		/* compute lines */
 		for (var i=0;i<self.events.length;i++) { self.computeLine(self.events[i]); }
-		
+
 		/* adjust heights */
 		var startingHeights = {};
 		var headerHeights = {};
@@ -435,7 +435,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			var dims = OAT.Dom.getWH(self.content);
 			self.port.style.height = (dims[1]-self.options.sliderHeight)+"px";
 		}
-		
+
 		/* sync slider */
 		self.slider.options.minValue = 0;
 		self.slider.options.minPos = 0;
@@ -443,11 +443,11 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		/* slide to center */
 		self.slider.options.initValue = Math.round(self.slider.options.maxValue / 2);
 		self.slider.init();
-		
+
 		self.drawFormatSelect();
 		self.drawResizer();
 	}
-	
+
 	this.computeLine = function(event) {
 		/* find free line */
 		var free = -1;
@@ -468,7 +468,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		var w = event.elm.offsetWidth;
 		a[free] = Math.max(x2,x1+w);
 	}
-	
+
 	this.sync = function() {
 		var dims = OAT.Dom.getWH(self.port);
 		var sdims = OAT.Dom.getWH(self.sliderBtn);
@@ -478,7 +478,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		var pos = parseInt(self.slider.elm.style[self.slider.options.cssProperty]);
 		if (pos > self.slider.options.maxPos) { self.slider.slideTo(self.slider.options.maxValue,true); }
 	}
-	
+
 	this.scrollTo = function(pixel) {
 		self.position = pixel;
 		self.elm.style.left = (-self.position) + "px";

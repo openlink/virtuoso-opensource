@@ -12,7 +12,7 @@
 	appendChild(cb.div);
 	cb.addOption(imagepath,textvalue,callback)
 	cb.removeOption(index)
-	
+
 	CSS: combo_button, combo_button_image, combo_button_text, combo_button_option, combo_button_option_down
 */
 
@@ -24,17 +24,17 @@ OAT.ComboButton = function() {
 	this.image = OAT.Dom.create("img",{cursor:"pointer"},"combo_button_image"); /* dropdown clicker */
 	this.image.src = OAT.Preferences.imagePath+"Combobutton_select.gif";
 	this.selected = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left"}); /* currently selected option */
-	
+
 	self.instant = new OAT.Instant(this.optList);
 	OAT.Dom.append([this.div,this.selected,this.image],[document.body,self.optList]);
-	
+
 	this.select = function(index,do_callback) { /* select one option, call for action */
 		if (self.selected.firstChild) { self.optList.appendChild(self.selected.firstChild); } /* remove old option, if any */
 		self.selected.appendChild(self.options[index][0]); /* append one from listbox */
 		if (self.optList.parentNode) { self.instant.hide(); } /* hide listbox */
 		if (do_callback) { self.options[index][1](); } /* if not selected automatically, action */
 	}
-	
+
 	self.instant.options.showCallback = function() { /* open listbox */
 		var coords = OAT.Dom.position(self.div); /* calculate the place */
 		var dims = OAT.Dom.getWH(self.div); /* calculate the place */
@@ -42,7 +42,7 @@ OAT.ComboButton = function() {
 		self.optList.style.top = (coords[1]+dims[1])+"px";
 	}
 	self.instant.createHandle(self.image); /* show listbox */
-	
+
 	this.addOption = function(imagePath,textValue,callback) {
 		var opt = OAT.Dom.create("div",{},"combo_button_option");
 		OAT.Event.attach(opt,"mousedown",function(){
@@ -67,7 +67,7 @@ OAT.ComboButton = function() {
 		OAT.Event.attach(opt,"click",clickRef); /* what to do after clicking */
 		if (self.options.length == 1) { this.select(0,false); } /* first option is automatically selected */
 	}
-	
+
 	this.removeOption = function(index) {
 		if (index > self.options.length-1) { return; }
 		var was_active = false;

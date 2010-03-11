@@ -31,7 +31,7 @@ OAT.JSObj = {
 			}
 		}
 	}, /* JSObj.walk() */
-	
+
 	getStringIndexes:function(obj) {
 		var list = [];
 		var callback = function(key,value) {
@@ -40,7 +40,7 @@ OAT.JSObj = {
 		OAT.JSObj.walk(obj,callback);
 		return list;
 	},
-	
+
 	getAllValues:function(obj,property) {
 		var list = [];
 		var callback = function(key,value) {
@@ -49,7 +49,7 @@ OAT.JSObj = {
 		OAT.JSObj.walk(obj,callback);
 		return list;
 	},
-	
+
 	createFromXmlNode:function(node) {
 		var childNodes = [];
 		for (var i=0;i<node.childNodes.length;i++) {

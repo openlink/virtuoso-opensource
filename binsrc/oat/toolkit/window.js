@@ -45,9 +45,9 @@ OAT.Window = function(optObj,type) {
 		imagePath:OAT.Preferences.imagePath
 	}
 	for (var p in optObj) { options[p] = optObj[p]; }
-	
+
 	if (options.height == 0) { options.height = 200; }
-	
+
 	var self = this;
 	/* get window type */
 	var t = OAT.WindowType(type);
@@ -91,7 +91,7 @@ OAT.Window = function(optObj,type) {
 	if (this.closeBtn) { OAT.Event.attach(this.closeBtn,"click",function(){self.onclose();}); }
 	if (this.minBtn) { OAT.Event.attach(this.minBtn,"click",function(){self.onmin();}); }
 	if (this.maxBtn) { OAT.Event.attach(this.maxBtn,"click",function(){self.onmax();}); }
-	
+
 	/* trick for easy stacking? need to be thoroughly tested.. */
 	var upRef = function(event) {
 		if (!obj.div.parentNode) { return; }
@@ -109,15 +109,15 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 	obj.closeBtn = false;
 	obj.minBtn = false;
 	obj.maxBtn = false;
-	
+
 	obj.div = OAT.Dom.create("div",{position:"absolute"});
-	obj.content = OAT.Dom.create("div",{overflow:"auto",position:"relative"}); 
+	obj.content = OAT.Dom.create("div",{overflow:"auto",position:"relative"});
 	obj.move = OAT.Dom.create("div");
 
-	if (options.move) { 
-		OAT.Drag.create(obj.move,obj.div,{magnetsH:options.magnetsH,magnetsV:options.magnetsV});	
+	if (options.move) {
+		OAT.Drag.create(obj.move,obj.div,{magnetsH:options.magnetsH,magnetsV:options.magnetsV});
 	}
-	
+
 	OAT.Dom.append([obj.div,obj.move,obj.content]);
 
 	if (options.close) {
@@ -143,23 +143,23 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
  		OAT.Resize.create(obj.resize,obj.move,OAT.Resize.TYPE_X);
 	}
 
-	
+
 	obj.caption = OAT.Dom.create("div");
 	obj.caption.innerHTML = "&nbsp;"+options.title;
 	obj.move.appendChild(obj.caption);
 	obj.anchorTo = function(x_,y_) { /* where should we put the window? */
 		var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
 		var dims = OAT.Dom.getWH(obj.div);
-		
+
 		if (fs[1]) { /* top */
 			var y = y_ - 20 - dims[1];
 		} else { /* bottom */
 			var y = y_ + 20;
 		}
-		
+
 		var x = Math.round(x_ - dims[0]/2);
 		if (x < 0) { x = 10; }
-		
+
 		obj.moveTo(x,y);
 	}
 
@@ -176,14 +176,14 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 			obj.content.style.height = (h - options.statusHeight - options.moveHeight + 3) + "px";
 		}
 	}
-	
+
 	obj.moveTo = function(x,y) {
 		if (x >= 0) { obj.div.style.left = x + "px"; }
 		if (x < 0) { obj.div.style.right = (-x) + "px"; }
 		if (y >= 0) { obj.div.style.top = (y + options.moveHeight) + "px"; }
 		if (y < 0) { obj.div.style.bottom = (-y) + "px"; }
 	}
-	
+
 	obj.accomodate = function() {
 		var x = 0;
 		var y = 0;

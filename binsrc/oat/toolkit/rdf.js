@@ -32,12 +32,12 @@ OAT.RDF = {
 		u = u.match(/^[^#]+/);
 		u = u? u[0] : "";
 		var idPrefix = u + "#";
-		
+
 		function getAtt(obj,att) {
 			if (att in obj) { return obj[att]; }
 			return false;
 		}
-		
+
 		function processNode(node,isPredicateNode) {
 			/* get info about node */
 			var attribs = OAT.Xml.getLocalAttributes(node);
@@ -46,12 +46,12 @@ OAT.RDF = {
 			var id1 = getAtt(attribs,"nodeID");
 			var id2 = getAtt(attribs,"ID");
 			/* no subject in triplet */
-			if (!subj) { 
+			if (!subj) {
 				/* try construct it from ids */
 				if (id1) {
-					subj = idPrefix+id1; 
+					subj = idPrefix+id1;
 				} else if (id2) {
-					subj = idPrefix+id2; 
+					subj = idPrefix+id2;
 				} else {
 					/* create anonymous subject */
 					subj = bnodePrefix+bnodeCount;
@@ -59,7 +59,7 @@ OAT.RDF = {
 				}
 			}
 			/* now we have a subject */
-			
+
 			/* handle literals ? */
 			if (OAT.Xml.localName(node) != "Description" && !isPredicateNode) { /* add 'type' where needed */
 				var pred = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -67,7 +67,7 @@ OAT.RDF = {
 				triples.push([subj,pred,obj,0]); /* 0 - literal, 1 - reference */
 			}
 
-			/* for each of our own attributes, push a reference triplet into the graph */	
+			/* for each of our own attributes, push a reference triplet into the graph */
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
 				var local = OAT.Xml.localName(a);
@@ -90,15 +90,15 @@ OAT.RDF = {
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"nodeID") != "") { /* link via id */
 					/* recurse */
-					var obj = processNode(n,true); 
+					var obj = processNode(n,true);
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"ID") != "") { /* link via id */
 					/* recurse */
-					var obj = processNode(n,true); 
+					var obj = processNode(n,true);
 					triples.push([subj,pred,obj,1]);
 				} else {
 					var children = [];
-					for (var j=0;j<n.childNodes.length;j++) if (n.childNodes[j].nodeType == 1) { 
+					for (var j=0;j<n.childNodes.length;j++) if (n.childNodes[j].nodeType == 1) {
 						children.push(n.childNodes[j]);
 					}
 					/* now what those children mean: */
@@ -127,7 +127,7 @@ OAT.RDF = {
 			} /* for all subnodes */
 			return subj;
 		} /* process node */
-		
+
 		for (var i=0;i<root.childNodes.length;i++) {
 			var node = root.childNodes[i];
 			if (node.nodeType == 1) { processNode(node); }

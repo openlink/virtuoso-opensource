@@ -42,20 +42,20 @@ OAT.GhostDragData = {
 				obj.callback(t[0],x,y);
 			}
 		}
-		if (ok) { 
+		if (ok) {
 			/* mouseup at correct place - remove element */
 			OAT.Dom.unlink(elm);
-			OAT.MSG.send(obj,OAT.MSG.GD_END,elm);
+			OAT.MSG.send(obj,"GD_END",elm);
 		} else {
 			/* mouseup at wrong place - let's animate it back */
-			OAT.MSG.send(obj,OAT.MSG.GD_ABORT,elm);
+			OAT.MSG.send(obj,"GD_ABORT",elm);
 			obj.onFail();
 			var coords = OAT.Dom.position(obj.originalElement);
 			var x = coords[0];
 			var y = coords[1];
 			var sf = function() { OAT.Dom.unlink(elm); }
 			var anim = new OAT.AnimationPosition(elm,{speed:10,delay:10,left:x,top:y});
-			OAT.MSG.attach(anim.animation,OAT.MSG.ANIMATION_STOP,sf);
+			OAT.MSG.attach(anim.animation,"ANIMATION_STOP",sf);
 			anim.start();
 		}
 	}, /* OAT.GhostDragData.up() */
@@ -71,7 +71,7 @@ OAT.GhostDragData = {
 			elm.style.zIndex = 2000;
 			if (obj.process) { obj.process(elm); }
 			obj.pending = 0;
-			OAT.MSG.send(obj,OAT.MSG.GD_START,elm);
+			OAT.MSG.send(obj,"GD_START",elm);
 		}
 		/*
 			selection sukz. detect it and remove!
@@ -110,7 +110,7 @@ OAT.GhostDrag = function() {
 	this.callbacks = [];
 	this.targets = [];
 	this.pending = 0; /* mouse is down, waiting for move to appear */
-	
+
 	this.addSource = function(node,process,callback) {
 		var elm = $(node);
 		self.sources.push(elm);
@@ -127,7 +127,7 @@ OAT.GhostDrag = function() {
 		}
 		OAT.Event.attach(elm,"mousedown",ref);
 	}
-	
+
 	this.delSource = function(node) {
 		var elm = $(node);
 		var index = self.sources.find(elm);
@@ -136,13 +136,13 @@ OAT.GhostDrag = function() {
 		self.processes.splice(index,1);
 		self.callbacks.splice(index,1);
 	}
-	
+
 	this.clearSources = function() {
 		self.sources = [];
 		self.processes = [];
 		self.callbacks = [];
 	}
-	
+
 	this.addTarget = function(node,customTest,isLast) {
 		var elm = $(node);
 		var newTriple = [elm,customTest,isLast];
@@ -153,7 +153,7 @@ OAT.GhostDrag = function() {
 			self.targets.push(newTriple);
 		}
 	}
-	
+
 	this.delTarget = function(node) {
 		var elm = $(node);
 		var index = -1;

@@ -25,19 +25,19 @@ OAT.DockWindow = function(content,options,dock) {
 	}
 	for (var p in options) { self.options[p] = options[p]; }
 	this.state = 1;
-	
+
 	this.div = OAT.Dom.create("div",{marginBottom:"3px", border:"1px solid "+self.options.color,backgroundColor:"#fff"},"dock_window");
-	
+
 	this.header = OAT.Dom.create("div",{fontWeight:"bold",padding:"1px",color:self.options.titleColor,backgroundColor:self.options.color},"dock_header");
 
 	this.toggle = OAT.Dom.create("div",{styleFloat:"left",cssFloat:"left",width:"16px"});
 	this.headerContent = OAT.Dom.create("span");
 	this.headerContent.innerHTML = self.options.title;
-	
+
 	this.close = OAT.Dom.create("span",{cursor:"pointer",cssFloat:"right",styleFloat:"right"});
 	this.close.innerHTML = "X";
 	OAT.Event.attach(self.close,"click",function(){self.dock.removeObject(self);});
-	
+
 	this.content = OAT.Dom.create("div",{padding:"3px"},"dock_content");
 	this.content.appendChild($(content));
 
@@ -52,14 +52,14 @@ OAT.DockWindow = function(content,options,dock) {
 			OAT.Dom.hide(self.content);
 		}
 	}
-	
+
 	var toggleRef = function() {
 		self.state = ++self.state % 2;
 		self.actualizeState();
 	}
-	
-	
-	OAT.Event.attach(self.toggle,"click",toggleRef);	
+
+
+	OAT.Event.attach(self.toggle,"click",toggleRef);
 
 	self.actualizeState();
 }
@@ -72,7 +72,7 @@ OAT.Dock = function(div,numColumns) {
 	this.windows = [];
 	this.dummies = [];
 	this.gd = new OAT.GhostDrag();
-	
+
 	this.ghost = OAT.Dom.create("div",{border:"1px dashed #000",position:"absolute",display:"none"});
 	document.body.appendChild(this.ghost);
 	this.lock = 0;
@@ -84,40 +84,40 @@ OAT.Dock = function(div,numColumns) {
 		this.dummies.push(dummie);
 		this.gd.addTarget(dummie);
 	}
-	
+
 	for (var i=0;i<numColumns;i++) {
 		var neco = OAT.Dom.create("div",{position:"absolute",top:"0px",right:"-5px",width:"10px",height:"100%"});
 		this.columns[i].appendChild(neco);
-		
+
 		if (OAT.Browser.isIE) {
 			neco.style.height = "";
 			neco.className = "IEHeightFix";
 		}
-		
+
 		OAT.Resize.create(neco,this.columns[i],OAT.Resize.TYPE_X);
 	}
-	
+
 	this.startDrag = function(sender, msg, elm) {
 		self.lock = 1;
 		var dims = OAT.Dom.getWH(elm);
-		for (var i=0;i<self.columns.length;i++) { 
+		for (var i=0;i<self.columns.length;i++) {
 			self.columns[i].appendChild(self.dummies[i]);
 			self.dummies[i].style.height = dims[1] + "px";
 		}
 	}
-	
+
 	this.endDrag = function() {
 		self.lock = 0;
 		OAT.Dom.hide(self.ghost);
 		for (var i=0;i<self.columns.length;i++) { OAT.Dom.unlink(self.dummies[i]); }
 	}
-	OAT.MSG.attach(self.gd,OAT.MSG.GD_END,self.endDrag);
-	OAT.MSG.attach(self.gd,OAT.MSG.GD_ABORT,self.endDrag);
-	OAT.MSG.attach(self.gd,OAT.MSG.GD_START,self.startDrag);
-	
+	OAT.MSG.attach(self.gd,"GD_END",self.endDrag);
+	OAT.MSG.attach(self.gd,"GD_ABORT",self.endDrag);
+	OAT.MSG.attach(self.gd,"GD_START",self.startDrag);
+
 	this.move = function(mover,target) { /* finally moving the panel 'mover' to place 'target' */
 		if (mover == target) { return; }
-		
+
 		/* coords */
 		var oldX = self.columns.find(mover.parentNode);
 		var newX = self.columns.find(target.parentNode);
@@ -137,22 +137,22 @@ OAT.Dock = function(div,numColumns) {
 		mover.parentNode.insertBefore(blank,mover);
 		var sf = function(){OAT.Dom.unlink(blank);}
 		var a = new OAT.AnimationSize(blank,{speed:dims[1]/30,delay:5,height:0,stopFunction:sf});
-		OAT.MSG.attach(a.animation,OAT.MSG.ANIMATION_STOP,sf);
+		OAT.MSG.attach(a.animation,"ANIMATION_STOP",sf);
 		a.start();
 
 
 		/* put mover to right place */
 		target.parentNode.insertBefore(mover,target);
-		
+
 		var o = {
 			oldX:oldX,
 			oldY:oldY,
 			newX:newX,
 			newY:newY
 		}
-		OAT.MSG.send(self,OAT.MSG.DOCK_DRAG,o);
+		OAT.MSG.send(self,"DOCK_DRAG",o);
 	}
-	
+
 	this.getOverElm = function(event) {
 		/* returns coordinates, dimensions */
 		var exact = OAT.Event.position(event);
@@ -182,7 +182,7 @@ OAT.Dock = function(div,numColumns) {
 		}
 		if (index==-1) { return false; } else { return [s_coords,s_dims]; }
 	}
-	
+
 	this.check = function(event) { /* mousemove routine */
 		if (!self.lock) { return; }
 		var tmp = self.getOverElm(event);
@@ -196,32 +196,32 @@ OAT.Dock = function(div,numColumns) {
 			self.ghost.style.top = (tmp[0][1] - 2) + "px";
 		}
 	}
-	
+
 	this.addObject = function(colIndex,content,options) {
 		var w = new OAT.DockWindow(content,options,self);
 		self.windows.push(w);
-		
+
 		w.header.style.cursor = "pointer";
 		this.columns[colIndex].appendChild(w.div);
-		
+
 		var postProcess = function(elm) {
 			var dim = OAT.Dom.getWH(w.div);
 			elm.style.width = dim[0]+"px";
 			elm.style.height = dim[1]+"px";
 			elm.style.border = "1px solid #000";
 		}
-		
+
 		var callback = function(target,x,y) { self.move(w.div,target); }
 		this.gd.addSource(w.header,postProcess,callback);
 		this.gd.addTarget(w.div);
 		return w;
 	}
-	
+
 	this.removeObject = function(win) {
-		OAT.MSG.send(self,OAT.MSG.DOCK_REMOVE,win);
+		OAT.MSG.send(self,"DOCK_REMOVE",win);
 		var index = self.windows.find(win);
 		self.windows.splice(index,1);
-		
+
 		OAT.Dom.unlink(win.div);
 		self.gd.delSource(win.header);
 		self.gd.delTarget(win.div);

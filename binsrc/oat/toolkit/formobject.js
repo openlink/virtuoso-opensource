@@ -64,7 +64,7 @@
 		type:"string|select|color|combo",
 		options:[1,2,3] // only for type="select" or type="combo"
 	}
-	
+
 */
 
 OAT.FormObjectNames = {
@@ -119,14 +119,14 @@ OAT.FormObject = {
 		fo.clear = function(){};
 		fo.notify = function(){};
 	},
-	
+
 	abstractParent:function(fo,x,y) {
 		fo.fromXML = function(node,dsArr) {
 			var tmp;
 			if (node.getAttribute("hidden")) { fo.hidden = 1; }
 			fo.parentContainer = parseInt(node.getAttribute("parent")); /* to be referenced later */
 			fo.empty = (node.getAttribute("empty")=="1" ? 1 : 0);
-			
+
 			if (fo.userSet) { fo.setValue(node.getAttribute("value")); }
 			/* css */
 			tmp = node.getElementsByTagName("style")[0];
@@ -147,7 +147,7 @@ OAT.FormObject = {
 				fo.elm.style[attr.name] = attr.value;
 			}
 			/* properties */
-			
+
 			tmp = node.getElementsByTagName("properties")[0].getElementsByTagName("property");
 			/*	compatibility hack for old format - NAV and GRAPH
 			*/
@@ -163,7 +163,7 @@ OAT.FormObject = {
 					tmp = list;
 			}
 			/* end hack */
-			
+
 			for (var i=0;i<tmp.length;i++) {
 				var name = OAT.Xml.textValue(tmp[i].getElementsByTagName("name")[0]);
 				var value = tmp[i].getElementsByTagName("value")[0];
@@ -171,14 +171,14 @@ OAT.FormObject = {
 				for (var j=0;j<fo.properties.length;j++) {
 					if (fo.properties[j].name == name) { obj = fo.properties[j]; }
 				}
-				if (!obj) { 
-					alert("Unknown (probably obsolete?) property '"+name+"'"); 
+				if (!obj) {
+					alert("Unknown (probably obsolete?) property '"+name+"'");
 				} else {
 					obj.value = OAT.Xml.textValue(value);
 					if (obj.variable) { obj.value = obj.value.split(","); }
 				}
 			}
-			
+
 			/* tab tricks */
 			if (fo.name == "tab") {
 				fo.__tp = [];
@@ -207,12 +207,12 @@ OAT.FormObject = {
 				var obj = fo.datasources[i]; /* add values to this object */
 				obj.ds = dsnode.getAttribute("index");
 				obj.ds = dsArr[parseInt(obj.ds)];
-				
+
 				var fsnodes = dsnode.getElementsByTagName("fieldset");
 				for (var j=0;j<fsnodes.length;j++) {
 					var fsnode = fsnodes[j];
 					var name = fsnode.getAttribute("name");
-					
+
 					var fs = obj.fieldSets[j];
 					if (fs.name != name) { alert('Panic! Saved data incomplete?'); }
 					var names = fsnode.getElementsByTagName("name"); /* all <name> subnodes */
@@ -224,7 +224,7 @@ OAT.FormObject = {
 				} /* for all fieldSets */
 			} /* for all datasources */
 		} /* fromXML() */
-		
+
 		fo.actualizeResizers = function() {
 			if (!fo.resizeXY) { return; }
 			var coords = OAT.Dom.position(fo.elm);
@@ -242,28 +242,28 @@ OAT.FormObject = {
 			fo.resizeXY.style.left = (x+w-4)+"px";
 			fo.resizeXY.style.top = (y+h-4)+"px";
 		}
-		
+
 		fo.select = function() {
 			if (fo.selected) { return; }
 			fo.selected = 1;
-			fo.elm.oldBorder = fo.elm.style.border; 
+			fo.elm.oldBorder = fo.elm.style.border;
 			fo.elm.style.border = "2px solid #f00"; /* red border */
 			/* resizor: */
 			if (fo.resizable) {
 				fo.resizeX = OAT.Dom.create("div",{position:"absolute",width:"6px",height:"6px",backgroundColor:"#f00",border:"1px solid #000",overflow:"hidden",zIndex:10});
 				fo.resizeY = OAT.Dom.create("div",{position:"absolute",width:"6px",height:"6px",backgroundColor:"#f00",border:"1px solid #000",overflow:"hidden",zIndex:10});
 				fo.resizeXY = OAT.Dom.create("div",{position:"absolute",width:"6px",height:"6px",backgroundColor:"#f00",border:"1px solid #000",overflow:"hidden",zIndex:10});
-				
+
 				fo.actualizeResizers();
 
 				document.body.appendChild(fo.resizeX);
 				document.body.appendChild(fo.resizeY);
-				document.body.appendChild(fo.resizeXY); 
-				
+				document.body.appendChild(fo.resizeXY);
+
 				OAT.Resize.create(fo.resizeX,fo.elm,OAT.Resize.TYPE_X);
 				OAT.Resize.create(fo.resizeY,fo.elm,OAT.Resize.TYPE_Y);
 				OAT.Resize.create(fo.resizeXY,fo.elm,OAT.Resize.TYPE_XY);
-				
+
 				var cancelFunc = function(event) { event.cancelBubble = true; }
 				OAT.Event.attach(fo.resizeX,"mousedown",cancelFunc);
 				OAT.Event.attach(fo.resizeY,"mousedown",cancelFunc);
@@ -335,7 +335,7 @@ OAT.FormObject = {
 			if (fo.hidden == "1") { xml += 'hidden="1" '; }
 			xml += 'empty="'+fo.empty+'" ';
 			xml += 'value="'+fo.getValue()+'">\n';
-			
+
 			/* style */
 			xml += '\t\t<style left="'+x+'" top="'+y+'" z-index="'+z+'"';
 			if (fo.resizable) { xml += ' width="'+w+'" height="'+h+'" '; }
@@ -365,7 +365,7 @@ OAT.FormObject = {
 				xml += '\t\t\t<property>\n';
 				xml += '\t\t\t\t<name>'+p.name+'</name>\n';
 				var val = p.value;
-				// not needed anymore 
+				// not needed anymore
 				// if (p.type == "datasource") { val = designer.datasources.find(val); }
 				if (p.type == "container") { val = designer.objects.find(val); }
 				if (p.variable) { val = val.join(","); }
@@ -397,7 +397,7 @@ OAT.FormObject = {
 
 			return xml;
 		}
-		
+
 		fo.selected = 0;
 		fo.elm.style.position = "absolute";
 		fo.elm.style.left = x+"px";
@@ -405,14 +405,14 @@ OAT.FormObject = {
 		var actFunc = function(event) { fo.actualizeResizers(); }
 		OAT.Event.attach(document.body,"mousemove",actFunc);
 	},
-	
+
 	label:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
 		self.name="label";
 		self.resizable = true;
 		self.elm = OAT.Dom.create("div");
-		self.userSet = true; 
+		self.userSet = true;
 		self.datasources = [
 			{ds:false,fieldSets:[
 				{name:"Value",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
@@ -430,7 +430,7 @@ OAT.FormObject = {
 		self.getValue = function() {
 			return self.elm.innerHTML;
 		}
-		
+
 		self.bindRecordCallback = function(dataRow,currentIndex) {
 			var ri = self.datasources[0].fieldSets[0].realIndexes;
 			if (ri[0] == -1) { return; }
@@ -438,14 +438,14 @@ OAT.FormObject = {
 			var value = dataRow[ri[0]];
 			self.setValue(value);
 		}
-		
+
 		self.clear = function() {
 			if (self.datasources[0].fieldSets[0].realIndexes[0] != -1) { self.elm.innerHTML = ""; }
 		}
-		
+
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	input:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -453,7 +453,7 @@ OAT.FormObject = {
 		self.resizable = true;
 		self.elm = OAT.Dom.create("input");
 		self.elm.setAttribute("type","text");
-		self.userSet = true; 
+		self.userSet = true;
 		self.datasources = [
 			{ds:false,fieldSets:[
 				{name:"Value",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
@@ -470,10 +470,10 @@ OAT.FormObject = {
 		self.getValue = function() {
 			return self.elm.value;
 		}
-		self.clear = function() { 
+		self.clear = function() {
 			if (self.datasources[0].fieldSets[0].realIndexes[0] != -1) { self.elm.value = ""; }
 		}
-		
+
 		self.bindRecordCallback = function(dataRow,currentIndex) {
 			var ri = self.datasources[0].fieldSets[0].realIndexes;
 			if (ri[0] == -1) { return; }
@@ -483,7 +483,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	uinput:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -573,7 +573,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	line:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -583,7 +583,7 @@ OAT.FormObject = {
 		self.elm.style.width = "200px";
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	container:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -620,11 +620,11 @@ OAT.FormObject = {
 		self.tabUL.className = "tab";
 		self.elm.appendChild(self.tabElm);
 		self.tabElm.appendChild(self.tabUL);
-		
+
 		self.pages = [];
 		self.objects = [];
 		self.tabs = [];
-		
+
 		self.consume = function(obj,x,y) {
 			var elm = obj.elm;
 			elm.__originalParent = elm.parentNode;
@@ -633,7 +633,7 @@ OAT.FormObject = {
 			elm.style.left = x+"px";
 			elm.style.top = y+"px";
 		}
-		
+
 		self.remove = function(obj,x,y) {
 			var elm = obj.elm;
 			elm.__originalParent.appendChild(elm);
@@ -642,7 +642,7 @@ OAT.FormObject = {
 			elm.style.left = x+"px";
 			elm.style.top = y+"px";
 		}
-		
+
 		self.countChangeCallback = function(oldCount,newCount) {
 			/* number of tabs is going to change - do something */
 			if (oldCount > newCount) {
@@ -674,12 +674,12 @@ OAT.FormObject = {
 				}
 			}
 		}
-		
+
 		self.changeCallback = function(index,value) {
 			self.tabs[index].innerHTML = value;
 			self.properties[0].value[index] = value;
 		}
-		
+
 		self.properties = [
 			{name:"Tabs",type:"string",variable:true,onchange:self.changeCallback,oncountchange:self.countChangeCallback,value:[]}
 		]
@@ -689,10 +689,10 @@ OAT.FormObject = {
 			self.changeCallback(1,"tab 2");
 			self.changeCallback(2,"tab 3");
 		}
-		
+
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	map:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -737,7 +737,7 @@ OAT.FormObject = {
 			self.map.closeWindow();
 			if (self.form) { self.form.elm.style.display = "none"; }
 		}
-		
+
 		self.openWindow = function(dsIndex,recordIndex) {
 			if (self.form) {
 				var marker = self.markers[dsIndex][recordIndex];
@@ -759,11 +759,11 @@ OAT.FormObject = {
 			self.map.removeMarkers(dsIndex);
 			if (self.multi) {
 				var pointArr = [];
-				for (var i=0;i<value.length;i++) { 
+				for (var i=0;i<value.length;i++) {
 					var lat = value[i][0];
 					var lon = value[i][1];
 					var index = value[i][2];
-					pointArr.push([lat,lon]); 
+					pointArr.push([lat,lon]);
 					var ref = self.clickRef(dsIndex,index);
 					var m = self.map.addMarker(dsIndex,lat,lon,value[i][3],self.markerWidth,self.markerHeight,ref);
 					self.markers[dsIndex][index] = m;
@@ -799,7 +799,7 @@ OAT.FormObject = {
 			self.markerHeight = parseInt(self.properties[8].value);
 			/* markers available */
 			self.markerPath = OAT.Preferences.imagePath+"markers/";
-			self.markerFiles = []; 
+			self.markerFiles = [];
 			for (var i=1;i<=12;i++) {
 				var name = self.prefix + (i<10?"0":"") + i +".png";
 				self.markerFiles.push(name);
@@ -825,14 +825,14 @@ OAT.FormObject = {
 			self.form = false;
 			if (self.properties[9].value) { self.form = self.properties[9].value; }
 
-			
+
 			self.markers = [];
 			for (var i=0;i<self.datasources.length;i++) {
 				self.markers.push([]);
-				OAT.MSG.attach(self.datasources[i].ds,OAT.MSG.DS_RECORD_PREADVANCE,self.closeWindow);
+				OAT.MSG.attach(self.datasources[i].ds,"DS_RECORD_PREADVANCE",self.closeWindow);
 			}
 		}
-		
+
 		self.bindRecordCallback = function(dataRow,currentIndex,dsIndex) {
 			if (!dataRow) { return; }
 			var ds = self.datasources[dsIndex];
@@ -844,7 +844,7 @@ OAT.FormObject = {
 				self.markerIndex++;
 				if (self.markerIndex >= self.markerFiles.length) { self.markerIndex = 0; }
 			}
-			var image = self.markerMapping[color];			
+			var image = self.markerMapping[color];
 			if (!isNaN(lat) && !isNaN(lon)) {
 				var value = [lat,lon,currentIndex,image];
 				if (!self.multi) { self.setValue([value],dsIndex); }
@@ -864,7 +864,7 @@ OAT.FormObject = {
 					self.markerIndex++;
 					if (self.markerIndex >= self.markerFiles.length) { self.markerIndex = 0; }
 				}
-				var image = self.markerMapping[color];			
+				var image = self.markerMapping[color];
 				if (ds.fieldSets[3].columnIndexes[0] != -1) { /* custom image */
 					image = dataRows[i][ds.fieldSets[3].realIndexes[0]];
 				}
@@ -876,7 +876,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	barchart:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -915,7 +915,7 @@ OAT.FormObject = {
 			for (var i=0;i<fs.realIndexes.length;i++) { textY.push(fs.names[i]); }
 			self.chart.attachTextY(textY);
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var fs = self.datasources[0].fieldSets[0];
@@ -930,7 +930,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	linechart:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -970,7 +970,7 @@ OAT.FormObject = {
 			for (var i=0;i<fs.realIndexes.length;i++) { textY.push(fs.names[i]); }
 			self.chart.attachTextY(textY);
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var fs = self.datasources[0].fieldSets[0];
@@ -1024,7 +1024,7 @@ OAT.FormObject = {
 		self.init = function() {
 			self.chart = new OAT.PieChart(self.elm,{});
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var fs1 = self.datasources[0].fieldSets[0];
 			var fs2 = self.datasources[0].fieldSets[1];
@@ -1075,7 +1075,7 @@ OAT.FormObject = {
 		self.init = function() {
 			self.chart = new OAT.Sparkline(self.elm,{});
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var fs = self.datasources[0].fieldSets[0];
 			var dataArr = [];
@@ -1104,7 +1104,7 @@ OAT.FormObject = {
 		self.properties = [
 			{name:"Data column name",value:"",type:"string"}
 		];
-		
+
 		if (designMode) {
 			self.elm.style.width = "200px";
 			self.elm.style.height = "200px";
@@ -1149,10 +1149,10 @@ OAT.FormObject = {
 				self.pivot.go();
 			}
 			OAT.Event.attach(pivot_agg,"change",aggRef);
-		
-			self.filterDiv = OAT.Dom.create("div"); 
-			self.pivotDiv = OAT.Dom.create("div"); 
-			self.chartDiv = OAT.Dom.create("div"); 
+
+			self.filterDiv = OAT.Dom.create("div");
+			self.pivotDiv = OAT.Dom.create("div");
+			self.chartDiv = OAT.Dom.create("div");
 			self.chartDiv.className = "chart";
 			self.content.appendChild(self.aggDiv);
 			self.content.appendChild(self.filterDiv);
@@ -1187,13 +1187,13 @@ OAT.FormObject = {
 						self.headerColIndexes.push(index);
 						index++;
 					}
-				} 
+				}
 			} /* for all DSs */
 
 			OAT.Event.attach(self.content,"scroll",function(event){event.cancelBubble = true;});
 			OAT.Event.attach(self.content,"mousewheel",function(event){event.cancelBubble = true;});
 			OAT.Event.attach(self.content,"DOMMouseScroll",function(event){event.cancelBubble = true;});
-			
+
 		} /* init() */
 
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
@@ -1218,10 +1218,10 @@ OAT.FormObject = {
 			}
 			self.setValue(value);
 		}
-		
+
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	grid:function(x,y,designMode,forbidHiding) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -1250,14 +1250,14 @@ OAT.FormObject = {
 			var genRef = function() { return self.grid.toXML(); }
 			var pasteRef = function(xmlStr) {}
 			var typeRef = function() { return "ol_grid_xhtml"; }
-			if (OAT.WebClipBindings) {	
-				OAT.WebClipBindings.bind(self.lc, typeRef, genRef, pasteRef, onRef, outRef); 
+			if (OAT.WebClipBindings) {
+				OAT.WebClipBindings.bind(self.lc, typeRef, genRef, pasteRef, onRef, outRef);
 				self.elm.appendChild(self.lc);
 			}
 		}
-		
+
 		self.setValue = function(data) {
-			self.grid.clearData(); 
+			self.grid.clearData();
 			for (var i=0;i<data.length;i++) {
 				self.grid.createRow(data[i]);
 			}
@@ -1278,45 +1278,45 @@ OAT.FormObject = {
 				fs.realIndexes.splice(i1-1,1);
 				fs.realIndexes.splice(newi,0,tmp);
 			}
-			if (!self.showAll) { 
+			if (!self.showAll) {
 				var data = [];
-				for (var i=0;i<ds.names.length;i++) { 
+				for (var i=0;i<ds.names.length;i++) {
 					var label = ds.names[i];
-					if (label == "") { label = self.datasources[0].ds.outputFields[ds.realIndexes[i]]; } 
+					if (label == "") { label = self.datasources[0].ds.outputFields[ds.realIndexes[i]]; }
 					var o = {
 						value:label,
 						sortable:1,
 						draggable:1,
 						resizable:1
 					}
-					data.push(o); 
+					data.push(o);
 				}
-				self.grid.createHeader(data); 
+				self.grid.createHeader(data);
 			}
 			OAT.Event.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
 			OAT.Event.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
 			OAT.Event.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 		}
-		
+
 		self.bindHeaderCallback = function(header) {
 			var data = [];
-			for (var i=0;i<header.length;i++) { 
+			for (var i=0;i<header.length;i++) {
 				var o = {
 					value:header[i],
 					sortable:1,
 					draggable:1,
 					resizable:1
 				}
-				data.push(o); 
+				data.push(o);
 			}
-			self.grid.createHeader(data); 
+			self.grid.createHeader(data);
 		}
-		
+
 		self.bindRecordCallback = function(dataRow, currentIndex) {
 			for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
 			if (self.grid.rows.length + self.pageIndex >= currentIndex) { self.grid.rows[currentIndex - self.pageIndex].select(); }
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var fs = self.datasources[0].fieldSets[0];
@@ -1369,7 +1369,7 @@ OAT.FormObject = {
 			OAT.Dom.unlink(self.embed);
 			var dims = OAT.Dom.getWH(self.elm);
 			self.embed.style.width = dims[0]+"px";
-			self.embed.style.height = dims[1]+"px"; 
+			self.embed.style.height = dims[1]+"px";
 			self.param.setAttribute("value",value);
 			self.embed.setAttribute("src",value);
 			self.elm.appendChild(self.embed);
@@ -1384,7 +1384,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	image:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -1401,11 +1401,11 @@ OAT.FormObject = {
 				{name:"Source",variable:false,columnIndexes:[-1],names:[],realIndexes:[]}
 			]}
 		];
-		
+
 		self.properties = [
 			{name:"User specified size",value:"0",type:"bool"}
 		];
-		
+
 		self.clear = function() {
 			self.elm.src = "";
 		}
@@ -1417,9 +1417,9 @@ OAT.FormObject = {
 			if (value.match(/\./)) {
 				/* URL */
 				self.elm.src = value;
-				return; 
+				return;
 			}
-			if (OAT.Dom.isIE()) { return; } /* IE doesn't support data: URLs */
+			if (OAT.Browser.isIE) { return; } /* IE doesn't support data: URLs */
 			self.elm.src = OAT.Dom.decodeImage(value);
 		}
 		self.bindRecordCallback = function(dataRow,currentIndex) {
@@ -1432,7 +1432,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	imagelist:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -1461,10 +1461,10 @@ OAT.FormObject = {
 		}
 		self.setValue = function(value) {
 			self.clear();
-			if (OAT.Dom.isIE()) { return; }
+			if (OAT.Browser.isIE) { return; }
 			var limit = parseInt(self.properties[0].value);
 			var tr = OAT.Dom.create("tr");
-			
+
 			for (var i=0;i<value.length;i++) {
 				var small = value[i][0];
 				var large = value[i][0]; /* large == link */
@@ -1478,11 +1478,11 @@ OAT.FormObject = {
 				var a = OAT.Dom.create("a");
 				a.target = "_blank";
 				a.href = large;
-				
+
 				a.appendChild(img);
 				td.appendChild(a)
 				tr.appendChild(td);
-				
+
 				if (!((i+1) % limit)) {
 					self.tbody.appendChild(tr);
 					var tr = OAT.Dom.create("tr");
@@ -1490,7 +1490,7 @@ OAT.FormObject = {
 			} /* for all images */
 			if ((i+1) % limit) { self.tbody.appendChild(tr); }
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var fs1 = self.datasources[0].fieldSets[0];
@@ -1559,12 +1559,12 @@ OAT.FormObject = {
 				if (percent > 0.4) { a.style.color = "#c33"; }
 				if (percent > 0.6) { a.style.color = "#393"; }
 				if (percent > 0.8) { a.style.color = "#90c"; }
-				
+
 				self.elm.appendChild(a);
 				self.elm.appendChild(OAT.Dom.text(" "));
 			}
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			var value = [];
 			var fs1 = self.datasources[0].fieldSets[0];
@@ -1658,7 +1658,7 @@ OAT.FormObject = {
 		self.resizable = true;
 		self.elm = OAT.Dom.create("div");
 		self.rowOffset = 0; /* for grid auto-numbering */
-		self.datasources = [	
+		self.datasources = [
 			{ds:false,fieldSets:[
 				{name:"Columns",variable:true,names:[],columnIndexes:[],realIndexes:[]}
 			]}
@@ -1700,7 +1700,7 @@ OAT.FormObject = {
 			self.container.style.overflow = "auto";
 			self.elm.appendChild(self.container);
 		}
-		
+
 		self.setValue = function(data) {
 			switch (self.properties[0].value) {
 				case "Single":
@@ -1708,7 +1708,7 @@ OAT.FormObject = {
 						self.values[i].value = data[i];
 					}
 				break;
-				
+
 				case "Tabular":
 					self.grid.clearData();
 					self.grid.options.rowOffset = self.rowOffset;
@@ -1716,8 +1716,8 @@ OAT.FormObject = {
 						self.grid.createRow(data[i]);
 					}
 					for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
-					if (self.grid.rows.length + self.pageIndex >= self.recordIndex && self.recordIndex >= self.pageIndex) { 
-						self.grid.rows[self.recordIndex - self.pageIndex].select(); 
+					if (self.grid.rows.length + self.pageIndex >= self.recordIndex && self.recordIndex >= self.pageIndex) {
+						self.grid.rows[self.recordIndex - self.pageIndex].select();
 					}
 				break;
 			}
@@ -1729,7 +1729,7 @@ OAT.FormObject = {
 						self.values[i].value = "";
 					}
 				break;
-				
+
 				case "Tabular":
 					self.grid.clearData();
 				break;
@@ -1755,7 +1755,7 @@ OAT.FormObject = {
 						self.labels.push(lbl);
 						var dims = OAT.Dom.getWH(lbl);
 						if (dims[0] > maxW) { maxW = dims[0]; }
-						
+
 						var value = OAT.Dom.create("input",{position:"absolute",left:"3px"});
 						value.setAttribute("type","text");
 						value.style.top = (2+i*24)+"px";
@@ -1768,14 +1768,14 @@ OAT.FormObject = {
 						self.values[i].style.left = (maxW+10)+"px";
 					}
 				break;
-				
+
 				case "Tabular":
 					s.style.backgroundColor = notBGcolor;
 					t.style.backgroundColor = BGcolor;
 					var data = [];
 					var fs = self.datasources[0].fieldSets[0];
 
-					for (var i=0;i<fs.names.length;i++) { 
+					for (var i=0;i<fs.names.length;i++) {
 						var label = fs.names[i];
 						if (label == "") { label = self.datasources[0].ds.outputFields[fs.realIndexes[i]]; }
 						var o = {
@@ -1784,7 +1784,7 @@ OAT.FormObject = {
 							draggable:1,
 							resizable:1
 						}
-						data.push(o); 
+						data.push(o);
 					}
 					self.grid = new OAT.Grid(self.container,{autoNumber:true});
 					self.grid.options.reorderNotifier = function(i1,i2) {
@@ -1795,14 +1795,14 @@ OAT.FormObject = {
 						fs.realIndexes.splice(newi,0,tmp);
 					}
 					self.grid.createHeader(data);
-					
+
 					OAT.Event.attach(self.container,"scroll",function(event){event.cancelBubble = true;});
 					OAT.Event.attach(self.container,"mousewheel",function(event){event.cancelBubble = true;});
 					OAT.Event.attach(self.container,"DOMMouseScroll",function(event){event.cancelBubble = true;});
 				break;
 			} /* switch */
 		} /* FormObject::init() */
-		
+
 		self.bindRecordCallback = function(dataRow, currentIndex) {
 			self.recordIndex = currentIndex;
 			var value = [];
@@ -1814,12 +1814,12 @@ OAT.FormObject = {
 			if (self.properties[0].value == "Single") { self.setValue(value); }
 			if (!self.grid) { return; }
 			for (var i=0;i<self.grid.rows.length;i++) { self.grid.rows[i].deselect(); }
-			if (self.grid.rows.length + self.pageIndex >= self.recordIndex) { 
-				self.grid.rows[self.recordIndex - self.pageIndex].select(); 
+			if (self.grid.rows.length + self.pageIndex >= self.recordIndex) {
+				self.grid.rows[self.recordIndex - self.pageIndex].select();
 			}
-			
+
 		}
-		
+
 		self.bindPageCallback = function(dataRows, currentPageIndex) {
 			self.pageIndex = currentPageIndex;
 			var value = [];
@@ -1837,7 +1837,7 @@ OAT.FormObject = {
 		}
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	nav:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
@@ -1861,7 +1861,7 @@ OAT.FormObject = {
 		self.next.value = ">";
 		self.nextp.value = ">>";
 		self.last.value = ">>|";
-		
+
 		self.current = OAT.Dom.create("input");
 		self.current.setAttribute("type","text");
 		self.current.setAttribute("size","2");
@@ -1880,12 +1880,12 @@ OAT.FormObject = {
 				{name:"Datasource",variable:false,names:[],columnIndexes:[],realIndexes:[]}
 			]}
 		];
-		
+
 		self.clear = function() {
 //			self.total.innerHTML = "";
 			self.current.value = "";
 		}
-		
+
 		self.bindRecordCallback = function(dataRow,currentIndex) {
 			self.current.value = currentIndex+1;
 //			self.total.innerHTML = totalCount;
@@ -1987,7 +1987,7 @@ OAT.FormObject = {
 		self.getValue = function() {
 			return self.elm.innerHTML;
 		}
-	
+
 		self.bindRecordCallback = function(dataRow,currentIndex) {
 			var ri1 = self.datasources[0].fieldSets[0].realIndexes;
 			var ri2 = self.datasources[0].fieldSets[1].realIndexes;
@@ -1996,16 +1996,16 @@ OAT.FormObject = {
 			var label = (ri2[0] == -1 ? value : dataRow[ri2[0]]);
 			self.setValue(value,label);
 		}
-		
+
 		OAT.FormObject.abstractParent(self,x,y);
 	},
-	
+
 	gem1:function(x,y,designMode) {
 		var self = this;
 		OAT.FormObject.init(self);
 		self.name="gem1";
 		self.elm = OAT.Dom.create("div");
-		
+
 		var apply = function() {
 			/* load saved query, add information about stylesheet, save as new saved query */
 			var source = self.properties[1].value;
@@ -2014,7 +2014,7 @@ OAT.FormObject = {
 			if (source == "") { alert("Please select a saved query to process"); return; }
 			if (ss == "") { alert("Please select a stylesheet to create a feed"); return; }
 			if (target == "") { alert("Please select a target feed file"); return; }
-			
+
 			var processRef = function(query) {
 				/* we have saved source query. append a stylesheet and save */
 				var q = new OAT.SqlQuery();
@@ -2032,10 +2032,10 @@ OAT.FormObject = {
 				}
 				OAT.AJAX.PUT(target,xml,recv_ref,o);
 			}
-			
+
 			OAT.AJAX.GET(source,false,processRef);
 		}
-		
+
 		if (designMode) {
 			self.elm.innerHTML = "GEM";
 		} else {
@@ -2055,7 +2055,7 @@ OAT.FormObject = {
 		];
 		self.init = function() {
 			var iurl = self.properties[0].value;
-			if (iurl) { 
+			if (iurl) {
 				self.image.src = self.properties[0].value; /* draw proper icon */
 			} else {
 				OAT.Dom.unlink(self.image);
@@ -2099,11 +2099,11 @@ OAT.FormObject = {
 			self.window.div.style.left = x+"px";
 			self.window.div.style.top = y+"px";
 		}
-		
+
 		self.closeWindow = function() {
 			OAT.Dom.hide(self.window.div);
 		}
-		
+
 		self.clickRef = function(dsIndex,index) {
 			return function(event) {
 				var coords = OAT.Event.position(event);
@@ -2118,7 +2118,7 @@ OAT.FormObject = {
 				self.datasources[dsIndex].ds.advanceRecord(index);
 			}
 		}
-		
+
 		self.setValue = function(value,dsIndex) { /* time,band,label,link,index */
 			self.timeline.clear();
 			var bands = {};
@@ -2152,8 +2152,8 @@ OAT.FormObject = {
 				self.timeline.addBand(p,c);
 				index++;
 			}
-			
-			for (var i=0;i<value.length;i++) { 
+
+			for (var i=0;i<value.length;i++) {
 				var time = value[i][0];
 				var band = value[i][1];
 				var label = value[i][2];
@@ -2179,23 +2179,23 @@ OAT.FormObject = {
 			self.timeline.draw();
 			self.timeline.slider.slideTo(0,1);
 		}
-		
+
 		self.getValue = function() { return false; }
-		
+
 		self.init = function() {
 			var opts = {formatter:1,autoHeight:false};
 			if (self.properties[2].value == 0) { opts.formatter = 0; }
 			self.timeline = new OAT.Timeline(self.elm,opts);
-			
+
 			self.form = false;
 			if (self.properties[0].value) { self.form = self.properties[0].value; }
 
 			self.window = new OAT.Window({close:1,max:0,min:0,width:0,height:0,x:0,y:0,title:"Lookup window",resize:0},OAT.Window.TYPE_RECT);
 			document.body.appendChild(self.window.div);
 			self.window.onclose = self.closeWindow;
-			self.closeWindow(); 
+			self.closeWindow();
 		}
-		
+
 		self.bindPageCallback = function(dataRows,currentPageIndex,dsIndex) {
 			var values = [];
 			var ds = self.datasources[0];
@@ -2211,9 +2211,9 @@ OAT.FormObject = {
 			}
 			self.setValue(values,dsIndex);
 		}
-		
+
 		OAT.FormObject.abstractParent(self,x,y);
 	} /* timeline */
-	
+
 }
 OAT.Loader.featureLoaded("formobject");

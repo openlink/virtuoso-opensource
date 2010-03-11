@@ -91,7 +91,7 @@ OAT.DSTransport.REST = {
 		} else { /* json */
 			obj = OAT.JSON.parse(text);
 		}
-		
+
 		var allValues = {};
 		var data = [];
 		/* analyze maximum count */

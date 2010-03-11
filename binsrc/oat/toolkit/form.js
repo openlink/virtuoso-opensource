@@ -25,14 +25,14 @@ OAT.Form = function(targetElm,optObj) {
 	this.objects = [];
 	this.dialogs = {};
 	this.sqlDS = [];
-	
+
 	this.paramsDiv = OAT.Dom.create("div");
 	this.credsDiv = OAT.Dom.create("div");
 	this.credsDiv.innerHTML = '<table><tr><td class="right">Name: </td>'+
-	                          '<td><input name="cred_user" value="demo" type="text" id="cred_user" /></td></tr>'+
-							  '<tr><td class="right">Password: </td>'+
-							  '<td><input name="cred_password" value="demo" type="password" id="cred_password" /></td></tr></table>';
-	
+	'<td><input name="cred_user" value="demo" type="text" id="cred_user" /></td></tr>'+
+	'<tr><td class="right">Password: </td>'+
+	'<td><input name="cred_password" value="demo" type="password" id="cred_password" /></td></tr></table>';
+
 	this.getValue = function(fb,index) {
 		switch (fb.types[index]) {
 			case 0: /* typed at designtime */
@@ -75,7 +75,7 @@ OAT.Form = function(targetElm,optObj) {
 		}
 		return queryObj.toString(OAT.SqlQueryData.TYPE_SQL);
 	}
-	
+
 	this.buildWSDL = function(ds) {
 		var fb = ds.fieldBinding;
 		var inputObj = {};
@@ -112,23 +112,23 @@ OAT.Form = function(targetElm,optObj) {
 
 	this.callForData = function(ds) {
 		ds.reset();
-		switch (ds.type) { 
+		switch (ds.type) {
 			case OAT.DataSourceData.TYPE_SQL:
 				var q = self.buildQuery(ds);
 				if (ds.lastQuery && q == ds.lastQuery) { return; }
 				ds.lastQuery = q;
 				ds.options.query = q;
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_SOAP:
 				var inputObj = self.buildWSDL(ds);
 				ds.options.inputobj = inputObj;
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_REST:
 				ds.options.query = self.buildREST(ds);
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_SPARQL:
 				var sq = new OAT.SparqlQuery();
 				sq.fromString(ds.options.query);
@@ -138,7 +138,7 @@ OAT.Form = function(targetElm,optObj) {
 					ds.options.query = q;
 				}
 			break;
-			
+
 			case OAT.DataSourceData.TYPE_GDATA:
 				var q = ds.options.query ? "q="+encodeURIComponent(ds.options.query) : "";
 				ds.options.query = q;
@@ -158,19 +158,19 @@ OAT.Form = function(targetElm,optObj) {
 
 	this.attachNav = function(nav) {
 		var ds = nav.datasources[0].ds;
-		OAT.Event.attach(nav.first,"click",function() { ds.advanceRecord(0); }); 
+		OAT.Event.attach(nav.first,"click",function() { ds.advanceRecord(0); });
 		OAT.Event.attach(nav.prevp,"click",function() { ds.advanceRecord(ds.recordIndex - ds.pageSize); });
 		OAT.Event.attach(nav.prev,"click",function() { ds.advanceRecord("-1"); });
 		OAT.Event.attach(nav.next,"click",function() { ds.advanceRecord("+1"); });
 		OAT.Event.attach(nav.nextp,"click",function() { ds.advanceRecord(ds.recordIndex + ds.pageSize); });
 //					OAT.Event.attach(nav.last,"click",function() { ds.advanceRecord(parseInt(nav.total.innerHTML)-1); });
-		OAT.Event.attach(nav.current,"keyup",function(event) { 
+		OAT.Event.attach(nav.current,"keyup",function(event) {
 			if (event.keyCode != 13) { return; }
 			var value = parseInt($v(nav.current));
-			ds.advanceRecord(value-1); 
+			ds.advanceRecord(value-1);
 		});
 	}
-	
+
 	this.recomputeFields = function() {
 		/* massive re-computation of used fields for table binding */
 		for (var i=0;i<self.datasources.length;i++) { /* count used columns */
@@ -190,9 +190,9 @@ OAT.Form = function(targetElm,optObj) {
 				} /* for all fieldsets */
 			} /* all datasources */
 		} /* all objects */
-		
+
 		/* also binding columns need to be included in query */
-		for (var i=0;i<self.datasources.length;i++) { 
+		for (var i=0;i<self.datasources.length;i++) {
 			var ds = self.datasources[i];
 			var fb = ds.fieldBinding;
 			for (var j=0;j<fb.selfFields.length;j++) {
@@ -207,7 +207,7 @@ OAT.Form = function(targetElm,optObj) {
 		/* we have now marked all really used fields */
 
 		/* create right queries */
-		for (var i=0;i<self.datasources.length;i++) { 
+		for (var i=0;i<self.datasources.length;i++) {
 			var ds = self.datasources[i];
 			if (ds.type == OAT.DataSourceData.TYPE_SQL && ds.options.table) { /* only table forms */
 				var q = [];
@@ -245,9 +245,9 @@ OAT.Form = function(targetElm,optObj) {
 					} /* all fs parts */
 				} /* all fieldsets */
 			} /* all datasources */
-		} /* all objects */						
+		} /* all objects */
 	}
-	
+
 	this.draw = function() {
 		self.totalWidth = 0;
 		self.totalHeight = 0;
@@ -257,26 +257,26 @@ OAT.Form = function(targetElm,optObj) {
 			if (o.bindFileCallback) { ds.bindFile(o.bindFileCallback) ;}
 			if (o.bindRecordCallback) {
 				var ref1 = function(dataRow,currentIndex) { o.bindRecordCallback(dataRow,currentIndex,index); }
-				ds.bindRecord(ref1); 
+				ds.bindRecord(ref1);
 			}
-			if (o.bindPageCallback) { 
+			if (o.bindPageCallback) {
 				var ref2 = function(dataRows,currentPageIndex) { o.bindPageCallback(dataRows,currentPageIndex,index); }
-				ds.bindPage(ref2); 
+				ds.bindPage(ref2);
 			}
 			if (o.empty) {
 				var ref3 = function() { o.clear(index); }
-				ds.bindEmpty(ref3); 
+				ds.bindEmpty(ref3);
 			}
 		}
 		for (var i=0;i<self.objects.length;i++) {
 			var o = self.objects[i];
-			
+
 			if (!o.hidden) {
 				self.div.appendChild(o.elm);
 				o.init();
-				
+
 				if (o.name == "nav") { self.attachNav(o); }
-				
+
 				/* add dimensions to total width/height */
 				var pos = OAT.Dom.getLT(o.elm);
 				var dims = OAT.Dom.getWH(o.elm);
@@ -291,7 +291,7 @@ OAT.Form = function(targetElm,optObj) {
 				OAT.Resize.createDefault(o.elm);
 			} /* if movable object */
 		} /* for all objects */
-		
+
 		/* create tab dependencies */
 		for (var i=0;i<self.objects.length;i++) if (self.objects[i].name == "tab") {
 			var o = self.objects[i];
@@ -301,18 +301,18 @@ OAT.Form = function(targetElm,optObj) {
 			for (var j=0;j<o.__tp.length;j++) {
 				o.tab.go(j);
 				var tp = o.__tp[j];
-				for (var k=0;k<tp.length;k++) { 
+				for (var k=0;k<tp.length;k++) {
 					var victim = self.objects[tp[k]];
 					var coords = OAT.Dom.getLT(victim.elm);
-					o.consume(victim,coords[0],coords[1]); 
+					o.consume(victim,coords[0],coords[1]);
 				}
 			}
 		}
-		
+
 		/* create subforms for lookup windows & possible drag handles */
-		for (var i=0;i<self.objects.length;i++) { 
+		for (var i=0;i<self.objects.length;i++) {
 			var o = self.objects[i];
-			if ((o.parentContainer && o.parentContainer.properties[1].value == "1") || o.name == "nav") { 
+			if ((o.parentContainer && o.parentContainer.properties[1].value == "1") || o.name == "nav") {
 				var mapOK = true;
 				for (var j=0;j<self.objects.length;j++) {
 					var oo = self.objects[j];
@@ -323,13 +323,13 @@ OAT.Form = function(targetElm,optObj) {
 				}
 				if (mapOK) { /* drag only for google & yahoo */
 					var useIcon = (o.name == "map" || o.name == "pivot" || o.name == "grid" || o.name == "twostate");
-					OAT.Drag.createDefault(o.elm,useIcon); 
+					OAT.Drag.createDefault(o.elm,useIcon);
 				}
 			}
 			if (o.name == "container") { o.createForm(self.objects); }
 		}
 	}
-	
+
 	this.initialData = function() {
 		var topLevelCandidates = [];
 		for (var i=0;i<self.datasources.length;i++) {
@@ -342,30 +342,30 @@ OAT.Form = function(targetElm,optObj) {
 			if (hope) { topLevelCandidates.push(self.datasources[i]); }
 		}
 		for (var i=0;i<topLevelCandidates.length;i++) {
-			self.callForData(topLevelCandidates[i]); 
+			self.callForData(topLevelCandidates[i]);
 		}
 	}
-	
+
 	this.materialize = function(xmlDoc) { /* everything is ready, do it */
 		/* area properties */
 		var area = xmlDoc.getElementsByTagName("area")[0];
 		self.div.style.backgroundColor = area.getAttribute("bgcolor");
 		self.div.style.color = area.getAttribute("fgcolor");
 		self.div.style.fontSize = area.getAttribute("size");
-	
+
 		var counter = -1;
 		var ready = false;
 
 		/* listen for loading apis */
-		OAT.MSG.attach("*",OAT.MSG.API_LOADING,function() {
-			counter = (counter == -1)? 1 : counter+1;	
+		OAT.MSG.attach("*","API_LOADING",function() {
+			counter = (counter == -1)? 1 : counter+1;
 		});
 
-		OAT.MSG.attach("*",OAT.MSG.API_LOADED,function() {
+		OAT.MSG.attach("*","API_LOADED",function() {
 			counter--;
 			if (!counter && ready) { self.initialData(); }
 		});
-	
+
 		/* read datasources from xmlDoc */
 		var dselms = xmlDoc.getElementsByTagName("ds");
 		for (var i=0;i<dselms.length;i++) {
@@ -376,7 +376,7 @@ OAT.Form = function(targetElm,optObj) {
 			ds.fromXML(dselm);
 			self.datasources.push(ds);
 		}
-		
+
 		/* read objects from xmlDoc */
 		var objelms = xmlDoc.getElementsByTagName("object");
 		for (var i=0;i<objelms.length;i++) {
@@ -386,33 +386,33 @@ OAT.Form = function(targetElm,optObj) {
 			obj.fromXML(objelm,self.datasources);
 			self.objects.push(obj);
 		}
-		
+
 		self.references();
-		
+
 		var paramsCallback = function() { /* what to do when params are ready */
 			self.recomputeFields();
 			self.draw();
 			self.options.onDone();
 			ready = true;
-			/* -1 -> no apis needed to be loaded, 
+			/* -1 -> no apis needed to be loaded,
 			   >0 -> api loading in progress,
 			   =0 -> api loading finished
 			 */
 			if (counter == -1 || counter == 0) { self.initialData(); }
 		}
-		
+
 		var qualifiersCallback = function() { /* what to do when qualifiers are ready */
 			self.getParams(paramsCallback);
 		}
-		
+
 		var credentialsCallback = function() { /* what to do when credentials are ready */
 			self.getQualifiers(qualifiersCallback);
 		}
-		
+
 		self.options.onReady();
 		self.getCredentials(credentialsCallback);
-	} 
-	
+	}
+
 	this.getParams = function(cb) {
 		var p = [];
 		for (var i=0;i<self.datasources.length;i++) {
@@ -424,7 +424,7 @@ OAT.Form = function(targetElm,optObj) {
 			}
 		}
 		if (!p.length) { cb(); return; }
-		
+
 		function bindParameter(input,ds,index) {
 			var ref = function() {
 				ds.fieldBinding.masterFields[index] = $v(input);
@@ -440,9 +440,9 @@ OAT.Form = function(targetElm,optObj) {
 			var label = OAT.Dom.create("span");
 			var input = OAT.Dom.create("input");
 			input.type = "text";
-			
+
 			label.innerHTML = ds.inputFields[ds.fieldBinding.selfFields[index]] + ' = ';
-			
+
 			div.appendChild(label);
 			div.appendChild(input);
 			self.paramsDiv.appendChild(div);
@@ -455,7 +455,7 @@ OAT.Form = function(targetElm,optObj) {
 		params.show();
 
 	}
-	
+
 	this.getQualifiers = function(cb) {
 		if (!self.sqlDS.length) { cb(); return; }
 		var qRef = function(qualifs) {
@@ -467,7 +467,7 @@ OAT.Form = function(targetElm,optObj) {
 		OAT.Xmla.connection = sqlDS[0].connection;
 		OAT.Xmla.qualifiers(qRef);
 	}
-	
+
 	this.getCredentials = function(cb) {
 		function applyCreds() {
 			for (var i=0;i<self.sqlDS.length;i++) {
@@ -475,9 +475,9 @@ OAT.Form = function(targetElm,optObj) {
 				self.sqlDS[i].connection.options.password = self.options.password;
 			}
 		}
-	
+
 		var needCreds = 1;
-		
+
 		if (self.options.user) { /* no credentials needed - supplied in options */
 			needCreds = 0;
 			applyCreds();
@@ -488,7 +488,7 @@ OAT.Form = function(targetElm,optObj) {
 		if (self.sqlDS.length && self.sqlDS[0].connection.nocred) { needCreds = 0; }
 
 		if (!needCreds) { cb(); return; }
-		
+
 		/* display credentials dialog */
 		var d = new OAT.Dialog("Credentials",self.credsDiv,{modal:1,width:300});
 		d.show();
@@ -502,10 +502,10 @@ OAT.Form = function(targetElm,optObj) {
 		d.ok = ref;
 		d.cancel = d.hide;
  	}
-	
+
 	this.references = function() { /* do various references */
 		/* various references */
-		var create_callback = function(index) { 
+		var create_callback = function(index) {
 			return function() { self.callForData(self.datasources[index]); }
 		}
 		for (var i=0;i<self.datasources.length;i++) {
@@ -522,7 +522,7 @@ OAT.Form = function(targetElm,optObj) {
 				} /* switch */
 			} /* all field bindings */
 		} /* all datasources*/
-		
+
 		/* control references */
 		var os = self.objects;
 		for (var i=0;i<os.length;i++) {
@@ -575,7 +575,7 @@ OAT.Form = function(targetElm,optObj) {
 				arr.push("map");
 				var props = objs[i].getElementsByTagName("property");
 				var val = parseInt(OAT.Xml.textValue(props[2].getElementsByTagName("value")[0]));
-				if (val == 1 || val == 2) { 
+				if (val == 1 || val == 2) {
 					var key = OAT.Xml.textValue(props[0].getElementsByTagName("value")[0]);
 					if (val == 1) { window._apiKey = key; }
 					if (val == 2) { window.YMAPPID = key; }
@@ -600,7 +600,7 @@ OAT.Form = function(targetElm,optObj) {
 		}
 		OAT.Loader.loadFeatures(needed,callback);
 	}
-	
+
 	this.createFromURL = function(url) { /* create form from url */
 		var createRef = function(xmlDoc) {
 			self.createFromXML(xmlDoc);

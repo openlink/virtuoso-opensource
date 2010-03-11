@@ -15,7 +15,7 @@
 OAT.Color = function() {
 	var self = this;
 	this.callback = function(){};
-	
+
 	this.div = OAT.Dom.create("div",{position:"absolute",backgroundColor:"#fff",border:"2px solid #000",padding:"2px",width:"168px",zIndex:200});
 	this.div.style.width = (OAT.Browser.isIE ? "170px" : "162px");
 	OAT.Drag.create(this.div,this.div);
@@ -26,7 +26,7 @@ OAT.Color = function() {
 	OAT.Event.attach(close,"click",function(){OAT.Dom.unlink(self.div);});
 	this.div.appendChild(close);
 	this.div.appendChild(help);
-	
+
 	var col = 0;
 	var prepare = function(elm,color) {
 		var overRef = function(event) { help.innerHTML = color; }
@@ -34,11 +34,11 @@ OAT.Color = function() {
 		OAT.Event.attach(elm,"mouseover",overRef);
 		OAT.Event.attach(elm,"click",clickRef);
 	}
-	
+
 	function dec2hex(dec) {
 		return dec.toString(16);
 	}
-	
+
 	for (var i=0;i<6;i++)
 		for (var j=0;j<3;j++)
 			for (var k=0;k<6;k++) {
@@ -55,8 +55,8 @@ OAT.Color = function() {
 				self.div.appendChild(elm);
 				prepare(elm,color);
 			}
-			
-	
+
+
 
 	this.pick = function(x,y,callback) {
 		self.callback = callback;

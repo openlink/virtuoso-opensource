@@ -20,7 +20,7 @@ OAT.Drag = {
 	elm:false,
 	mouse_x:0,
 	mouse_y:0,
-	
+
 	move:function(event) {
 		if (!OAT.Drag.elm) return;
 		OAT.Dom.removeSelection();
@@ -30,7 +30,7 @@ OAT.Drag = {
 		var dims = OAT.Dom.getWH(OAT.Drag.elm);
 
 		/* stop when mouse leaves viewport */
-		if (event.clientX > vp[0] || event.clientX < 0 || event.clientY > vp[1] || event.clientY < 0) { 
+		if (event.clientX > vp[0] || event.clientX < 0 || event.clientY > vp[1] || event.clientY < 0) {
 			return;
 		}
 
@@ -78,7 +78,7 @@ OAT.Drag = {
 				if (check(ny+ndims[1],mpos[1]+mdims[1])) { element.style.top = (mpos[1]+mdims[1]-ndims[1])+"px"; magnetOK = false; break; }
 			}
 		}
-		
+
 		/* perform dragging */
 		if (checkOK && magnetOK) {
 			for (var i=0;i<movers.length;i++) {
@@ -96,7 +96,7 @@ OAT.Drag = {
 			OAT.Drag.mouse_y = event.clientY;
 		}
 	},
-	
+
 	up:function(event) {
 		if (!OAT.Drag.elm) { return; }
 		var movers = OAT.Drag.elm._Drag_movers;
@@ -124,21 +124,21 @@ OAT.Drag = {
 		var ref = function(event) {
 			OAT.Drag.initiate(event,elm);
 		}
-		if (!elm._Drag_movers) { 
-			OAT.Event.attach(elm,"mousedown",ref);		
+		if (!elm._Drag_movers) {
+			OAT.Event.attach(elm,"mousedown",ref);
 			elm._Drag_movers = [];
 			elm._Drag_cursor = elm.style.cursor;
 		}
 		if (options.cursor) { elm.style.cursor = "move"; }
 		elm._Drag_movers.push([win,options]);
 	},
-	
+
 	initiate:function(event,elm) {
 		OAT.Drag.elm = elm;
 		OAT.Drag.mouse_x = event.clientX;
 		OAT.Drag.mouse_y = event.clientY;
 	},
-	
+
 	remove:function(clicker,mover) {
 		var elm = $(clicker);
 		var win = $(mover);
@@ -150,15 +150,15 @@ OAT.Drag = {
 		if (index == -1) { return; }
 		elm._Drag_movers.splice(index,1);
 	},
-	
+
 	removeAll:function(clicker) {
 		var elm = $(clicker);
-		if (elm._Drag_movers) { 
+		if (elm._Drag_movers) {
 			elm._Drag_movers = [];
 			elm.style.cursor = elm._Drag_cursor;
 		}
 	},
-	
+
 	createDefault:function(element,useIcon) {
 		if (!OAT.Preferences.allowDefaultDrag) { return; }
 		var elm = $(element);
@@ -177,7 +177,7 @@ OAT.Drag = {
 			}
 			OAT.Drag.create(elm,elm,{restrictionFunction:restrictionFunction});
 			return;
-		} 
+		}
 		elm.parentNode.appendChild(drag);
 		var restrictionFunction = function(newx,newy) {
 			var dims = OAT.Dom.getWH(elm);
@@ -186,10 +186,10 @@ OAT.Drag = {
 			var b = newy + dims[1];
 			return (newx < 20 || newy < 20 || r > parDims[0] || b > parDims[1]);
 		}
-		
+
 		OAT.Drag.create(drag,drag);
 		OAT.Drag.create(drag,elm,{restrictionFunction:restrictionFunction});
-		
+
 		OAT.Dom.hide(drag);
 		var show = function(event) {
 			OAT.Dom.show(drag);

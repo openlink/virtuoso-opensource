@@ -11,7 +11,7 @@
 /*
 	var r = new OAT.RSSReader(div, optObj);
 	r.display(xmlText);
-	
+
 	CSS: .rss_reader .rss_body .rss_header
 */
 
@@ -40,13 +40,13 @@ OAT.RSSReader = function(div,options) {
 				date:""
 			}
 		}
-		
+
 		var tn = xmlDoc.documentElement.tagName.toLowerCase();
 		if (tn == "rss") { self.parseRSS(xmlDoc,data); }
 		if (tn.match(/rdf/)) { self.parseRDF(xmlDoc,data); }
 
 		OAT.Dom.clear(self.div);
-		if (self.options.showTitle) { 
+		if (self.options.showTitle) {
 			var title = OAT.Dom.create("h3",{},"rss_header");
 			var link = OAT.Dom.create("a");
 			link.href = data.link;
@@ -64,7 +64,7 @@ OAT.RSSReader = function(div,options) {
 		}
 		self.div.appendChild(body);
 	}
-	
+
 	this.parseRSS = function(xmlDoc,result) {
 		var titleNode = OAT.Xml.xpath(xmlDoc,"//channel/title")[0];
 		var linkNode = OAT.Xml.xpath(xmlDoc,"//channel/link")[0];
@@ -110,6 +110,6 @@ OAT.RSSReader = function(div,options) {
 			result.items.push(item);
 		}
 	}
-	
+
 }
 OAT.Loader.featureLoaded("rssreader");

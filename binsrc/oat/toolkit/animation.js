@@ -17,6 +17,10 @@
 	a.stop()
 */
 
+/**
+ * @class Implements basic animation framework, as well as some pre-defined animation effects.
+ * @message ANIMATION_STOP animation finished
+ */
 OAT.Animation = function(element, optionsObject) { /* periodic executer */
 	var self = this;
 	this.elm = $(element);
@@ -28,14 +32,14 @@ OAT.Animation = function(element, optionsObject) { /* periodic executer */
 		stopFunction:function() {}
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
+
 	this.step = function() {
 		var callback = function() {
 			if (!self.running) return;
 			if (self.options.conditionFunction(self)) {
 				self.running = 0;
 				self.options.stopFunction(self);
-				OAT.MSG.send(self,OAT.MSG.ANIMATION_STOP,self);
+				OAT.MSG.send(self, "ANIMATION_STOP" ,self);
 			} else {
 				self.options.stepFunction(self);
 				self.step(self);
@@ -43,13 +47,13 @@ OAT.Animation = function(element, optionsObject) { /* periodic executer */
 		} /* callback */
 		setTimeout(callback,self.options.delay);
 	}
-	
+
 	this.start = function() {
 		self.running = 1;
 		self.options.startFunction(self);
 		self.step();
 	}
-	
+
 	this.stop = function() {
 		self.running = 0;
 	}
@@ -64,7 +68,7 @@ OAT.AnimationSize = function(element, optionsObject) {
 		speed:1
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
+
 	var o = {delay:self.options.delay};
 
 	o.startFunction = function(a) { /* prepare step */
@@ -95,7 +99,7 @@ OAT.AnimationSize = function(element, optionsObject) {
 		var ok_h = (a.signY > 0 ? a.height >= self.options.height : a.height <= self.options.height);
 		if (self.options.width == -1) { ok_w = 1; }
 		if (self.options.height == -1) { ok_h = 1; }
-		return (ok_w && ok_h);	
+		return (ok_w && ok_h);
 	}
 	o.stepFunction = function(a) {
 		a.width += a.stepX;
@@ -106,7 +110,7 @@ OAT.AnimationSize = function(element, optionsObject) {
 		if (self.options.height != -1) { a.elm.style.height = (h >= 0 ? h : 0) + "px"; ; }
 	}
 	this.animation = new OAT.Animation(element,o);
-	
+
 	this.start = self.animation.start;
 	this.stop = self.animation.stop;
 }
@@ -120,7 +124,7 @@ OAT.AnimationPosition = function(element, optionsObject) {
 		speed:1
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
+
 	var o = {delay:self.options.delay};
 
 	o.startFunction = function(a) { /* prepare step */
@@ -151,7 +155,7 @@ OAT.AnimationPosition = function(element, optionsObject) {
 		var ok_t = (a.signY > 0 ? a.top >= self.options.top : a.top <= self.options.top);
 		if (self.options.left == -1) { ok_l = 1; }
 		if (self.options.top == -1) { ok_t = 1; }
-		return (ok_l && ok_t);	
+		return (ok_l && ok_t);
 	}
 	o.stepFunction = function(a) {
 		a.left += a.stepX;
@@ -162,7 +166,7 @@ OAT.AnimationPosition = function(element, optionsObject) {
 		if (self.options.top != -1) { a.elm.style.top = t + "px"; ; }
 	}
 	this.animation = new OAT.Animation(element,o);
-	
+
 	this.start = self.animation.start;
 	this.stop = self.animation.stop;
 }
@@ -175,14 +179,14 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 		speed:0.1
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
+
 	var o = {delay:self.options.delay};
 
 	o.startFunction = function(a) { /* prepare step */
 		a.opacity = 1;
-		if (OAT.Browser.isGecko) { a.opacity = parseFloat(OAT.Dom.style(a.elm,"opacity")); }
-		if (OAT.Browser.isIE) { 
-			var filter = OAT.Dom.style(a.elm,"filter"); 
+		if (OAT.Browser.isGecko) { a.opacity = parseFloat(OAT.Style.get(a.elm,"opacity")); }
+		if (OAT.Browser.isIE) {
+			var filter = OAT.Style.get(a.elm,"filter");
 			var num = filter.match(/alpha\(opacity=([^\)]+)\)/);
 			if (num) { a.opacity = parseFloat(num[1])/100; }
 		}
@@ -192,18 +196,18 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 		a.step_ = a.sign * self.options.speed;
 	}
 	o.stopFunction = function(a) {
-		OAT.Style.opacity(a.elm,self.options.opacity);
+		OAT.Style.set(a.elm,{opacity:self.options.opacity});
 	}
 	o.conditionFunction = function(a) {
 		var ok = (a.sign > 0 ? a.opacity+0.0001 >= self.options.opacity : a.opacity-0.0001 <= self.options.opacity);
-		return ok;	
+		return ok;
 	}
 	o.stepFunction = function(a) {
 		a.opacity += a.step_;
-		OAT.Style.opacity(a.elm,a.opacity);
+		OAT.Style.set(a.elm,{opacity:a.opacity});
 	}
 	this.animation = new OAT.Animation(element,o);
-	
+
 	this.start = self.animation.start;
 	this.stop = self.animation.stop;
 }
@@ -218,7 +222,7 @@ OAT.AnimationCSS = function(element, optionsObject) {
 		stop:10
 	}
 	for (var p in optionsObject) { self.options[p] = optionsObject[p]; }
-	
+
 	var o = {delay:self.options.delay};
 
 	o.startFunction = function(a) { /* prepare step */
@@ -230,16 +234,14 @@ OAT.AnimationCSS = function(element, optionsObject) {
 	}
 	o.conditionFunction = function(a) {
 		var ok = (a[self.options.property] == self.options.stop);
-		return ok;	
+		return ok;
 	}
 	o.stepFunction = function(a) {
 		a[self.options.property] += self.options.step;
 		a.elm.style[self.options.property] = a[self.options.property];
 	}
 	this.animation = new OAT.Animation(element,o);
-	
+
 	this.start = self.animation.start;
 	this.stop = self.animation.stop;
 }
-
-OAT.Loader.featureLoaded("animation");

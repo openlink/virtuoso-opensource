@@ -11,9 +11,9 @@
 	c = new OAT.Connection(OAT.ConnectionDATA.TYPE_XMLA,optObj)
 	c.toXML()
 	c.fromXML(node)
-	
+
 */
-OAT.ConnectionData = { 
+OAT.ConnectionData = {
 	TYPE_XMLA:1,
 	TYPE_WSDL:2,
 	TYPE_REST:3
@@ -45,16 +45,16 @@ OAT.Connection = function(type,optObj) {
 		break;
 	}
 	for (var p in optObj) if (p in this.options) { this.options[p] = optObj[p]; }
-	
+
 	this.toXML = function(uid, noCreds) {
 		var xml = '<connection type="'+self.type+'"';
-		for (var p in self.options) { 
+		for (var p in self.options) {
 			var v = self.options[p];
 			if (p == "user" || p == "password")  { v = OAT.Crypto.base64e(v); }
 			if ((p != "user" && p != "password") || uid) {
 				xml += ' '+p+'="';
 				xml += OAT.Dom.toSafeXML(v);
-				xml += '"'; 
+				xml += '"';
 			}
 		}
 		xml += ' nocred="'+(noCreds ? 1 : 0)+'"';
@@ -62,7 +62,7 @@ OAT.Connection = function(type,optObj) {
 		xml += '/>';
 		return xml;
 	}
-	
+
 	this.fromXML = function(node) {
 		for (var p in self.options) {
 			var v = node.getAttribute(p);

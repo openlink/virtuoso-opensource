@@ -19,7 +19,7 @@ OAT.Layers = function(baseOffset) {
 	this.baseOffset = baseOffset;
 	this.layers = [];
 	this.currentIndex = 0;
-	
+
 	this.raise = function(elm) {
 		var index = self.layers.find(elm);
 		if (index == -1) { return; }
@@ -40,14 +40,14 @@ OAT.Layers = function(baseOffset) {
 		var event = (activationEvent ? activationEvent : "mousedown");
 		OAT.Event.attach(elm,event,function(){self.raise(elm);});
 	}
-	
+
 	this.removeLayer = function(something) {
 		var elm = $(something);
 		var index = self.layers.find(elm);
 		if (index == -1) { return; }
 		self.layers.splice(index,1);
 	}
-	
+
 	self.currentIndex = self.baseOffset;
 }
 OAT.Loader.featureLoaded("layers");
