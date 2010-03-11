@@ -2432,13 +2432,13 @@ ODS.Nav = function (navOptions)
 
 
         var mapOpt = {
-	    fix:OAT.MapData.FIX_ROUND1
+      fix:OAT.Map.FIX_ROUND1
 	}
 
 	var searchCallback = function(commonMapObj) {
 	    commonMapObj.addTypeControl();
 	    commonMapObj.addMapControl();
-	    commonMapObj.setMapType(OAT.MapData.MAP_MAP);
+	commonMapObj.setMapType(OAT.Map.MAP_MAP);
 	    commonMapObj.centerAndZoom(0,0,1);
 
 	    if ($v ('search_textbox_searchC') == '')
@@ -2450,10 +2450,10 @@ ODS.Nav = function (navOptions)
 		      self.searchObj.map.loadApi (providerType, searchCallback);
 		  });
 
-	// Use Yahoo maps for now
-	window.YMAPPID = "";
+    // Google maps Api v3 is now the default
+
 	var searchDiv = document.getElementById('searchMap');
-	var providerType = OAT.MapData.TYPE_Y;
+      var providerType = OAT.Map.TYPE_G3;
 	self.searchObj.map = new OAT.Map (searchDiv, providerType, mapOpt);
 
 
@@ -3626,15 +3626,14 @@ ODS.Nav = function (navOptions)
 		    rWidgets[i].style.width = pRWidth - 8 + 'px';
 	    }
 
-//    if(!self.profile.connTab)
-//    {
-//       var connTab=new OAT.Tab('connPCtr');
-//       connTab.add('connT1','connP1');
-//       connTab.add("connT2","connP2");
-//       connTab.go(0);
-//       self.profile.connTab=connTab;
-//    }
-
+    if(!self.profile.connTab)
+    {
+       var connTab=new OAT.Tab('connPCtr');
+       connTab.add('connT1','connP1');
+       connTab.add("connT2","connP2");
+       connTab.go(0);
+       self.profile.connTab=connTab;
+    }
 
 	self.session.usersGetInfo (self.profile.userId,
 				   'userName,fullName,photo,dataspace',
@@ -3644,20 +3643,20 @@ ODS.Nav = function (navOptions)
 
     var mapOpt = 
     {
-	    fix         : OAT.MapData.FIX_ROUND1,
+      fix         : OAT.Map.FIX_ROUND1,
 	    fixDistance : 20,
 	    fixEpsilon  : 0.5
 	}
 
-//    self.profile.connMap = new OAT.Map('connP2map',OAT.MapData.TYPE_G,mapOpt);
-//    self.profile.connMap.connLocations=new Array();
-//    self.profile.connMap.connData={};
-//    self.profile.connMap.centerAndZoom(0,0,8); /* africa, middle zoom */
-//    self.profile.connMap.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
-//
-//    OAT.Event.attach('connT2',"click",function(){self.profile.connMap.obj.checkResize();
-//                                                 self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
-//                                                });
+    self.profile.connMap = new OAT.Map('connP2map',OAT.Map.TYPE_G3,mapOpt);
+    self.profile.connMap.connLocations=new Array();
+    self.profile.connMap.connData={};
+    self.profile.connMap.centerAndZoom(0,0,8); /* africa, middle zoom */
+    self.profile.connMap.setMapType(OAT.Map.MAP_ORTO); /* aerial */
+
+    OAT.Event.attach('connT2',"click",function(){self.profile.connMap.obj.checkResize();
+                                                 self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
+                                                });
 
 	if (!self.profile.ciTab)
 	    {
@@ -3675,32 +3674,32 @@ ODS.Nav = function (navOptions)
 		self.profile.ciTab = ciTab;
 	    }
 
-	//	self.profile.ciMap = new OAT.Map ('locatorMap', OAT.MapData.TYPE_G, mapOpt);
+      self.profile.ciMap = new OAT.Map ('locatorMap', OAT.Map.TYPE_G, mapOpt);
 
-	//	self.profile.ciMap.homeLocation  = false;
-	//self.profile.ciMap.workLocation  = false;
-	//self.profile.ciMap.connLocations = new Array();
-	//self.profile.ciMap.connData      = {};
-	//self.profile.ciMap.centerAndZoom (0, 0, 8); /* africa, middle zoom */
-	//self.profile.ciMap.obj.addControl (new GSmallMapControl ());
-	//self.profile.ciMap.setMapType (OAT.MapData.MAP_ORTO); /* aerial */
-	//self.profile.ciMap.expandMap = function ()
+      self.profile.ciMap.homeLocation  = false;
+      self.profile.ciMap.workLocation  = false;
+      self.profile.ciMap.connLocations = new Array();
+      self.profile.ciMap.connData      = {};
+      self.profile.ciMap.centerAndZoom (0, 0, 8); /* africa, middle zoom */
+      self.profile.ciMap.obj.addControl (new GSmallMapControl ());
+      self.profile.ciMap.setMapType (OAT.Map.MAP_ORTO); /* aerial */
+      self.profile.ciMap.expandMap = function ()
 
-	//{
-	//	    self.profile.ciMap.obj.checkResize();
-	//
-	//	    if (self.profile.ciMap.homeLocation &&
-	//		self.profile.ciMap.workLocation)
-	//		{
-	//		    self.profile.ciMap.optimalPosition (new Array (self.profile.ciMap.homeLocation,
-	//								   self.profile.ciMap.workLocation));
-	//		}
-	//	    else
-	//		self.profile.ciMap.centerAndZoom (50, -10, 3);
-	//	}
+      {
+	  self.profile.ciMap.obj.checkResize();
 
+          if (self.profile.ciMap.homeLocation &&
+	      self.profile.ciMap.workLocation)
+	  {
+              self.profile.ciMap.optimalPosition (new Array (self.profile.ciMap.homeLocation,
+							     self.profile.ciMap.workLocation));
+	  }
+          else
+	      self.profile.ciMap.centerAndZoom (50, -10, 3);
+      }
 
-//    setTimeout(self.profile.ciMap.expandMap,500);
+      
+      setTimeout(self.profile.ciMap.expandMap,500);
 
     };
 

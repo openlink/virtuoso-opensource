@@ -45,16 +45,16 @@
       IDd := vector ();
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'x5_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'd_fld_1_', '');
-          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          suffix := replace (params [N], 'x5_fld_1_', '');
+          id := cast (get_keyword ('x5_fld_0_'||suffix, params, '-1') as integer);
           if (id <> -1)
           {
             update WA_USER_BIOEVENTS
                set WUB_EVENT = trim (params [N+1]),
-                   WUB_DATE = trim (get_keyword ('d_fld_2_'||suffix, params, '')),
-                   WUB_PLACE = trim (get_keyword ('d_fld_3_'||suffix, params, ''))
+                   WUB_DATE = trim (get_keyword ('x5_fld_2_'||suffix, params, '')),
+                   WUB_PLACE = trim (get_keyword ('x5_fld_3_'||suffix, params, ''))
              where WUB_ID = id;
             IDd := vector_concat (IDd, vector (id));
           }
@@ -73,14 +73,14 @@
       }
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'd_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'x5_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'd_fld_1_', '');
-          id := cast (get_keyword ('d_fld_0_'||suffix, params, '-1') as integer);
+          suffix := replace (params [N], 'x5_fld_1_', '');
+          id := cast (get_keyword ('x5_fld_0_'||suffix, params, '-1') as integer);
           if (id = -1)
           {
             insert into WA_USER_BIOEVENTS ( WUB_EVENT, WUB_DATE, WUB_PLACE, WUB_U_ID)
-              values (trim (params [N+1]), trim (get_keyword ('d_fld_2_'||suffix, params, '')), trim (get_keyword ('d_fld_3_'||suffix, params, '')), self.u_id);
+              values (trim (params [N+1]), trim (get_keyword ('x5_fld_2_'||suffix, params, '')), trim (get_keyword ('x5_fld_3_'||suffix, params, '')), self.u_id);
           }
         }
       }
@@ -109,7 +109,7 @@
       <table class="ctl_grp">
         <tr>
           <td width="800px">
-            <table id="d_tbl" class="listing">
+            <table id="x5_tbl" class="listing">
               <tr class="listing_header_row">
                 <th width="15%">
                   Event
@@ -120,48 +120,25 @@
                 <th>
                   Place
                 </th>
-                <th width="80px">
+                <th width="1%">
                   Action
                 </th>
               </tr>
-              <?vsp
-                declare N integer;
-
-                N := 0;
-                for select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id do
-                {
-              ?>
-              <tr id="d_tr_<?V N ?>">
-                <td id="d_th_<?V N ?>">
-                  <input type="hidden" id="d_fld_0_<?V N ?>" name="d_fld_0_<?V N ?>" value="<?V WUB_ID ?>" />
             		  <![CDATA[
             		    <script type="text/javascript">
             		    <?vsp
-                      http (sprintf ('ODSInitArray.push ( function (){OAT.Loader.loadFeatures(["combolist"], function() {updateField4(\'d_th_%d\', \'d_fld_1_%d\', null, null, {mode: 4, value: \'%s\'});});})', N, N, WUB_EVENT));
+                  for (select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
+                  {
+                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 0, value: "%s"}});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
+                  }
             		    ?>
             		    </script>
             		  ]]>
-                </td>
-                <td>
-                  <input type="text" id="d_fld_2_<?V N ?>" name="d_fld_2_<?V N ?>" value="<?V WUB_DATE ?>" style="width: 95%;" />
-                </td>
-                <td>
-                  <input type="text" id="d_fld_3_<?V N ?>" name="d_fld_3_<?V N ?>" value="<?V WUB_PLACE ?>" style="width: 95%;" />
-                </td>
-                <td>
-                  <input type="button" value="Remove" onclick="javascript: updateRow('d', <?V N ?>);" />
-                </td>
-              </tr>
-              <?vsp
-                  N := N + 1;
-                }
-                http (sprintf ('<tr id="d_tr_no" style="display: %s"><td colspan="4"><b>No Biographical Events</b></td></tr>', case when N = 0 then '' else 'none' end));
-              ?>
+             <tr id="x5_tr_no"><td colspan="4"><b>No Biographical Events</b></td></tr>
             </table>
-            <input type="hidden" id="d_no" name="d_no" value="<?V N ?>" />
           </td>
           <td valign="top" nowrap="1">
-            <input type="button" value="Add" onclick="javascript: updateRow('d', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
+            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {mode: 0}, fld_3: {mode: 0}});" />
           </td>
         </tr>
       </table>

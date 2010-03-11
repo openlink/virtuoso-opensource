@@ -237,14 +237,9 @@ create procedure ODS_CREATE_USER (
    declare _err,_port,default_host,default_port,vhost varchar;
    declare _arr any;
 
-
    _username := trim(_username);
-
-
   if(length(_host)=0)
-  {
     _host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  }
 
   _arr := split_and_decode (_host, 0, '\0\0:');
   if (length (_arr) > 1)
@@ -270,18 +265,13 @@ create procedure ODS_CREATE_USER (
 
    dom_reg := null;
    whenever not found goto nfd;
-     select WD_MODEL into dom_reg from WA_DOMAINS where WD_HOST = vhost and
-     WD_LISTEN_HOST = _port and WD_LPATH = '/ods';
+  select WD_MODEL into dom_reg from WA_DOMAINS where WD_HOST = vhost and WD_LISTEN_HOST = _port and WD_LPATH = '/ods';
 
    nfd:;
-
    if (dom_reg is not null)
    {
-     if (dom_reg = 0 or
-         not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1)
-        )
+    if (dom_reg = 0 or not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1))
        {
-
            if(web_user_password_check(_creator_username,_creator_passwd)=0
               or
               not exists(select 1 from SYS_USERS where U_NAME=_creator_username and U_GROUP in (0,3))
@@ -315,7 +305,8 @@ create procedure ODS_CREATE_USER (
 
     declare _disabled any;
     -- create user initially disabled
-    uid := USER_CREATE (_username, _passwd,
+  uid := USER_CREATE (_username,
+                      _passwd,
          vector ('E-MAIL', _email,
                  'HOME', '/DAV/home/' || _username || '/',
                  'DAV_ENABLE' , 1,
@@ -323,6 +314,10 @@ create procedure ODS_CREATE_USER (
    update SYS_USERS set U_ACCOUNT_DISABLED = _mail_verify_on where U_ID = uid;
    DAV_MAKE_DIR ('/DAV/home/', http_dav_uid (), http_admin_gid (), '110100100R');
    DAV_MAKE_DIR ('/DAV/home/' || _username || '/', uid, http_nogroup_gid (), '110100100R');
+
+  declare _det_col_id integer;
+  _det_col_id := DB.DBA.DAV_MAKE_DIR ('/DAV/home/'||_username||'/RDFData/', uid, http_nogroup_gid (), '110100100N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'RDFData' where COL_ID = _det_col_id;
 
    WA_USER_SET_INFO(_username, '', '');
    WA_USER_TEXT_SET(uid, _username||' '||_email);
@@ -386,8 +381,7 @@ create procedure ODS_CREATE_USER (
 
        -- determine existing default mail server
        declare _smtp_server any;
-       if((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1
-           or (select length(max(WS_SMTP)) from WA_SETTINGS) = 0)
+    if((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length(max(WS_SMTP)) from WA_SETTINGS) = 0)
          _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
        else
          _smtp_server := (select max(WS_SMTP) from WA_SETTINGS);
@@ -398,18 +392,17 @@ create procedure ODS_CREATE_USER (
          goto report_err;
        }
        declare msg, _sender_address, body, body1 varchar;
-       body := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...') from WS.WS.SYS_DAV_RES
-                where  RES_FULL_PATH = '/DAV/VAD/wa/tmpl/WS_REG_TEMPLATE');
+    body := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...') from WS.WS.SYS_DAV_RES where  RES_FULL_PATH = '/DAV/VAD/wa/tmpl/WS_REG_TEMPLATE');
        body1 := WA_MAIL_TEMPLATES(body, null, _username, sprintf('%s/conf.vspx?sid=%s&realm=wa', rtrim(WA_LINK(1),'/'),sid ));
-       msg := 'Subject: Account registration confirmation\r\nContent-Type: text/plain\r\n';
-       msg := msg || body1;
+    msg := 'Subject: Account registration confirmation\r\nContent-Type: text/plain\r\n' || body1;
        _sender_address := (select U_E_MAIL from SYS_USERS where U_ID = http_dav_uid ());
        {
          declare exit handler for sqlstate '*'
          {
            declare _use_sys_errors, _sys_error, _error any;
            _sys_error := concat (__SQL_STATE,' ',__SQL_MESSAGE);
-           _error := 'Due to a transient problem in the system, your registration could not be
+        _error := '
+          Due to a transient problem in the system, your registration could not be
              processed at the moment. The system administrators have been notified. Please
              try again later';
            _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);

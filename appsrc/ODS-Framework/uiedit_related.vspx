@@ -74,12 +74,13 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 			      <td>
 				  <v:label name="lr1" value="--ods_iri_qual ((control.vc_parent as vspx_row_template).te_rowset[3])"/>
 			      </td>
-			      <td>
-				  <v:url name="related_ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+            <td nowrap="nowrap">
+              <v:url name="related_ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
                 url="--sprintf ('uiedit.vspx?page=8&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
+                xhtml_class="img_button"
 				      />
 			      </td>
 			  </tr>
@@ -120,7 +121,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
                 }
               ?>
 		      }
-		      ODSInitArray.push ( function () { OAT.Loader.loadFeatures(["combolist"], p_init); } );
+              ODSInitArray.push ( function () { OAT.Loader.load(["combolist"], p_init); } );
             ]]>
           </script>
 	          </div>

@@ -124,10 +124,6 @@ img.button {
   margin-bottom: -2px;
 }
 
-.pointer {
-  cursor: pointer;
-}
-
 table.listing td, table.listing th {
   border-spacing: 0px;
 }

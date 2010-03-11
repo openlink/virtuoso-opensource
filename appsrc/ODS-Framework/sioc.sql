@@ -1037,11 +1037,12 @@ create procedure sioc_user_info (
 	      exponent := info[1];
     	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
 
-    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
-    	  DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
-
-    	  DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
-    	  DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
+	  DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
+	  DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
+    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
+    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
+    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
 	    }
 	}
   sioc_user_private_info (graph_iri,
@@ -2590,6 +2591,14 @@ create procedure DB.DBA.ODS_QUAD_URI_L (in g_iri any, in s_iri any, in p_iri any
 }
 ;
 
+create procedure DB.DBA.ODS_QUAD_URI_L_TYPED (in g_iri any, in s_iri any, in p_iri any, in obj any, in dt varchar, in lang varchar)
+{
+  g_iri := fix_graph (g_iri);
+  s_iri := fix_graph (s_iri);
+  DB.DBA.RDF_QUAD_URI_L_TYPED (g_iri, s_iri, p_iri, obj, dt, lang);
+}
+;
+
 create procedure delete_quad_so (in _g any, in _s any, in _o any)
 {
   _g := fix_graph (_g);
@@ -3939,6 +3948,10 @@ create procedure sioct_n3 ()
 }
 ;
 
+-- define common foaf+ssl NS
+DB.DBA.XML_SET_NS_DECL ('rsa', 'http://www.w3.org/ns/auth/rsa#', 2);
+DB.DBA.XML_SET_NS_DECL ('cert', 'http://www.w3.org/ns/auth/cert#', 2);
+
 create procedure std_pref_declare ()
 {
   return
@@ -4027,10 +4040,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := sprintf ('sparql define input:storage ""  prefix cert: <' || cert_iri ('') || '> ' || ' prefix rsa: <' || rsa_iri ('') || '> ' ||
-  	'select ?exp_val ?mod_val from <%S> '||
-  	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-	graph, agent);
+  qr := DB.DBA.FOAF_SSL_QR (graph, agent);      
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -4293,8 +4303,6 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?idn rdf:type rsa:RSAPublicKey .
 	    ?idn rsa:public_exponent ?exp .
 	    ?idn rsa:modulus ?mod .
-	    ?exp cert:decimal ?exp_val .
-	    ?mod cert:hex ?mod_val .
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
@@ -4310,7 +4318,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?interest rdfs:label ?interest_label  } .
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
-	      optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val  } .
+	        optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 	      }
 	    }

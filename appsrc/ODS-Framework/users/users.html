@@ -10,14 +10,14 @@
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
       function navigate(e) {
         if (e.keyCode == 13) {
           if (isShow("lf"))
@@ -50,7 +50,7 @@
       <input type="hidden" name="formMode" id="formMode" value="" />
       <div id="ob">
         <div id="ob_left">Login</div>
-        <div id="ob_right" style="display: none;"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
+        <div id="ob_right"><a href="#" id="ob_right_logout" onclick="javascript: return logoutSubmit();" style="display: none;">Logout</a></div>
       </div>
       <div id="MD">
         <table cellspacing="0">
@@ -124,6 +124,102 @@
                 </div>
                 <div class="footer">
                   <input type="button" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
+                  <input type="button" name="lf_register" value="Sign Up" id="lf_register" onclick="javascript: return lfRegisterSubmit();"/>
+                </div>
+              </div>
+
+              <div id="rf" class="form" style="display: none">
+                <div class="header">
+                  User register
+                </div>
+                <ul id="rf_tabs" class="tabs">
+                  <li id="rf_tab_0" title="ODS">ODS</li>
+                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                  <li id="rf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                </ul>
+                <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="rf_content"></div>
+                  <div id="rf_page_0" class="tabContent" >
+                    <table class="form" cellspacing="5">
+                      <tr id="rf_login_1">
+                        <th>
+                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_uid" value="" id="rf_uid" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_2">
+                        <th>
+                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                        </td>
+                      </tr>
+                      <tr id="rf_login_3">
+                        <th>
+                          <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password" value="" id="rf_password" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_4">
+                        <th>
+                          <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password2" value="" id="rf_password2" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_1" class="tabContent" >
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="rf_openId">OpenID</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_2" class="tabContent" >
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="rf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_3" class="tabContent" >
+                    <table id="rf_table_3" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="30%">
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="footer" id="rf_login_5">
+                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
 
@@ -322,7 +418,7 @@
                                           <th>
                                             URI
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
@@ -331,7 +427,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -370,7 +466,7 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
@@ -379,7 +475,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -402,7 +498,7 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
@@ -411,7 +507,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -557,7 +653,7 @@
                                     <th>
                                       Member Home Page URL
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
@@ -566,7 +662,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('x4', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('x4', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
                             </td>
                           </tr>
                         </table>
@@ -588,7 +684,7 @@
                                     <th>
                                       Place
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
@@ -597,7 +693,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('x5', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('x5', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
                             </td>
                           </tr>
                         </table>
@@ -641,14 +737,19 @@
                             <th>
                               <label for="pf_msn">MSN</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_msn" value="" id="pf_msn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                             </td>
                           </tr>
                         </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                       </div>
 
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
@@ -664,7 +765,7 @@
                                     <th width="100%">
                                       Favorite Type
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
@@ -675,7 +776,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="nowrap">
-                              <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
                             </td>
                           </tr>
                         </table>
@@ -718,7 +819,7 @@
                                     fld.addOption("dc:creator");
                                     fld.addOption("sioc:owner");
                                   }
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){OAT.Loader.loadFeatures(["combolist"], p_init);});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", p_init);
                                 </script>
                               </td>
                             </tr>
@@ -1137,7 +1238,7 @@
                         <th>
                                       Member Home Page URL
                         </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                         </th>
                                   </tr>
@@ -1146,7 +1247,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('y1', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="updateRow('y1', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
                         </td>
                       </tr>
                         </table>
@@ -1190,14 +1291,19 @@
                         <th>
                               <label for="pf_businessMsn">MSN</label>
                         </th>
-                        <td>
+                            <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="" id="pf_businessMsn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                         </td>
                       </tr>
                     </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                   </div>
 
                       <div class="footer">
@@ -1253,10 +1359,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_openID">OpenID URL</label>
+                          <label for="pf_securityOpenID">OpenID URL</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_openID" value="" id="pf_openID" />
+                          <input type="text" name="pf_securityOpenID" value="" id="pf_securityOpenID" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1264,6 +1370,36 @@
                         </th>
                         <td nowrap="nowrap">
                           <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(31);"/>
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook" style="display:none;">
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Facebook
+                        </th>
+                      </tr>
+                      <tr id="pf_facebook1" style="display:none;">
+                        <th>
+                          Saved Facebook ID
+                        </th>
+                        <td nowrap="nowrap">
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook2" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="pf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook3" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
+                          <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(33);" />
                         </td>
                       </tr>
                       <tr>
@@ -1306,7 +1442,7 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
+                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(34);"/>
                         </td>
                       </tr>
                       <tr>
@@ -1326,7 +1462,57 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(33);"/>
+                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(35);"/>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          X.509 Certificate
+                        </th>
+                      </tr>
+                      <tr id="tr_certificateSubject" style="display: none;">
+                        <th>
+                	    	  Subject
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <span id="span_certificateSubject"></span>
+                    		</td>
+                      </tr>
+                      <tr id="tr_certificateAgentID" style="display: none;">
+                        <th>
+                	    	  Agent ID
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <span id="span_certificateAgentID"></span>
+                    		</td>
+                      </tr>
+                      <tr>
+                        <th valign="top">
+                          <label for="pf_certificate">Certificate</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"></textarea>
+              	          <iframe id="iframe_certificate" src="" width="200" height="200" frameborder="0" scrolling="no" style="display: none;">
+              	            <p>Your browser does not support iframes.</p>
+              	          </iframe>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th />
+                        <td nowrap="nowrap">
+                          <label>
+                            <input type="checkbox" name="pf_certificateLogin" id="pf_certificateLogin" value="1" />
+                            Enable Automatic FOAF+SSL Login
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(36);" />
+                          <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(37);" />
+                          <input type="submit" name="pf_update" value="Refresh" onclick="return pfUpdateSubmit(99);" />
                         </td>
                       </tr>
                     </table>

@@ -1045,3 +1045,39 @@ td.calendar_selected {
 .calendar_special {
 	color: #c55;
 }
+
+a.img_button {
+  background: none repeat scroll 0 0 #99B3C5;
+  border: 1px solid #7F94A5;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  color: #FFFFFF;
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 5px 5px 2px;
+  text-decoration:none;
+}
+
+a.img_button img {
+  margin-bottom: -2px;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+span.button {
+  background: none repeat scroll 0 0 #99B3C5;
+  border: 1px solid #7F94A5;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  color: #FFFFFF;
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 5px 5px 2px;
+  text-decoration:none;
+}
+
+img.button {
+  margin-bottom: -2px;
+}

@@ -34,14 +34,16 @@
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
     </script>
   </head>
   <?php
@@ -66,6 +68,8 @@
     {
       if ($form == "login")
         print "Login";
+      if ($form == "register")
+        print "Register";
       if ($form == "user")
         print "View Profile";
       if ($form == "profile")
@@ -103,6 +107,8 @@
           $_form = "profile";
           }
         }
+      if (isset ($_REQUEST['lf_register']) && ($_REQUEST['lf_register'] <> ""))
+        $_form = "register";
       }
 
       if ($_form == "user")
@@ -478,12 +484,26 @@
 
             if ($_REQUEST['securityNo'] == "2")
               $_url .=
-                  "&securitySecretQuestion=". urlencode ($_REQUEST['pf_securitySecretQuestion']).
-                  "&securitySecretAnswer=".   urlencode ($_REQUEST['pf_securitySecretAnswer']);
+                  "&securityFacebookID=" . urlencode ($_REQUEST['pf_securityFacebookID']);
 
             if ($_REQUEST['securityNo'] == "3")
               $_url .=
+                  "&securityFacebookID=";
+
+            if ($_REQUEST['securityNo'] == "4")
+              $_url .=
+                  "&securitySecretQuestion=". urlencode ($_REQUEST['pf_securitySecretQuestion']).
+                  "&securitySecretAnswer=".   urlencode ($_REQUEST['pf_securitySecretAnswer']);
+
+            if ($_REQUEST['securityNo'] == "5")
+              $_url .=
                   "&securitySiocLimit=".      urlencode ($_REQUEST['pf_securitySiocLimit']);
+            if ($_REQUEST['securityNo'] == "6")
+              $_url .=
+                  "&certificate=" . urlencode ($_REQUEST['pf_certificate']) .
+                  "&certificateLogin=" . urlencode ((isset($_REQUEST['pf_certificateLogin']))? $_REQUEST['pf_certificateLogin']: "0");
+            if ($_REQUEST['securityNo'] == "7")
+              $_url .= "&certificate=&certificateLogin=";
           }
           $_result = file_get_contents($_url);
           if (substr_count($_result, "<failed>") <> 0)
@@ -550,14 +570,16 @@
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><?php outFormTitle($_form); ?></div>
+        <div id="ob_right">
         <?php
-          if ($_form <> 'login')
+          if (($_form <> 'login') && ($_form <> 'register'))
           {
         ?>
-        <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
+          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>
         <?php
           }
         ?>
+      </div>
       </div>
       <div id="MD">
         <table cellspacing="0">
@@ -641,9 +663,108 @@
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
+                  <input type="submit" name="lf_register" value="Sign Up" id="lf_register" />
                 </div>
               </div>
-
+              <?php
+              }
+              if ($_form == 'register')
+              {
+              ?>
+              <div id="rf" class="form">
+                <div class="header">
+                  User register
+                </div>
+                <ul id="rf_tabs" class="tabs">
+                  <li id="rf_tab_0" title="ODS">ODS</li>
+                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                  <li id="rf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                </ul>
+                <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="rf_content"></div>
+                  <div id="rf_page_0" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr id="rf_login_1">
+                        <th width="30%">
+                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_uid" value="" id="rf_uid" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_2">
+                        <th>
+                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                        </td>
+                      </tr>
+                      <tr id="rf_login_3">
+                        <th>
+                          <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password" value="" id="rf_password" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_4">
+                        <th>
+                          <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password2" value="" id="rf_password2" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_1" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="rf_openId">OpenID</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_2" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="rf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_3" class="tabContent" style="display: none">
+                    <table id="rf_table_3" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="30%">
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="footer" id="rf_login_5">
+                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                </div>
+              </div>
               <?php
               }
               if ($_form == 'user')
@@ -1187,17 +1308,22 @@
                             <th>
                               <label for="pf_msn">MSN</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_msn" value="<?php print($_xml->msn); ?>" id="pf_msn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                             </td>
                           </tr>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x6", '<?php print(str_replace("\n", "\\n", $_xml->messaging)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", '<?php print(str_replace("\n", "\\n", $_xml->messaging)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                         </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                       </div>
 
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
@@ -1213,7 +1339,7 @@
                                     <th width="100%">
                                       Favorite Type
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
@@ -1822,17 +1948,22 @@
                         <th>
                               <label for="pf_businessMsn">MSN</label>
                         </th>
-                        <td>
+                            <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="<?php print($_xml->businessMsn); ?>" id="pf_businessMsn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                         </td>
                       </tr>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("y2", '<?php print(str_replace("\n", "\\n", $_xml->businessMessaging)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("y2", '<?php print(str_replace("\n", "\\n", $_xml->businessMessaging)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                     </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                   </div>
 
                       <div class="footer">
@@ -1906,6 +2037,36 @@
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
+                      <tr id="pf_facebook" style="display:none;">
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Facebook
+                        </th>
+                      </tr>
+                      <tr id="pf_facebook1" style="display:none;">
+                        <th>
+                          Saved Facebook ID
+                        </th>
+                        <td nowrap="nowrap">
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook2" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="pf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook3" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
+                          <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
+                        </td>
+                      </tr>
                       <tr>
                         <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
                           Password Recovery
@@ -1946,7 +2107,7 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
                         </td>
                       </tr>
                       <tr>
@@ -1966,7 +2127,71 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          X.509 Certificate
+                        </th>
+                      </tr>
+              	      <?php
+              	        if (strlen ($_xml->certificate) <> 0)
+              	        {
+              	      ?>
+                      <tr>
+                        <th>
+                	    	  Subject
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <?php print($_xml->certificateSubject); ?>
+                    		</td>
+                      </tr>
+                      <tr>
+                        <th>
+                	    	  Agent ID
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <?php print($_xml->certificateAgentID); ?>
+                    		</td>
+                      </tr>
+            	        <?php
+            	          }
+            	        ?>
+                      <tr>
+                        <th valign="top">
+                          <label for="pf_certificate">Certificate</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><?php print($_xml->certificate); ?></textarea>
+              	          <?php
+              	            if (strlen($_xml->certificate) == 0)
+              	            {
+              	          ?>
+                	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="200" height="200" frameborder="0" scrolling="no">
+                	            <p>Your browser does not support iframes.</p>
+                	          </iframe>
+              	          <?php
+              	            }
+              	          ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th />
+                        <td nowrap="nowrap">
+                          <label>
+                            <?php print (sprintf ("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\" %s/>", ($_xml->certificateLogin == '1')? "checked=\"checked\"": "")); ?>
+                            Enable Automatic FOAF+SSL Login
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />
                         </td>
                       </tr>
                     </table>

@@ -38,11 +38,27 @@
 	<v:form name="usr_personal_9" type="simple" method="POST" xhtml_enctype="multipart/form-data">
     <h3>Offers I Seek (GoodRelations Ontologies)</h3>
     <vm:if test="self.wl_mode = 'WL/browse'">
+      <?vsp
+        if (0)
+        {
+      ?>
+        <v:button name="wl_dButton" action="simple" value="Delete">
+          <v:on-post>
+            <![CDATA[
+              delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = get_keyword ('wl_id', self.vc_page.vc_event.ve_params) and WUWL_U_ID = self.u_id;
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      <?vsp
+        }
+      ?>
+      <input type="hidden" name="wl_id" id="wl_id" value="" />
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="wl_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
     <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add Seek';
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
             ]]>
           </v:before-render>
           <v:on-post>
@@ -94,7 +110,7 @@
                   <v:button name="wl_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit Seek" title="Edit Seek"/> Edit';
+                        control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Seek" title="Edit Seek"/> Edit';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -115,19 +131,9 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button name="wl_dButton" action="simple" style="url" value="''" xhtml_class="img_button">
-                    <v:before-render>
-                      <![CDATA[
-                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete Seek" title="Delete Seek"/> Delete';
-                      ]]>
-                    </v:before-render>
-                    <v:on-post>
-                      <![CDATA[
-                        delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUWL_ID') and WUWL_U_ID = self.u_id;
-                        self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
+                  <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('wl_id').value = <?V (control as vspx_row_template).te_column_value('WUWL_ID') ?>; doPost('page_form', 'wl_dButton');}">
+                    <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                  </span>
 			        </td>
 			      </tr>
             </table>
@@ -145,8 +151,6 @@
 
     <vm:if test="self.wl_mode <> 'WL/browse'">
 	  <div class="fm">
-	    <fieldset>
-  				<legend><b>Seek</b></legend>
 				<table>
 				  <tr>
 				    <th width="100px">
@@ -193,11 +197,10 @@
           </script>
               </td>
             </tr>
-  				</table>
-	    </fieldset>
-	    <fieldset>
-  	      <legend><b>Action</b></legend>
-	      <span class="fm_ctl_btn">
+          <tr>
+            <td></td>
+            <td>
+              <br />
   		      <v:button name="user_c_personal_9" value="Cancel" action="simple">
 		        <v:on-post>
                 self.wl_mode := 'WL/browse';
@@ -238,8 +241,9 @@
                 self.vc_data_bind (e);
             ]]></v:on-post>
           </v:button>
-	      </span>
-	    </fieldset>
+            </td>
+          </tr>
+        </table>
     </div>
     </vm:if>
 	</v:form>

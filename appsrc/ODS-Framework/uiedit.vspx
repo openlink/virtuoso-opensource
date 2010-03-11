@@ -56,6 +56,7 @@
 
   <vm:page>
     <vm:header>
+      <script type="text/javascript" src="tbl.js">;</script>
       <script type="text/javascript" src="typeahead.js">;</script>
       <link rel="stylesheet" href="typeahead.css" type="text/css" />
       <vm:title>Edit your personal data</vm:title>

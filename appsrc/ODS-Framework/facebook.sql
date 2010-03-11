@@ -1191,6 +1191,7 @@ create procedure _get_ods_fb_settings (out fb_settings any, in fb_user_id intege
    declare exit handler for sqlstate '*' {return 0;};
 
    fb_settings := null;
+  fb_dba_options := null;
    dba_options := (select US_KEY from WA_USER_SVC where US_U_ID = fb_user_id and US_SVC = 'FBKey');
    if(length(dba_options) >0)
    {
@@ -1198,7 +1199,7 @@ create procedure _get_ods_fb_settings (out fb_settings any, in fb_user_id intege
      fb_dba_options:=replace(fb_dba_options,'\n','&');
      fb_dba_options:=split_and_decode(fb_dba_options);
    }
-   if(length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
+  if (fb_dba_options is not null and length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
    {
       fb_settings:=vector(trim(get_keyword('key',fb_dba_options)),trim(get_keyword('secret',fb_dba_options)));
       return 1;

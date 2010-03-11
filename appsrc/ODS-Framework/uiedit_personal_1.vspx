@@ -41,20 +41,19 @@
       tmp_e := '';
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'x1_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'a_fld_1_', '');
-          tmp_a := tmp_a || trim (params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, params, '')) || '\n';
-        }
-        else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'b_fld_1_', '');
-          tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
-        }
-        else if ((params [N] like 'e_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'e_fld_1_', '');
           tmp_e := tmp_e || trim (params [N+1]) || '\n';
+        }
+        else if ((params [N] like 'x2_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'x2_fld_1_', '');
+          tmp_a := tmp_a || trim (params [N+1]) || ';' || trim (get_keyword ('x2_fld_2_'||suffix, params, '')) || '\n';
+        }
+        else if ((params [N] like 'x3_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'x3_fld_1_', '');
+          tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('x3_fld_2_'||suffix, params, '')) || '\n';
         }
       }
       self.interests := tmp_a;
@@ -245,36 +244,10 @@
       WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
       WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
 
-      declare N, id integer;
-      declare suffix, suffix2, tmp, tmp_a, tmp_b, tmp_e varchar;
-
-      tmp_a := '';
-      tmp_b := '';
-      tmp_e := '';
-      for (N := 0; N < length (params); N := N + 4)
-      {
-        if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'a_fld_1_', '');
-          tmp_a := tmp_a || trim (params [N+1]) || ';' || trim (get_keyword ('a_fld_2_'||suffix, params, '')) || '\n';
-        }
-        else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'b_fld_1_', '');
-          tmp_b := tmp_b || trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
-        }
-        else if ((params [N] like 'e_fld_1_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 'e_fld_1_', '');
-          tmp_e := tmp_e || trim (params [N+1]) || '\n';
-        }
-      }
-      self.interests := tmp_a;
-      self.interestTopics := tmp_b;
-      self.efoaf := tmp_e;
-      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', tmp_a);
-      WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', tmp_b);
-      WA_USER_EDIT (self.u_name, 'WAUI_FOAF', tmp_e);
+      self.storePersonal_1();
+      WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
+      WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.interestTopics);
+      WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
       -- change user_text data
@@ -553,42 +526,32 @@
              <table>
                <tr>
                  <td width="600px">
-                   <table id="e_tbl" class="listing">
+                   <table id="x1_tbl" class="listing">
                      <thead>
                        <tr class="listing_header_row">
                          <th>
                            URI
                          </th>
-                         <th width="80px">
+                         <th width="1%">
                            Action
                          </th>
                        </tr>
                      </thead>
+               		   <![CDATA[
+                		   <script type="text/javascript">
                      <?vsp
-                       declare N integer;
-
-                       N := 0;
                        for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
                        {
-                     ?>
-                     <tr id="e_tr_<?V N ?>">
-                       <td>
-                         <input type="text" id="e_fld_1_<?V N ?>" name="e_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                       </td>
-                       <td>
-                         <input type="button" value="Remove" onclick="javascript: updateRow('e', <?V N ?>);" />
-                       </td>
-                     </tr>
-                     <?vsp
-                         N := N + 1;
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', interest));
                        }
-                       http (sprintf ('<tr id="e_tr_no" style="display: %s"><td colspan="2"><b>No Personal URIs</b></td></tr>', case when N = 0 then '' else 'none' end));
                      ?>
+                		   </script>
+                  	 ]]>
+                     <tr id="x1_tr_no"><td colspan="2"><b>No Personal URIs</b></td></tr>
                    </table>
-                   <input type="hidden" id="e_no" name="e_no" value="<?V N ?>" />
                  </td>
                  <td valign="top" nowrap="1">
-                   <input type="button" value="Add" onclick="javascript: updateRow('e', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x1', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}});" />
                    <vm:u-prop-select name="sel_8" value="self.sav8" />
                  </td>
                </tr>
@@ -630,7 +593,7 @@
              <table>
                <tr>
                  <td width="600px">
-                   <table id="a_tbl" class="listing">
+                   <table id="x2_tbl" class="listing">
                      <thead>
                        <tr class="listing_header_row">
                          <th>
@@ -639,39 +602,26 @@
                          <th>
                            Label
                          </th>
-                         <th width="80px">
+                         <th width="1%">
                            Action
                          </th>
                        </tr>
                      </thead>
+               		   <![CDATA[
+                		   <script type="text/javascript">
                      <?vsp
-                       declare N integer;
-
-                       N := 0;
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
                        {
-                     ?>
-                     <tr id="a_tr_<?V N ?>">
-                       <td>
-                         <input type="text" id="a_fld_1_<?V N ?>" name="a_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                       </td>
-                       <td>
-                         <input type="text" id="a_fld_2_<?V N ?>" name="a_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                       </td>
-                       <td>
-                         <input type="button" value="Remove" onclick="javascript: updateRow('a', <?V N ?>);" />
-                       </td>
-                     </tr>
-                     <?vsp
-                         N := N + 1;
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
                        }
-                       http (sprintf ('<tr id="a_tr_no" style="display: %s"><td colspan="3"><b>No Topic of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
                      ?>
+                		   </script>
+                  	 ]]>
+                     <tr id="x2_tr_no"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                    </table>
-                   <input type="hidden" id="a_no" name="a_no" value="<?V N ?>" />
                  </td>
                  <td valign="top" nowrap="1">
-                   <input type="button" value="Add" onclick="javascript: updateRow('a', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x2', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}, fld_2: {mode: 0}});" />
                    <vm:u-prop-select name="sel_48" value="self.sav48" />
                  </td>
                </tr>
@@ -686,7 +636,7 @@
              <table>
                <tr>
                  <td width="600px">
-                   <table id="b_tbl" class="listing">
+                   <table id="x3_tbl" class="listing">
                      <thead>
                        <tr class="listing_header_row">
                          <th>
@@ -695,39 +645,26 @@
                          <th>
                            Label
                          </th>
-                         <th width="80px">
+                         <th width="1%">
                            Action
                          </th>
                        </tr>
                      </thead>
+               		   <![CDATA[
+                		   <script type="text/javascript">
                      <?vsp
-                       declare N integer;
-
-                       N := 0;
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
                        {
-                     ?>
-                     <tr id="b_tr_<?V N ?>">
-                       <td>
-                         <input type="text" id="b_fld_1_<?V N ?>" name="b_fld_1_<?V N ?>" value="<?V interest ?>" style="width: 95%;" class="_validate_ _url_ _canEmpty_" onblur="javascript: validateField(this);" />
-                       </td>
-                       <td>
-                         <input type="text" id="b_fld_2_<?V N ?>" name="b_fld_2_<?V N ?>" value="<?V label ?>" style="width: 95%;" />
-                       </td>
-                       <td>
-                         <input type="button" value="Remove" onclick="javascript: updateRow('b', <?V N ?>);" />
-                       </td>
-                     </tr>
-                     <?vsp
-                         N := N + 1;
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
                        }
-                       http (sprintf ('<tr id="b_tr_no" style="display: %s"><td colspan="3"><b>No Thing of Interests</b></td></tr>', case when N = 0 then '' else 'none' end));
                      ?>
+                		   </script>
+                  	 ]]>
+                     <tr id="x3_tr_no"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                    </table>
-                   <input type="hidden" id="b_no" name="b_no" value="<?V N ?>" />
                  </td>
                  <td valign="top" nowrap="1">
-                   <input type="button" value="Add" onclick="javascript: updateRow('b', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: ''}});" />
+                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x3', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}, fld_2: {mode: 0}});" />
                    <vm:u-prop-select name="sel_49" value="self.sav49" />
                  </td>
                </tr>

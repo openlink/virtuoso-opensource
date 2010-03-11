@@ -952,20 +952,117 @@ create procedure ODS.ODS_API."address.geoData" (
 --! password: desired password
 --! email: user's e-mail address
 create procedure ODS.ODS_API."user.register" (
-  in name varchar,
-	in "password" varchar,
-	in "email" varchar) __soap_http 'text/xml'
+  in name varchar := null,
+	in "password" varchar := null,
+	in "email" varchar := null,
+	in mode integer := 0,
+	in data any := null) __soap_http 'text/xml'
 {
-  declare rc any;
+  declare sid, rc any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+	if (mode = 1)
+	{
+	  -- OpenID
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+	else if (mode = 2)
+	{
+	  -- facebook
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := null;
+    "password" := uuid ();
+	}
+	else if (mode = 3)
+	{
+	  -- FOAF+SSL
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+  if (name is null or length (name) < 1 or length (name) > 20)
+    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+
+  if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
+    signal ('23023', 'The login name contains invalid characters');
+
+  if (mode <> 2)
+  {
+    if ("email" is null or length ("email") < 1 or length ("email") > 40)
+      signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
+
+    if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', "email") is null)
+      signal ('23023', 'Invalid E-mail address');
+  }
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = "email") and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+    signal ('23023', 'This e-mail address is already registered.');
+
+  if ("password" is null or length ("password") < 1 or length ("password") > 40)
+    signal ('23023', 'Password cannot be empty or longer then 40 chars');
+
+  if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
+    signal ('23023', 'This OpenID identity is already registered.');
+
+  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = get_keyword ('uid', data)))
+    signal ('23023', 'This Facebook identity is already registered.');
+
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
+  -- rc := 'xxx';
   if (not isinteger (rc))
-    rc := -1;
-  return ods_serialize_int_res (rc);
+    signal ('23023', rc);
+
+  if (mode = 1)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME', get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER', case get_keyword ('gender', data) when 'M' then 'male' when 'F' then 'female' else NULL end);
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HCODE', get_keyword ('homeCode', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HCOUNTRY', (select WC_NAME from DB.DBA.WA_COUNTRY where WC_ISO_CODE = upper (get_keyword ('homeCode', data))));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HTZONE', get_keyword ('homeTimezone', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_OPENID_URL', get_keyword ('openid_url', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_OPENID_SERVER', get_keyword ('openid_server', data));
+  }
+  else if (mode = 2)
+  {
+    -- facebook
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_LOGIN_ID', get_keyword ('uid', data));
+  }
+  else if (mode = 3)
+  {
+    -- FOAF+SSL
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_TITLE'        , get_keyword ('title', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_ICQ'          , get_keyword ('icqChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_MSN'          , get_keyword ('msnChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_AIM'          , get_keyword ('aimChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_YAHOO'        , get_keyword ('yahooChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('workplaceHomepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_WEBPAGE'      , get_keyword ('homepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HPHONE'       , get_keyword ('phone', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+  }
+  sid := DB.DBA.vspx_sid_generate ();
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
+    values (sid, 'wa', name, now ());
+  return '<sid>' || sid  || '</sid>';
 }
 ;
 
@@ -986,15 +1083,12 @@ create procedure ODS.ODS_API."user.authenticate" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  if (not ods_check_auth (uname))
-  {
+  uname := null;
     if (not isnull (facebookUID))
     {
       uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
-      if (not isnull (uname))
-        goto _valid;
     }
-    if (not isnull (openIdUrl))
+  else if (not isnull (openIdUrl))
     {
       declare vResult any;
 
@@ -1004,12 +1098,14 @@ create procedure ODS.ODS_API."user.authenticate" (
         signal ('22023', 'OpenID Authentication Failed');
 
       uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity);
-      if (not isnull (uname))
-        goto _valid;
     }
-    return ods_auth_failed ();
+  else
+  {
+    ods_check_auth (uname);
   }
-_valid:;
+  if (isnull (uname))
+    return ods_auth_failed ();
+
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
     values (sid, 'wa', uname, now ());
@@ -1165,7 +1261,10 @@ create procedure ODS.ODS_API."user.update.fields" (
 
   in securitySecretQuestion varchar := null,
   in securitySecretAnswer varchar := null,
-  in securitySiocLimit varchar := null) __soap_http 'text/xml'
+  in securitySiocLimit varchar := null,
+
+  in certificate varchar := null,
+  in certificateLogin varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare exit handler for sqlstate '*' {
@@ -1264,6 +1363,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
   if (not isnull (securitySiocLimit))
     DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
+
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
 
   return ods_serialize_int_res (1);
 }
@@ -1502,6 +1604,15 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
+
+      ods_xml_item ('certificate',            WAUI_CERT);
+      if (length(WAUI_CERT))
+      {
+        ods_xml_item ('certificateSubject',   get_certificate_info (2, cast (WAUI_CERT as varchar), 0, ''));
+        ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
+      }
+      ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
+
     }
     http ('</user>');
   }
@@ -2958,24 +3069,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
 
     info := get_certificate_info (9);
     st := '00000';
-    S := sprintf (' sparql define input:storage "" ' ||
-                  ' prefix cert: <%s> ' ||
-                  ' prefix rsa: <%s> ' ||
-                  ' select ?exp_val ' ||
-                  '        ?mod_val ' ||
-                  '   from <%s> ' ||
-                  '  where { ' ||
-                  '          ?id cert:identity <%s> ; ' ||
-                  '              rsa:public_exponent ?exp ; ' ||
-                  '              rsa:modulus ?mod . ' ||
-                  '          ?exp cert:decimal ?exp_val . ' ||
-                  '          ?mod cert:hex ?mod_val . ' ||
-                  '        }',
-                  SIOC..cert_iri (''),
-                  SIOC..rsa_iri (''),
-                  foafGraph,
-		  _loc_idn
-                  );
+    S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
