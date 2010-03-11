@@ -88,7 +88,6 @@ div.controls h3 {margin: 0;padding:0}
 
 fieldset.queryopts {
   display: block;
-  width: 850px;
   margin: 0 0 3px 10px
 }
 
@@ -389,7 +388,11 @@ div#virtuoso_options
 }
 
 #default-graph-uri {
-  width: 100%;
+  width: 90%;
+}
+
+#default-graph-uri-clear {
+  float:right;
 }
 
 .combo_list {
@@ -451,6 +454,9 @@ ul#tabgrph {
   background-color: #E8F3F6;
 }
 
+#tabgrph_default_content {
+  width: 100%;
+}
 
 /* ---------------- other -------------- */
 .ctl_right {
