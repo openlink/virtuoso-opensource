@@ -784,7 +784,7 @@
                  {
                    if(previeImgPath.length>0)
                    {
-                     OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
+                     OAT.Loader.load(["dimmer"],showPrevieImg);
                    }
                  }
                  ODSInitArray.push(dimmerPreviewInit);

@@ -52,7 +52,7 @@
         var toolkitPath="/ods/oat";
         var imagePath = "/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "dialog", "dav", "color", "calendar"];
+        var featureList=["ajax", "anchor", "dialog", "dav", "color", "calendar"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
@@ -120,10 +120,8 @@
             OAT.Dom.show('reminderDiv');
           }
         }
+          setFooter();
         }
-        
-        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
-        
     		function getWindowHeight()
     		{
     			var windowHeight = 0;
@@ -147,7 +145,6 @@
     			}
     			return windowHeight;
     		}
-    		
     		function setFooter()
     		{
     			if (document.getElementById)
@@ -162,8 +159,8 @@
     				}
     			}
     		}
-    		
-    		window.onload = function() {setFooter();};
+        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
     		window.onresize = function() {setFooter();}
   	</script>
     ]]>

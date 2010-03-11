@@ -50,7 +50,8 @@
           OAT.WebDav.init(options);
           oWebDAV = OAT.WebDav;
         }
-        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, fromInit);
+        OAT.MSG.attach(OAT, 'PAGE_LOADED', fromInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
       </script>
     ]]>
   </head>

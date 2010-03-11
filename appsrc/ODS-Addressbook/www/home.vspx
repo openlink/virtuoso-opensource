@@ -1764,9 +1764,9 @@
                                       N := N + 1;
                                     if (self.abAction <> 'view')
                                         {
-                                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("a", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_", onbBlur: function(){AB.validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
+                                          http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("a", null, {fld_1: {value: "%s", className: "_validate_ _url_"}, fld_2: {value: "%s"}});});', interest, label));
                                         } else {
-                                          http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("a", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', interest, label));
+                                          http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("a", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', interest, label));
                                         }
                                       }
                                   ?>
@@ -1846,15 +1846,6 @@
                             <script type="text/javascript">
                               <![CDATA[
                                 var previeImgPath = '<?Vself.v_photo_preview_path?>';
-                                function dimmerPreviewInit()
-                                {
-                                  if (previeImgPath.length>0)
-                                  {
-                                    OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
-                                  }
-                                }
-                                ODSInitArray.push(dimmerPreviewInit);
-
                                 function showPrevieImg()
                                 {
                                   var div = OAT.Dom.create('div', {position: 'relative', textAlign: 'center'});
@@ -1939,7 +1930,7 @@
                                     }
                                   ?>
                                 }
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                                OAT.MSG.attach(OAT, 'PAGE_LOADED', categoryCombo);
                                </script>
                             ]]>
                           </vm:if>
@@ -2073,7 +2064,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <span id="span_ab_hState">
                                 <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("ab_hCountry", "ab_hState", "<?V self.v_hState ?>", true);});
+                                OAT.MSG.attach(OAT, 'PAGE_LOADED', function (){updateState("ab_hCountry", "ab_hState", "<?V self.v_hState ?>", true);});
                                  </script>
                             </span>
                         </vm:if>
@@ -2250,7 +2241,7 @@
                         <vm:if test="self.abAction <> 'view'">
                             <span id="span_ab_bState">
                                 <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("ab_bCountry", "ab_bState", "<?V self.v_bState ?>", true);});
+                                OAT.MSG.attach(OAT, 'PAGE_LOADED', function (){updateState("ab_bCountry", "ab_bState", "<?V self.v_bState ?>", true);});
                                  </script>
                             </span>
                         </vm:if>
@@ -2477,9 +2468,9 @@
                                 N := N + 1;
                               if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_", onblur: function(){AB.validateField(this);}}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_"}});});', relationship));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("b", {fld_1: {value: "%s"}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("b", {fld_1: {value: "%s"}});});', relationship));
                                   }
                                 }
                             ?>
@@ -2526,7 +2517,7 @@
                               for (N := 1; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
                               }
                               acl := deserialize (self.v_acl);
                               for (N := 1; N < length (acl); N := N + 1)
@@ -2534,9 +2525,9 @@
                                 L := L + 1;
                                   if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
                                   }
                                 }
                            		    ?>

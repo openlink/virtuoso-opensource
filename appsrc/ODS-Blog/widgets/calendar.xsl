@@ -658,7 +658,7 @@
 		var inst_id = <?V self.inst_id ?>;
 		var post_id = <?V coalesce (self.editpost, -1) ?>;
 
-                  ODSInitArray.push( function (){OAT.Loader.loadFeatures(["tab"], panel_init);});
+                  ODSInitArray.push( function (){OAT.Loader.load(["tab"], panel_init);});
                 ]]>
               </script>
                   </td>

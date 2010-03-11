@@ -182,7 +182,7 @@
           <script type="text/javascript">
             <![CDATA[
               ODSInitArray.push ( function () {
-                      OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+                      OAT.Loader.load(["ajax", "json", "combolist"], function(){
                         RDF.tablePrefix = 'wl';
                         RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
                         RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.wl_newProperties, 10), 'class:', 'className:')); ?>;

@@ -77,7 +77,7 @@
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax2"];
+      var featureList=["ajax"];
 
       function updateList()
       {

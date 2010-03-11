@@ -296,7 +296,7 @@ if (typeof (OAT) == 'undefined')
   function init()
     {
 
-      OAT.Loader.loadFeatures(["ajax","xml"],function(){});
+      OAT.Loader.load(["ajax","xml"],function(){});
 
       OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat/";
       OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
@@ -669,7 +669,7 @@ if (typeof (OAT) == 'undefined')
   function applyTransparentImg(parent_elm)
     {
 
-      if (OAT.Dom.isIE() == false) return;
+      if (!OAT.Browser.isIE) return;
 
         var img_elements = parent_elm.getElementsByTagName('IMG');
 
@@ -758,7 +758,7 @@ function ods_bar_state_set (state)
       {
         var dx;
 
-        if (OAT.Dom.isIE)
+        if (OAT.Browser.isIE)
           {
             dx = document.body.offsetWidth - 16 - OAT.Dom.getWH('ods_bar_toggle_min_spacer')[0];
           }

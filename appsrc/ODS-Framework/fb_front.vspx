@@ -452,7 +452,7 @@ function fbInitPrepare()
   ods_bar_state_set('min');
   OAT.Preferences.imagePath='./images/oat/';
   if(typeof(fbInit)!='undefined')
-     OAT.Loader.loadFeatures(["dock","animation","ajax2","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
+    OAT.Loader.load(["dock","animation","ajax","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
   return;
 }
 
@@ -508,7 +508,7 @@ function assignPopup(element,textContent)
 	var a1 = new OAT.AnimationOpacity(popup,{opacity:1});
 	var a2 = new OAT.AnimationOpacity(popup,{opacity:0});
 
-	OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,function(){ /* hide after opacity gets to 0 */
+	OAT.MSG.attach(a2.animation,"ANIMATION_STOP",function(){ /* hide after opacity gets to 0 */
 		OAT.Dom.hide(popup);
 	});
 

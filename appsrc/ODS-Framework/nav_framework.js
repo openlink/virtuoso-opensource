@@ -523,10 +523,9 @@ ODS.session = function (customEndpoint)
 		{
 		    resXmlNodes = OAT.Xml.xpath (xmlDoc, '/sessionStart_response/session', {});
 		    self.sid = OAT.Xml.textValue (resXmlNodes[0]);
-		    OAT.MSG.send (self, OAT.MSG.SES_TOKEN_RECEIVED, {});
+        	    OAT.MSG.send (self, "WA_SES_TOKEN_RECEIVED", {});
 		}
 	};
-
 	OAT.AJAX.POST (self.endpoint + "sessionStart", data, callback, options);
     };
 
@@ -568,11 +567,11 @@ ODS.session = function (customEndpoint)
           self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
           $('loginErrDiv').innerHTML = '';
 
-          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+          OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
         }
         else
         {
-          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+          OAT.MSG.send (self, "WA_SES_INVALID", {retryLogIn: true});
         }
       };
       OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
@@ -630,7 +629,7 @@ ODS.session = function (customEndpoint)
 			}
 		    else
 			{
-			    OAT.MSG.send (self, OAT.MSG.SES_INVALID,{retryLogIn:true});
+                           OAT.MSG.send (self, "WA_SES_INVALID",{retryLogIn:true});
 			}
 		};
 		OAT.AJAX.POST (self.endpoint+"openIdServer", data, callback, options);
@@ -653,11 +652,11 @@ ODS.session = function (customEndpoint)
           self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
           $('loginErrDiv').innerHTML = '';
 
-          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+          OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
         }
         else
         {
-          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+          OAT.MSG.send (self, "WA_SES_INVALID", {retryLogIn: true});
         }
       };
       OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
@@ -675,11 +674,11 @@ ODS.session = function (customEndpoint)
           self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/sessionValidate_response/dba', {})[0]);
           $('loginErrDiv').innerHTML = '';
 
-          OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+          OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
         }
         else
         {
-          OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn: true});
+          OAT.MSG.send (self, "WA_SES_INVALID", {retryLogIn: true});
         }
       };
       OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
@@ -706,17 +705,14 @@ ODS.session = function (customEndpoint)
 								    '/sessionValidate_response/userId', {})[0]);
 		    self.userIsDba = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
 								       '/sessionValidate_response/dba', {})[0]);
-		    OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+		    OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 		}
 	    else
 		{
 		    self.sid = false;
-		    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {});
-
+        	    OAT.MSG.send (self, "WA_SES_INVALID", {});
 		}
-
 	};
-
 	OAT.AJAX.POST (self.endpoint + "sessionValidate", data, callback, options);
     };
 
@@ -735,10 +731,9 @@ ODS.session = function (customEndpoint)
 		    self.userName  = false;
 		    self.userId    = false;
 		    self.userIsDba = false;
-		    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {sessionEnd:true});
+        	    OAT.MSG.send (self, "WA_SES_INVALID", {sessionEnd:true});
 		}
 	};
-
 	OAT.AJAX.POST (self.endpoint+"sessionEnd", data, callback, options);
     };
 
@@ -787,13 +782,13 @@ ODS.session = function (customEndpoint)
 		    self.userId =
 			OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/openIdCheckAuthentication_response/userId',{})[0]);
 
-		    OAT.MSG.send (self, OAT.MSG.SES_VALIDBIND, {});
+        OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 		}
 	    else
 		{
 		    var errMsg = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc, '/error_response/error_msg', {})[0]);
 
-		    OAT.MSG.send (self, OAT.MSG.SES_INVALID, {retryLogIn:true, msg:errMsg});
+        OAT.MSG.send (self, "WA_SES_INVALID", {retryLogIn:true, msg:errMsg});
 		    return;
 		}
 	};
@@ -990,7 +985,7 @@ ODS.Nav = function (navOptions)
 	self.session.validate ();
     }
 
-  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED,
+  OAT.MSG.attach (self.session, "WA_SES_TOKEN_RECEIVED",
 	  function ()
 	  {
 			OAT.Event.detach ('loginBtn', 'click', preValidate);
@@ -1000,7 +995,7 @@ ODS.Nav = function (navOptions)
 	  }
 	);
 
-    OAT.MSG.attach (self.session, OAT.MSG.SES_VALIDBIND,
+    OAT.MSG.attach (self.session, "WA_SES_VALIDBIND",
 	  function ()
 	  {
 			self.createCookie ('sid', self.session.sid, 1);
@@ -1014,11 +1009,11 @@ ODS.Nav = function (navOptions)
 			self.connections.userId = self.session.userId;
 
 			OAT.Dimmer.hide();
-	    OAT.MSG.send (self.session, OAT.MSG.SES_VALIDATION_END, {sessionValid:1});
+           OAT.MSG.send (self.session, "WA_SES_VALIDATION_END", {sessionValid:1});
 	  }
 	);
 
-    OAT.MSG.attach (self.session, OAT.MSG.SES_INVALID,
+    OAT.MSG.attach (self.session, "WA_SES_INVALID",
 	  function (src, msg, event)
 	  {
 			self.showLoginThrobber ('hide');
@@ -1056,13 +1051,13 @@ ODS.Nav = function (navOptions)
 			       }
 			    else
 	      {
-				OAT.MSG.send (self.session, OAT.MSG.SES_VALIDATION_END, {sessionValid:0});
+          		        OAT.MSG.send (self.session, "WA_SES_VALIDATION_END", {sessionValid:0});
 			  }
 			}
     }
   );
 
-    OAT.MSG.attach (self.session, OAT.MSG.SES_VALIDATION_END,
+    OAT.MSG.attach (self.session, "WA_SES_VALIDATION_END",
 	  function (src, msg, event)
 	  {
 			self.showLoginThrobber ('hide');
@@ -1178,7 +1173,7 @@ ODS.Nav = function (navOptions)
     }
   );
 
-    OAT.MSG.attach (self, OAT.MSG.PROFILE_UPDATED,
+    OAT.MSG.attach (self, "WA_PROFILE_UPDATED",
 		    function () {
 			if (self.profile.show)
 			    self.showProfile ();
@@ -1186,7 +1181,7 @@ ODS.Nav = function (navOptions)
 			//			self.profile.ciMap.expandMap ();
 		    });
 
-    OAT.MSG.attach (self, OAT.MSG.CONNECTIONS_UPDATED,
+    OAT.MSG.attach (self, "WA_CONNECTIONS_UPDATED",
 		    function () {
 			if (self.connections.show)
 			    self.showConnections ();
@@ -1550,7 +1545,7 @@ ODS.Nav = function (navOptions)
 
 	    OAT.Dom.show ($('messages_menu').parentNode);
 
-	    OAT.Loader.loadFeatures (["dock"],
+      OAT.Loader.load (["dock"],
 				     function () {
 					 self.userMessages (1, renderMessagesInterface);
 //                                                  setInterval(function(){self.userMessages(1,renderMessagesInterface);},10000);
@@ -2301,7 +2296,7 @@ ODS.Nav = function (navOptions)
 		  self.alog = false;
 		  OAT.Dom.hide ($('login_page'));
 		  self.showLoginThrobber ();
-        		  OAT.MSG.attach (self.session, OAT.MSG.SES_TOKEN_RECEIVED, function (){self.session.validate ();});
+        		  OAT.MSG.attach (self.session, "WA_SES_TOKEN_RECEIVED", function (){self.session.validate ();});
 		}
 	    }
         }
@@ -3060,7 +3055,7 @@ ODS.Nav = function (navOptions)
 				  function () {
                         $('loginBtn').value = 'Login';
 				      $('loginErrDiv').innerHTML = '';
-				      if (!OAT.Dom.isIE ())
+                          if (!OAT.Browser.isIE)
 					  $('loginUserName').focus();
                        }
                       );
@@ -3070,7 +3065,7 @@ ODS.Nav = function (navOptions)
                         $('loginBtn').value = 'Login';
 				      OAT.Dom.hide ($('loginForgot'));
 				      $('loginErrDiv').innerHTML = '';
-				      if (!OAT.Dom.isIE ())
+                          if (!OAT.Browser.isIE)
 					  $('loginOpenIdUrl').focus();
                       }
                      );
@@ -3264,8 +3259,7 @@ ODS.Nav = function (navOptions)
 	OAT.Dom.center (loginDiv, 1, 1);
 
 // fix for missing cursor in FF
-
-	if (OAT.Dom.isGecko ())
+  if (OAT.Browser.isGecko)
 	    {
 		$('loginUserName').style.position   = 'fixed';
 		$('loginUserName').style.marginLeft = '105px';
@@ -3587,7 +3581,7 @@ ODS.Nav = function (navOptions)
 	    }
 
 
-        OAT.MSG.send (self, OAT.MSG.CONNECTIONS_UPDATED, {});
+    OAT.MSG.send (self, "WA_CONNECTIONS_UPDATED", {});
 
 // END render connection Interface
 
@@ -4754,10 +4748,9 @@ ODS.Nav = function (navOptions)
 		     "tagcloud",
 		     "anchor",
 		     "dock"];
-	OAT.Loader.loadFeatures (fList, RDFMInit);
+    OAT.Loader.load (fList, RDFMInit);
 
-
-	OAT.MSG.send (self, OAT.MSG.PROFILE_UPDATED, {});
+    OAT.MSG.send (self, "WA_PROFILE_UPDATED", {});
 
     };
 
@@ -5620,7 +5613,7 @@ ODS.Nav = function (navOptions)
 	    else
 		OAT.Dom.hide (links[3].parentNode);
 
-	    var winType = OAT.Dom.isIE() ? OAT.WinData.TYPE_RECT : OAT.WinData.TYPE_ROUND
+      var winType = OAT.Browser.isIE ? OAT.WinData.TYPE_RECT : OAT.WinData.TYPE_ROUND
 	    var obj = {
 		title         : connObj.fullName,
 		content       : connContent,
@@ -5699,7 +5692,7 @@ ODS.Nav = function (navOptions)
     else
 	if (!self.session.sid && typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
 	    {
-		OAT.MSG.send (self.session, OAT.MSG.SES_INVALID, {retryLogIn:true, msg:'OpenID Authentication Failed'});
+  OAT.MSG.send (self.session, "WA_SES_INVALID", {retryLogIn:true, msg:'OpenID Authentication Failed'});
 	    }
 	else
 	    if (typeof (uriParams.sid) != 'undefined' && uriParams.sid != '')
@@ -5715,7 +5708,7 @@ ODS.Nav = function (navOptions)
 		    }
 		else
 		    {
-			OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:0});
+      OAT.MSG.send (self.session, "WA_SES_VALIDATION_END", {sessionValid:0});
 		    }
 
   OAT.Event.attach ($('vspxApp'), "load", function () { self.hide_app_throbber (); });  
@@ -5724,7 +5717,7 @@ ODS.Nav = function (navOptions)
 		      function () {
 			  if (!self.session.sid)
 			      {
-				  var getParams = OAT.Dom.isIE () ?
+        var getParams = OAT.Browser.isIE ?
 				      $('vspxApp').contentWindow.location.href :
 				      $('vspxApp').contentDocument.location.search;
 
@@ -5834,16 +5827,6 @@ var optionsGet   = false;
 
 function initNav ()
 {
-
-    OAT.MSG.SES_TOKEN_RECEIVED  = 30;
-    OAT.MSG.SES_VALID           = 31;
-    OAT.MSG.SES_VALIDBIND       = 32;
-    OAT.MSG.SES_INVALID         = 33;
-    OAT.MSG.SES_VALIDATION_END  = 34;
-    OAT.MSG.PROFILE_UPDATED     = 51;
-    OAT.MSG.CONNECTIONS_UPDATED = 52;
-
-
     options = {auth             : OAT.AJAX.AUTH_BASIC,
 	       noSecurityCookie : 1,
 	       onerror          : function (request) { dd (request.getStatus ()); }

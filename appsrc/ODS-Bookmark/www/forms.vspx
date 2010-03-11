@@ -1401,7 +1401,7 @@
                         for (N := 1; N < length (acl); N := N + 1)
                         {
                           L := L + 1;
-                            http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
                         }
                         acl := deserialize (self.v_acl);
                         for (N := 1; N < length (acl); N := N + 1)
@@ -1409,9 +1409,9 @@
                           L := L + 1;
                             if (self.v_form <> 'Bookmark/View')
                             {
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
                             } else {
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
                             }
                           }
                      		    ?>

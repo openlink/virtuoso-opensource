@@ -858,8 +858,8 @@
                     </div>
                   </div>
                   <script type="text/javascript">
-                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){selectProfile();});
-                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){cRDF.open("<% out.print(xpathEvaluate($_document, "/user/iri")); %>");});
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<% out.print(xpathEvaluate($_document, "/user/iri")); %>");});
                   </script>
                 </div>
                 <div class="footer">
@@ -1050,7 +1050,7 @@
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});});
                                       </script>
                                     </table>
                                   </td>
@@ -1101,7 +1101,7 @@
                                       </thead>
                                       <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x2", '<% out.print(xpathEvaluate($_document, "/user/interests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<% out.print(xpathEvaluate($_document, "/user/interests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
@@ -1136,7 +1136,7 @@
                                       </thead>
                                       <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x3", '<% out.print(xpathEvaluate($_document, "/user/topicInterests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<% out.print(xpathEvaluate($_document, "/user/topicInterests").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
@@ -1172,7 +1172,7 @@
                         <td nowrap="nowrap">
                           <span id="span_pf_homestate">
                             <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_homecountry", "pf_homestate", "<% out.print(xpathEvaluate($_document, "/user/homeState")); %>");});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_homecountry", "pf_homestate", "<% out.print(xpathEvaluate($_document, "/user/homeState")); %>");});
                             </script>
                           </span>
                         </td>
@@ -1287,7 +1287,7 @@
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 1, value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                 </script>
                               </table>
                             </td>
@@ -1321,7 +1321,7 @@
                                 </thead>
                                 <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 4, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
                                 </script>
                               </table>
                             </td>
@@ -1404,13 +1404,13 @@
                                 <tbody id="r_tbody">
                                   <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
                                   <script type="text/javascript">
-                                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowFavorites();});
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
                                 </tbody>
                               </table>
                             </td>
                             <td valign="top" nowrap="nowrap">
-                              <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
                         </td>
                       </tr>
                         </table>
@@ -1441,7 +1441,7 @@
                             </thead>
                       	    <tbody id="pf07_tbody">
                               <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowMades();});
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMades();});
                               </script>
                       	    </tbody>
                           </table>
@@ -1473,7 +1473,7 @@
                                     fld.addOption("dc:creator");
                                     fld.addOption("sioc:owner");
                                   }
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){OAT.Loader.loadFeatures(["combolist"], p_init);});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", p_init)
                                 </script>
                               </td>
                             </tr>
@@ -1495,7 +1495,7 @@
                             </tr>
                           </table>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowMade();});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMade();});
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
@@ -1531,7 +1531,7 @@
                             </thead>
                       	    <tbody id="pf08_tbody">
                               <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOffers();});
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffers();});
                               </script>
                       	    </tbody>
                           </table>
@@ -1574,7 +1574,7 @@
                             </tr>
                           </table>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOffer();});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffer();});
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
@@ -1610,7 +1610,7 @@
                             </thead>
                       	    <tbody id="pf09_tbody">
                               <script type="text/javascript">
-                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowSeeks();});
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowSeeks();});
                               </script>
                       	    </tbody>
                           </table>
@@ -1861,7 +1861,7 @@
                             <td nowrap="nowrap">
                               <span id="span_pf_businessstate">
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
                                 </script>
                               </span>
                             </td>
@@ -2132,7 +2132,7 @@
                               cc.addOption("Favorite Pet");
                               cc.addOption("Favorite Sports Team");
                             }
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", categoryCombo);
                           </script>
                         </td>
                       </tr>

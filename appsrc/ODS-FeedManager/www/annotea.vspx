@@ -225,7 +225,7 @@
 
                     for (N := 0; N < length (self.v_claims); N := N + 1)
                     {
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("c", null, {fld_1: {mode: 2, value: "%s"}, fld_2: {mode: 0, value: "%s"}, btn_1: {mode: 2}});});', self.v_claims[N][1], self.v_claims[N][2]));
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 2, value: "%s"}, fld_2: {mode: 0, value: "%s"}, btn_1: {mode: 2}});});', self.v_claims[N][1], self.v_claims[N][2]));
                     }
                   ?>
                 		    </script>

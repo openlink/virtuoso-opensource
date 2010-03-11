@@ -47,7 +47,8 @@
         	OAT.Style.include("grid.css");
         	OAT.Style.include("webdav.css");
         }
-        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
       </script>
     ]]>
     <title></title>

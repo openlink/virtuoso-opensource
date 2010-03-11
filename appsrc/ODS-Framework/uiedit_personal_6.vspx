@@ -133,7 +133,7 @@
       <script type="text/javascript">
         <![CDATA[
           ODSInitArray.push ( function () {
-            OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+            OAT.Loader.load(["ajax", "json", "combolist"], function(){
               RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
               RDF.showItemTypes();
             });

@@ -45,7 +45,7 @@ function mapInitPrepare()
 {
   if (typeof(window.mapInit) == "function")
     {
-      OAT.Loader.loadFeatures(["gmaps"], function(){setTimeout(mapInit,60)});
+    OAT.Loader.load(["gmaps"], function(){setTimeout(mapInit,60)});
 }
 }
 
