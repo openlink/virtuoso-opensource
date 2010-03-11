@@ -1777,7 +1777,7 @@
                               </td>
                               <vm:if test="self.abAction <> 'view'">
                                 <td valign="top" nowrap="nowrap">
-                                  <img class="pointer" src="image/add_16.png" border="0" alt="Add Interest" title="Add Interest" onclick="javascript: TBL.createRow('a', null, {fld_1: {mode: 0, className: '_validate_ _url_', onblur: function(){AB.validateField(this);}}, fld_2: {mode: 0}});" />
+                                  <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Interest" title="Add Interest" onclick="javascript: TBL.createRow('a', null, {fld_1: {className: '_validate_ _url_'}, fld_2: {}});" />
                                 </td>
                               </vm:if>
                             </tr>
@@ -2481,7 +2481,7 @@
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="image/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_', onblur: function(){AB.validateField(this);}}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_'}});" />
                           </td>
                         </vm:if>
                       </tr>
@@ -2538,7 +2538,7 @@
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="image/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {}, fld_3: {mode: 31}});" />
                           </td>
                         </vm:if>
                       </tr>

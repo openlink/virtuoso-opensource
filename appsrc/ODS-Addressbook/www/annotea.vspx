@@ -227,7 +227,7 @@
                       </table>
 		                </td>
                     <td valign="top" nowrap="nowrap">
-                      <img class="pointer" src="image/add_16.png" border="0" alt="Add Tripple" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {mode: 0}, btn_1: {mode: 2}});" />
+                      <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Tripple" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {}});" />
                     </td>
                   </tr>
                 </table>

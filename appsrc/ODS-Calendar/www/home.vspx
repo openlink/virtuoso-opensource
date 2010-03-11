@@ -3081,7 +3081,7 @@
                           </table>
                         </td>
                         <td valign="top" nowrap="nowrap">
-                          <img class="pointer" src="image/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
+                          <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
                         </td>
                       </tr>
                     </table>
@@ -3607,7 +3607,7 @@
                           </table>
                         </td>
                         <td valign="top" nowrap="nowrap">
-                          <img class="pointer" src="image/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
+                          <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
                         </td>
                       </tr>
                     </table>
