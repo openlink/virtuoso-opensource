@@ -155,7 +155,7 @@
 	  <dcterms:hasPart>
 	    <bibo:Slide>
 	      <xsl:attribute name="rdf:about">
-	        <xsl:value-of select="concat($documentResourceURL, '/slide', string(position() + number(/ep:Properties/ep:Slides) - number(../@size)))"/>
+	        <xsl:value-of select="concat($documentResourceURL, '#slide', string(position() + number(/ep:Properties/ep:Slides) - number(../@size)))"/>
 	      </xsl:attribute>
 	      <dcterms:isPartOf rdf:resource="{$documentResourceURL}"/>
               <dc:title><xsl:value-of select="."/></dc:title>
@@ -226,7 +226,7 @@
     <xsl:for-each select="r:Relationship[@Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/image']/@Target">
       <bibo:Slide>
         <xsl:attribute name="rdf:about">
-          <xsl:value-of select="concat($documentResourceURL, '/slide', $slideNum)"/>
+          <xsl:value-of select="concat($documentResourceURL, '#slide', $slideNum)"/>
         </xsl:attribute>
         <foaf:depiction>
 	  <xsl:attribute name="rdf:resource">

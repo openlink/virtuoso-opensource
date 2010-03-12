@@ -80,6 +80,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://www.ustream.tv/channel/.*)|'||
+    '(http://www.ustream.tv/user/.*)|'||
+    '(http://www.ustream.tv/recorded/.*)',
+    'URL', 'DB.DBA.RDF_LOAD_USTREAM', null, 'Ustream');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('http://.*openstreetmap.org/.*',
     'URL', 'DB.DBA.RDF_LOAD_OPENSTREETMAP', null, 'OpenStreetMap');
 
@@ -5234,6 +5240,67 @@ create procedure DB.DBA.RDF_LOAD_OPENSTREETMAP (in graph_iri varchar, in new_ori
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_USTREAM (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, api_key, img_id, hdr, what, pos any;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	api_key := _key;
+	if (not isstring (api_key))
+		return 0;
+	if (new_origin_uri like 'http://www.ustream.tv/channel/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/channel/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/channel/%s/getInfo?key=%s', img_id, api_key);
+                what := 'channel';
+	}
+	else if (new_origin_uri like 'http://www.ustream.tv/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/user/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/user/%s/getInfo?key=%s', img_id, api_key);
+                what := 'user';
+	}
+	else if (new_origin_uri like 'http://www.ustream.tv/recorded/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.ustream.tv/recorded/%s', 0);
+		if (tmp is null)
+		    return 0;
+		img_id := tmp[0];
+		pos := strchr(img_id, '/');
+		if (pos is not null)
+                    img_id := left(img_id, pos);
+                url := sprintf('http://api.ustream.tv/xml/video/%s/getInfo?key=%s', img_id, api_key);
+                what := 'video';
+	}
+	else
+	    return 0;
+	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/ustream2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'what', what));
+	xd := serialize_to_UTF8_xml (xt);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6767,6 +6834,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
   declare meta_xml, tmpFile, fileName, fileExt varchar;
   declare xt, xd any;
   declare extracted_image_collection_dav_root, extracted_image_collection_dav_path varchar;
+  declare dav_uid, dav_pwd varchar;
 
   declare exit handler for sqlstate '*'
   {
@@ -6775,6 +6843,10 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
   };
   if (__proc_exists ('unzip_file', 2) is null)
     return 0;
+
+  dav_uid := 'dav';
+  dav_pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME=dav_uid);
+
   -- Create a tmp file from input stream
   tmpFile := tmp_file_name ('rdfm', 'pptx');
   string_to_file (tmpFile, _ret_body, -2);
@@ -6792,10 +6864,13 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
   -- Override dest so graph URI doesn't refer to original location of the source .PPTX file
   -- Using a fixed URL, instead of the source document URL, as the graph name makes
-  -- creating rewrite rules easier. The same rewrite rules can be used for alll sponged .PPTX files.
+  -- creating rewrite rules easier. The same rewrite rules can be used for all sponged .PPTX files.
   original_dest := coalesce(dest, graph_iri);
-  dest := 'http://' || urihost || '/PPTX';
-  baseUri := dest || '/' || fileName;
+  -- Disabled - Breaks description.vsp
+  -- dest := 'http://' || urihost || '/PPTX';
+  -- baseUri := dest || '/' || fileName;
+  dest := original_dest;
+  baseUri := original_dest;
 
   -- Construct graph $original_dest which contains link to graph $dest created solely for sponged PPTX metadata
   {
@@ -6937,11 +7012,11 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
             if (create_dav_col)
 	    {
-              rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_root, '110110110R', 'dav','dav','dav','dav');
+              rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_root, '110110110R', 'dav','dav', dav_uid, dav_pwd);
 	      if (rc >= 0 or rc = (-3) )
 	      {
-		DB.DBA.DAV_DELETE(extracted_image_collection_dav_path, 1, 'dav', 'dav');
-                rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_path, '110110110R', 'dav','dav','dav','dav');
+		DB.DBA.DAV_DELETE(extracted_image_collection_dav_path, 1, dav_uid, dav_pwd);
+                rc := DB.DBA.DAV_COL_CREATE(extracted_image_collection_dav_path, '110110110R', 'dav','dav', dav_uid, dav_pwd);
 	      }
 	      if (rc >= 0)
 	        create_dav_col := 0;
@@ -6951,7 +7026,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
 	    if (create_dav_col = 0)
 	    {
-              rc := DB.DBA.DAV_RES_UPLOAD (extracted_image_collection_dav_path || image_basename, image_str, image_mime_type,'110110110R','dav','dav','dav','dav');
+              rc := DB.DBA.DAV_RES_UPLOAD (extracted_image_collection_dav_path || image_basename, image_str, image_mime_type,'110110110R','dav','dav', dav_uid, dav_pwd);
 	      if (rc < 0)
 	        dbg_printf('.PPTX Cartridge - DAV_RES_UPLOAD failed (%d) with file %s', rc, extracted_image_collection_dav_path || image_basename);
 	    }
@@ -6981,7 +7056,7 @@ inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any
 
       -- slide path takes form 'slides/slide<n>.xml'
       slide_basename := subseq(slide_path3, 7);
-      slideUri :=  baseUri || '/' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
+      slideUri :=  baseUri || '#' || subseq(slide_basename, 0, strrchr(slide_basename, '.'));
       slide_content := unzip_file (tmpFile, 'ppt/' || slide_path3); 
       if (slide_content is null)
       {
