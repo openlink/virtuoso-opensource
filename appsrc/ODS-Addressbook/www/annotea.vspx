@@ -218,7 +218,7 @@
 
                     for (N := 0; N < length (self.v_claims); N := N + 1)
                     {
-                              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){TBL.createRow("c", null, {fld_1: {mode: 2, value: "%s"}, fld_2: {mode: 0, value: "%s"}, btn_1: {mode: 2}});});', self.v_claims[N][1], self.v_claims[N][2]));
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 2, value: "%s"}, fld_2: {value: "%s"}});});', self.v_claims[N][1], self.v_claims[N][2]));
                     }
                   ?>
                 		    </script>
@@ -227,7 +227,7 @@
                       </table>
 		                </td>
                     <td valign="top" nowrap="nowrap">
-                      <img class="pointer" src="image/add_16.png" border="0" alt="Add Tripple" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {mode: 0}, btn_1: {mode: 2}});" />
+                      <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Tripple" title="Add Tripple" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 2}, fld_2: {}});" />
                     </td>
                   </tr>
                 </table>
