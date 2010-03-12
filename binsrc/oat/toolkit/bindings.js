@@ -18,28 +18,28 @@
 OAT.Bindings = {
 	bindString:function(input,object,property) {
 		var callback = function(event) {
-			object[property] = $v(input); 
+			object[property] = $v(input);
 		}
 		OAT.Event.attach(input,"keyup",callback);
 	},
 
 	bindBool:function(input,object,property) {
 		var callback = function(event) {
-			object[property] = (input.checked ? "1" : "0"); 
+			object[property] = (input.checked ? "1" : "0");
 		}
 		OAT.Event.attach(input,"change",callback);
 	},
 
 	bindSelect:function(input,object,property) {
 		var callback = function(event) {
-			object[property] = $v(input); 
+			object[property] = $v(input);
 		}
 		OAT.Event.attach(input,"change",callback);
 	},
-	
+
 	bindCombo:function(input,object,property) {
 		var callback = function(event) {
-			object[property] = $v(input); 
+			object[property] = $v(input);
 		}
 		input.onchange = callback;
 	},

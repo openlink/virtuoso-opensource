@@ -28,7 +28,7 @@
 	<html>
 		<head>
 			<script type="text/javascript">
-				var featureList=["pivot","xmla","soap","ajax2","window","dialog"];
+				var featureList=["pivot","xmla","soap","ajax","window","dialog"];
 			</script>	
 			<script type="text/javascript" src="/DAV/JS/oat/loader.js"></script>
 			<script type="text/javascript">

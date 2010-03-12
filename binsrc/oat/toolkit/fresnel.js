@@ -13,7 +13,7 @@
 	f.addURL("fresnel-resource-url",callback)
 	[xmlDoc, stylesheetsArray] = f.format(RDFDataObject);
 */
- 
+
 OAT.Fresnel = function(optObj) {
 	var self = this;
 	this.options = {
@@ -26,7 +26,7 @@ OAT.Fresnel = function(optObj) {
 	this.nsFormat = "http://www.w3.org/2004/09/fresnel#Format";
 	this.nsGroup = "http://www.w3.org/2004/09/fresnel#Group";
 	this.nsLens = "http://www.w3.org/2004/09/fresnel#Lens";
-	
+
 	self.data = {};
 	self.data.lenses = [];
 	self.data.formats = [];
@@ -44,7 +44,7 @@ OAT.Fresnel = function(optObj) {
 			if (item.type == self.nsFormat) { self.data.formats.push(item); }
 			if (item.type == self.nsGroup) { self.data.groups.push(item); }
 		}
-		
+
 		for (var i=0;i<self.data.lenses.length;i++) { /* each lens has shortcuts to groups */
 			var lens = self.data.lenses[i];
 			lens.groups = [];
@@ -63,20 +63,20 @@ OAT.Fresnel = function(optObj) {
 			format.groups = [];
 			if (gns in format.preds) {
 				var groups = format.preds[gns];
-				format.groups = groups; 
+				format.groups = groups;
 				for (var j=0;j<groups.length;j++) { groups[j].formats.push(format); }
 			}
 		}
 
-		if (self.callback) { self.callback(); } 
+		if (self.callback) { self.callback(); }
 	}
 	this.store = new OAT.RDFStore(self.storeLoaded,self.options);
-	
+
 	this.addURL = function(url,callback) {
 		self.callback = callback;
 		self.store.addURL(url);
 	}
-	
+
 	self.addClass = function(element,className) {
 		var arr = [];
 		var c = element.getAttribute("class") || "";
@@ -87,15 +87,15 @@ OAT.Fresnel = function(optObj) {
 		arr.push(className);
 		element.setAttribute("class",arr.join(" "));
 	}
-	
+
 	/* -------------------- formatting detection ---------- */
-	
+
 	this.findGFResource = function(item,lens,use) { /* find groups and format for a resource */
 		var groups = [];
 		var format_class = false;
 		var format_instance = false;
 		var format = false;
-		
+
 		if (use) for (var i=0;i<use.length;i++) {
 			var it = use[i];
 			if  (it.type == self.nsFormat) { format = it; } else { groups.push(it); }
@@ -103,22 +103,22 @@ OAT.Fresnel = function(optObj) {
 
 		groups.append(lens.groups);
 		if (format) { return [groups,format]; }
-		
+
 		var classNS = self.ns+"classFormatDomain";
 		var instanceNS = self.ns+"instanceFormatDomain";
-		
+
 		function checkFormat(f) {
 			if (classNS in f.preds && f.preds[classNS].find(item.type) != -1) { format_class = f; }
 			if (instanceNS in f.preds && f.preds[instanceNS].find(item.uri) != -1) { format_instance = f; }
 		}
-		
+
 		for (var i=0;i<groups.length;i++) { /* first check formats in groups */
 			var g = groups[i];
 			if (g.formats) for (var j=0;j<g.formats.length;j++) {
-				checkFormat(g.formats[j]);				
+				checkFormat(g.formats[j]);
 			}
 		}
-		
+
 		if (!format_class && !format_instance) { /* try again in all formats */
 			for (var i=0;i<self.data.formats.length;i++) {
 				checkFormat(self.data.formats[i]);
@@ -127,32 +127,32 @@ OAT.Fresnel = function(optObj) {
 
 		if (format_class) { format = format_class; }
 		if (format_instance) { format = format_instance; }
-		
+
 		return [groups,format];
 	}
-	
+
 	this.findGFProperty = function(lens,property,use) {
 		var groups = [];
 		var format = false;
-		
+
 		if (use) for (var i=0;i<use.length;i++) {
 			var item = use[i];
 			if  (item.type == self.nsFormat) { format = item; } else { groups.push(item); }
 		}
-		
+
 		groups.append(lens.groups);
-		
+
 		if (format) { return [groups,format]; }
-		
+
 		var format_prop = false;
 		var format_all = false;
-		
+
 		var ns = self.ns+"propertyFormatDomain";
 		function checkFormat(f) {
 			if (ns in f.preds) {
 				if (f.preds[ns].find(property) != -1) { format_prop = f; }
 				if (f.preds[ns].find(self.ns+"allProperties") != -1) { format_all = f; }
-			}	
+			}
 		}
 
 		for (var i=0;i<groups.length;i++) { /* first formats in groups */
@@ -161,20 +161,20 @@ OAT.Fresnel = function(optObj) {
 				checkFormat(g.formats[j]);
 			}
 		}
-		
-		
+
+
 		if (!format_all && !format_prop) for (var i=0;i<self.data.formats.length;i++) { /* all remaining formats */
 			checkFormat(self.data.formats[i]);
 		}
-		
+
 		if (format_all) { format = format_all; }
 		if (format_prop) { format = format_prop; }
-		
+
 		return [groups,format];
 	}
-	
+
 	/* -------------------- styling subs ------------------ */
-	
+
 	this.styleBox = function(box,list,property,format,counter) {
 		var pre = false;
 		var post = false;
@@ -192,7 +192,7 @@ OAT.Fresnel = function(optObj) {
 				var values = tmp.preds[property];
 				for (var j=0;j<values.length;j++) {
 					var value = values[j];
-					
+
 					if (value.match(/:/)) {
 						var s = box.getAttribute("style") || "";
 						s += value+" ";
@@ -204,21 +204,21 @@ OAT.Fresnel = function(optObj) {
 			} /* if correct property */
 			if (format in tmp.preds) {
 				var obj = tmp.preds[format][0];
-				if (self.ns+"contentBefore" in obj.preds) {	
+				if (self.ns+"contentBefore" in obj.preds) {
 					pre = self.xmlDoc.createElement("fresnel_text");
-					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentBefore"]));	
+					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentBefore"]));
 				}
-				if (self.ns+"contentAfter" in obj.preds) { 
+				if (self.ns+"contentAfter" in obj.preds) {
 					post = self.xmlDoc.createElement("fresnel_text");
-					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentAfter"]));	
+					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentAfter"]));
 				}
 				if (self.ns+"contentFirst" in obj.preds && counter && counter[0] == 0) {
 					pre = self.xmlDoc.createElement("fresnel_text");
-					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentFirst"]));	
+					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentFirst"]));
 				}
 				if (self.ns+"contentLast" in obj.preds && counter && counter[0]+1 == counter[1]) {
 					post = self.xmlDoc.createElement("fresnel_text");
-					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentLast"]));	
+					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentLast"]));
 				}
 			} /* if correct property */
 		} /* for all formatting objects */
@@ -228,14 +228,14 @@ OAT.Fresnel = function(optObj) {
 		if (post) { result.push(post); }
 		return result;
 	}
-	
+
 	this.styleProperty = function(box,lens,property,use) {
 		var tmp = self.findGFProperty(lens,property,use);
 		var list = tmp[0];
 		if (tmp[1]) { list.push(tmp[1]); }
 		return self.styleBox(box,list,self.ns+"propertyStyle",self.ns+"propertyFormat");
 	}
-	
+
 	this.styleLabel = function(box,lens,property,use) { /* if available, include label */
 		var tmp = self.findGFProperty(lens,property,use);
 		var label = self.xmlDoc.createElement("fresnel_label");
@@ -249,9 +249,9 @@ OAT.Fresnel = function(optObj) {
 				var val = tmp.preds[self.ns+"label"][0];
 				if (val == self.ns+"none") { label = false; }
 				else if (val == self.ns+"show") {}
-				else { 
+				else {
 					OAT.Dom.clear(label);
-					label.appendChild(self.xmlDoc.createTextNode(val)); 
+					label.appendChild(self.xmlDoc.createTextNode(val));
 				}
 			}
 		}
@@ -272,9 +272,9 @@ OAT.Fresnel = function(optObj) {
 		self.styleBox(container,list,self.ns+"containerStyle");
 		return self.styleBox(box,list,self.ns+"resourceStyle",self.ns+"resourceFormat");
 	}
-	
+
 	/* ------------------- main routines ----------------- */
-	
+
 	this.findLens = function(item) { /* find appropriate lens for this resource */
 		var l_class = false;
 		var d_class = false;
@@ -306,14 +306,14 @@ OAT.Fresnel = function(optObj) {
 	this.formatProperty = function(parent,item,lens,property,sublens,use) { /* add this property to resource's box */
 		var box = self.xmlDoc.createElement("fresnel_property");
 		var htmlElements = self.styleProperty(box,lens,property,use);
-		
+
 		self.styleLabel(box,lens,property,use);
 		var values = item.preds[property];
 		self.formatContainer(box,values,property,(sublens ? sublens : lens),use);
-		
+
 		OAT.Dom.append([parent,htmlElements]);
 	}
-	
+
 	this.formatProperties = function(parent,item,lens) { /* add (some?) properties to resource's box */
 		var showProps = [];
 		var hideProps = [];
@@ -343,7 +343,7 @@ OAT.Fresnel = function(optObj) {
 			if (sublens) { self.depth--; }
 			usedProps.push(property);
 		}
-		
+
 		if (all) { /* all remaining */
 			for (var p in item.preds) {
 				if (usedProps.find(p) == -1 && hideProps.find(p) == -1) {
@@ -352,12 +352,12 @@ OAT.Fresnel = function(optObj) {
 			}
 		}
 	}
-	
+
 	this.formatValue = function(parent,pair,property,counter,use) { /* add value to container: resource or simple value */
 		var item = pair[0];
 		var lens = pair[1];
 		var box = false;
-		
+
 		if (typeof(item) == "object") {
 			box = self.xmlDoc.createElement("fresnel_value");
 			box.setAttribute("type","resource");
@@ -389,7 +389,7 @@ OAT.Fresnel = function(optObj) {
 		var htmlElements = self.styleValue(box,lens,property,use,counter);
 		OAT.Dom.append([parent,htmlElements]);
 	}
-	
+
 	this.formatResource = function(parent,pair,use,container) { /* add resource to container */
 		var item = pair[0];
 		var lens = pair[1];
@@ -399,7 +399,7 @@ OAT.Fresnel = function(optObj) {
 		self.formatProperties(box,item,lens); /* add all these properties */
 		OAT.Dom.append([parent,htmlElements]);
 	}
-	
+
 	this.formatItem = function(parent,pair,property,counter,use) { /* add something to container */
 		if (property) { /* these items are values of some property */
 			self.formatValue(parent,pair,property,counter,use);
@@ -428,14 +428,14 @@ OAT.Fresnel = function(optObj) {
 			var counter = [i,list.length]
 			self.formatItem(container,list[i],property,counter,use);
 		}
-		if (parent) { 
-			parent.appendChild(container); 
+		if (parent) {
+			parent.appendChild(container);
 			return false;
-		} else { 
-			return container;	
+		} else {
+			return container;
 		}
 	}
-	
+
 	this.format = function(data) {
 		self.depth = 1;
 		self.stylesheets = [];

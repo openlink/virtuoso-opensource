@@ -27,7 +27,7 @@
 	s.reposition()
 	s.arrange()
 	s.startDrawing(node|group,clientX,clientY,label)
-	
+
 	node|edge|group.setLabel(index,value)
 	node|edge|group.getLabel(index)
 	node|edge|group.setType(type)
@@ -36,7 +36,7 @@
 	node|edge|group.setVisible(bool)
 	node|edge|group.getVisible()
 	node.setGroup(group|false)
-	
+
 	group.setParent(newParentGroup)
 	group.setFill(newColor)
 
@@ -77,7 +77,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 	this.getType = function() {
 		return self.type;
 	}
-	
+
 	this.setFill = function(newColor) {
 		self.svg.setAttribute("fill",newColor);
 	}
@@ -92,23 +92,23 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 		var oldParent = self.parent;
 		self.parent = newParent;
 		if (oldParent) { oldParent.redraw(); }
-		if (self.parent) { 
+		if (self.parent) {
 			/* move our svg element after parent's element */
 			if (self.parent.svg.nextSibling) {
 				self.parent.svg.parentNode.insertBefore(self.svg,self.parent.svg.nextSibling);
 			} else {
 				self.parent.svg.parentNode.appendChild(self.svg);
 			}
-			self.parent.redraw(); 
+			self.parent.redraw();
 		}
 	}
-	
+
 	this.signalStart = function() {
 		if (self.signal) { return; }
 		self.signal = true;
 		self.label.setAttribute("font-weight","bold");
 	}
-	
+
 	this.signalStop = function() {
 		if (!self.signal) { return; }
 		self.signal = false;
@@ -129,15 +129,15 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 			if (n.group == self || n.group.parent == self) { self.nodes.push(n); }
 		}
 	}
-	
-	
+
+
 	this.twoClosestNodes = function(x,y) {
 		self.checkNodes();
 		if (!self.nodes.length) { return false; }
 		if (self.nodes.length == 1) { return [self.nodes[0],self.nodes[0]]; }
 		if (self.nodes.length == 2) { return self.nodes; }
 		var points = [];
-		for (var i=0;i<self.nodes.length;i++) { 
+		for (var i=0;i<self.nodes.length;i++) {
 			var n = self.nodes[i];
 			points.push([n.draw_x,n.draw_y]);
 		}
@@ -161,24 +161,24 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 		self.checkNodes();
 		if (!self.nodes.length) { return false; }
 		if (self.nodes.length == 1) { return [self.nodes[0].draw_x,self.nodes[0].draw_y]; }
-		if (self.nodes.length == 2) { 
+		if (self.nodes.length == 2) {
 			var x = (self.nodes[0].draw_x + self.nodes[1].draw_x) / 2;
 			var y = (self.nodes[0].draw_y + self.nodes[1].draw_y) / 2;
-			return [x,y]; 
+			return [x,y];
 		}
 		var points = [];
-		for (var i=0;i<self.nodes.length;i++) { 
+		for (var i=0;i<self.nodes.length;i++) {
 			var n = self.nodes[i];
 			points.push([n.draw_x,n.draw_y]);
 		}
 		var poly = OAT.Geometry.createConvexPolygon(points);
 		return OAT.Geometry.findCOG(poly);
 	}
-	
+
 	this.setLabel = function(newLabel) {
 		self.label.textContent = newLabel;
 	}
-	
+
 	this.getLabel = function() {
 		return self.label.textContent;
 	}
@@ -189,7 +189,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 		self.checkNodes();
 		if (self.nodes.length == 0) { self.svg.style.display = "none"; return; }
 		self.svg.style.display = "";
-		if (self.nodes.length == 1) { 
+		if (self.nodes.length == 1) {
 			var x = self.nodes[0].draw_x;
 			var y = self.nodes[0].draw_y;
 			var dist = self.svgsparql.options.groupOptions.padding;
@@ -201,7 +201,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 			self.label.setAttribute("x",x+labelOffset[0]);
 			self.label.setAttribute("y",y+labelOffset[1]);
 			for (var i=0;i<self.edges.length;i++) { self.edges[i].redraw(); }
-			return; 
+			return;
 		} /* one point */
 		var points = [];
 		if (self.nodes.length == 2) {
@@ -221,7 +221,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 			points.push([x2-vec2[0],y2-vec2[1]]);
 			points.push([x2+vec2[0],y2+vec2[1]]);
 		} else {
-			for (var i=0;i<self.nodes.length;i++) { 
+			for (var i=0;i<self.nodes.length;i++) {
 				var n = self.nodes[i];
 				points.push([n.draw_x,n.draw_y]);
 			}
@@ -253,14 +253,14 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 			subpoint.push(OAT.Geometry.movePoint(center,b,-rd));
 			subpoints.push(subpoint);
 		}
-		/* without subpoints 
+		/* without subpoints
 		var d = "M "+poly[0][0]+" "+poly[0][1]+" ";
 		for (var i=1;i<poly.length;i++) {
 			var p = poly[i];
 			d += " L "+p[0]+" "+p[1]+" ";
 		}
 		/**/
-		
+
 		/* with subpoints */
 		var d = "M "+subpoints[0][0][0]+" "+subpoints[0][0][1]+" ";
 		for (var i=0;i<subpoints.length;i++) {
@@ -272,7 +272,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 			}
 		}
 		/* */
-		
+
 		d += " z";
 		self.svg.setAttribute("d",d);
 		for (var i=0;i<self.edges.length;i++) { self.edges[i].redraw(); }
@@ -288,7 +288,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 		xml += '</group>\n';
 		return xml;
 	}
-	
+
 	this.fromXML = function(xmlNode) {
 		var val = OAT.Xml.textValue(xmlNode);
 		var t = parseInt(xmlNode.getAttribute("type"));
@@ -297,7 +297,7 @@ OAT.SVGSparqlGroup = function(svgsparql,label) {
 		self.setVisible(xmlNode.getAttribute("visible") == "1");
 		self.setLabel(arr);
 	}
-	
+
 }
 
 OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
@@ -316,24 +316,24 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 	this.edges = [];
 	this.visible = true; /* not overall visibility, but rather SPARQL query inclusion */
 	this.type = OAT.SVGSparqlData.NODE_CIRCLE;
-	
+
 	var options = svgsparql.options.nodeOptions;
-	
+
 	this.svgs.push(OAT.SVG.element("circle",options));
 	this.svgs.push(OAT.SVG.element("rect",options));
 	this.svg = self.svgs[0];
-	
+
 	for (var i=0;i<self.svgs.length;i++) { self.svgs[i].obj = self; }
 	self.label1.obj = self;
 	self.label2.obj = self;
-	
+
 	this.setGroup = function(group) {
 		var oldGroup = self.group;
 		self.group = group;
 		if (oldGroup) { oldGroup.redraw(); }
-		if (self.group) { group.redraw(); } 
+		if (self.group) { group.redraw(); }
 	}
-	
+
 	this.setType = function(newType) {
 		self.type = parseInt(newType);
 		var newsvg = false;
@@ -361,33 +361,33 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 	this.setLabel = function(which,newLabel) {
 		self["label"+which].textContent = newLabel;
 	}
-	
+
 	this.getLabel = function(which) {
 		return self["label"+which].textContent;
 	}
 	this.setLabel(1,value);
-	
+
 	this.setVisible = function(value) {
 		self.visible = value;
 		self.redraw();
 	}
 
 	this.getVisible = function() { return self.visible; }
-	
+
 	this.signalStart = function() {
 		if (self.signal) { return; }
 		self.signal = true;
 		self.label1.setAttribute("font-weight","bold");
 		self.label2.setAttribute("font-weight","bold");
 	}
-	
+
 	this.signalStop = function() {
 		if (!self.signal) { return; }
 		self.signal = false;
 		self.label1.setAttribute("font-weight","normal");
 		self.label2.setAttribute("font-weight","normal");
 	}
-	
+
 	this.checkBBox = function(x,y) {
 		var bb = self.svgsparql.bbox(self.svg);
 		if (x >= bb.x && y >= bb.y && x <= bb.x+bb.width && y <= bb.y+bb.height) { return true; }
@@ -397,7 +397,7 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 		if (x >= bb.x && y >= bb.y && x <= bb.x+bb.width && y <= bb.y+bb.height) { return true; }
 		return false;
 	}
-	
+
 	this.redraw = function() {
 		self.draw_x = self.x;
 		self.draw_y = self.y;
@@ -413,7 +413,7 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 				self.draw_y = c[1];
 			}
 		}
-		
+
 		switch (self.type) {
 			case OAT.SVGSparqlData.NODE_CIRCLE:
 				self.svg.setAttribute("cx",self.draw_x);
@@ -425,27 +425,27 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 				self.svg.setAttribute("x",self.draw_x - w/2);
 				self.svg.setAttribute("y",self.draw_y - h/2);
 			break;
-			
+
 		} /* switch */
-		
+
 		self.indicator.setAttribute("cx",self.draw_x);
 		self.indicator.setAttribute("cy",self.draw_y);
-		
+
 		if (self.visible) {
 			self.indicator.style.visibility = "";
 		} else {
 			self.indicator.style.visibility = "hidden";
 		}
-		
+
 		self.label1.setAttribute("x",self.draw_x);
 		self.label1.setAttribute("y",self.draw_y);
 		self.label2.setAttribute("x",self.draw_x);
 		self.label2.setAttribute("y",self.draw_y+svgsparql.options.fontOptions["font-size"]+2);
 		for (var i=0;i<self.edges.length;i++) { self.edges[i].redraw(); }
 	}
-	
+
 	this.setType(OAT.SVGSparqlData.NODE_RECT);
-	
+
 	this.toXML = function() {
 		var xml = "";
 		xml += '\t\t<node x="'+self.x+'" y="'+self.y+'" type="'+self.getType()+'" group="'+self.svgsparql.groups.find(self.group)+'" ';
@@ -457,7 +457,7 @@ OAT.SVGSparqlNode = function(x,y,value,svgsparql) {
 		xml += '</node>\n';
 		return xml;
 	}
-	
+
 	this.fromXML = function(xmlNode) {
 		var val = OAT.Xml.textValue(xmlNode);
 		var arr = OAT.Dom.fromSafeXML(val).split(",");
@@ -484,9 +484,9 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 	this.type = OAT.SVGSparqlData.EDGE_SOLID;
 	node1.edges.push(self);
 	node2.edges.push(self);
-	
+
 	var options = svgsparql.options.edgeOptions;
-	
+
 	if (node1 == node2) {
 		this.svg = OAT.SVG.element("path",options);
 		this.svg.setAttribute("fill","none");
@@ -497,7 +497,7 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 	this.indicator = OAT.SVG.element("circle",{fill:svgsparql.options.indicatorColor,r:svgsparql.options.indicatorSize});
 	this.label1 = OAT.SVG.element("text",svgsparql.options.fontOptions);
 	this.label2 = OAT.SVG.element("text",svgsparql.options.fontOptions);
-	
+
 	self.svg.obj = self;
 	self.label1.obj = self;
 	self.label2.obj = self;
@@ -522,12 +522,12 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 	this.setLabel = function(which,newLabel) {
 		self["label"+which].textContent = newLabel;
 	}
-	
+
 	this.getLabel = function(which) {
 		return self["label"+which].textContent;
 	}
 	this.setLabel(1,value);
-	
+
 	this.setVisible = function(value) {
 		self.visible = value;
 		self.redraw();
@@ -541,14 +541,14 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 		self.label1.setAttribute("font-weight","bold");
 		self.label2.setAttribute("font-weight","bold");
 	}
-	
+
 	this.signalStop = function() {
 		if (!self.signal) { return; }
 		self.signal = false;
 		self.label1.setAttribute("font-weight","normal");
 		self.label2.setAttribute("font-weight","normal");
 	}
-	
+
 	this.checkBBox = function(x,y) {
 		var bb = self.svgsparql.bbox(self.svg);
 		if (x >= bb.x && y >= bb.y && x <= bb.x+bb.width && y <= bb.y+bb.height) { return true; }
@@ -563,14 +563,14 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 		var x1,x2,y1,y2;
 		var shift1 = true;
 		var shift2 = true;
-		
+
 		if (self.node1 instanceof OAT.SVGSparqlGroup && self.node2 instanceof OAT.SVGSparqlGroup) {
 			/* edge between two groups */
 			var coords = self.svgsparql.twoGroupsCoords(self.node1,self.node2);
 			self.redraw2(coords[0],coords[1],coords[2],coords[3]);
 			return;
 		}
-		
+
 		if (self.node1 instanceof OAT.SVGSparqlNode && self.node2 instanceof OAT.SVGSparqlNode) {
 			/* edge between two nodes */
 			var x1 = self.node1.draw_x;
@@ -597,7 +597,7 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 				shift1 = false;
 			}
 		}
-		
+
 		/* at least one node is present: check for visibility */
 		var s = OAT.Geometry.sphericalData;
 		if (self.node1 instanceof OAT.SVGSparqlNode && self.node1.hidden) {
@@ -614,7 +614,7 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 			x2 = s.cx + s.r * Math.cos(a);
 			y2 = s.cy + s.r * Math.sin(a);
 			}
-		
+
 		var dist = radius + options.padding;
 		if (shift1) {
 			var m1 = OAT.Geometry.movePoint([x1,y1],[x2,y2],-dist);
@@ -626,10 +626,10 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 			x2 = m2[0];
 			y2 = m2[1];
 		}
-		
+
 		self.redraw2(x1,y1,x2,y2);
 	}
-	
+
 	this.redraw2 = function(x1,y1,x2,y2) { /* draw a line */
 		var y;
 		if (x1 == x2 && y1 == y2) {
@@ -657,9 +657,9 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 			self.indicator.style.visibility = "hidden";
 		}
 	}
-	
+
 	this.redraw();
-	
+
 	this.toXML = function() {
 		var xml = "";
 		xml += '\t\t<edge type="'+self.getType()+'"';
@@ -685,7 +685,7 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 		xml += '</edge>\n';
 		return xml;
 	}
-	
+
 	this.fromXML = function(xmlNode) {
 		var val = OAT.Xml.textValue(xmlNode);
 		var arr = OAT.Dom.fromSafeXML(val).split(",");
@@ -695,12 +695,12 @@ OAT.SVGSparqlEdge = function(node1,node2,value,svgsparql,radius) {
 		self.setType(t);
 		self.setVisible(xmlNode.getAttribute("visible") == "1");
 	}
-	
+
 }
 
 OAT.SVGSparql = function(parentElm,paramsObj) {
 	var self = this;
-	
+
 	this.options = {
 		allowSelfEdges:false,
 		defaultNodeValue:"<anonymous node>",
@@ -745,9 +745,9 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	this.selectedNodes = [];
 	this.selectedEdges = [];
 	this.selectedGroups = [];
-	
+
 	this.ghostdrag = new OAT.GhostDrag();
-	
+
 	self.parent = $(parentElm);
 	OAT.Dom.makePosition(self.parent);
 	var dims = OAT.Dom.getWH(self.parent);
@@ -786,8 +786,8 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		self.lasso.style.top = y + "px";
 		self.lasso.origX = x;
 		self.lasso.origY = y;
-	} 
-	
+	}
+
 	this.lassoProcess = function(event) {
 		if (!self.lasso) { return; }
 		if (!self.lasso.parentNode) { self.parent.appendChild(self.lasso); }
@@ -797,16 +797,16 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		var end_y = exact[1] - pos[1];
 		var dx = end_x - self.lasso.origX;
 		var dy = end_y - self.lasso.origY;
-		if (dx < 0) { 
+		if (dx < 0) {
 			self.lasso.style.left = end_x + "px";
 		}
-		if (dy < 0) { 
+		if (dy < 0) {
 			self.lasso.style.top = end_y + "px";
 		}
 		self.lasso.style.width = Math.abs(dx) + "px";
 		self.lasso.style.height = Math.abs(dy) + "px";
-	} 
-	
+	}
+
 	this.lassoStop = function(event) {
 		if (!self.lasso) { return; }
 		self.deselectGroups();
@@ -820,13 +820,13 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		OAT.Dom.unlink(self.lasso);
 		self.lasso = false;
-	} 
-	
+	}
+
 	this.redraw = function() {
 		for (var i=0;i<self.nodes.length;i++) { self.nodes[i].redraw(); }
 		for (var i=0;i<self.groups.length;i++) { self.groups[i].redraw(); }
 	}
-	
+
 	this.bbox = function(svgNode) {
 		var fake = {x:-1,y:-1,w:0,h:0};
 		if (svgNode.style.display == "none") { return fake; } /* hidden */
@@ -835,7 +835,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (svgNode.nodeName == "text" && svgNode.textContent == "") { return fake; }
 		return svgNode.getBBox();
 	}
-	
+
 	this.twoGroupsCoords = function(g1,g2) { /* return 4 coordinates of edge between two groups */
 		var x1,y1,x2,y2;
 		g1.checkNodes();
@@ -843,7 +843,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 
 		var c1 = [];
 		var c2 = [];
-		
+
 		for (var i=0;i<g1.nodes.length;i++) {
 			for (var j=0;j<g1.nodes.length;j++) {
 				if (i != j || g1.nodes.length == 1) {
@@ -885,7 +885,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		return [x1,y1,x2,y2];
 	}
-	
+
 	this.dragging = {
 		obj:false,
 		x:0,
@@ -937,7 +937,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			if (!self.dragging.obj) { return; }
 			var o = self.dragging.obj;
 			self.dragging.obj = false;
-			
+
 			if (self.fakeEdge) { /* if drawing mode */
 				var l1 = self.fakeEdge.l1.textContent;
 				var l2 = self.fakeEdge.l2.textContent;
@@ -966,13 +966,13 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 						e.setLabel(2,l2);
 					}
 				} /* not over node nor group */
-			} else { 
+			} else {
 				self.redraw();
 			}
 		} /* self.dragging.up */
 	} /* self.dragging */
 
-	/* 
+	/*
 		firefox trick: firefox sometimes displays 'dragging forbidden' cursor when we try to move nodes.
 		this can be prevented by creating semi-transparent layer
 	*/
@@ -986,11 +986,11 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	for (var p in self.layers) {
 		var g = OAT.SVG.element("g");
 		self.layers[p] = g;
-		self.svg.appendChild(g); 
+		self.svg.appendChild(g);
 	}
 	var r = OAT.SVG.element("rect",{x:0,y:0,width:"100%",height:"100%",fill:"#fff","fill-opacity":0.1});
 	self.layers.background.appendChild(r);
-	
+
 	this.setProjection = function(newProjection) {
 		self.projection = newProjection;
 		self.prepareSphere();
@@ -1005,7 +1005,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		self.redraw();
 	}
-	
+
 	this.computeMinDist = function(w,h) {
 		/* for each node, compute its distance to all other nodes & borders. find the minimum, add to total */
 		var total = 0;
@@ -1028,7 +1028,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		return total;
 	}
-	
+
 	this.arrange = function(numIterations) { /* shift nodes to optimize space */
 		var num = (numIterations ? numIterations : 5);
 		var cnt = self.nodes.length;
@@ -1085,13 +1085,13 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		} /* for all iterations */
 		self.redraw();
 	} /* arrange */
-	
+
 	this.reposition = function() {
 		/* completely re-position and arrange all nodes */
 		var components = [];
 		var allNodes = [];
 		var usedNodes = [];
-		
+
 		var walk = function(node) {
 			var index = allNodes.find(node);
 			if (index == -1) { return [false,0]; }
@@ -1106,14 +1106,14 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			}
 			if (out > tmp[1]) { return [node,out]; } else { return tmp; }
 		}
-		
+
 		for (var i=0;i<self.nodes.length;i++) { allNodes.push(self.nodes[i]); }
 		while (allNodes.length) {
 			var start = allNodes[0];
 			var maxEdges = walk(start);
 			components.push(maxEdges);
 		}
-		
+
 		var dims = OAT.Dom.getWH(self.parent);
 		var w = dims[0];
 		var h = dims[1];
@@ -1125,11 +1125,11 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		var coefX = 1;
 		//var coefY = Math.sqrt(h/w);
 		var coefY = 1;
-			
+
 		/* find optimal distance */
 		var dist = 80;
 		if (self.nodes.length/components.length < 3) { dist = 120; }
-		
+
 		function computeAngle(index,numSiblings,parentAngle,first) {
 			if (!first) {
 				var angle = (parentAngle + Math.PI) + (index+1) * (2 * Math.PI) / (numSiblings+1);
@@ -1146,13 +1146,13 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			if (ci >= s*(s2-1)) { v = w/(components.length - s*(s2-1) + 1); }
 			var cx = (ci % s + 1) * v;
 			var cy = Math.floor(1 + ci / s) * (h/(s2+1));
-			
+
 			centerNode.x = cx;
 			centerNode.y = cy;
 
 			var positionedNodes = [];
 			var workToDo = [[centerNode,0]];
-			
+
 			while (workToDo.length) {
 				var node = workToDo[0][0]; /* this node needs children repositioned */
 				var angle = workToDo[0][1]; /* this node needs children repositioned */
@@ -1176,7 +1176,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		} /* for all components */
 		self.arrange();
 	}
-	
+
 	this.addTarget = function(svgObj) {
 		var testFunc = function(x_,y_) {
 			var pos = OAT.Dom.position(self.parent);
@@ -1186,11 +1186,11 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		self.ghostdrag.addTarget(svgObj,testFunc);
 	}
-	
+
 	this.delTarget = function(svgObj) {
 		self.ghostdrag.delTarget(svgObj);
 	}
-	
+
 	this.clear = function() {
 		self.nodes = [];
 		self.edges = [];
@@ -1209,7 +1209,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		self.ghostdrag.addTarget(self,canvasCheck,true);
 		for (var p in self.layers) if (p != "background") { OAT.Dom.clear(self.layers[p]); }
 	}
-	
+
 	this.sphere = false;
 	this.prepareSphere = function() {
 		var dims = OAT.Dom.getWH(self.parent);
@@ -1221,7 +1221,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		OAT.Geometry.sphericalData.cx = w/2;
 		OAT.Geometry.sphericalData.cy = h/2;
 	}
-	
+
 	this.startDrawing = function(obj,clientX,clientY,label) {
 		self.dragging.obj = obj;
 		self.dragging.x = clientX;
@@ -1277,7 +1277,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		self.fakeEdge.redraw();
 	}
-	
+
 	this.deselectGroup = function(group) {
 		var index = self.selectedGroups.find(group);
 		if (index == -1) { return; }
@@ -1286,7 +1286,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (self.options.deselectGroupCallback) { self.options.deselectGroupCallback(group); }
 		if (group == self.selectedGroup) { self.selectedGroup = false; }
 	}
-	
+
 	this.deselectNode = function(node) {
 		var index = self.selectedNodes.find(node);
 		if (index == -1) { return; }
@@ -1295,7 +1295,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (self.options.deselectNodeCallback) { self.options.deselectNodeCallback(node); }
 		if (node == self.selectedNode) { self.selectedNode = false; }
 	}
-	
+
 	this.deselectEdge = function(edge) {
 		var index = self.selectedEdges.find(edge);
 		if (index == -1) { return; }
@@ -1304,7 +1304,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (self.options.deselectEdgeCallback) { self.options.deselectEdgeCallback(edge); }
 		if (edge == self.selectedEdge) { self.selectedEdge = false; }
 	}
-	
+
 	this.deselectGroups = function() {
 		while (self.selectedGroups.length) { self.deselectGroup(self.selectedGroups[0]); }
 	}
@@ -1312,11 +1312,11 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	this.deselectNodes = function() {
 		while (self.selectedNodes.length) { self.deselectNode(self.selectedNodes[0]); }
 	}
-	
+
 	this.deselectEdges = function() {
 		while (self.selectedEdges.length) { self.deselectEdge(self.selectedEdges[0]); }
 	}
-	
+
 	this.selectGroup = function(group) {
 		self.selectedGroup = group;
 		group.selected = true;
@@ -1330,14 +1330,14 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		self.selectedNodes.push(node);
 		if (self.options.selectNodeCallback) { self.options.selectNodeCallback(node); }
 	}
-	
+
 	this.selectEdge = function(edge) {
 		self.selectedEdge = edge;
 		edge.selected = true;
 		self.selectedEdges.push(edge);
 		if (self.options.selectEdgeCallback) { self.options.selectEdgeCallback(edge); }
 	}
-	
+
 	this.toggleGroup = function(group,event) {
 		if (!event.shiftKey && !event.ctrlKey) {
 			self.deselectGroups();
@@ -1359,7 +1359,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			if (node.selected) { self.deselectNode(node); } else { self.selectNode(node); }
 		}
 	}
-	
+
 	this.toggleEdge = function(edge,event) {
 		if (!event.shiftKey && !event.ctrlKey) {
 			self.deselectGroups();
@@ -1386,7 +1386,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (node == self.selectedNode) { self.deselectNode(); }
 		if (node.group) { node.group.redraw(); }
 	}
-	
+
 	this.removeEdge = function(edge) {
 		/* remove from parent's array */
 		if (self.options.removeEdgeCallback) { self.options.removeEdgeCallback(edge); }
@@ -1403,7 +1403,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		OAT.Dom.unlink(edge.label2);
 		if (edge == self.selectedEdge) { self.deselectEdge(); }
 	}
-	
+
 	this.toXML = function() {
 		var xml = "";
 		xml += "<sparql_design>\n";
@@ -1419,7 +1419,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		xml += "</sparql_design>\n";
 		return xml;
 	}
-	
+
 	this.fromXML = function(xmlNode) {
 		self.clear();
 		var nnodes = xmlNode.getElementsByTagName("node");
@@ -1444,21 +1444,21 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			edge.fromXML(enodes[i]);
 		}
 	}
-	
+
 	this.addEdge = function(node1,node2,value,loadMode) {
 		/* check for inverse or same edge */
 		for (var i=0;i<self.edges.length;i++) {
 			var e = self.edges[i];
-			if (e.node1 == node1 && e.node2 == node2) { 
+			if (e.node1 == node1 && e.node2 == node2) {
 				alert("This relationship can not be created, because the same relationship already exists.");
 				return false;
 			}
-			if (e.node1 == node2 && e.node2 == node1) { 
+			if (e.node1 == node2 && e.node2 == node1) {
 				alert("This relationship can not be created, because inverse relationship exists.");
 				return false;
 			}
 		}
-		
+
 		var edge = new OAT.SVGSparqlEdge(node1,node2,value,self,self.options.nodeOptions.size);
 		if (self.options.addEdgeCallback) { self.options.addEdgeCallback(edge,loadMode); }
 		self.addTarget(edge);
@@ -1475,7 +1475,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		var y = y_;
 		if (self.projection == OAT.SVGSparqlData.PROJECTION_SPHERICAL) {
 			var c = OAT.Geometry.fromSpherical(x,y);
-			if (!c) { 
+			if (!c) {
 				alert("In spherical mode, nodes must be placed within radius.");
 				return false;
 			}
@@ -1492,7 +1492,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		self.layers.labels.appendChild(node.label2);
 		return node;
 	}
-	
+
 	this.addGroup = function(label,loadMode) {
 		var group = new OAT.SVGSparqlGroup(self,label);
 		if (self.options.addGroupCallback) { self.options.addGroupCallback(group,loadMode); }
@@ -1502,7 +1502,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		group.redraw();
 		return group;
 	}
-	
+
 	this.removeGroup = function(group) {
 		if (self.options.removeGroupCallback) { self.options.removeGroupCallback(group); }
 		OAT.Dom.unlink(group.label);
@@ -1517,7 +1517,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			if (self.groups[i].parent == group) { self.groups[i].setParent(false); }
 		}
 	}
-	
+
 	this.findActiveElement = function(x,y,ignoreEdges) {
 		for (var i=0;i<self.nodes.length;i++) { /* nodes first */
 			var n = self.nodes[i];
@@ -1542,8 +1542,8 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		}
 		return false;
 	}
-	
-	var downRef = function(event) { /* start dragging or moving */		
+
+	var downRef = function(event) { /* start dragging or moving */
 		self.timeStamp = event.timeStamp;
 		if (self.dragging.obj) { return; }
 		var epos = OAT.Event.position(event);
@@ -1551,7 +1551,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		var x = epos[0] - pos[0];
 		var y = epos[1] - pos[1];
 		var elm = self.findActiveElement(x,y,true);
-		
+
 		if (self.mode == OAT.SVGSparqlData.MODE_DRAG) {
 			self.dragging.x = event.clientX;
 			self.dragging.y = event.clientY;
@@ -1563,15 +1563,15 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 				self.dragging.obj = elm; /* node (or set of nodes */
 			}
 		}
-		
+
 		if (self.mode == OAT.SVGSparqlData.MODE_DRAW) {
 			if (!(elm instanceof OAT.SVGSparqlEdge)) {
 				self.startDrawing(elm,event.clientX,event.clientY,"");
 			}
 		}
-		
+
 	}
-	
+
 	var clickRef = function(event) { /* add new node */
 		var epos = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
@@ -1591,15 +1591,15 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 			if (active instanceof OAT.SVGSparqlGroup) { self.toggleGroup(active,event); }
 		}
 	}
-	
+
 	var moveRef = function(event) { /* signalling */
 		if (self.dragging.obj == self) { return; } /* do nothing when canvas is dragged */
-		
+
 		if (self.lasso) {
 			self.lassoProcess(event);
 			return;
 		}
-		
+
 		var epos = OAT.Event.position(event);
 		var pos = OAT.Dom.position(self.parent);
 		var x = epos[0] - pos[0];
@@ -1619,10 +1619,10 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	OAT.Event.attach(self.svg,"mousedown",downRef); /* start drag or draw */
 	OAT.Event.attach(self.svg,"click",clickRef);
 	OAT.Event.attach(document,"mousemove",moveRef);
-	
+
 	OAT.Event.attach(self.svg,"mousemove",self.dragging.move);
 	OAT.Event.attach(self.svg,"mouseup",self.dragging.up);
-	
+
 	self.clear();
 	self.prepareSphere();
 }

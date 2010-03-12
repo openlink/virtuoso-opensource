@@ -15,22 +15,22 @@
 	o.specialDays = []
 	o.dayZeroIndex = 6 - which day is when date.getDay() == 0
 	o.weekStartIndex = 0
-	
+
 	CSS: .calendar, .calendar_selected, .calendar_special, .calendar_year, .calendar_month
 */
 
 OAT.Calendar = function(optObj) {
 	var self = this;
-	
+
 	this.options = {
 		popup:false
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
-	
+
 	this.dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 	this.monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 	this.specialDays = [0,0,0,0,0,1,1];
-	
+
 	/* for some english-speaking countries, appropriate values should be 6, 6 */
 	this.dayZeroIndex = 6; /* which day is when date.getDay() == 0 */
 	this.weekStartIndex = 0;
@@ -41,7 +41,7 @@ OAT.Calendar = function(optObj) {
 	this.oldDate = [0,0,0];
 	this.textYear = false;
 	this.textMonth = false;
-	
+
 	this.allowFuture = true;
 	this.allowToday = true;
 	this.allowPast = true;
@@ -50,7 +50,7 @@ OAT.Calendar = function(optObj) {
 		self.date[0]--;
 		self.setYear();
 	}
-	
+
 	this.yearF = function() {
 		self.date[0]++;
 		self.setYear();
@@ -65,7 +65,7 @@ OAT.Calendar = function(optObj) {
 		}
 		self.setMonth();
 	}
-	
+
 	this.monthF = function() {
 		self.date[1]++;
 		if (self.date[1] == 13) {
@@ -106,17 +106,17 @@ OAT.Calendar = function(optObj) {
 		}
 		OAT.Event.attach(td,"click",callback);
 	}
-	
+
 	this.setYear = function() {
 		self.textYear.nodeValue = self.date[0];
 		self.createDays();
 	}
-	
+
 	this.setMonth = function() {
 		self.textMonth.nodeValue = self.monthNames[self.date[1]-1];
 		self.createDays();
 	}
-	
+
 	this.createDays = function() {
 		OAT.Dom.clear(self.body);
 		var tmpdate = new Date();
@@ -169,7 +169,7 @@ OAT.Calendar = function(optObj) {
 			self.body.appendChild(tr);
 		}
 	},
-	
+
 	this.show = function(x,y,callback,date) {
 		if (!self.drawn) {
 			self.draw();
@@ -187,12 +187,12 @@ OAT.Calendar = function(optObj) {
 			self.oldDate[0] = date[0];
 			self.oldDate[1] = date[1];
 			self.oldDate[2] = date[2];
-			
+
 			self.setYear();
 			self.setMonth();
 		}
 	}
-	
+
 	this.draw = function() {
 		self.div = OAT.Dom.create("div",{position:"absolute"});
 		OAT.Dom.hide(self.div);
@@ -212,14 +212,14 @@ OAT.Calendar = function(optObj) {
 		t.appendChild(head);
 		t.appendChild(self.body);
 
-		
+
 		var divYear = OAT.Dom.create("div");
 		divYear.className = "calendar_year";
 		var divMonth = OAT.Dom.create("div");
 		divMonth.className = "calendar_month";
 		self.textYear = OAT.Dom.text("");
 		self.textMonth = OAT.Dom.text("");
-		
+
 		/* clickers for year/month changes */
 		var div = OAT.Dom.create("div",{position:"absolute",left:"2px",cursor:"pointer"});
 		div.innerHTML = " &laquo; ";
@@ -230,7 +230,7 @@ OAT.Calendar = function(optObj) {
 		divYear.appendChild(div);
 		OAT.Event.attach(div,"click",self.yearF);
 		divYear.appendChild(self.textYear);
-		
+
 		var div = OAT.Dom.create("div",{position:"absolute",left:"2px",cursor:"pointer"});
 		div.innerHTML = " &laquo; ";
 		divMonth.appendChild(div);
@@ -244,18 +244,18 @@ OAT.Calendar = function(optObj) {
 		self.div.appendChild(divYear);
 		self.div.appendChild(divMonth);
 		self.div.appendChild(t);
-		
+
 		var today = new Date();
 		self.date[0] = today.getFullYear();
 		self.date[1] = today.getMonth() + 1;
 		self.date[2] = 0; /* no day selected */
 		self.setYear();
 		self.setMonth();
-		
+
 		OAT.Drag.create(divYear,self.div);
 		OAT.Drag.create(divMonth,self.div);
 	}
-	
+
 	this.drawn = false;
 	this.visible = false;
 	if (self.options.popup) {

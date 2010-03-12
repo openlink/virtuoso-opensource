@@ -29,7 +29,7 @@
 	<html>
 	<head>
 		<script type="text/javascript">
-			var featureList = ["grid","ajax2","xmla","soap","dialog","crypto","datasource","formobject","webclip"];
+			var featureList = ["grid","ajax","xmla","soap","dialog","crypto","datasource","formobject","webclip"];
 		</script>
 		<script type="text/javascript" src="/DAV/JS/oat/loader.js"></script>
 		<script type="text/javascript">

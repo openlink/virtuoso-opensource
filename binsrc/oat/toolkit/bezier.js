@@ -17,14 +17,14 @@
 OAT.Bezier = {
 	points:[],
 	fac:[],
-	
+
 	setPoints:function(points) {
 		OAT.Bezier.points = [];
 		for (var i=0;i<points.length;i++) {
 			OAT.Bezier.points.push(points[i]);
 		}
 	},
-	
+
 	recursion:function(t,i,j) {
 		if (j==0) {
 			return OAT.Bezier.points[i];
@@ -36,12 +36,12 @@ OAT.Bezier = {
 			return [x,y];
 		}
 	},
-	
+
 	Bernstein:function(i,n,t) {
 		var koef = OAT.Bezier.Factorial(n)/(OAT.Bezier.Factorial(i) * OAT.Bezier.Factorial(n-i));
 		return Math.pow(t,i)*Math.pow(1-t,n-i)*koef;
 	},
-	
+
 	initFactorial:function(max) {
 		for (var i=0;i<=max;i++) {
 			if (i==0) {
@@ -51,7 +51,7 @@ OAT.Bezier = {
 			}
 		}
 	},
-	
+
 	Factorial:function(n) {
 		if (n < OAT.Bezier.fac.length) return OAT.Bezier.fac[n];
 		if (n==0) return 1;

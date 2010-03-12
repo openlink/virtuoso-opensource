@@ -10,9 +10,9 @@
 /*
 	new OAT.MacWin(params)
 	not to be directly called, rather accessed by Window library
-	
+
 	exports: div, content, closeBtn, minBtn, maxBtn, move, caption, anchorTo, resizeTo
-	
+
 	no styling via CSS available ATM
 */
 
@@ -22,9 +22,9 @@ OAT.MacWin = function(optObj) {
 	OAT.WindowParent(this,optObj);
 	this.options.statusHeight = 16;
 	this.options.moveHeight = 23;
-	
+
 	OAT.Dom.applyStyle(this.div,{font:"menu",backgroundColor:"#c5c5c5"});
-	
+
 	var opt = {
 		corners:[1,1,0,0], /* CW from LT */
 		edges:[1,1,0,1], /* CW from T */
@@ -32,8 +32,8 @@ OAT.MacWin = function(optObj) {
 		edgeFiles:[self.options.imagePath+"MacWin_top.gif",self.options.imagePath+"MacWin_left.gif","",self.options.imagePath+"MacWin_right.gif"],
 		thickness:[23,8,0,8] /* CW from T */
 	}
-	OAT.Dom.applyStyle(this.content,{position:"relative"}); 
-	
+	OAT.Dom.applyStyle(this.content,{position:"relative"});
+
 	OAT.SimpleFX.roundImg(this.div,opt);
 	OAT.SimpleFX.shadow(this.div,{offsetX:8,imagePath:self.options.imagePath});
 
@@ -54,19 +54,19 @@ OAT.MacWin = function(optObj) {
 			self.div.style.width = (w-16) + "px";
 			self.content.style.width = (w-16) + "px";
 		}
-		if (h) { 
+		if (h) {
 			self.div.style.height = (h - self.options.moveHeight) + "px";
 			self.content.style.height = (h - self.options.statusHeight - self.options.moveHeight) + "px";
 		}
 	}
-	
+
 	this.moveTo = function(x,y) {
 		if (x >= 0) { self.div.style.left = (x+8) + "px"; }
 		if (x < 0) { self.div.style.right = (-x) + "px"; }
 		if (y >= 0) { self.div.style.top = (y+self.options.moveHeight) + "px"; }
 		if (y < 0) { self.div.style.bottom = (-y) + "px"; }
 	}
-	
+
 	this.closeBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});
 	this.minBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});
 	this.maxBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});
@@ -82,7 +82,7 @@ OAT.MacWin = function(optObj) {
 		OAT.Event.attach(this.closeBtn,"mouseover",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close_hover.gif)";});
 		OAT.Event.attach(this.closeBtn,"mouseout",function(){self.closeBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_close.gif)";});
 	} else { this.closeBtn = false; }
-	
+
 	if (self.options.min) {
 		this.minBtn.style.backgroundImage = "url("+self.options.imagePath+"MacWin_minimize.gif)";
 		this.minBtn.style.cursor = "pointer";

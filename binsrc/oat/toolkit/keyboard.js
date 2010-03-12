@@ -17,30 +17,30 @@ OAT.Keyboard = {
 	groups:{},
 	objects:[],
 	disabled:[], /* groups */
-	
+
 	check:function(event,target) {
 		/* TODO: detect which tab is active */
 		var list = [];
-		for (var p in OAT.Keyboard.groups) { 
+		for (var p in OAT.Keyboard.groups) {
 			var index = OAT.Keyboard.disabled.find(p);
 			if (index == -1) { list.append(OAT.Keyboard.groups[p]); } /* only non-disabled groups */
 		}
 		/***/
-		
+
 		for (var i=0;i<list.length;i++) {
 			var ko = list[i];
 			if (ko.target == target) {
 				if (ko.keyCode == event.keyCode &&
 					ko.ctrlKey == event.ctrlKey &&
 					ko.altKey == event.altKey &&
-					ko.shiftKey == event.shiftKey) { 
+					ko.shiftKey == event.shiftKey) {
 						if (ko.downCallback && event.type == "keydown") { ko.downCallback(); }
 						if (ko.upCallback && event.type == "keyup") { ko.upCallback(); }
 					} /* if right key */
 			} /* if right target */
 		} /* for all managed keycodes */
 	}, /* OAT.Keyboard.check() */
-	
+
 	add:function(key, downCallback, upCallback, group, id, obj) {
 		var o = (obj ? $(obj) : document); /* cannot attach to window due to ie */
 		var g = (group ? group : 0);
@@ -51,7 +51,7 @@ OAT.Keyboard = {
 			OAT.Event.attach(o,"keyup",function(event){OAT.Keyboard.check(event,o);});
 		}
 		if (!(g in OAT.Keyboard.groups)) { OAT.Keyboard.groups[g] = []; }
-		
+
 		var keyObj = {
 			downCallback:downCallback,
 			upCallback:upCallback,
@@ -75,21 +75,21 @@ OAT.Keyboard = {
 		}
 		OAT.Keyboard.groups[g].push(keyObj);
 	}, /* OAT.Keyboard.add() */
-	
+
 	save:function(){},
-	
+
 	load:function(){},
-	
+
 	disable:function(group){
 		var index = OAT.Keyboard.disabled.find(group);
 		if (index == -1) { OAT.Keyboard.disabled.push(group); }
 	},
-	
+
 	enable:function(group){
 		var index = OAT.Keyboard.disabled.find(group);
 		if (index != -1) { OAT.Keyboard.disabled.splice(index,1); }
 	},
-	
+
 	conversion:{
 		"f1":112, "f2":113, "f3":114, "f4":115, "f5":116, "f6":117, "f7":118,
 		"f8":119, "f9":120, "f10":121, "f11":122, "f12":123,
@@ -98,7 +98,7 @@ OAT.Keyboard = {
 		"num1":97, "num2":98, "num3":99, "num4":100, "num5":101,
 		"num6":102, "num7":103, "num8":104, "num9":105,
 		"num0":96, "num.":110, "num+":107, "num-":109,
-		"num*":106, "num/":111, "/":191, ".":190, ",":188, 
+		"num*":106, "num/":111, "/":191, ".":190, ",":188,
 		"[":219, "]":221, "\\":220, ";":59, "'":222,
 		"a":65, "b":66, "c":67, "d":68, "e":69, "f":70,
 		"g":71 ,"h":72, "i":73, "j":74, "k":75, "l":76,
@@ -107,7 +107,7 @@ OAT.Keyboard = {
 		"y":89 ,"z":90, "0":48, "1":49, "2":50, "3":51,
 		"4":52, "5":53, "6":54, "7":55, "8":56, "9":57,
 		"esc":27,"return":13,"enter":13
-		
+
 	}
 }
 OAT.Loader.featureLoaded("keyboard");

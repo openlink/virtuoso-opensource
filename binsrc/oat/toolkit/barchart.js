@@ -13,9 +13,9 @@
 	bc.attachTextX(textArray)
 	bc.attachTextY(textArray)
 	bc.draw()
-	
+
 	CSS: .legend .legend_box .textX .textY
-	
+
 */
 
 OAT.BarChart = function(div,optObj) {
@@ -23,7 +23,7 @@ OAT.BarChart = function(div,optObj) {
 	this.options = {
 		percentage:false, /* percentage plot? */
 		spacing:25, /* between columns */
-		paddingLeft:30, 
+		paddingLeft:30,
 		paddingBottom:30,
 		paddingTop:5,
 		width:15, /* of one column */
@@ -36,22 +36,22 @@ OAT.BarChart = function(div,optObj) {
 		shadowColor:"#222",
 		shadowOffset:2
 	}
-	
+
 	for (var p in optObj) { this.options[p] = optObj[p]; }
-	
+
 	this.maxValue = 0;
 	this.data = [];
 	this.textX = [];
 	this.textY = [];
 	this.div = $(div);
-	
+
 	OAT.Dom.makePosition(self.div);
 
 	this.getFreeH = function() {
 		var tmp = OAT.Dom.getWH(self.div);
 		return tmp[1] - self.options.paddingTop - self.options.paddingBottom;
 	}
-	
+
 	this.drawColumn = function(index, position) {
 		var opts = self.options;
 
@@ -66,7 +66,7 @@ OAT.BarChart = function(div,optObj) {
 			}
 		} else { var values = orig; }
 		/* percentage? */
-		
+
 		var bottom = opts.paddingBottom;
 		var total = 0;
 		var divs = [];
@@ -78,13 +78,13 @@ OAT.BarChart = function(div,optObj) {
 			d.style.backgroundColor = opts.colors[i];
 			d.style.left = position+"px";
 			d.style.bottom = bottom + "px";
-			var h = self.scale(v); 
+			var h = self.scale(v);
 			d.style.height = h+"px";
 			bottom += h;
 			total += h;
 			divs.push(d);
 		}
-		
+
 		/* shadow */
 		if (opts.shadow) {
 			var shadow = OAT.Dom.create("div",{position:"absolute",fontSize:"0px",lineHeight:"0px"});
@@ -100,9 +100,9 @@ OAT.BarChart = function(div,optObj) {
 			}
 			self.div.appendChild(shadow);
 		}
-		
+
 		for (var i=0;i<divs.length;i++) { self.div.appendChild(divs[i]); }
-		
+
 		/* text X */
 		if (self.textX.length) {
 			var l = OAT.Dom.create("div",{position:"absolute"});
@@ -115,7 +115,7 @@ OAT.BarChart = function(div,optObj) {
 			l.style.left = (position +Math.round(opts.width/2) - Math.round(dims[0]/2)) + "px";
 		}
 	}
-	
+
 	this.draw = function() {
 		OAT.Dom.clear(self.div);
 		self.div.style.width = "100%";
@@ -192,11 +192,11 @@ OAT.BarChart = function(div,optObj) {
 		}
 		if (!isNaN(total)) { self.div.style.width = total+"px"; }
 	}
-	
+
 	this.scale = function(value) {
 		return Math.round(value / self.maxValue * self.freeH);
 	}
-		
+
 	this.attachData = function(dataArray) {
 		self.data = dataArray;
 	}
@@ -204,7 +204,7 @@ OAT.BarChart = function(div,optObj) {
 	this.attachTextX = function(textArray) {
 		self.textX = textArray;
 	}
-	
+
 	this.attachTextY = function(textArray) {
 		self.textY = textArray;
 	}

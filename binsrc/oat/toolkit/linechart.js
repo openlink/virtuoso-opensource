@@ -73,11 +73,11 @@ OAT.LineChart = function(div,optObj) {
 		fontSize:14
 	};
 	for (var p in optObj) { self.options[p] = optObj[p]; }
-	
+
 	this.data = [];
 	this.textX = [];
 	this.textY = [];
-	
+
 	this.findExtremes = function() {	/* find maximum */
 		var allvalues = [];
 		for (var i=0;i<self.data.length;i++) {
@@ -95,15 +95,15 @@ OAT.LineChart = function(div,optObj) {
 		var h = dims[1] - self.options.paddingTop - self.options.paddingBottom;
 		self.svg = OAT.SVG.canvas("100%","100%");
 		self.div.appendChild(self.svg);
-		
+
 		var e = self.findExtremes();
 		var max = e[1];
 		var min = e[0];
-		
+
 		var scale = function(value) {
 			return Math.round((value-min) / (max-min) * h);
 		}
-		
+
 		if (self.options.axes) {
 			var axe1 = OAT.SVG.element("line",{x1:self.options.paddingLeft,x2:self.options.paddingLeft+w,stroke:self.options.gridColor});
 			var axe2 = OAT.SVG.element("line",{y1:self.options.paddingTop + h,y2:self.options.paddingTop,stroke:self.options.gridColor});
@@ -114,11 +114,11 @@ OAT.LineChart = function(div,optObj) {
 
 			axe2.setAttribute("x1",x);
 			axe2.setAttribute("x2",x);
-			
+
 			self.svg.appendChild(axe1);
 			self.svg.appendChild(axe2);
 		}
-		
+
 		if (self.options.desc) { /* x labels */
 			var step = w / (self.textX.length-1);
 			var y = self.options.paddingTop + h;
@@ -150,7 +150,7 @@ OAT.LineChart = function(div,optObj) {
 				line.setAttribute("y2",y);
 				line.setAttribute("stroke",self.options.gridColor);
 				self.svg.appendChild(line);
-				
+
 				if (self.options.gridDesc) {
 					/* description of Y axis */
 					var desc = OAT.SVG.element("text",{"text-anchor":"end"});
@@ -162,7 +162,7 @@ OAT.LineChart = function(div,optObj) {
 				}
 			}
 		}
-		
+
 		var drawLine = function(dataRow,index) {
 			var markerArr = [];
 			var markerFunc = self.options.markers[index % self.options.markers.length];
@@ -191,18 +191,18 @@ OAT.LineChart = function(div,optObj) {
 						markerArr.push(spark);
 					}
 				}
-				
+
 			}
 			line.setAttribute("d",d);
 			line.setAttribute("stroke",color);
 			self.svg.appendChild(line);
 			for (var i=0;i<markerArr.length;i++) { if (markerArr[i]) { self.svg.appendChild(markerArr[i]); } }
 		}
- 
-		if (typeof(self.data[0]) == "object") { 
+
+		if (typeof(self.data[0]) == "object") {
 			for (var i=0;i<self.data.length;i++) {
 				drawLine(self.data[i],i);
-			} 
+			}
 		} else { drawLine(self.data,0); }
 
 		if (self.options.legend) {
@@ -229,12 +229,12 @@ OAT.LineChart = function(div,optObj) {
 			}
 			self.svg.appendChild(g);
 		}
-		
+
 	} /* draw */
-	
+
 	this.attachData = function(arr) { self.data = arr; }
 	this.attachTextX = function(arr) { self.textX = arr; }
 	this.attachTextY = function(arr) { self.textY = arr; }
-	
+
 } /* OAT.LineChart() */
 OAT.Loader.featureLoaded("linechart");

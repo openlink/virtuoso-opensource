@@ -34,12 +34,12 @@ OAT.RDFMini = function(div,optObj) {
 		endpoint:"/sparql?query="
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
-	
+
 	this.parent = $(div);
 	this.content = OAT.Dom.create("div",{},"rdf_mini");
 	this.tabs = [];
 	this.select = false;
-	
+
 	this.executeSparql = function(template,replace) {
 		var str = template;
 		for (var p in replace) {
@@ -49,7 +49,7 @@ OAT.RDFMini = function(div,optObj) {
 		var url = self.options.endpoint+encodeURIComponent(str)+"&format=rdf";
 		self.open(url);
 	}
-	
+
 	this.search = function(str) {
 		var s = (str ? str : $v(self.searchInput));
 		if (!s.trim()) { return; }
@@ -65,7 +65,7 @@ OAT.RDFMini = function(div,optObj) {
 			self.executeSparql('SELECT ?s ?p ?o WHERE { ?s ?p ?o . ?o bif:contains "\'{query}\'"}',{"{query}":s});
 		}
 	}
-	
+
 	this.init = function() {
 		OAT.Dom.clear(self.parent);
 		self.throbber = OAT.Dom.create("img",{styleFloat:"right",cssFloat:"right",cursor:"pointer"});
@@ -73,7 +73,7 @@ OAT.RDFMini = function(div,optObj) {
 		OAT.Event.attach(self.throbber,"click",OAT.AJAX.abortAll);
 		self.parent.appendChild(self.throbber);
 		OAT.Dom.hide(self.throbber);
-		
+
 		var s = OAT.Dom.create("div");
 		var inp = OAT.Dom.create("input",{verticalAlign:"middle"});
 		inp.type = "text";
@@ -85,7 +85,7 @@ OAT.RDFMini = function(div,optObj) {
 		OAT.Event.attach(btn,"click",self.search);
 		OAT.Event.attach(inp,"keypress",function(e) { if (e.keyCode == 13) { self.search(); } });
 		self.searchInput = inp;
-		
+
 		if (!self.options.tabs.length) {
 			var note = new OAT.Notify();
 			var msg = "No visualizations available!";
@@ -110,7 +110,7 @@ OAT.RDFMini = function(div,optObj) {
 		}
 		self.parent.appendChild(self.content);
 	}
-	
+
 	this.redraw = function() { /* change vis */
 	    var index = 0;
 	    if (self.select) { index = self.select.selectedIndex; }
@@ -120,21 +120,21 @@ OAT.RDFMini = function(div,optObj) {
 	    self.tabs[index].redraw();
 	    var et = {};
 	    et.tabIndex = index;
-	    OAT.MSG.send (self,OAT.MSG.RDFMINI_VIEW_CHANGED,et);
+	    OAT.MSG.send (self,"RDFMINI_VIEW_CHANGED",et);
 	}
-	
+
 	this.open = function(url) { /* open url */
 		self.store.clear();
 		self.store.addURL(url);
 	}
-	
+
 	this.reset = function() { /* url arrived */
 		for (var i=0;i<self.tabs.length;i++) {
 			self.tabs[i].reset();
 		}
 		self.redraw();
 	}
-	
+
 	var ajaxStart = function() { OAT.Dom.show(self.throbber); }
 	var ajaxEnd = function() { OAT.Dom.hide(self.throbber); }
 
@@ -145,7 +145,7 @@ OAT.RDFMini = function(div,optObj) {
 		var content = false;
 		var data = (typeof(data_) == "object" ? data_.uri : data_);
 		var type = self.getContentType(data);
-		
+
 		switch (type) {
 			case 3:
 				content = OAT.Dom.create("img");
@@ -177,14 +177,14 @@ OAT.RDFMini = function(div,optObj) {
 				for (var j=0;j<anchors.length;j++) {
 					var a = anchors[j];
 					if (a.href.match(/^http/)) {
-						self.processLink(a,a.href); 
+						self.processLink(a,a.href);
 					}
 				}
 			break;
 		} /* switch */
 		return content;
 	}
-	
+
 	this.simplify = self.store.simplify;
 	this.getContentType = self.store.getContentType;
 	this.getTitle = self.store.getTitle;

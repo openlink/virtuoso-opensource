@@ -11,7 +11,7 @@
  /*
 	OAT.N3.toTriples(string);
  */
- 
+
  OAT.N3 = {
 	cleanComments:function(str) { /* remove comments */
 		var lines = str.split(/\r|\n/);
@@ -31,12 +31,12 @@
 		for (var i=0;i<str.length;i++) {
 			var ch = str.charAt(i);
 			switch (ch) {
-				case "<": 
+				case "<":
 					if (!instring) {
 						inuri = true;
 					} else { item += ch; }
 				break;
-				
+
 				case ">":
 					if (!instring) {
 						inuri = false;
@@ -44,11 +44,11 @@
 						item = "";
 					} else { item += ch; }
 				break;
-			
+
 				case "'":
 				case '"':
-					if (!instring) { 
-						instring = ch; 
+					if (!instring) {
+						instring = ch;
 					} else if (instring == ch) {
 						instring = false;
 						arr.push('"'+item+'"');
@@ -58,12 +58,12 @@
 							while (i+2 < str.length && stopArr.find(str.charAt(i+1)) == -1) { i++; }
 						} else if (i+1 < str.length && str.charAt(i+1) == "@") { /* skip lang declaration */
 							while (i+2 < str.length && stopArr.find(str.charAt(i+1)) == -1) { i++; }
-						}						
+						}
 					} else {
 						item += ch;
 					}
 				break;
-				
+
 				case "[":
 				case "]":
 				case ";":
@@ -75,7 +75,7 @@
 						item = "";
 					} else { item += ch; }
 				break;
-				
+
 				case " ":
 					if (instring) {
 						item += ch;
@@ -84,7 +84,7 @@
 						item = "";
 					}
 				break;
-				
+
 				default:
 					item += ch;
 				break;
@@ -140,24 +140,24 @@
 		var bnodeCount = 0;
 
 		var triples = [];
-	
+
 		var resStack = [];
 		var predStack = [];
-		
+
 		var expected = 0;
-		
+
 		for (var i=0;i<arr.length;i++) {
 			var token = arr[i];
 			switch (token) {
 				case ")": break; /* nothing interesting */
-				case "]": 
+				case "]":
 					resStack.pop();
 					predStack.pop();
-				break; 
+				break;
 
 				case "(":
 				break;
-				
+
 				case "[":
 					expected = 1;
 					bnodeCount++;
@@ -167,27 +167,27 @@
 					resStack.push(res); /* new blank node */
 					predStack.push(""); /* new empty predicate */
 				break;
-				
+
 				case ";":
 					expected = 1;
 				break;
-				
+
 				case ".":
 					expected = 0;
 					resStack = [];
 				break;
-				
+
 				case ",":
 					expected = 2;
 				break;
 
-				default: 
-					if (expected == 0) { 
-						resStack.push(token); 
+				default:
+					if (expected == 0) {
+						resStack.push(token);
 						predStack.push("");
 						expected = 1;
-					} else if (expected == 1) { 
-						predStack[predStack.length-1] = token; 
+					} else if (expected == 1) {
+						predStack[predStack.length-1] = token;
 						expected = 2;
 					} else if (expected == 2) {
 						var pred = predStack[predStack.length-1];
@@ -196,7 +196,7 @@
 				break;
 			}
 		}
-		
+
 		return triples;
 	},
 	toTriples:function(str) {

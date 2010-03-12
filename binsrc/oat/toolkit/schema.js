@@ -16,7 +16,7 @@ OAT.Schema = {
 		var availTypeNodes = OAT.Xml.getElementsByLocalName(schemas,"complexType");
 		for (var i=0;i<availTypeNodes.length;i++) {
 			var node = availTypeNodes[i];
-			
+
 			if (node.getAttribute("name") == name) {
 				/* correct type node */
 				var result = {};
@@ -34,7 +34,7 @@ OAT.Schema = {
 							result[ref] = type;
 						} else return [type];
 					}
-					
+
 				}
 				/* also try arrays */
 				if (elems.length) { return result; }
@@ -43,16 +43,16 @@ OAT.Schema = {
 					/* is array! */
 					result = [];
 					var a = OAT.Xml.getElementsByLocalName(res[0],"attribute")[0];
-					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];					
+					var t = a.getAttribute("wsdl:arrayType").split(":").pop().match(/(.*)\[\]/)[1];
 					result.push(OAT.Schema.getType(schemas,t));
 				}
 				return result;
-				
+
 			}
 		}
 		return name;
 	},
-	
+
 	getElement:function(schemaElements,name) {
 		var schemas = schemaElements;
 		if (!(schemas instanceof Array)) { schemas = [schemaElements]; }

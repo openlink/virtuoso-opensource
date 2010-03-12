@@ -17,7 +17,7 @@ OAT.Profiler = {
 			OAT.Profiler.data[label] = {total:0,start:0,end:0};
 		}
 		var o = OAT.Profiler.data[label];
-		
+
 		var oo = OAT.Profiler.data["_"];
 		var s = new Date().getTime();
 		o.start = s;

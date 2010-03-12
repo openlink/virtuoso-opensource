@@ -11,14 +11,20 @@
 	OAT.Anchor.assign(elm,paramsObj);
 */
 
+/**
+ * @class
+ */
 OAT.AnchorData = {
 	active:false,
 	window:false,
 	closeOnBlur:true
 }
 
+/**
+ * @class Enhanced Anchor tag.
+ */
 OAT.Anchor = {
-		
+
 	appendContent:function(options) {
 		if (options.content && options.window) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
@@ -28,7 +34,7 @@ OAT.Anchor = {
 			OAT.Anchor.fixSize(win);
 		}
 	},
-	
+
 	callForData:function(options,pos) {
 		var win = options.window;
 		options.stat = 1; /* loading */
@@ -36,8 +42,8 @@ OAT.Anchor = {
 		if (options.status) { win.dom.status.innerHTML = options.status; }
 
 		var ds = options.datasource;
-		if (ds) { 
-			ds.connection = options.connection; 
+		if (ds) {
+			ds.connection = options.connection;
 			var link = options.elm.innerHTML;
 			var unlinkRef = function() {
 				win.dom.caption.innerHTML = options.elm.innerHTML;
@@ -46,7 +52,7 @@ OAT.Anchor = {
 			ds.bindRecord(unlinkRef);
 			ds.bindEmpty(unlinkRef);
 		}
-			
+
 		switch (options.result_control) {
 			case "grid":
 				var g = new OAT.FormObject["grid"](0,0,0,1); /* x,y,designMode,forbidHiding */
@@ -86,7 +92,7 @@ OAT.Anchor = {
 				ds.bindPage(tl.bindPageCallback);
 			break;
 		} /* switch */
-		
+
 		OAT.Anchor.appendContent(options);
 
 		if (!ds) { return; }
@@ -156,10 +162,9 @@ OAT.Anchor = {
 			elm:elm, /* anchor node */
 			window:false, /* what should be displayed */
 			arrow:false, /* what should be displayed */
-			type:OAT.WinData.TYPE_RECT,
-			visibleButtons:"cr",
-			enabledButtons:"cr",
-			template:false, /* use with type:OAT.WinData.TYPE_TEMPLATE - see win component documentation */
+			type:OAT.Win.Rect,
+			buttons:"cr",
+			template:false, /* use with type:false - see win component documentation */
 			preload:false /* include the a++ node in the page DOM right at the assing time - do not use when large number of a++ windows on the page */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
@@ -170,8 +175,7 @@ OAT.Anchor = {
 			title:"Loading...",
 			type:options.type,
 			status:options.status,
-			visibleButtons:options.visibleButtons,
-			enabledButtons:options.enabledButtons,
+			buttons:options.buttons,
 			template:options.template	} );
 		function checkOver() {
 			var opts = OAT.AnchorData.active;
@@ -202,7 +206,7 @@ OAT.Anchor = {
 		options.displayRef = function(event,preload) {
 			OAT.Event.prevent(event);
 			var win = options.window;
-			win.hide(); /* close existing window */
+			win.close(); /* close existing window */
 			OAT.AnchorData.active = options;
 			var pos = OAT.Event.position(event);
 			OAT.AnchorData.window = win; /* assign last opened window */
@@ -213,28 +217,27 @@ OAT.Anchor = {
 
 			if (!options.stat) {
 				OAT.Anchor.callForData(options,pos);
-			} else { 
+			} else {
 				OAT.Anchor.appendContent(options);
 			}
-            
+
 			if (!preload) {
 			    if (options.activation=="focus") {
 				pos = OAT.Dom.position(elm);
 			    }
 			    options.anchorTo(pos[0],pos[1]);
-			    win.show();
+			    win.open();
 			    window.setTimeout(function(){
 				options.anchorTo(pos[0],pos[1]);
 			    },60); /* after adding arrows, window can be shifted a bit */
 			}
-			
+
 		}
-        
-	        if (options.preload) {
-		    win.preload();
+
+        if (options.preload) {
 		    options.displayRef(false, true);
 		}
-        
+
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;
 			var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
@@ -264,11 +267,11 @@ OAT.Anchor = {
 		}
 		options.closeRef = function() {
 			if (options.closeFlag) {
-				options.window.hide();
+				options.window.close();
 				OAT.AnchorData.active = false;
 			}
 		}
-		options.close = function() { options.window.hide(); }
+		options.close = function() { options.window.close(); }
 		options.startClose = function() {
 			options.closeFlag = 1;
 			setTimeout(options.closeRef,1000);
@@ -286,13 +289,13 @@ OAT.Anchor = {
 				OAT.Event.attach(elm,"click",options.displayRef);
 			break;
 			case "dblclick":
-				OAT.Event.attach(elm,"dblclick",options.displayRef);			
+				OAT.Event.attach(elm,"dblclick",options.displayRef);
 			break;
 			case "focus":
 				OAT.Event.attach(elm,"focus",options.displayRef);
 				OAT.Event.attach(elm,"blur",options.close);
 			break;
-			
+
 		}
 	},
 
@@ -338,5 +341,3 @@ if (OAT.Browser.isIE) {
 } else {
 	OAT.Anchor.closeOnBlur();
 }
-
-OAT.Loader.featureLoaded("anchor");

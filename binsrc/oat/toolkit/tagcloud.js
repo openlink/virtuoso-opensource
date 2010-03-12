@@ -30,11 +30,11 @@ OAT.TagCloud = function(elm, optObj) {
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	this.elm = $(elm);
-	
+
 	this.items = {};
 	this.min = 0;
 	this.max = 0;
-	
+
 	this.getColor = function(item,index) {
 		var count = self.options.colors.length;
 		switch (self.options.colorMapping) {
@@ -69,7 +69,7 @@ OAT.TagCloud = function(elm, optObj) {
 		this.min = 99999;
 		this.max = 0
 	}
-	
+
 	this.addItem = function(name,link,frequency) {
 		var freq = frequency || 1;
 		if (name in self.items) {
@@ -85,7 +85,7 @@ OAT.TagCloud = function(elm, optObj) {
 		if (o.freq > self.max) { self.max = o.freq; }
 		if (o.freq < self.min) { self.min = o.freq; }
 	}
-	
+
 	this.draw = function() {
 		OAT.Dom.clear(self.elm);
 		var counter = 0;
@@ -104,7 +104,7 @@ OAT.TagCloud = function(elm, optObj) {
 		}
 		OAT.Dom.unlink(separator);
 	}
-	
+
 	this.clearItems();
 }
 OAT.Loader.featureLoaded("tagcloud");

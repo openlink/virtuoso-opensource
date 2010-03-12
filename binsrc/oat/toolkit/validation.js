@@ -11,7 +11,7 @@
 	OAT.Validation.create(something, type, params)
 	OAT.Validation.TYPE_REGEXP
 	OAT.Validation.TYPE_DATE
-	
+
 	params = {
 		min:0,
 		max:50,
@@ -26,7 +26,7 @@
 OAT.Validation = {
 	TYPE_REGEXP: 1,
 	TYPE_DATE:2,
-	
+
 	getPos:function(elm) {
 	    if (typeof elm.selectionStart != "undefined" && typeof elm.selectionEnd != "undefined")
 			return [elm.selectionStart,elm.selectionEnd];
@@ -37,7 +37,7 @@ OAT.Validation = {
 			return [range.text.length,range.text.length + selRange.text.length];
 		}
 	},
-			
+
 	setPos:function(elm,begin,end) {
 	    if (typeof elm.selectionStart != "undefined" && typeof elm.selectionEnd != "undefined") {
 	        elm.setSelectionRange(begin, end);
@@ -48,7 +48,7 @@ OAT.Validation = {
 	        range.select ();
 	    }
 	},
-	
+
 	printDate:function(date) {
 		var year = date[0];
 		var month = date[1];
@@ -57,12 +57,12 @@ OAT.Validation = {
 		if (day < 10) { day = "0"+date[2]; }
 		return year+"/"+month+"/"+day;
 	},
-	
+
 	validate:function(elm,event,type,params) {
 		var key = event.keyCode;
 		var pos = OAT.Validation.getPos(elm);
 		var value = elm.value; /* test value for validity */
-		
+
 		switch (type) {
 			case OAT.Validation.TYPE_REGEXP:
 				var good = "";
@@ -79,14 +79,14 @@ OAT.Validation = {
 				for (var i=maxLen;i<params.min;i++) { good += params.def; }
 				elm.value = good;
 			break;
-			
+
 			case OAT.Validation.TYPE_DATE:
 				var strDate = [];
 				var numDate = [];
 				value = value.replace(/\/\//g,"/");
 				value = value.replace(/[^0-9\/]/g,"");
 				var parts = value.split("/");
-				for (var i=0;i<3;i++) { 
+				for (var i=0;i<3;i++) {
 					strDate[i] = params.defDate[i].toString();
 					if (parts.length > i) { strDate[i] = parts[i]; }
 				}
@@ -128,7 +128,7 @@ OAT.Validation = {
 					elm.value = val;
 				}
 			break;
-			
+
 			case OAT.Validation.TYPE_DATE:
 				var minDateObj = new Date();
 				var maxDateObj = new Date();

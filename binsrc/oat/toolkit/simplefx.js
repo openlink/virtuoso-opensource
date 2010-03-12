@@ -7,14 +7,14 @@
  *
  *  See LICENSE file for details.
  */
- 
+
 /*
 	OAT.SimpleFX.roundImg(something, optObj)
 	OAT.SimpleFX.roundDiv(something, optObj)
 	OAT.SimpleFX.shadow(something, optObj)
 	OAT.SimpleFX.shader(clicker, target, optObj)
-*/ 
- 
+*/
+
 OAT.SimpleFX = {
 	roundImg:function(something, optObj) {
 		var options = {
@@ -28,7 +28,7 @@ OAT.SimpleFX = {
 		var elm = $(something);
 		var cornerElms = [];
 		var edgeElms = [];
-		
+
 
 		for (var i=0;i<4;i++) {
 			if (options.corners[i]) {
@@ -43,7 +43,7 @@ OAT.SimpleFX = {
 				cornerElms.push(corner);
 			}
 		}
-		
+
 		var dirArr = ["top","right","bottom","left"];
 		for (var i=0;i<4;i++) {
 			if (options.edges[i]) {
@@ -56,7 +56,7 @@ OAT.SimpleFX = {
 				edgeElms.push(edge);
 			}
 		}
-		
+
 		function add(e) {
 			if (elm.firstChild) {
 				elm.insertBefore(e,elm.firstChild);
@@ -67,12 +67,12 @@ OAT.SimpleFX = {
 
 		for (var i=0;i<cornerElms.length;i++) { add(cornerElms[i]); }
 		for (var i=0;i<edgeElms.length;i++) { add(edgeElms[i]); }
-		
+
 		elm.cornerElms = cornerElms;
 		elm.edgeElms = edgeElms;
 		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
 	},
-	
+
 	roundDiv:function(something, optObj) {
 		var options = {
 			corners:[1,1,1,1], /* CW from LT */
@@ -139,12 +139,12 @@ OAT.SimpleFX = {
 					aas = options.antialias ? aas : 0;
 					marginOffset = aas;
 				}
-				if (options.corners[0]) { 
-					d.style.marginLeft = (margins[i]-marginOffset)+"px"; 
+				if (options.corners[0]) {
+					d.style.marginLeft = (margins[i]-marginOffset)+"px";
 					d.style.borderLeft = aas+"px solid "+aacolor;
 				}
-				if (options.corners[1]) { 
-					d.style.marginRight = (margins[i]-marginOffset)+"px"; 
+				if (options.corners[1]) {
+					d.style.marginRight = (margins[i]-marginOffset)+"px";
 					d.style.borderRight = aas+"px solid "+aacolor;
 				}
 				top.appendChild(d);
@@ -174,12 +174,12 @@ OAT.SimpleFX = {
 					aas = options.antialias ? aas : 0;
 					marginOffset = aas;
 				}
-				if (options.corners[3]) { 
-					d.style.marginLeft = (margins[i]-marginOffset)+"px"; 
+				if (options.corners[3]) {
+					d.style.marginLeft = (margins[i]-marginOffset)+"px";
 					d.style.borderLeft = aas+"px solid "+aacolor;
 				}
-				if (options.corners[2]) { 
-					d.style.marginRight = (margins[i]-marginOffset)+"px"; 
+				if (options.corners[2]) {
+					d.style.marginRight = (margins[i]-marginOffset)+"px";
 					d.style.borderRight = aas+"px solid "+aacolor;
 				}
 				bottom.appendChild(d);
@@ -215,14 +215,14 @@ OAT.SimpleFX = {
 		b.style.height = options.bottomSize+"px";
 		b.style.bottom = (-options.bottomSize-options.offsetY)+"px";
 		OAT.Style.background(b,options.imagePath+options.bottomImage);
-		
+
 		var r = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 		r.style.bottom = (-options.offsetY)+"px";
 		r.style.width = options.rightSize+"px";
 		r.style.right = (-options.rightSize-options.offsetX)+"px";
 		r.style.height = "100%";
 		OAT.Style.background(r,options.imagePath+options.rightImage);
-		
+
 		var c = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 		c.style.bottom = (-options.bottomSize-options.offsetY)+"px";
 		c.style.right = (-options.rightSize-options.offsetX)+"px";
@@ -234,10 +234,10 @@ OAT.SimpleFX = {
 		elm.appendChild(r);
 		elm.appendChild(c);
 		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
-		
+
 		elm.shadows = [b,r,c];
 	},
-	
+
 	shadowRemove:function(something) {
 		var elm = $(something);
 		if (elm.shadows) {
@@ -245,7 +245,7 @@ OAT.SimpleFX = {
 		}
 		elm.shadows = false;
 	},
-	
+
 	shader:function(clicker,target,optObj) {
 		var elm1 = $(clicker);
 		var elm2 = $(target);
@@ -254,7 +254,7 @@ OAT.SimpleFX = {
 			initialState:1,
 			mode:2, /* 0 - hide, 1 - fade out, 2 - both */
 			type:2 /* 0 - hide, 1 - show, 2 - both */
-			
+
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
 		for (var i=0;i<elm2.length;i++) {
@@ -270,7 +270,7 @@ OAT.SimpleFX = {
 				var a1 = OAT.AnimationOpacity(elm,{opacity:0,delay:5});
 				var a2 = OAT.AnimationSize(elm,{width:0,height:0,speed:10,delay:2});
 				var sf = function() {OAT.Dom.hide(elm);}
-				OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,sf);
+				OAT.MSG.attach(a2.animation,"ANIMATION_STOP",sf);
 			} else {
 				var orig_w = elm.__origW;
 				var orig_h = elm.__origH;
@@ -279,7 +279,7 @@ OAT.SimpleFX = {
 				var a1 = OAT.AnimationOpacity(elm,{opacity:1,delay:5});
 				var a2 = OAT.AnimationSize(elm,{width:orig_w,height:orig_h,speed:10,delay:2});
 				var sf = function() {elm.style.width = elm.__origW+"px"; elm.style.height = elm.__origH+"px"; OAT.Dom.show(elm); }
-				OAT.MSG.attach(a2.animation,OAT.MSG.ANIMATION_STOP,sf);
+				OAT.MSG.attach(a2.animation,"ANIMATION_STOP",sf);
 			}
 			elm.__shaderState++;
 			if (elm.__shaderState == 2) { elm.__shaderState = 0; }

@@ -13,7 +13,7 @@
 */
 
 OAT.JSON = {
-	tt:{'\b':'\\b', '\t':'\\t', '\n':'\\n',	'\f':'\\f',	
+	tt:{'\b':'\\b', '\t':'\\t', '\n':'\\n',	'\f':'\\f',
 		'\r':'\\r',	'"' :'\\"',	'\\':'\\\\' },
 
 	parse:function(jsonString) {
@@ -38,15 +38,15 @@ OAT.JSON = {
 			case 'boolean':
 				return something.toString();
 			break;
-			
+
 			case 'number':
 				return something.toString();
 			break;
-			
+
 			case 'function':
 				return something.toString();
 			break;
-			
+
 			case 'string':
 				var tmp = "";
 				for (var i=0;i<something.length;i++) {
@@ -58,7 +58,7 @@ OAT.JSON = {
 				}
 				return '"'+tmp+'"';
 			break;
-			
+
 			case 'object':
 				if (something instanceof Array) {
 					var members = [];

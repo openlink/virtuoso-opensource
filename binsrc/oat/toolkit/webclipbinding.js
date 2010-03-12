@@ -23,12 +23,12 @@ OAT.WebClipBindings = {
 			content.data.formats[0].items[0].data = toXMLcallback();
 			return content;
 		} /* copyCallback */
-		
+
 		var pasteCallback = function(clipData) {
 			var type = typeCallback();
 			for (var i=0; i<clipData.data.formats.length;i++) {
-				if ((clipData.data.formats[i].type == type) && 
-					(clipData.data.formats[i].items.length > 0) && 
+				if ((clipData.data.formats[i].type == type) &&
+					(clipData.data.formats[i].items.length > 0) &&
 					(clipData.data.formats[i].items[0].data)) {
 
 					var xml = clipData.data.formats[i].items[0].data;
@@ -37,7 +37,7 @@ OAT.WebClipBindings = {
 				} /* if suitable format found */
 			} /* for all formats in clipboard */
 		} /* pasteCallback */
-		
+
         var webclip = new WebClip($(div),copyCallback,pasteCallback,activeCallback,inactiveCallback);
 	} /* OAT.WebClipBindings.bind() */
 }

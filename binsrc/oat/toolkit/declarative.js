@@ -7,9 +7,9 @@
  *
  *  See LICENSE file for details.
  */
-/*	
+/*
 	Declarative markup scanner & initializer:
-	
+
 	OAT.Declarative.shouldBeProcessed = function(domNode)
 	OAT.Declarative.execute()
 	OAT.Declarative.scanningFinished()
@@ -18,7 +18,7 @@
 OAT.Declarative = {
 	objects:{},
 	toBeProcessed:[], /* elements found by scanner, deferred processing */
-	
+
 	shouldBeProcessed:function(domNode) {
 		/*
 			samples of OAT-markup elements
@@ -27,20 +27,20 @@ OAT.Declarative = {
 		if (domNode.getAttribute("openajaxType") && domNode.getAttribute("openajaxType").toString().split(":")[0].toLowerCase() == "oat") { return true; }
 		return false;
 	},
-	
+
 	scan:function() { /* to be replaced by OpenAjax Alliance's Event Hub Scanner */
 		var tmpAll = document.getElementsByTagName("*"); /* dynamic array */
 		var all = [];
 		for (var i=0;i<tmpAll.length;i++) { all.push(tmpAll[i]); } /* static array */
-		for (var i=0;i<all.length;i++) { 
+		for (var i=0;i<all.length;i++) {
 			if (OAT.Declarative.shouldBeProcessed(all[i])) { OAT.Declarative.process(all[i]); }
 		}
 	},
-	
+
 	process:function(domNode) {	/* process dom node, containing declarative markup for OAT */
 		OAT.Declarative.toBeProcessed.push(domNode);
 	},
-	
+
 	scanningFinished:function() { /* process deferred elements */
 		/*
 			A. categorize - 0: ordinary widgets, 1: tab, dock & panelbar, 2: tab, dock & panelbar parts
@@ -51,7 +51,7 @@ OAT.Declarative = {
 		}
 		var partTwo = ["tab","panelbar","dock"];
 		var partThree = ["tab_content","panelbar_content","dock_content"];
-		
+
 		var queue = [[],[],[]];
 		for (var i=0;i<OAT.Declarative.toBeProcessed.length;i++) {
 			var elm = OAT.Declarative.toBeProcessed[i];
@@ -64,7 +64,7 @@ OAT.Declarative = {
 				if (s[0] == "oat") { params[s[1]] = a.nodeValue; }
 			}
 			var jsonParams = elm.getAttribute("openajaxParams");
-			if (jsonParams) { 
+			if (jsonParams) {
 				var json = OAT.JSON.parse(jsonParams);
 				for (var p in json) { params[p] = json[p]; }
 			}
@@ -119,7 +119,7 @@ OAT.Declarative = {
 				break;
 			} /* switch */
 		}
-		
+
 		/* tabs, docks, panelbars */
 		for (var i=0;i<queue[1].length;i++) {
 			var o = queue[1][i];
@@ -167,10 +167,10 @@ OAT.Declarative = {
 			} /* switch */
 		}
 	}, /* scanningFinished - dynamic creation of widgets */
-	
+
 	execute:function() {
-		/* 
-			two modes of operation: 
+		/*
+			two modes of operation:
 			1. scan - no OAA Hub present
 			2. attach to OAA Hub
 		*/

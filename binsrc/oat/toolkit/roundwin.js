@@ -20,14 +20,14 @@ OAT.RoundWin = function(optObj) {
 	OAT.WindowParent(this,optObj);
 	this.options.statusHeight = 20;
 	this.options.moveHeight = 8;
-	
+
 	OAT.Dom.applyStyle(this.div,{border:"1px solid rgb(160,160,164)",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{top:"8px",position:"relative"}); 
+	OAT.Dom.applyStyle(this.content,{top:"8px",position:"relative"});
 
 	document.body.appendChild(this.div);
 	var tmp = OAT.SimpleFX.roundDiv(this.div,{antialias:0,size:15});
 	OAT.Dom.unlink(this.div);
-	
+
 	if (OAT.Browser.isIE && document.compatMode == "BackCompat") {
 		OAT.Resize.create(self.resize,tmp[0],OAT.Resize.TYPE_X);
 		OAT.Resize.create(self.resize,tmp[1],OAT.Resize.TYPE_X);
@@ -46,9 +46,9 @@ OAT.RoundWin = function(optObj) {
 		}
 	}
 
-	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:(-self.options.moveHeight)+"px",height:2*self.options.moveHeight+"px",borderBottom:"1px solid rgb(208,208,210)"}); 
+	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:(-self.options.moveHeight)+"px",height:2*self.options.moveHeight+"px",borderBottom:"1px solid rgb(208,208,210)"});
 
-	if (self.options.move) { 
+	if (self.options.move) {
 		this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 			return l < 0 || t <= self.options.moveHeight;
 		}
