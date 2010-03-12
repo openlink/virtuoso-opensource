@@ -74,50 +74,51 @@
     <script type="text/javascript" >
 <![CDATA[
 OAT.Preferences.imagePath = "oat/images/";
-function init(){
-  var callback = function(commonMapObj) {
-    var click = function (href, label) {
-      return function(marker) {
-        var x;
-	if (href.length > 0) {
-	  x = OAT.Dom.create ("a");
-	  x.href = '/describe/?url='+escape (href);
-	  if (label.length > 0)
-	    x.innerHTML = label;
-	  else
-            x.innerHTML = href;
-	}
-        else x = OAT.Dom.text(label);
-	commonMapObj.openWindow (marker, x);
-      }
-    }
-    window.m = commonMapObj;
-    commonMapObj.centerAndZoom(0,0,0);
-    commonMapObj.addTypeControl();
-    commonMapObj.addMapControl();
-    commonMapObj.setMapType(OAT.MapData.MAP_HYB);
 
+function markerClickHandler (caller, msg, m) {
+  var c = m.__fct_bubble_content;
+
+        var x;
+  if (c[0].length > 0) {
+	  x = OAT.Dom.create ("a");
+    x.href = '/describe/?url='+escape (c[0]);
+    if (c[1].length > 0)
+      x.innerHTML = c[1];
+	  else
+      x.innerHTML = c[0];
+	}
+  else x = OAT.Dom.text(c[1]);
+  window.cMap.openWindow (m, x);
+      }
+
+function init(){
+  window.cMap = {};
+  var mapcb = function() {
+    window.cMap.init(OAT.Map.TYPE_G3);
+    window.cMap.centerAndZoom(0,0,0);
+    window.cMap.setMapType(OAT.Map.MAP_HYB);
+    OAT.MSG.attach ("*", "MAP_MARKER_CLICK", markerClickHandler);
     var markersArr = [];
 ]]>
     <xsl:for-each select="result/row">
-      commonMapObj.addMarker(1,
-                             <xsl:value-of select="column[3]"/>,
+      window.cMap.addMarker( <xsl:value-of select="column[3]"/>,
                              <xsl:value-of select="column[4]"/>,
-                             "oat/images/markers/01.png",
-                             18,
-                             41,
-                             click ("<xsl:value-of select="column[1]"/>", "<xsl:value-of select='translate (normalize-space (column[2]), &apos;"&apos;, &apos;&apos;)'/>"));
+                             false,
+                             {image: "oat/images/markers/01.png",
+                              imageSize: [18,41],
+                              custData: {__fct_bubble_content: ["<xsl:value-of select="column[1]"/>", 
+	                                                        "<xsl:value-of select='translate (normalize-space (column[2]), &apos;"&apos;, &apos;&apos;)'/>"]}});
       markersArr.push([<xsl:value-of select="column[3]"/>,<xsl:value-of select="column[4]"/>]);
     </xsl:for-each>
 <![CDATA[
-    commonMapObj.optimalPosition(markersArr);
+    window.cMap.optimalPosition(markersArr);
+    window.cMap.showMarkers(false);
     return;
   }
   window.YMAPPID = "";
-  var providerType = OAT.MapData.TYPE_Y;
-  var containerDiv = document.getElementById('user_map');
-  var map = new OAT.Map(containerDiv,providerType,{fix:OAT.MapData.FIX_ROUND1});
-  map.loadApi(providerType, callback);
+  var providerType = OAT.Map.TYPE_G3;
+  window.cMap = new OAT.Map($('user_map'),providerType,{fix:OAT.Map.FIX_ROUND1});
+  OAT.Map.loadApi(providerType, {callback: mapcb});
 }
 ]]>
     </script>

@@ -12,7 +12,7 @@
 ?>
 
 <script type="text/javascript" >
-    var featureList=["map", "combolist", "ajax2", "tab", "json"];
+    var featureList=["map", "combolist", "ajax", "tab", "json"];
 </script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 <script type="text/javascript" src="facet.js"></script>

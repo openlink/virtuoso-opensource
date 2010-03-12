@@ -146,7 +146,7 @@ function init()
 
     tabs.go (0);
 
-    OAT.MSG.attach ('*', OAT.MSG.AJAX_START, function () { ac_show_thr () });
+	OAT.MSG.attach ('*', 'AJAX_START', function () { ac_show_thr () });
 
     OAT.Dom.show ('main_srch');  
 	
