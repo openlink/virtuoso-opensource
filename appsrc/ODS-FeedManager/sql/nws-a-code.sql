@@ -723,6 +723,25 @@ create procedure ENEWS.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.domain_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  if (domain_id < 0)
+  {
+    S := sprintf ('%s/subscriptions', ENEWS.WA.host_url ());
+  } else {
+    S := sprintf ('%s/dataspace/%U/subscriptions/%U', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.domain_name (domain_id));
+  }
+  return ENEWS.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,

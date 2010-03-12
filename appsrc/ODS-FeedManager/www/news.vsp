@@ -48,7 +48,7 @@ _start:
     S := '?' || S;
 	http_rewrite ();
 	http_request_status ('HTTP/1.1 302 Found');
-  http_header (sprintf('Location: %s/%s%s\r\n', ENEWS.WA.domain_sioc_url (domain_id), 'news.vspx', S));
+  http_header (sprintf('Location: %s/%s%s\r\n', ENEWS.WA.domain_url (domain_id), 'news.vspx', S));
 	http_flush ();
 
 	commit work;
