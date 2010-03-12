@@ -1431,7 +1431,7 @@ in user_id integer)
         '\n  // OAT                                                              ' ||
         '\n  var toolkitPath="/ods/oat";                                         ' ||
         '\n  var imagePath="/ods/images/oat/";                                   ' ||
-        '\n  var featureList=["ajax2","anchor"];                                 ' ||
+        '\n  var featureList=["ajax","anchor"];                                 ' ||
         '\n</script>                                                             ' ||
         '\n<script type="text/javascript" src="/ods/oat/loader.js"></script>     ' ||
         '\n<script type="text/javascript" src="/ods/app.js"></script>            ' ||
@@ -1506,7 +1506,7 @@ in user_id integer)
         '\n  // OAT                                                              ' ||
         '\n  var toolkitPath="/ods/oat";                                         ' ||
         '\n  var imagePath="/ods/images/oat/";                                   ' ||
-        '\n  var featureList=["ajax2","anchor"];                                 ' ||
+        '\n  var featureList=["ajax","anchor"];                                 ' ||
         '\n</script>                                                             ' ||
         '\n<script type="text/javascript" src="/ods/oat/loader.js"></script>     ' ||
         '\n<script type="text/javascript" src="/ods/app.js"></script>            ' ||

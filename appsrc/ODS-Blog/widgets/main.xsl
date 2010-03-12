@@ -881,7 +881,7 @@ else if (length (self.catid))
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
 
-        var featureList=["ajax2", "anchor", "ghostdrag", "dav"];
+        var featureList=["ajax", "anchor", "ghostdrag", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>

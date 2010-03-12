@@ -660,7 +660,7 @@
           </tr>
     		  <![CDATA[
     		    <script type="text/javascript">
-              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, ODRIVE.initFilter);
+              OAT.MSG.attach(OAT, "PAGE_LOADED", ODRIVE.initFilter);
     		  <?vsp
               for (N := 1; N <= I; N := N + 1)
               {
@@ -673,9 +673,9 @@
                 S := sprintf ('field_0:\'%s\', field_1:\'%s\', field_2:\'%s\', field_3:\'%s\', field_4:\'%s\'', f0, f1, f2, f3, f4);
                 S := replace (S, '\'null\'', 'null');
 
-                http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.searchRowCreate(\'%d\', {%s});});', N - 1, S));
+                http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\', {%s});});', N - 1, S));
               }
-              http (sprintf ('OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){ODRIVE.searchRowCreate(\'%d\');})', I));
+              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\');})', I));
     		  ?>
     		    </script>
     		  ]]>

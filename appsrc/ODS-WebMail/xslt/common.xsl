@@ -248,7 +248,7 @@
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax2", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
+      var featureList=["ajax", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
@@ -288,7 +288,8 @@
         // Init OMAIL object
         OMAIL.init();
       }
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
     </script>
   </xsl:template>
 

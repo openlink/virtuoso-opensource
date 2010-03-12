@@ -53,7 +53,7 @@
              var anchorTopLeft=OAT.Dom.position('cal_anchor');
 
              
-           if (OAT.Dom.isIE() == false)
+             if (!OAT.Browser.isIE)
               nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+12, clickCal);
            else
               nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+2, clickCal);

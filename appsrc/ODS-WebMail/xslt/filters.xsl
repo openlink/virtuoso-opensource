@@ -116,7 +116,7 @@
   <!-- ====================================================================================== -->
   <xsl:template match="filter[@type='edit']">
     <script type="text/javascript">
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){OMAIL.initFilter();});
+      OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.initFilter();});
     </script>
     <input type="hidden" name="filter_id">
       <xsl:attribute name="value"><xsl:value-of select="id"/></xsl:attribute>
@@ -193,9 +193,9 @@
 		          </tr>
 		    		    <script type="text/javascript">
 						      <xsl:for-each select="criteria/entry">
-		                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){OMAIL.searchRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@field" />', field_1:'<xsl:value-of select="@criteria" />', field_2:'<xsl:value-of select="." />'});});
+		                OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.searchRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@field" />', field_1:'<xsl:value-of select="@criteria" />', field_2:'<xsl:value-of select="." />'});});
 		    		      </xsl:for-each>
-                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){OMAIL.searchRowCreate('<xsl:value-of select="count(criteria/entry)" />');});
+                  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.searchRowCreate('<xsl:value-of select="count(criteria/entry)" />');});
 		    		    </script>
 		        </tbody>
 		      </table>
@@ -225,9 +225,9 @@
 		          </tr>
 		    		    <script type="text/javascript">
 						      <xsl:for-each select="actions/entry">
-		                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){OMAIL.actionRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@action" />', field_1:'<xsl:value-of select="." />'});});
+		                OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.actionRowCreate('<xsl:value-of select="@ID" />', {field_0:'<xsl:value-of select="@action" />', field_1:'<xsl:value-of select="." />'});});
 		    		      </xsl:for-each>
-                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function(){OMAIL.actionRowCreate('<xsl:value-of select="count(actions/entry)" />');});
+                  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){OMAIL.actionRowCreate('<xsl:value-of select="count(actions/entry)" />');});
 		    		    </script>
 		        </tbody>
 		      </table>

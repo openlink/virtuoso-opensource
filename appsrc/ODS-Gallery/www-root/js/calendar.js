@@ -31,7 +31,7 @@ var GCallendar = {
 		  GCallendar.setCurrent(ctrlId);
 	    var _ctrl=GCallendar.current_control;
       var _ctrlLeftTop=OAT.Dom.position(_ctrl);
-      if (OAT.Dom.isIE() == false)
+      if (OAT.Browser.isIE == false)
         GCallendar.obj.show(_ctrlLeftTop[0]+25, _ctrlLeftTop[1]+0, GCallendar.onClick);
       else
         GCallendar.obj.show(_ctrlLeftTop[0]+25, _ctrlLeftTop[1]+0, GCallendar.onClick);

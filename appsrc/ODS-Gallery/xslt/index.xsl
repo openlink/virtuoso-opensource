@@ -67,7 +67,7 @@
         </link>
         <script type="text/javascript">
       		var toolkitPath = "/ods/oat";
-      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar","quickedit","ajax2","ws","anchor"];
+      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar","quickedit","ajax","ws","anchor"];
       	</script>
       	<script type="text/javascript" src="/ods/oat/loader.js"></script>
       	<script type="text/javascript" src="/ods/app.js"></script>

@@ -175,7 +175,7 @@
       myDiv.curr_a_elm=curr_a_elm;
           var anchorTopLeft=OAT.Dom.position('cal_anchor');
 
-           if (OAT.Dom.isIE() == false)
+          if (!OAT.Browser.isIE)
            {
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
          myDiv.style.top = (anchorTopLeft[1]+20+calendarH)+'px';
@@ -183,10 +183,8 @@
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
          myDiv.style.top = (anchorTopLeft[1]+12+calendarH)+'px';
            }
-
       OAT.Dom.show('tags_div');
-
-      if (OAT.Dom.isIE() == false)
+          if (!OAT.Browser.isIE)
       {
          if($('LT').offsetHeight<(calendarH+16+$('tags_div').offsetHeight))
          {

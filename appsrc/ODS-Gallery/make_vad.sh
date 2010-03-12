@@ -92,7 +92,7 @@ VERSION_INIT()
   for i in `find . -name 'Entries' | grep -v "vad/"`; do
         cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
   done
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=45 } { cnt = cnt + $1} END { printf "1.%02.02f", cnt/100 + 1}'`
+  VERSION=`cat version.tmp | awk ' BEGIN { cnt=78 } { cnt = cnt + $1} END { printf "1.%02.02f", cnt/100 + 1}'`
   rm -f version.tmp
 }
 
@@ -239,8 +239,8 @@ sticker_init() {
   echo "  <require>" >> $STICKER
   echo "   <name package=\"Framework\">" >> $STICKER
   echo "   </name>" >> $STICKER
-  echo "    <versions_later package=\"1.65.02\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2010-01-28 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "   </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
