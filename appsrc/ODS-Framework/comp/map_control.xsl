@@ -178,7 +178,7 @@ function mapInitPrepare()
 {
   if (typeof(window.mapInit) == "function")
     {
-      OAT.Loader.loadFeatures(["map"], function(){setTimeout(mapInit,60)});
+      OAT.Loader.load(["map"], function(){setTimeout(mapInit,60)});
     };
 
   return;

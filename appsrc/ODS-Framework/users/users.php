@@ -34,14 +34,16 @@
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
     </script>
   </head>
   <?php
@@ -66,6 +68,8 @@
     {
       if ($form == "login")
         print "Login";
+      if ($form == "register")
+        print "Register";
       if ($form == "user")
         print "View Profile";
       if ($form == "profile")
@@ -83,6 +87,7 @@
     $_form = (isset ($_REQUEST['form'])) ? $_REQUEST['form'] : "login";
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formSubtab = intval((isset ($_REQUEST['formSubtab'])) ? $_REQUEST['formSubtab'] : "0");
+    $_formMode = (isset ($_REQUEST['formMode'])) ? $_REQUEST['formMode'] : "";
     $_sid = $_REQUEST['sid'];
     $_realm = "wa";
 
@@ -102,6 +107,8 @@
           $_form = "profile";
           }
         }
+      if (isset ($_REQUEST['lf_register']) && ($_REQUEST['lf_register'] <> ""))
+        $_form = "register";
       }
 
       if ($_form == "user")
@@ -116,11 +123,82 @@
 
       if ($_form == "profile")
       {
-      if (
+      if (isset ($_REQUEST['pf_update07']) && ($_REQUEST['pf_update07'] <> ""))
+      {
+        $_url = sprintf (
+                          "%s/user.mades.%s?sid=%s&realm=%s&id=%s&property=%s&url=%s&description=%s",
+                          apiURL(),
+                          $_formMode,
+                          $_sid,
+                          $_realm,
+                          urlencode ($_REQUEST ["pf07_id"]),
+                          urlencode ($_REQUEST ["pf07_property"]),
+                          urlencode ($_REQUEST ["pf07_url"]),
+                          urlencode ($_REQUEST ["pf07_description"])
+                        );
+        $_result = file_get_contents($_url);
+        if (substr_count($_result, "<failed>") <> 0)
+        {
+          $_xml = simplexml_load_string($_result);
+          $_error = $_xml->failed->message;;
+          $_form = "login";
+        }
+        $_formMode = "";
+      }
+      else if (isset ($_REQUEST['pf_update08']) && ($_REQUEST['pf_update08'] <> ""))
+      {
+        $_url = sprintf (
+                          "%s/user.offers.%s?sid=%s&realm=%s&id=%s&name=%s&comment=%s&properties=%s",
+                          apiURL(),
+                          $_formMode,
+                          $_sid,
+                          $_realm,
+                          urlencode ($_REQUEST ["pf08_id"]),
+                          urlencode ($_REQUEST ["pf08_name"]),
+                          urlencode ($_REQUEST ["pf08_comment"]),
+                          urlencode ($_REQUEST ["items"])
+                        );
+        $_result = file_get_contents($_url);
+        if (substr_count($_result, "<failed>") <> 0)
+        {
+          $_xml = simplexml_load_string($_result);
+          $_error = $_xml->failed->message;;
+          $_form = "login";
+        }
+        $_formMode = "";
+      }
+      else if (isset ($_REQUEST['pf_update09']) && ($_REQUEST['pf_update09'] <> ""))
+      {
+        $_url = sprintf (
+                          "%s/user.seeks.%s?sid=%s&realm=%s&id=%s&name=%s&comment=%s&properties=%s",
+                          apiURL(),
+                          $_formMode,
+                          $_sid,
+                          $_realm,
+                          urlencode ($_REQUEST ["pf09_id"]),
+                          urlencode ($_REQUEST ["pf09_name"]),
+                          urlencode ($_REQUEST ["pf09_comment"]),
+                          urlencode ($_REQUEST ["items"])
+                        );
+        $_result = file_get_contents($_url);
+        if (substr_count($_result, "<failed>") <> 0)
+        {
+          $_xml = simplexml_load_string($_result);
+          $_error = $_xml->failed->message;;
+          $_form = "login";
+        }
+        $_formMode = "";
+      }
+      else if (isset ($_REQUEST['pf_cancel2']))
+      {
+        $_formMode = "";
+      }
+      else if (
           (isset ($_REQUEST['pf_update']) && ($_REQUEST['pf_update'] <> "")) ||
           (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))
          )
       {
+        $_formMode = "";
         if ((($_formTab == 0) && ($_formSubtab == 3)) || (($_formTab == 1) && ($_formSubtab == 2)))
         {
           $_prefix = "x4";
@@ -406,12 +484,26 @@
 
             if ($_REQUEST['securityNo'] == "2")
               $_url .=
-                  "&securitySecretQuestion=". urlencode ($_REQUEST['pf_securitySecretQuestion']).
-                  "&securitySecretAnswer=".   urlencode ($_REQUEST['pf_securitySecretAnswer']);
+                  "&securityFacebookID=" . urlencode ($_REQUEST['pf_securityFacebookID']);
 
             if ($_REQUEST['securityNo'] == "3")
               $_url .=
+                  "&securityFacebookID=";
+
+            if ($_REQUEST['securityNo'] == "4")
+              $_url .=
+                  "&securitySecretQuestion=". urlencode ($_REQUEST['pf_securitySecretQuestion']).
+                  "&securitySecretAnswer=".   urlencode ($_REQUEST['pf_securitySecretAnswer']);
+
+            if ($_REQUEST['securityNo'] == "5")
+              $_url .=
                   "&securitySiocLimit=".      urlencode ($_REQUEST['pf_securitySiocLimit']);
+            if ($_REQUEST['securityNo'] == "6")
+              $_url .=
+                  "&certificate=" . urlencode ($_REQUEST['pf_certificate']) .
+                  "&certificateLogin=" . urlencode ((isset($_REQUEST['pf_certificateLogin']))? $_REQUEST['pf_certificateLogin']: "0");
+            if ($_REQUEST['securityNo'] == "7")
+              $_url .= "&certificate=&certificateLogin=";
           }
           $_result = file_get_contents($_url);
           if (substr_count($_result, "<failed>") <> 0)
@@ -425,7 +517,6 @@
         {
           $_formSubtab = $_formSubtab + 1;
           if (
-              (($_formTab == 0) && ($_formSubtab > 5)) ||
               (($_formTab == 1) && ($_formSubtab > 3)) ||
               ($_formTab > 1)
              )
@@ -467,35 +558,34 @@
       }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" method="post" action="users.php">
+    <form name="page_form" id="page_form" method="post" action="users.php">
+      <input type="hidden" name="mode" id="mode" value="php" />
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
       <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
       <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?php print($_formTab); ?>" />
       <input type="hidden" name="formSubtab" id="formSubtab" value="<?php print($_formSubtab); ?>" />
-      <input type="hidden" name="favorites" id="favorites" value="" />
+      <input type="hidden" name="formMode" id="formMode" value="<?php print($_formMode); ?>" />
+      <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left"><?php outFormTitle($_form); ?></div>
+        <div id="ob_right">
         <?php
-          if ($_form <> 'login')
+          if (($_form <> 'login') && ($_form <> 'register'))
           {
         ?>
-        <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
+          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>
         <?php
           }
         ?>
       </div>
+      </div>
       <div id="MD">
         <table cellspacing="0">
           <tr>
-            <td>
-              <img style="margin: 60px;" src="/ods/images/odslogo_200.png" /><br />
-              <div id="ob_links" style="display: none; margin-left: 60px;">
-                <a id="ob_links_foaf" href="#">
-                  <img border="0" alt="FOAF" src="/ods/images/foaf.gif"/>
-                </a>
-              </div>
+            <td valign="top">
+              <img class="logo" src="/ods/images/odslogo_200.png" /><br />
             </td>
             <td>
               <?php
@@ -573,9 +663,108 @@
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
+                  <input type="submit" name="lf_register" value="Sign Up" id="lf_register" />
                 </div>
               </div>
-
+              <?php
+              }
+              if ($_form == 'register')
+              {
+              ?>
+              <div id="rf" class="form">
+                <div class="header">
+                  User register
+                </div>
+                <ul id="rf_tabs" class="tabs">
+                  <li id="rf_tab_0" title="ODS">ODS</li>
+                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                  <li id="rf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                </ul>
+                <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="rf_content"></div>
+                  <div id="rf_page_0" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr id="rf_login_1">
+                        <th width="30%">
+                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_uid" value="" id="rf_uid" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_2">
+                        <th>
+                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                        </td>
+                      </tr>
+                      <tr id="rf_login_3">
+                        <th>
+                          <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password" value="" id="rf_password" />
+                        </td>
+                      </tr>
+                      <tr id="rf_login_4">
+                        <th>
+                          <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="rf_password2" value="" id="rf_password2" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_1" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="rf_openId">OpenID</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_2" class="tabContent" style="display: none">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="rf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_3" class="tabContent" style="display: none">
+                    <table id="rf_table_3" class="form" cellspacing="5">
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="30%">
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="footer" id="rf_login_5">
+                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                </div>
+              </div>
               <?php
               }
               if ($_form == 'user')
@@ -617,8 +806,8 @@
                     </div>
                   </div>
                   <script type="text/javascript">
-                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){selectProfile();});
-                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){cRDF.open("<?php print($_xml->iri); ?>");});
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<?php print($_xml->iri); ?>");});
                   </script>
                 </div>
                 <div class="footer">
@@ -632,7 +821,7 @@
               {
               ?>
 
-              <div id="pf" class="form" style="width: 800px;">
+              <div id="pf" class="form" style="width: 100%;">
                 <?php
                   if ($_error <> '')
                   {
@@ -657,6 +846,9 @@
                       <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
                       <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
                       <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
+                      <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
+                      <li id="pf_tab_0_8" title="My Offers">My Offers</li>
+                      <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
                     </ul>
                     <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
@@ -794,19 +986,19 @@
                                           <th>
                                             URI
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n"], function(prefix, val1){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -845,19 +1037,19 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
                                       </thead>
                                       <tr id="x2_tr_no" style="display: none;"><td colspan="3"><b>No Topic of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x2", '<?php print(str_replace("\n", "\\n", $_xml->interests)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x2", '<?php print(str_replace("\n", "\\n", $_xml->interests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -880,19 +1072,19 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="80px">
+                                          <th width="1%">
                                             Action
                                           </th>
                                         </tr>
                                       </thead>
                                       <tr id="x3_tr_no" style="display: none;"><td colspan="3"><b>No Thing of Interests</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x3", '<?php print(str_replace("\n", "\\n", $_xml->topicInterests)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x3", '<?php print(str_replace("\n", "\\n", $_xml->topicInterests)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <input type="button" value="Add" onclick="javascript: updateRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {}});" />
+                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
                                   </td>
                                 </tr>
                               </table>
@@ -924,7 +1116,7 @@
                         <td>
                           <span id="span_pf_homestate">
                             <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_homecountry", "pf_homestate", "<?php print($_xml->homeState); ?>");});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_homecountry", "pf_homestate", "<?php print($_xml->homeState); ?>");});
                             </script>
                           </span>
                         </td>
@@ -1026,19 +1218,19 @@
                                     <th>
                                       Member Home Page URL
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 1, value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('x4', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
                             </td>
                           </tr>
                         </table>
@@ -1060,19 +1252,19 @@
                                     <th>
                                       Place
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
                                 </thead>
                                 <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 4, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('x5', null, {fld_1: {mode: 4}, fld_2: {}, fld_3: {}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});" />
                             </td>
                           </tr>
                         </table>
@@ -1116,17 +1308,22 @@
                             <th>
                               <label for="pf_msn">MSN</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_msn" value="<?php print($_xml->msn); ?>" id="pf_msn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                             </td>
                           </tr>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("x6", '<?php print(str_replace("\n", "\\n", $_xml->messaging)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", '<?php print(str_replace("\n", "\\n", $_xml->messaging)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                         </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                       </div>
 
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
@@ -1142,7 +1339,7 @@
                                     <th width="100%">
                                       Favorite Type
                                     </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                                     </th>
                                   </tr>
@@ -1150,23 +1347,280 @@
                                 <tbody id="r_tbody">
                                   <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
                                   <script type="text/javascript">
-                                    OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowFavorites();});
+                                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
                                 </tbody>
                               </table>
                             </td>
                             <td valign="top" nowrap="nowrap">
-                              <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
                             </td>
                           </tr>
                         </table>
                       </div>
-
+                      <?php
+                      if ($_formTab == 0)
+                      {
+                        if ($_formSubtab == 7)
+                        {
+                      ?>
+                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+                        <h3>Creator Of</h3>
+                        <?php
+                          if ($_formMode == "")
+                          {
+                        ?>
+                        <div id="pf07_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Creator Of" alt="Add Creator Of" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf07_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Property</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf07_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMades();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?php
+                          }
+                          else
+                          {
+                            if ($_formMode == "edit")
+                              print sprintf("<input type=\"hidden\" id=\"pf07_id\" name=\"pf07_id\" value=\"%s\" />", (isset ($_REQUEST['pf07_id'])) ? $_REQUEST['pf07_id'] : "0");
+                        ?>
+                        <div id="pf07_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Property
+                              </th>
+                              <td id="if_opt">
+                                <script type="text/javascript">
+                                  function p_init ()
+                                  {
+                                    var fld = new OAT.Combolist([]);
+                                    fld.input.name = 'pf07_property';
+                                    fld.input.id = fld.input.name;
+                                    fld.input.className = '_validate_';
+                                    fld.input.style.width = "400px";
+                                    $("if_opt").appendChild(fld.div);
+                                    fld.addOption("foaf:made");
+                                    fld.addOption("dc:creator");
+                                    fld.addOption("sioc:owner");
+                                  }
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", p_init)
+                                </script>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
+                              </th>
+                              <td>
+                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Description
+                              </th>
+                              <td>
+                                <textarea name="pf07_description" id="pf07_description" class="_validate_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowMade();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
+                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?php
+                          }
+                        ?>
+                      </div>
+                      <?php
+                        }
+                        else if ($_formSubtab == 8)
+                        {
+                      ?>
+                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+                        <h3>My Offers</h3>
+                        <?php
+                          if ($_formMode == "")
+                          {
+                        ?>
+                        <div id="pf08_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf08_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Name</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf08_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffers();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?php
+                          }
+                          else
+                          {
+                            print sprintf("<input type=\"hidden\" id=\"pf08_id\" name=\"pf08_id\" value=\"%s\" />", (isset ($_REQUEST['pf08_id'])) ? $_REQUEST['pf08_id'] : "0");
+                        ?>
+                        <div id="pf08_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Name
+                              </th>
+                              <td>
+                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+                  		          Products
+                  		        </th>
+                  		        <td width="800px">
+                                <table id="ol_tbl" class="listing">
+                                  <tbody id="ol_tbody">
+                                  </tbody>
+                                </table>
+                                <input type="hidden" id="ol_no" name="ol_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOffer();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?php
+                          }
+                        ?>
+                      </div>
+                      <?php
+                        }
+                        else if ($_formSubtab == 9)
+                        {
+                      ?>
+                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+                        <h3>Offers I Seek</h3>
+                        <?php
+                          if ($_formMode == "")
+                          {
+                        ?>
+                        <div id="pf09_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf09_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Name</th>
+                        		    <th>Description</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf09_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowSeeks();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <?php
+                          }
+                          else
+                          {
+                            print sprintf("<input type=\"hidden\" id=\"pf09_id\" name=\"pf09_id\" value=\"%s\" />", (isset ($_REQUEST['pf09_id'])) ? $_REQUEST['pf09_id'] : "0");
+                        ?>
+                        <div id="pf09_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Name
+                              </th>
+                              <td>
+                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+                  		          Products
+                  		        </th>
+                  		        <td width="800px">
+                                <table id="wl_tbl" class="listing">
+                                  <tbody id="wl_tbody">
+                                  </tbody>
+                                </table>
+                                <input type="hidden" id="wl_no" name="wl_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowSeek();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?php
+                          }
+                        ?>
+                      </div>
+                      <?php
+                        }
+                        else
+                        {
+                      ?>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
                       </div>
+                      <?php
+                        }
+                      }
+                      ?>
                     </div>
                   </div>
 
@@ -1336,7 +1790,7 @@
                         <td>
                           <span id="span_pf_businessstate">
                             <script type="text/javascript">
-                              OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){updateState("pf_businesscountry", "pf_businessstate", "<?php print($_xml->businessState); ?>");});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_businesscountry", "pf_businessstate", "<?php print($_xml->businessState); ?>");});
                             </script>
                           </span>
                         </td>
@@ -1438,19 +1892,19 @@
                         <th>
                                       Member Home Page URL
                         </th>
-                                    <th width="80px">
+                                    <th width="1%">
                                       Action
                         </th>
                                   </tr>
                                 </thead>
                                 <tr id="y1_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){updateRow(prefix, null, {fld_0: {value: val0}, fld_1: {mode: 1, value: val1, className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}, fld_2: {value: val2}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <input type="button" value="Add" onclick="javascript: updateRow('y1', null, {fld_1: {mode: 1}, fld_2: {className: '_validate_ _url_ _canEmpty_', onBlur: function(){validateField(this);}}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
                         </td>
                       </tr>
                         </table>
@@ -1494,17 +1948,22 @@
                         <th>
                               <label for="pf_businessMsn">MSN</label>
                         </th>
-                        <td>
+                            <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="<?php print($_xml->businessMsn); ?>" id="pf_businessMsn" style="width: 220px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Add other services</th>
+                            <td>
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                             </td>
                             <td width="40%">
                         </td>
                       </tr>
                           <script type="text/javascript">
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){pfShowRows("y2", '<?php print(str_replace("\n", "\\n", $_xml->businessMessaging)); ?>', ["\n", ";"], function(prefix, val1, val2){updateRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("y2", '<?php print(str_replace("\n", "\\n", $_xml->businessMessaging)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                     </table>
-                        <input type="button" value="Add" onclick="javascript: updateRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
                   </div>
 
                       <div class="footer">
@@ -1578,6 +2037,36 @@
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
+                      <tr id="pf_facebook" style="display:none;">
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Facebook
+                        </th>
+                      </tr>
+                      <tr id="pf_facebook1" style="display:none;">
+                        <th>
+                          Saved Facebook ID
+                        </th>
+                        <td nowrap="nowrap">
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook2" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <span id="pf_facebookData" style="min-height: 20px;"></span>
+                          <br />
+                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                          <fb:login-button autologoutlink="true"></fb:login-button>
+                        </td>
+                      </tr>
+                      <tr id="pf_facebook3" style="display:none;">
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
+                          <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
+                        </td>
+                      </tr>
                       <tr>
                         <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
                           Password Recovery
@@ -1602,7 +2091,7 @@
                               cc.addOption("Favorite Pet");
                               cc.addOption("Favorite Sports Team");
                             }
-                            OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", categoryCombo);
                           </script>
                         </td>
                       </tr>
@@ -1618,7 +2107,7 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
                         </td>
                       </tr>
                       <tr>
@@ -1638,7 +2127,71 @@
                         <th>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          X.509 Certificate
+                        </th>
+                      </tr>
+              	      <?php
+              	        if (strlen ($_xml->certificate) <> 0)
+              	        {
+              	      ?>
+                      <tr>
+                        <th>
+                	    	  Subject
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <?php print($_xml->certificateSubject); ?>
+                    		</td>
+                      </tr>
+                      <tr>
+                        <th>
+                	    	  Agent ID
+                        </th>
+                        <td nowrap="nowrap">
+                    		  <?php print($_xml->certificateAgentID); ?>
+                    		</td>
+                      </tr>
+            	        <?php
+            	          }
+            	        ?>
+                      <tr>
+                        <th valign="top">
+                          <label for="pf_certificate">Certificate</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><?php print($_xml->certificate); ?></textarea>
+              	          <?php
+              	            if (strlen($_xml->certificate) == 0)
+              	            {
+              	          ?>
+                	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="200" height="200" frameborder="0" scrolling="no">
+                	            <p>Your browser does not support iframes.</p>
+                	          </iframe>
+              	          <?php
+              	            }
+              	          ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th />
+                        <td nowrap="nowrap">
+                          <label>
+                            <?php print (sprintf ("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\" %s/>", ($_xml->certificateLogin == '1')? "checked=\"checked\"": "")); ?>
+                            Enable Automatic FOAF+SSL Login
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
+                          <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />
                         </td>
                       </tr>
                     </table>

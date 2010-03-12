@@ -1375,9 +1375,9 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
       <v:template name="rdf_search_tmpl2" type="simple" condition="self.page = 5">
 	<!-- RDF search -->
 	<script type="text/javascript">
-	  var featureList = ["rdfbrowser","dimmer","ajax2","dialog","grid","graphsvg","map","timeline",
+	  var featureList = ["rdfbrowser","dimmer","ajax","dialog","grid","graphsvg","map","timeline",
 	  "menu","dialog","xml","tagcloud","fresnel"];
-	  OAT.Loader.loadFeatures(featureList, RDFBInit);
+	  OAT.Loader.load(featureList, RDFBInit);
 	</script>
 	<div id="throbber">
 	  <img src="/DAV/JS/images/throbber.gif" />

@@ -22,7 +22,12 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page" xmlns:vm="http://www.openlinksw.com/vspx/ods/" xmlns:v="http://www.openlinksw.com/vspx/" style="index.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="blog-home-page" 
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/" 
+        xmlns:v="http://www.openlinksw.com/vspx/" 
+        style="index.xsl" 
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"  
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:page>
     <vm:header>
       <vm:title>Web Application Configuration</vm:title>
@@ -36,7 +41,7 @@
       <vm:navigation on="site_settings"/>
       <vm:navigation1 on="site_settings"/>
       <vm:navigation3 on="web" />
-      <vm:rawheader caption="Web Application Configuration"/>
+      <vm:rawheader caption="ODS Service Configuration"/>
       <vm:body>
         <![CDATA[
           <script type="text/javascript">

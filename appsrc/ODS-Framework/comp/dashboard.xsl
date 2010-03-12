@@ -1420,7 +1420,7 @@
 
   			function dataspacesPrepare()
   			{
-  	      OAT.Loader.loadFeatures(["ws", "anchor"], generateDSLinks);
+  	      OAT.Loader.load(["ws", "anchor"], generateDSLinks);
   			}
 
         function hasError(root) {

@@ -3948,6 +3948,10 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_SEARCHABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_SHOWACTIVE')
     UPDATE WA_USER_INFO SET WAUI_SHOWACTIVE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_OPENID_URL')
+    UPDATE WA_USER_INFO SET WAUI_OPENID_URL = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_OPENID_SERVER')
+    UPDATE WA_USER_INFO SET WAUI_OPENID_SERVER = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FACEBOOK_ID')
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FACEBOOK_LOGIN_ID')

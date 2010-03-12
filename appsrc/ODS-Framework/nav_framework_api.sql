@@ -226,24 +226,7 @@ create procedure sessionValidateX509 (
 	vec [1] := '';
 	loc_idn := db.dba.vspx_uri_compose (vec);
       }
-    S := sprintf ('sparql ' ||
-                  'prefix cert: <%s> ' ||
-                  'prefix rsa: <%s> ' ||
-                  'select ?exp_val ' ||
-                  '       ?mod_val ' ||
-                  '  from <%s> ' ||
-                  ' where { ' ||
-                  '         ?id cert:identity <%s> ; ' ||
-                  '             rsa:public_exponent ?exp ; ' ||
-                  '             rsa:modulus ?mod . ' ||
-                  '         ?exp cert:decimal ?exp_val . ' ||
-                  '         ?mod cert:hex ?mod_val . ' ||
-                  '       }',
-                  SIOC..cert_iri (''),
-                  SIOC..rsa_iri (''),
-                  graph,
-                  loc_idn);
-
+    S := DB.DBA.FOAF_SSL_QR (graph, loc_idn);
     st := '00000';
     exec (S, st, msg, vector (), 0, meta, data);
     if ((st <> '00000') or (length (data) = 0))

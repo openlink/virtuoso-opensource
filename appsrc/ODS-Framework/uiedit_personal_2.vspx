@@ -169,7 +169,7 @@
                         http (sprintf ('cc.addOption("%s");', WP_PROVINCE));
                     ?>
                   }
-                  ODSInitArray.push ( function () { OAT.Loader.loadFeatures(["combolist"], categoryCombo); } );
+                  ODSInitArray.push ( function () { OAT.Loader.load(["combolist"], categoryCombo); } );
                 </script>
               ]]>
             </span>

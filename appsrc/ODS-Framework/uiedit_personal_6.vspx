@@ -109,7 +109,7 @@
                   <th width="100%">
                     Favorite Type
                   </th>
-                  <th width="80px">
+                  <th width="1%">
                     Action
                   </th>
                 </tr>
@@ -126,14 +126,14 @@
             <input type="hidden" id="r_no" name="r_no" value="1" />
           </td>
           <td valign="top" nowrap="nowrap">
-            <input type="button" value="Add" onclick="javascript: updateRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});" />
           </td>
         </tr>
       </table>
       <script type="text/javascript">
         <![CDATA[
           ODSInitArray.push ( function () {
-            OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+            OAT.Loader.load(["ajax", "json", "combolist"], function(){
               RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
               RDF.showItemTypes();
             });

@@ -1,6 +1,40 @@
 DB.DBA.EXEC_STMT ('create table FOAF_SSL_ACL (FS_URI varchar primary key, FS_UID varchar not null)', 0)
 ;
 
+create procedure FOAF_SSL_QR (in gr varchar, in agent varchar)
+{
+  declare qr any;
+  qr := sprintf (
+        'sparql define input:storage "" '||
+	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
+	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
+	' from <%S> '||
+  	' where { '||
+	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
+	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
+	'       } ',
+	gr, agent);
+  return qr;      
+}
+;
+
+create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
+{
+  declare qr any;
+  qr := sprintf (
+        'sparql define input:storage "" '||
+  	' prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
+	' from <%S> '||
+  	' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . '||
+	' optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } } ',
+	gr, agent);
+  return qr;      
+}
+;
+
+
 create procedure FOAF_SSL_AUTH (in realm varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr any;
@@ -38,10 +72,7 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-  	'select ?exp_val ?mod_val from <%S> '||
-  	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-	gr, agent);
+  qr := FOAF_SSL_QR (gr, agent);    
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -59,10 +90,7 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
     }
   else if (acc = 0)
     {
-      qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-      'select ?exp_val ?mod_val from <%S> '||
-      ' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-      gr, agent);
+      qr := FOAF_SSL_QR_BY_ACCOUNT (gr, agent);
       stat := '00000';
       --  dbg_printf ('%s', qr);
       exec (qr, stat, msg, vector (), 0, meta, data);
@@ -100,10 +128,7 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-  	'select ?exp_val ?mod_val from <%S> '||
-  	' where { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-	gr, agent);
+  qr := FOAF_SSL_QR (gr, agent);    
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -116,10 +141,7 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
     }
   else if (acc = 0)
     {
-      qr := sprintf ('sparql prefix cert: <http://www.w3.org/ns/auth/cert#> prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-      'select ?exp_val ?mod_val from <%S> '||
-      ' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . }',
-      gr, agent);
+      qr := FOAF_SSL_QR_BY_ACCOUNT (gr, agent);
       stat := '00000';
       --  dbg_printf ('%s', qr);
       exec (qr, stat, msg, vector (), 0, meta, data);

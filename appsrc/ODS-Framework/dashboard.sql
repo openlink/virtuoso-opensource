@@ -413,13 +413,21 @@ create procedure wa_abs_date (in  dt datetime)
     {
       ret := sprintf ('%d minutes ago', diff);
     }
+  else if (diff < 120)
+    {
+      ret := 'Less than 2 hours ago';
+    }
   else if (diff < 60*24)
     {
-      ret := sprintf ('%d hour(s) ago', datediff ('hour', dt, now ()));
+      ret := sprintf ('%d hours ago', datediff ('hour', dt, now ()));
+    }
+  else if (ddiff = 1)
+    {
+      ret := sprintf ('Yesterday at %d:%d', hour(dt), minute(dt));
     }
   else if (ddiff < 7)
     {
-      ret := sprintf ('%d day(s) ago', ddiff);
+      ret := sprintf ('%d days ago', ddiff);
     }
   else if (ddiff < 30)
     {

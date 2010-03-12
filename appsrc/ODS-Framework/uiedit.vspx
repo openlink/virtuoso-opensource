@@ -56,6 +56,7 @@
 
   <vm:page>
     <vm:header>
+      <script type="text/javascript" src="tbl.js">;</script>
       <script type="text/javascript" src="typeahead.js">;</script>
       <link rel="stylesheet" href="typeahead.css" type="text/css" />
       <vm:title>Edit your personal data</vm:title>
@@ -129,7 +130,7 @@ function checkRest (form, sel)
     }
 }
             ODSInitArray.push ( function () {
-              OAT.Loader.loadFeatures(["json", "ws", "calendar", "combolist"], function(){});
+              OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.send(OAT, 'PAGE_LOADED');});
             });
             ODSInitArray.push ( function () {
               (<?V self.is_org ?>)? swPersHide(): swPersShow();

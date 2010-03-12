@@ -27,6 +27,7 @@
 --   2) OAuth
 --   3) VSPX session (sid & realm)
 --   4) username=<user>&password=<pass>
+--   5) FOAF+SSL
 -- The effective user is authenticated account
 --
 -- Important:
@@ -951,20 +952,117 @@ create procedure ODS.ODS_API."address.geoData" (
 --! password: desired password
 --! email: user's e-mail address
 create procedure ODS.ODS_API."user.register" (
-  in name varchar,
-	in "password" varchar,
-	in "email" varchar) __soap_http 'text/xml'
+  in name varchar := null,
+	in "password" varchar := null,
+	in "email" varchar := null,
+	in mode integer := 0,
+	in data any := null) __soap_http 'text/xml'
 {
-  declare rc any;
+  declare sid, rc any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+	if (mode = 1)
+	{
+	  -- OpenID
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+	else if (mode = 2)
+	{
+	  -- facebook
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := null;
+    "password" := uuid ();
+	}
+	else if (mode = 3)
+	{
+	  -- FOAF+SSL
+	  data := json_parse (data);
+    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+    "email" := get_keyword ('mbox', data);
+    "password" := uuid ();
+	}
+  if (name is null or length (name) < 1 or length (name) > 20)
+    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+
+  if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
+    signal ('23023', 'The login name contains invalid characters');
+
+  if (mode <> 2)
+  {
+    if ("email" is null or length ("email") < 1 or length ("email") > 40)
+      signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
+
+    if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', "email") is null)
+      signal ('23023', 'Invalid E-mail address');
+  }
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = "email") and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+    signal ('23023', 'This e-mail address is already registered.');
+
+  if ("password" is null or length ("password") < 1 or length ("password") > 40)
+    signal ('23023', 'Password cannot be empty or longer then 40 chars');
+
+  if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
+    signal ('23023', 'This OpenID identity is already registered.');
+
+  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = get_keyword ('uid', data)))
+    signal ('23023', 'This Facebook identity is already registered.');
+
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
+  -- rc := 'xxx';
   if (not isinteger (rc))
-    rc := -1;
-  return ods_serialize_int_res (rc);
+    signal ('23023', rc);
+
+  if (mode = 1)
+  {
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME', get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER', case get_keyword ('gender', data) when 'M' then 'male' when 'F' then 'female' else NULL end);
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HCODE', get_keyword ('homeCode', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HCOUNTRY', (select WC_NAME from DB.DBA.WA_COUNTRY where WC_ISO_CODE = upper (get_keyword ('homeCode', data))));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HTZONE', get_keyword ('homeTimezone', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_OPENID_URL', get_keyword ('openid_url', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_OPENID_SERVER', get_keyword ('openid_server', data));
+  }
+  else if (mode = 2)
+  {
+    -- facebook
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_LOGIN_ID', get_keyword ('uid', data));
+  }
+  else if (mode = 3)
+  {
+    -- FOAF+SSL
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_TITLE'        , get_keyword ('title', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BIRTHDAY'     , get_keyword ('birthday', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_ICQ'          , get_keyword ('icqChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_MSN'          , get_keyword ('msnChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_AIM'          , get_keyword ('aimChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_YAHOO'        , get_keyword ('yahooChatID', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('workplaceHomepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_WEBPAGE'      , get_keyword ('homepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_HPHONE'       , get_keyword ('phone', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+  }
+  sid := DB.DBA.vspx_sid_generate ();
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
+    values (sid, 'wa', name, now ());
+  return '<sid>' || sid  || '</sid>';
 }
 ;
 
@@ -985,15 +1083,12 @@ create procedure ODS.ODS_API."user.authenticate" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
-  if (not ods_check_auth (uname))
-  {
+  uname := null;
     if (not isnull (facebookUID))
     {
       uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
-      if (not isnull (uname))
-        goto _valid;
     }
-    if (not isnull (openIdUrl))
+  else if (not isnull (openIdUrl))
     {
       declare vResult any;
 
@@ -1003,12 +1098,14 @@ create procedure ODS.ODS_API."user.authenticate" (
         signal ('22023', 'OpenID Authentication Failed');
 
       uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity);
-      if (not isnull (uname))
-        goto _valid;
     }
-    return ods_auth_failed ();
+  else
+  {
+    ods_check_auth (uname);
   }
-_valid:;
+  if (isnull (uname))
+    return ods_auth_failed ();
+
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
     values (sid, 'wa', uname, now ());
@@ -1164,7 +1261,10 @@ create procedure ODS.ODS_API."user.update.fields" (
 
   in securitySecretQuestion varchar := null,
   in securitySecretAnswer varchar := null,
-  in securitySiocLimit varchar := null) __soap_http 'text/xml'
+  in securitySiocLimit varchar := null,
+
+  in certificate varchar := null,
+  in certificateLogin varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare exit handler for sqlstate '*' {
@@ -1263,6 +1363,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
   if (not isnull (securitySiocLimit))
     DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
+
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
 
   return ods_serialize_int_res (1);
 }
@@ -1501,6 +1604,15 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
+
+      ods_xml_item ('certificate',            WAUI_CERT);
+      if (length(WAUI_CERT))
+      {
+        ods_xml_item ('certificateSubject',   get_certificate_info (2, cast (WAUI_CERT as varchar), 0, ''));
+        ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
+      }
+      ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
+
     }
     http ('</user>');
   }
@@ -2402,14 +2514,11 @@ create procedure ODS.ODS_API."user.favorites.delete" (
 }
 ;
 
-create procedure ODS.ODS_API."user.offer.new" (
-  in offerName varchar,
-  in offerComment varchar := null) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.mades.list" () __soap_http 'application/json'
 {
   declare uname varchar;
-  declare rc integer;
   declare _u_id integer;
-
+  declare retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2418,222 +2527,305 @@ create procedure ODS.ODS_API."user.offer.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT)
-    values (_u_id, offerName, offerComment);
-
-  rc := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
-  return ods_serialize_int_res (rc);
-}
-;
-
-create procedure ODS.ODS_API."user.offer.delete" (
-  in offerName varchar := null) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id integer;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  delete
-    from DB.DBA.WA_USER_OFFERLIST
-   where WUOL_U_ID = _u_id
-     and WUOL_OFFER = offerName;
-  rc := 1;
-  return ods_serialize_int_res (rc);
-}
-;
-
-create procedure ODS.ODS_API."user.offer.property.new" (
-  in offerName varchar,
-  in offerProperty varchar,
-  in offerPropertyValue varchar) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id, notFound integer;
-  declare oldData, newData any;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  if (not exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName))
-		return ods_serialize_sql_error ('37000', 'The item is not found');
-
-  notFound := 1;
-  offerProperty := trim (offerProperty);
-  offerPropertyValue := coalesce (trim (offerPropertyValue), '');
-  newData := '';
-  oldData := (select WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName);
-  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  retValue := vector();
+  for (select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = _u_id) do
   {
-    if (property = offerProperty)
+    retValue := vector_concat (retValue, vector (vector (WUP_ID, WUP_NAME, WUP_URL, WUP_DESC)));
+  }
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.mades.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare property, url, description, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  property := '';
+  url := '';
+  description := '';
+  for (select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from DB.DBA.WA_USER_PROJECTS where WUP_ID = id) do
+  {
+    property := WUP_NAME;
+    url := WUP_URL;
+    description := WUP_DESC;
+  }
+  retValue := vector_concat (jsonObject (), vector ('id', id, 'property', property, 'url', url, 'description', description));
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.mades.update" (
+  in id integer,
+  in property varchar,
+  in url varchar,
+  in description varchar)
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare tmp, name, iri varchar;
+  declare stat, msg, dta, mdta, qrs any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  name := property;
+  iri := url;
+  tmp := uuid ();
+  {
+    declare exit handler for sqlstate '*'
     {
-      notFound := 0;
-      newData := newData || offerProperty || ';' || offerPropertyValue || '\n';
-    } else {
-      newData := newData || property || ';' || label || '\n';
+      exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+      goto _next;
+    };
+    qrs := vector (0,0,0);
+    exec (sprintf ('sparql load "%s" into graph <%s>', url, tmp));
+
+    qrs[0] := sprintf ('sparql
+                        prefix doap: <http://usefulinc.com/ns/doap#>
+                        select ?P ?N ?D
+                          from <%s>
+                         where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp);
+    qrs[1] := sprintf ('sparql
+                        prefix foaf: <http://xmlns.com/foaf/0.1/>
+                        select ?P ?N ?D
+                          from <%s>
+                         where { ?P a foaf:Organization ; foaf:name ?N . optional { ?P foaf:dummy ?D . } }', tmp);
+    qrs[2] := sprintf ('sparql
+                        prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                        prefix dc: <http://purl.org/dc/elements/1.1/>
+                   			prefix foaf: <http://xmlns.com/foaf/0.1/>
+                    		select ?P ?N ?D ?TI
+                    		  from <%s>
+                    		 where { ?P a ?TP .
+             			     	        optional { ?P foaf:name ?N } .
+                         				optional { ?P rdfs:label ?D . } .
+                         				optional { ?P dc:title ?TI }
+                         				filter ( ?P = <%s> )
+                         			 }', tmp, url);
+    foreach (any qr in qrs) do
+    {
+      exec (qr, stat, msg, vector (), 0, mdta, dta);
+      if (length (dta) and length (dta[0]) > 3)
+	    {
+    	  iri := url;
+    	  name := coalesce (dta[0][1], dta[0][2], dta[0][3]);
+    	  description := coalesce (name, description);
+    	  goto _found;
+    	}
+      else if (length (dta) and length (dta[0]) > 2)
+    	{
+    	  iri := dta[0][0];
+    	  name := dta[0][1];
+    	  description := coalesce (dta[0][2], description);
+    	  goto _found;
+    	}
     }
+  _found:
+    exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
   }
-  if (notFound)
-    newData := newData || offerProperty || ';' || offerPropertyValue || '\n';
-  update DB.DBA.WA_USER_OFFERLIST
-     set WUOL_PROPERTIES = newData
-   where WUOL_U_ID = _u_id
-     and WUOL_OFFER = offerName;
-  return ods_serialize_int_res (1);
-}
-;
+_next:;
 
-create procedure ODS.ODS_API."user.offer.property.delete" (
-  in offerName varchar,
-  in offerProperty varchar) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id integer;
-  declare oldData, newData any;
+  if (length (property))
+    name := property;
+  if (not length (name))
+    signal ('23023', 'The title of item made is not specified nor can be retrieved from source URI, please specify.');
 
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  if (not exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName))
-		return ods_serialize_sql_error ('37000', 'The item is not found');
-
-  offerProperty := trim (offerProperty);
-  newData := '';
-  oldData := (select WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id and WUOL_OFFER = offerName);
-  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  if (isnull (id))
   {
-    if (property <> offerProperty)
-      newData := newData || property || ';' || label || '\n';
-  }
-  update DB.DBA.WA_USER_OFFERLIST
-     set WUOL_PROPERTIES = newData
-   where WUOL_U_ID = _u_id
-     and WUOL_OFFER = offerName;
-  return ods_serialize_int_res (1);
-}
-;
-
-create procedure ODS.ODS_API."user.wish.new" (
-  in wishName varchar,
-  in wishComment varchar := null) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id integer;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT)
-    values (_u_id, wishName, wishComment);
-
-  rc := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
-  return ods_serialize_int_res (rc);
-}
-;
-
-create procedure ODS.ODS_API."user.wish.delete" (
-  in wishName varchar := null) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id integer;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  delete
-    from DB.DBA.WA_USER_WISHLIST
-   where WUWL_U_ID = _u_id
-     and WUWL_BARTER = wishName;
+    insert into DB.DBA.WA_USER_PROJECTS (WUP_U_ID, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI)
+      values (_u_id, name, url, description, iri);
+    } else {
+    update DB.DBA.WA_USER_PROJECTS
+       set WUP_NAME = name,
+           WUP_URL = url,
+           WUP_DESC = description,
+           WUP_IRI = iri
+     where WUP_ID = id;
+    }
   rc := row_count ();
+
   return ods_serialize_int_res (rc);
-}
-;
-
-create procedure ODS.ODS_API."user.wish.property.new" (
-  in wishName varchar,
-  in wishProperty varchar,
-  in wishPropertyValue varchar) __soap_http 'text/xml'
-{
-  declare uname varchar;
-  declare rc integer;
-  declare _u_id, notFound integer;
-  declare oldData, newData any;
-
-  declare exit handler for sqlstate '*' {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-
-  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  if (not exists (select 1 from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName))
-		return ods_serialize_sql_error ('37000', 'The item is not found');
-
-  notFound := 1;
-  wishProperty := trim (wishProperty);
-  wishPropertyValue := coalesce (trim (wishPropertyValue), '');
-  newData := '';
-  oldData := (select WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName);
-  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
-  {
-    if (property = wishProperty)
-    {
-      notFound := 0;
-      newData := newData || wishProperty || ';' || wishPropertyValue || '\n';
-    } else {
-      newData := newData || property || ';' || label || '\n';
-    }
   }
-  if (notFound)
-    newData := newData || wishProperty || ';' || wishPropertyValue || '\n';
-  update DB.DBA.WA_USER_WISHLIST
-     set WUWL_PROPERTIES = newData
-   where WUWL_U_ID = _u_id
-     and WUWL_BARTER = wishName;
-  return ods_serialize_int_res (1);
+;
+
+create procedure ODS.ODS_API."user.mades.new" (
+  in property varchar,
+  in url varchar,
+  in description varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.mades.update" (null, property, url, description);
 }
 ;
 
-create procedure ODS.ODS_API."user.wish.property.delete" (
-  in wishName varchar,
-  in wishProperty varchar) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.mades.edit" (
+  in id integer,
+  in property varchar,
+  in url varchar,
+  in description varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.mades.update" (id, property, url, description);
+}
+;
+
+create procedure ODS.ODS_API."user.mades.delete" (
+  in id integer) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
-  declare oldData, newData any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_PROJECTS where WUP_ID = id and WUP_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json'
+  {
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUOL_ID, WUOL_OFFER, WUOL_COMMENT)));
+  }
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare name, comment, products, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  name := '';
+  comment := '';
+  products := vector ();
+  for (select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id) do
+  {
+    name := WUOL_OFFER;
+    comment := WUOL_COMMENT;
+    products := deserialize (WUOL_PROPERTIES);
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'name', name,
+                                     'comment', comment,
+                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
+                                    )
+                            );
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.update" (
+  in id integer,
+  in name varchar,
+  in comment varchar,
+  in properties any) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare products, ontologies any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  products := vector();
+  ontologies := json_parse (properties);
+  if (length(ontologies))
+    products := get_keyword ('items', ontologies[0], vector());
+  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+  if (isnull (id))
+  {
+    insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+      values (_u_id, name, comment, serialize (properties));
+    id := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
+  }
+  else
+  {
+    update DB.DBA.WA_USER_OFFERLIST
+       set WUOL_OFFER = name,
+           WUOL_COMMENT = comment,
+           WUOL_PROPERTIES = serialize (properties)
+     where WUOL_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.new" (
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (null, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.edit" (
+  in id integer,
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.offers.update" (id, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.offers.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
 
   declare exit handler for sqlstate '*' {
     rollback work;
@@ -2643,22 +2835,149 @@ create procedure ODS.ODS_API."user.wish.property.delete" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  if (not exists (select 1 from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName))
-		return ods_serialize_sql_error ('37000', 'The item is not found');
 
-  wishProperty := trim (wishProperty);
-  newData := '';
-  oldData := (select WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id and WUWL_BARTER = wishName);
-  for (select property, label from DB.DBA.WA_USER_INTERESTS (txt) (property varchar, label varchar) P where txt = oldData) do
+  delete from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = id and WUOL_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = _u_id) do
   {
-    if (property <> wishProperty)
-      newData := newData || property || ';' || label || '\n';
+    retValue := vector_concat (retValue, vector (vector (WUWL_ID, WUWL_BARTER, WUWL_COMMENT)));
   }
+  return obj2json (retValue, 10);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.get" (
+  in id integer) __soap_http 'application/json'
+  {
+  declare uname varchar;
+  declare _u_id integer;
+  declare name, comment, products, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  name := '';
+  comment := '';
+  products := vector ();
+  for (select WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id) do
+    {
+    name := WUWL_BARTER;
+    comment := WUWL_COMMENT;
+    products := deserialize (WUWL_PROPERTIES);
+    }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'name', name,
+                                     'comment', comment,
+                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
+                                    )
+                            );
+  return obj2json (retValue, 10);
+  }
+;
+
+create procedure ODS.ODS_API."user.seeks.update" (
+  in id integer,
+  in name varchar,
+  in comment varchar,
+  in properties any) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare products, ontologies any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  products := vector();
+  ontologies := json_parse (properties);
+  if (length(ontologies))
+    products := get_keyword ('items', ontologies[0], vector());
+  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+  if (isnull (id))
+  {
+    insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
+      values (_u_id, name, comment, serialize (properties));
+    id := (select max (WUWL_ID) from DB.DBA.WA_USER_WISHLIST);
+  }
+  else
+  {
   update DB.DBA.WA_USER_WISHLIST
-     set WUWL_PROPERTIES = newData
-   where WUWL_U_ID = _u_id
-     and WUWL_BARTER = wishName;
-  return ods_serialize_int_res (1);
+       set WUWL_BARTER = name,
+           WUWL_COMMENT = comment,
+           WUWL_PROPERTIES = serialize (properties)
+     where WUWL_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.new" (
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.seeks.update" (null, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.edit" (
+  in id integer,
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.seeks.update" (id, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.seeks.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_WISHLIST where WUWL_ID = id and WUWL_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -2750,24 +3069,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
 
     info := get_certificate_info (9);
     st := '00000';
-    S := sprintf (' sparql define input:storage "" ' ||
-                  ' prefix cert: <%s> ' ||
-                  ' prefix rsa: <%s> ' ||
-                  ' select ?exp_val ' ||
-                  '        ?mod_val ' ||
-                  '   from <%s> ' ||
-                  '  where { ' ||
-                  '          ?id cert:identity <%s> ; ' ||
-                  '              rsa:public_exponent ?exp ; ' ||
-                  '              rsa:modulus ?mod . ' ||
-                  '          ?exp cert:decimal ?exp_val . ' ||
-                  '          ?mod cert:hex ?mod_val . ' ||
-                  '        }',
-                  SIOC..cert_iri (''),
-                  SIOC..rsa_iri (''),
-                  foafGraph,
-		  _loc_idn
-                  );
+    S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
@@ -3520,14 +3822,21 @@ grant execute on ODS.ODS_API."user.bioEvents.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.list" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.new" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.offer.new" to ODS_API;
-grant execute on ODS.ODS_API."user.offer.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.offer.property.new" to ODS_API;
-grant execute on ODS.ODS_API."user.offer.property.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.wish.new" to ODS_API;
-grant execute on ODS.ODS_API."user.wish.delete" to ODS_API;
-grant execute on ODS.ODS_API."user.wish.property.new" to ODS_API;
-grant execute on ODS.ODS_API."user.wish.property.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.mades.list" to ODS_API;
+grant execute on ODS.ODS_API."user.mades.get" to ODS_API;
+grant execute on ODS.ODS_API."user.mades.new" to ODS_API;
+grant execute on ODS.ODS_API."user.mades.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.mades.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.offers.list" to ODS_API;
+grant execute on ODS.ODS_API."user.offers.get" to ODS_API;
+grant execute on ODS.ODS_API."user.offers.new" to ODS_API;
+grant execute on ODS.ODS_API."user.offers.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.offers.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.seeks.list" to ODS_API;
+grant execute on ODS.ODS_API."user.seeks.get" to ODS_API;
+grant execute on ODS.ODS_API."user.seeks.new" to ODS_API;
+grant execute on ODS.ODS_API."user.seeks.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.seeks.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFacebookData" to ODS_API;

@@ -132,7 +132,7 @@
         <v:button name="lButton_1" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
             <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add LDAP Server';
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
             ]]>
           </v:before-render>
           <v:on-post>

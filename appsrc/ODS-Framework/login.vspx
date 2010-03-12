@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog-home-page"
+<v:page name="ods-login-pg"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
@@ -30,7 +30,7 @@
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:page>
     <vm:header>
-      <vm:title>Virtuoso Web Applications</vm:title>
+      <vm:title>ODS User Authentication</vm:title>
     </vm:header>
     <vm:pagewrapper>
       <vm:rawheader caption=""/>

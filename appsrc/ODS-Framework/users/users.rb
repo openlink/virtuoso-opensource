@@ -137,8 +137,8 @@ def user_form()
           </div>
         </div>
         <script type="text/javascript">
-          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){selectProfile();});
-          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, function (){cRDF.open("<?V xpath_eval ('string (/user/iri)', vXml) ?>");});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<?V xpath_eval ('string (/user/iri)', vXml) ?>");});
         </script>
       </div>
       <div class="footer">
@@ -967,11 +967,11 @@ def main()
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax2", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
-      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      OAT.MSG.attach(OAT, "PAGE_LOADED", myInit);
     </script>
   </head>
   <body>

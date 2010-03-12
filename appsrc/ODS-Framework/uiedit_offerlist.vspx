@@ -36,13 +36,29 @@
 	<v:variable name="ol_newProperties" type="any" default="null" />
 
 	<v:form name="usr_personal_8" type="simple" method="POST" xhtml_enctype="multipart/form-data">
-    <h3>Offers (GoodRelations Ontologies)</h3>
+    <h3>My Offers (GoodRelations Ontologies)</h3>
     <vm:if test="self.ol_mode = 'OL/browse'">
+      <?vsp
+        if (0)
+        {
+      ?>
+        <v:button name="ol_dButton" action="simple" value="Delete">
+          <v:on-post>
+            <![CDATA[
+              delete from DB.DBA.WA_USER_OFFERLIST where WUOL_ID = get_keyword ('ol_id', self.vc_page.vc_event.ve_params) and WUOL_U_ID = self.u_id;
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      <?vsp
+        }
+      ?>
+      <input type="hidden" name="ol_id" id="ol_id" value="" />
       <div style="padding: 0 0 0.5em 0;">
         <v:button name="ol_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
           <v:before-render>
             <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Add Offer';
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
             ]]>
           </v:before-render>
           <v:on-post>
@@ -60,7 +76,7 @@
       </div>
 
 	    <v:data-set name="ol_ds"
-	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id"
+	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
 		              nrows="10">
@@ -94,7 +110,7 @@
                   <v:button name="ol_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
                     <v:before-render>
                       <![CDATA[
-                        control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit Offer" title="Edit Offer"/> Edit';
+                        control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Offer" title="Edit Offer"/> Edit';
                       ]]>
                     </v:before-render>
                     <v:on-post>
@@ -107,7 +123,7 @@
                           into self.ol_offer.ufl_value,
                                self.ol_comment.ufl_value,
                                self.ol_properties
-                          from WA_USER_OFFERLIST
+                          from DB.DBA.WA_USER_OFFERLIST
                          where WUOL_ID = self.ol_id;
 
                         self.ol_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', self.ol_properties, vector ()))));
@@ -116,19 +132,9 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button name="ol_dButton" action="simple" style="url" value="''" xhtml_class="img_button">
-                    <v:before-render>
-                      <![CDATA[
-                        control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete Offer" title="Delete Offer"/> Delete';
-                      ]]>
-                    </v:before-render>
-                    <v:on-post>
-                      <![CDATA[
-                        delete from WA_USER_OFFERLIST where WUOL_ID = (control.vc_parent as vspx_row_template).te_column_value('WUOL_ID') and WUOL_U_ID = self.u_id;
-                        self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                  </v:button>
+                  <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('ol_id').value = <?V (control as vspx_row_template).te_column_value('WUOL_ID') ?>; doPost('page_form', 'ol_dButton');}">
+                    <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                  </span>
 			        </td>
 			      </tr>
             </table>
@@ -145,8 +151,6 @@
 
     <vm:if test="self.ol_mode <> 'OL/browse'">
 	  <div class="fm">
-	    <fieldset>
-  				<legend><b>Offer</b></legend>
 				<table>
 				  <tr>
 				    <th width="100px">
@@ -171,18 +175,13 @@
               <td width="800px">
                 <table id="ol_tbl" class="listing">
                   <tbody id="ol_tbody">
-                    <tr id="ol_tr_no">
-                      <td colspan="3">
-                        <b>No Elements</b>
-     				</td>
-   				</tr>
                   </tbody>
 			  </table>
                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
           <script type="text/javascript">
             <![CDATA[
               ODSInitArray.push ( function () {
-                      OAT.Loader.loadFeatures(["ajax2", "json", "combolist"], function(){
+                      OAT.Loader.load(["ajax", "json", "combolist"], function(){
                         RDF.tablePrefix = 'ol';
                         RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
                         RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.ol_newProperties, 10), 'class:', 'className:')); ?>;
@@ -193,11 +192,10 @@
           </script>
               </td>
             </tr>
-  				</table>
-	    </fieldset>
-	    <fieldset>
-  	      <legend><b>Action</b></legend>
-	      <span class="fm_ctl_btn">
+          <tr>
+            <td></td>
+            <td>
+              <br />
   		      <v:button name="user_c_personal_8" value="Cancel" action="simple">
 		        <v:on-post>
                 self.ol_mode := 'OL/browse';
@@ -222,12 +220,12 @@
                 self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.ol_mode = 'OL/add')
               {
-                insert into WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
+                  insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
                   values (self.u_id, self.ol_offer.ufl_value, self.ol_comment.ufl_value, serialize (self.ol_properties));
               }
               else
               {
-                update WA_USER_OFFERLIST
+                  update DB.DBA.WA_USER_OFFERLIST
                    set WUOL_OFFER = self.ol_offer.ufl_value,
                        WUOL_COMMENT = self.ol_comment.ufl_value,
                        WUOL_PROPERTIES = serialize (self.ol_properties)
@@ -238,8 +236,9 @@
                 self.vc_data_bind (e);
             ]]></v:on-post>
           </v:button>
-	      </span>
-	    </fieldset>
+            </td>
+          </tr>
+        </table>
     </div>
     </vm:if>
 	</v:form>

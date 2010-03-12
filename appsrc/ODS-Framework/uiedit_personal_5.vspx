@@ -45,19 +45,19 @@
       WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
 
       declare N integer;
-      declare suffix, tmp_m varchar;
+      declare suffix, tmp varchar;
 
-      tmp_m := '';
+      tmp := '';
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'x6_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'm_fld_1_', '');
-          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+          suffix := replace (params [N], 'x6_fld_1_', '');
+          tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x6_fld_2_'||suffix, params, '')) || '\n';
         }
       }
-      self.messaging := tmp_m;
-      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp_m);
+      self.messaging := tmp;
+      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp);
 
       WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
 
@@ -119,7 +119,7 @@
 
   <v:form name="usr_personal_5" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
-      <table id="m_tbl" class="ctl_grp">
+      <table id="x6_tbl" class="ctl_grp">
         <tr>
           <th width="180px"><label for="u_icq">ICQ Number</label></th>
           <td class="listing_col" nowrap="1">
@@ -175,30 +175,23 @@
             <vm:u-prop-select name="sel_14" value="self.sav14" />
           </td>
               </tr>
+        <tr>
+          <th>Add other services</th>
+          <td colspan="2">
+            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x6', null, {fld_1: {mode: 0}, fld_2: {mode: 0, cssText: 'width: 216px;'}});" />
+          </td>
+        </tr>
+  		  <![CDATA[
+   		    <script type="text/javascript">
               <?vsp
-                declare N integer;
-
-                N := 0;
           for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
                 {
-              ?>
-        <tr id="m_tr_<?V N ?>">
-          <td>
-            <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
-                </td>
-                <td>
-            <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
-                </td>
-                <td>
-            <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
-                </td>
-              </tr>
-              <?vsp
-                  N := N + 1;
+              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x6", null, {fld_1: {mode: 0, value: "%s"}, fld_2: {mode: 0, value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
                 }
               ?>
+   		    </script>
+     	  ]]>
             </table>
-      <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
       <table class="ctl_grp">
         <tr>
           <th width="180px"><label for="set_personal_5">Set access for all fields as </label></th>

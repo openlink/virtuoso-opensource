@@ -48,21 +48,19 @@
 
 
       declare N integer;
-      declare suffix, tmp_m varchar;
-      declare IDx any;
+      declare suffix, tmp varchar;
 
-      IDx := vector ();
-      tmp_m := '';
+      tmp := '';
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'm_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'y2_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'm_fld_1_', '');
-          tmp_m := tmp_m || trim (params [N+1]) || ';' || trim (get_keyword ('m_fld_2_'||suffix, params, '')) || '\n';
+          suffix := replace (params [N], 'y2_fld_1_', '');
+          tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('y2_fld_2_'||suffix, params, '')) || '\n';
         }
       }
-      self.bmessaging := tmp_m;
-      WA_USER_EDIT (self.u_name, 'WAUI_BMESSAGING', tmp_m);
+      self.bmessaging := tmp;
+      WA_USER_EDIT (self.u_name, 'WAUI_BMESSAGING', tmp);
 
       -- change user_text data
       WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1));
@@ -123,7 +121,7 @@
 
   <v:form name="usr_bussiness_3" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
-      <table id="m_tbl" class="ctl_grp">
+      <table id="y2_tbl" class="ctl_grp">
         <tr>
           <th width="180px"><label for="b_icq">ICQ Number</label></th>
           <td class="listing_col" nowrap="1">
@@ -179,30 +177,23 @@
             <vm:u-prop-select name="sel_54" value="self.sav54" />
           </td>
         </tr>
-        <?vsp
-          declare N integer;
-
-          N := 0;
-          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.bmessaging) do
-          {
-        ?>
-        <tr id="m_tr_<?V N ?>">
-          <td>
-            <input type="text" id="m_fld_1_<?V N ?>" name="m_fld_1_<?V N ?>" value="<?V m_label ?>" style="width: 95%;" />
-          </td>
-          <td>
-            <input type="text" id="m_fld_2_<?V N ?>" name="m_fld_2_<?V N ?>" value="<?V m_id ?>" style="width: 216px;" />
-          </td>
-          <td>
-            <input type="button" value="Remove" onclick="javascript: updateRow('m', <?V N ?>);" />
+        <tr>
+          <th>Add other services</th>
+          <td colspan="2">
+            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {mode: 0}, fld_2: {mode: 0, cssText: 'width: 216px;'}});" />
           </td>
         </tr>
+  		  <![CDATA[
+   		    <script type="text/javascript">
         <?vsp
-            N := N + 1;
+          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.bmessaging) do
+          {
+              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("y2", null, {fld_1: {mode: 0, value: "%s"}, fld_2: {mode: 0, value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
           }
         ?>
+   		    </script>
+     	  ]]>
       </table>
-      <input type="button" value="Add" onclick="javascript: updateRow('m', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});" />
       <table class="ctl_grp">
         <tr>
           <th width="180px"><label for="set_business_3">Set access for all fields as </label></th>
