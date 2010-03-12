@@ -26,18 +26,30 @@
 <head>
 
   <title>OpenLink iSPARQL</title>
+
+  <meta name="viewport" content="width=device-width"/>
+
+  <link rel="apple-touch-icon" href="/isparql/images/mob_home_icon.png"/>
+
   <link type="text/css" rel="stylesheet" href="/isparql/styles/style.css"/>
   <link type="text/css" rel="stylesheet" href="/isparql/styles/execute.css"/>
+  <link media="only screen and (max-device-width: 480px)" 
+        type="text/css" 
+	rel="stylesheet" 
+	href="/isparql/styles/mobile.css"/>
 
   <script type="text/javascript">
 
 window.YMAPPID = 'yahoo-id';
-var featureList = ["keyboard","tab","ajax2","combolist","window","tree","grid","anchor","dav","xml",
+var featureList = ["keyboard","dimmer","tab","ajax","combolist","win","tree","grid","anchor","dav","xml",
                    "svgsparql","toolbar","dialog","sparql","graphsvg","menu","layers","rdfstore",
-		   "rdfmini","map"];
+		   "rdfmini","map","json"];
   </script>
   <script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
   <script type="text/javascript" src="defaults.js"></script>
+  <script type="text/javascript" src="statusui.js"></script>
+  <script type="text/javascript" src="error.js"></script>
+  <script type="text/javascript" src="location.js"></script>
   <script type="text/javascript" src="io.js"></script>
   <script type="text/javascript" src="execute.js"></script>
   <script type="text/javascript" src="main.js"></script>
@@ -61,7 +73,7 @@ function myInit() {
   gen_sparql_bookmarklet();
 }
 
-OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
   </script>
 </head>
 <body>
@@ -76,10 +88,30 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
         <img src="/isparql/toolkit/images/throbber.gif" id="splashThrobber"/>
         <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display: none"/>
         <div class="error" id="statMsgErr"></div>
+	<div id="splash_ver"></div>
         <div id="splash_copyr">Copyright &copy; 2010 OpenLink Software</div>
         <div id="splash_foot" class="opl_motto">Making Technology Work For You &trade;</div>
       </div> <!-- #splash_inner -->
     </div> <!-- #splash -->
+
+    <div id="locAcquireUI" style="display:none;position:absolute">
+      <div id="locAcquireUI_inner">
+        <div id="locAcquireMsg">
+          <h3>Acquiring location <img id="locAcquireThrobber" src="/isparql/toolkit/images/throbber.gif"/></h3>
+          <table id="locAcquireCurrent">
+            <tr><th>Latitude</th><td id="locAcquireLatCtr">N/A</td></tr>
+            <tr><th>Longitude</th><td id="locAcquireLonCtr">N/A</td></tr>
+            <tr><th>Accuracy</th><td id="locAcquireAccCtr">N/A</td></tr>
+          </table>
+        </div>
+        <div id="locAcquireErrMsg"></div>
+        <div id="locAcquireBtnCtr">
+          <button id="locAcquireUseBtn">Use</button>
+          <button id="locAcquireRefreshBtn">Refresh</button>
+          <button id="locAcquireCancelBtn">Cancel</button>
+        </div>
+      </div> 
+    </div> <!-- #locAcquireUI -->
 
     <div id="page_content" style="display:none;">
       <ul id="menu">
@@ -186,6 +218,7 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
               <div id="tabgrph_content"></div>
               <div id="tabgrph_default_content">
                 <input id="default-graph-uri" name="default-graph-uri" value=""/>
+		<button type="button" id="default-graph-uri-clear">Clear</button>
               </div>
               <div id="tabgrph_named_content">
                 <div id="graphs_grid_div">
@@ -212,6 +245,10 @@ OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
                 </div> <!-- #graphs_grid_div -->
 	      </div> <!-- #tabgrph_named_content --> <br/>
               <div id="topbox_ctl" class="ctl_right">
+	        <select name="recent_queries" id="recent_queries">
+		  <option value="">-- Recent Queries --</option>
+		  <option value="***CLEAR***"></option>
+		</select>
                 <select name="prefix" id="prefix" onchange="prefix_insert()">
                   <option value="">-- Prefixes --</option>
                   <option value="PREFIX cc: &lt;http://web.resource.org/cc/&gt;">CC</option>
@@ -434,7 +471,8 @@ ASK WHERE
             </div>
             &nbsp;Bookmarklet - drag this link to your browser's bookmark bar: <a id="isparql_bookmarklet_a" href="javascript:(function(){location='http://www.openlinksw.com/';})();">iSPARQL</a> <a id="sparql_bookmarklet_a" href="" style="display:none">SPARQL</a>
         </div> <!-- #foot_l -->
-          <div class="foot_r" id="foot_r">Copyright &copy; 2010 OpenLink Software, Inc.</div>
+        <div class="foot_r" id="foot_r">Copyright &copy; 2010 OpenLink Software, Inc.<br/><span id="ft_loc"></span><br/>
+        </div>
       </div> <!-- #foot -->
       </div> <!-- #content -->
     </div><!-- #page_content -->
@@ -563,7 +601,7 @@ ASK WHERE
       iSPARQL's Query By Example feature relies upon features and open standards not supported by
       Microsoft Internet Explorer.<br/>
       Please try one of the following:<br/>
-      <a target="_blank" href="http://www.firefox.com/" title="Get Firefox"><img class="logo" src="images/ff-logo-only.png" alt="Get Firefox"/></a>
+      <a target="_blank" href="http://www.firefox.com/" title="Get Firefox"><img class="logo" src="images/firefox-logo.png" alt="Get Firefox"/></a> 
       <a target="_blank" href="http://www.apple.com/safari/" title="Get Safari"><img class="logo" src="images/safari-logo.png" alt="Get Safari"/></a>
       <a target="_blank" href="http://www.opera.com/browser" title="Get Opera"><img class="logo" src="images/opera-logo.png" alt="Get Opera"/></a>
       <a target="_blank" href="http://google.com/chrome" title="Get Google Chrome"><img class="logo" src="images/chrome-logo.png" alt="Get Google Chrome"/></a>
@@ -601,5 +639,11 @@ ASK WHERE
       </table>
     </div> <!-- #qbe_dataset_div -->
   </div> <!-- #windows -->
+  <div id="map_popup_templates">
+    <div class="map_popup_tpl" id="map_popup_tpl_foaf_person">
+      <div class="map_popup_inner">
+      </div>
+    </div>
+  </div>
 </body>
 </html>

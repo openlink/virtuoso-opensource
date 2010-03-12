@@ -27,7 +27,7 @@
 
   <script type="text/javascript">
 window.YMAPPID = 'yahoo-id';
-var featureList=["ajax2","grid","anchor","xml","tab","sparql","rdfstore","rdfmini","map","ghostdrag"];
+var featureList=["ajax","json","dimmer","grid","anchor","resize","xml","tab","sparql","rdfstore","rdfmini","map","ghostdrag"];
 function init() {
   var startRef = function() {
     OAT.Dom.show("throbber");
@@ -43,17 +43,11 @@ function init() {
   OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 
   var qe = new QueryExec({div:"result"});
-  var opts = OAT.Dom.uriParams();
-  var p = {onstart:startRef,onend:endRef};
 
-  if ("sponge" in opts) { p.sponge = opts.sponge; }
-  if ("query" in opts) { p.query = opts.query; }
-//  if ("limit" in opts) { p.limit = opts.limit; }
-  if ("defaultGraph" in opts) { p.defaultGraph = opts.defaultGraph; }
-  if ("default-graph-uri" in opts) { p.defaultGraph = opts["default-graph-uri"] }
-  if ("endpoint" in opts) { p.endpoint = opts.endpoint; }
-  if ("maxrows" in opts) { p.maxrows = opts.maxrows; }
-  if ("resultview") { p.resultView = opts.resultview; }
+  iSPARQL.Defaults.init();
+
+  var opts = OAT.Dom.uriParams();
+
   if ("file" in opts) {
     var f = $("file");
     f.appendChild(OAT.Dom.text("Stored query: "));
@@ -65,16 +59,39 @@ function init() {
   }
 
   OAT.Dom.hide("throbber");
-  qe.execute(p);
+
+  iSPARQL.locationCache = new iSPARQL.LocationCache (10, [], true);
+
+  if (qe.detectLocationMacros(iSPARQL.Defaults.query)) {
+    var loc = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
+                                              cancelCB: false,
+					      cbParm: iSPARQL.Defaults,
+					      cache: iSPARQL.locationCache});
+  } else {
+    qe.execute(iSPARQL.Defaults);
+  }   
 }
   </script>
 
-  <script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
+  <script type="text/javascript" src="defaults.js"></script>
+  <script type="text/javascript" src="statusui.js"></script>
+  <script type="text/javascript" src="error.js"></script>
   <script type="text/javascript" src="execute.js"></script>
+  <script type="text/javascript" src="location.js"></script>
+  <script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
+
+  <meta name="viewport" content="width = device-width"/>
+
+  <link rel="apple-touch-icon" href="/isparql/images/mob_home_icon.png"/>
 
   <link type="text/css" rel="stylesheet" href="/isparql/styles/execute.css"/>
+  <link type="text/css" rel="stylesheet" href="/isparql/styles/dialog.css"/>
   <link type="text/css" rel="stylesheet" href="/isparql/toolkit/styles/winrect.css"/>
-
+  <link media="only screen and (max-device-width: 480px)" 
+        type="text/css" 
+	rel="stylesheet" 
+	href="/isparql/styles/mobile.css"/>
+  <title>iSPARQL Query Execution</title>
 </head>
 
 <body>
@@ -84,6 +101,25 @@ function init() {
       <img style="margin: auto; cursor:pointer;" src="/isparql/toolkit/images/throbber.gif" />
     </div>
   </div> <!-- throbber -->
+
+  <div id="locAcquireUI" style="display:none">
+    <div id="locAcquireUI_inner">
+      <div id="locAcquireMsg">
+        <h3>Acquiring location <img id="locAcquireThrobber" src="/isparql/toolkit/images/throbber.gif"/></h3>
+        <table id="locAcquireCurrent">
+          <tr><th>Latitude</th><td id="locAcquireLatCtr">N/A</td></tr>
+          <tr><th>Longitude</th><td id="locAcquireLonCtr">N/A</td></tr>
+          <tr><th>Accuracy</th><td id="locAcquireAccCtr">N/A</td></tr>
+        </table>
+      </div>
+      <div id="locAcquireErrMsg"></div>
+      <div id="locAcquireBtnCtr">
+        <button id="locAcquireUseBtn">Use</button>
+        <button id="locAcquireRefreshBtn">Refresh</button>
+        <button id="locAcquireCancelBtn">Cancel</button>
+      </div>
+    </div> 
+  </div> <!-- locAcquireUI -->
   <div id="result">
   </div>
   <p class="copyright">

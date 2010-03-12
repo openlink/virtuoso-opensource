@@ -54,6 +54,21 @@
     default_user := '';
     default_pass := '';
   }
+
+  declare setup_done varchar;
+
+  setup_done := registry_get ('iSPARQL_SETUP_DONE');
+  if (0 = setup_done) setup_done := 'false';
+
+  declare map_type varchar;
+
+  map_type := registry_get ('iSPARQL_MAP_TYPE');
+  if (0 = map_type) map_type := 'GMAP2';
+
+  declare api_key varchar;
+  api_key := registry_get ('iSPARQL_API_KEY');
+  if (0 = api_key) api_key := '';
+  
 ?>
 {  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
    query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
@@ -62,9 +77,13 @@
        endpoint:'./auth.vsp',
        user:    '<?vsp http(replace(default_user,'\'','\\\'')); ?>',
        pass:    '<?vsp http(replace(default_pass,'\'','\\\'')); ?>'
-   }<?vsp 
+   },<?vsp 
         if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
-          http('        getInitialCredentials:''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
+          http('        getInitialCredentials:''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''',\n');
         if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
-          http('        authEndpoint:''' || registry_get('iSPARQL_AUTH_ENDPOINT') || '''');
-?>}
+          http('        authEndpoint:''' || registry_get('iSPARQL_AUTH_ENDPOINT') || ''',\n');
+?>
+   map_type: '<?= map_type ?>',
+   api_key: '<?=api_key ?>',
+   setup_done: <?= setup_done ?>
+}

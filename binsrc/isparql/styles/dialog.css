@@ -28,7 +28,7 @@ div.btn_row {
   width: 450px;
   text-align: center;
   border: 1px outset #00529c;
-  moz-border-radius: 4px 4px 4px 4px;
+  moz-border-radius: 6px 6px 6px 6px;
 }
 
 #statMsgMain { font-size: 10pt; font-weight: bold; margin-top: 10px; }
@@ -44,3 +44,21 @@ div.btn_row {
   color: #fff;
   background-color: #3bafd5;
 }
+
+#locAcquireUI { width: 100%; text-align: center; position: absolute;}
+
+#locAcquireUI_inner {
+  padding: 6px;
+  background-color: #fff;  
+  margin: 100px auto 0 auto;
+  width: 250px;
+  text-align: center;
+  border: 1px outset #00529c;
+  border-radius: 6px 6px 6px 6px;
+}
+
+#locAcquireMsg { margin: 5px; } 
+
+#locAcquireCurrent { margin: 5px; }
+
+#locAcquireBtnCtr { margin-top: 5px;}

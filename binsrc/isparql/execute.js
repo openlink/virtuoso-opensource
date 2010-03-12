@@ -49,6 +49,85 @@ window.defaultPrefixes = [
 						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
 						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
 
+iSPARQL.CircularBuffer = function (len, initList) {
+    var self = this;
+    this._length = len;
+    this._buf = [];
+    this._ptr = 0;
+    this._fill = 0;
+
+    this.append = function (item) {
+	if (self._fill < self._length) {
+	    self._buf.append(item);
+	    self._fill++;
+	    self._ptr++;
+	    return item;
+	}
+	if (self._ptr == self._length)
+	    (self._ptr = 0)
+
+	self._buf[self._ptr] = item;
+	self._ptr++;
+	return item;
+    }
+
+    this.clear = function () {
+	self._buf = [];
+	self._fill = self._ptr = 0;
+    }
+
+    this.appendList = function (list) {
+	for (var i=0;i<list.length;i++)
+	    self.append (list[i]);
+    }
+
+    this.getFill = function () {
+	return self._fill;
+    }
+
+    this.getLength = this.getFill;
+
+    this.getNth = function (n)
+    {
+	return self._buf[(self._ptr+n)%self._fill];
+    }
+
+    this.putNth = function (n, item) {
+	self._buf[(self._ptr+n)%self._fill] = item;
+	return item;
+    }
+
+    this.toList = function () {
+	var retList = [];
+
+	if (self._buf.length == 0) 
+	    return retList;
+
+	for (var i=0;i<self._fill;i++) {
+	    retList.append(self.getNth(i));
+	}
+	return retList;
+    }
+
+    this.find = function (item) {
+	for (i=0;i<self._fill;i++) {
+	    if (self.getNth(i) == item)
+		return i;
+	}
+	return -1;
+    }
+
+    if (isArray(initList)) {
+	if (initList.length <= self._length) {
+	    self._buf = initList;
+	    self._fill = initList.length;
+	    self._ptr = self._fill;
+	    return;
+	} else {
+	    self._buf = initList.slice (initList.length - self._length, initList.length-1);
+	}
+    }
+}
 
 var QueryExec = function(optObj) {
 	var self = this;
@@ -74,7 +153,8 @@ var QueryExec = function(optObj) {
 		defaultGraph:false,
 		namedGraphs:[],
 		sponge:false,
-	maxrows:false
+	maxrows:false,
+	sourceQuery:false /* before macro expansion */
     };
 
 	this.cache = [];
@@ -91,9 +171,9 @@ var QueryExec = function(optObj) {
 		this.dom.request = OAT.Dom.create("div");
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
-		this.dom.select = OAT.Dom.create("select");
-		OAT.Dom.option("Machine-readable","1",this.dom.select);
-		OAT.Dom.option("Human-readable","0",this.dom.select);
+//	this.dom.select = OAT.Dom.create("select");
+//	OAT.Dom.option("Machine-readable","1",this.dom.select);
+//	OAT.Dom.option("Human-readable","0",this.dom.select);
 
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
@@ -108,7 +188,7 @@ var QueryExec = function(optObj) {
 		}
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
-			OAT.Dom.append([self.options.div,self.dom.select,OAT.Dom.create("br")]);
+	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
 			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]);
 		}
 		self.initNav();
@@ -119,6 +199,10 @@ var QueryExec = function(optObj) {
 		OAT.Event.attach(self.dom.check,"click",function(){
 			if (self.cacheIndex > -1) { self.draw(); }
 		});
+
+	iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
+
+
     };
 
 	this.initNav = function() {
@@ -193,7 +277,12 @@ var QueryExec = function(optObj) {
     this.isNew = function(opts) {
 		if (self.cacheIndex == -1) { return true; }
 		var cache = self.cache[self.cacheIndex];
-	return (cache.opts.query != opts.query || cache.opts.endpoint != opts.endpoint || cache.opts.defaultGraph != opts.defaultGraph);
+	return (cache.opts.query != opts.query || 
+		cache.opts.endpoint != opts.endpoint || 
+		cache.opts.defaultGraph != opts.defaultGraph ||
+	        cache.opts.maxrows != opts.maxrows ||
+	        cache.opts.namedGraphs != opts.namedGraphs ||
+	        cache.opts.pragmas != opts.pragmas);
     };
 
 	this.buildRequest = function(opts) {
@@ -231,11 +320,13 @@ var QueryExec = function(optObj) {
 	    return req;
 	}
 
+	 arr.push (encodeURIComponent("format=application/rdf+xml"));
 		return arr.join("&");
     };
 
-	this.addResponse = function(request,opts,wasError,data) { /* something arrived. maybe cache and visualize */
+     this.addResponse = function(request,opts,wasError,data) { /* Cache and visualize */
 		if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
+
 	if (self.isNew(opts) || (self.cache[self.cacheIndex].wasError && !wasError)) {
 			var cache = {
 				opts:opts,
@@ -525,7 +616,7 @@ var QueryExec = function(optObj) {
     };
 
     this.makeErrorMsg = function (data) {
-	var msg;
+	 var msg = '';
 	var r = data.match(/Error (..[0-9]{3})/);
 	if (r) {
 	    msg="<h3>SPARQL Processor Error ("+ r[1] + ")</h3>\n"
@@ -537,13 +628,17 @@ var QueryExec = function(optObj) {
 	    msg += "<span class=\"endpoint_url\">" + self.cache[self.cacheIndex].opts.endpoint;
 	    msg += "</span>. Please try again later.</p>";
 	}
-	msg += "<p>See Response tab for full response from SPARQL endpoint.</p>"
+	 else {
+	     msg =  "<h3>Error</h3>\n";
+	     msg += "<p>An error occurred when executing the query</p>\n";
+	 }
+	 msg += "<p>See Response tab for full response from SPARQL endpoint.</p>";
 	return msg;
     };
 
     this.makeErrorResp = function (data) {
 	var txt = OAT.Xml.serializeXmlDoc(data);
-	if (txt.length == 0) 
+	 if (txt.length == 0 || txt == false) 
 	    txt = data;
 	txt = "<pre>"+txt+"</pre>";
 	return txt;
@@ -603,7 +698,9 @@ var QueryExec = function(optObj) {
 					["triples","Grid View",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
-		    ["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y, 
+		     ["map",
+		      iSPARQL.Defaults.mapProviderNames[iSPARQL.Defaults.map_type],
+		      {provider:iSPARQL.Defaults.map_type, 
 					markerMode:OAT.RDFTabsData.MARKER_MODE_AUTO,
 					clickPopup:true,
 					hoverPopup:false}] 
@@ -631,7 +728,7 @@ var QueryExec = function(optObj) {
 				self.mini.select.selectedIndex = lastIndex;
 				self.mini.redraw();
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-		OAT.MSG.attach (self.mini, OAT.MSG.RDFMINI_VIEW_CHANGED, self.makeMiniRDFPlinkURI);
+		 OAT.MSG.attach (self.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
@@ -762,12 +859,43 @@ var QueryExec = function(optObj) {
 //	domNode.parentNode.appendChild(a);
     };
 
+     this.detectLocationMacros = function (q) {
+	 return (q.match(/__P_[a-zA-Z0-9]*__/));
+     }
+
+    this.processLocationMacros = function (q, loc) {
+	if (self.detectLocationMacros(q)) {
+	    if (iSPARQL.locationCache._acquire_denied) {
+		alert ("Cannot acquire location required to process this query.");
+		return;
+	    }
+	    
+	    var rv = q;
+	    rv = rv.replace(/__P_LAT__/g, loc.getLat());
+	    rv = rv.replace(/__P_LON__/g, loc.getLon());
+	    return rv;
+        }
+
+    }
+
+    this.executeWithLocation = function (optObj, loc) {
+	optObj.procQuery = self.processLocationMacros (optObj.query, loc);
+	self.execute (optObj)
+    }
+
 	this.execute = function(optObj) {
+
 		var opts = {};
+
 		for (var p in self.queryOptions) { opts[p] = self.queryOptions[p]; } /* copy of defaults */
 		for (var p in optObj) { opts[p] = optObj[p]; }
 
+	if (optObj.procQuery && 
+	    optObj.procQuery != opts.query) 
+	    opts.query = optObj.procQuery;
+
 		var request = self.buildRequest(opts);
+
 		var callback = function(data) {
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }

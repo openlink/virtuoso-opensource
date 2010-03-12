@@ -1,0 +1,19 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2009 OpenLink Software
+ *
+ *  See LICENSE file for details.
+ *
+ */
+
+body {
+/*  font-size: 8pt;*/
+  font-family: Helvetica,sans-serif;
+}
+
+#rdf_tab { height: device-height}
+#splash_inner {width: device-width; height: device-height;}
+#locAcquireUI {margin-top: 10px;}
