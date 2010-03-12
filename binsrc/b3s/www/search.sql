@@ -643,7 +643,7 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --    option (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step ('step_no') as ?dist) .
 --    filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
 --  } order by ?dist desc 3 limit 50;
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val)  or val = '') val := 'http://www.w3.org/People/Berners-Lee/card#i';
     s1 := 'sparql SELECT ?o ?dist ( ( SELECT COUNT (*) WHERE {?o foaf:knows ?xx } ) ) WHERE  { { SELECT ?s ?o  WHERE { ?s foaf:knows ?o } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1), t_max (4), t_step (''step_no'') as ?dist ) . FILTER (?s= <';
     validate_input(val);
     s2 := val;
@@ -671,8 +671,8 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
 --  } limit 20;
 
     if (isnull(val)  or val = '') val := 'foaf:knows';
-    if (isnull(val2)  or val2 = '') val2 := 'http://myopenlink.net/dataspace/person/kidehen#this';
-    if (isnull(val3)  or val3 = '') val3 := 'http://www.advogato.org/person/mparaz/foaf.rdf#me';
+    if (isnull(val2)  or val2 = '') val2 := 'http://www.w3.org/People/Berners-Lee/card#i';
+    if (isnull(val3)  or val3 = '') val3 := 'http://myopenlink.net/dataspace/person/kidehen#this';
 -- old variant with foaf:knows
 --  s1 := 'sparql SELECT ?link ?g ?step ?path WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s foaf:knows ?o } } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . FILTER (?s= <';
     s1 := 'sparql SELECT ?link ?g ?step ?path WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s ';
@@ -1070,7 +1070,7 @@ s3 := '\')) .
 --    ?o2 <http://b3s-demo.openlinksw.com/label> ?lbl .
 --  }
 --;
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val)  or val = '') val := 'http://www.w3.org/People/Berners-Lee/card#i';
     s1 := 'sparql define input:inference ''virtrdf-label'' SELECT ?lbl COUNT(*) WHERE { <';
     validate_input(val);
     s2 := val;
@@ -1095,7 +1095,7 @@ s3 := '\')) .
 --    filter (?s= <http://myopenlink.net/dataspace/person/kidehen#this>)
 --  } order by ?dist desc 3 limit 50
 --;
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val)  or val = '') val := 'http://www.w3.org/People/Berners-Lee/card#i';
     s1 := 'sparql SELECT ?o ?name ?dist ((SELECT COUNT (*) WHERE {?o foaf:knows ?xx})) WHERE { { SELECT ?s ?o ?name WHERE { ?s foaf:knows ?o . ?o foaf:name ?name } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (2), t_max (4), t_step (''step_no'') as ?dist) . FILTER (?s= <';
     validate_input(val);
     s2 := val;
@@ -1123,7 +1123,7 @@ s3 := '\')) .
 --  } limit 20
 --;
 
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val)  or val = '') val := 'http://www.w3.org/People/Berners-Lee/card#i';
     --if (isnull(val2)  or val2 = '') val2 := 'http://www.advogato.org/person/mparaz/foaf.rdf#me';
     --s1 := 'sparql select ?link ?g ?step ?path where  { { select ?s ?o ?g where { graph ?g {?s foaf:knows ?o } } } option (transitive, t_distinct, t_in(?s), t_out(?o), t_no_cycles, T_shortest_only, t_step (?s) as ?link, t_step (''path_id'') as ?path, t_step (''step_no'') as ?step, t_direction 3) . filter (?s= <';
     s1 := 'sparql define input:same-as "YES" SELECT ?g COUNT (*) WHERE { { SELECT ?s ?o ?g WHERE { graph ?g {?s foaf:knows ?o } } } OPTION (transitive, t_distinct, t_in(?s), t_out(?o), t_min (1)) .  FILTER (?s= <';
@@ -1148,7 +1148,7 @@ s3 := '\')) .
 --  ?p foaf:nick ?n
 --} order by desc 2 limit 50
 --;
-    if (isnull(val)  or val = '') val := 'http://myopenlink.net/dataspace/person/kidehen#this';
+    if (isnull(val)  or val = '') val := 'http://www.w3.org/People/Berners-Lee/card#i';
     s1 := 'sparql SELECT ?n ((SELECT COUNT (*) WHERE { ?p foaf:interest ?i . ?ps foaf:interest ?i})) ((SELECT COUNT (*) WHERE { ?p foaf:interest ?i})) WHERE { { SELECT DISTINCT ?p ?psi WHERE { ?p foaf:interest ?i . ?psi foaf:interest ?i  } } . FILTER (?psi = <';
     validate_input(val);
     s2 := val;
