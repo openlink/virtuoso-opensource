@@ -636,6 +636,7 @@ lt_2pc_commit (lock_trx_t * lt)
 #ifdef MSDTC_DEBUG
   lt->lt_in_mts = 0;
 #endif
+  lt_resume_waiting_end (lt);
   lt_restart (lt, TRX_CONT_LT_LEAVE);
   IN_TXN;
 
