@@ -1204,6 +1204,9 @@ key_set_version (dbe_key_t * key)
   key->key_versions = kv;
   if (1 == key->key_version)
     kv[0] = key;
+
+  if (key->key_version >= KEY_MAX_VERSIONS || key->key_version <= 0)
+    GPF_T1("key_version outside of array");
   kv[key->key_version] = key;
   mutex_leave (mtx);
 }
