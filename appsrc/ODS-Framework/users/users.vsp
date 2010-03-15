@@ -737,7 +737,7 @@
           if ((vForm <> 'login') and (vForm <> 'register'))
           {
         ?>
-          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>
+          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>&nbsp;
         <?vsp
           }
         ?>

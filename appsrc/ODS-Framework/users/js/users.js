@@ -1026,7 +1026,7 @@ function loginSubmit(mode, prefix) {
 	return false;
 }
 
-function afterLogin(data) {
+function afterLogin(data, prefix) {
 	var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
 		/* user data */
@@ -1034,7 +1034,7 @@ function afterLogin(data) {
 		$('realm').value = 'wa';
 		var T = $('form');
 		if (T) {
-			T.value = 'profile';
+			T.value = ((prefix == 'rf')? 'profile': 'user');
 			T.form.submit();
 		} else {
 			showTitle('View Profile');
@@ -1044,8 +1044,13 @@ function afterLogin(data) {
 			OAT.Dom.hide("lf");
 			OAT.Dom.hide("rf");
 			OAT.Dom.hide("uf");
+			OAT.Dom.hide("pf");
+			if (prefix == 'rf') {
 			OAT.Dom.show("pf");
 			ufProfileSubmit();
+			} else {
+			  pfCancelSubmit();
+			}
 		}
 	} else {
 		$('sid').value = '';
@@ -1672,6 +1677,7 @@ function pfCancelSubmit() {
   showTitle('View Profile');
 
   OAT.Dom.hide("lf");
+	OAT.Dom.hide("rf");
   OAT.Dom.show("uf");
   OAT.Dom.hide("pf");
   selectProfile()
@@ -1895,7 +1901,7 @@ function afterSignup(data) {
     $('rf_password2').value = '';
     $('rf_openID').value = '';
     $('rf_is_agreed').checked = false;
-    afterLogin(data);
+    afterLogin(data, 'rf');
   }
 }
 

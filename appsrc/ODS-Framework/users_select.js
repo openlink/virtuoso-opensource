@@ -21,13 +21,6 @@
  *
  */
 // ---------------------------------------------------------------------------
-function myPost(frm_name, fld_name, fld_value)
-{
-  createHidden(frm_name, fld_name, fld_value);
-  document.forms[frm_name].submit();
-}
-
-// ---------------------------------------------------------------------------
 function selectAllCheckboxes (form, btn)
 {
   for (var i = 0; i < form.elements.length; i = i + 1) {
@@ -77,7 +70,6 @@ function getSelected (form, txt)
 }
 
 // ---------------------------------------------------------------------------
-//
 function anySelected (form, txt, selectionMsq, mode)
 {
   if ((form != null) && (txt != null)) {
@@ -97,7 +89,6 @@ function anySelected (form, txt, selectionMsq, mode)
 }
 
 // ---------------------------------------------------------------------------
-//
 function singleSelected (form, txt, zeroMsq, moreMsg, mode)
 {
   var count = countSelected(form, txt);
@@ -114,130 +105,11 @@ function singleSelected (form, txt, zeroMsq, moreMsg, mode)
   return true;
 }
 
-
-// ---------------------------------------------------------------------------
-//
-function chkbx(bx1, bx2)
-{
-  if (bx1.checked == true && bx2.checked == true)
-    bx2.checked = false;
-}
-
-// ---------------------------------------------------------------------------
-//
-function updateLabel(value)
-{
-  hideLabel(4, 9);
-  if (value == 'oMail')
-    showLabel(4, 4);
-  if (value == 'PropFilter')
-    showLabel(5, 5);
-  if (value == 'ResFilter')
-    showLabel(7, 9);
-  if (value == 'CatFilter')
-    showLabel(7, 9);
-}
-
-// ---------------------------------------------------------------------------
-//
-function showLabel(from, to)
-{
-  for (var i = from; i <= to; i++) {
-    var div = document.getElementById('tabLabel_'+i);
-    if (div != null) {
-      div.style.visibility = 'visible';
-      div.style.display = 'inline';
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-//
-function hideLabel(from, to)
-{
-  for (var i = from; i <= to; i++) {
-    var div = document.getElementById('tabLabel_'+i);
-    if (div != null) {
-      div.style.visibility = 'hidden';
-      div.style.display = 'none';
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-//
-function showTab(tab, tabs)
-{
-  for (var i = 1; i <= tabs; i++) {
-    var div = document.getElementById(i);
-    if (div != null) {
-      var divTab = document.getElementById('tab_'+i);
-      if (i == tab) {
-        var divNo = document.getElementById('tabNo');
-        divNo.value = tab;
-        div.style.visibility = 'visible';
-        div.style.display = 'block';
-        if (divTab != null) {
-          divTab.className = "tab activeTab";
-          divTab.blur();
-        };
-      } else {
-        div.style.visibility = 'hidden';
-        div.style.display = 'none';
-        if (divTab != null)
-          divTab.className = "tab";
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-//
-function initTab(tabs, defaultNo)
-{
-  var divNo = document.getElementById('tabNo');
-  var tab = defaultNo;
-  if (divNo != null) {
-    var divTab = document.getElementById('tab_'+divNo.value);
-    if (divTab != null)
-      tab = divNo.value;
-  }
-  showTab(tab, tabs);
-}
-
-// ---------------------------------------------------------------------------
-//
-function deleteConfirm()
-{
-  return confirm('Are you sure you want to delete the chosen record?');
-}
-
-// ---------------------------------------------------------------------------
-//
-function deprecateConfirm()
-{
-  return confirm('Are you sure you want to deprecate the chosen record?');
-}
-
 // ---------------------------------------------------------------------------
 function confirmAction(confirmMsq, form, txt, selectionMsq) {
   if (anySelected (form, txt, selectionMsq))
     return confirm(confirmMsq);
   return false;
-}
-
-
-// ---------------------------------------------------------------------------
-//
-function renameShow(myForm, myPrefix, myPage, width, height)
-{
-  var myFile = getSelected(myForm, myPrefix);
-  if (myFile != '') {
-    if (height == null)
-      height = 250;
-    myPage = myPage + '&file=' + escape(myFile);
-    windowShow(myPage, width, height);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -309,7 +181,6 @@ function rowSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-//
 function rowSelectValue(dstField, srcField, singleMode, submitMode)
 {
   if (singleMode) {
@@ -333,7 +204,6 @@ function rowSelectValue(dstField, srcField, singleMode, submitMode)
 }
 
 // ---------------------------------------------------------------------------
-//
 function updateChecked(form, objName)
 {
   for (var i = 0; i < form.elements.length; i = i + 1) {
@@ -350,25 +220,21 @@ function updateChecked(form, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addChecked (form, txt, selectionMsq)
 {
-  if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return;
+  var openerForm = eval('window.opener.document.'+$v('form'));
+  if (!openerForm)
+    return false;
 
-  var openerForm=eval('window.opener.document.'+form.name);
+  if (!anySelected (form, txt, selectionMsq, 'confirm'))
+    return false;
 
   var submitMode = false;
-  if (form.elements['src'])
-    if (form.elements['src'].value.indexOf('s') != -1)
+  if (form.elements['src'] && (form.elements['src'].value.indexOf('s') != -1))
       submitMode = true;
-  if (submitMode)
-    if (openerForm)
-      if (openerForm.elements['submitting'])
-        return false;
+
   var singleMode = true;
-  if (form.elements['dst'])
-    if (form.elements['dst'].value.indexOf('s') == -1)
+  if (form.elements['dst'] && (form.elements['dst'].value.indexOf('s') == -1))
       singleMode = false;
 
   var s1 = 's1';
@@ -382,84 +248,20 @@ function addChecked (form, txt, selectionMsq)
     if (myArray == undefined)
       break;
     if (myArray.length > 2)
-    var opener_form;
-    opener_form = window.opener.document.page_form;
-
-      if (opener_form)
-        if (opener_form.elements[myArray[1]]) {
+      if (openerForm.elements[myArray[1]]) {
           if (myArray[2] == 's1')
-            if (opener_form.elements[myArray[1]])
-              rowSelectValue(opener_form.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
+          if (openerForm.elements[myArray[1]])
+            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
-            if (opener_form.elements[myArray[1]])
-              rowSelectValue(opener_form.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
+          if (openerForm.elements[myArray[1]])
+            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
   if (submitMode)
-    opener_form.submit();
+    openerForm.submit();
+
   window.close();
-}
-
-// ---------------------------------------------------------------------------
-function createHidden(frm_name, fld_name, fld_value)
-{
-  var hidden;
-
-  if (document.forms[frm_name]) {
-    hidden = document.forms[frm_name].elements[fld_name];
-    if (hidden == null) {
-      hidden = document.createElement("input");
-      hidden.setAttribute("type", "hidden");
-      hidden.setAttribute("name", fld_name);
-      hidden.setAttribute("id", fld_name);
-      document.forms[frm_name].appendChild(hidden);
-    }
-    hidden.value = fld_value;
-  }
-}
-
-// ---------------------------------------------------------------------------
-function getObject(id)
-{
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
-}
-
-// ---------------------------------------------------------------------------
-showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
-
-// ---------------------------------------------------------------------------
-function toggleCell(cell)
-{
-  var c = getObject(cell);
-  if (c)
-    c.style.display = (c.style.display == "none") ? showRow : "none";
-}
-
-// ---------------------------------------------------------------------------
-function showTableRow(cell)
-{
-  var c = getObject(cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = showRow;
-}
-
-// ---------------------------------------------------------------------------
-function showCell(cell)
-{
-  var c = getObject(cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = "";
-}
-
-// ---------------------------------------------------------------------------
-function hideCell(cell)
-{
-  var c = getObject(cell);
-  if ((c) && (c.style.display != "none"))
-    c.style.display = "none";
 }
