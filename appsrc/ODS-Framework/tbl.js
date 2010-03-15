@@ -25,17 +25,8 @@ TBL.createRow = function (prefix, No, optionObject)
 {
   if (No != null)
   {
-  //  if (alert ('xx')) {
-    OAT.Dom.unlink(prefix+'_tr_'+No);
-    var No = parseInt($(prefix+'_no').value);
-    for (var N = 0; N < No; N++)
-    {
-      if ($(prefix+'_tr_'+N))
-        return;
-    }
-    OAT.Dom.show (prefix+'_tr_no');
+    TBL.deleteRow(prefix, No);
   }
-  //}
   else
   {
     var tbl = $(prefix+'_tbl');
