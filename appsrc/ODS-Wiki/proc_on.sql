@@ -1487,7 +1487,7 @@ in user_id integer)
         '\n      }                                                               ' ||
         '\n    }                                                                 ' ||
         '\n  }                                                                   ' ||
-        '\n  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, wikiInit);                    ' ||
+        '\n  OAT.MSG.attach(OAT, "OAT_LOAD", wikiInit);                    ' ||
         '\n</script>                                                             ';
 
   return sprintf (S, app, case when app = 2 then 'hover' else 'click' end, case when wa_check_package ('OAT') then 'true' else 'false' end);
@@ -1553,7 +1553,7 @@ in user_id integer)
         '\n      }                                                               ' ||
         '\n    }                                                                 ' ||
         '\n  }                                                                   ' ||
-        '\n  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, wikiInit);                    ' ||
+        '\n  OAT.MSG.attach(OAT, "OAT_LOAD", wikiInit);                    ' ||
         '\n]]></script>                                                             ';
 
   return sprintf (S, app, case when app = 2 then 'hover' else 'click' end, case when wa_check_package ('OAT') then 'true' else 'false' end);
