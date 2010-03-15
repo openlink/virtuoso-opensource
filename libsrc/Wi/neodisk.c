@@ -187,6 +187,7 @@ cpt_rollback (int may_freeze)
 	  break;
 	case LT_1PC_PENDING:
 	case LT_2PC_PENDING:
+	case LT_PREPARE_PENDING:
 	  if (CPT_ATOMIC_PENDING == wi_inst.wi_is_checkpoint_pending)
 	    {
 	      TC (tc_atomic_wait_2pc);
