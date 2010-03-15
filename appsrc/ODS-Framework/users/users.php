@@ -575,7 +575,7 @@
           if (($_form <> 'login') && ($_form <> 'register'))
           {
         ?>
-          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>
+          <a href="#" onclick="javascript: return logoutSubmit();">Logout</a>&nbsp;
         <?php
           }
         ?>
