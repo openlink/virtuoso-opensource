@@ -1014,7 +1014,7 @@ create procedure WV.WIKI.VSPHEADER (
 --    http (' 	{\n');
 --    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
 --    http (' 	}\n');
---    http (' 	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);\n');
+--    http ('   OAT.MSG.attach(OAT,"OAT_LOAD",myInit);\n');
 --    http ('</script>\n');
   }
 
