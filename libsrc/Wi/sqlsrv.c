@@ -908,11 +908,11 @@ srv_client_connection_died (client_connection_t *cli)
   srv_delete_login (cli);
   client_connection_free (cli);
   IN_TXN;
-  lt->lt_threads = 1;
-  LT_THREADS_REPORT(lt, "set to 1");
-  LT_ENTER_SAVE (lt);
   if (lt)
     {
+      lt->lt_threads = 1;
+      LT_THREADS_REPORT(lt, "set to 1");
+      LT_ENTER_SAVE (lt);
       lt_log_debug (("src_client_connection_died : lt_client=NULL lt=%p", lt));
       lt->lt_client = NULL; /* cli already is free */
       lt_resume_waiting_end (lt);
