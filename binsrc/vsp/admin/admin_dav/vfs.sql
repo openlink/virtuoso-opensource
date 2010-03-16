@@ -1726,8 +1726,10 @@ create procedure WS.WS.SITEMAP_ENSURE_NEW_SITE (in _host varchar, in _root varch
 {
   if (not exists (select 1 from WS.WS.VFS_SITE where VS_HOST = _new_host and VS_ROOT = _root))
     {    
-      insert into WS.WS.VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR)
-	  select _new_host, _root, _new_url, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR ||':'|| _new_host 
+      insert into WS.WS.VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR, 
+	  	VS_EXTRACT_FN, VS_STORE_FN, VS_DEPTH, VS_STORE, VS_DLOAD_META, VS_UDATA)
+	  select _new_host, _root, _new_url, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR ||':'|| _new_host,
+		VS_EXTRACT_FN, VS_STORE_FN, VS_DEPTH, VS_STORE, VS_DLOAD_META, VS_UDATA 
 	  from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
     }    
 }
@@ -1797,7 +1799,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
                               inout _content varchar, in _s_etag varchar, in _c_type varchar,
 			      in store_flag int := 1, in udata any := null, in lev int := 0)
 {
-  declare graph varchar;
+  declare graph, url_ck varchar;
   graph := null;
   declare exit handler for sqlstate '*'
     {
@@ -1809,14 +1811,19 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     };
 
   graph := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
-
-  if (_url like '%.rdf' or _c_type = 'application/rdf+xml')
+  url_ck := _url;
+  if (_url like '%.gz')
     {
-      DB.DBA.RDF_LOAD_RDFXML (_content, graph, graph);
+      _content := gzip_uncompress (_content);
+      url_ck := regexp_replace (_url, '\.gz\x24', '');  
     }
-  else if (_url like '%.n3' or _url like '%.ttl' or _url like '%.nt' or _c_type = 'text/n3' or _c_type = 'text/rdf+n3')
+  if (url_ck like '%.rdf' or _c_type = 'application/rdf+xml')
     {
-      DB.DBA.TTLP (_content, graph, graph, 255);
+      DB.DBA.RDF_LOAD_RDFXML (_content, graph, graph, 3);
+    }
+  else if (url_ck like '%.n3' or url_ck like '%.ttl' or url_ck like '%.nt' or _c_type = 'text/n3' or _c_type = 'text/rdf+n3')
+    {
+      DB.DBA.TTLP (_content, graph, graph, 255, 3);
     }
   if (isvector (udata) and isvector (get_keyword ('follow-property', udata)))
     {
