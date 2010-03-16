@@ -1448,6 +1448,7 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
   mutex_leave (global_xa_map->xm_mtx);
 
   IN_TXN;
+  lt_wait_checkpoint ();
   if (cli->cli_trx != x->xid_tp_data->cli_tp_lt)
     {
       lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
