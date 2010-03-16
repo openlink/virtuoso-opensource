@@ -54,8 +54,6 @@
           self.dta:=dta;
           self.mtd:=mtd[0];
 
---          dbg_obj_print('ccc',self.dta);
---          dbg_obj_print('ddd',self.mtd);
 
         ]]>
       </v:before-data-bind>
@@ -431,8 +429,6 @@
                           enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[3]>0  or (control.vc_parent as vspx_row_template).te_rowset[3] is null then 1 else 0 end)"
                   >
                    <v:on-post>
---                     DB.DBA.MSG_NEWS_CLEAR_MESSAGES((control.vc_parent as vspx_row_template).te_rowset[3], (control.vc_parent as vspx_row_template).te_rowset[0], 'clear all');
---                     delete from DB.DBA.NEWS_GROUPS where NG_GROUP = (control.vc_parent as vspx_row_template).te_rowset[0];
                        update  DB.DBA.NEWS_GROUPS set NG_STAT=-1 where NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0];
                        self.vc_data_bind(e);
                    </v:on-post>

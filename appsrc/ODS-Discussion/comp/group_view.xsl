@@ -74,7 +74,6 @@
   self.article_list_lenght := atoi (get_keyword ('view', params, '10'));
   self.old_view := atoi (get_keyword ('old_view', params, '10'));
   self.cur_art := get_keyword ('disp_artic', params, null);
---  dbg_obj_print ('+ + + before-data-bind self.fordate = ', self.fordate);
 
   declare cancel_article varchar;
   cancel_article := get_keyword ('cancel_artic', params, '');
@@ -382,8 +381,6 @@ if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds
         declare id any;
 
         id := get_keyword ('disp_artic', self.vc_page.vc_event.ve_params, '-');
---        dbg_obj_print ('--- id = ', id);
-
         if (id <> '-')
           {
       ?>
