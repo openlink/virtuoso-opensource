@@ -526,7 +526,12 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
     lt->lt_status = LT_BLOWN_OFF;
 
   if (lt->lt_status == LT_COMMITTED && !LT_IS_RUNNING (lt))
+    {
+      lt_threads_inc_inner (lt);
+      LT_CLOSE_ACK_THREADS(lt);
+      lt->lt_close_ack_threads++;
     lt_2pc_commit (lt);
+    }
   else
     lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 
