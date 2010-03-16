@@ -274,14 +274,13 @@ _selected_groups_arr:=vector();
                      {
                           zeroPostNA:=1;
                           goto _skip;
---                        select ClusterName into _wai_name from WV.Wiki.CLUSTERS,NEWS_GROUPS where C_NEWS_ID=NG_NAME and NG_NAME=_selected_groups_arr[i];
+--                     qry:='select ClusterName into _wai_name from WV.Wiki.CLUSTERS,NEWS_GROUPS where C_NEWS_ID=NG_NAME and NG_NAME=\''||_selected_groups_arr[i]||'\'';
                      }
                      else if(_ng_type='OFM')
                      {
                           zeroPostNA:=1;
                           goto _skip;
-
---                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where ENEWS.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
+--                     qry:='select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where ENEWS.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME=\''||_selected_groups_arr[i]||'\'';
                      }
                      else if(_ng_type='MAIL')
                      {
@@ -309,10 +308,7 @@ _selected_groups_arr:=vector();
                      _ugroup:=-1;
                      _membertype:=-1;
                      
-
                      declare exit handler for not found {
---                                                    dbg_obj_print('_wai_name2',_wai_name);
---                                                    dbg_obj_print('self.u_name',self.u_name);
                                                     isAuthor:=0;
                                                     goto _skip;
                                                    };

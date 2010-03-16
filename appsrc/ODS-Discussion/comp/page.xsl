@@ -60,17 +60,17 @@ function dd(txt){
 	
 	      if (typeof(window.davbrowseInit) == "function")
         {
-          OAT.Loader.loadFeatures(["dav","mswin","macwin"], function(){davbrowseInit()});
+          OAT.Loader.load(["dav","mswin","macwin"], function(){davbrowseInit()});
         };
 
 	      if (typeof(window.calendarInit) == "function")
         {
-          OAT.Loader.loadFeatures(["calendar"], function(){calendarInit()});
+          OAT.Loader.load(["calendar"], function(){calendarInit()});
         };
 
 	      if (typeof(window.showTagsDiv) == "function")
         {
-          OAT.Loader.loadFeatures(["ws"], function(){tagsInit()});
+          OAT.Loader.load(["ws"], function(){tagsInit()});
         };
 
       return;

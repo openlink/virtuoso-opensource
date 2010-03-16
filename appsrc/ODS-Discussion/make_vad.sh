@@ -86,12 +86,24 @@ fi
 
 VERSION_INIT() 
 {
-  rm -f version.tmp
-  for i in `find . -name 'Entries' | grep -v "vad/"`; do
-        cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
-  done
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
-  rm -f version.tmp
+    if [ $VOS -eq 1 ]
+    then
+	if [ -f vad_version ]
+	then
+	    VERSION=`cat vad_version`
+	else
+	    LOG "The vad_version does not exist, please verify your checkout"
+	    exit 1
+	fi
+    else
+	rm -f version.tmp
+	for i in `find . -name 'Entries' | grep -v "vad/"`; do
+	    cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+	done
+	VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+	rm -f version.tmp
+	echo "$VERSION" > vad_version
+    fi
 }
 
 virtuoso_start() {
@@ -239,8 +251,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.42.00\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2007-04-04 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.67.12\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2010-03-29 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
