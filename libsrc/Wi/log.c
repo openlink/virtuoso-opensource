@@ -1814,12 +1814,14 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  dbs->dbs_log_name = box_string (new_log);
 	}
       cfg_replace_log (new_log);
+      mutex_enter (log_write_mtx);
       dbs->dbs_log_length = 0;
       if (CPT_SHUTDOWN != shutdown)
 	{
 	  log_set_byte_order_check (1);
 	  log_set_server_version_check (1);
 	}
+      mutex_leave (log_write_mtx);
       log_info ("Checkpoint finished, new log is %s", new_log);
     }
 #ifdef VIRTTP
@@ -1829,12 +1831,12 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	{
 	  int rc;
 	  int status = lt->lt_status;
+	  mutex_enter (log_write_mtx);
 	  if (!dbs->dbs_log_length)
 	    {
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
-	  mutex_enter (log_write_mtx);
 	  if (LT_PREPARED == status)
 	    lt->lt_status = LT_PREPARE_PENDING;
 	  rc = log_commit (lt);
