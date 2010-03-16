@@ -4048,13 +4048,13 @@ dfe_unit_col_loci (df_elt_t * dfe)
   caddr_t tmp[7];
   caddr_t ref;
   ST * ref_box;
+  if (!IS_BOX_POINTER (dfe) || DFE_FALSE == dfe)
+    return;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
       dfe_list_col_loci (dfe);
       return;
     }
-  if (!IS_BOX_POINTER (dfe) || DFE_FALSE == dfe)
-    return;
   if (dfe->dfe_tree)
     {
       org_dfe = sqlo_df_elt (dfe->dfe_sqlo, dfe->dfe_tree);
