@@ -261,6 +261,7 @@ log_commit (lock_trx_t * lt)
     return LTE_OK;
   if (dbf_log_no_disk)
     return LTE_LOG_FAILED;
+  ASSERT_IN_MTX (log_write_mtx);
   prev_length = dbs->dbs_log_length;
   log_ses = dbs->dbs_log_session;
   if (!dbs->dbs_log_session)
@@ -2173,12 +2174,14 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  dbs->dbs_log_name = box_string (new_log);
 	}
       cfg_replace_log (new_log);
+      mutex_enter (log_write_mtx);
       dbs->dbs_log_length = 0;
       if (CPT_SHUTDOWN != shutdown)
 	{
 	  log_set_byte_order_check (1);
 	  log_set_server_version_check (1);
 	}
+      mutex_leave (log_write_mtx);
       log_info ("Checkpoint finished, new log is %s", new_log);
     }
   DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -2188,12 +2191,12 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	{
 	  int status = lt->lt_status;
 	  int rc;
+	  mutex_enter (log_write_mtx);
 	  if (!dbs->dbs_log_length)
 	    {
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
-	  mutex_enter (log_write_mtx);
 	  if (LT_PREPARED == status && lt->lt_2pc._2pc_wait_commit)
 	    lt->lt_status = LT_PREPARE_PENDING;
 	  rc = log_commit (lt);
