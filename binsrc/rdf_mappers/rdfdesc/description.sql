@@ -776,22 +776,22 @@ create procedure virt_proxy_init_about ()
   --# the rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_1', 1,
       '/about/data/(xml|n3|nt|ttl|text|turtle)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
-      '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
+      '/about?url=%s://%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_2', 1,
       '/about/data/turtle/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
+      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_3', 1,
       '/about/data/ttl/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_4', 1,
       '/about/data/jrdf/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/rdf+json');
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/rdf+json');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_ahp_rule_data_5', 1,
       '/about/data/json/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/json');
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/json');
 
 
 
@@ -811,23 +811,23 @@ create procedure virt_proxy_init_about ()
   --# entity rdf
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_1', 1,
       '/about/data/entity/(xml|n3|nt|ttl|text|turtle|json)/(http|https|nodeID)/(.*)\0x24', vector ('fmt', 'sch', 'url'), 3,
-      '/about?url=%s://%s&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
+      '/about?url=%s://%U&force=rdf&output-format=%U', vector ('sch', 'url', 'fmt'), null, null, 2);
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_2', 1,
       '/about/data/entity/turtle/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
+      '/about?url=%s://%U&force=rdf&output-format=text%%2Fturtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: text/turtle');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_3', 1,
       '/about/data/entity/ttl/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
+      '/about?url=%s://%U&force=rdf&output-format=application%%2Fx-turtle', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/x-turtle');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_4', 1,
       '/about/data/entity/json/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/json');
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/json');
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('sp_ent_data_rl_5', 1,
       '/about/data/entity/jrdf/(http|https|nodeID)/(.*)\0x24', vector ('sch', 'url'), 2,
-      '/about?url=%s://%s&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/rdf+json');
+      '/about?url=%s://%U&force=rdf&output-format=json', vector ('sch', 'url'), null, null, 2, null, 'Content-Type: application/rdf+json');
 
 
   DB.DBA.URLREWRITE_CREATE_RULELIST ( 'sp_ent_data_rll', 1,
