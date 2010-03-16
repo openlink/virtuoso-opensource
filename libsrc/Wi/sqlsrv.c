@@ -2180,6 +2180,12 @@ void sf_sql_tp_transact(short op, char* xid_str)
 	    _2pc_printf(("tp pre/comm 5 =%x cli %p\n",op,cli));
 	    if ( (op == SQL_XA_PREPARE) && (future->ft_result != LTE_OK))
 	      {
+		lt_enter_anyway (cli->cli_trx);
+		IN_TXN;
+		lt_rollback (cli->cli_trx, TRX_FREE);
+		cli->cli_trx = NULL;
+		LEAVE_TXN;
+		virt_xa_remove_xid (xid);
 		MAKE_TRX_ERROR (future->ft_result, err, NULL);
 		dk_free(future,sizeof(tp_future_t));
 		DKST_RPC_DONE (client);
