@@ -525,7 +525,12 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
     lt->lt_status = LT_BLOWN_OFF;
 
   if (lt->lt_status == LT_COMMITTED && !LT_IS_RUNNING (lt))
+    {
+      lt_threads_inc_inner (lt);
+      LT_CLOSE_ACK_THREADS(lt);
+      lt->lt_close_ack_threads++;
     lt_2pc_commit (lt);
+    }
   else
     lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
 
@@ -635,6 +640,7 @@ lt_2pc_commit (lock_trx_t * lt)
 #ifdef MSDTC_DEBUG
   lt->lt_in_mts = 0;
 #endif
+  lt_resume_waiting_end (lt);
   lt_restart (lt, TRX_CONT_LT_LEAVE);
   IN_TXN;
 
@@ -1446,6 +1452,7 @@ virt_xa_client (void *xid, client_connection_t * cli, struct tp_data_s **tpd, in
   mutex_leave (global_xa_map->xm_mtx);
 
   IN_TXN;
+  lt_wait_checkpoint ();
   if (cli->cli_trx != x->xid_tp_data->cli_tp_lt)
     {
       lt_kill_other_trx (cli->cli_trx, NULL, NULL, LT_KILL_ROLLBACK);
