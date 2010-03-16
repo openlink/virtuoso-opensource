@@ -7,6 +7,8 @@
 @prefix vr: <http://www.openrdf.org/config/repository/virtuoso#>.
 
 [] a rep:Repository ;
+   rep:repositoryID "{%Repository ID|virtuoso%}" ;
+   rdfs:label "{%Repository title|Virtuoso repository%}" ;
    rep:repositoryImpl [
       rep:repositoryType "openrdf:VirtuosoRepository" ;
       vr:hostList "{%Host list|localhost:1111%}" ;
@@ -17,6 +19,4 @@
       vr:roundRobin {%Use RoundRobin for connection|false|true%} ;
       vr:fetchSize {%Buffer fetch size|200%} ;
       vr:ruleSet "{%Inference RuleSet name|null%}"
-   ];
-   rep:repositoryID "{%Repository ID|virtuoso%}" ;
-   rdfs:label "{%Repository title|Virtuoso repository%}" .
+   ].

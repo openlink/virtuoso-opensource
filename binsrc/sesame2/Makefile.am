@@ -43,6 +43,10 @@ SESAME_SRC= \
 	virtuoso_driver/VirtuosoRepositorySchema.java \
 	virtuoso_driver/VirtuosoTupleQuery.java
 
+SESAME_XSL = \
+	create.xsl \
+	create-virtuoso.xsl
+
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
@@ -53,6 +57,7 @@ all-am:	$(TARGETS)
 install-data-local:
 	-mkdir "$(DESTDIR)${libdir}/sesame"
 	-cp virt_sesame2.jar "$(DESTDIR)${libdir}/sesame"
+	-cp $(SESAME_XSL) "$(DESTDIR)${libdir}/sesame"
 
 lib:
 	@test -d lib || touch virt_sesame2.jar
@@ -66,6 +71,10 @@ virt_sesame2.jar: $(SESAME_SRC)
 	-mkdir out.driver/META-INF
 	-mkdir out.driver/META-INF/services
 	-cp META-INF/services/org.openrdf.repository.config.RepositoryFactory out.driver/META-INF/services
+	-mkdir out.driver/org
+	-mkdir out.driver/org/openrdf
+	-mkdir out.driver/org/openrdf/console
+	-cp virtuoso.ttl out.driver/org/openrdf/console
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
@@ -105,7 +114,9 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.xsl \
 	META-INF/services/org.openrdf.repository.config.RepositoryFactory \
+	virtuoso.ttl \
 	virtuoso_driver/*.java \
 	virtuoso_driver/data.nt \
 	virt_sesame2.jar
