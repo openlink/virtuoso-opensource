@@ -343,7 +343,7 @@ OAT.FormObject = {
 			xml += '\t\t\t<css ';
 			for (var i=0;i<fo.css.length;i++) {
 				var css = fo.css[i];
-				xml += ' '+css.property+'="'+OAT.Dom.style(e,css.property)+'" ';
+				xml += ' '+css.property+'="'+OAT.Style.get(e,css.property)+'" ';
 			}
 			xml += '></css>\n';
 			xml += '\t\t</style>\n';
@@ -712,9 +712,12 @@ OAT.FormObject = {
 		self.properties = [
 /*0*/		{name:"Key",type:"string",value:""},
 /*1*/		{name:"Zoom level",type:"select",value:"2",options:[["0 - Far","0"],"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15",["16 - Near","16"]]},
-/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G,options:[
-				["Google",OAT.MapData.TYPE_G],["Yahoo!",OAT.MapData.TYPE_Y],
-				["MS Virtual Earth",OAT.MapData.TYPE_MS],["OpenLayers",OAT.MapData.TYPE_OL]
+/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G3,options:[
+				["Google v3",OAT.MapData.TYPE_G3],
+				["Google",OAT.MapData.TYPE_G],
+				["Yahoo!",OAT.MapData.TYPE_Y],
+				["MS Virtual Earth",OAT.MapData.TYPE_MS],
+				["OpenLayers",OAT.MapData.TYPE_OL]
 			]},
 /*3*/		{name:"All markers at once?",type:"bool",value:"0"},
 /*4*/		{name:"Map type",type:"select",value:"Map",options:["Map","Satellite","Hybrid"]},
@@ -787,6 +790,7 @@ OAT.FormObject = {
 		self.init = function() {
 			self.zoom = parseInt(self.properties[1].value);
 			switch (parseInt(self.properties[2].value)) {
+				case OAT.MapData.TYPE_G3: self.provider = OAT.MapData.TYPE_G3; break;
 				case OAT.MapData.TYPE_G: self.provider = OAT.MapData.TYPE_G; break;
 				case OAT.MapData.TYPE_Y: self.provider = OAT.MapData.TYPE_Y; break;
 				case OAT.MapData.TYPE_MS: self.provider = OAT.MapData.TYPE_MS; break;
@@ -2216,4 +2220,3 @@ OAT.FormObject = {
 	} /* timeline */
 
 }
-OAT.Loader.featureLoaded("formobject");
