@@ -146,8 +146,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                 <li>
                   <div class="menu_head" >
                     <a href="javascript:void(0)">Messages
-		      <span class="indicator"
-		             id="newMsgCountSpan">(2)</span>
+            		      <span class="indicator" id="newMsgCountSpan">(2)</span>
 		    </a>
   	            <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div> <!-- menu_head -->
@@ -201,9 +200,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
           <iframe id="vspxApp" style="width:100%;height:500px;border:0px;display:none;"></iframe>
 
   	      <!-- Profile Page start-->
+
   	  <div id="u_profile_l" style="display:none;">
   	    <div id="user_info_w" class="widget user_info_w">
-  	      <div class="w_title" id="userProfilePhotoName"><h3></h3></div>
+      	      <div class="w_title" id="userProfilePhotoName">
+      	        <h3></h3>
+      	      </div>
   	      <div class="w_content">
                 <div class="user_img_ctr">
                   <a href="javascript:void(0)">
@@ -267,22 +269,18 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                 </div> <!-- w_title_bar_btns -->
 	      </div> <!-- w_title -->
   	      <div class="w_content">
-<!--
                 <ul class="tab_bar">
-                  <li class="sel" id="connT1"><a href="javascript:void(0)">Thumbnails</a></li>
+                <li id="connT1" class="sel"><a href="javascript:void(0)">Thumbnails</a></li>
                   <li id="connT2"><a href="javascript:void(0)">Map</a></li>
                 </ul>
--->
                 <div class="tab_deck">
                   <div id="connPCtr" class="tab_page">
                   </div>
                   <div class="tab_page" id="connP1">
-                  </div> <!-- .tab_page -->
-<!--
+                </div>
                 <div class="tab_page" id="connP2">
                   <div id="connP2map" style="height: 200px;"> </div>
                 </div>
--->
                 </div> <!-- tab_deck -->
               </div> <!-- w_content -->
   	    </div> <!-- .widget -->
@@ -339,7 +337,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                           <span class="postal-code" id="ciP1zip"></span>
                           <span class="country-name" id="ciP1country"></span>
                         </div> <!-- adr -->
-                        <div class="tel" id="ciP1tel"></div>
+                      <div class="tel" id="ciP1tel">
+                      </div>
                       </div>
                     </div>
                   </div> <!-- tab_page -->
@@ -348,13 +347,15 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <div class="fn org" id="ciP2title"></div>
                       <div class="adr">
                         <div class="street-address" id="ciP2address"></div>
-                        <div><span class="locality" id="ciP2city">,</span>
+                      <div>
+                        <span class="locality" id="ciP2city">,</span>
                              <abbr class="region" id="ciP2state" title=""></abbr>
                              <span class="postal-code" id="ciP2zip">,</span>
                              <abbr class="country" id="ciP2country" title=""></abbr>
                         </div>
                       </div> <!-- .adr -->
-                      <div class="tel" id="ciP2tel"></div>
+                    <div class="tel" id="ciP2tel">
+                    </div>
                     </div> <!-- .vcard -->
                   </div> <!-- .tab_page -->
                   <div id="ciP3" class="tab_page">
