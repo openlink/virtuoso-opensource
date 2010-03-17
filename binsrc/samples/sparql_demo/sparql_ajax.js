@@ -870,11 +870,11 @@ function tool_put_line_start(txt)
       res += "\n";
   }
   query.value = res;
-  //alert(res.charAt(start - 1 - OAT.Dom.isIE()));
-  if (!((res.charAt(start - 1 - OAT.Dom.isIE()) == "\n" || start == 0) && start != end))
+  //alert(res.charAt(start - 1 - OAT.Browser.isIE));
+  if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end))
     start = start + txt.length;
   if (cnt > 1)
-    end = end + (cnt * txt.length) - (OAT.Dom.isIE() * (cnt - 1));
+    end = end + (cnt * txt.length) - (OAT.Browser.isIE * (cnt - 1));
   else 
     end = end + txt.length;
   
@@ -915,10 +915,10 @@ function tool_rem_line_start(txt)
   
   if (cnt > 0)
   {
-    if (!((res.charAt(start - 1 - OAT.Dom.isIE()) == "\n" || start == 0) && start != end))
+    if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end))
       start = start - txt.length;
     if (cnt > 1)
-      end = end - (cnt * txt.length) - (OAT.Dom.isIE() * (cnt - 1));
+      end = end - (cnt * txt.length) - (OAT.Browser.isIE * (cnt - 1));
     else 
       end = end - txt.length;
   }
