@@ -141,4 +141,3 @@ OAT.Resize = {
 }
 OAT.Event.attach(document,"mousemove",OAT.Resize.move);
 OAT.Event.attach(document,"mouseup",OAT.Resize.up);
-OAT.Loader.featureLoaded("resize");

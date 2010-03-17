@@ -68,4 +68,3 @@ OAT.JSObj = {
 		return o;
 	}
 }
-OAT.Loader.featureLoaded("jsobj");

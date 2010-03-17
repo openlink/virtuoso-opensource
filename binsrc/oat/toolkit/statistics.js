@@ -116,4 +116,3 @@ OAT.Statistics = {
 		return parseFloat(prop);
 	}
 }
-OAT.Loader.featureLoaded("statistics");

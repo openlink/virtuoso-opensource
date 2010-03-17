@@ -690,4 +690,3 @@ OAT.Tree = function(optObj) {
 		return obj;
 	}
 }
-OAT.Loader.featureLoaded("tree");

@@ -190,10 +190,10 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 		for (var i=0;i<obj.content.childNodes.length;i++) {
 			var node = obj.content.childNodes[i];
 			var dims = OAT.Dom.getWH(node);
-			var mt = parseInt(OAT.Dom.style(node,"marginTop"));
-			var mb = parseInt(OAT.Dom.style(node,"marginBottom"));
-			var ml = parseInt(OAT.Dom.style(node,"marginLeft"));
-			var mr = parseInt(OAT.Dom.style(node,"marginRight"));
+			var mt = parseInt(OAT.Style.get(node,"marginTop"));
+			var mb = parseInt(OAT.Style.get(node,"marginBottom"));
+			var ml = parseInt(OAT.Style.get(node,"marginLeft"));
+			var mr = parseInt(OAT.Style.get(node,"marginRight"));
 			x = Math.max(x,dims[0]+ml+mr);
 //			alert([dims[1],mt,mb]);
 			y += dims[1]+mt+mb;
@@ -203,4 +203,3 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 		obj.resizeTo(false,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
 	}
 }
-OAT.Loader.featureLoaded("window");

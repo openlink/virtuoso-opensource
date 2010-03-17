@@ -44,4 +44,3 @@ OAT.Sparkline = function(div,optObj) {
 	}
 	this.draw = function() { self.obj.draw(); }
 }
-OAT.Loader.featureLoaded("sparkline");

@@ -378,7 +378,7 @@ OAT.GraphSidebar = function(graph) {
 	this.create = function(button) {
 		self.div = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"2px",width:"300px",height:"100%",overflow:"auto"},"rdf_sidebar");
 		self.div.style.backgroundColor = "#fff";
-		OAT.Style.opacity(self.div,0.8);
+		OAT.Style.set(self.div,{opacity:0.8});
 		self.button = button;
 		self.createResources();
 		self.createPredicates();
@@ -395,4 +395,3 @@ OAT.GraphSidebar = function(graph) {
 		}
 	}
 }
-OAT.Loader.featureLoaded("graphsidebar");

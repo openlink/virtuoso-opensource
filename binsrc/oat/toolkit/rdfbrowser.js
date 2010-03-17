@@ -758,4 +758,3 @@ OAT.RDFBrowser = function(div,optObj) {
 
 	this.init();
 }
-OAT.Loader.featureLoaded("rdfbrowser");

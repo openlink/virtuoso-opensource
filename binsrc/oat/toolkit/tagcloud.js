@@ -107,4 +107,3 @@ OAT.TagCloud = function(elm, optObj) {
 
 	this.clearItems();
 }
-OAT.Loader.featureLoaded("tagcloud");

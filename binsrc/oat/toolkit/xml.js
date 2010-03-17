@@ -223,4 +223,3 @@ OAT.Xml = {
 	escape:OAT.Dom.toSafeXML,
 	unescape:OAT.Dom.fromSafeXML
 }
-OAT.Loader.featureLoaded("xml");

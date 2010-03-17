@@ -375,4 +375,3 @@ OAT.Crypto = {
 		return binb2hex(core_sha1(str2binb(input),input.length * chrsz));
 	} /* OAT.Crypto.sha(); */
 }
-OAT.Loader.featureLoaded("crypto");

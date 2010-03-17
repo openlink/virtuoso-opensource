@@ -173,4 +173,3 @@ OAT.Geometry = {
 	}
 
 }
-OAT.Loader.featureLoaded("geometry");

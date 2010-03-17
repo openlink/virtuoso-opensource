@@ -96,7 +96,7 @@ OAT.Notify = function(parentDiv,optObj) {
 			div.appendChild(img);
 		}
 		div.appendChild(c);
-		OAT.Style.opacity(div,0);
+		OAT.Style.set(div,{opacity:0});
 
 		var afterAppear = function() {
 			if (!options.timeout) { return; }
@@ -126,7 +126,7 @@ OAT.Notify = function(parentDiv,optObj) {
 			if (options.delayIn) {
 				aAppear.start();
 			} else {
-				OAT.Style.opacity(div,options.opacity);
+				OAT.Style.set(div,{opacity:options.opacity});
 				afterAppear();
 			}
 		}
@@ -139,4 +139,3 @@ OAT.Notify = function(parentDiv,optObj) {
 
 
 }
-OAT.Loader.featureLoaded("notify");

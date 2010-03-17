@@ -539,4 +539,3 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	return (r ? r[1] : str);
     }
 }
-OAT.Loader.featureLoaded("rdfstore");

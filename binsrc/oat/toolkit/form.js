@@ -598,7 +598,7 @@ OAT.Form = function(targetElm,optObj) {
 		var callback = function() {
 			self.materialize(xmlDoc);
 		}
-		OAT.Loader.loadFeatures(needed,callback);
+		OAT.Loader.load(needed,callback);
 	}
 
 	this.createFromURL = function(url) { /* create form from url */
@@ -608,5 +608,3 @@ OAT.Form = function(targetElm,optObj) {
 		OAT.AJAX.GET(url,false,createRef,{type:OAT.AJAX.TYPE_XML});
 	}
 }
-
-OAT.Loader.featureLoaded("form");

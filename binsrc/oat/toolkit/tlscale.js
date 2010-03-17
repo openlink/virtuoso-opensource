@@ -438,4 +438,3 @@ OAT.TlScale = {
 		}
 	}
 }
-OAT.Loader.featureLoaded("tlscale");

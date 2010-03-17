@@ -65,5 +65,3 @@ OAT.RoundWin = function(optObj) {
 
 	OAT.Dom.applyStyle(this.caption,{textAlign:"center",fontWeight:"bold"});
 }
-
-OAT.Loader.featureLoaded("roundwin");

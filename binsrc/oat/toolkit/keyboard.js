@@ -110,4 +110,3 @@ OAT.Keyboard = {
 
 	}
 }
-OAT.Loader.featureLoaded("keyboard");

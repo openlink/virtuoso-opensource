@@ -167,7 +167,7 @@ OAT.LineChart = function(div,optObj) {
 			var markerArr = [];
 			var markerFunc = self.options.markers[index % self.options.markers.length];
 			var color = self.options.colors[index % self.options.colors.length];
-			var bg = OAT.Dom.style(self.div,"backgroundColor");
+			var bg = OAT.Style.get(self.div,"backgroundColor");
 			var line = OAT.SVG.element("path",{fill:"none","stroke-width":0.8});
 			var step = w / (dataRow.length-1);
 			var d = "";
@@ -218,7 +218,7 @@ OAT.LineChart = function(div,optObj) {
 				var y = self.options.fontSize*(2*i+1);
 				var markerFunc = self.options.markers[i % self.options.markers.length];
 				var color = self.options.colors[i % self.options.colors.length];
-				var bg = OAT.Dom.style(self.div,"backgroundColor");
+				var bg = OAT.Style.get(self.div,"backgroundColor");
 				var line = OAT.SVG.element("line",{stroke:color,x1:5,x2:5*self.options.markerSize,y1:y,y2:y});
 				var m = markerFunc(5+2.5*self.options.markerSize,y,self.options.markerSize,color,bg,self.textY[i]);
 				var t = OAT.SVG.element("text",{x:5+6*self.options.markerSize,y:y+self.options.fontSize/3});
@@ -237,4 +237,3 @@ OAT.LineChart = function(div,optObj) {
 	this.attachTextY = function(arr) { self.textY = arr; }
 
 } /* OAT.LineChart() */
-OAT.Loader.featureLoaded("linechart");

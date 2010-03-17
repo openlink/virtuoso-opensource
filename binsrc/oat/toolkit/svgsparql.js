@@ -1626,4 +1626,3 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 	self.clear();
 	self.prepareSphere();
 }
-OAT.Loader.featureLoaded("svgsparql");

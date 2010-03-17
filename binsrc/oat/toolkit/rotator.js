@@ -137,4 +137,3 @@ OAT.Rotator = function(panelX,panelY,paramsObj,callback) {
 
 	this.stop = function() { this.running = 0; }
 }
-OAT.Loader.featureLoaded("rotator");

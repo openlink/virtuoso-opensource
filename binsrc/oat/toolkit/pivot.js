@@ -1291,4 +1291,3 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	self.init();
 	self.go();
 }
-OAT.Loader.featureLoaded("pivot");

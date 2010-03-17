@@ -801,4 +801,3 @@ OAT.SparqlQuery = function() {
 		return ret;
 	}
 }
-OAT.Loader.featureLoaded("sparql");

@@ -110,7 +110,7 @@ OAT.TabPart = function(clicker, mover, parent) {
 		if (self.dragStatus != 1) { return; }
 		self.dragStatus = 0;
 		self.ghost = OAT.Dom.create("div",{position:"absolute"});
-		OAT.Style.opacity(self.ghost,0.5);
+		OAT.Style.set(self.ghost,{opacity:0.5});
 		self.ghost.appendChild(self.key.cloneNode(true));
 		/* create right position */
 		var pos = OAT.Dom.position(self.key);
@@ -287,4 +287,3 @@ OAT.Tab = function(elm,optObj) {
 		OAT.Event.attach(document,"mouseup",OAT.TabData.checkWin);
 	}
 }
-OAT.Loader.featureLoaded("tab");

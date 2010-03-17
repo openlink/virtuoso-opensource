@@ -178,4 +178,3 @@ OAT.Declarative = {
 		OAT.Declarative.scanningFinished();
 	}
 }
-OAT.Loader.featureLoaded("declarative");

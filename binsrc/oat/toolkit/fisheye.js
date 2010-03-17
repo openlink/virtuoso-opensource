@@ -96,4 +96,3 @@ OAT.FishEye = function(div,optObj) {
 	OAT.Event.attach(self.div,"mouseout",out);
 	OAT.Event.attach(self.div,"mousemove",move);
 }
-OAT.Loader.featureLoaded("fisheye");

@@ -38,4 +38,3 @@ OAT.Soap = {
 		OAT.AJAX.SOAP(target, data_, callback, optObj);
 	}
 }
-OAT.Loader.featureLoaded("soap");

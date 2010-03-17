@@ -210,5 +210,3 @@
 		return triples;
 	}
 }
-
-OAT.Loader.featureLoaded("n3");

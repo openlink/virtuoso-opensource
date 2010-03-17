@@ -447,4 +447,3 @@ OAT.Fresnel = function(optObj) {
 		return [xmlDoc,self.stylesheets];
 	}
 }
-OAT.Loader.featureLoaded("fresnel");

@@ -50,4 +50,3 @@ OAT.Layers = function(baseOffset) {
 
 	self.currentIndex = self.baseOffset;
 }
-OAT.Loader.featureLoaded("layers");

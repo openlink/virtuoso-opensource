@@ -50,7 +50,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 					self.animA.start();
 					self.animB.start();
 				} else {
-					OAT.Style.opacity(self.panels[i][1], 1);
+					OAT.Style.set(self.panels[i][1], {opacity:1});
 					self.panels[i][1].style.height = self.height+'px';
 				}
 			} else { /* hide others */
@@ -64,7 +64,7 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 					a.start();
 					b.start();
 				} else {
-					OAT.Style.opacity(self.panels[i][1], 1);
+					OAT.Style.set(self.panels[i][1], {opacity:1});
 					self.panels[i][1].style.height = '0px';
 				}
 			}
@@ -92,10 +92,9 @@ OAT.Panelbar = function(div, delay, height, noanim) {
 		if (!self.height)
 			self.height = parseInt(OAT.Style.get(content_elm,"height"));
 		//this.go(this.panels.length-1, true);
-		OAT.Style.opacity(content_elm, 1);
+		OAT.Style.set(content_elm, {opacity:1});
 		content_elm.style.height = '0px';
 	}
 
 
 }
-OAT.Loader.featureLoaded("panelbar");

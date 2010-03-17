@@ -66,4 +66,3 @@ OAT.Color = function() {
 		document.body.appendChild(d);
 	}
 }
-OAT.Loader.featureLoaded("color");

@@ -866,4 +866,3 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	this.init();
 	this.draw();
 } /* OAT.GraphSVG() */
-OAT.Loader.featureLoaded("graphsvg");
