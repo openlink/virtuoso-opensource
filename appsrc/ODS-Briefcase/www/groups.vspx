@@ -375,7 +375,7 @@
                     </table>
                   </td>
                   <td valign="top" nowrap="nowrap">
-                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 1}, btn_1: {mode: 2}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
+                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 1}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                   </td>
                 </tr>
               </table>
