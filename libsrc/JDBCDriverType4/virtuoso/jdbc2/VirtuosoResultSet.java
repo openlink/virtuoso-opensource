@@ -792,7 +792,8 @@ public class VirtuosoResultSet implements ResultSet
    {
       if(rows < 0 || rows > statement.getMaxRows())
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-      prefetch = rows;
+
+      prefetch = (rows == 0 ? VirtuosoTypes.DEFAULTPREFETCH : rows);
    }
 
    /**

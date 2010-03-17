@@ -724,7 +724,8 @@ public class VirtuosoStatement implements Statement
    {
       if(rows < 0 || (maxRows > 0 && rows > maxRows))
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-      prefetch = rows;
+	
+      prefetch = (rows == 0 ? VirtuosoTypes.DEFAULTPREFETCH : rows);
    }
 
    /**
