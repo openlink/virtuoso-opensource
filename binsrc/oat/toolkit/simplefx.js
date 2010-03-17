@@ -274,7 +274,7 @@ OAT.SimpleFX = {
 			} else {
 				var orig_w = elm.__origW;
 				var orig_h = elm.__origH;
-				if (!orig_w || !orig_h) { alert("Cannot restore element which was initially hidden!"); }
+				if (!orig_w || !orig_h) { alert("OAT.SimpleFX.shader:\nCannot restore element which was initially hidden!"); }
 				OAT.Dom.show(elm);
 				var a1 = OAT.AnimationOpacity(elm,{opacity:1,delay:5});
 				var a2 = OAT.AnimationSize(elm,{width:orig_w,height:orig_h,speed:10,delay:2});

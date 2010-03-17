@@ -549,7 +549,7 @@ OAT.SparqlQuery = function() {
 				self.splitPiece(piece);
 			}
 		} catch (e) {
-			alert('Invalid query!\nThere was a problem parsing the query. Please, check the syntax.');
+			alert('OAT.SparqlQuery.fromString:\nInvalid query!\nThere was a problem parsing the query. Please, check the syntax.');
 		}
 	}
 

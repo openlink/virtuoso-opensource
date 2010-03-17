@@ -123,7 +123,7 @@ OAT.WebDav = {
 				var path = p + f;
 				var error = function(xhr) {
 					var desc = OAT.WebDav.genericError(xhr,path);
-					alert('Error while trying to open file.\n'+desc);
+					alert('OAT.WebDav.usefile:\nError while trying to open file.\n'+desc);
 				}
 				var url = path + '?'+ new Date().getMilliseconds();
 				var o = {
@@ -164,7 +164,7 @@ OAT.WebDav = {
 			var data = this.options.dataCallback(f,id);
 			var error = function(xhr) {
 				var desc = OAT.WebDav.genericError(xhr,p+f);
-				alert('Error while trying to save file.\n'+desc);
+				alert('OAT.WebDav.usefile:\nError while trying to save file.\n'+desc);
 			}
 			var o = {
 				headers:OAT.WebDav.options.connectionHeaders,
@@ -193,13 +193,13 @@ OAT.WebDav = {
 
 	createDirectory:function(newDir) { /* create new directory */
 		if (this.fileExists(newDir)) {
-			alert("An item with name '"+newDir+"' already exists!");
+			alert("OAT.WebDav.createDirectory:\nAn item with name '"+newDir+"' already exists!");
 			return;
 		}
 		var url = this.options.path+newDir;
 		var error = function(xhr) {
 			var desc = OAT.WebDav.genericError(xhr,newDir);
-			alert('Error while creating new directory.\n'+desc);
+			alert('OAT.WebDav.createDirectory:\nError while creating new directory.\n'+desc);
 		}
 		var o = {
 			headers:OAT.WebDav.options.connectionHeaders,

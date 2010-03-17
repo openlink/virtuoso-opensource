@@ -70,7 +70,7 @@ OAT.Keyboard = {
 			if (p == "shift") { keyObj.shiftKey = 1; } else {
 				if (p in OAT.Keyboard.conversion) {
 					keyObj.keyCode = OAT.Keyboard.conversion[p];
-				} else { alert("Unknown key '"+p+"'"); }
+				} else { alert("OAT.Keyboard.add:\nUnknown key '"+p+"'"); }
 			}
 		}
 		OAT.Keyboard.groups[g].push(keyObj);

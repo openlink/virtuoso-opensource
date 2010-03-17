@@ -440,7 +440,7 @@ OAT.Fresnel = function(optObj) {
 		self.depth = 1;
 		self.stylesheets = [];
 		var xmlDoc = OAT.Xml.createXmlDoc();
-		if (!xmlDoc) { alert("No XML support, sorry :/"); }
+		if (!xmlDoc) { alert("OAT.Fresnel.format:\nNo XML support available"); }
 		self.xmlDoc = xmlDoc;
 		var node = self.formatContainer(false,data);
 		xmlDoc.appendChild(node);

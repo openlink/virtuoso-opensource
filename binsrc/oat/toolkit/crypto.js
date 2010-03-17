@@ -68,7 +68,7 @@ OAT.Crypto = {
 		// remove all characters that are not A-Z, a-z, 0-9, +, /, or =
 		var base64test = /[^A-Za-z0-9\+\/\=]/g;
 		if (base64test.exec(input)) {
-			alert("There were invalid base64 characters in the input text.\n" +
+			alert("OAT.Crypto.base64d:\nThere were invalid base64 characters in the input text.\n" +
 			"Valid base64 characters are A-Z, a-z, 0-9, '+', '/', and '='\n" +
 			"Expect errors in decoding.");
 		}

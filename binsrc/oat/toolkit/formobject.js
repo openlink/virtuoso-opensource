@@ -172,7 +172,7 @@ OAT.FormObject = {
 					if (fo.properties[j].name == name) { obj = fo.properties[j]; }
 				}
 				if (!obj) {
-					alert("Unknown (probably obsolete?) property '"+name+"'");
+					alert("OAT.FormObject.abstractParent:\nUnknown (probably obsolete?) property '"+name+"'"); 
 				} else {
 					obj.value = OAT.Xml.textValue(value);
 					if (obj.variable) { obj.value = obj.value.split(","); }
@@ -214,7 +214,7 @@ OAT.FormObject = {
 					var name = fsnode.getAttribute("name");
 
 					var fs = obj.fieldSets[j];
-					if (fs.name != name) { alert('Panic! Saved data incomplete?'); }
+					if (fs.name != name) { alert('OAT.FormObject.abstractParent:\nPanic! Saved data incomplete?'); }
 					var names = fsnode.getElementsByTagName("name"); /* all <name> subnodes */
 					var indexes = fsnode.getElementsByTagName("columnIndex"); /* all <columnIndex> subnodes */
 					fs.names = [];
@@ -1942,7 +1942,6 @@ OAT.FormObject = {
 				if (dir.charAt(dir.length-1) != "/") { dir += "/"; }
 				target = (target.charAt(0) == "/" ? target.substring(1) : target);
 				target = host+dir+target;
-//				alert(target);
 			}
 			if (self.properties[0].value == "1") {
 				/* guess type from address */
@@ -2015,9 +2014,9 @@ OAT.FormObject = {
 			var source = self.properties[1].value;
 			var ss = self.properties[2].value;
 			var target = self.properties[3].value;
-			if (source == "") { alert("Please select a saved query to process"); return; }
-			if (ss == "") { alert("Please select a stylesheet to create a feed"); return; }
-			if (target == "") { alert("Please select a target feed file"); return; }
+			if (source == "") { alert("OAT.FormObject.apply:\nPlease select a saved query to process"); return; }
+			if (ss == "") { alert("OAT.FormObject.apply:\nPlease select a stylesheet to create a feed"); return; }
+			if (target == "") { alert("OAT.FormObject.apply:\nPlease select a target feed file"); return; }
 
 			var processRef = function(query) {
 				/* we have saved source query. append a stylesheet and save */
@@ -2028,7 +2027,7 @@ OAT.FormObject = {
 				xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
 				xml += ' sql:xsl="'+ss+'" ';
 				xml += '><sql:sqlx>'+result+'</sql:sqlx></root>';
-				var recv_ref = function() { alert("New saved query created"); }
+				var recv_ref = function() { alert("OAT.FormObject.processRef:\nNew saved query created"); }
 				var o = {
 					auth:OAT.AJAX.AUTH_BASIC,
 					user:http_cred.user,

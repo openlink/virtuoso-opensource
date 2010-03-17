@@ -676,7 +676,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 						break;
 					}
 				}
-				if (!o) { alert("Value not found in distinct?!?!? PANIC!!!"); }
+				if (!o) { alert("OAT.Pivot.coords:\nValue not found in distinct?!?!? PANIC!!!"); }
 				ptr = o;
 			} /* for all conditions */
 			return pos;
@@ -1144,7 +1144,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 						break;
 					}
 				}
-				if (!o) { alert("Value not found in distinct?!?!? PANIC!!!"); }
+				if (!o) { alert("OAT.Pivot.fillAggStructure:\nValue not found in distinct?!?!? PANIC!!!"); }
 				ptr = o;
 			} /* for all conditions */
 			ptr.used = true;

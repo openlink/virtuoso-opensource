@@ -237,7 +237,7 @@ OAT.GraphSidebar = function(graph) {
 			var n = self.graph.data[i];
 			if (n.name == resource) { res = n; }
 		}
-		if (!res) { alert("Consistency error!"); }
+		if (!res) { alert("OAT.GraphsideBar.CreateResourceDR:\nConsistency error!"); }
 
 		var arr = (type == 1 ? res.outEdges : res.inEdges);
 		for (var i=0;i<arr.length;i++) {

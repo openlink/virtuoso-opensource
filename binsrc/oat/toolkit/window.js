@@ -195,11 +195,9 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 			var ml = parseInt(OAT.Style.get(node,"marginLeft"));
 			var mr = parseInt(OAT.Style.get(node,"marginRight"));
 			x = Math.max(x,dims[0]+ml+mr);
-//			alert([dims[1],mt,mb]);
 			y += dims[1]+mt+mb;
 		}
 		// obj.resizeTo(x + 4,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
-//		alert(y);
 		obj.resizeTo(false,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
 	}
 }

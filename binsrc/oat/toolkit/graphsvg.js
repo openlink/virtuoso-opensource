@@ -343,7 +343,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				if (node.vertex == v1) { o1 = node; }
 				if (node.vertex == v2) { o2 = node; }
 			}
-			if (!o1 || !o2) { alert('Inconsistent input data!'); }
+			if (!o1 || !o2) { alert('OAT.GraphSVG.compute:\nInconsistent input data!'); }
 			o1.outCount++;
 			o2.inCount++;
 			var edge = {

@@ -1450,11 +1450,11 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		for (var i=0;i<self.edges.length;i++) {
 			var e = self.edges[i];
 			if (e.node1 == node1 && e.node2 == node2) {
-				alert("This relationship can not be created, because the same relationship already exists.");
+				alert("OAT.SVGSparql.addEdge:\nThis relationship can not be created, because the same relationship already exists.");
 				return false;
 			}
 			if (e.node1 == node2 && e.node2 == node1) {
-				alert("This relationship can not be created, because inverse relationship exists.");
+				alert("OAT.SVGSparql.addEdge:\nThis relationship can not be created, because inverse relationship exists.");
 				return false;
 			}
 		}
@@ -1476,7 +1476,7 @@ OAT.SVGSparql = function(parentElm,paramsObj) {
 		if (self.projection == OAT.SVGSparqlData.PROJECTION_SPHERICAL) {
 			var c = OAT.Geometry.fromSpherical(x,y);
 			if (!c) {
-				alert("In spherical mode, nodes must be placed within radius.");
+				alert("OAT.SVGSparql.addNode:\nIn spherical mode, nodes must be placed within radius.");
 				return false;
 			}
 			x = c[0];
