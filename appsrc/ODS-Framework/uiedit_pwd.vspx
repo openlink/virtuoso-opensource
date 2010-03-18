@@ -408,7 +408,7 @@
                  control.ufl_selected := self.certificate_login;
              </v:after-data-bind>
             </v:check-box>
-            <b>Enable Automatic FOAF+SSL Login</b>
+              <b>Enable Automatic WebID Login</b>
           </label>
  	      </td>
       </tr>

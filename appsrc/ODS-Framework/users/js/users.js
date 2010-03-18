@@ -123,7 +123,7 @@ function myInit() {
 		  	OAT.Dom.show(prefix+"_tab_3");
 				var tbl = $(prefix+'_table_3');
 				if (tbl) {
-					addProfileRowValue(tbl, 'IRI', sslData.iri);
+					addProfileRowValue(tbl, 'WebID', sslData.iri);
 					if (sslData.firstName)
 						addProfileRowValue(tbl, 'First Name', sslData.firstName);
 					if (sslData.family_name)
@@ -539,9 +539,9 @@ function pfShowList(api, prefix, noMsg, cols, idIndex, cb) {
         }
     	  var td = OAT.Dom.create('td');
     	  td.noWrap = true;
-        buttonShow(td, function(){pfEditListObject(prefix, id);}, 'edit_16.png', ' Edit');
+        buttonShow(td, function(p1, p2){return function(){pfEditListObject(p1, p2);};}(prefix, id), 'edit_16.png', ' Edit');
         td.appendChild(OAT.Dom.text(' '));
-        buttonShow(td, function(){pfDeleteListObject(api, id, cb);}, 'trash_16.png', ' Delete');
+        buttonShow(td, function(p1, p2, p3){return function(){pfDeleteListObject(p1, p2, p3);};}(api, id, cb), 'trash_16.png', ' Delete');
       	tr.appendChild(td);
 
     		tbody.appendChild(tr);
@@ -720,7 +720,11 @@ function tagValue(xml, tName) {
   var str;
   try {
     str = OAT.Xml.textValue(xml.getElementsByTagName(tName)[0]);
+		if (str) {
     str = str.replace (/%2B/g, ' ');
+    } else {
+		  str = '';
+    }
   } catch (x) {
     str = '';
   }
@@ -1866,8 +1870,8 @@ function rfSignupSubmit(event) {
 		if (!facebookData || !facebookData.uid)
 			return showError('Invalid Facebook UserID');
 	} else if (rfTab.selectedIndex == 3) {
-		if (!facebookData || !facebookData.uid)
-			return showError('Invalid FOAF+SSL UserID');
+		if (!sslData || !sslData.iri)
+			return showError('Invalid WebID UserID');
   }
   if (!$('rf_is_agreed').checked)
     return showError('You have not agreed to the Terms of Service!');

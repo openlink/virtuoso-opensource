@@ -1054,12 +1054,12 @@ a.img_button {
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 5px 5px 2px;
+  padding: 3px 4px 1px;
   text-decoration:none;
 }
 
 a.img_button img {
-  margin-bottom: -2px;
+  margin-bottom: -3px;
 }
 
 .pointer {
@@ -1074,10 +1074,10 @@ span.button {
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 5px 5px 2px;
+  padding: 3px 4px 1px;
   text-decoration:none;
 }
 
 img.button {
-  margin-bottom: -2px;
+  margin-bottom: -3px;
 }

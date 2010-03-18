@@ -37,7 +37,7 @@ def login_form()
         <li id="lf_tab_0" title="ODS">ODS</li>
         <li id="lf_tab_1" title="OpenID">OpenID</li>
         <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-        <li id="lf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+        <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
       </ul>
       <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
         <div id="lf_content"></div>
@@ -967,11 +967,12 @@ def main()
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "crypto", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
       OAT.MSG.attach(OAT, "PAGE_LOADED", myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
     </script>
   </head>
   <body>

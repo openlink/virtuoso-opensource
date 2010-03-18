@@ -175,11 +175,6 @@
               <td width="800px">
                 <table id="wl_tbl" class="listing">
                   <tbody id="wl_tbody">
-                    <tr id="wl_tr_no">
-                      <td colspan="3">
-                        <b>No Elements</b>
-     				</td>
-   				</tr>
                   </tbody>
 			  </table>
                 <input type="hidden" id="wl_no" name="wl_no" value="1" />
@@ -222,9 +217,15 @@
                 if (length (ontologies))
                   products := get_keyword ('items', ontologies[0], vector());
 
-                self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+                  self.wl_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
                 if (self.wl_mode = 'WL/add')
               {
+                    if (exists (select 1 from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = self.u_id and WUWL_BARTER = self.wl_offer.ufl_value))
+                    {
+                      self.vc_error_message := 'A seek with same name already exists, please specify unique name.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
                   insert into DB.DBA.WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES)
                   values (self.u_id, self.wl_offer.ufl_value, self.wl_comment.ufl_value, serialize (self.wl_properties));
               }

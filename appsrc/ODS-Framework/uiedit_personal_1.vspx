@@ -532,7 +532,7 @@
                          <th>
                            URI
                          </th>
-                         <th width="1%">
+                         <th width="65px">
                            Action
                          </th>
                        </tr>
@@ -542,7 +542,7 @@
                      <?vsp
                        for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', interest));
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', interest));
                        }
                      ?>
                 		   </script>
@@ -551,7 +551,7 @@
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x1', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}});" />
+                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                    <vm:u-prop-select name="sel_8" value="self.sav8" />
                  </td>
                </tr>
@@ -602,7 +602,7 @@
                          <th>
                            Label
                          </th>
-                         <th width="1%">
+                         <th width="65px">
                            Action
                          </th>
                        </tr>
@@ -612,7 +612,7 @@
                      <?vsp
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
                        }
                      ?>
                 		   </script>
@@ -621,7 +621,7 @@
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x2', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}, fld_2: {mode: 0}});" />
+                   <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                    <vm:u-prop-select name="sel_48" value="self.sav48" />
                  </td>
                </tr>
@@ -645,7 +645,7 @@
                          <th>
                            Label
                          </th>
-                         <th width="1%">
+                         <th width="65px">
                            Action
                          </th>
                        </tr>
@@ -655,7 +655,7 @@
                      <?vsp
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {mode: 0, value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {mode: 0, value: "%s"}});});', interest, label));
+                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
                        }
                      ?>
                 		   </script>
@@ -664,7 +664,7 @@
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x3', null, {fld_1: {mode: 0, className: '_validate_ _url_ _canEmpty_'}, fld_2: {mode: 0}});" />
+                   <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                    <vm:u-prop-select name="sel_49" value="self.sav49" />
                  </td>
                </tr>

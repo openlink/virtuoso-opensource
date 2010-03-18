@@ -38,7 +38,7 @@
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["dom", "ajax", "ws", "json", "tab", "dimmer", "combolist", "calendar", "crypto", "rdfmini", "dimmer", "grid", "graphsvg", "tagcloud", "anchor", "dock", "map", "timeline"];
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "crypto", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -606,7 +606,7 @@
                   <li id="lf_tab_0" title="ODS">ODS</li>
                   <li id="lf_tab_1" title="OpenID">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="lf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
@@ -679,7 +679,7 @@
                   <li id="rf_tab_0" title="ODS">ODS</li>
                   <li id="rf_tab_1" title="OpenID">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="rf_tab_3" title="FOAF+SSL" style="display: none;">FOAF+SSL</li>
+                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
@@ -986,7 +986,7 @@
                                           <th>
                                             URI
                                           </th>
-                                          <th width="1%">
+                                          <th width="65px">
                                             Action
                                           </th>
                                         </tr>
@@ -998,7 +998,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});" />
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>
@@ -1037,7 +1037,7 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="1%">
+                                          <th width="65px">
                                             Action
                                           </th>
                                         </tr>
@@ -1049,7 +1049,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
+                                    <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>
@@ -1072,7 +1072,7 @@
                                           <th>
                                             Label
                                           </th>
-                                          <th width="1%">
+                                          <th width="65px">
                                             Action
                                           </th>
                                         </tr>
@@ -1084,7 +1084,7 @@
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});" />
+                                    <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                   </td>
                                 </tr>
                               </table>
@@ -1218,7 +1218,7 @@
                                     <th>
                                       Member Home Page URL
                                     </th>
-                                    <th width="1%">
+                                    <th width="65px">
                                       Action
                                     </th>
                                   </tr>
@@ -1230,7 +1230,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1252,7 +1252,7 @@
                                     <th>
                                       Place
                                     </th>
-                                    <th width="1%">
+                                    <th width="65px">
                                       Action
                                     </th>
                                   </tr>
@@ -1264,7 +1264,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});" />
+                              <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1315,7 +1315,7 @@
                           <tr>
                             <th>Add other services</th>
                             <td>
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
+                              <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                             <td width="40%">
                             </td>
@@ -1339,7 +1339,7 @@
                                     <th width="100%">
                                       Favorite Type
                                     </th>
-                                    <th width="1%">
+                                    <th width="65px">
                                       Action
                                     </th>
                                   </tr>
@@ -1353,7 +1353,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="nowrap">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('r', null, {fld_1: {mode: 12, cssText: 'display: none;'}, fld_2: {mode: 5, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 5, cssText: 'margin-left: 2px; margin-right: 2px;'}, btn_2: {mode: 6, cssText: 'margin-left: 2px; margin-right: 2px;'}});" />
+                              <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1400,7 +1400,7 @@
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Property
+                                Property (*)
                               </th>
                               <td id="if_opt">
                                 <script type="text/javascript">
@@ -1409,7 +1409,6 @@
                                     var fld = new OAT.Combolist([]);
                                     fld.input.name = 'pf07_property';
                                     fld.input.id = fld.input.name;
-                                    fld.input.className = '_validate_';
                                     fld.input.style.width = "400px";
                                     $("if_opt").appendChild(fld.div);
                                     fld.addOption("foaf:made");
@@ -1430,10 +1429,16 @@
                             </tr>
                             <tr>
                               <th>
-                                Description
+                                Description (*)
                               </th>
                               <td>
-                                <textarea name="pf07_description" id="pf07_description" class="_validate_" style="width: 400px;"></textarea>
+                                <textarea name="pf07_description" id="pf07_description" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td />
+                              <td>
+  		                          <b>Note: The fields designated with '*' will be fetched from the source document if empty</b>
                               </td>
                             </tr>
                           </table>
@@ -1892,7 +1897,7 @@
                         <th>
                                       Member Home Page URL
                         </th>
-                                    <th width="1%">
+                                    <th width="65px">
                                       Action
                         </th>
                                   </tr>
@@ -1904,7 +1909,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});" />
+                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                         </td>
                       </tr>
                         </table>
@@ -1955,7 +1960,7 @@
                           <tr>
                             <th>Add other services</th>
                             <td>
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});" />
+                              <span class="button pointer" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                             <td width="40%">
                         </td>
@@ -2181,7 +2186,7 @@
                         <td nowrap="nowrap">
                           <label>
                             <?php print (sprintf ("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\" %s/>", ($_xml->certificateLogin == '1')? "checked=\"checked\"": "")); ?>
-                            Enable Automatic FOAF+SSL Login
+                            Enable Automatic WebID Login
                           </label>
                         </td>
                       </tr>

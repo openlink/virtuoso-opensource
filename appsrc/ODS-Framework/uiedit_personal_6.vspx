@@ -103,13 +103,13 @@
             <table id="r_tbl" class="listing">
               <thead>
                 <tr class="listing_header_row">
-                  <th>
+                  <th width="16px">
                     <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
                   </th>
-                  <th width="100%">
+                  <th>
                     Favorite Type
                   </th>
-                  <th width="1%">
+                  <th width="65px">
                     Action
                   </th>
                 </tr>
@@ -126,7 +126,7 @@
             <input type="hidden" id="r_no" name="r_no" value="1" />
           </td>
           <td valign="top" nowrap="nowrap">
-            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});" />
+            <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
       </table>

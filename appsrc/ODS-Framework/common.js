@@ -1098,11 +1098,20 @@ RDF.showItemsTable = function(itemType)
   {
     var prefixItem = prefix + '_item_' + No;
 
-    var btn = OAT.Dom.create('img');
-    btn.src = '/ods/images/icons/add_16.png';
-    btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-    btn.onclick = function(){TBL.createRow(prefixItem, null, {fld_1: {mode: 45, cssText: 'display: none;'}, fld_2: {mode: 44, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 0}, btn_2: {mode: 42}});};
-    TDs[2].appendChild(btn);
+    var fld = OAT.Dom.create('span');
+    fld.onclick = function(){TBL.createRow(prefixItem, null, {fld_1: {mode: 45, cssText: 'display: none;'}, fld_2: {mode: 44, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 0}, btn_2: {mode: 42}});};
+    OAT.Dom.addClass(fld, 'button pointer');
+
+    var img = OAT.Dom.create('img');
+    img.src = '/ods/images/icons/add_16.png';
+    img.alt = 'Add row';
+    img.title = fld.alt;
+    OAT.Dom.addClass(img, 'button');
+
+    fld.appendChild(img);
+    fld.appendChild(OAT.Dom.text(' Add'));
+    TDs[2].style.whiteSpace = 'nowrap';
+    TDs[2].appendChild(fld);
 
     var S = '<table id="item_tbl" class="listing" style="background-color: #F5F5EE;"><thead><tr class="listing_header_row"><th><div style="width: 16px;"><![CDATA[&nbsp;]]></div></th><th width="100%">Item</th><th width="80px">Action</th></tr></thead><tbody id="item_tbody"><tr id="item_tr_no"><td></td><td colspan="2"><b><i>No Items</i></b></td></tr></tbody></table><input type="hidden" id="item_no" name="item_no" value="0" />';
     TDs[1].innerHTML = S.replace(/item_/g, prefixItem+'_');
@@ -1112,6 +1121,8 @@ RDF.showItemsTable = function(itemType)
     {
       for (var i = 0; i < items.length; i++)
         this.showItem(prefixItem, items[i]);
+    } else {
+      fld.onclick();
     }
   } else {
     TDs[1].innerHTML = '<b><i>Ontology has no elements</i></b>';
@@ -1348,11 +1359,20 @@ RDF.showPropertiesTable = function(item)
     {
       var prefixProp = prefix + '_prop_' + No;
 
-      var btn = OAT.Dom.create('img');
-      btn.src = '/ods/images/icons/add_16.png';
-      btn.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-      btn.onclick = function(){TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item}, fld_2: {mode: 47, item: item}});};
-      TDs[2].appendChild(btn);
+      var fld = OAT.Dom.create('span');
+      fld.onclick = function(){TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item}, fld_2: {mode: 47, item: item}});};
+      OAT.Dom.addClass(fld, 'button pointer');
+
+      var img = OAT.Dom.create('img');
+      img.src = '/ods/images/icons/add_16.png';
+      img.alt = 'Add row';
+      img.title = fld.alt;
+      OAT.Dom.addClass(img, 'button');
+
+      fld.appendChild(img);
+      fld.appendChild(OAT.Dom.text(' Add'));
+      TDs[2].style.whiteSpace = 'nowrap';
+      TDs[2].appendChild(fld);
 
       var S = '<table id="prop_tbl" class="listing" style="background-color: #FFF;"><thead><tr class="listing_header_row"><th width="50%">Property</th><th width="50%">Value</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="3">No Properties</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
       TDs[1].innerHTML = S.replace(/prop_/g, prefixProp+'_');
@@ -1362,6 +1382,8 @@ RDF.showPropertiesTable = function(item)
       {
         for (var i = 0; i < properties.length; i++)
           TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item, value: properties[i]}, fld_2: {mode: 47, item: item, value: properties[i]}});
+      } else {
+        fld.onclick();
       }
     } else {
       TDs[1].innerHTML = '<b><i>class has no properties</i></b>';
