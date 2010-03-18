@@ -178,7 +178,7 @@
 
         <vm:if test='not isnull (ODS.ODS_API."server.getInfo"(&apos;sslPort&apos;))'>
           <fieldset>
-            <legend><b>FOAF+SSL groups</b></legend>
+            <legend><b>WebID groups</b></legend>
           	<v:data-source name="fgrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
                 <![CDATA[
@@ -244,7 +244,7 @@
                 <v:template name="fg_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr align="center">
-                      <td colspan="4">No FOAF+SSL groups</td>
+                      <td colspan="4">No WebID groups</td>
                     </tr>
                   </table>
                 </v:template>
@@ -481,7 +481,7 @@
       <v:template type="simple" enabled="--case when self.v_mode in ('fgCreate', 'fgUpdate') then 1 else 0 end">
         <input name="tabNo" id="tabNo" type="hidden" value="<?V self.v_tabNo ?>" />
         <div class="new-form-header">
-          <v:label format="%s" value="--concat(initcap(subseq(self.v_mode, 2)), ' FOAF+SSL Group')"/>
+          <v:label format="%s" value="--concat(initcap(subseq(self.v_mode, 2)), ' WebID Group')"/>
         </div>
 
         <div id="c1">
