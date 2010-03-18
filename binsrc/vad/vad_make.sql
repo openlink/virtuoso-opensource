@@ -2276,6 +2276,8 @@ create procedure VAD.DBA.VER_LT (in x varchar, in y varchar)
       yi := atoi (yy[i]);
       if (xi < yi)
 	return 1;
+      if (xi > yi)
+	return 0;
     }
   return 0;
 }
