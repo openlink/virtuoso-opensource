@@ -1415,20 +1415,22 @@ dk_mutex_t * pl_ref_count_mtx;
 
 
 page_lock_t **
-lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
+lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret, int * n_locks_ret)
 {
   /* If they all fit, put them there without sort.  If a lot, alloc a new array. If more than 1/4 of buffers, also sort */
   dk_hash_t * locks = &lt->lt_lock;
-  int n_locks = locks->ht_count, fill = 0, inx;
+  int n_locks, fill = 0, inx;
   page_lock_t * pl;
   void* d;
   dk_hash_iterator_t hit;
+
+  IN_LT_LOCKS (lt);
+  n_locks = locks->ht_count;
   if (n_locks > max)
     {
       max = MIN (n_locks, 1000000);
       arr = dk_alloc (sizeof (caddr_t) * max );
     }
-  mutex_enter (&lt->lt_locks_mtx);
   dk_hash_iterator (&hit, locks);
   mutex_enter (pl_ref_count_mtx);
     while (dk_hit_next (&hit, (void**)&pl, &d))
@@ -1446,11 +1448,12 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
     }
   else
     clrhash (locks);
-  mutex_leave (&lt->lt_locks_mtx);
+  LEAVE_LT_LOCKS (lt);
   if (max > main_bufs / 4)
     {
       buf_sort ((buffer_desc_t **)arr, fill, (sort_key_func_t)pl_page_key);
     }
+  *n_locks_ret = n_locks;
   *fill_ret = fill;
   return arr;
 }
@@ -1510,8 +1513,7 @@ lt_transact (lock_trx_t * lt, int op)
   for (;;)
     {
       int n_locks, l_fill, l_inx;
-      pl_arr = lt_locks_to_array (lt, pl_arr_auto, sizeof (pl_arr_auto) / sizeof (caddr_t), &l_fill);
-      n_locks = lt->lt_lock.ht_count;
+      pl_arr = lt_locks_to_array (lt, pl_arr_auto, sizeof (pl_arr_auto) / sizeof (caddr_t), &l_fill, &n_locks);
       for (l_inx = 0; l_inx < l_fill; l_inx++)
 	{
 	  page_lock_t * pl = pl_arr[l_inx];
