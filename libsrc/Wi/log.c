@@ -660,7 +660,11 @@ log_cl_final(lock_trx_t* lt, int is_commit)
 	    GPF_T1 ("failed lseek in cl commit final");
 	  write(fd, &s, 1);
 	  if (dbs->dbs_log_length != (end = LSEEK(fd,0,SEEK_END)))
-	    GPF_T1 ("dbs_log_length and end of log file differ");
+	    {
+	      log_error ("Logging at offset " OFF_T_PRINTF_FMT " where end of log file is " OFF_T_PRINTF_FMT ".",
+		  	(OFF_T_PRINTF_DTP) end, (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
+	      GPF_T1 ("dbs_log_length and end of log file differ");
+	    }
 	  lt->lt_commit_flag_offset = 0;
 	  if (SQL_COMMIT == is_commit && QFID_HOST (lt->lt_w_id) == local_cll.cll_this_host)
 	    log_2pc_archive (lt->lt_w_id);
@@ -2135,6 +2139,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
     {
       if (dbs->dbs_log_session)
 	{
+	  mutex_enter (log_write_mtx);
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
 	  dbs->dbs_log_length = 0;
@@ -2143,6 +2148,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	      log_set_byte_order_check (1);
 	      log_set_server_version_check (1);
 	    }
+	  mutex_leave (log_write_mtx);
 	  log_info ("Checkpoint finished, log reused");
 	}
       else
@@ -2184,6 +2190,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
       mutex_leave (log_write_mtx);
       log_info ("Checkpoint finished, new log is %s", new_log);
     }
+  ASSERT_IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
       if (((LT_PREPARED == lt->lt_status && lt->lt_2pc._2pc_wait_commit) || LT_2PC_PENDING == lt->lt_status)
@@ -2204,6 +2211,11 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  if (LTE_OK != rc)
 	    log_error ("Checkpoint interrupted 2pc transaction between prepare and final.  The log of the prepared state could not be written to the post-checkpoint transaction log.  This means that, if the transaction commits and ought to be replayed from log, the transaction will be lost. trx no %d:%d", QFID_HOST (lt->lt_w_id), (uint32)lt->lt_w_id);
 	  mutex_leave (log_write_mtx);
+	}
+      else if (lt->lt_log_2pc && lt->lt_commit_flag_offset)
+	{
+	  log_info ("2pc txn with status %d during cpt log", lt->lt_status);
+	  lt->lt_commit_flag_offset = 0;
 	}
     }
   END_DO_SET ();
