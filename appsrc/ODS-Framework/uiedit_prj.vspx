@@ -150,7 +150,7 @@
     <vm:if test="self.m_mode <> 'M/browse'">
 	  <div class="fm">
 	      <fieldset>
-  		    <label for="m_name">Property*</label>
+  		    <label for="m_name">Property (*)</label>
 		  <br />
           <div id="if_opt">
             <script type="text/javascript">
@@ -174,7 +174,7 @@
 		    <br />
           <v:text name="m_url" value="" xhtml_id="m_url" xhtml_style="width:316px" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
 		  <br/>
-  		    <label for="m_desc">Description*</label>
+  		    <label for="m_desc">Description (*)</label>
 		    <br />
   		    <v:textarea name="m_desc" value="" xhtml_id="m_desc" xhtml_rows="4" xhtml_cols="80"/>
 		  <br />

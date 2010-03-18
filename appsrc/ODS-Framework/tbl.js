@@ -29,7 +29,9 @@ TBL.createRow = function (prefix, No, optionObject)
   }
   else
   {
-    var tbl = $(prefix+'_tbl');
+    var tbl = $(prefix+'_tbody');
+    if (!tbl)
+      tbl = $(prefix+'_tbl');
     if (tbl)
     {
       var options = {btn_1: {mode: 0}};
@@ -152,6 +154,8 @@ TBL.deleteRow = function (prefix, No, ask) {
     return false;
 
     OAT.Dom.unlink(prefix+'_tr_'+No);
+  OAT.Dom.unlink(prefix+'_tr_'+No+'_items');
+  OAT.Dom.unlink(prefix+'_tr_'+No+'_properties');
     var No = parseInt($(prefix+'_no').value);
     for (var N = 0; N < No; N++)
     {
@@ -386,14 +390,19 @@ TBL.createCell44 = function (td, prefix, fldName, No, fldOptions) {
   var fldValue;
   if (fldOptions.value)
     fldValue = fldOptions.value.name;
-  TBL.selectOption(fld, fldValue, '', '');
+  TBL.selectOption(fld, null, '', '');
   var ontology = RDF.getOntologyByName(fld.itemType.ontology);
   if (ontology && ontology.classes)
   {
     var C = ontology.classes;
     for (i = 0; i < C.length; i++)
-      TBL.selectOption(fld, fldValue, C[i].name, C[i].name);
+      TBL.selectOption(fld, null, C[i].name, C[i].name);
   }
+  sortSelect (fld);
+  fld.value = fldValue;
+  if (fld.selectedIndex != -1)
+    fld.options[fld.selectedIndex].defaultSelected = true;
+
   td.appendChild(fld);
   return fld;
 }
@@ -421,7 +430,7 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
-  function selectOption(fld, fldValue, ontologyClassName)
+  function xSelectOption(fld, fldValue, ontologyClassName)
   {
     var ontologyClass = RDF.getOntologyClass(ontologyClassName);
     if (ontologyClass && ontologyClass.properties)
@@ -431,7 +440,7 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
 
       for (i = 0; i < properties.length; i++)
         TBL.selectOption(fld, fldValue, properties[i].name, properties[i].name);
-      selectOption(fld, fldValue, ontologyClass.subClassOf);
+      xSelectOption(fld, fldValue, ontologyClass.subClassOf);
     }
   }
 
@@ -444,7 +453,7 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
   if (fldOptions.value)
     fldValue = fldOptions.value.name;
   TBL.selectOption(fld, null, '', '');
-  selectOption(fld, null, fld.item.className);
+  xSelectOption(fld, null, fld.item.className);
   fld.onchange = function(){RDF.changePropertyValue(fld);};
   sortSelect (fld);
   fld.value = fldValue;
@@ -535,13 +544,19 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
 
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
-  var fld = OAT.Dom.create('img');
-  fld.src = '/ods/images/icons/del_16.png';
-  fld.alt = 'Delete row';
-  fld.title = fld.alt;
-  fld.style.cssText = 'margin-left: 2px; margin-right: 2px;';
+  var fld = OAT.Dom.create('span');
+  fld.id = fldName;
   fld.onclick = function(){TBL.deleteRow(prefix, No);};
-  OAT.Dom.addClass(fld, 'pointer');
+  OAT.Dom.addClass(fld, 'button pointer');
+
+  var img = OAT.Dom.create('img');
+  img.src = '/ods/images/icons/trash_16.png';
+  img.alt = 'Delete row';
+  img.title = fld.alt;
+  OAT.Dom.addClass(img, 'button');
+
+  fld.appendChild(img);
+  fld.appendChild(OAT.Dom.text(' Delete'));
 
   td.appendChild(fld);
   return fld;
@@ -563,7 +578,6 @@ TBL.createButton40 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createButton0(td, prefix, fldName, No, fldOptions);
   fld.onclick = function(){
-    if (TBL.deleteRow(prefix, No)) {
       var itemType = RDF.getItemType(No);
       if (itemType) {
         for (var i = 0; i < RDF.itemTypes.length; i++) {
@@ -573,20 +587,25 @@ TBL.createButton40 = function (td, prefix, fldName, No, fldOptions)
           }
         }
       }
-    }
+    TBL.deleteRow(prefix, No);
   };
   return fld;
 }
 
 TBL.createButtonAdd = function (td, prefix, fldName, No, fldOptions)
 {
-  var fld = OAT.Dom.create('img');
-  fld.src = '/ods/images/icons/add_16.png';
+  var fld = OAT.Dom.create('span');
   fld.id = fldName;
-  fld.alt = 'Add row';
-  fld.title = fld.alt;
-  fld.style.cssText = 'margin-left: 2px; margin-right: 2px;';
-  OAT.Dom.addClass(fld, 'pointer');
+  OAT.Dom.addClass(fld, 'button pointer');
+
+  var img = OAT.Dom.create('img');
+  img.src = '/ods/images/icons/add_16.png';
+  img.alt = 'Add row';
+  img.title = fld.alt;
+  OAT.Dom.addClass(img, 'button');
+
+  fld.appendChild(img);
+  fld.appendChild(OAT.Dom.text(' Add'));
 
   td.appendChild(fld);
   return fld;

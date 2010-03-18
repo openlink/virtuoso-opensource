@@ -2990,7 +2990,7 @@ ODS.Nav = function(navOptions) {
 			if ((document.location.protocol == 'https:') && self.sslData) {
         OAT.Dom.show('loginT4');
         loginTab.add('loginT4', 'loginP4');
-        $('loginBtn').value = 'FOAF+SSL Login';
+				$('loginBtn').value = 'WebID Login';
 
 				if (self.sslData.iri) {
           var label = OAT.Dom.create('label');
@@ -3041,7 +3041,7 @@ ODS.Nav = function(navOptions) {
                           $('loginErrDiv').innerHTML = '';
 			});
 			OAT.Event.attach('loginT4', 'click', function() {
-                        $('loginBtn').value = 'FOAF+SSL Login';
+				$('loginBtn').value = 'WebID Login';
                         OAT.Dom.hide ($('loginForgot'));
                         $('loginErrDiv').innerHTML = '';
 			});

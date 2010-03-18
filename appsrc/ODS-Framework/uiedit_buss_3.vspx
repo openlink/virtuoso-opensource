@@ -180,7 +180,7 @@
         <tr>
           <th>Add other services</th>
           <td colspan="2">
-            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('y2', null, {fld_1: {mode: 0}, fld_2: {mode: 0, cssText: 'width: 216px;'}});" />
+            <span class="button pointer" onclick="TBL.createRow('y2', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
   		  <![CDATA[
@@ -188,7 +188,7 @@
         <?vsp
           for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.bmessaging) do
           {
-              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("y2", null, {fld_1: {mode: 0, value: "%s"}, fld_2: {mode: 0, value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
+              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("y2", null, {fld_1: {value: "%s"}, fld_2: {value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
           }
         ?>
    		    </script>

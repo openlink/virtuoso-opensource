@@ -120,7 +120,7 @@
                 <th>
                   Place
                 </th>
-                <th width="1%">
+                <th width="65px">
                   Action
                 </th>
               </tr>
@@ -129,7 +129,7 @@
             		    <?vsp
                   for (select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
                   {
-                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 0, value: "%s"}});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
+                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
                   }
             		    ?>
             		    </script>
@@ -138,7 +138,7 @@
             </table>
           </td>
           <td valign="top" nowrap="1">
-            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {mode: 0}, fld_3: {mode: 0}});" />
+            <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
       </table>

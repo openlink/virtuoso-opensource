@@ -1101,7 +1101,8 @@ create procedure ODS.ODS_API."user.authenticate" (
     }
   else
   {
-    ods_check_auth (uname);
+    if (not ods_check_auth (uname))
+      uname := null;
   }
   if (isnull (uname))
     return ods_auth_failed ();
