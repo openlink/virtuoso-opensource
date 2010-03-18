@@ -71,11 +71,11 @@
 			</dcterms:title>
 			<foaf:img rdf:resource="{THUMBNAILIMAGEURL}"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="LASTPUBLISHEDDATE" />
+				<xsl:value-of select="vi:string2date2 (LASTPUBLISHEDDATE)" />
 			</dcterms:created>
 			<foaf:maker rdf:resource="{concat('http://slidesix.com/user/', CREATEDBYUSERNAME)}" />
-			<dcterms:modified>
-				<xsl:value-of select="LASTPUBLISHEDDATE" />
+			<dcterms:modified rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="vi:string2date2 (LASTPUBLISHEDDATE)" />
 			</dcterms:modified>
 			<bibo:content>
 				<xsl:value-of select="EMBEDCODE" />
