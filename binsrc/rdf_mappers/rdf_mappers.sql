@@ -7459,7 +7459,18 @@ drop procedure DB.DBA.RM_LOAD_ONTOLOGIES;
 
 create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refresh int := null)
 {
+  declare dedl int;
   set_user_id ('SPARQL');
+  dedl := 10;
+  declare exit handler for sqlstate '40001' 
+  {
+    rollback work;
+    if (dedl <= 0)
+      resignal; 
+    dedl := dedl - 1;  
+    goto again;
+  };
+again:  
   if (do_refresh is null)
     DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  'soft',  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type));
   else
