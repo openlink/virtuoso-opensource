@@ -1856,7 +1856,7 @@
                 </fieldset>
                 <vm:if test='not isnull (ODS.ODS_API."server.getInfo"(&apos;sslPort&apos;))'>
                   <fieldset>
-                    <legend><b>FOAF+SSL users</b></legend>
+                    <legend><b>WebID users</b></legend>
                     <table>
                       <tr>
                         <td width="100%">
@@ -1890,7 +1890,7 @@
                         		    ?>
                         		    </script>
                         		  ]]>
-                            <tr id="f_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 3 else 4 end ?>"><b>No FOAF+SSL Security</b></td></tr>
+                            <tr id="f_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 3 else 4 end ?>"><b>No WebID Security</b></td></tr>
                           </table>
                         </td>
                         <vm:if test="self.dav_enable">

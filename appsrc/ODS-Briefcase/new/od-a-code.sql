@@ -900,8 +900,14 @@ create procedure ODRIVE.WA.str2vector(
 create procedure ODRIVE.WA.utf2wide (
   inout S any)
 {
+  declare retValue any;
+
   if (isstring (S))
-  return charset_recode (S, 'UTF-8', '_WIDE_');
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
   return S;
 }
 ;
@@ -911,9 +917,15 @@ create procedure ODRIVE.WA.utf2wide (
 create procedure ODRIVE.WA.wide2utf (
   inout S any)
 {
+  declare retValue any;
+
   if (iswidestring (S))
-  return charset_recode (S, '_WIDE_', 'UTF-8' );
-  return S;
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
+  return charset_recode (S, null, 'UTF-8' );
 }
 ;
 
