@@ -31,7 +31,7 @@
     <link type="text/css" rel="stylesheet" href="SyntaxHighlighter.css"></link>  
     <script type="text/javascript">
       var toolkitPath="toolkit"; 
-      var featureList=["tab","ajax2","combolist","window","tree","grid","dav","xml"];
+      var featureList=["tab","ajax","combolist","window","tree","grid","dav","xml"];
     </script>
     <script type="text/javascript" src="toolkit/loader.js"></script>
     <script type="text/javascript" src="sparql_ajax.js"></script>
