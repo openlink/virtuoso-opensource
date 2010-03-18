@@ -476,4 +476,3 @@ OAT.SqlQuery = function() {
 
 	}
 }
-OAT.Loader.featureLoaded("sqlquery");

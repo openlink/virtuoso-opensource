@@ -166,4 +166,3 @@ OAT.PieChart = function(div,optObj) {
 		} /* for all data */
 	} /* draw */
 } /* OAT.PieChart() */
-OAT.Loader.featureLoaded("piechart");

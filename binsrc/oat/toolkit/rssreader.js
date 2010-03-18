@@ -112,4 +112,3 @@ OAT.RSSReader = function(div,options) {
 	}
 
 }
-OAT.Loader.featureLoaded("rssreader");

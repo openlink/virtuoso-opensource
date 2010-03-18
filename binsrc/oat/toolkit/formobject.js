@@ -172,7 +172,7 @@ OAT.FormObject = {
 					if (fo.properties[j].name == name) { obj = fo.properties[j]; }
 				}
 				if (!obj) {
-					alert("Unknown (probably obsolete?) property '"+name+"'");
+					alert("OAT.FormObject.abstractParent:\nUnknown (probably obsolete?) property '"+name+"'"); 
 				} else {
 					obj.value = OAT.Xml.textValue(value);
 					if (obj.variable) { obj.value = obj.value.split(","); }
@@ -214,7 +214,7 @@ OAT.FormObject = {
 					var name = fsnode.getAttribute("name");
 
 					var fs = obj.fieldSets[j];
-					if (fs.name != name) { alert('Panic! Saved data incomplete?'); }
+					if (fs.name != name) { alert('OAT.FormObject.abstractParent:\nPanic! Saved data incomplete?'); }
 					var names = fsnode.getElementsByTagName("name"); /* all <name> subnodes */
 					var indexes = fsnode.getElementsByTagName("columnIndex"); /* all <columnIndex> subnodes */
 					fs.names = [];
@@ -343,7 +343,7 @@ OAT.FormObject = {
 			xml += '\t\t\t<css ';
 			for (var i=0;i<fo.css.length;i++) {
 				var css = fo.css[i];
-				xml += ' '+css.property+'="'+OAT.Dom.style(e,css.property)+'" ';
+				xml += ' '+css.property+'="'+OAT.Style.get(e,css.property)+'" ';
 			}
 			xml += '></css>\n';
 			xml += '\t\t</style>\n';
@@ -712,9 +712,12 @@ OAT.FormObject = {
 		self.properties = [
 /*0*/		{name:"Key",type:"string",value:""},
 /*1*/		{name:"Zoom level",type:"select",value:"2",options:[["0 - Far","0"],"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15",["16 - Near","16"]]},
-/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G,options:[
-				["Google",OAT.MapData.TYPE_G],["Yahoo!",OAT.MapData.TYPE_Y],
-				["MS Virtual Earth",OAT.MapData.TYPE_MS],["OpenLayers",OAT.MapData.TYPE_OL]
+/*2*/		{name:"Provider",type:"select",value:OAT.MapData.TYPE_G3,options:[
+				["Google v3",OAT.MapData.TYPE_G3],
+				["Google",OAT.MapData.TYPE_G],
+				["Yahoo!",OAT.MapData.TYPE_Y],
+				["MS Virtual Earth",OAT.MapData.TYPE_MS],
+				["OpenLayers",OAT.MapData.TYPE_OL]
 			]},
 /*3*/		{name:"All markers at once?",type:"bool",value:"0"},
 /*4*/		{name:"Map type",type:"select",value:"Map",options:["Map","Satellite","Hybrid"]},
@@ -787,6 +790,7 @@ OAT.FormObject = {
 		self.init = function() {
 			self.zoom = parseInt(self.properties[1].value);
 			switch (parseInt(self.properties[2].value)) {
+				case OAT.MapData.TYPE_G3: self.provider = OAT.MapData.TYPE_G3; break;
 				case OAT.MapData.TYPE_G: self.provider = OAT.MapData.TYPE_G; break;
 				case OAT.MapData.TYPE_Y: self.provider = OAT.MapData.TYPE_Y; break;
 				case OAT.MapData.TYPE_MS: self.provider = OAT.MapData.TYPE_MS; break;
@@ -1938,7 +1942,6 @@ OAT.FormObject = {
 				if (dir.charAt(dir.length-1) != "/") { dir += "/"; }
 				target = (target.charAt(0) == "/" ? target.substring(1) : target);
 				target = host+dir+target;
-//				alert(target);
 			}
 			if (self.properties[0].value == "1") {
 				/* guess type from address */
@@ -2011,9 +2014,9 @@ OAT.FormObject = {
 			var source = self.properties[1].value;
 			var ss = self.properties[2].value;
 			var target = self.properties[3].value;
-			if (source == "") { alert("Please select a saved query to process"); return; }
-			if (ss == "") { alert("Please select a stylesheet to create a feed"); return; }
-			if (target == "") { alert("Please select a target feed file"); return; }
+			if (source == "") { alert("OAT.FormObject.apply:\nPlease select a saved query to process"); return; }
+			if (ss == "") { alert("OAT.FormObject.apply:\nPlease select a stylesheet to create a feed"); return; }
+			if (target == "") { alert("OAT.FormObject.apply:\nPlease select a target feed file"); return; }
 
 			var processRef = function(query) {
 				/* we have saved source query. append a stylesheet and save */
@@ -2024,7 +2027,7 @@ OAT.FormObject = {
 				xml += '<root xmlns:sql="urn:schemas-openlink-com:xml-sql"';
 				xml += ' sql:xsl="'+ss+'" ';
 				xml += '><sql:sqlx>'+result+'</sql:sqlx></root>';
-				var recv_ref = function() { alert("New saved query created"); }
+				var recv_ref = function() { alert("OAT.FormObject.processRef:\nNew saved query created"); }
 				var o = {
 					auth:OAT.AJAX.AUTH_BASIC,
 					user:http_cred.user,
@@ -2216,4 +2219,3 @@ OAT.FormObject = {
 	} /* timeline */
 
 }
-OAT.Loader.featureLoaded("formobject");

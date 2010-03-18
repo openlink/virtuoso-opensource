@@ -57,4 +57,3 @@ OAT.ComboBox = function(defaultValue) {
 	self.instant.createHandle(this.image);
 	self.instant.createHandle(this.selected);
 }
-OAT.Loader.featureLoaded("combobox");

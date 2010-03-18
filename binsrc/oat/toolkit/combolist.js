@@ -87,4 +87,3 @@ OAT.Combolist = function(optList,value,optObj) {
 	}
 	self.instant.createHandle(self.img);
 }
-OAT.Loader.featureLoaded("combolist");

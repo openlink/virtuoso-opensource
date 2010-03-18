@@ -114,5 +114,3 @@ OAT.RectWin = function(optObj) {
 	}
 
 }
-
-OAT.Loader.featureLoaded("rectwin");

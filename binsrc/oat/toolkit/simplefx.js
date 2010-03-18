@@ -70,7 +70,7 @@ OAT.SimpleFX = {
 
 		elm.cornerElms = cornerElms;
 		elm.edgeElms = edgeElms;
-		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
+		if (OAT.Style.get(elm,"position") == "static") { elm.style.position = "relative"; }
 	},
 
 	roundDiv:function(something, optObj) {
@@ -84,7 +84,7 @@ OAT.SimpleFX = {
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
-		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
+		if (OAT.Style.get(elm,"position") == "static") { elm.style.position = "relative"; }
 		/* calculate colors */
 		var getBG = function(e) {
 			var ee = $(e);
@@ -92,7 +92,7 @@ OAT.SimpleFX = {
 			if (ee.nodeType!=1) /* ie fix */
 				if (ee.parentNode) { getBG(ee.parentNode); }
 				else { return '#fff'; }
-			var bg = OAT.Dom.style(ee,"backgroundColor");
+			var bg = OAT.Style.get(ee,"backgroundColor");
 			if (bg != "transparent") return bg;
 			return getBG(ee.parentNode);
 		}
@@ -126,8 +126,8 @@ OAT.SimpleFX = {
 				var d = OAT.Dom.create("div",{height:"1px",fontSize:"1px",overflow:"hidden",backgroundColor:options.color});
 				/* trick for rounded border */
 				var marginOffset = 0;
-				if (!options.antialias && parseInt(OAT.Dom.style(elm,"borderTopWidth"))) {
-					var bc = OAT.Dom.style(elm,"borderTopColor");
+				if (!options.antialias && parseInt(OAT.Style.get(elm,"borderTopWidth"))) {
+					var bc = OAT.Style.get(elm,"borderTopColor");
 					if (i==options.size-1) { d.style.backgroundColor = bc; }
 					aacolor = bc;
 					marginOffset = 1;
@@ -161,8 +161,8 @@ OAT.SimpleFX = {
 				aas = aas ? aas : 1;
 				/* trick for rounded border */
 				var marginOffset = 0;
-				if (!options.antialias && parseInt(OAT.Dom.style(elm,"borderTopWidth"))) {
-					var bc = OAT.Dom.style(elm,"borderTopColor");
+				if (!options.antialias && parseInt(OAT.Style.get(elm,"borderTopWidth"))) {
+					var bc = OAT.Style.get(elm,"borderTopColor");
 					if (i==options.size-1) { d.style.backgroundColor = bc; }
 					aacolor = bc;
 					marginOffset = 1;
@@ -188,7 +188,7 @@ OAT.SimpleFX = {
 			elm.appendChild(bottom);
 		}
 
-		if (!options.antialias && parseInt(OAT.Dom.style(elm,"borderTopWidth"))) {
+		if (!options.antialias && parseInt(OAT.Style.get(elm,"borderTopWidth"))) {
 			elm.style.borderWidth = "0px 1px";
 			elm.style.borderStyle = "solid";
 		}
@@ -233,7 +233,7 @@ OAT.SimpleFX = {
 		elm.appendChild(b);
 		elm.appendChild(r);
 		elm.appendChild(c);
-		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
+		if (OAT.Style.get(elm,"position") == "static") { elm.style.position = "relative"; }
 
 		elm.shadows = [b,r,c];
 	},
@@ -274,7 +274,7 @@ OAT.SimpleFX = {
 			} else {
 				var orig_w = elm.__origW;
 				var orig_h = elm.__origH;
-				if (!orig_w || !orig_h) { alert("Cannot restore element which was initially hidden!"); }
+				if (!orig_w || !orig_h) { alert("OAT.SimpleFX.shader:\nCannot restore element which was initially hidden!"); }
 				OAT.Dom.show(elm);
 				var a1 = OAT.AnimationOpacity(elm,{opacity:1,delay:5});
 				var a2 = OAT.AnimationSize(elm,{width:orig_w,height:orig_h,speed:10,delay:2});
@@ -294,4 +294,3 @@ OAT.SimpleFX = {
 		});
 	}
 }
-OAT.Loader.featureLoaded("simplefx");

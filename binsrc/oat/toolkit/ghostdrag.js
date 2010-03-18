@@ -81,8 +81,8 @@ OAT.GhostDragData = {
 		/* ok, now move */
 		var offs_x = event.clientX - elm.mouse_x;
 		var offs_y = event.clientY - elm.mouse_y;
-		var new_x = parseInt(OAT.Dom.style(elm,"left")) + offs_x;
-		var new_y = parseInt(OAT.Dom.style(elm,"top")) + offs_y;
+		var new_x = parseInt(OAT.Style.get(elm,"left")) + offs_x;
+		var new_y = parseInt(OAT.Style.get(elm,"top")) + offs_y;
 		elm.style.left = new_x + "px";
 		elm.style.top = new_y + "px";
 		elm.mouse_x = event.clientX;
@@ -178,7 +178,7 @@ OAT.GhostDrag = function() {
 		var coords = OAT.Dom.position(elm);
 		obj.style.left = coords[0]+"px";
 		obj.style.top = coords[1]+"px";
-		OAT.Style.opacity(obj,0.5);
+		OAT.Style.set(obj,{opacity:0.5});
 		obj.appendChild(elm.cloneNode(true));
 		obj.mouse_x = x;
 		obj.mouse_y = y;
@@ -189,4 +189,3 @@ OAT.GhostDrag = function() {
 
 OAT.Event.attach(document,"mousemove",OAT.GhostDragData.move);
 OAT.Event.attach(document,"mouseup",OAT.GhostDragData.up);
-OAT.Loader.featureLoaded("ghostdrag");

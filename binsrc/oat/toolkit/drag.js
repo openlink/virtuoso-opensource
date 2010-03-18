@@ -210,4 +210,3 @@ OAT.Drag = {
 }
 OAT.Event.attach(document,"mousemove",OAT.Drag.move);
 OAT.Event.attach(document,"mouseup",OAT.Drag.up);
-OAT.Loader.featureLoaded("drag");

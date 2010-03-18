@@ -176,5 +176,3 @@ OAT.Slidebar = function (div, optionsObj) {
 
 
 }
-
-OAT.Loader.featureLoaded("slidebar");

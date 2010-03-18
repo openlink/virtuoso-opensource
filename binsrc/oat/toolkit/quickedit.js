@@ -71,4 +71,3 @@ OAT.QuickEdit = {
 		elm.parentNode.replaceChild(oldelm,elm);
 	}
 }
-OAT.Loader.featureLoaded("quickedit");

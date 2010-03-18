@@ -59,7 +59,7 @@ OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) 
 	if (this.interval) {
 		if (!options.noIntervals) {
 			this.intervalElm = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",backgroundColor:color});
-			OAT.Style.opacity(this.intervalElm,0.5);
+			OAT.Style.set(this.intervalElm,{opacity:0.5});
 			this.elm.appendChild(this.intervalElm);
 		}
 		var t = (options.timeTitleOverride ? options.timeTitleOverride(endTime) : endTime.toHumanString());
@@ -488,4 +488,3 @@ OAT.Timeline = function(contentElm,paramsObj) {
 }
 OAT.Event.attach(document,"mouseup",OAT.TimelineData.up);
 OAT.Event.attach(document,"mousemove",OAT.TimelineData.move);
-OAT.Loader.featureLoaded("timeline");

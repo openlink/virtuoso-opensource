@@ -425,4 +425,3 @@ OAT.Xmla = {
 		return keys;
 	}
 }
-OAT.Loader.featureLoaded("xmla");

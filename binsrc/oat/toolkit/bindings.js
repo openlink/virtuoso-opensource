@@ -54,4 +54,3 @@ OAT.Bindings = {
 		OAT.Event.attach(input,"click",callback);
 	}
 }
-OAT.Loader.featureLoaded("bindings");

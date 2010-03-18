@@ -135,4 +135,3 @@ OAT.RDF = {
 		return triples;
 	}
 } /* OAT.RDF */
-OAT.Loader.featureLoaded("rdf");

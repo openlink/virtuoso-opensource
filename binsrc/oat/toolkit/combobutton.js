@@ -77,4 +77,3 @@ OAT.ComboButton = function() {
 		if (was_active && self.options.length) { self.select(0,false); } /* then select the first available */
 	}
 }
-OAT.Loader.featureLoaded("combobutton");

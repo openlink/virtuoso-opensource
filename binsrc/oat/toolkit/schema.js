@@ -93,4 +93,3 @@ OAT.Schema = {
 		return false;
 	}
 }
-OAT.Loader.featureLoaded("schema");

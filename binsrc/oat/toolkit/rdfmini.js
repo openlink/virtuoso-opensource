@@ -193,4 +193,3 @@ OAT.RDFMini = function(div,optObj) {
 
 	this.init();
 }
-OAT.Loader.featureLoaded("rdfmini");

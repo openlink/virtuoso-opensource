@@ -75,4 +75,3 @@ OAT.Connection = function(type,optObj) {
 		if (uid == true) { self.uid = true; }
 	}
 }
-OAT.Loader.featureLoaded("connection");

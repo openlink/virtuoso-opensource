@@ -84,7 +84,7 @@ OAT.Preferences = {
     windowTypeOverride: 0, /* do not guess window type */
     xsltPath: "/DAV/JS/xslt/",
     imagePath: "/DAV/JS/images/",
-    stylePath: "../DAV/JS/styles/",
+    stylePath: "/DAV/JS/styles/",
     endpointXmla: "/XMLA",
     version: "2.9",
     build: "$Date$",

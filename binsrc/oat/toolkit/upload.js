@@ -65,4 +65,3 @@ OAT.Upload = function(method,action,target,inputName) {
 
 	this.add();
 }
-OAT.Loader.featureLoaded("upload");

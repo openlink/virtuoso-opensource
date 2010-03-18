@@ -80,4 +80,3 @@ OAT.JSON = {
 		return result;
 	}
 }
-OAT.Loader.featureLoaded("json");

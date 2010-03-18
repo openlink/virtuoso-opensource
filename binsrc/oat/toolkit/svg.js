@@ -26,4 +26,3 @@ OAT.SVG = {
 		return elm;
 	}
 }
-OAT.Loader.featureLoaded("svg");

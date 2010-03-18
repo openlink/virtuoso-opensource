@@ -369,7 +369,7 @@ OAT.AJAX = {
 		} else if (window.ActiveXObject) {
 			self.obj = new ActiveXObject("Microsoft.XMLHTTP"); /* ie */
 		} else {
-			alert("XMLHTTPRequest not available!");
+			alert("OAT.AJAX.constructor:\nXMLHTTPRequest not available!");
 		}
 
 		// Fix problem with some versions of FireBug

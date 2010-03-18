@@ -565,11 +565,11 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 
     this.redrawTop = function() { /* navigation controls */
 	var activate = function(elm) {
-	    OAT.Style.opacity(elm,1);
+	    OAT.Style.set(elm,{opacity:1});
 	    elm.style.cursor = "pointer";
 	}
 	var deactivate = function(elm) {
-	    OAT.Style.opacity(elm,0.3);
+	    OAT.Style.set(elm,{opacity:0.3});
 	    elm.style.cursor = "default";
 	}
 	if (self.historyIndex > 0) {
@@ -1856,5 +1856,3 @@ OAT.RDFTabs.fresnel = function(parent, optObj) {
 	OAT.Dom.append([self.inputElm,OAT.Dom.text("Fresnel URI: "),inp,btn]);
     }
 }
-
-OAT.Loader.featureLoaded("rdftabs");

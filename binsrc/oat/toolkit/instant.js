@@ -77,5 +77,3 @@ OAT.Instant = function(element, optObj) {
 OAT.Instant.assign = function(something, callback) { /* backward compatibility */
 	var obj = new OAT.Instant(something, {hideCallback:callback});
 }
-
-OAT.Loader.featureLoaded("instant");

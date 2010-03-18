@@ -102,5 +102,3 @@ OAT.MacWin = function(optObj) {
 	}
 
 }
-
-OAT.Loader.featureLoaded("macwin");

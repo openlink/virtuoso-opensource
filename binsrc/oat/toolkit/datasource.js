@@ -625,4 +625,3 @@ OAT.DataSource = function(type) {
 		} /* for all masterFields */
 	} /* fromXML() */
 } /* DataSource() */
-OAT.Loader.featureLoaded("datasource");

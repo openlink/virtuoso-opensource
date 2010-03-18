@@ -89,4 +89,3 @@ OAT.Slider = function(something,optObj) {
 
 OAT.Event.attach(document,"mousemove",OAT.SliderData.move);
 OAT.Event.attach(document,"mouseup",OAT.SliderData.up);
-OAT.Loader.featureLoaded("slider");

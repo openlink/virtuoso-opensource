@@ -45,10 +45,9 @@ OAT.Profiler = {
 		}
 		var o = OAT.Profiler.data["_"];
 		str += "TOTAL: " + o.total + "msec (" + Math.round(o.total / total * 100) + "%)\n";
-		alert(str);
+		alert("OAT.Profiler.display:\n" + str);
 	},
 	clear:function() {
 		OAT.Profiler.data = {"_":{total:0,start:0,end:0}};
 	}
 }
-OAT.Loader.featureLoaded("profiler");

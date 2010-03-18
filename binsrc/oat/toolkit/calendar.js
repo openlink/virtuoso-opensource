@@ -269,4 +269,3 @@ OAT.Calendar = function(optObj) {
 		OAT.Event.attach(document,"click",clickRef);
 	}
 }
-OAT.Loader.featureLoaded("calendar");

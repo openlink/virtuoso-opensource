@@ -219,7 +219,7 @@ OAT.Form = function(targetElm,optObj) {
 						index++;
 					} /* if column is used */
 				} /* for all used columns */
-				if (!q.length) { alert("There are no used data fields in the form."); }
+				if (!q.length) { alert("OAT.Form.recomputeFields:\nThere are no used data fields in the form."); }
 				ds.options.query = "SELECT "+q.join(", ")+" FROM "+OAT.SqlQueryData.qualifyMulti(ds.options.table);
 			} else {
 				for (var j=0;j<ds.usedFields.length;j++) {
@@ -598,7 +598,7 @@ OAT.Form = function(targetElm,optObj) {
 		var callback = function() {
 			self.materialize(xmlDoc);
 		}
-		OAT.Loader.loadFeatures(needed,callback);
+		OAT.Loader.load(needed,callback);
 	}
 
 	this.createFromURL = function(url) { /* create form from url */
@@ -608,5 +608,3 @@ OAT.Form = function(targetElm,optObj) {
 		OAT.AJAX.GET(url,false,createRef,{type:OAT.AJAX.TYPE_XML});
 	}
 }
-
-OAT.Loader.featureLoaded("form");

@@ -189,5 +189,3 @@ OAT.WS = {
 	}
 
 }
-
-OAT.Loader.featureLoaded("ws");

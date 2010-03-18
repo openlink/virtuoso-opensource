@@ -129,4 +129,3 @@ OAT.DSTransport.REST = {
 		xpath:0 /* use xpath for output names? */
 	}
 }
-OAT.Loader.featureLoaded("dstransport");

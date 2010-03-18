@@ -210,7 +210,7 @@ OAT.Xml = {
 			for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
 			return result;
 		} else {
-			alert("Ooops - no XML parser available");
+		        alert("OAT.Xml.textValue:\nNo XML parser available");
 			return false;
 		}
 	},
@@ -223,4 +223,3 @@ OAT.Xml = {
 	escape:OAT.Dom.toSafeXML,
 	unescape:OAT.Dom.fromSafeXML
 }
-OAT.Loader.featureLoaded("xml");

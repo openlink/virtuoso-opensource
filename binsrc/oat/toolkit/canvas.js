@@ -68,4 +68,3 @@ OAT.Canvas = function(canvas) {
 		this.ctx.stroke();
 	}
 }
-OAT.Loader.featureLoaded("canvas");

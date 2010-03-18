@@ -82,4 +82,3 @@ OAT.Bezier = {
 		return result;
 	}
 }
-OAT.Loader.featureLoaded("bezier");

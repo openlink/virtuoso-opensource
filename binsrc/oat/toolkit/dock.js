@@ -229,4 +229,3 @@ OAT.Dock = function(div,numColumns) {
 
 	OAT.Event.attach(document,"mousemove",self.check);
 }
-OAT.Loader.featureLoaded("dock");

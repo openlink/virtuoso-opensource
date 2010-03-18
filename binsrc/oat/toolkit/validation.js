@@ -146,4 +146,3 @@ OAT.Validation = {
 		OAT.Event.attach(elm,"keyup",function(event){OAT.Validation.validate(elm,event,type,paramsObj);});
 	}
 }
-OAT.Loader.featureLoaded("validation");

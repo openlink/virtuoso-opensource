@@ -291,7 +291,7 @@ OAT.Win = function(optObj) {
 OAT.Win.Template = function(obj) {
 	var tmp = obj.options.template;
 	if (!tmp) {
-		alert("OAT Window cannot be created, as a template is required but not specified!");
+		alert("OAT.Win.Template:\nOAT Window cannot be created, as a template is required but not specified!");
 		return;
 	}
 	var template = (typeof(tmp) == "function" ? tmp() : $(tmp).cloneNode(true));
