@@ -521,6 +521,7 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
       LEAVE_TXN;
       return LTE_DEADLOCK;
     }
+  lt_wait_checkpoint ();
   lt->lt_2pc._2pc_prepared = 0;
   if (operation == SQL_ROLLBACK)
     lt->lt_status = LT_BLOWN_OFF;
@@ -540,7 +541,7 @@ cli_2pc_transact (lock_trx_t * lt, int operation)
       lt_log_debug (("cli_2pc_transact op=%d result=%d lt=%p cli=%p", operation,
 	    (int) lt->lt_error, lt, lt->lt_client));
     }
-  lt->lt_2pc._2pc_wait_commit = 0;
+  lt->lt_2pc._2pc_wait_commit = 0; /* commit happened */
   LEAVE_TXN;
   return lt->lt_error;
 }
@@ -579,7 +580,7 @@ lt_2pc_prepare (lock_trx_t * lt)
     {
       *((unsigned long *) lt->lt_2pc._2pc_prepared) = LT_PREPARED;
       lt->lt_2pc._2pc_prepared = 0;
-    };
+    }
 
 failed:
   if (rc != LTE_OK)
