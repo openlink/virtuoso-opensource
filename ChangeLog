@@ -1,3 +1,319 @@
+2010-03-19 10:08  source
+
+	* Added improved version of xsl:for-each-row for both SPARQL and SQL
+
+2010-03-19 10:05  source
+
+	* FIxed issue with backup
+
+2010-03-18 15:45  source
+
+	* Fixed when transaction is prepared but not committed before commit
+	  we must check if cpt is pending. If so we must wait as xa trx has
+	  special processing in cpt_rollback and log_cpt
+	* Fixed compiler warning
+
+2010-03-18 15:43  source
+
+	* Fixed better serialization on lt_lock_mtx
+
+2010-03-18 10:59  source
+
+	* Fixed enter mtx before truncating log
+	* Fixed when a 2pc transaction as finished, invalidate its commit
+	  flag offset since the log is rewritten already. The trx must already
+	  be in cpt state.
+
+2010-03-18 10:50  source
+
+	* Fixed use new OAT toolkit
+
+2010-03-18 10:48  source
+
+	* Fixed check if datadump is gz too
+	* Fixed the next site needs to copy all props from initial
+	* Fixed use log mode 3 as dump can be large
+
+2010-03-18 10:47  source
+
+	* Fixed deadlock retry
+
+2010-03-18 10:46  source
+
+	* Fixed missing date conversion
+
+2010-03-18 10:45  source
+
+	* Fixed alert text
+	* Fixed typo in styles path
+	* Fixed use new API functions
+	* Fixed support for Google map v3
+
+2010-03-18 10:20  source
+
+	* Fixed rebuild driver
+
+2010-03-18 09:58  source
+
+	* Fixed user's login
+	* Fixed UI buttons
+	* Fixed unique name message
+	* Fixed wishlist UI pages
+	* Fixed rename FOAF+SSL to WebID
+
+2010-03-18 09:56  source
+
+	* Fixed rename FOAF+SSL to WebID
+
+2010-03-17 14:54  source
+
+	* Fixed check proper prefetch value
+
+2010-03-16 23:53  source
+
+	* Fixed check lt
+
+2010-03-16 18:21  source
+
+	* Fixed when txn error remove trx from global pool. It cannot be
+	  committed anyway
+
+2010-03-16 18:20  source
+
+	* Fixed properly set lt_threads
+
+2010-03-16 11:39  source
+
+	* Fixed when writing log entries always check the mtx
+
+2010-03-16 11:39  source
+
+	* Fixed when setting up a XA trx wait for any checkpoint in progress
+	  to finish before proceeding
+
+2010-03-16 10:54  source
+
+	* Fixed if not box or dfe false, skip rest
+
+2010-03-16 10:51  source
+
+	* Added virtuoso.ttl to sesame jar
+	* Added csl pages for Sesame HTTP repository configuration
+	* Rebuild driver
+
+2010-03-16 10:44  source
+
+	file create-virtuoso.xsl was added on branch V6_0_0-DEVEL on 2010-03-16 10:51:14 +0000
+
+2010-03-16 10:44  source
+
+	file create.xsl was added on branch V6_0_0-DEVEL on 2010-03-16 10:51:14 +0000
+
+2010-03-16 10:26  source
+
+	* Added support for vad_version
+	* FIxed use new OAT toolkit
+	* Removed debug code
+
+2010-03-16 10:24  source
+
+	* FIxed encoding of URL params
+
+2010-03-16 10:16  source
+
+	file vad_version was added on branch V6_0_0-DEVEL on 2010-03-16 10:26:11 +0000
+
+2010-03-15 16:46  source
+
+	* Fixed resume waiting
+
+2010-03-15 15:51  source
+
+	* Fixed check array index not out of bound
+
+2010-03-15 15:50  source
+
+	* Fixdd FOAF+SSL user pages
+
+2010-03-15 15:49  source
+
+	* FIxed removed debugging code
+
+2010-03-15 15:27  source
+
+	* Fixed use new OAT toolkit
+	* Fixed version check for ODS Framework
+
+2010-03-15 13:16  source
+
+	* Fixed missing case for LT_PREPARE_PENDING
+
+2010-03-12 14:04  source
+
+	* Fixed invitation problem with multiple users
+
+2010-03-12 13:34  source
+
+	* Merged new version of OAT toolkit
+	* Fixed Google Maps v3 support
+
+2010-03-12 13:34  source
+
+	* FIxed IRIs
+
+2010-03-12 09:13  source
+
+	* Merged newer version of OAT toolkit
+	* Fixed dependency to later version of ODS Framework
+	* Fixed SIOC subscriptions
+
+2010-03-12 09:13  source
+
+	* Merged newer version of OAT toolkit
+	* Fixed dependency to later version of ODS Framework
+
+2010-03-12 09:12  source
+
+	* Merged new version of OAT toolkit
+	* Fixed icons - delete and add
+	* Fixed dependency to later version of ODS framework
+
+2010-03-12 09:10  source
+
+	* Added Register to vsp, php etc users pages
+	* Added X.509 create certificate to users pages
+	* Merged new version of OAT toolkit
+	* Fixed UI profile
+	* Fixed delete action
+	* Fixed new foaf+ssl schema support
+
+2010-03-12 09:04  source
+
+	* Added uStream cartridge
+	* Fixed PPTX cartridge to work with latest description.vsp
+
+2010-03-12 09:01  source
+
+	* Merged new version of OAT toolkit
+	* Added location macro support
+	* Fixed numerous issues
+
+2010-03-11 17:20  source
+
+	file error.js was added on branch V6_0_0-DEVEL on 2010-03-12 09:01:02 +0000
+
+2010-03-11 17:20  source
+
+	file location.js was added on branch V6_0_0-DEVEL on 2010-03-12 09:01:02 +0000
+
+2010-03-11 17:20  source
+
+	file mob_home_icon.png was added on branch V6_0_0-DEVEL on 2010-03-12 09:01:02 +0000
+
+2010-03-11 17:20  source
+
+	file mobile.css was added on branch V6_0_0-DEVEL on 2010-03-12 09:01:02 +0000
+
+2010-03-11 17:20  source
+
+	file statusui.js was added on branch V6_0_0-DEVEL on 2010-03-12 09:01:02 +0000
+
+2010-03-11 17:02  source
+
+	* Merged new version of OAT toolkit
+
+2010-03-10 20:28  source
+
+	* Fixed JSON support
+
+2010-03-10 15:09  source
+
+	* Fixed wide character when getting procedure columns information
+
+2010-03-10 15:08  source
+
+	* Added OPTIONS for http server
+	* Added trace method
+
+2010-03-10 14:43  source
+
+	* Fixed support of old and new schema for FOAF+SSL
+
+2010-03-10 10:34  source
+
+	* Fixed allow nulls, DV_C_STRING and memleak
+
+2010-03-09 20:14  source
+
+	* Added support for nvarchar to __like_min and __like_max
+
+2010-03-09 20:12  source
+
+	* Fixed possible dfe_false in context
+
+2010-03-08 20:39  source
+
+	* Fixed setting pooling params
+
+2010-03-08 20:37  source
+
+	* Rebuild driver
+
+2010-03-08 14:20  source
+
+	* Fixed allow chunked content to be read as strses
+
+2010-03-08 12:04  source
+
+	* Fixed typos
+
+2010-03-08 12:02  source
+
+	* Fixed typo in tag MusicianCreditsList
+
+2010-03-08 11:54  source
+
+	* Added wide char support to set_qualifier
+
+2010-03-08 11:53  source
+
+	* Fixed issue when no content len is give but content is sent as
+	  http/1.0 protocol e.g. with connection-close
+
+2010-03-08 09:21  source
+
+	* Fixed typo in scovo:dimension
+
+2010-03-07 08:20  source
+
+	* Fixed typo
+	 CVS: ----------------------------------------------------------------------
+
+2010-03-07 08:18  source
+
+	* Fixed SERVICE parameter passing
+	* Fixed (!ask(...)) in filters
+
+2010-03-05 10:17  source
+
+	file ustream2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-03-12 09:04:54 +0000
+
+2010-03-04 23:49  source
+
+	* Added tests
+
+2010-03-04 23:44  source
+
+	* Fixed improved codegen for FILTER (?local = IRI(?:global)) .
+
+2010-03-04 23:43  source
+
+	* Added support for fractions of second in bif_dateadd
+
+2010-03-04 23:38  source
+
+	* Fixed tests
+
 2010-03-04 20:45  source
 
 	* Updated docs
