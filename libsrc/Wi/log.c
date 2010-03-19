@@ -2190,7 +2190,6 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
       mutex_leave (log_write_mtx);
       log_info ("Checkpoint finished, new log is %s", new_log);
     }
-  ASSERT_IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
       if (((LT_PREPARED == lt->lt_status && lt->lt_2pc._2pc_wait_commit) || LT_2PC_PENDING == lt->lt_status)
