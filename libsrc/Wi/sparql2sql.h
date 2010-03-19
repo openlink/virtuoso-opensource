@@ -840,7 +840,8 @@ extern ssg_valmode_t sparp_rettype_of_function (sparp_t *sparp, caddr_t name);
 extern ssg_valmode_t sparp_argtype_of_function (sparp_t *sparp, caddr_t name, int arg_idx);
 extern void ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name);
 
-extern void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed);
+extern void ssg_print_global_param (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed);
+extern void ssg_print_global_param_name (spar_sqlgen_t *ssg, caddr_t vname);
 extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname);
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);

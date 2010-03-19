@@ -826,6 +826,7 @@ typedef struct xslt_sheet_s
     dk_set_t		xsh_formats;
     xml_ns_2dict_t	xsh_ns_2dict;		/*!< Dictionary of namespace that are declared in the stylesheet (or imported) and will extend the xd_ns_2dict of the resulting tree */
     caddr_t		xsh_top_excl_res_prefx;	/*!< String that is an attribute value expression (string with expressions in {...}) that is value of exclude-result-prefixes attr of xsl:stylesheet element */
+    caddr_t		xsh_sparql_preamble;	/*!< A string that is inserted at the front of any SPARQL query that is executed by for-each-row */
     XOUT_MEMBERS
     xslt_sheet_stats_t	xsh_total_uses;
     xslt_sheet_stats_t	xsh_new_uses;

@@ -1707,6 +1707,18 @@ create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any) -- DEPRECATED
 create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any, in dflt varchar := '') returns any
 {
   declare t int;
+  if (__tag of rdf_box = __tag (v))
+    {
+      declare twobyte integer;
+      declare res varchar;
+      twobyte := rdf_box_lang (v);
+      whenever not found goto badtype;
+      select RL_ID into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+      return res;
+
+badtype:
+  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_SQLVAL, bad id %d', twobyte));
+    }
   return case (isiri_id (v)) when 0 then dflt else null end;
 --  t := __tag (v);
 --  if (not (t in (__tag of varchar, 217, __tag of nvarchar)))

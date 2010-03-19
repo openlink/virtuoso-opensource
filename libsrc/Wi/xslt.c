@@ -43,6 +43,7 @@
 #include "srvmultibyte.h"
 #include "bif_text.h"
 #include "xpf.h"
+#include "xmlparser.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1546,7 +1547,25 @@ xslt_for_each_row (xparse_ctx_t * xp, caddr_t * xstree)
     }
   if (query_is_sparql)
     {
-      query_final_text = box_dv_short_strconcat ("sparql define sql:globals-mode \"XSLT\" ", query_text);
+      caddr_t preamble = xp->xp_sheet->xsh_sparql_preamble;
+      if (NULL == preamble)
+        {
+          dk_session_t *tmp_ses = strses_allocate ();
+          xml_ns_2dict_t *ns2d = &(xp->xp_sheet->xsh_ns_2dict);
+          int ns_ctr = ns2d->xn2_size;
+          SES_PRINT (tmp_ses, "sparql define output:valmode \"AUTO\" define sql:globals-mode \"XSLT\" ");
+          while (ns_ctr--)
+            {
+              SES_PRINT (tmp_ses, "prefix ");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_key);
+              SES_PRINT (tmp_ses, ": <");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_value);
+              SES_PRINT (tmp_ses, "> ");
+            }
+          preamble = xp->xp_sheet->xsh_sparql_preamble = strses_string (tmp_ses);
+          dk_free_box (tmp_ses);
+        }
+      query_final_text = box_dv_short_strconcat (preamble, query_text);
       if (query_text != query_texts_set[0])
         dk_free_box (query_text);
     }
@@ -1595,7 +1614,7 @@ xslt_for_each_row (xparse_ctx_t * xp, caddr_t * xstree)
       goto err_generated; /* see below */
 xb_found:
       params[param_ofs++] = box_copy (name);
-      params[param_ofs++] = box_copy_tree (xb->xb_value);
+      params[param_ofs++] = ((NULL == xb->xb_value) ? NEW_DB_NULL : box_copy_tree (xb->xb_value));
     }
   END_DO_SET ()
   err = qr_exec (cli, qr, qi, NULL, NULL, &lc,
@@ -1640,8 +1659,35 @@ xb_found:
       xqi_binding_t *xb = saved_locals;
       for (col_ctr = 0; col_ctr < cols_count; col_ctr++)
         {
+          caddr_t new_val = lc_nth_col (lc, col_ctr);
+          switch (DV_TYPE_OF (new_val))
+            {
+            case DV_DB_NULL:
+              new_val = NULL;
+              goto xb_set_new_val; /* see below */
+            case DV_IRI_ID:
+              dk_free_tree (xb->xb_value);
+              xb->xb_value = NULL;
+              xb->xb_value = key_id_to_iri (qi, ((iri_id_t*)new_val)[0]);
+              goto xb_done; /* see below */
+            default:
+              if (NULL == new_val)
+                {
+                  if ((DV_LONG_INT != DV_TYPE_OF (xb->xb_value)) || (0 != unbox (xb->xb_value)) || (NULL == xb->xb_value))
+                    {
           dk_free_tree (xb->xb_value);
-          xb->xb_value = box_copy_tree (lc_nth_col (lc, col_ctr));
+                      xb->xb_value = box_num_nonull (0);
+                      goto xb_done; /* see below */
+                    }
+                }
+            }
+xb_set_new_val:
+          if (new_val != xb->xb_value)
+            {
+              dk_free_tree (xb->xb_value);
+              xb->xb_value = box_copy_tree (new_val);
+            }
+xb_done:
           xb = xb->xb_next;
 	}
       xslt_instantiate_children (xp, xstree);
@@ -2930,6 +2976,8 @@ void shuric_destroy_data__xslt (struct shuric_s *shuric)
       id_hash_free (xsh->xout_cdata_section_elements);
     }
   xml_ns_2dict_clean (&(xsh->xsh_ns_2dict));
+  dk_free_tree (xsh->xsh_top_excl_res_prefx);
+  dk_free_tree (xsh->xsh_sparql_preamble);
   dk_free (xsh, sizeof (xslt_sheet_t));
 }
 
@@ -4395,12 +4443,10 @@ xslt_init (void)
   xslt_define ("for-each"		, XSLT_EL_FOR_EACH		, xslt_for_each			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS | XSLT_ELGRP_SORT	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "select"		, XSLT_ATTR_FOREACH_SELECT		),
 	xslt_arg_eol);
-#if 1
   xslt_define ("for-each-row"		, XSLT_EL_FOR_EACH_ROW		, xslt_for_each_row		, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_PCDATA | XSLT_ELGRP_INS | XSLT_ELGRP_RESELS	,
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sparql"		, XSLT_ATTR_FOREACHROW_SPARQL		),
 	xslt_arg_define (XSLTMA_XPATH	, 0, NULL, "sql"		, XSLT_ATTR_FOREACHROW_SQL		),
 	xslt_arg_eol);
-#endif
   xslt_define ("if"			, XSLT_EL_IF			, xslt_if			, XSLT_ELGRP_CHARINS	, XSLT_ELGRP_TMPL	,
 	xslt_arg_define (XSLTMA_XPATH	, 1, NULL, "test"		, XSLT_ATTR_IFORWHEN_TEST		),
 	xslt_arg_eol);

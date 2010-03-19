@@ -1503,9 +1503,14 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
     case BOP_AND: case BOP_OR: case BOP_NOT:
       return SSG_VALMODE_BOOL;
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case SPAR_LIT:
     case SPAR_QNAME:
     /*case SPAR_QNAME_NS:*/
+      return SSG_VALMODE_SQLVAL;
+    case SPAR_LIT:
+      if (!IS_BOX_POINTER (tree))
+        return SSG_VALMODE_SQLVAL;
+      if (NULL != tree->_.lit.language)
+        return SSG_VALMODE_LONG; /* Otherwise printing literal as (default) SQLVAL may lose the language */
       return SSG_VALMODE_SQLVAL;
     case SPAR_ALIAS:
       if (SSG_VALMODE_AUTO == tree->_.alias.native)
@@ -3726,8 +3731,32 @@ ssg_print_uri_list (spar_sqlgen_t *ssg, dk_set_t uri_precodes, ssg_valmode_t nee
 }
 
 void
-ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmode_t needed)
-{ /* needed is always equal to native in this function */
+ssg_print_global_param (spar_sqlgen_t *ssg, SPART * var, ssg_valmode_t needed)
+{
+  ssg_valmode_t native;
+  caddr_t vname = var->_.var.vname;
+  char *coloncolon;
+  if (SSG_VALMODE_AUTO == needed)
+    goto print_name; /* see below */
+  coloncolon = strstr (vname, "::");
+  if (NULL == coloncolon)
+    native = SSG_VALMODE_SQLVAL;
+  else if (vname == coloncolon)
+    native = sparp_rettype_of_global_param (ssg->ssg_sparp, vname);
+  else
+    native = sparp_find_valmode_by_name_prefix (ssg->ssg_sparp, vname, SSG_VALMODE_SQLVAL);
+  if (needed != native)
+    {
+      ssg_print_valmoded_scalar_expn (ssg, var, needed, native, NULL_ASNAME);
+      return;
+    }
+print_name:
+  ssg_print_global_param_name (ssg, vname);
+}
+
+void
+ssg_print_global_param_name (spar_sqlgen_t *ssg, caddr_t vname)
+{
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
   char *coloncolon = strstr (vname, "::");
   if ((NULL != coloncolon) && (vname != coloncolon))
@@ -4084,7 +4113,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
 #else
         if (SPART_VARNAME_IS_GLOB (tree->_.var.vname))
           {
-            ssg_print_global_param (ssg, tree->_.var.vname, needed);
+            ssg_print_global_param (ssg, tree, needed);
             goto print_asname; /* see below */
           }
         if (NULL == ssg->ssg_equivs) /* This is for case when parts of the SPARQL front-end are used to produce small SQL fragments */
@@ -4373,7 +4402,7 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
     }
   if (SPART_VARNAME_IS_GLOB(tree->_.retval.vname))
     {
-      ssg_print_global_param (ssg, tree->_.retval.vname, vmode);
+      ssg_print_global_param (ssg, tree, vmode);
       goto print_asname;
     }
   e_varname = ssg->ssg_equivs[tree->_.var.equiv_idx]->e_varnames[0];
@@ -4840,7 +4869,7 @@ Maybe the best thing is to prohibit seealso declarations in subqueries at all.
                 }
               if (SPART_VARR_GLOBAL & graph_tree_restr)
                 {
-                  ssg_print_global_param (ssg, graph_tree->_.var.vname, SSG_VALMODE_LONG);
+                  ssg_print_global_param (ssg, graph_tree, SSG_VALMODE_LONG);
                   break;
                 }
               ssg_print_tmpl (ssg, graph_qmv->qmvFormat, graph_qmv->qmvFormat->qmfIidOfShortTmpl, tabid, graph_qmv, NULL, NULL_ASNAME);
@@ -5014,7 +5043,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
             native = sparp_expn_native_valmode (ssg->ssg_sparp, vartree);
           if (needed == native)
             {
-              ssg_print_global_param (ssg, vartree->_.var.vname, needed);
+              ssg_print_global_param (ssg, vartree, needed);
               goto write_assuffix;
             }
           else

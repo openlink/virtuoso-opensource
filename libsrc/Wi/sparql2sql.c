@@ -6124,7 +6124,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
         ssg_puts (", ");
       else
         need_comma = 1;
-      ssg_print_global_param (ssg, vname, SSG_VALMODE_SQLVAL);
+      ssg_print_global_param_name (ssg, vname);
     }
   END_DO_SET ();
   ssg_puts (")");
