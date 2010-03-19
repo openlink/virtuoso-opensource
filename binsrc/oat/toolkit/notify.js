@@ -87,7 +87,7 @@ OAT.Notify = function(parentDiv,optObj) {
 			c = OAT.Dom.create("div");
 			c.innerHTML = content;
 		}
-		if (options.style) { OAT.Style.apply(c,options.style); }
+		if (options.style) { OAT.Style.set(c,options.style); }
 
 		var div = OAT.Dom.create("div",{width:options.width+"px",height:options.height+"px",cursor:"pointer",overflow:"hidden",marginBottom:"2px",padding:options.padding,backgroundColor:options.background,color:options.color});
 		if (options.image) { /* image */

@@ -68,7 +68,7 @@ OAT.Slidebar = function (div, optionsObj) {
 	this.close = function () {
 		clearTimeout (self.sb_to);
 		OAT.Event.detach (self.handle_div, "click", self.close);
-		OAT.Style.apply (self.content_div, {overflow : "hidden"});
+		OAT.Style.set (self.content_div, {overflow : "hidden"});
 		self.a_close.start ();
 	}
 
@@ -86,7 +86,7 @@ OAT.Slidebar = function (div, optionsObj) {
 		}
 
 		OAT.Event.attach (self.handle_div, "click", self.close);
-		OAT.Style.apply (self.content_div, {overflow : "auto"});
+		OAT.Style.set (self.content_div, {overflow : "auto"});
 		self.handle_close();
 		OAT.MSG.send (self, "SLB_OPENED", self)
 	}
@@ -172,7 +172,7 @@ OAT.Slidebar = function (div, optionsObj) {
 	this.center_handle_img ();
 
 	OAT.Event.attach (window, "resize", this.center_handle_img);
-	OAT.Style.apply (this.content_div, {overflow : "hidden"});
+	OAT.Style.set (this.content_div, {overflow : "hidden"});
 
 
 }
