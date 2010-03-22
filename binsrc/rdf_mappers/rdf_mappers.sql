@@ -4147,8 +4147,13 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
   }
   else if (new_origin_uri like 'http://%.youtube.com/watch?v=%')
   {
-    tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/watch?v=%s', 0);
-    img_id :=  tmp[2];
+    declare ar any;
+    ar := WS.WS.PARSE_URI (new_origin_uri);
+    ar := ar[4];
+    ar := split_and_decode (ar);
+    img_id := get_keyword ('v', ar);
+    --tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/watch?v=%s', 0);
+    --img_id :=  tmp[2];
     if (img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
