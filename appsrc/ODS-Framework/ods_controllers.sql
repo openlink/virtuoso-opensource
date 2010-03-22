@@ -401,6 +401,7 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n SELECT distinct ?c ?sc' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
+         '\n          {' ||
          '\n          ?c rdf:type owl:Class .' ||
          '\n          OPTIONAL ' ||
          '\n          { ' ||
@@ -409,7 +410,20 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n          }.' ||
          '\n          filter (str(?c) like "%s%%").' ||
          '\n        }' ||
+         '\n          union' ||
+         '\n          {' ||
+         '\n            ?c rdf:type rdfs:Class .' ||
+         '\n            OPTIONAL ' ||
+         '\n            { ' ||
+         '\n              ?c rdfs:subClassOf ?sc .' ||
+         '\n              filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n            }.' ||
+         '\n            filter (str(?c) like "%s%%").' ||
+         '\n          }' ||
+         '\n        }' ||
          '\n  ORDER BY ?c ?sc',
+         ontology,
+         ontology,
          ontology,
          ontology,
          ontology);
@@ -445,6 +459,7 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
          '\n          {' ||
+         '\n            {' ||
          '\n            ?p rdf:type owl:ObjectProperty .' ||
          '\n            ?p rdfs:range ?r1 .' ||
          '\n            {' ||
@@ -469,6 +484,20 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n            ?p rdf:type owl:DatatypeProperty .' ||
          '\n            ?p rdfs:domain %s .' ||
          '\n            ?p rdfs:range ?r2 .' ||
+         '\n          }' ||
+         '\n        }' ||
+         '\n          union' ||
+         '\n          {' ||
+         '\n            {' ||
+         '\n              ?p rdf:type rdf:Property .' ||
+         '\n              ?p rdfs:range ?r1 .' ||
+         '\n            }' ||
+         '\n            union' ||
+         '\n            {' ||
+         '\n              ?p rdf:type rdf:Property .' ||
+         '\n              OPTIONAL {?p rdfs:range ?r2 }.' ||
+         '\n              FILTER (!bound(?r2))' ||
+         '\n            }' ||
          '\n          }' ||
          '\n        }' ||
          '\n  ORDER BY ?p ?r1 ?r2',
@@ -499,8 +528,10 @@ create procedure ODS.ODS_API."ontology.classProperties" (
         property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
       }
     }
-    if (not isnull (item[2]))
-      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize"(item[2])));
+    else
+    {
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'))));
+    }
   }
   if (property[0] <> '')
     properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
@@ -610,6 +641,7 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'ibis', 'http://purl.org/ibis#',
                  'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
                  'mo',   'http://purl.org/ontology/mo/',
+                 'movie','http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#',
                  'owl',  'http://www.w3.org/2002/07/owl#',
                  'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                  'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
@@ -1201,6 +1233,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   in homepage varchar := null,
   in mailSignature varchar := null,
   in sumary varchar := null,
+  in appSetting varchar := null,
   in webIDs varchar := null,
   in interests varchar := null,
   in topicInterests varchar := null,
@@ -1277,7 +1310,8 @@ create procedure ODS.ODS_API."user.update.fields" (
     return ods_auth_failed ();
 
   -- Personal
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_NICK', nickName);
+  if (not isnull (nickName))
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_NICK', DB.DBA.WA_MAKE_NICK (nickName));
   ODS.ODS_API."user.update.field" (uname, 'E_MAIL', mail);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_TITLE', title);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FIRST_NAME', firstName);
@@ -1297,6 +1331,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_WEBPAGE', homepage);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSIGNATURE', mailSignature);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_SUMMARY', sumary);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_APP_ENABLE', atoi(appSetting));
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FOAF', webIDs);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTERESTS', interests);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTEREST_TOPICS', topicInterests);
@@ -1613,7 +1648,7 @@ create procedure ODS.ODS_API."user.info" (
         ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
       }
       ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
-
+      ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
     }
     http ('</user>');
   }
@@ -2645,6 +2680,8 @@ _next:;
     name := property;
   if (not length (name))
     signal ('23023', 'The title of item made is not specified nor can be retrieved from source URI, please specify.');
+  if (not length (description))
+    signal ('23023', 'The description of item made is not specified nor can be retrieved from source URI, please specify.');
 
   if (isnull (id))
   {
@@ -3216,7 +3253,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         if (sslLoginCheck)
           appendProperty (V, 'certLogin', certLogin);
         appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
-    appendProperty (V, 'nick', coalesce ("nick", "name")); -- WAUI_NICK
+        appendProperty (V, 'nickName', coalesce ("nick", "name"));            -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
     appendProperty (V, 'name', "name");			   -- WAUI_FULL_NAME
     appendProperty (V, 'firstName', coalesce ("firstName", "givenname")); -- WAUI_FIRST_NAME

@@ -3830,6 +3830,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
 
   else if (_key = 'WAUI_BIRTHDAY' and (__tag (_data) = 211 or _data is null))
     UPDATE WA_USER_INFO SET WAUI_BIRTHDAY = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_NICK')
+    UPDATE WA_USER_INFO SET WAUI_NICK = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_TITLE')
     UPDATE WA_USER_INFO SET WAUI_TITLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FIRST_NAME')

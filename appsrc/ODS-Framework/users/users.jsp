@@ -258,27 +258,6 @@
     {
       if ($_form.equals("login"))
       {
-        if (request.getParameter("lf_login") != null)
-        {
-          try
-          {
-            params = httpParam ( "", "user_name", request.getParameter("lf_uid")) +
-                     httpParam ("&", "password_hash", encrypt (request.getParameter("lf_uid")+request.getParameter("lf_password")));
-            $_retValue = httpRequest ("GET", "user.authenticate", params);
-            if ($_retValue.indexOf("<failed>") == 0)
-            {
-    		      $_document = createDocument($_retValue);
-              throw new Exception(xpathEvaluate($_document, "/failed/message"));
-              }
-		        $_document = createDocument($_retValue);
-            $_sid = xpathEvaluate($_document, "/sid");
-                $_form = "user";
-              }
-            catch (Exception e)
-            {
-              $_error = e.getMessage();
-            }
-          }
         if (request.getParameter("lf_register") != null)
           $_form = "register";
         }
@@ -498,7 +477,8 @@
                      httpParam ("&", "birthday"              , request.getParameter("pf_birthday")) +
                      httpParam ("&", "homepage"              , request.getParameter("pf_homepage")) +
                        httpParam ("&", "mailSignature"         , request.getParameter("pf_mailSignature")) +
-                       httpParam ("&", "sumary"                , request.getParameter("pf_sumary"));
+                       httpParam ("&", "sumary"                , request.getParameter("pf_sumary")) +
+                       httpParam ("&", "appSetting"            , request.getParameter("pf_appSetting"));
 
                   tmp = "";
                   keys = request.getParameterNames();
@@ -1273,6 +1253,23 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
+                            </th>
+                            <td>
+                              <select name="pf_appSetting" id="pf_appSetting">
+                                <%
+                                  {
+                                    String[] V = {"0", "disabled", "1", "click", "2", "hover"};
+                                    String S = xpathEvaluate($_document, "/user/appSetting");
+                                    for (int N = 0; N < V.length; N += 2)
+                                      out.print("<option value=\"" + V[N] + "\" " + ((V[N].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + V[N+1] + "</option>");
+                                  }
+                                %>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 

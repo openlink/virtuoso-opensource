@@ -850,11 +850,13 @@ function selectProfileCallback(data) {
         tbl.innerHTML = '';
 				} catch (e) {}
         addProfileRow(tbl, user, 'name',      'Login Name');
-        addProfileRow(tbl, user, 'mail',      'Title');
-        addProfileRow(tbl, user, 'title',     'First Name');
-        addProfileRow(tbl, user, 'firstName', 'Last Name');
-        addProfileRow(tbl, user, 'lastName',  'Full Name');
-        addProfileRow(tbl, user, 'fullName',  'E-mail');
+				addProfileRow(tbl, user, 'nickName', 'Nick Name');
+				addProfileRow(tbl, user, 'iri', 'IRI');
+				addProfileRow(tbl, user, 'title', 'Title');
+				addProfileRow(tbl, user, 'firstName', 'First Name');
+				addProfileRow(tbl, user, 'lastName', 'Lsst Name');
+				addProfileRow(tbl, user, 'fullName', 'Full Name');
+				addProfileRow(tbl, user, 'mail', 'E-mail');
         addProfileRow(tbl, user, 'gender',    'Gender');
         addProfileRow(tbl, user, 'birthday',  'Birthday');
         addProfileRow(tbl, user, 'homepage',  'Personal Webpage');
@@ -1152,6 +1154,7 @@ function ufProfileCallback(data) {
       pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
 			fieldUpdate(user, 'sumary', 'pf_sumary');
+			fieldUpdate(user, 'appSetting', 'pf_appSetting');
       pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
       pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
 
@@ -1533,6 +1536,7 @@ function pfUpdateSubmit(No) {
         + '&homepage=' + encodeURIComponent($v('pf_homepage'))
         + '&mailSignature=' + encodeURIComponent($v('pf_mailSignature'))
         + '&sumary=' + encodeURIComponent($v('pf_sumary'))
+        + '&appSetting=' + encodeURIComponent($v('pf_appSetting'))
         + '&webIDs=' + encodeTableData("x1", ["\n"])
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);

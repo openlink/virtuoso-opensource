@@ -47,6 +47,44 @@
     </script>
   </head>
   <?php
+    function postRequest($url, $data) {
+      // parse the given URL
+      $url = parse_url($url);
+      if (!isset($url['port'])) {
+        if ($url['scheme'] == 'http') {
+          $url['port'] = 80;
+        }
+        elseif ($url['scheme'] == 'https') {
+          $url['port']=443;
+        }
+      }
+      $url['query'] = isset($url['query'])? $url['query']: '';
+      $url['protocol'] = $url['scheme'] . '://';
+
+      $content = '';
+      $eol="\r\n";
+      $headers = "POST " . $url['path'] . " HTTP/1.0" . $eol.
+                 "Host: " . $url['host'].":".$url['port'] . $eol.
+                 "Referer: " . $url['protocol'].$url['host'] . ":" . $url['port'] . $url['path'] . $eol.
+                 "Content-Type: application/x-www-form-urlencoded" . $eol.
+                 "Content-Length: " . strlen($data) . $eol . $eol . $data;
+      $fp = fsockopen($url['host'], $url['port'], $errno, $errstr, 30);
+      if ($fp) {
+        fputs($fp, $headers);
+        while (!feof($fp)) {
+          $result .= fgets($fp, 128);
+        }
+        fclose($fp);
+
+        // split the result header from the content
+        $result = explode("\r\n\r\n", $result, 2);
+
+        $header = isset($result[0]) ? $result[0] : '';
+        $content = isset($result[1]) ? $result[1] : '';
+      }
+      return $content;
+    }
+
     function selectList ($list, $param)
     {
       $V = Array ();
@@ -79,7 +117,7 @@
     function apiURL()
     {
       $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
-      $pageURL .= $_SERVER['SERVER_PORT'] != '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
+      $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
       return $pageURL.'/ods/api';
     }
 
@@ -93,20 +131,6 @@
 
       if ($_form == "login")
       {
-      if (isset ($_REQUEST['lf_login']) && ($_REQUEST['lf_login'] <> ""))
-        {
-        $_url = sprintf ("%s/user.authenticate?user_name=%s&password_hash=%s", apiURL(), $_REQUEST['lf_uid'], sha1($_REQUEST['lf_uid'].$_REQUEST['lf_password']));
-        $_result = file_get_contents($_url);
-        if (substr_count($_result, "<failed>") <> 0)
-        {
-          $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
-        } else {
-          $_xml = simplexml_load_string($_result);
-          $_sid = $_xml->sid;
-          $_form = "profile";
-          }
-        }
       if (isset ($_REQUEST['lf_register']) && ($_REQUEST['lf_register'] <> ""))
         $_form = "register";
       }
@@ -277,7 +301,7 @@
             $_error = $_xml->failed->message;;
             $_form = "login";
           }
-          if ($_form != "login")
+          if ($_form <> "login")
           {
             $_url = apiURL()."/user.favorites.new?sid=".$_sid."&realm=".$_realm."&favorites=".urlencode (str_replace("\\\"", "\"", $_REQUEST["favorites"]));
             $_result = file_get_contents($_url);
@@ -291,63 +315,64 @@
         }
         else
         {
-          $_url = apiURL()."/user.update.fields"."?sid=".$_sid."&realm=".$_realm;
+          $_url = apiURL()."/user.update.fields";
+          $_params = "sid=".$_sid."&realm=".$_realm;
           if ($_formTab == 0)
           {
             if ($_formSubtab == 0)
             {
               // Import
-              if ($_REQUEST['cb_item_i_name'] = '1')
-                $_url .= '&nickName' . urlencode ($_REQUEST['i_nickName']);
-              if ($_REQUEST['cb_item_i_title'] = '1')
-                $_url .= '&title=' . urlencode ($_REQUEST['i_title']);
-              if ($_REQUEST['cb_item_i_firstName'] = '1')
-                $_url .= '&firstName=' . urlencode ($_REQUEST['i_firstName']);
-              if ($_REQUEST['cb_item_i_lastName'] = '1')
-                $_url .= '&lastName=' . urlencode ($_REQUEST['i_lastName']);
-              if ($_REQUEST['cb_item_i_fullName'] = '1')
-                $_url .= '&fullName=' . urlencode ($_REQUEST['i_fullName']);
-              if ($_REQUEST['cb_item_i_gender'] = '1')
-                $_url .= '&gender=' . urlencode ($_REQUEST['i_gender']);
-              if ($_REQUEST['cb_item_i_mail'] = '1')
-                $_url .= '&mail=' . urlencode ($_REQUEST['i_mail']);
-              if ($_REQUEST['cb_item_i_birthday'] = '1')
-                $_url .= '&birthday=' . urlencode ($_REQUEST['i_birthday']);
-              if ($_REQUEST['cb_item_i_homepage'] = '1')
-                $_url .= '&homepage=' . urlencode ($_REQUEST['i_homepage']);
-              if ($_REQUEST['cb_item_i_icq'] = '1')
-                $_url .= '&icq=' . urlencode ($_REQUEST['i_icq']);
-              if ($_REQUEST['cb_item_i_aim'] = '1')
-                $_url .= '&aim=' . urlencode ($_REQUEST['i_aim']);
-              if ($_REQUEST['cb_item_i_yahoo'] = '1')
-                $_url .= '&yahoo=' . urlencode ($_REQUEST['i_yahoo']);
-              if ($_REQUEST['cb_item_i_msn'] = '1')
-                $_url .= '&msn=' . urlencode ($_REQUEST['i_msn']);
-              if ($_REQUEST['cb_item_i_skype'] = '1')
-                $_url .= '&skype=' . urlencode ($_REQUEST['i_skype']);
-              if ($_REQUEST['cb_item_i_homelat'] = '1')
-                $_url .= '&homeLatitude=' . urlencode ($_REQUEST['i_homelat']);
-              if ($_REQUEST['cb_item_i_homelng'] = '1')
-                $_url .= '&homeLongitude=' . urlencode ($_REQUEST['i_homelng']);
-              if ($_REQUEST['cb_item_i_homelng'] = '1')
-                $_url .= '&homePhone=' . urlencode ($_REQUEST['i_homePhone']);
-              if ($_REQUEST['cb_item_i_businessOrganization'] = '1')
-                $_url .= '&businessOrganization=' . urlencode ($_REQUEST['i_businessOrganization']);
-              if ($_REQUEST['cb_item_i_businessHomePage'] = '1')
-                $_url .= '&businessHomePage=' . urlencode ($_REQUEST['i_businessHomePage']);
-              if ($_REQUEST['cb_item_i_sumary'] = '1')
-                $_url .= '&sumary=' . urlencode ($_REQUEST['i_sumary']);
-              if ($_REQUEST['cb_item_i_tags'] = '1')
-                $_url .= '&tags=' . urlencode ($_REQUEST['i_tags']);
-              if ($_REQUEST['cb_item_i_interests'] = '1')
-                $_url .= '&interests=' . urlencode ($_REQUEST['i_interests']);
-              if ($_REQUEST['cb_item_i_topicInterests'] = '1')
-                $_url .= '&topicInterests=' . urlencode ($_REQUEST['i_topicInterests']);
+              if ($_REQUEST['cb_item_i_name'] == '1')
+                $_params .= '&nickName' . urlencode ($_REQUEST['i_nickName']);
+              if ($_REQUEST['cb_item_i_title'] == '1')
+                $_params .= '&title=' . urlencode ($_REQUEST['i_title']);
+              if ($_REQUEST['cb_item_i_firstName'] == '1')
+                $_params .= '&firstName=' . urlencode ($_REQUEST['i_firstName']);
+              if ($_REQUEST['cb_item_i_lastName'] == '1')
+                $_params .= '&lastName=' . urlencode ($_REQUEST['i_lastName']);
+              if ($_REQUEST['cb_item_i_fullName'] == '1')
+                $_params .= '&fullName=' . urlencode ($_REQUEST['i_fullName']);
+              if ($_REQUEST['cb_item_i_gender'] == '1')
+                $_params .= '&gender=' . urlencode ($_REQUEST['i_gender']);
+              if ($_REQUEST['cb_item_i_mail'] == '1')
+                $_params .= '&mail=' . urlencode ($_REQUEST['i_mail']);
+              if ($_REQUEST['cb_item_i_birthday'] == '1')
+                $_params .= '&birthday=' . urlencode ($_REQUEST['i_birthday']);
+              if ($_REQUEST['cb_item_i_homepage'] == '1')
+                $_params .= '&homepage=' . urlencode ($_REQUEST['i_homepage']);
+              if ($_REQUEST['cb_item_i_icq'] == '1')
+                $_params .= '&icq=' . urlencode ($_REQUEST['i_icq']);
+              if ($_REQUEST['cb_item_i_aim'] == '1')
+                $_params .= '&aim=' . urlencode ($_REQUEST['i_aim']);
+              if ($_REQUEST['cb_item_i_yahoo'] == '1')
+                $_params .= '&yahoo=' . urlencode ($_REQUEST['i_yahoo']);
+              if ($_REQUEST['cb_item_i_msn'] == '1')
+                $_params .= '&msn=' . urlencode ($_REQUEST['i_msn']);
+              if ($_REQUEST['cb_item_i_skype'] == '1')
+                $_params .= '&skype=' . urlencode ($_REQUEST['i_skype']);
+              if ($_REQUEST['cb_item_i_homelat'] == '1')
+                $_params .= '&homeLatitude=' . urlencode ($_REQUEST['i_homelat']);
+              if ($_REQUEST['cb_item_i_homelng'] == '1')
+                $_params .= '&homeLongitude=' . urlencode ($_REQUEST['i_homelng']);
+              if ($_REQUEST['cb_item_i_homelng'] == '1')
+                $_params .= '&homePhone=' . urlencode ($_REQUEST['i_homePhone']);
+              if ($_REQUEST['cb_item_i_businessOrganization'] == '1')
+                $_params .= '&businessOrganization=' . urlencode ($_REQUEST['i_businessOrganization']);
+              if ($_REQUEST['cb_item_i_businessHomePage'] == '1')
+                $_params .= '&businessHomePage=' . urlencode ($_REQUEST['i_businessHomePage']);
+              if ($_REQUEST['cb_item_i_sumary'] == '1')
+                $_params .= '&sumary=' . urlencode ($_REQUEST['i_sumary']);
+              if ($_REQUEST['cb_item_i_tags'] == '1')
+                $_params .= '&tags=' . urlencode ($_REQUEST['i_tags']);
+              if ($_REQUEST['cb_item_i_interests'] == '1')
+                $_params .= '&interests=' . urlencode ($_REQUEST['i_interests']);
+              if ($_REQUEST['cb_item_i_topicInterests'] == '1')
+                $_params .= '&topicInterests=' . urlencode ($_REQUEST['i_topicInterests']);
             }
             else if ($_formSubtab == 1)
             {
               // Main
-              $_url .=
+              $_params .=
                   "&nickName=".               urlencode ($_REQUEST['pf_nickName']).
                   "&mail=".                   urlencode ($_REQUEST['pf_mail']).
                   "&title=".                  urlencode ($_REQUEST['pf_title']).
@@ -358,14 +383,15 @@
                   "&birthday=".               urlencode ($_REQUEST['pf_birthday']).
                   "&homepage=".               urlencode ($_REQUEST['pf_homepage']).
                   "&mailSignature=".          urlencode ($_REQUEST['pf_mailSignature']).
-                  "&sumary=".                 urlencode ($_REQUEST['pf_sumary']);
+                  "&sumary=".                 urlencode ($_REQUEST['pf_sumary']).
+                  "&appSetting=".             urlencode ($_REQUEST['pf_appSetting']);
               $_tmp = "";
               foreach($_REQUEST as $name => $value)
               {
                 if (substr_count($name, 'x1_fld_1_') <> 0)
                   $_tmp = $_tmp . $value . '\n';
               }
-              $_url .= "&webIDs=" . urlencode ($_tmp);
+              $_params .= "&webIDs=" . urlencode ($_tmp);
               $_tmp = "";
               foreach($_REQUEST as $name => $value)
               {
@@ -375,7 +401,7 @@
                   $_tmp = $_tmp . $value . ";" . $_REQUEST['x2_fld_2_'.$_sufix] . "\n";
                 }
               }
-              $_url .= "&interests=" . urlencode ($_tmp);
+              $_params .= "&interests=" . urlencode ($_tmp);
               $_tmp = "";
               foreach($_REQUEST as $name => $value)
               {
@@ -385,11 +411,11 @@
                   $_tmp = $_tmp . $value . ";" . $_REQUEST['x3_fld_2_'.$_sufix] . '\n';
                 }
               }
-              $_url .= "&topicInterests=" . urlencode ($_tmp);
+              $_params .= "&topicInterests=" . urlencode ($_tmp);
             }
             if ($_formSubtab == 2)
             {
-              $_url .=
+              $_params .=
                   "&homeDefaultMapLocation=". urlencode ($_REQUEST['pf_homeDefaultMapLocation']).
                   "&homeCountry=".            urlencode ($_REQUEST['pf_homecountry']).
                   "&homeState=".              urlencode ($_REQUEST['pf_homestate']).
@@ -405,7 +431,7 @@
             }
             if ($_formSubtab == 5)
             {
-              $_url .=
+              $_params .=
                   "&icq=".                    urlencode ($_REQUEST['pf_icq']).
                   "&skype=".                  urlencode ($_REQUEST['pf_skype']).
                   "&yahoo=".                  urlencode ($_REQUEST['pf_yahoo']).
@@ -420,14 +446,14 @@
                   $_tmp = $_tmp . $value . ";" . $_REQUEST['x6_fld_2_'.$_sufix] . '\n';
                 }
               }
-              $_url .= "&messaging=" . urlencode ($_tmp);
+              $_params .= "&messaging=" . urlencode ($_tmp);
             }
           }
           if ($_formTab == 1)
           {
             if ($_formSubtab == 0)
             {
-              $_url .=
+              $_params .=
                   "&businessIndustry=".       urlencode ($_REQUEST['pf_businessIndustry']).
                   "&businessOrganization=".   urlencode ($_REQUEST['pf_businessOrganization']).
                   "&businessHomePage=".       urlencode ($_REQUEST['pf_businessHomePage']).
@@ -443,7 +469,7 @@
             }
             if ($_formSubtab == 1)
             {
-              $_url .=
+              $_params .=
                   "&businessCountry=".        urlencode ($_REQUEST['pf_businesscountry']).
                   "&businessState=".          urlencode ($_REQUEST['pf_businessstate']).
                   "&businessCity=".           urlencode ($_REQUEST['pf_businesscity']).
@@ -458,7 +484,7 @@
             }
             if ($_formSubtab == 3)
             {
-              $_url .=
+              $_params .=
                   "&businessIcq=".            urlencode ($_REQUEST['pf_businessIcq']).
                   "&businessSkype=".          urlencode ($_REQUEST['pf_businessSkype']).
                   "&businessYahoo=".          urlencode ($_REQUEST['pf_businessYahoo']).
@@ -473,39 +499,39 @@
                   $_tmp = $_tmp . $value . ";" . $_REQUEST['y2_fld_2_'.$_sufix] . '\n';
                 }
               }
-              $_url .= "&businessMessaging=" . urlencode ($_tmp);
+              $_params .= "&businessMessaging=" . urlencode ($_tmp);
             }
           }
           if ($_formTab == 2)
           {
             if ($_REQUEST['securityNo'] == "1")
-              $_url .=
+              $_params .=
                   "&securityOpenID=".      urlencode ($_REQUEST['pf_securityOpenID']);
 
             if ($_REQUEST['securityNo'] == "2")
-              $_url .=
+              $_params .=
                   "&securityFacebookID=" . urlencode ($_REQUEST['pf_securityFacebookID']);
 
             if ($_REQUEST['securityNo'] == "3")
-              $_url .=
+              $_params .=
                   "&securityFacebookID=";
 
             if ($_REQUEST['securityNo'] == "4")
-              $_url .=
+              $_params .=
                   "&securitySecretQuestion=". urlencode ($_REQUEST['pf_securitySecretQuestion']).
                   "&securitySecretAnswer=".   urlencode ($_REQUEST['pf_securitySecretAnswer']);
 
             if ($_REQUEST['securityNo'] == "5")
-              $_url .=
+              $_params .=
                   "&securitySiocLimit=".      urlencode ($_REQUEST['pf_securitySiocLimit']);
             if ($_REQUEST['securityNo'] == "6")
-              $_url .=
+              $_params .=
                   "&certificate=" . urlencode ($_REQUEST['pf_certificate']) .
                   "&certificateLogin=" . urlencode ((isset($_REQUEST['pf_certificateLogin']))? $_REQUEST['pf_certificateLogin']: "0");
             if ($_REQUEST['securityNo'] == "7")
-              $_url .= "&certificate=&certificateLogin=";
+              $_params .= "&certificate=&certificateLogin=";
           }
-          $_result = file_get_contents($_url);
+          $_result = postRequest($_url, $_params);
           if (substr_count($_result, "<failed>") <> 0)
           {
             $_xml = simplexml_load_string($_result);
@@ -539,7 +565,7 @@
         $_url = $_url."&short=1";
       $_result = file_get_contents($_url);
       $_xml = simplexml_load_string($_result);
-      if ($_xml->failed->message)
+      if (substr_count($_result, "<failed>") <> 0)
           {
         $_error = $_xml->failed->message;
             $_form = "login";
@@ -1090,6 +1116,20 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
+                            </th>
+                            <td>
+                              <select name="pf_appSetting" id="pf_appSetting">
+                                <?php
+                                  $X = array ("0", "disabled", "1", "click", "2", "hover");
+                                  for ($N = 0; $N < count ($X); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $X[$N], ((strcmp($X[$N], $_xml->appSetting) == 0) ? "selected=\"selected\"" : ""), $X[$N+1]);
+                                ?>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 
