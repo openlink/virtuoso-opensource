@@ -227,7 +227,7 @@
         self.regender.ufl_value := null;
         self.m_sign.ufl_value := null;
       }
-
+      WA_USER_EDIT (self.u_name, 'WAUI_NICK', self.nickn.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.regtitle.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.f_name.ufl_value);
       WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.l_name.ufl_value);

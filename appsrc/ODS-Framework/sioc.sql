@@ -1273,7 +1273,7 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
 {
   declare prj_iri, pers_iri any;
 
-  if (piri is null)
+  if (DB.DBA.is_empty_or_null (piri))
     prj_iri := person_prj_iri (iri, sprintf ('%U', nam));
   else
     prj_iri := piri;

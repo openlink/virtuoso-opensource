@@ -91,39 +91,6 @@
 
     if (vForm = 'login')
     {
-      if (get_keyword ('lf_login', params, '') <> '')
-      {
-        declare vUser, vPassword any;
-
-        vUser := get_keyword ('lf_uid', params, '');
-        vPassword := get_keyword ('lf_password', params, '');
-        vUrl := sprintf ('%s/user.authenticate?user_name=%s&password_hash=%s', vHostUrl, vUser, ODS.._hex_sha1_digest (vUser || vPassword));
-        commit work;
-        vResult := http_client_ext (
-                     vUrl,
-                     http_method=>'GET',
-                     http_headers=>vRequest,
-                     headers=>vRespond
-                   );
-        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
-        {
-          vError := vRespond[0];
-        }
-        else
-        {
-          vXml := xml_tree_doc (vResult);
-          if (xpath_eval ('/failed/message', vXml))
-          {
-            vError := xpath_eval ('string (/failed/message)', vXml);
-            vForm := 'login';
-          }
-          else
-          {
-            vSid := cast (xpath_eval ('/sid', vXml) as varchar);
-          vForm := 'user';
-        }
-      }
-    }
       if (get_keyword ('lf_register', params, '') <> '')
       {
         vForm := 'register';
@@ -158,6 +125,7 @@
           if (xpath_eval ('/failed/message', vXml))
           {
             vError := xpath_eval ('string (/failed/message)', vXml);
+            if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
             vForm := 'login';
           }
         }
@@ -189,6 +157,7 @@
           if (xpath_eval ('/failed/message', vXml))
           {
             vError := xpath_eval ('string (/failed/message)', vXml);
+            if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
             vForm := 'login';
           }
         }
@@ -220,6 +189,7 @@
           if (xpath_eval ('/failed/message', vXml))
           {
             vError := xpath_eval ('string (/failed/message)', vXml);
+            if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
             vForm := 'login';
           }
         }
@@ -446,7 +416,8 @@
                 '&birthday=' ||               sprintf ('%U', get_keyword ('pf_birthday', params, '')) ||
                 '&homepage=' ||               sprintf ('%U', get_keyword ('pf_homepage', params, '')) ||
                   '&mailSignature=' ||          sprintf ('%U', get_keyword ('pf_mailSignature', params, '')) ||
-                  '&sumary=' ||                 sprintf ('%U', get_keyword ('pf_sumary', params, ''));
+                  '&sumary=' ||        sprintf ('%U', get_keyword ('pf_sumary', params, '')) ||
+                  '&appSetting=' ||    sprintf ('%U', get_keyword ('pf_appSetting', params, '0'));
 
               tmp := '';
               for (N := 0; N < length (params); N := N + 2)
@@ -1245,6 +1216,20 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
+                            </th>
+                            <td>
+                              <select name="pf_appSetting" id="pf_appSetting">
+                                <?vsp
+                                  items := vector (vector ('0', 'disabled'), vector ('1', 'click'), vector ('2', 'hover'));
+                                  foreach (any item in items) do
+                                    http (sprintf('<option value="%s" %s>%s</option>', item[0], case when (item[0] = xpath_eval ('string (/user/appSetting)', vXml)) then 'selected="selected"' else '' end, item[1]));
+                                ?>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 
