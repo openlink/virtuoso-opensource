@@ -1,3 +1,646 @@
+2010-03-22 22:01  source
+
+	* Added a++ otion in user's pages
+	* Fixed ontology APIs
+	* Fixed 'Creator of'
+	* Fixed nickName
+	* Fixed php POST request
+
+2010-03-22 21:48  source
+
+	* Fixed also check for ctype
+
+2010-03-22 21:46  source
+
+	* Fixed Back button
+
+2010-03-22 21:46  source
+
+	* Added support for WebID
+
+2010-03-22 21:43  source
+
+	* Fixed fetching img id
+	* Fixed issue with multiple URL params
+
+2010-03-22 16:09  source
+
+	* Added FOAF+SSL login for SQL clients
+
+2010-03-22 13:40  source
+
+	* Fixed use sk_X509_ALGOR_* macros
+
+2010-03-22 11:54  source
+
+	* Fixed do not encode default graph
+
+2010-03-19 14:59  source
+
+	* Fixed use newer OAT functions
+
+2010-03-18 13:01  source
+
+	* Fixed shortcut comparing version numbers during package upgrade
+
+2010-03-18 09:58  source
+
+	* Fixed user's login
+	* Fixed UI buttons
+	* Fixed unique name message
+	* Fixed wishlist UI pages
+	* Fixed rename FOAF+SSL to WebID
+
+2010-03-18 09:56  source
+
+	* Fixed rename FOAF+SSL to WebID
+
+2010-03-17 14:57  source
+
+	* Rebuild driver
+
+2010-03-17 14:54  source
+
+	* Fixed check proper prefetch value
+
+2010-03-17 13:40  source
+
+	* Fixed alert text
+
+2010-03-17 13:40  source
+
+	* Fixed typo in styles path
+
+2010-03-17 00:51  source
+
+	* Fixed use new OAT toolkit
+
+2010-03-17 00:29  source
+
+	* Fixed JS error after new OAT
+	* Fixed change to google map
+
+2010-03-17 00:27  source
+
+	* Fixed problem with resource name and special symbols
+	* Fixed delete action
+
+2010-03-17 00:19  source
+
+	* Fixed deadlock retry
+
+2010-03-17 00:19  source
+
+	* Fixed missing date conversion
+
+2010-03-17 00:03  source
+
+	* Fixed use new API functions
+
+2010-03-17 00:03  source
+
+	* Added support for Google map v3
+
+2010-03-16 23:58  source
+
+	* Fixed check if datadump is gz too
+	* Fixed the next site needs to copy all props from initial
+	* Fixed use log mode 3 as dump can be large
+
+2010-03-16 18:58  source
+
+	* Fixed check if lt present
+
+2010-03-16 18:15  source
+
+	* Fixed when killed during the cpt, remove trx from global pool,
+	  cannot commit anyway
+
+2010-03-16 14:04  source
+
+	* Fixed when doing xa commit set the lt_threads properly
+
+2010-03-16 12:57  source
+
+	* Fixed enter log mtx when writing byte order and version checks
+
+2010-03-16 10:46  source
+
+	* Rebuild driver
+
+2010-03-16 10:44  source
+
+	* Added virtuoso.ttl to sesame jar
+	* Added xsl pages for Sesame HTTP repository configuration
+
+2010-03-16 10:21  source
+
+	* Fixed encoding of URL params
+
+2010-03-16 10:16  source
+
+	* Added support for vad_version
+
+2010-03-16 10:02  source
+
+	* Fixed use new OAT toolkit
+	* Removed debug code
+
+2010-03-15 15:47  source
+
+	* Fixed FOAF+SSL user pages
+
+2010-03-15 15:46  source
+
+	* Removed debug code
+
+2010-03-15 15:27  source
+
+	* Fixed use new OAT toolkit
+	* Fixed version check for ODS Framework
+
+2010-03-12 14:04  source
+
+	* Fixed invitation problem with multiple users
+
+2010-03-11 17:20  source
+
+	* Added locaction macro support
+	* Fixed numerous issues
+	* Merged new version of OAT
+
+2010-03-11 17:14  source
+
+	* Updated version number
+
+2010-03-11 17:11  source
+
+	* Added Register to vsp, php etc users pages
+	* Added X.509 create certificate to users pages
+	* Fixed UI profile
+	* Fixed delete action
+	* Fixed new foaf+ssl schema support
+
+2010-03-11 17:09  source
+
+	* Fixed SIOC subscriptions
+
+2010-03-11 17:07  source
+
+	* Fixed icons - delete and add
+
+2010-03-11 17:05  source
+
+	* Fixed dependency to later version of ODS Framework
+
+2010-03-11 17:04  source
+
+	* Updated code to newer OAT version
+
+2010-03-11 17:03  source
+
+	* Updated version to 2.9
+
+2010-03-11 17:02  source
+
+	* Merged new version of OAT toolkit
+
+2010-03-10 20:28  source
+
+	* Fixed JSON support
+
+2010-03-10 14:48  source
+
+	* Fixed wide character when getting procedure columns information.
+
+2010-03-10 14:43  source
+
+	* Fixed support of old and new schema for FOAF+SSL
+
+2010-03-10 10:32  source
+
+	* Fixed arg check and memleak
+
+2010-03-09 20:14  source
+
+	* Added support for nvarchar to __like_min and __like_max
+
+2010-03-08 20:37  source
+
+	* Rebuild driver
+
+2010-03-08 20:36  source
+
+	* Fixed setting/getting pooling params
+
+2010-03-08 14:18  source
+
+	* Merged fixes from v6
+
+2010-03-08 12:10  source
+
+	* Added support for nvarchar to set_qualifier
+
+2010-03-08 09:21  source
+
+	* Fixed typo in scovo:dimension
+
+2010-03-05 10:17  source
+
+	* Added uStream cartridge
+
+2010-03-04 23:38  source
+
+	* Fixed tests
+
+2010-03-04 14:46  source
+
+	* Fixed when one connection does a prepare and then uses another
+	  connection to commit/rollback, must reset 1st cli's trx
+
+2010-03-04 13:40  source
+
+	* Fixed use trx mtx
+
+2010-03-04 13:39  source
+
+	* Added initial support for JDBC hibernate
+
+2010-03-04 13:31  source
+
+	* Fixed reading possibly freed memory
+	* Fixed when writing to log enter log_write_mtx to avoid concurrent
+	  writing
+
+2010-03-04 12:23  source
+
+	* Fixed possible read of free memory, as lt_2pc._2pc_xid can be released
+	  on one thread and xa_prep_log to look in tpd_trx_cookie on the TP
+	  thread
+
+2010-03-04 12:18  source
+
+	* Rebuild driver
+
+2010-03-04 12:13  source
+
+	* Rebuild drivers
+
+2010-03-04 12:12  source
+
+	* Fixed version number of driver
+
+2010-03-04 12:12  source
+
+	* Fixed connection pooling
+
+2010-03-04 12:11  source
+
+	* Fixed remove xa transaction
+
+2010-03-03 11:17  source
+
+	* Fixed mem leak
+	* Fixed read after free
+
+2010-03-03 10:41  source
+
+	* Added 'Offers', 'Seeks' etc to user pages
+
+2010-03-03 09:21  source
+
+	* Rebuild driver
+
+2010-03-03 09:20  source
+
+	* Fixed problem with jar packaging
+
+2010-03-02 22:00  source
+
+	* Fixed memory leaks
+
+2010-03-02 19:34  source
+
+	* Fixed remove id from hash before free structure
+
+2010-03-02 19:28  source
+
+	* Fixed PPTX cartridge to work with latest description.vsp
+
+2010-03-02 19:27  source
+
+	* Fixed minor issue
+
+2010-03-02 14:46  source
+
+	* Added OPTIONS for http server
+	* Added trace method
+
+2010-03-02 14:46  source
+
+	* Added OPTIONS for http server
+
+2010-03-01 10:26  source
+
+	* Fixed use unzip_file function
+
+2010-03-01 10:22  source
+
+	* Upgraded to Jena 2.6.2
+
+2010-03-01 10:16  source
+
+	* Fixed CSS
+
+2010-03-01 10:15  source
+
+	* Fixed minor issues
+
+2010-03-01 10:15  source
+
+	* Fixed Import and CSS
+
+2010-03-01 10:12  source
+
+	* Fixed compatiblity with jdk1.5
+
+2010-03-01 09:31  source
+
+	* Regenerated driver
+
+2010-03-01 09:31  source
+
+	* Fixed make sesame2 jdk1.5 compatible
+
+2010-03-01 09:17  source
+
+	* Rebuild driver
+
+2010-03-01 09:16  source
+
+	* Upgraded to Jena 2.6.2
+	* Use jdk 1.6 with -target 1.5 for backward compatibility
+
+2010-03-01 01:01  source
+
+	* Added support for unzip_file ()
+
+2010-03-01 00:06  source
+
+	* Added support for switching servers and speed limiting
+
+2010-03-01 00:03  source
+
+	* Added support for saving history to disk
+
+2010-02-28 23:58  source
+
+	* Added swap guard option
+
+2010-02-28 23:58  source
+
+	* Fixed geo:point matching
+	* Fixed regex to remove default ns from XML - single quotes are valid
+	  for enclosed attribute values
+
+2010-02-28 23:57  source
+
+	* Fixed positioned update problem on cluster
+
+2010-02-28 23:55  source
+
+	* Added refresh parameter
+
+2010-02-28 23:54  source
+
+	* Added id column
+
+2010-02-28 23:52  source
+
+	* Added setting for RoundRobin scheduling
+
+2010-02-26 10:06  source
+
+	* Upgraded to Sesame 2.3.1
+
+2010-02-26 10:05  source
+
+	* Upgraded to Sesame 2.3.1
+	* Removed deprecated file
+	* Fixed inference support
+
+2010-02-25 20:21  source
+
+	* Rebuild driver
+
+2010-02-25 20:20  source
+
+	* Added support for Sesame 2 HTTP repository
+	* Updated to Sesame 2.2.4
+
+2010-02-25 16:09  source
+
+	* Added 'Import' to user pages (vsp, php etc)
+	* Fixed pass interface too
+
+2010-02-25 16:08  source
+
+	* Added tweet gizmo
+
+2010-02-25 16:07  source
+
+	* Fixed groups
+
+2010-02-25 16:03  source
+
+	* Fixed url param for metadata selection
+
+2010-02-25 12:00  source
+
+	* Fixed external
+
+2010-02-24 09:01  source
+
+	* Added column for api type
+
+2010-02-23 22:35  source
+
+	* Fixed metadata
+
+2010-02-18 20:24  source
+
+	* Fixed mem leak
+
+2010-02-18 17:01  source
+
+	* Fixed memory leak
+
+2010-02-18 14:33  source
+
+	* Fixed compiler warnings
+
+2010-02-18 14:30  source
+
+	* Fixed detection of n3 and nt formats
+
+2010-02-18 14:29  source
+
+	* Merged back from V6
+
+2010-02-18 14:29  source
+
+	* Fixed when starting new XA transaction and client has one already,
+	  we leave old and make new for the new xid
+
+2010-02-18 14:22  source
+
+	* Fixed minor issue
+
+2010-02-18 10:01  source
+
+	* Fixed SIOC subscriptions
+	* Fixed bad item descriptions
+
+2010-02-18 10:00  source
+
+	* Fixed groups
+	* Fixed bookmarklet
+	* Fixed typo
+
+2010-02-16 13:46  source
+
+	* Added slidesix cartridge
+
+2010-02-15 13:17  source
+
+	* Added DB.DBA.BEST_LANGMATCH() aggregate
+
+2010-02-15 13:16  source
+
+	* Fixed compiler warnings
+
+2010-02-15 10:05  source
+
+	* Fixed problem with shared files
+
+2010-02-12 22:13  source
+
+	* Added option for user WebID
+
+2010-02-12 22:12  source
+
+	* Fixed table editing fields
+
+2010-02-12 12:56  source
+
+	* Rebuild driver
+
+2010-02-12 12:56  source
+
+	* Fixed use bitmask check
+
+2010-02-12 11:20  source
+
+	* Added "Create New Resource" option
+
+2010-02-12 11:20  source
+
+	* Fixed always refresh robot status
+
+2010-02-12 10:26  source
+
+	* Regenerated driver
+
+2010-02-12 10:26  source
+
+	* Fixed issues with Literal data
+	* Small bugfixes
+
+2010-02-11 16:20  source
+
+	* Fixed bug with UTF-8 encoded strings in box
+
+2010-02-11 13:16  source
+
+	* Added 'create file' action
+
+2010-02-11 13:15  source
+
+	* Fixed removed status bar
+
+2010-02-11 13:11  source
+
+	* Fixed run microformats independent of rdfa
+
+2010-02-11 13:10  source
+
+	* Fixed minor issues
+
+2010-02-11 13:10  source
+
+	* Fixed rolled back fix for GR data
+
+2010-02-11 13:09  source
+
+	* Fixed owl:sameAs is not a:id
+
+2010-02-10 22:12  source
+
+	* Fixed Anotea, CSS
+
+2010-02-10 22:11  source
+
+	* Fixed Anotea, CSS
+	* Fixed Annotation SIOC Data
+	* Fixed problem with bad item descriptions
+
+2010-02-10 22:11  source
+
+	* Fixed WebID selection
+	* Fixed calling proc from other packages other than Framework
+
+2010-02-10 22:09  source
+
+	* Fixed Anotea, CSS
+	* Fixed Annotation SIOC Data
+
+2010-02-10 22:09  source
+
+	* Fixed Anotea, CSS
+	* Fixed ANnotation SIOC Data
+
+2010-02-10 22:06  source
+
+	* Fixed DAV path normalize
+	* Fixed Feeds rights
+	* Fixed UI Profile JS
+
+2010-02-09 16:11  source
+
+	* Fixed bug with UTF-8 encoded strings
+
+2010-02-09 14:46  source
+
+	* Added missing file
+
+2010-02-09 14:46  source
+
+	* Fixed missing execute permalink
+
+2010-02-09 14:45  source
+
+	* Fixed css to make tab effect more consitent
+	* Added new SPARQL endpoints
+
+2010-02-09 14:01  source
+
+	* Fixed check against abnormally big number of distince datatypes
+	  or languages
+
+2010-02-08 16:05  source
+
+	* Fixed UI profile pages
+
 2010-02-03 18:13  source
 
 	* Updated version to 5.0.13 for final release
@@ -19213,7 +19856,7 @@
 
 	* Fixed vhost for demo vad package
 
-2007-03-27 12:37  source
+2007-03-27 12:29  source
 
 	* Added scripts for making demo vad package
 
