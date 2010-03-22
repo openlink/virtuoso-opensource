@@ -52,6 +52,7 @@
       <v:variable persist="0" name="os_password" type="varchar" default="''"/>
       <v:variable persist="0" name="roles_grant_list" type="any" default="''"/>
       <v:variable persist="0" name="dav_quota" type="integer" default="0"/>
+      <v:variable persist="0" name="_webid" type="varchar" default="''"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Virtuoso Account Management"/>
@@ -158,8 +159,8 @@
              self.def_qual, _all_opts
         from SYS_USERS
         where U_NAME = self.user_name;
-
       self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
+      self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
       ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
       if (isarray (ldapo) and length (ldapo) > 1)
         {
@@ -563,6 +564,12 @@
         </tr>
               <tr>
                 <td colspan="2">
+		      <label for="webid">WebID</label>
+		      <v:text name="webid" value="--self._webid" xhtml_size="80" />
+                </td>
+              </tr> 
+              <tr>
+                <td colspan="2">
 
                   <table class="complex_selector">
                     <caption style="text-align:left;">Account Roles</caption>
@@ -814,6 +821,13 @@
       return;
     }
 
+  if (exists (select 1 from SYS_USER_WEBID where UW_U_NAME <> user_name and UW_WEBID = self.webid.ufl_value))  
+    {
+      control.vc_parent.vc_error_message := 'This WebID is already registered for another account.';
+      self.vc_is_valid := 0;
+      return;
+    }
+
   user_home := self.t_repository_path.ufl_value;
 
   if (strcasestr (user_home, '/DAV/home/') is not null)
@@ -984,6 +998,10 @@
 	      }
             i := i + 1;
           }
+
+	delete from SYS_USER_WEBID where UW_U_NAME = user_name;
+        if (length (self.webid.ufl_value) and length (user_name))
+	  insert into SYS_USER_WEBID (UW_U_NAME, UW_WEBID) values (user_name, self.webid.ufl_value);
 
         commit work;
 
