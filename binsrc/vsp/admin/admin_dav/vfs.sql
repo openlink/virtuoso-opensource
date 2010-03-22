@@ -1768,7 +1768,7 @@ create procedure WS.WS.SITEMAP_XML_PARSE (in _host varchar, in _url varchar, in 
     {
       _content := gzip_uncompress (_content); 
     }
-  if (_url like '%.xml' or _url like '%.xml.gz')
+  if (_url like '%.xml' or _url like '%.xml.gz' or _c_type = 'text/xml' or _c_type = 'application/xml' or _c_type = 'application/sparql-results+xml')
     {
       xt := xtree_doc (_content);
       if (xpath_eval ('/urlset/dataset', xt) is not null)
