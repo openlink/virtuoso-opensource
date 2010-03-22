@@ -7942,13 +7942,13 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
       skCAList = SSL_CTX_get_client_CA_list(ssl_ctx);
 
-      if (sk_num((STACK *) skCAList) == 0)
+      if (sk_X509_ALGOR_num(skCAList) == 0)
 	log_warning ("HTTPS Client authentication requested but no CA known for verification");
 
-      for (i = 0; i < sk_num((STACK *) skCAList); i++)
+      for (i = 0; i < sk_X509_ALGOR_num(skCAList); i++)
 	{
 	  char ca_buf[1024];
-	  X509_NAME *ca_name = (X509_NAME *) sk_value ((STACK *) skCAList, i);
+	  X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 	    log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
 	}
@@ -10085,13 +10085,13 @@ http_init_part_two ()
 
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
-	  if (sk_num((STACK *) skCAList) == 0)
+	  if (sk_X509_ALGOR_num(skCAList) == 0)
 	    log_warning ("HTTPS Client authentication requested but no CA known for verification");
 
-	  for (i = 0; i < sk_num((STACK *) skCAList); i++)
+	  for (i = 0; i < sk_X509_ALGOR_num(skCAList); i++)
 	    {
 	      char ca_buf[1024];
-	      X509_NAME *ca_name = (X509_NAME *) sk_value ((STACK *) skCAList, i);
+	      X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
               if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 		log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
 	    }
