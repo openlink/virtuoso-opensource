@@ -124,9 +124,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token _LPAR		/*:: PUNCT_SPAR_LAST("(") ::*/
 %token _LSQBRA		/*:: PUNCT_SPAR_LAST("[") ::*/
 %token _LT		/*:: PUNCT_SPAR_LAST("<") ::*/
-%token _MINUS		/*:: PUNCT_SPAR_LAST("-") ::*/
+%token<token_type> _MINUS		/*:: PUNCT_SPAR_LAST("-") ::*/
 %token _NOT_EQ		/*:: PUNCT_SPAR_LAST("!=") ::*/
-%token _PLUS		/*:: PUNCT_SPAR_LAST("+") ::*/
+%token<token_type> _PLUS		/*:: PUNCT_SPAR_LAST("+") ::*/
 %token _PLUS_GT		/*:: PUNCT_SPAR_LAST("+>") ::*/
 %token _RBRA		/*:: PUNCT_SPAR_LAST("{ }") ::*/
 %token _RPAR		/*:: PUNCT_SPAR_LAST("( )") ::*/
@@ -302,6 +302,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_select_query
 %type <token_type> spar_select_query_mode
 %type <trees> spar_select_rset
+%type <trees> spar_select_rset_1
 %type <tree> spar_construct_query
 %type <tree> spar_describe_query
 %type <trees> spar_describe_rset
@@ -362,9 +363,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_var_or_blank_node_or_iriref_or_backquoted
 %type <tree> spar_var_or_iriref_or_pexpn_or_backquoted
 %type <tree> spar_var_or_iriref_or_backquoted
+%type <backstack> spar_retcol_commalist
 %type <backstack> spar_retcols
-%type <tree> spar_retcol
-%type <tree> spar_retcol_value
 %type <tree> spar_ret_agg_call
 %type <box> spar_agg_name
 %type <box> spar_agg_name_int
@@ -482,6 +482,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 
 %left _SEMI
 %left _COLON
+%nonassoc AS_L
 %left _BAR_BAR
 %left _AMP_AMP
 %nonassoc _BANG NOT_L
@@ -581,7 +582,7 @@ spar_prefix_decl	/* [4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF	*/
 	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
 	;
 
-spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' )	*/
+spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' )? ( ( Retcol ( ','? Retcol )* ) | '*' )	*/
 			/*... DatasetClause* WhereClause SolutionModifier	*/
 	: spar_select_query_mode {
 		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
@@ -606,9 +607,17 @@ spar_select_query_mode	/* ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' ) ?	*/
 	;
 
 spar_select_rset	/* ::=  ( ( Retcol ( ','? Retcol )* ) | '*' | 'COUNT' )	*/
+	: { $<token_type>$ = sparp_arg->sparp_rset_lexdepth_plus_1; sparp_arg->sparp_rset_lexdepth_plus_1 = sparp_arg->sparp_lexdepth + 1; }
+	    spar_select_rset_1 { sparp_arg->sparp_rset_lexdepth_plus_1 = $<token_type>1; $$ = $2; }
+	;
+
+spar_select_rset_1
 	: _STAR		{ $$ = (SPART **) _STAR; }
 	/*| COUNT_LPAR _STAR _RPAR	{ $$ = (SPART **) COUNT_LPAR; }*/
 	| spar_retcols	{ $$ = (SPART **) t_revlist_to_array ($1); }
+	| spar_retcol_commalist	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "comma-delimited list of result set expressions");
+		$$ = (SPART **) t_revlist_to_array ($1); }
 	;
 
 spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate DatasetClause* WhereClause SolutionModifier	*/
@@ -1143,22 +1152,14 @@ spar_var_or_blank_node_or_iriref_or_backquoted	/* [40]*	VarOrBlankNodeOrIRIrefOr
 	| spar_backquoted
 	;
 
-spar_retcols		/* ::=  ( Retcol ( ','? Retcol )*	*/
-	: spar_retcol			{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_retcols spar_retcol	{ $$ = $1; t_set_push (&($$), $2); }
-	| spar_retcols _COMMA spar_retcol	{ $$ = $1; t_set_push (&($$), $3); }
+spar_retcol_commalist			/* ::=  ( Expn ( ',' Expn )+ )	*/
+	: spar_expn _COMMA spar_expn			{ $$ = NULL; t_set_push (&($$), $1); t_set_push (&($$), $3); }
+	| spar_retcol_commalist _COMMA spar_expn	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
-spar_retcol		/* [Virt]	Retcol	 ::=  ( Var | ( '(' Expn ')' ) | RetAggCall ) ( 'AS' ( VAR1 | VAR2 ) )?	*/
-	: spar_retcol_value					{ $$ = $1; }
-	| spar_retcol_value AS_L QUEST_VARNAME		{ $$ = spartlist (sparp_arg, 4, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO); }
-	| spar_retcol_value AS_L DOLLAR_VARNAME		{ $$ = spartlist (sparp_arg, 4, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO); }
-	;
-
-spar_retcol_value	/* ::=  ( Var | ( '(' Expn ')' | RetAggCall ) )	*/
-	: spar_var
-        | _LPAR spar_expn _RPAR	{ $$ = $2; }
-	| spar_ret_agg_call { $$ = $1; }
+spar_retcols		/* ::=  ( Expn+ )	*/
+	: spar_expn			{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_retcols spar_expn	{ $$ = $1; t_set_push (&($$), $2); }
 	;
 
 spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
@@ -1231,8 +1232,10 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 		}
 	;
 
-spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
-	: spar_expn _BAR_BAR spar_expn { /* [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*	*/
+spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
+	: spar_expn AS_L QUEST_VARNAME		{ $$ = spartlist (sparp_arg, 4, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO); }
+	| spar_expn AS_L DOLLAR_VARNAME		{ $$ = spartlist (sparp_arg, 4, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO); }
+	| spar_expn _BAR_BAR spar_expn { /* [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_OR, $1, $3); }
 	| spar_expn _AMP_AMP spar_expn { /* [45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	*/
 					/* [46]	ValueLogical	 ::=  RelationalExpn	*/
@@ -1264,8 +1267,13 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 	| spar_expn _LE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $1, $3); }
 	| spar_expn _GE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $3, $1); }
 	| spar_expn _PLUS spar_expn {	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
+		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
+		  sparyyerror ("Ambiguous (unary or binary) plus operator in result list, please add \"(\" and \")\"");
 		  SPAR_BIN_OP ($$, BOP_PLUS, $1, $3); }
-	| spar_expn _MINUS spar_expn	{ SPAR_BIN_OP ($$, BOP_MINUS, $1, $3); }
+	| spar_expn _MINUS spar_expn	{
+		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
+		  sparyyerror ("Ambiguous (unary or binary) minus operator in result list, please add \"(\" and \")\"");
+		SPAR_BIN_OP ($$, BOP_MINUS, $1, $3); }
 	| spar_expn _STAR spar_expn {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_TIMES, $1, $3); }
 	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }

@@ -386,9 +386,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>">"		{ return _GT		; }
 <SPARQL>"<="		{ return _LE		; }
 <SPARQL>"<"		{ return _LT		; }
-<SPARQL>"-"		{ return _MINUS		; }
+<SPARQL>"-"		{ sparyylval.token_type = sparp->sparp_lexdepth; return _MINUS		; }
 <SPARQL>"!="		{ return _NOT_EQ	; }
-<SPARQL>"+"		{ return _PLUS		; }
+<SPARQL>"+"		{ sparyylval.token_type = sparp->sparp_lexdepth; return _PLUS		; }
 <SPARQL>"+>"		{ return _PLUS_GT	; }
 <SPARQL>";"		{ return _SEMI		; }
 <SPARQL>"/"		{ return _SLASH		; }

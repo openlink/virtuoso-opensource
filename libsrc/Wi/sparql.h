@@ -295,6 +295,7 @@ typedef struct sparp_s {
   size_t sparp_text_len;
   int sparp_lexlineno;			/*!< Source line number, starting from 1 */
   int sparp_lexdepth;			/*!< Lexical depth, it's equal to the current position in \c sparp_lexpars and \c sparp_lexstates */
+  int sparp_rset_lexdepth_plus_1;	/*!< Lexical depth of current result set, increased by 1 (so when it's zero it means not in rset) */
   int sparp_lexpars[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
   int sparp_lexstates[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of lexical states */
   int sparp_string_literal_lexval;	/*!< Lexical value of string literal that is now in process. */
