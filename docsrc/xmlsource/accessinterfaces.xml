@@ -473,6 +473,354 @@ the Virtuoso server running on the same computer on port 1111:</para>
 
 
 				</sect2>
+  <sect2 id="JDBCDriverhibernate"><title>Virtuoso JDBC Driver Hibernate Support</title>
+    <sect3 id="JDBCDriverhibernateintro"><title>Introduction</title>
+      <para><emphasis>What</emphasis></para>
+      <para>Hibernate is a powerful, open source, high performance object/relational persistence and query service. Hibernate lets
+you develop persistent classes following object-oriented idiom - including association, inheritance, polymorphism, composition, and
+collections. Hibernate allows you to express queries in its own portable SQL extension (HQL), as well as in native SQL, or with an
+object-oriented Criteria and Example API.
+      </para>
+      <para><emphasis>Why</emphasis></para>
+      <para>Hibernate employs very aggressive, and very intelligent first and second level caching strategy, providing a high
+performance and scalable development framework for Java. Greater cross portability and productivity can also be achieve using
+hibernate as the same techniques can be employed across multiple databases.
+      </para>
+      <para><emphasis>How</emphasis></para>
+      <para>Hibernate uses JDBC for accessing databases and may require a given database has a custom SQL dialect file that informs
+Hibernate what SQL dialects are to be use for performing certain operations against the target database. Although not strictly
+required, it should be used to ensure Hibernate Query Language (HQL) statements are correctly converted into the proper SQL
+dialect for the underlying database. Virtuoso includes a new jar file called virt_dialect.jar containing the SQL dialect mappings
+required between hibernate and Virtuoso and is used in conjunction to the Virtuoso JDBC Drivers (virtjdbc3.jar or virtjdbc4.jar).
+      </para>
+    </sect3>
+    <sect3 id="JDBCDriverhibernatesetupandtesting"><title>Setup and Testing</title>
+<para>Three <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtJdbcHibernate/Hibernate_Examples.zip">sample programs</ulink> are
+provided to test Virtuoso hibernate support. Extract the contents of the zip file to a location of choice.
+</para>
+      <sect4 id="JDBCDriverhibernatesetupandtestingreq"><title>Requirements</title>
+<itemizedlist mark="bullet">
+  <listitem><ulink url="https://www.hibernate.org/">Hibernate</ulink> 3.3 or higher</listitem>
+  <listitem>JDK 5.0 or higher on any operating system</listitem>
+  <listitem>Ant 1.6</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtJdbcHibernate/virt_dialect.jar">Virtuoso SQL Dialect jar file</ulink> (virt_dialect.jar)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtJdbcHibernate/virtjdbc4.jar">Virtuoso JDBC Driver</ulink> (virtjdbc4.jar)</listitem>
+</itemizedlist>
+      </sect4>
+      <sect4 id="JDBCDriverhibernatesetupandtesting"><title>Building and running the example</title>
+        <para>The following Ant targets are available:</para>
+<programlisting><![CDATA[
+clean         Clean the build directory
+compile       Build example
+run           Build and run example
+]]></programlisting>
+      </sect4>
+      <sect4 id="JDBCDriverhibernateconstr"><title>Hibernate connection string</title>
+<para>Edit the file <code>hibernate.cfg.xml</code> in the "bin" and "src" directories of the hibernate application directory
+with the correct connection attributes for the Virtuoso Server instance:</para>
+<programlisting><![CDATA[
+$ more hibernate.cfg.xml
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+
+    <session-factory>
+
+        <!-- Database connection settings -->
+        <property name="connection.driver_class">virtuoso.jdbc4.Driver</property>
+        <property name="connection.url">jdbc:virtuoso://localhost:1111/</property>
+        <property name="connection.username">dba</property>
+        <property name="connection.password">dba</property>
+
+        <!-- JDBC connection pool (use the built-in) -->
+        <property name="connection.pool_size">1</property>
+
+        <!-- SQL dialect -->
+        <property name="dialect">virtuoso.hibernate.VirtuosoDialect</property>
+
+        <!-- Enable Hibernate's current session context -->
+        <property name="current_session_context_class">thread</property>
+
+        <!-- Disable the second-level cache  -->
+        <property name="cache.provider_class">org.hibernate.cache.NoCacheProvider</property>
+
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">true</property>
+
+        <!-- Drop and re-create the database schema on startup -->
+        <property name="hbm2ddl.auto">create</property>
+
+        <mapping resource="events/Event.hbm.xml"/>
+
+    </session-factory>
+
+</hibernate-configuration>
+]]></programlisting>
+<para>The key attributes being</para>
+<itemizedlist mark="bullet">
+  <listitem><emphasis>connection.driver_class</emphasis> - Virtuoso JDBC Driver class name, typically virtuoso.jdbc4.Driver</listitem>
+  <listitem><emphasis>connection.url</emphasis> - Virtuoso JDBC Driver connect string for target Virtuoso server instance, of the
+form <code>jdbc:virtuoso://hostname:portno</code></listitem>
+  <listitem><emphasis>connection.username</emphasis> - Virtuoso Server username</listitem>
+  <listitem><emphasis>connection.password</emphasis> - Virtuoso Server password</listitem>
+</itemizedlist>
+      </sect4>
+      <sect4 id="JDBCDriverhibernatesetupandtestingexmp"><title>Examples</title>
+      <sect5 id="JDBCDriverhibernatesetupandtestingexmp1"><title>Example 1</title>
+<para>This sample performs a simple insert and retrieval of data against the Virtuoso database.
+</para>
+<orderedlist>
+  <listitem>Open your command shell and change to the "ex1" directory</listitem>
+  <listitem>The following required files need to be placed in the ./lib directory:
+<programlisting><![CDATA[
+antlr-2.7.6.jar
+commons-collections-3.1.jar
+commons-logging-1.0.4.jar
+dom4j-1.6.1.jar
+hibernate3.jar
+javassist-3.4.GA.jar
+jta-1.1.jar
+lib.lst
+log4j-1.2.15.jar
+slf4j-api-1.5.10.jar
+slf4j-api-1.5.2.jar
+slf4j-jcl-1.5.10.jar
+virtjdbc4.jar
+virt_dialect.jar
+]]></programlisting>
+</listitem>
+  <listitem>Run the example with "ant run" and read the log output on the console:
+<programlisting><![CDATA[
+$ ant run
+Buildfile: build.xml
+
+clean:
+   [delete] Deleting directory /Users/hughwilliams/hibernate/ex1/bin
+    [mkdir] Created dir: /Users/hughwilliams/hibernate/ex1/bin
+
+copy-resources:
+     [copy] Copying 3 files to /Users/hughwilliams/hibernate/ex1/bin
+     [copy] Copied 2 empty directories to 1 empty directory under /Users/hughwilliams/hibernate/ex1/bin
+
+compile:
+    [javac] Compiling 3 source files to /Users/hughwilliams/hibernate/ex1/bin
+
+run:
+     [java] Hibernate: insert into Event (EVENT_DATE, title) values (?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: insert into Event (EVENT_DATE, title) values (?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: select event0_.EVENT_ID as EVENT1_0_, event0_.EVENT_DATE as EVENT2_0_, event0_.title as title0_ from Event event0_
+     [java] Event: My Event1 Time: 2010-03-14 03:27:51.0
+     [java] Event: My Event2 Time: 2010-03-14 03:27:53.0
+
+BUILD SUCCESSFUL
+Total time: 3 seconds
+]]></programlisting>
+</listitem>
+  <listitem>Hibernate logging levels can be varied by changing the settings in the src/hibernate.cfg.xml and src/log4j.properties files.</listitem>
+</orderedlist>
+      </sect5>
+      <sect5 id="JDBCDriverhibernatesetupandtestingexmp2"><title>Example 2</title>
+<para>Hello World with Java Persistence</para>
+<orderedlist>
+  <listitem>Open your command shell and change to the "ex2" directory</listitem>
+  <listitem>The following required files need to be placed in the ./lib directory:
+<programlisting><![CDATA[
+
+antlr-2.7.6.jar
+asm-attrs.jar
+asm.jar
+c3p0-0.9.0.jar
+cglib-2.1.3.jar
+commons-collections-2.1.1.jar
+commons-logging-1.0.4.jar
+dom4j-1.6.1.jar
+ejb3-persistence.jar
+freemarker.jar
+hibernate-annotations.jar
+hibernate-commons-annotations.jar
+hibernate-entitymanager.jar
+hibernate-tools.jar
+hibernate3.jar
+javassist.jar
+jboss-archive-browsing.jar
+jta.jar
+log4j-1.2.13.jar
+virtjdbc4.jar
+virt_dialect.jar
+]]></programlisting>
+</listitem>
+  <listitem>Use "ant schemaexport" to export a database schema automatically to the database. Ignore any errors about failing
+ALTER TABLE statements, they are thrown because there are no tables when you run this for the first time.
+<programlisting><![CDATA[
+$ ant schemaexport
+Buildfile: build.xml
+
+compile:
+
+copymetafiles:
+
+schemaexport:
+[hibernatetool] Executing Hibernate Tool with a JPA Configuration
+[hibernatetool] 1. task: hbm2ddl (Generates database schema)
+[hibernatetool]
+[hibernatetool]     drop table MESSAGES;
+[hibernatetool]
+[hibernatetool]     create table MESSAGES (
+[hibernatetool]         MESSAGE_ID decimal(20,0)  identity,
+[hibernatetool]         MESSAGE_TEXT varchar(255) null,
+[hibernatetool]         NEXT_MESSAGE_ID decimal(20,0) null,
+[hibernatetool]         primary key (MESSAGE_ID)
+[hibernatetool]     );
+[hibernatetool]
+[hibernatetool]     alter table MESSAGES
+[hibernatetool]         add
+[hibernatetool]         foreign key (NEXT_MESSAGE_ID)
+[hibernatetool]         references MESSAGES;
+
+BUILD SUCCESSFUL
+Total time: 2 seconds
+]]></programlisting>
+</listitem>
+  <listitem>Check the DDL that was also exported to the file helloworld-ddl.sql
+<programlisting><![CDATA[
+$ more helloworld-ddl.sql
+
+    drop table MESSAGES;
+
+    create table MESSAGES (
+        MESSAGE_ID decimal(20,0)  identity,
+        MESSAGE_TEXT varchar(255) null,
+        NEXT_MESSAGE_ID decimal(20,0) null,
+        primary key (MESSAGE_ID)
+    );
+
+    alter table MESSAGES
+        add
+        foreign key (NEXT_MESSAGE_ID)
+        references MESSAGES;
+]]></programlisting>
+</listitem>
+  <listitem>Run the example with "ant run" and read the log output on the console
+<programlisting><![CDATA[
+$ ant run
+Buildfile: build.xml
+
+compile:
+
+copymetafiles:
+
+run:
+     [java] 1 message(s) found:
+     [java] Hello World with JPA
+
+BUILD SUCCESSFUL
+Total time: 2 seconds
+]]></programlisting>
+</listitem>
+  <listitem>Call ant run again
+<programlisting><![CDATA[
+$ ant run
+Buildfile: build.xml
+
+compile:
+
+copymetafiles:
+
+run:
+     [java] 2 message(s) found:
+     [java] Hello World with JPA
+     [java] Hello World with JPA
+
+BUILD SUCCESSFUL
+Total time: 2 seconds
+]]></programlisting>
+</listitem>
+  <listitem>If you call ant schemaexport again, all tables will be re-created </listitem>
+  <listitem>Hibernate logging levels can be varied by changing the settings in the
+src/etc/log4j.properties and src/etc/META-INF/persistence.xml files</listitem>
+</orderedlist>
+      </sect5>
+      <sect5 id="JDBCDriverhibernatesetupandtestingexmp3"><title>Example 3</title>
+<para>This sample performs more complex insert and retrieval of data against the Virtuoso database.</para>
+<orderedlist>
+  <listitem>Open your command shell and change to the "ex3" directory</listitem>
+  <listitem>The following required files need to be placed in the ./lib directory:
+<programlisting><![CDATA[
+]]></programlisting>
+antlr-2.7.6.jar
+commons-collections-3.1.jar
+commons-logging-1.0.4.jar
+dom4j-1.6.1.jar
+hibernate3.jar
+javassist-3.4.GA.jar
+jta-1.1.jar
+libs.lst
+log4j-1.2.15.jar
+slf4j-api-1.5.10.jar
+slf4j-api-1.5.2.jar
+slf4j-jcl-1.5.10.jar
+virtjdbc4.jar
+virt_dialect.jar
+</listitem>
+  <listitem>Run the example with "ant run" and read the log output on the console:
+<programlisting><![CDATA[
+$ ant run
+Buildfile: build.xml
+
+clean:
+   [delete] Deleting directory /Users/hughwilliams/hibernate/ex3/bin
+    [mkdir] Created dir: /Users/hughwilliams/hibernate/ex3/bin
+
+copy-resources:
+     [copy] Copying 4 files to /Users/hughwilliams/hibernate/ex3/bin
+     [copy] Copied 2 empty directories to 1 empty directory under /Users/hughwilliams/hibernate/ex3/bin
+
+compile:
+    [javac] Compiling 4 source files to /Users/hughwilliams/hibernate/ex3/bin
+    [javac] Note: Some input files use unchecked or unsafe operations.
+    [javac] Note: Recompile with -Xlint:unchecked for details.
+
+run:
+     [java] Hibernate: insert into EVENTS (EVENT_DATE, title) values (?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: insert into EVENTS (EVENT_DATE, title) values (?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: insert into PERSON (age, firstname, lastname) values (?, ?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: select person0_.PERSON_ID as PERSON1_2_0_, event2_.EVENT_ID as EVENT1_0_1_, person0_.age as age2_0_, person0_.firstname as firstname2_0_, person0_.lastname as lastname2_0_, event2_.EVENT_DATE as EVENT2_0_1_, event2_.title as title0_1_, events1_.PERSON_ID as PERSON2_0__, events1_.EVENT_ID as EVENT1_0__ from PERSON person0_ left outer join PERSON_EVENT events1_ on person0_.PERSON_ID=events1_.PERSON_ID left outer join EVENTS event2_ on events1_.EVENT_ID=event2_.EVENT_ID where person0_.PERSON_ID=?
+     [java] Hibernate: select event0_.EVENT_ID as EVENT1_0_0_, event0_.EVENT_DATE as EVENT2_0_0_, event0_.title as title0_0_ from EVENTS event0_ where event0_.EVENT_ID=?
+     [java] Hibernate: select participan0_.EVENT_ID as EVENT1_1_, participan0_.PERSON_ID as PERSON2_1_, person1_.PERSON_ID as PERSON1_2_0_, person1_.age as age2_0_, person1_.firstname as firstname2_0_, person1_.lastname as lastname2_0_ from PERSON_EVENT participan0_ left outer join PERSON person1_ on participan0_.PERSON_ID=person1_.PERSON_ID where participan0_.EVENT_ID=?
+     [java] Hibernate: insert into PERSON_EVENT (PERSON_ID, EVENT_ID) values (?, ?)
+     [java] Hibernate: update PERSON set age=?, firstname=?, lastname=? where PERSON_ID=?
+     [java] Added person 1 to event 2
+     [java] Hibernate: insert into PERSON (age, firstname, lastname) values (?, ?, ?)
+     [java] Hibernate: select identity_value()
+     [java] Hibernate: select person0_.PERSON_ID as PERSON1_2_0_, person0_.age as age2_0_, person0_.firstname as firstname2_0_, person0_.lastname as lastname2_0_ from PERSON person0_ where person0_.PERSON_ID=?
+     [java] Hibernate: select emailaddre0_.PERSON_ID as PERSON1_0_, emailaddre0_.EMAIL_ADDR as EMAIL2_0_ from PERSON_EMAIL_ADDR emailaddre0_ where emailaddre0_.PERSON_ID=?
+     [java] Hibernate: insert into PERSON_EMAIL_ADDR (PERSON_ID, EMAIL_ADDR) values (?, ?)
+     [java] Hibernate: select person0_.PERSON_ID as PERSON1_2_0_, person0_.age as age2_0_, person0_.firstname as firstname2_0_, person0_.lastname as lastname2_0_ from PERSON person0_ where person0_.PERSON_ID=?
+     [java] Hibernate: select emailaddre0_.PERSON_ID as PERSON1_0_, emailaddre0_.EMAIL_ADDR as EMAIL2_0_ from PERSON_EMAIL_ADDR emailaddre0_ where emailaddre0_.PERSON_ID=?
+     [java] Hibernate: insert into PERSON_EMAIL_ADDR (PERSON_ID, EMAIL_ADDR) values (?, ?)
+     [java] Added two email addresses (value typed objects) to person entity : 1
+     [java] Hibernate: select event0_.EVENT_ID as EVENT1_0_, event0_.EVENT_DATE as EVENT2_0_, event0_.title as title0_ from EVENTS event0_
+     [java] Event: My Event Time: 2010-03-14 03:30:02.0
+     [java] Event: My Event Time: 2010-03-14 03:30:06.0
+
+BUILD SUCCESSFUL
+Total time: 5 seconds
+]]></programlisting>
+</listitem>
+  <listitem>Hibernate logging levels can be varied by changing the settings in the src/hibernate.cfg.xml and src/log4j.properties files.</listitem>
+</orderedlist>
+      </sect5>
+      </sect4>
+    </sect3>
+  </sect2>
 			</sect1>
 
 &oledbimplementation;

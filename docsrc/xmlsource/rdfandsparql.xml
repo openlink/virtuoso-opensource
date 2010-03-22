@@ -5545,6 +5545,36 @@ Timothy Berners-Lee TimBL
       </itemizedlist>
     </tip>
   </sect3>
+  <sect3 id="rdfsqlfromsparqlex1"><title>Example with sql: namespace prefix and bif:contains</title>
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT DISTINCT ?cityUri ?cityName (sql:BEST_LANGMATCH (?cityName, 'en, en-gb;q=0.8, fr;q=0.7, *;q=0.1', '')) as ?bestCityName
+WHERE
+  {
+    ?cityUri ?predicate ?value.
+    ?cityUri a <http://dbpedia.org/ontology/City>.
+    ?value bif:contains "London".
+    OPTIONAL
+      {
+        ?cityUri rdfs:label ?cityName
+      }
+  };
+
+cityUri                                              cityName                      bestCityName
+ANY                                                  ANY 	                         ANY
+______________________________________________________________________________________________________________
+http://dbpedia.org/resource/Anerley	                 Anerley	                     Anerley
+http://dbpedia.org/resource/Felixstowe	             Felixstowe	                   Felixstowe
+http://dbpedia.org/resource/Chesham	                 Chesham	                     Chesham
+http://dbpedia.org/resource/Stratford%2C_London	     Stratford, London	           Stratford, London
+http://dbpedia.org/resource/Ashford%2C_Surrey	       Ashford (Surrey)	 A           shford (Surrey)
+http://dbpedia.org/resource/Newmarket%2C_Suffolk	   Newmarket (Suffolk)	         Newmarket (Suffolk)
+http://dbpedia.org/resource/North_Rhine-Westphalia	 Renania d'o Norte-Westfalia	 Renania d'o Norte-Westfalia
+http://dbpedia.org/resource/West_Bromwich	           West Bromwich	               West Bromwich
+....
+
+]]></programlisting>
+  </sect3>
   <sect3 id="rdfsqlfromsparqlex2"><title>Example with bif: namespace prefix</title>
 <programlisting><![CDATA[
 SQL>SPARQL
@@ -32518,7 +32548,7 @@ SQL>SPARQL
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sioc: <http://rdfs.org/sioc/ns#>
-INSERT INTO GRAPH <urn:rules.skos> { foaf:knows rdfs:subPropertyOf skos:follows . };
+INSERT INTO GRAPH <urn:rules.skos> { foaf:knows rdfs:subPropertyOf sioc:follows . };
 
 callret-0
 VARCHAR
@@ -36158,7 +36188,7 @@ been tested against the <ulink url="http://sourceforge.net/project/showfiles.php
 Sesame APIs, take a look at Chapter 4 of the Sesame User Guide, <ulink url="http://www.openrdf.org/doc/sesame2/users/RDF">Setting up to use the Sesame libraries</ulink>.
     </para>
     </sect3>
-    <sect3 id="rdfnativestorageproviderssesamesetup"><title>Setup</title>
+    <sect3 id="rdfnativestorageproviderssesamesetup"><title>Setup Tutorial</title>
     <sect4 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
     <para>This tutorial assumes you have Virtuoso server installed and that the database
 is accessible at "localhost:1111". In addition, you will need the latest version of the
@@ -36320,7 +36350,7 @@ PASSED:18 FAILED:0
     <sect3 id="rdfnativestorageproviderssesamegettingstarted"><title>Getting Started</title>
     <para>This section covers the essentials for connecting to and manipulating data stored in
 a Virtuoso repository using the Sesame API. More information on the Sesame Framework, including
-extended examples on how to use the API, can be found in Chapter 8 of the Sesame User’s guide,
+extended examples on how to use the API, can be found in Chapter 8 of the Sesame User's guide,
 <ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/users/ch08.html#d0e833">the RepositoryConnection API</ulink>.
     </para>
     <para>The interfaces for the Repository API can be found in packages virtuoso.sesame2.driver
@@ -36688,6 +36718,328 @@ finally {
 we invoke con.close() to close the connection and free resources.
       </para>
     </sect4>
+    </sect3>
+    <sect3 id="rdfnativestorageproviderssesamestpandtesting"><title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+      <sect4 id="rdfnativestorageproviderssesamestpandtestingwhat"><title>What</title>
+<para>Sesame is an open source Java framework for storing, querying and reasoning with RDF and RDF Schema. It can be
+used as a database for RDF and RDF Schema, or as a Java library for applications that need to work with RDF internally.
+The Sesame HTTP repository serves as a proxy for a RDF store hosted on a remote Sesame server, enabling the querying of
+the RDF store using the Sesame HTTP protocol.
+</para>
+      </sect4>
+      <sect4 id="rdfnativestorageproviderssesamestpandtestingwhy"><title>Why</title>
+<para>The Sesame HTTP repository endpoint provides users with the greater flexibility for manipulating the RDF store via
+a common interface. Sesame provides you with the necessary tools to parse, interpret, query and store all this information,
+embedded in your own application if you want, or, if you prefer, in a separate database or even on a remote server.
+</para>
+      </sect4>
+      <sect4 id="rdfnativestorageproviderssesamestpandtestinghow"><title>How</title>
+<para>To create a new Sesame HTTP repository, the Console needs to create such an RDF document and submit it to the SYSTEM
+repository. The Console uses so called repository configuration templates to accomplish this. Repository configuration
+templates are simple Turtle RDF files that describe a repository configuration, where some of the parameters are replaced
+with variables. The Console parses these templates and asks the user to supply values for the variables. The variables
+are then substituted with the specified values, which produces the required configuration data.
+</para>
+      </sect4>
+      <sect4 id="rdfnativestorageproviderssesamestpandtestingmain"><title>Setup and Testing</title>
+<para>This section details the steps required for configuring and testing a Virtuoso Sesame Repository,
+both using the HTTP and Console Sesame repositories.</para>
+      <sect5 id="rdfnativestorageproviderssesamestpandtestingreq"><title>Requirements</title>
+<itemizedlist mark="bullet">
+  <listitem><ulink url="http://www.openrdf.org/download.jsp">Sesame 2.3.1</ulink> or higher</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virt_sesame2.jar">Virtuoso Sesame 2 Provider </ulink> (virt_sesame2.jar)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtjdbc4.jar">Virtuoso JDBC Driver</ulink> (virtjdbc4.jar)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtuoso.ttl">Virtuoso Sesame Template</ulink> (virtuoso.ttl)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create.xsl">Sesame System Repository config file</ulink> (create.xsl)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create-virtuoso.xsl">Sesame Virtuoso Repository config file </ulink> (create-virtuoso.xsl)</listitem>
+  <listitem><ulink url="http://tomcat.apache.org/download-60.cgi">Apache Tomcat</ulink> version 5 or 6</listitem>
+</itemizedlist>
+      </sect5>
+      <sect5 id="rdfnativestorageproviderssesamestpandtestinghttprep"><title>Setup Sesame HTTP Repository</title>
+<para>This section details the steps required for configuring and testing a Virtuoso HTTP Sesame Repository.</para>
+<orderedlist>
+  <listitem>Install <ulink url="http://tomcat.apache.org/tomcat-6.0-doc/index.html">Apache Tomcat</ulink> web server</listitem>
+  <listitem>From the Sesame 2.3.1 or higher "lib" directory copy the "openrdf-sesame.war" and "openrdf-worbbench.war" files to the
+tomcat "webapps" directory where they will automatically be deployed creating two new sub directories "openrdf-sesame" and
+"openrdf-workbench".</listitem>
+  <listitem>Place the Virtuoso Sesame Provider "virt_sesame2.jar" and JDBC Driver "virtjdbc4.jar" into the Tomcat
+<code>~/webapps/openrdf-sesame/WEB-INF/lib/</code> and <code>~/webapps/openrdf-workbench/WEB-INF/lib/</code> directories for
+use by the Sesame HTTP Repository for accessing the Virtuoso RDF repository.</listitem>
+  <listitem>Place the "create.xsl" and "create-virtuoso.xsl" files in the Tomcat
+<code>~/webapps/openrdf-workbench/transformations/</code> directory. Note "create.xsl" replaces the default provided with Sesame and contains the necessary entries required to reference the new "create-virtuoso.xsl" template file for Virtuoso repository configuration.</listitem>
+  <listitem>The Sesame HTTP Repository will now be accessible on the URLs
+<programlisting><![CDATA[
+http://localhost:8080/openrdf-sesame
+http://localhost:8080/openrdf-workbench
+]]></programlisting>
+</listitem>
+   <listitem>The Sesame OpenRDF Workbench is used for accessing the Sesame HTTP Repositories, loading
+"<ulink url="http://localhost:8080/openrdf-workbench">http://localhost:8080/openrdf-workbench</ulink>" will enable the
+default "SYSTEM" repository to be accessed.
+     <figure id="ss1" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss1.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "New Repository" link in the left frame to create a new Sesame Repository.
+     <figure id="ss2" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss2.png"/>
+     </figure>
+  </listitem>
+   <listitem>Select the "Virtuoso RDF Store" from the "Type" drop down list box presented.
+     <figure id="ss3" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss3.png"/>
+     </figure>
+  </listitem>
+   <listitem>Choose suitable repository "ID" and "Title" for the Virtuoso repository to be created and click "Next".
+     <figure id="ss4" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss4.png"/>
+     </figure>
+  </listitem>
+   <listitem>Fill in the connection parameters for the target Virtuoso sever the repository is to be created for and
+click the "create" button. The minimum required are the hostname, port number, username and password of the Virtuoso Server.
+     <figure id="ss5" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss5.png"/>
+     </figure>
+  </listitem>
+   <listitem>The new Virtuoso respository will be created and its summary page displayed.
+     <figure id="ss6" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss6.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "Namespaces" link in the left frame to obtain a list of the available namespaces in the Virtuoso repository.
+     <figure id="ss7" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss7.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "Context" link in the left frame to obtain a list of the available contexts in the Virtuoso repository.
+     <figure id="ss8" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss8.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "Types" link in the left frame to obtain a list of the available types in the Virtuoso repository.
+     <figure id="ss9" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss9.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "Query" link in the left frame, enter a suitable SPARQL query to execute against the Virtuoso repository
+and click the "execute" button.
+     <figure id="ss10" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss10.png"/>
+     </figure>
+  </listitem>
+   <listitem>The results of the SPARQL query are returned.
+     <figure id="ss11" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss11.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click on the "Repositories" link in the left frame and the newly created Virtuoso repository entry is displayed along side
+the default SYSTEM repository.
+     <figure id="ss12" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss12.png"/>
+     </figure>
+  </listitem>
+</orderedlist>
+      </sect5>
+      <sect5 id="rdfnativestorageproviderssesamestpandtestingcons"><title>Setup Sesame Console Repository</title>
+<para>This section details the steps required for configuring and testing a Virtuoso Sesame Console Repository:</para>
+<orderedlist>
+  <listitem>Extract Sesame 2.3.1 or higher archive to a location of choice and place the virt_sesame2.jar and
+virtjdbc4.jar files to the sesame 2.3.1 "lib" directory</listitem>
+  <listitem>Start the <ulink url="http://www.openrdf.org/doc/sesame2/users/ch07.html#section-console-repository-creation">sesame console application</ulink> by running the "console.bat" script in the sesame "bin" directory and then "exit." the program
+<programlisting><![CDATA[
+$ sh console.sh
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/logback-classic-0.9.18.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/slf4j-jdk14-1.5.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+10:32:38.317 [main] DEBUG info.aduna.platform.PlatformFactory - os.name <http://os.name> <http://os.name> = mac os x
+10:32:38.351 [main] DEBUG info.aduna.platform.PlatformFactory - Detected Mac OS X platform
+Connected to default data directory
+Commands end with '.' at the end of a line
+Type 'help.' for help
+exit.
+]]></programlisting>
+</listitem>
+  <listitem>This will create the necessary sesame application data directories as detailed in the sesame
+<ulink url="http://www.openrdf.org/doc/sesame2/2.3.1/users/userguide.html#chapter-datadir-config">data directory configuration</ulink> documentation.
+<programlisting><![CDATA[
+Windows - C:\Documents and Settings\LocalService\Application Data\Aduna\
+Mac OS X - /Users/myuser/Library/Application Support/Aduna/
+Linux - $HOME/.aduna/
+]]></programlisting>
+</listitem>
+  <listitem>If you do not want to use the default sesame data directory location the Sesame console application can be started by
+specifying a custom data directory location with the "-d" option. Note in this case the directory "OpenRDF Sesame console" always
+has to be manually appended to the directory as Sesame assumes the data file will reside in a sub directory of this name.
+<programlisting><![CDATA[
+$ sh console.sh -d /Users/myuser/OpenRDF Sesame console
+]]></programlisting>
+</listitem>
+  <listitem>Within the "OpenRDF Sesame console" directory of the chosen Sesame data directory create a directory called "templates"
+and place the Virtuoso template file "virtuoso.ttl" in it.</listitem>
+  <listitem>Start the sesame console application with the required data directory location and create a Virtuoso repository as
+detailed in the steps below, the key parameters to be specified being the target Virtuoso server hostname, port number,
+username, password and a unique "Repository ID".
+<programlisting><![CDATA[
+$ sh console.sh
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/logback-classic-0.9.18.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/slf4j-jdk14-1.5.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+10:32:38.317 [main] DEBUG info.aduna.platform.PlatformFactory - os.name <http://os.name> <http://os.name> = mac os x
+10:32:38.351 [main] DEBUG info.aduna.platform.PlatformFactory - Detected Mac OS X platform
+Connected to default data directory
+Commands end with '.' at the end of a line
+Type 'help.' for help
+create virtuoso .
+Please specify values for the following variables:
+Host list [localhost:1111]:
+Username [dba]:
+Password [dba]:
+Default graph name [sesame:nil]:
+Enable using batch optimization (false|true) [false]:
+Use RoundRobin for connection (false|true) [false]:
+Buffer fetch size [200]:
+Inference RuleSet name [null]:
+Repository ID [virtuoso]: myvirt
+Repository title [Virtuoso repository]:
+Repository created
+show r .
++----------
+|SYSTEM
+|myvirt ("Virtuoso repository")
++----------
+open myvirt .
+Opened repository 'myvirt'
+myvirt> show n .
++----------
+|bif  bif:
+|dawgt  http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#
+|dbpedia  http://dbpedia.org/resource/
+|dbpprop  http://dbpedia.org/property/
+|dc  http://purl.org/dc/elements/1.1/
+|foaf  http://xmlns.com/foaf/0.1/
+|geo  http://www.w3.org/2003/01/geo/wgs84_pos#
+|go  http://purl.org/obo/owl/GO#
+|math  http://www.w3.org/2000/10/swap/math#
+|mesh  http://purl.org/commons/record/mesh/
+|mf  http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#
+|nci  http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#
+|obo  http://www.geneontology.org/formats/oboInOwl#
+|owl  http://www.w3.org/2002/07/owl#
+|protseq  http://purl.org/science/protein/bysequence/
+|rdf  http://www.w3.org/1999/02/22-rdf-syntax-ns#
+|rdfdf  http://www.openlinksw.com/virtrdf-data-formats#
+|rdfs  http://www.w3.org/2000/01/rdf-schema#
+|sc  http://purl.org/science/owl/sciencecommons/
+|scovo  http://purl.org/NET/scovo#
+|skos  http://www.w3.org/2004/02/skos/core#
+|sql  sql:
+|vcard  http://www.w3.org/2001/vcard-rdf/3.0#
+|virtrdf  http://www.openlinksw.com/schemas/virtrdf#
+|void  http://rdfs.org/ns/void#
+|xf  http://www.w3.org/2004/07/xpath-functions
+|xml  http://www.w3.org/XML/1998/namespace
+|xsd  http://www.w3.org/2001/XMLSchema#
+|xsl10  http://www.w3.org/XSL/Transform/1.0
+|xsl1999  http://www.w3.org/1999/XSL/Transform
+|xslwd  http://www.w3.org/TR/WD-xsl
+|yago  http://dbpedia.org/class/yago/
++----------
+exit.
+]]></programlisting>
+</listitem>
+</orderedlist>
+      </sect5>
+      <sect5 id="rdfnativestorageproviderssesamestpandtestinghttpcons"><title>Connection to Sesame HTTP repository from Console repository</title>
+<para>The Sesame Console repository can connect to a Sesame HTTP repository and vice-versa, enabling access to remote Sesame
+HTTP repositories from a local server.</para>
+<orderedlist>
+  <listitem>The Sesame Console repository can connect to a Sesame HTTP repository and query it as if local using the "connect" command.
+<programlisting><![CDATA[
+$ sh console.sh
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/logback-classic-0.9.18.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/Users/myuser/openrdf-sesame-2.3.1/lib/slf4j-jdk14-1.5.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+10:32:38.317 [main] DEBUG info.aduna.platform.PlatformFactory - os.name <http://os.name> <http://os.name> = mac os x
+10:32:38.351 [main] DEBUG info.aduna.platform.PlatformFactory - Detected Mac OS X platform
+Connected to default data directory
+Commands end with '.' at the end of a line
+Type 'help.' for help
+> connect http://localhost:8080/openrdf-sesame.
+Connected to http://localhost:8080/openrdf-sesame
+> show r.
++----------
+|SYSTEM ("System configuration repository")
+|VirtSesRep ("Virtuoso Sesame HTTP Repository")
++----------
+> open VirtSesRep.
+Opened repository 'VirtSesRep'
+VirtSesRep> sparql select * from <http://localhost:8890/Northwind> where {?s ?p ?o} Limit 10.
+Evaluating query...
++------------------------+------------------------+------------------------+
+| s                      | p                      | o                      |
++------------------------+------------------------+------------------------+
+| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| rdf:type  | foaf:Person            |
+| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| rdf:type  | northwind:CustomerContact|
+| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| opl:isDescribedUsing   | northwind:             |
+| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| rdf:type | foaf:Person            |
+| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| rdf:type | northwind:CustomerContact|
+| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| opl:isDescribedUsing   | northwind:             |
+| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| rdf:type  | foaf:Person            |
+| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| rdf:type  | northwind:CustomerContact|
+| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| opl:isDescribedUsing   | northwind:             |
+| <http://localhost:8890/Northwind/CustomerContact/AROUT#this>| rdf:type  | foaf:Person            |
++------------------------+------------------------+------------------------+
+10 result(s) (530 ms)
+VirtSesRep> show n.
++----------
+|SearchResults  http://www.zillow.com/static/xsd/SearchResults.xsd
+|UpdatedPropertyDetails  http://www.zillow.com/static/xsd/UpdatedPropertyDetails.xsd
+|a  http://www.w3.org/2005/Atom
+|aapi  http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#
+|address  http://schemas.talis.com/2005/address/schema#
+|admin  http://webns.net/mvcb/
+|amz  http://webservices.amazon.com/AWSECommerceService/2005-10-05
+|atom  http://atomowl.org/ontologies/atomrdf#
+|audio  http://purl.org/media/audio#
+|awol  http://bblfish.net/work/atom-owl/2006-06-06/#
+|aws  http://soap.amazon.com/
+|b3s  http://b3s.openlinksw.com/
+]]></programlisting>
+</listitem>
+  <listitem>Conversely the Sesame HTTP repository can be configured to access the repository created by the Sesame console.
+To do this the location of the data directory for both needs to be reconfigured using the Java system property
+info.aduna.platform.appdata.basedir (does not include "OpenRDF Sesame console directory) to point to the same location.
+When you are using Tomcat as the servlet container then you can set this property using the JAVA_OPTS parameter.
+Note, if you are using Apache Tomcat as a Windows Service you should use the Windows Services configuration tool to
+set this property. Other users can either edit the Tomcat startup script or set the property some other way.
+<programlisting><![CDATA[
+ * set JAVA_OPTS=-Dinfo.aduna.platform.appdata.basedir=\path\to\other\dir\ (on Windows)
+    * export JAVA_OPTS='-Dinfo.aduna.platform.appdata.basedir=/path/to/other/dir/' (on Linux/UNIX/Mac OS X)
+]]></programlisting>
+     <figure id="ss13" float="1">
+       <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
+       <graphic fileref="ui/ss13.png"/>
+     </figure>
+
+</listitem>
+</orderedlist>
+       </sect5>
+      </sect4>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamejavadoc"><title>Javadoc API Documentation</title>
     <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink>
