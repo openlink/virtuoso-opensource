@@ -1092,7 +1092,9 @@ normal_auth:
     }
   else
     {
-      rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
+      rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
+      if (rc = 0)
+        rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
     }
   return rc;
 }
@@ -1322,6 +1324,77 @@ LDAP_SERVER_REMOVED:
 
 LDAP_VALIDATION_FAILURE:
   return 0;
+}
+;
+
+-- FOAF+SSL login
+create table SYS_USER_WEBID (UW_U_NAME varchar, UW_WEBID varchar, primary key (UW_WEBID))
+alter index SYS_USER_WEBID on SYS_USER_WEBID partition cluster replicated
+create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster replicated
+;
+
+create procedure
+DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
+{
+  declare stat, msg, meta, data, info, qr, hf, graph, gr any;
+  declare agent varchar;
+  declare rc int;
+  rc := 0;
+  gr := null;
+
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      goto err_ret;
+    }
+  ;
+
+  if (client_attr ('client_ssl') = 0)
+    return 0;
+
+  info := get_certificate_info (9);
+  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+
+  if (not isarray (info) or agent is null or agent not like 'URI:%')
+    return 0;
+
+  agent := subseq (agent, 4);
+  hf := rfc1808_parse_uri (agent);
+  hf[5] := '';
+  gr := uuid ();
+  graph := WS.WS.VFS_URI_COMPOSE (hf);
+  qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
+  stat := '00000';
+  exec (qr, stat, msg);
+  commit work;
+  qr := sprintf (
+        'sparql define input:storage "" '||
+	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
+	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
+	' from <%S> '||
+  	' where { '||
+	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
+	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
+	'       } ',
+	gr, agent);
+  stat := '00000';
+  exec (qr, stat, msg, vector (), 0, meta, data);
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+    {
+      declare uname varchar;
+      uname := (select UW_U_NAME from SYS_USER_WEBID where UW_WEBID = agent);
+      if (length (uname))
+	{
+	  user_name := uname;
+          rc := 1;
+	}
+    }
+  err_ret:
+  if (gr is not null)
+    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  commit work;
+  return rc;
 }
 ;
 
