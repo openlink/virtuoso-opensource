@@ -97,13 +97,7 @@
 		    &#160;
 		  </td>
                   <td align="right">
-                    <v:button action="simple" value="Back" name="robot_button25" format="%s" style="url">
-                      <v:on-post>
-                        <![CDATA[
-                          self.vc_redirect ('robot_queues.vspx');
-                        ]]>
-                      </v:on-post>
-                    </v:button>
+		      <v:url value="Back" name="robot_button25" url="robot_queues.vspx"/>  
                   </td>
                 </tr>
               </table>
