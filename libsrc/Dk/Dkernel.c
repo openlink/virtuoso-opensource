@@ -4720,6 +4720,20 @@ ssl_cert_verify_callback (int ok, void *_ctx)
 
   cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
   cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
+
+  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+#if OPENSSL_VERSION_NUMBER >= 0x00905000
+	|| errnum == X509_V_ERR_CERT_UNTRUSTED
+#endif
+	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+      && ssl_server_verify == 3)
+    {
+      SSL_set_verify_result(ssl, X509_V_OK);
+      ok = 1;
+    }
+
   log_debug ("%s Certificate Verification: depth: %d, subject: %s, issuer: %s",
   	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
 	cp2 != NULL ? cp2 : "-unknown");
@@ -4881,13 +4895,17 @@ ssl_server_init ()
 
   if (ssl_server_verify)
     {
-      int i, session_id_context = 2;
+      int i, session_id_context = 2, verify = SSL_VERIFY_NONE;
       STACK_OF (X509_NAME) * skCAList = NULL;
 
       SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
       SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
       SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
-      SSL_CTX_set_verify (ssl_server_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      if (ssl_server_verify == 1) /* required */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
+      else /* 2 optional OR 3 optional no ca */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
       SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 
@@ -5116,7 +5134,7 @@ ssl_server_accept (dk_session_t * listen, dk_session_t * ses)
       new_ssl = SSL_new (ssl_server_ctx);
       SSL_set_fd (new_ssl, dst);
       ssl_err = SSL_accept (new_ssl);
-      if (ssl_err == -1 || SSL_get_verify_result (new_ssl) != X509_V_OK)
+      if (ssl_err == -1) /* the SSL_accept do the certificate verification */
 	{
 	  char client_ip[16];
 	  caddr_t err;
