@@ -6226,16 +6226,16 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
           ssg_puts (agg_meta); ssg_puts (" (");
         }
       ssg_puts ("vector (");
-      ssg_prin_id (ssg, retselid); ssg_putchar ('.'); ssg_prin_id (ssg, retname);
+      ssg_print_box_as_sql_atom (ssg, retname, SQL_ATOM_NARROW_ONLY /*???*/);
       if (NULL != agg_meta)
         {
           ssg_puts ("), '");
           ssg_puts (strchr (tree->_.req_top.formatmode_name, ' ')+1);
           ssg_putchar ('\'');
         }
-      ssg_puts ("), vector (");
-      ssg_print_box_as_sql_atom (ssg, retname, SQL_ATOM_NARROW_ONLY /*???*/);
-      ssg_puts (")) AS \"aggret-0\" INTEGER FROM (");
+      ssg_puts ("), vector ( __box_flags_tweak (");
+      ssg_prin_id (ssg, retselid); ssg_putchar ('.'); ssg_prin_id (ssg, retname);
+      ssg_puts (", 1))) AS \"aggret-0\" INTEGER FROM (");
       ssg->ssg_indent += 1;
       ssg_newline (0);
     }
