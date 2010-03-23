@@ -147,8 +147,9 @@ sqlo_df_elt (sqlo_t * so, ST * tree)
   if (so->so_df_private_elts)
     {
       place = (df_elt_t **) id_hash_get_with_hash_number (so->so_df_private_elts, (caddr_t) &tree, hash);
-      /* if this is not a leaf like col, literal or param, then do not use the global one even if there is one.  Except when there is an aggregate, they must be shared over the whole tree */
-      if (! (ST_COLUMN (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF)))
+      /* if this is not a leaf like col, literal or param, then do not use the global one even if there is one.  Except when there is an aggregate, they must be shared over the whole tree.
+      * If this is a dt being refd, must use the global, else will screw up the ot's by adding the froms many times.  */
+      if (! (ST_COLUMN (tree, COL_DOTTED) || DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree) || sqlo_has_node (tree, FUN_REF) || ST_P (tree, SELECT_STMT)))
 	return place ? *place : NULL;
     }
   if (!place)
