@@ -5820,3 +5820,145 @@ select k.KEY_TABLE as "TABLE",
 
 grant select on DB.DBA.TABLE_COLS to public
 ;
+
+create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2)
+{
+  declare r, s any;
+  declare stmt varchar;
+  declare inx, old_mode, num_cols, nrows int;
+
+  stmt := csv_ins_stmt (tb, num_cols);
+  old_mode := log_enable (log_mode, 1);
+  s := file_open (f);
+  inx := 0;
+  nrows  := 0;
+  while (isvector (r := get_csv_row (s)))
+    {
+      if (inx >= _from)
+	{
+	  if (length (r) = num_cols)
+	    {
+	      declare stat, message varchar;
+	      stat := '00000';
+	      exec (stmt, stat, message, r, vector ('max_rows', 0, 'use_cache', 1));
+	      if (stat <> '00000')
+		{
+		  log_message (sprintf ('CSV import: error importing row: %d', inx));
+		  log_message (message);
+		}
+	      else
+		nrows := nrows + 1;
+	    }
+	  else
+	    log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
+	}
+      if (inx > _to)
+	goto end_loop;
+      inx := inx + 1;
+    }
+  end_loop:;
+  log_enable (old_mode, 1);
+  return nrows;
+}
+;
+
+create procedure csv_ins_stmt (in tb varchar, out num_cols int)
+{
+  declare ss any;
+  declare cols any;
+  declare i int;
+  tb := complete_table_name (tb, 0);
+  cols := vector ();
+  for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' order by COL_ID do
+    {
+      cols := vector_concat (cols, vector (col));
+    }
+  if (length (cols) = 0)
+    signal ('22023', 'No such table');
+  ss := string_output ();
+  http (sprintf ('INSERT INTO "%I"."%I"."%I" (',
+	  name_part (tb, 0),
+	  name_part (tb, 1),
+	  name_part (tb, 2)
+	  ), ss);
+  for (i := 0; i < length (cols); i := i + 1)
+    {
+       http (sprintf ('"%I" ', cols[i]), ss);
+       if (i < length (cols) - 1)
+         http (', ', ss);
+    }
+  http (') values (', ss);
+  for (i := 0; i < length (cols); i := i + 1)
+    {
+       http (' ?', ss);
+       if (i < length (cols) - 1)
+         http (',', ss);
+    }
+  http (')', ss);
+  num_cols := length (cols);
+  return string_output_string (ss);
+}
+;
+
+create procedure csv_file_header_check (in f any, in num_to_check int := 10)
+{
+  declare h, r, s, i any;
+  s := file_open (f);
+  h := get_csv_row (s);
+  if (not isvector (h))
+    return 0;
+  for (i := 0; i < num_to_check; i := i + 1)
+    {
+      r := get_csv_row (s);
+      if (not isvector (r) or length (r) <> length (h))
+	return 0;
+    }
+  return h;
+}
+;
+
+create procedure csv_table_def (in f varchar)
+{
+  declare head any;
+  declare s, r, ss any;
+  declare i int;
+
+  if (not csv_file_header_check (f))
+    signal ('22023', 'Cannot guess the table definition');
+
+  s := file_open (f);
+  head := get_csv_row (s);
+  r := get_csv_row (s);
+  ss := string_output ();
+  http (sprintf ('CREATE TABLE "%I" ( \n', SYS_ALFANUM_NAME (f)), ss);
+  for (i := 0; i < length (head); i := i + 1)
+    {
+       http (sprintf ('\t"%I" %s', SYS_ALFANUM_NAME (head[i]), dv_type_title (__tag (r[i]))), ss);
+       if (i < length (head) - 1)
+         http (', \n', ss);
+    }
+  http (')', ss);
+  return string_output_string (ss);
+}
+;
+
+create procedure csv_cols_def (in f varchar)
+{
+  declare head any;
+  declare s, r, ss, vec any;
+  declare i int;
+
+  if (not csv_file_header_check (f))
+    signal ('22023', 'Cannot guess the table definition');
+
+  s := file_open (f);
+  head := get_csv_row (s);
+  r := get_csv_row (s);
+  vec := vector ();
+  for (i := 0; i < length (head); i := i + 1)
+    {
+      vec := vector_concat (vec, vector (vector (SYS_ALFANUM_NAME (head[i]), dv_type_title (__tag (r[i])))));
+    }
+  return vec;
+}
+;

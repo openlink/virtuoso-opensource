@@ -6057,7 +6057,201 @@ err_end:
   return (caddr_t) ses;
 }
 
+/* tiny CSV parser */
+#define CSV_DELIM 		','
+#define CSV_QUOTE		'\"'
 
+#define CSV_ROW_NOT_STARTED 	0
+#define CSV_FIELD_NOT_STARTED	1
+#define CSV_FIELD_STARTED	2
+#define CSV_FIELD_MAY_END	3
+
+#define CSV_FIELD(set,ses) \
+    do \
+	{ \
+	  dk_set_push (&set, csv_field (ses)); \
+	  strses_flush (ses); \
+	  quoted = 0; \
+	  state = CSV_FIELD_NOT_STARTED; \
+	} \
+    while (0)
+
+#define CSV_CHAR(c,ses) session_buffered_write_char (c, ses)
+
+/* CSV errors */
+#define CSV_OK 		0
+#define CSV_ERR_QUOTE 	1
+#define CSV_ERR_ESC	2
+#define CSV_ERR_UNK 	3
+#define CSV_ERR_END 	4
+
+static caddr_t
+csv_field (dk_session_t * ses)
+{
+  caddr_t regex, ret = NULL, str = strses_string (ses);
+  if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
+    {
+      float d = 0;
+      sscanf (str, "%f", &d);
+      ret = box_float (d);
+      dk_free_box (str);
+      dk_free_box (regex);
+    }
+  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+$", str, 0)))
+    {
+      ret = box_num (atol (str));
+      dk_free_box (str);
+      dk_free_box (regex);
+    }
+  else
+    {
+      ret = str;
+    }
+  return ret;
+}
+
+caddr_t
+bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
+  dk_set_t row = NULL;
+  dk_session_t * fl;
+  caddr_t res = NULL;
+  int quoted = 0, error = CSV_OK;
+  unsigned char c, state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  fl = strses_allocate ();
+  CATCH_READ_FAIL (in)
+    {
+      while (CSV_OK == error)
+	{
+	  c = session_buffered_read_char (in);
+	  switch (state)
+	    {
+	      case CSV_ROW_NOT_STARTED:
+	      case CSV_FIELD_NOT_STARTED:
+		    {
+		      if (c == 0x20 || c == 0x09) /* space */
+			continue;
+		      else if (c == 0x0d || c == 0x0a)
+			{
+			  if (state == CSV_ROW_NOT_STARTED) /* skip empty lines */
+			    continue;
+			  else
+			    {
+			      CSV_FIELD (row, fl);
+			      goto end; /* row end */
+			    }
+			}
+		      else if (c == delim)
+			{
+			  CSV_FIELD (row, fl);
+			}
+		      else if (c == quote)
+			{
+			  state = CSV_FIELD_STARTED;
+			  quoted = 1;
+			}
+		      else
+			{
+			  CSV_CHAR (c, fl);
+			  state = CSV_FIELD_STARTED;
+			  quoted = 0;
+			}
+		    }
+		  break;
+	      case CSV_FIELD_STARTED:
+		    {
+		      if (c == quote)
+			{
+			  if (quoted)
+			    {
+			      CSV_CHAR (c, fl);
+			      state = CSV_FIELD_MAY_END;
+			    }
+			  else
+			    {
+			      error = CSV_ERR_ESC;
+			      break;
+			    }
+			}
+		      else if (c == delim)
+			{
+			  if (quoted)
+			    CSV_CHAR (c, fl);
+			  else
+			    CSV_FIELD (row, fl);
+			}
+		      else if (c == 0x0d || c == 0x0a)
+			{
+			  if (quoted)
+			    CSV_CHAR (c, fl);
+			  else
+			    {
+			      CSV_FIELD (row, fl);
+			      goto end; /* row end */
+			    }
+			}
+		      else
+			{
+			  CSV_CHAR (c, fl);
+			}
+		    }
+		  break;
+	      case CSV_FIELD_MAY_END:
+		    {
+		      if (c == quote)
+			{
+			  /* skip, double quote */
+			  state = CSV_FIELD_STARTED;
+			}
+		      else if (c == delim)
+			{
+			  fl->dks_out_fill--;
+			  CSV_FIELD (row, fl);
+			}
+		      else if (c == 0x0d || c == 0x0a)
+			{
+			  fl->dks_out_fill--;
+			  CSV_FIELD (row, fl);
+			  goto end; /* row end */
+			}
+		      else
+			{
+			  error = CSV_ERR_ESC;
+			  break;
+			  /*CSV_CHAR (c, fl);*/
+			}
+		    }
+		  break;
+	      default: /* an error */
+		  error = CSV_ERR_UNK;
+		  break;
+	    }
+	}
+    }
+  FAILED
+    {
+      if (CSV_ROW_NOT_STARTED == state) /* when no one char can be read */
+	error = CSV_ERR_END;
+    }
+  END_READ_FAIL (in);
+  if (state == CSV_FIELD_STARTED) /* case when no cr/lf at the end of file */
+    {
+      CSV_FIELD (row, fl);
+    }
+  else if (state == CSV_FIELD_MAY_END)
+    {
+      fl->dks_out_fill--;
+      CSV_FIELD (row, fl);
+    }
+end:
+  if (CSV_OK == error)
+    res = list_to_array (dk_set_nreverse (row));
+  else
+    dk_free_tree (list_to_array (dk_set_nreverse (row)));
+  dk_free_box (fl);
+  return res;
+}
 
 void
 bif_file_init (void)
@@ -6128,6 +6322,7 @@ bif_file_init (void)
   bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
   bif_define_typed ("file_open", bif_file_open, &bt_any);
   bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
+  bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
