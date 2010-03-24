@@ -115,6 +115,8 @@ public class VirtuosoResultSet implements ResultSet
    // The prepare statement for the set_pos function
    private VirtuosoPreparedStatement pstmt;
 
+   private int rowNum = 0;
+
    /**
     * JDBC 2.0 extension.
     * The type for a <code>ResultSet</code> object whose cursor may
@@ -792,7 +794,6 @@ public class VirtuosoResultSet implements ResultSet
    {
       if(rows < 0 || rows > statement.getMaxRows())
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-
       prefetch = (rows == 0 ? VirtuosoTypes.DEFAULTPREFETCH : rows);
    }
 
@@ -2173,6 +2174,9 @@ public class VirtuosoResultSet implements ResultSet
 	       throw new VirtuosoException ("Activity on a closed statement 2", "IM001", VirtuosoException.SQLERROR);
 	   if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
 	   {
+	       if (rowNum >= maxRows && maxRows > 0)
+	           return false;
+
 	       while (true)
 	       {
 		   synchronized (statement.connection)
@@ -2189,6 +2193,7 @@ public class VirtuosoResultSet implements ResultSet
 			   //System.err.println ("fetch :Prefetched row used " + rows.elementAt (0).toString());
 			   stmt_current_of++;
 			   currentRow ++;
+			   rowNum++;
 			   return true;
 		       }
 		       if ((stmt_co_last_in_batch || stmt_current_of == stmt_n_rows_to_get - 1)
@@ -2261,6 +2266,8 @@ public class VirtuosoResultSet implements ResultSet
            r = ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getRow();
          else if (type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
            r = ((Number)((openlink.util.Vector)(((VirtuosoRow)(rows.elementAt(currentRow - 1))).getBookmark()).elementAt(1)).elementAt(0)).intValue();
+         else if (type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+           r = rowNum;
          else
            r = 0;
 
