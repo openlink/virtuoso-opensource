@@ -5737,7 +5737,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  if (ot->ot_layouts_tried >= 0)
 	    {
 	      ot->ot_layouts_tried += 1;
-	      if (sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts
+	      if ((sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
 		  || sqlo_no_more_time (so, ot))
 		{
 		  if (sqlo_print_debug_output)
