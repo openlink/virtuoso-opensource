@@ -4953,6 +4953,19 @@ bif_http_header_get (caddr_t * qst, caddr_t * err_ret, state_slot_t **args)
 }
 
 caddr_t
+bif_http_header_array_get (caddr_t * qst, caddr_t * err_ret, state_slot_t **args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+
+  if (!qi->qi_client->cli_http_ses)
+    sqlr_new_error ("42000", "HT010", "This function is only allowed processing a HTTP request");
+  if (qi->qi_client->cli_ws->ws_header)
+    return (caddr_t) ws_header_line_to_array (qi->qi_client->cli_ws->ws_header);
+  else
+    return (caddr_t) list (0);
+}
+
+caddr_t
 bif_http_file(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
@@ -9859,6 +9872,7 @@ http_init_part_one ()
   bif_define ("http_enable_gz", bif_http_enable_gz);
   bif_define ("http_header", bif_http_header);
   bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
+  bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
   bif_define ("http", bif_http_result);
   bif_define ("http_value", bif_http_value);
   bif_define ("http_url", bif_http_url);

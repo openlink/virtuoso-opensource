@@ -1692,6 +1692,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     }
 
   set http_charset='utf-8';
+  http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'TRACE');
   ses := 0;
   query := null;
   format := '';
