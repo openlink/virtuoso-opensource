@@ -293,17 +293,23 @@ public class VirtuosoConnection implements Connection
       if(user == null || user.equals(""))
          user = "anonymous";
       password = (String)prop.get("password");
-      if(password == null)
+      if (password == null)
          password = "";
-      if(prop.get("timeout") != null)
-		   timeout = Integer.parseInt(prop.getProperty("timeout"));
+      if (prop.get("timeout") != null)
+	 timeout = Integer.parseInt(prop.getProperty("timeout"));
       pwdclear = (String)prop.get("pwdclear");
       if(prop.get("sendbs") != null)
-		   sendbs = Integer.parseInt(prop.getProperty("sendbs"));
+	  sendbs = Integer.parseInt(prop.getProperty("sendbs"));
+      if (sendbs <= 0)
+          sendbs = 32768;
       if(prop.get("recvbs") != null)
-		   recvbs = Integer.parseInt(prop.getProperty("recvbs"));
-      if(prop.get("fbs") != null)
-		   fbs = Integer.parseInt(prop.getProperty("fbs"));
+          recvbs = Integer.parseInt(prop.getProperty("recvbs"));
+      if (recvbs <= 0)
+          recvbs = 32768;
+      if (prop.get("fbs") != null)
+          fbs = Integer.parseInt(prop.getProperty("fbs"));
+      if (fbs <= 0)
+          fbs = VirtuosoTypes.DEFAULTPREFETCH;;
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
       keystore_cert = (String)prop.get("certificate");
