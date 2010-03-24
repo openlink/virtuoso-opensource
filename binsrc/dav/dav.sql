@@ -25,12 +25,14 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
+  declare headers, ctype any;
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
   WS.WS.GET (path, params, lines);
+  headers := http_header_array_get ();
+  ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
   http_status_set (200);
   http_rewrite ();
-  http_header (concat ('Content-Type: text/plain\r\n',
-	--'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, PROPFIND, PROPPATCH, COPY, MOVE, LOCK, UNLOCK\r\n',
+  http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
 	'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 	'MS-Author-Via: DAV\r\n'));
 }
