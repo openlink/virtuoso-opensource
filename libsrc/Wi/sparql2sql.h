@@ -796,7 +796,7 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
 #endif
 
 
-#define SSG_INDENT_FACTOR 4
+#define SSG_INDENT_FACTOR 2
 #define SSG_MAX_ALLOWED_LINE_COUNT 10000
 #define ssg_newline(back) \
   do { \

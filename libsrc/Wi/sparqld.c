@@ -520,6 +520,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           }
         ssg_puts (ssg_sd_opname (tree->_.builtin.btype, 0));
         ssg_putchar ('(');
+        ssg->ssg_indent++;
         ssg_sdprint_tree_list (ssg, tree->_.builtin.args, ',');
         ssg_putchar (')');
         ssg->ssg_indent--;
@@ -554,7 +555,6 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             ssg_puts (" }");
             ssg->ssg_indent -= 2;
-            ssg_newline (0);
             ssg->ssg_sd_forgotten_graph = 0;
             ssg->ssg_sd_graph_gp_nesting--;
           }
@@ -569,16 +569,26 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             if (!(SSG_SD_BI & ssg->ssg_sd_flags))
               spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
             if (NULL == ssg->ssg_sd_outer_gps->data)
+              {
               ssg_puts (" (");
+                ssg->ssg_indent++;
+              }
             else
+              {
               ssg_puts (" {");
-            ssg->ssg_indent++;
+                ssg->ssg_indent += 2;
+              }
             ssg_sdprint_tree (ssg, tree->_.gp.subquery);
             if (NULL == ssg->ssg_sd_outer_gps->data)
+              {
               ssg_puts (" )");
+                ssg->ssg_indent--;
+              }
             else
+              {
               ssg_puts (" }");
-            ssg->ssg_indent--;
+                ssg->ssg_indent -= 2;
+              }
             return;
           case UNION_L:
             DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
@@ -620,9 +630,9 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               ssg_puts (") ");
               break;
             }
-          case 0: break;
+          case 0: ssg_putchar (' '); break;
           }
-        ssg_putchar ('{');
+        ssg_puts (" { ");
         ssg->ssg_indent += 2;
 #if 0
         if ((0 == BOX_ELEMENTS_0 (tree->_.gp.members)) && (NULL == tree->_.gp.subquery))
@@ -648,7 +658,6 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             ssg_puts (" }");
             ssg->ssg_indent -= 2;
-            ssg_newline (0);
             ssg->ssg_sd_forgotten_graph = 0;
             ssg->ssg_sd_graph_gp_nesting--;
           }
@@ -866,7 +875,6 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               {
                 ssg_puts (" .");
                 ssg->ssg_indent -= 4;
-                ssg_newline (0);
                 ssg->ssg_sd_forgotten_dot = 0;
                 ssg->ssg_sd_prev_subj = ssg->ssg_sd_prev_pred = NULL;
               }
@@ -875,18 +883,18 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             ssg_puts (" }");
             ssg->ssg_indent -= 2;
-            ssg_newline (0);
             ssg->ssg_sd_forgotten_graph = 0;
             ssg->ssg_sd_graph_gp_nesting--;
             ssg->ssg_sd_prev_graph = NULL;
           }
+        if ((need_new_graph || (OPTIONAL_L == tree->_.triple.subtype) || place_qm) && !ssg->ssg_sd_forgotten_dot)
+          ssg_newline (0);
         if (need_new_graph)
           {
             ssg_puts (" GRAPH");
             ssg_sdprint_tree (ssg, curr_graph);
             ssg_puts (" {");
             ssg->ssg_indent += 2;
-            ssg_newline (0);
             ssg->ssg_sd_forgotten_graph = 1;
             ssg->ssg_sd_graph_gp_nesting++;
             ssg->ssg_sd_prev_graph = curr_graph;
@@ -938,11 +946,14 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_name);
 /*@@@*/
           }
-        ssg->ssg_sd_forgotten_dot = 1;
         if (place_qm || (OPTIONAL_L == tree->_.triple.subtype))
           {
+            if (ssg->ssg_sd_forgotten_dot)
+              {
             ssg_puts (" .");
             ssg->ssg_indent -= 4;
+                ssg->ssg_sd_forgotten_dot = 0;
+              }
             if (place_qm)
               {
                 ssg_puts (" }");

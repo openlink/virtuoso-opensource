@@ -910,16 +910,16 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
 /*                         012345678901234567890 */
       else if (CMD_EQUAL ("custom-string-1", 15))
         {
-          if (NULL == qm_fmt)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-string-1}^ if qm_fmt is NULL", asname_printed);
+          if ((NULL == qm_fmt) || (NULL == qm_fmt->qmfCustomString1))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-string-1}^ if qm_fmt is NULL or qmfCustomString1 is not set", asname_printed);
           ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfCustomString1, SQL_ATOM_UTF8_ONLY);
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
       else if (CMD_EQUAL ("custom-verbatim-1", 17))
         {
-          if (NULL == qm_fmt)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-verbatim-1}^ if qm_fmt is NULL", asname_printed);
+          if ((NULL == qm_fmt) || (NULL == qm_fmt->qmfCustomString1))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{custom-verbatim-1}^ if qm_fmt is NULL or qmfCustomString1 is not set", asname_printed);
           ssg_puts (qm_fmt->qmfCustomString1);
         }
 /*                         0         1         2 */
@@ -933,6 +933,36 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
               ssg_puts (", ");
               ssg_print_box_as_sql_atom (ssg, qm_fmt->qmfArgDtps, SQL_ATOM_ASCII_ONLY);
             }
+        }
+/*                         0         1         2 */
+/*                         012345678901234567890 */
+      else if (CMD_EQUAL ("N-aref-of-spfinv", 16))
+        {
+          dtp_t tree_dtp, str_dtp;
+          caddr_t str = NULL, err = NULL;
+          caddr_t *res;
+          if ((NULL == qm_fmt) || (NULL == qm_fmt->qmfCustomString1))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{N-aref-of-spfinv}^ if qm_fmt is NULL or qmfCustomString1 is not set", asname_printed);
+          if (NULL == tree)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{N-aref-of-spfinv}^: tree not set", asname_printed);
+          if (col_idx < 0)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{N-aref-of-spfinv}^ outside the loop", asname_printed);
+          tree_dtp = DV_TYPE_OF (tree);
+          if (DV_ARRAY_OF_POINTER == tree_dtp)
+            str = tree->_.lit.val;
+          else
+            str = tree;
+          str_dtp =  DV_TYPE_OF (str);
+          if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{N-aref-of-spfinv}^: literal of wrong type", asname_printed);
+          res = (caddr_t *)sprintf_inverse_ex (ssg->ssg_sparp->sparp_sparqre->sparqre_qi, &err, str, qm_fmt->qmfCustomString1, 2, qm_fmt->qmfArgDtps);
+          dk_free_tree (err);
+          if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (res)) || (col_idx > BOX_ELEMENTS (res)))
+            {
+              ssg_puts (" NULL /* failed spfinv */ ");
+            }
+          ssg_print_box_as_sql_atom (ssg, res[col_idx], SQL_ATOM_NARROW_OR_WIDE);
+          dk_free_tree (res);
         }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
@@ -2621,9 +2651,13 @@ ssg_find_nullable_superformat (ssg_valmode_t fmt)
 
 #define SSG_MAGIC_SPLIT_MULTIPART \
 	"^{comma-list-begin}^ __spfinv (^{tree}^, ^{custom-string-1}^, 2)[^{N}^]^{as-name-N}^^{end}^"
+#define SSG_MAGIC_SPLIT_DTP_MULTIPART \
+	"^{comma-list-begin}^ __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[^{N}^]^{as-name-N}^^{end}^"
 
 #define SSG_MAGIC_SPLIT_SINGLEPART \
 	" __spfinv (^{tree}^, ^{custom-string-1}^, 2)[0]"
+#define SSG_MAGIC_SPLIT_DTP_SINGLEPART \
+	" __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[0]"
 
 caddr_t *
 ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tree_is_qname, ssg_valmode_t fmt)
@@ -2651,7 +2685,8 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
     default:
       return NULL;
     }
-  if (strcmp (tmpl, SSG_MAGIC_SPLIT_MULTIPART) && strcmp (tmpl, SSG_MAGIC_SPLIT_SINGLEPART))
+  if (strcmp (tmpl, SSG_MAGIC_SPLIT_MULTIPART) && strcmp (tmpl, SSG_MAGIC_SPLIT_DTP_MULTIPART) &&
+    strcmp (tmpl, SSG_MAGIC_SPLIT_SINGLEPART) && strcmp (tmpl, SSG_MAGIC_SPLIT_DTP_SINGLEPART) )
     return NULL;
   sff = fmt->qmfCustomString1;
   val_dtp_strg = fmt->qmfArgDtps;
@@ -4241,7 +4276,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               }
             else if ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
               {
-                ssg_puts (" iri_to_id (");
+                ssg_puts (" __i2id (");
                 ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UNAME_ALLOWED);
                 ssg_puts (")");
               }
@@ -4256,7 +4291,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                   }
                 else
                   {
-                    ssg_puts (" iri_to_id (");
+                    ssg_puts (" __i2id (");
                     ssg_print_literal_as_sqlval (ssg, NULL, tree);
                     ssg_puts (")");
                   }
@@ -5037,13 +5072,21 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       SPART *vartree;
       caddr_t varname;
       ssg_find_global_in_equiv (eq, &vartree, &varname);
-      if (NULL != vartree)
-        {
+      if (NULL == varname)
+        spar_internal_error (NULL, "ssg_print_equiv_retval_expn(): no global varname in global equiv");
           if (NULL == native)
+        {
+          if (NULL != vartree)
             native = sparp_expn_native_valmode (ssg->ssg_sparp, vartree);
+          else
+            native = sparp_rettype_of_global_param (ssg->ssg_sparp, varname);
+        }
           if (needed == native)
             {
+          if (NULL != vartree)
               ssg_print_global_param (ssg, vartree, needed);
+          else
+            ssg_print_global_param_name (ssg, varname);
               goto write_assuffix;
             }
           else
@@ -5052,7 +5095,6 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
               return 1;
             }
         }
-    }
   if (SPART_VARR_EXTERNAL & eq->e_rvr.rvrRestrictions)
     {
       SPART *vartree;

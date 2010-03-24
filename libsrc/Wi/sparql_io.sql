@@ -176,7 +176,7 @@ create aggregate DB.DBA.SPARQL_RSET_TTL_HTTP (inout colnames any, inout row any)
 ;
 
 --!AWK PUBLIC
-create procedure SPARQL_RSET_NT_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RSET_NT_WRITE_NS (inout ses any)
 {
   http ('_:ResultSet2053 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#ResultSet> .\n', ses);
 }
@@ -205,6 +205,7 @@ create function DB.DBA.SPARQL_RSET_NT_HTTP_PRE (in colnames any, in accept varch
   http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
   http_flush (1);
   ses := 0;
+  DB.DBA.SPARQL_RSET_NT_WRITE_NS (ses);
   DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (ses, colnames);
   colcount := length (colnames);
   res := make_array (colcount * 7, 'any');

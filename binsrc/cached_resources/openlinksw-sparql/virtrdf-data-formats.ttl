@@ -41,7 +41,7 @@ bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2010-02-27 0001v6g' ;
+  virtrdf:version '2010-03-22 0003v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -1493,6 +1493,8 @@ rdfdf:multipart-uri
   virtrdf:qmfShortOfSqlvalTmpl "^{comma-list-begin}^ __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[^{N}^]^{as-name-N}^^{end}^";	# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
   virtrdf:qmfShortOfLongTmpl "^{comma-list-begin}^ __spfinv (__id2in (^{tree}^), ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[^{N}^]^{as-name-N}^^{end}^";	# STRING REQUIRED ... makes short by long
   virtrdf:qmfShortOfUriTmpl "^{comma-list-begin}^ __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[^{N}^]^{as-name-N}^^{end}^";	# STRING REQUIRED ... makes short by uri
+#wrong:  virtrdf:qmfShortOfNiceSqlvalTmpl "^{comma-list-begin}^ ^{N-aref-of-spfinv}^^{as-name-N}^^{end}^";	# ... works like qmfShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
+#wrong:  virtrdf:qmfDtpOfNiceSqlval 217;						# The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 # Misc
   virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
   virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
