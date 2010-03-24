@@ -879,7 +879,7 @@ table_source_input_rdf_range (table_source_t * ts, caddr_t * inst, caddr_t * sta
 }
 
 
-data_source_t * sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, int last);
+data_source_t * sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t ** jt, int last);
 
 
 table_source_t *
@@ -893,7 +893,7 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
   r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range);
   r_ts->ts_is_alternate = TS_ALT_PRE;
   dfe_list_set_placed (ic->ic_o_range_ref_ic->ic_col_preds, DFE_PLACED);
-  range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic, 0);
+  range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic, tb_dfe->_.table.join_test, 0);
   range_ref_ts->ts_is_alternate = TS_ALT_POST;
   ref_ks = range_ref_ts->ts_order_ks;
   ref_ks->ks_out_cols = dk_set_copy (org_ts->ts_order_ks->ks_out_cols);
@@ -909,7 +909,7 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
 
 
 df_elt_t **
-sqlo_and_list_body_from_positions (sqlo_t * so, locus_t * loc, df_elt_t * tb, dk_set_t pred_pos, dk_set_t in_list)
+sqlo_and_list_body_from_positions (sqlo_t * so, dk_set_t pred_pos, df_elt_t ** jt, dk_set_t in_list)
 {
   int len = dk_set_length (pred_pos) + (in_list ? dk_set_length (in_list) : 0);
   if (len)
@@ -919,7 +919,7 @@ sqlo_and_list_body_from_positions (sqlo_t * so, locus_t * loc, df_elt_t * tb, dk
       terms[0] = (df_elt_t*) BOP_AND;
       DO_SET (ptrlong, pos, &pred_pos)
 	{
-	  terms[inx++] = tb->_.table.join_test[pos + 1];
+	  terms[inx++] = jt[pos + 1];
 	}
       END_DO_SET();
       if (in_list)
@@ -987,9 +987,8 @@ sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t *
   END_DO_SET();
 }
 
-
 data_source_t *
-sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, int last)
+sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t ** jt, int last)
 {
   sql_comp_t * sc = so->so_sc;
   comp_context_t *cc = so->so_sc->sc_cc;
@@ -1071,7 +1070,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, int last)
     sqlg_get_non_index_ins (tb_dfe, &in_list);
   else
   sqlg_non_index_ins (tb_dfe);
-  ts->src_gen.src_after_test = sqlg_pred_body (so, sqlo_and_list_body_from_positions (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, ic->ic_after_preds, in_list));
+  ts->src_gen.src_after_test = sqlg_pred_body (so, sqlo_and_list_body_from_positions (tb_dfe->dfe_sqlo, ic->ic_after_preds, jt, in_list));
   if (ts->ts_is_unique)
     ts->src_gen.src_input = (qn_input_fn) table_source_input_unique;
 
@@ -1110,11 +1109,12 @@ sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe)
   data_source_t * ts, * ret_ts = NULL;
   table_source_t * last_ts = NULL;
   char ord =so->so_sc->sc_order;
+  df_elt_t ** jt = tb_dfe->_.table.join_test; /* we store the join test before to execute sqlg_make_1_ts as ic_after_preds look at position */
   so->so_sc->sc_order = ord;
   so->so_in_list_nodes = NULL;
   DO_SET (index_choice_t *, ic, &tb_dfe->_.table.index_path)
     {
-      ts = sqlg_make_1_ts (so, tb_dfe, ic, nxt ? 0 : 1);
+      ts = sqlg_make_1_ts (so, tb_dfe, ic, jt, nxt ? 0 : 1);
       last_ts = (table_source_t *) ts;
       if (!ret_ts)
 	ret_ts = ts;
