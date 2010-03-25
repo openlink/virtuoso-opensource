@@ -5862,6 +5862,21 @@ create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := n
 }
 ;
 
+create procedure csv_parse (in s any, in cb varchar)
+{
+  declare r any;
+  declare inx int;
+
+  inx := 0;
+  while (isvector (r := get_csv_row (s)))
+    {
+      call (cb) (r);
+      inx := inx + 1;
+    }
+  return inx;
+}
+;
+
 create procedure csv_ins_stmt (in tb varchar, out num_cols int)
 {
   declare ss any;
