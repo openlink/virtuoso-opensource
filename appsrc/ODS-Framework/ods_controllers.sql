@@ -382,7 +382,8 @@ create procedure dav_path_normalize (
 
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
-  in ontology varchar) __soap_http 'application/json'
+  in ontology varchar,
+  in prefix varchar := null) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, classes, retValue any;
@@ -430,7 +431,7 @@ create procedure ODS.ODS_API."ontology.classes" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
+    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
@@ -439,28 +440,34 @@ create procedure ODS.ODS_API."ontology.classes" (
 ;
 
 create procedure ODS.ODS_API."ontology.classProperties" (
-  in ontologyClass varchar) __soap_http 'application/json'
+  in ontologyClass varchar,
+  in ontology varchar := null,
+  in prefix varchar := null) __soap_http 'application/json'
 {
   declare N integer;
   declare S, data any;
-  declare prefix, ontology, tmp, property, properties any;
+  declare tmp, property, properties any;
 
   -- select class properties ontology
-  prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
-  ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
   properties := vector ();
+  if (isnull (ontology))
+    ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
+  if (isnull (prefix))
+    prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
+  if (not isnull (ontology)) {
   S := sprintf(
          '\n SPARQL' ||
          '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
          '\n PREFIX %s: <%s>' ||
-         '\n SELECT ?p ?r1 ?r2' ||
+           '\n SELECT distinct ?p ?r1 ?r2' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
          '\n          {' ||
          '\n            {' ||
-         '\n            ?p rdf:type owl:ObjectProperty .' ||
+           '\n              ?p rdf:type ?tp .' ||
+           '\n              FILTER (?tp = rdf:ObjectProperty) .' ||
          '\n            ?p rdfs:range ?r1 .' ||
          '\n            {' ||
          '\n              ?p rdfs:domain %s .' ||
@@ -481,7 +488,8 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n          }' ||
          '\n          union' ||
          '\n          {' ||
-         '\n            ?p rdf:type owl:DatatypeProperty .' ||
+           '\n              ?p rdf:type ?tp .' ||
+           '\n              FILTER (?tp = rdf:DatatypeProperty) .' ||
          '\n            ?p rdfs:domain %s .' ||
          '\n            ?p rdfs:range ?r2 .' ||
          '\n          }' ||
@@ -489,12 +497,14 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n          union' ||
          '\n          {' ||
          '\n            {' ||
-         '\n              ?p rdf:type rdf:Property .' ||
+           '\n              ?p rdf:type ?tp .' ||
+           '\n              FILTER (?tp = rdf:Property) .' ||
          '\n              ?p rdfs:range ?r1 .' ||
          '\n            }' ||
          '\n            union' ||
          '\n            {' ||
-         '\n              ?p rdf:type rdf:Property .' ||
+           '\n              ?p rdf:type ?tp .' ||
+           '\n              FILTER (?tp = rdf:Property) .' ||
          '\n              OPTIONAL {?p rdfs:range ?r2 }.' ||
          '\n              FILTER (!bound(?r2))' ||
          '\n            }' ||
@@ -515,7 +525,7 @@ create procedure ODS.ODS_API."ontology.classProperties" (
     if (property[0] <> item[0])
     {
       if (property[0] <> '')
-        properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+          properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property, ontology, prefix)));
       property := vector (item[0], vector (), vector ());
     }
     if (not isnull (item[1]))
@@ -530,17 +540,19 @@ create procedure ODS.ODS_API."ontology.classProperties" (
     }
     else
     {
-      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'))));
+        property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'), ontology, prefix)));
     }
   }
   if (property[0] <> '')
-    properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+      properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property, ontology, prefix)));
+  }
   return obj2json (properties, 10);
 }
 ;
 
 create procedure ODS.ODS_API."ontology.objects" (
-  in ontology varchar) __soap_http 'application/json'
+  in ontology varchar,
+  in prefix varchar := null) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, objects any;
@@ -563,7 +575,7 @@ create procedure ODS.ODS_API."ontology.objects" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0]), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
+    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
     objects := vector_concat (objects , vector (tmp));
   }
   return obj2json (objects , 10);
@@ -614,11 +626,13 @@ create procedure ODS.ODS_API."ontology.load" (
 ;
 
 create procedure ODS.ODS_API."ontology.objectProperty" (
-  in property any)
+  in property any,
+  in ontology varchar,
+  in prefix varchar)
 {
   declare retValue any;
 
-  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0])));
+  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0], ontology, prefix)));
   if (length (property[1]))
     retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
   if (length (property[2]))
@@ -680,7 +694,9 @@ create procedure ODS.ODS_API."ontology.byPrefix" (
 ;
 
 create procedure ODS.ODS_API."ontology.normalize" (
-  in inValue varchar)
+  in inValue varchar,
+  in ontology varchar := null,
+  in prefix varchar := null)
 {
   if (not isnull (inValue))
   {
@@ -692,6 +708,8 @@ create procedure ODS.ODS_API."ontology.normalize" (
       if (inValue like (ontologies[N+1] || '%'))
         return ontologies[N] || ':' || subseq (inValue, length (ontologies[N+1]));
     }
+    if (not isnull (ontology) and not isnull (prefix))
+      return prefix || ':' || replace (inValue, ontology, '');
   }
   return inValue;
 }
