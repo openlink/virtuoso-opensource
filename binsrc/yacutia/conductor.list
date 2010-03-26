@@ -243,6 +243,9 @@ conductor/images/virtuosologo.png
 conductor/images/yac_banner.gif
 conductor/images/yac_banner.jpg
 conductor/images/yac_splash.jpg
+conductor/import_csv_1.vspx
+conductor/import_csv_2.vspx
+conductor/import_csv_3.vspx
 conductor/inifile.vspx
 conductor/isql_main_inc.vspx
 conductor/isql_main.vspx
