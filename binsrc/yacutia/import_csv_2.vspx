@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2010 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_rdf_class" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>CSV Import</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable name="path" persist="0" type="varchar" default="null"  param-name="path"/>
+    <v:variable name="mode" persist="0" type="integer" default="0" param-name="mode"/>
+    <v:variable name="head" persist="0" type="any" default="null" />
+    <v:variable name="offs" persist="0" type="int" default="1" />
+    <v:variable name="tname" persist="0" type="varchar" default="''" />
+  </vm:variables>
+  <vm:menu>
+  </vm:menu>
+  <vm:variables>
+  </vm:variables>
+
+  <vm:header caption="CSV Import"/>
+  <vm:pagebody>
+      <v:on-init>
+	  if (self.head is null)
+	    {
+              declare ss, cn, tmp any;
+	      if (self.mode = 0)
+	        ss := file_open (self.path);
+              else
+                {  
+		  ss := string_output ();
+		  declare exit handler for not found {
+		     self.vc_error_message := 'Invalid path';
+		     self.vc_is_valid := 0;
+		     return 0;
+		  };
+		  select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
+		  http (cn, ss);
+		}
+              tmp := split_and_decode (self.path, 0, '\0\0/');  
+              self.tname := SYS_ALFANUM_NAME (tmp[length(tmp) - 1]);		
+	      self.head := y_csv_get_cols (ss);
+	      if (length (self.head) and self.head[0][0] like 'COL%')
+	        self.offs := 0;
+	    }
+      </v:on-init>
+      <v:form name="inx_form" type="simple" method="POST" action="" >
+        <table class="ctl_grp">
+          <tr class="ctl_grp_title">
+            <th>Confirm Table details</th>
+          </tr>
+	  <tr>
+	      <td>
+		  <label for="">Table Name</label>
+		  <v:text name="tb_name" value="" default_value="--self.tname" />
+	      </td>
+	  </tr>
+	  <?vsp
+	  if (isvector (self.head)) {
+	    declare inx int;
+            inx := 0; 
+	    foreach (any _row in self.head) do 
+	      {
+	  ?>
+	  <tr>
+	      <td>
+		  <input type="text" name="<?V sprintf ('col_%d', inx) ?>" value="<?V _row[0] ?>" />
+	      </td>
+	      <td>
+		  <select name="<?V sprintf ('col_%d_dt', inx) ?>">
+		      <?vsp 
+		         y_col_dts (_row[1]);
+		      ?>
+		  </select>
+	      </td>
+	  </tr>
+	  <?vsp
+	       inx := inx + 1;
+	  } }
+	  ?>
+          <tr>
+            <td>
+		  <v:button action="simple" name="cncl" value="Back">
+		      <v:on-post><![CDATA[
+			  self.vc_redirect ('import_csv_1.vspx');
+			  ]]></v:on-post>
+		  </v:button>
+              <v:button action="simple" value="Create Table &amp; Import Data" name="upl_btn">
+                <v:on-post>
+		  <![CDATA[
+		  declare ss, s, i, nrec any;
+		  declare tb any;
+		  tb := SYS_ALFANUM_NAME (self.tb_name.ufl_value);
+		  ss := string_output ();
+		  http (sprintf ('create table "%I" ( \n', tb), ss);
+		  for (i := 0; i < length (self.head); i := i + 1)
+		    {
+                       declare n, dt any;
+		       n := get_keyword (sprintf ('col_%d', i), params); 
+		       dt := get_keyword (sprintf ('col_%d_dt', i), params); 
+		       if (not length (n) or not length (dt))
+		         {
+			   self.vc_is_valid := 0;
+			   self.vc_error_message := 'Invalid column name';
+			   return 0;
+			 }
+                       http (sprintf ('"%I" %s', n, dt), ss);
+		       if (i < length (self.head) - 1)
+		         http (', \n', ss);  
+		    }
+		  http (')', ss);
+		  declare exit handler for sqlstate '*' 
+		  {
+		    self.vc_is_valid := 0;
+		    self.vc_error_message := __SQL_MESSAGE;
+		    return 0;
+		  };
+		  exec (string_output_string (ss));
+		  commit work;
+		  if (self.mode = 0)
+		    s := file_open (self.path);
+		  else
+		    {  
+		      declare cn any;
+		      s := string_output ();
+		      declare exit handler for not found {
+			 self.vc_error_message := 'Invalid path';
+			 self.vc_is_valid := 0;
+			 return 0;
+		      };
+		      select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
+		      http (cn, s);
+		    }
+		  nrec := csv_load (s, self.offs, null, tb, 1);		  
+		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d', tb, nrec));
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

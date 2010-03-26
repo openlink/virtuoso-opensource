@@ -328,6 +328,10 @@ create procedure adm_menu_tree ()
    <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
    <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
    <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
+   <node name="Import" url="import_csv_1.vspx"  id="271" allowed="cvs_import">
+   <node name="Import" url="import_csv_2.vspx"  id="271" place="1" />
+   <node name="Import" url="import_csv_3.vspx"  id="271" place="1" />
+   </node>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx"  id="8001" >
@@ -6383,5 +6387,83 @@ create procedure y_rdf_api_type (in t int)
   else if (t = 2)
     return 'keywords';
   return '';
+}
+;
+
+create procedure y_csv_cb (inout r any, in inx int, inout cbd any)
+{
+  if (cbd is null)
+    cbd := vector ();
+  cbd := vector_concat (cbd, vector (r));   
+}
+;
+
+create procedure  y_csv_get_cols (inout ss any)
+{
+  declare h, res any;
+  declare inx, j, ncols, no_head int;
+  
+  h := null;
+  res := vector ();
+  csv_parse (ss, 'DB.DBA.y_csv_cb', h, 0, 10);
+  if (h is not null and length (h))
+    {
+      declare _row any;
+      _row := h[0];
+      for (j := 0; j < length (_row); j := j + 1)           
+        {
+	  res := vector_concat (res, vector (vector (SYS_ALFANUM_NAME (_row[j]), null)));
+        }
+      for (inx := 1; inx < length (h); inx := inx + 1)
+       { 
+	 _row := h[inx];
+         for (j := 0; j < length (_row); j := j + 1)           
+	   {
+	     if (res[j][1] is null)
+               res[j][1] := __tag (_row[j]);
+             else if (__tag (_row[j]) <> res[j][1] and 189 = res[j][1] and (isdouble (_row[j]) or isfloat (_row[j])))
+	       res[j][1] := __tag (_row[j]);
+             else if (__tag (_row[j]) <> res[j][1] and isinteger (_row[j]) and (res[j][1] = 219 or 190 = res[j][1]))
+	       ;  
+             else if (__tag (_row[j]) <> res[j][1])
+               res[j][1] := -1;
+	   }
+       } 
+    }
+  no_head := 0;
+  for (inx := 0; inx < length (res); inx := inx + 1)
+    { 
+       if (not isstring (res[inx][0]) or trim (res[inx][0]) = '')
+         no_head := 1;	 
+    }  
+  for (inx := 0; inx < length (res); inx := inx + 1)
+    { 
+       if (res[inx][1] = -1)
+         res[inx][1] := 'ANY';	 
+       else
+         res[inx][1] := dv_type_title (res[inx][1]);	 
+    }  
+  if (no_head)
+    {
+      for (inx := 0; inx < length (res); inx := inx + 1)
+	{ 
+	   res[inx][0] := sprintf ('COL%d', inx);
+	}
+    }
+--  dbg_obj_print (res);
+  return res;
+}
+;
+
+create procedure y_col_dts (in t varchar)
+{
+  for select TYPE_NAME from DB.DBA.oledb_get_types (m,n) (TYPE_NAME nvarchar) x where m = null and n = null do
+    {
+       TYPE_NAME := cast (TYPE_NAME as varchar);
+       if (TYPE_NAME = 'int')
+	 TYPE_NAME := 'integer';
+       http (sprintf ('<option %s>%s</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
+    }
+  http (sprintf ('<option %s>ANY</option>', case when 'ANY' = t then 'selected' else '' end));
 }
 ;
