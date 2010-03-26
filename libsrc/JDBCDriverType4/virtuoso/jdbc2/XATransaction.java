@@ -106,7 +106,7 @@ class XATransaction
     void checkNewStatus(int nstatus, boolean onePhase) throws XAException {
       if (status == ACTIVE && nstatus != IDLE && nstatus != ACTIVE && nstatus != ROLLBACKONLY) {
           throw createException(nstatus);
-      } else if (status == IDLE && (nstatus != PREPARED && !(nstatus == COMMITTED && onePhase))) {
+      } else if (status == IDLE && (nstatus != PREPARED && nstatus != ROLLEDBACK && !(nstatus == COMMITTED && onePhase))) {
           throw createException(nstatus);
       } else if (status == PREPARED && (nstatus != COMMITTED && nstatus != ROLLEDBACK)) {
           throw createException(nstatus);
