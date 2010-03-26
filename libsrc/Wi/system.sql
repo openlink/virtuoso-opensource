@@ -5821,18 +5821,33 @@ select k.KEY_TABLE as "TABLE",
 grant select on DB.DBA.TABLE_COLS to public
 ;
 
-create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2)
+create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
 {
-  declare r, s any;
+  declare s any;
+  s := file_open (f);
+  return csv_load (s, _from, _to, tb, log_mode, opts);
+}
+;
+
+create procedure csv_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
+{
+  declare r any;
   declare stmt varchar;
   declare inx, old_mode, num_cols, nrows int;
+  declare delim, quot char;
+
+  delim := quot := null;
+  if (isvector (opts) and mod (length (opts), 2) = 0)
+    {
+      delim := get_keyword ('csv-delimiter', opts);
+      quot  := get_keyword ('csv-quote', opts);
+    }
 
   stmt := csv_ins_stmt (tb, num_cols);
   old_mode := log_enable (log_mode, 1);
-  s := file_open (f);
   inx := 0;
   nrows  := 0;
-  while (isvector (r := get_csv_row (s)))
+  while (isvector (r := get_csv_row (s, delim, quot)))
     {
       if (inx >= _from)
 	{
@@ -5862,17 +5877,29 @@ create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := n
 }
 ;
 
-create procedure csv_parse (in s any, in cb varchar)
+create procedure csv_parse (in s any, in cb varchar, inout cbd any, in _from int := 0, in _to int := null, in opts any := null)
 {
   declare r any;
   declare inx int;
+  declare delim, quot char;
+
+  delim := quot := null;
+  if (isvector (opts) and mod (length (opts), 2) = 0)
+    {
+      delim := get_keyword ('csv-delimiter', opts);
+      quot  := get_keyword ('csv-quote', opts);
+    }
 
   inx := 0;
-  while (isvector (r := get_csv_row (s)))
+  while (isvector (r := get_csv_row (s, delim, quot)))
     {
-      call (cb) (r);
+      if (inx >= _from)
+	call (cb) (r, inx, cbd);
       inx := inx + 1;
+      if (inx > _to)
+	goto end_loop;
     }
+  end_loop:;
   return inx;
 }
 ;
