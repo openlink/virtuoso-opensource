@@ -1845,15 +1845,16 @@
                             </v:button>
                             <script type="text/javascript">
                               <![CDATA[
-                                var previeImgPath = '<?Vself.v_photo_preview_path?>';
-                                function showPrevieImg()
+                                var previewImgPath = '<?Vself.v_photo_preview_path?>';
+                                function previewImg()
                                 {
+                                  if (previewImgPath == '')
+                                    return;
                                   var div = OAT.Dom.create('div', {position: 'relative', textAlign: 'center'});
-
                                   OAT.Event.attach(div, "click", OAT.Dimmer.hide);
 
                                   var img=OAT.Dom.create('img', {display:'block'});
-                                  img.src = previeImgPath;
+                                  img.src = previewImgPath;
                                   OAT.Event.attach(div, "load", function(){OAT.Dom.center(div,1,1);});
                                   OAT.Dom.append([div, img]);
                                   OAT.Dimmer.show(div, {popup:true});
@@ -1867,6 +1868,7 @@
                                   }
                                   var centerImgE = setInterval(centerImg, 50);
                                 }
+                                OAT.MSG.attach(OAT, 'PAGE_LOADED', previewImg);
                               ]]>
                             </script>
                             <v:button name="ab_photo_upload" xhtml_id="ab_photo_upload" value="Upload" action="simple" xhtml_onclick="javascript: OAT.Dom.show(\'tr_photo\'); return false;" xhtml_class="button" />

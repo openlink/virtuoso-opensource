@@ -776,7 +776,7 @@ AB.getFOAFData = function(iri) {
 		if (o && o.iri) {
 			if (confirm('New data for \'' + o.iri + '\' is founded. Do you like to fill in the corresponding fields?')) {
         AB.setFOAFValue(o.iri, 'ab_iri');
-        AB.setFOAFValue(o.nick, 'ab_name');
+				AB.setFOAFValue(o.nickName, 'ab_name');
 				AB.setFOAFValue(o.title, 'ab_title');
         AB.setFOAFValue(o.name, 'ab_fullName');
         AB.setFOAFValue(o.firstName, 'ab_fName');
