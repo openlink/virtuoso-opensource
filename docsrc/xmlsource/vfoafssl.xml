@@ -349,5 +349,7 @@ ask for a certificate; select the one generated in the steps above.
 </listitem>
 </orderedlist>
   </sect2>
-
+  <sect2 id="vfoafsslsethttpsfoafsll"><title>FOAF+SSL ODBC Login</title>
+    <para>See details and examples <link linkend="secureodbcx509foafsll">here</link>.</para>
+  </sect2>
 </sect1>

@@ -593,7 +593,7 @@ file to correspond to the setup at hand. Then load the file:</para>
 
 <programlisting><![CDATA[
 SQL> load clrdfdup.sql;
-SQL> cl_exec (checkpoint');
+SQL> cl_exec ('checkpoint');
 ]]></programlisting>
 
       <para>Now load data. The load will be non-transactional but now will keep two copies of each partition.

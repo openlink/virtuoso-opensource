@@ -1467,6 +1467,9 @@ A Web ID will be generated automatically for the selected user.</para></listitem
     </figure>
 </listitem>
 </orderedlist>
+  <tip><title>See Also:</title>
+    <para><link linkend="secureodbcx509foafsll">FOAF+SSL ODBC Login</link></para>
+  </tip>
 </sect4>
 </sect3>
 
@@ -3412,6 +3415,9 @@ http://dbpedia.org/resource/Capacity_building 	 http://dbpedia.org/resource/Disa
 http://dbpedia.org/resource/Poverty 	         http://dbpedia.org/resource/Tanzania 	              1
 ]]></programlisting>
 <para>You can also find live demo query results <ulink url="http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&amp;should-sponge=&amp;query=SELECT+%0D%0A%3Fs1+%3Fs2+count+%281%29+where+{%0D%0A%3Fs1+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs1+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0A%3Fs2+%3Fp+%3Fo+.%0D%0Afilter+%28%3Fs2+in+%28%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FClimate_change%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FDisaster_risk_reduction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FTanzania%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FCapacity_building%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FPoverty%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FConstruction%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FVulnerability%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FMount_Kilimanjaro%3E%2C%0D%0A%3Chttp%3A%2F%2Fdbpedia.org%2Fresource%2FSocial_vulnerability%3E+%29%29%0D%0Afilter+%28%3Fs1+!%3D+%3Fs2%29%0D%0Afilter+%28str%28%3Fs1%29+%3C+str+%28%3Fs2%29%29%0D%0A}+limit+20&amp;format=html&amp;debug=on&amp;timeout=">here</ulink></para>
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfsparulexamples18">Example usage of IN operator for retrieving all triples for each entity.</link></para>
+  </tip>
 </sect5>
 <sect5 id="rdfsparulexamples7"><title>Example for Modify used as Update</title>
        <para>'Modify graph' may be used as a form of 'update' operation.
@@ -4330,6 +4336,42 @@ WHERE
     }
   }
 ]]></programlisting>
+</sect5>
+<sect5 id="rdfsparulexamples18"><title>Example usage of IN operator for retrieving all triples for each entity</title>
+<para>To retrieve all triples for each entity for a given list of entities uris, one might use the following syntax:</para>
+<programlisting><![CDATA[
+SELECT ?p ?o
+WHERE
+  {
+    ?s ?p ?o .
+    FILTER ( ?s IN (<someGraph#entity1>, <someGraph#entity2>, ...<someGraph#entityN> ) )
+  }
+]]></programlisting>
+<para>So to demonstrate this feature, execute the following query:
+</para>
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT DISTINCT ?p ?o
+WHERE
+  {
+    ?s ?p ?o .
+    FILTER ( ?s IN (<http://dbpedia.org/resource/Climate_change>, <http://dbpedia.org/resource/Social_vulnerability> ) )
+  }
+LIMIT 100
+
+p    	                                                o
+ANY                                                     ANY
+_______________________________________________________________________________
+
+http://www.w3.org/1999/02/22-rdf-syntax-ns#type 	http://s.zemanta.com/ns#Target
+http://s.zemanta.com/ns#title 	                        Climate change
+http://s.zemanta.com/ns#targetType 	                http://s.zemanta.com/targets#rdf
+
+3 Rows. -- 10 msec.
+]]></programlisting>
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfsparulexamples6">Example usage of IN operator.</link></para>
+  </tip>
 </sect5>
    </sect4>
    </sect3>
@@ -35395,12 +35437,15 @@ the <ulink url="http://jena.sourceforge.net/">Jena 2.5.5</ulink> version current
     </sect4>
     <sect4 id="rdfnativestorageprovidersjenacmsmpr"><title>Compiling Jena Sample Programs</title>
     <orderedlist>
-      <listitem>Edit the sample programs VirtuosoSPARQLExampleX.java, where X = 1 to 9. Set the JDBC connection strings within to point to a valid Virtuoso Server instance of the form:
+      <listitem>Edit the sample programs VirtuosoSPARQLExampleX.java, where X = 1 to 9.
+Set the JDBC connection strings within to point to a valid Virtuoso Server instance of the form:
 <programlisting><![CDATA[
-"jdbc:virtuoso://localhost:1111/charset=UTF-8/log_enable=2", "dba", "dba"
+"jdbc:virtuoso://localhost:1111/charset=UTF-8/log_enable=2"
 ]]></programlisting>
       <itemizedlist>
-         <listitem>charset=UTF-8: to work correctly with different encodings such as cirilic, etc.
+         <listitem>charset=UTF-8  will be added by Jena provider, if it isn't in connection string.
+So now you don't need add "charset=UTF-8" to the connection string any more, it is done by Jena provider.
+
          </listitem>
          <listitem>log_enable=2: to use row auto commit
          </listitem>
@@ -36201,7 +36246,7 @@ Virtuoso Sesame Provider, and Sesame 2 or greater installed.
       <listitem>Sample programs, <ulink url="http://virtuoso.openlinksw.com/wiki/main/Main/VirtSesame2Provider/virtsesame2samples.zip">virtsesame2samples.zip</ulink></listitem>
     </itemizedlist>
     </sect4>
-    <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Jena Sample Programs</title>
+    <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Sesame Sample Programs</title>
     <orderedlist>
       <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
     <itemizedlist mark="bullet">
@@ -36216,15 +36261,14 @@ Virtuoso Sesame Provider, and Sesame 2 or greater installed.
 <programlisting><![CDATA[
 javac VirtuosoTest.java
 ]]></programlisting>
-      <para>Note: to use utf-8 and to use row auto commit is recommended
-to add the following to the connect string:
+      <para>Note: to use row auto commit is recommended to add the following to the connect string:
       </para>
 <programlisting><![CDATA[
-"/charset=UTF-8/log_enable=2"
+"/log_enable=2"
 -- i.e. in VirtuosoTest.java the line:
 Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1], sa[2], sa[3]);
 -- should become:
-Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1]+ "/charset=UTF-8/log_enable=2", sa[2], sa[3]);
+Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1]+ "/log_enable=2", sa[2], sa[3]);
 ]]></programlisting>
       </listitem>
     </orderedlist>
@@ -36372,7 +36416,7 @@ repository:
 <programlisting><![CDATA[
 import virtuoso.sesame2.driver.VirtuosoRepository;
 
-Repository myRepository = VirtuosoRepositoryRDF?("jdbc:virtuoso://localhost:1111”,”dba”,”dba”);
+Repository myRepository = VirtuosoRepository("jdbc:virtuoso://localhost:1111”,”dba”,”dba”);
 
 myRepository.initialize();
 ]]></programlisting>
@@ -36524,7 +36568,7 @@ try {
 
    try {
 
-      String queryString = "SELECT x, y FROM  WHERE {x} p {y}";
+      String queryString = "SELECT ?s ?p FROM  <http://mygraph.com> WHERE { ?s ?p ?o }";
 
       TupleQuery? tupleQuery = con.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 
@@ -36570,9 +36614,9 @@ while (result.hasNext()) {
 
    BindingSet bindingSet = result.next();
 
-   Value valueOfX = bindingSet.getValue("x");
+   Value valueOfX = bindingSet.getValue("s");
 
-   Value valueOfY = bindingSet.getValue("y");
+   Value valueOfY = bindingSet.getValue("p");
 
    // do something interesting with the query variable values here?
 
@@ -36629,7 +36673,7 @@ try {
 
    try {
 
-      String queryString = "SELECT * FROM  WHERE {x} p {y}";
+      String queryString = "SELECT * FROM  WHERE { ?s ?p ?o }";
 
       TupleQuery tupleQuery = con.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 
@@ -36668,7 +36712,7 @@ import org.openrdf.query.GraphQueryResult;
 
 GraphQueryResult graphResult = con.prepareGraphQuery(
 
-      QueryLanguage.SPARQL, "CONSTRUCT * FROM {x} p {y}").evaluate();
+      QueryLanguage.SPARQL, "CONSTRUCT * FROM <http://mygraph.com> WHERE { ?s ?p ?o }").evaluate();
 ]]></programlisting>
       <para>A GraphQueryResult is similar to TupleQueryResult in that is an object that iterates
 over the query results. However, for graph queries the query results are RDF statements, so a
@@ -36704,7 +36748,7 @@ try {
 
    TurtleWriter turtleWriter = new TurtleWriter(System.out);
 
-   con.prepareGraphQuery(QueryLanguage.SPARQL, "CONSTRUCT * FROM  WHERE {x} p {y}").evaluate(turtleWriter);
+   con.prepareGraphQuery(QueryLanguage.SPARQL, "CONSTRUCT * FROM <http://mygraph.com> WHERE { ?s ?p ?o }").evaluate(turtleWriter);
 
 }
 
@@ -36721,35 +36765,34 @@ we invoke con.close() to close the connection and free resources.
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamestpandtesting"><title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
       <sect4 id="rdfnativestorageproviderssesamestpandtestingwhat"><title>What</title>
-<para>Sesame is an open source Java framework for storing, querying and reasoning with RDF and RDF Schema. It can be
-used as a database for RDF and RDF Schema, or as a Java library for applications that need to work with RDF internally.
-The Sesame HTTP repository serves as a proxy for a RDF store hosted on a remote Sesame server, enabling the querying of
-the RDF store using the Sesame HTTP protocol.
+<para>Sesame is an open source Java framework for storing, querying and reasoning with RDF and RDF Schema. It can be used as a
+database for RDF and RDF Schema, or as a Java library for applications that need to work with RDF internally. The Sesame HTTP
+repository serves as a proxy for a RDF store hosted on a remote Sesame server, enabling the querying of the RDF store using
+the Sesame HTTP protocol.
 </para>
       </sect4>
       <sect4 id="rdfnativestorageproviderssesamestpandtestingwhy"><title>Why</title>
-<para>The Sesame HTTP repository endpoint provides users with the greater flexibility for manipulating the RDF store via
-a common interface. Sesame provides you with the necessary tools to parse, interpret, query and store all this information,
-embedded in your own application if you want, or, if you prefer, in a separate database or even on a remote server.
+<para>The Sesame HTTP repository endpoint provides users with the greater flexibility for manipulating the RDF store via a common
+interface. Sesame provides you with the necessary tools to parse, interpret, query and store all this information, embedded
+in your own application if you want, or, if you prefer, in a separate database or even on a remote server.
 </para>
       </sect4>
       <sect4 id="rdfnativestorageproviderssesamestpandtestinghow"><title>How</title>
 <para>To create a new Sesame HTTP repository, the Console needs to create such an RDF document and submit it to the SYSTEM
-repository. The Console uses so called repository configuration templates to accomplish this. Repository configuration
-templates are simple Turtle RDF files that describe a repository configuration, where some of the parameters are replaced
-with variables. The Console parses these templates and asks the user to supply values for the variables. The variables
-are then substituted with the specified values, which produces the required configuration data.
+repository. The Console uses so called repository configuration templates to accomplish this. Repository configuration templates
+are simple Turtle RDF files that describe a repository configuration, where some of the parameters are replaced with variables.
+The Console parses these templates and asks the user to supply values for the variables. The variables are then substituted with
+the specified values, which produces the required configuration data.
 </para>
       </sect4>
       <sect4 id="rdfnativestorageproviderssesamestpandtestingmain"><title>Setup and Testing</title>
-<para>This section details the steps required for configuring and testing a Virtuoso Sesame Repository,
-both using the HTTP and Console Sesame repositories.</para>
+<para>This section details the steps required for configuring and testing a Virtuoso Sesame
+Repository, both using the HTTP and Console Sesame repositories.</para>
       <sect5 id="rdfnativestorageproviderssesamestpandtestingreq"><title>Requirements</title>
 <itemizedlist mark="bullet">
   <listitem><ulink url="http://www.openrdf.org/download.jsp">Sesame 2.3.1</ulink> or higher</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virt_sesame2.jar">Virtuoso Sesame 2 Provider </ulink> (virt_sesame2.jar)</listitem>
-  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtjdbc4.jar">Virtuoso JDBC Driver</ulink> (virtjdbc4.jar)</listitem>
-  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtuoso.ttl">Virtuoso Sesame Template</ulink> (virtuoso.ttl)</listitem>
+  <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtjdbc3.jar">Virtuoso JDBC Driver</ulink> (virtjdbc3.jar)</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create.xsl">Sesame System Repository config file</ulink> (create.xsl)</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create-virtuoso.xsl">Sesame Virtuoso Repository config file </ulink> (create-virtuoso.xsl)</listitem>
   <listitem><ulink url="http://tomcat.apache.org/download-60.cgi">Apache Tomcat</ulink> version 5 or 6</listitem>
@@ -36762,7 +36805,7 @@ both using the HTTP and Console Sesame repositories.</para>
   <listitem>From the Sesame 2.3.1 or higher "lib" directory copy the "openrdf-sesame.war" and "openrdf-worbbench.war" files to the
 tomcat "webapps" directory where they will automatically be deployed creating two new sub directories "openrdf-sesame" and
 "openrdf-workbench".</listitem>
-  <listitem>Place the Virtuoso Sesame Provider "virt_sesame2.jar" and JDBC Driver "virtjdbc4.jar" into the Tomcat
+  <listitem>Place the Virtuoso Sesame Provider "virt_sesame2.jar" and JDBC Driver "virtjdbc3.jar" into the Tomcat
 <code>~/webapps/openrdf-sesame/WEB-INF/lib/</code> and <code>~/webapps/openrdf-workbench/WEB-INF/lib/</code> directories for
 use by the Sesame HTTP Repository for accessing the Virtuoso RDF repository.</listitem>
   <listitem>Place the "create.xsl" and "create-virtuoso.xsl" files in the Tomcat
@@ -36855,8 +36898,8 @@ the default SYSTEM repository.
       <sect5 id="rdfnativestorageproviderssesamestpandtestingcons"><title>Setup Sesame Console Repository</title>
 <para>This section details the steps required for configuring and testing a Virtuoso Sesame Console Repository:</para>
 <orderedlist>
-  <listitem>Extract Sesame 2.3.1 or higher archive to a location of choice and place the virt_sesame2.jar and
-virtjdbc4.jar files to the sesame 2.3.1 "lib" directory</listitem>
+  <listitem>Extract Sesame 2.3.1 or higher archive to a location of choice and place the virt_sesame2.jar and virtjdbc3.jar
+files to the sesame 2.3.1 "lib" directory</listitem>
   <listitem>Start the <ulink url="http://www.openrdf.org/doc/sesame2/users/ch07.html#section-console-repository-creation">sesame console application</ulink> by running the "console.bat" script in the sesame "bin" directory and then "exit." the program
 <programlisting><![CDATA[
 $ sh console.sh
@@ -36887,8 +36930,6 @@ has to be manually appended to the directory as Sesame assumes the data file wil
 $ sh console.sh -d /Users/myuser/OpenRDF Sesame console
 ]]></programlisting>
 </listitem>
-  <listitem>Within the "OpenRDF Sesame console" directory of the chosen Sesame data directory create a directory called "templates"
-and place the Virtuoso template file "virtuoso.ttl" in it.</listitem>
   <listitem>Start the sesame console application with the required data directory location and create a Virtuoso repository as
 detailed in the steps below, the key parameters to be specified being the target Virtuoso server hostname, port number,
 username, password and a unique "Repository ID".

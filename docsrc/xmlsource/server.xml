@@ -1262,11 +1262,14 @@ then the service will be disabled.</para>
 						<para>Whether the server will require X509 certificates from the browsers.</para>
 					</formalpara>
  <simplelist>
-  <member><emphasis>X509ClientVerify = 0</emphasis> - do not ask</member>
+  <member><emphasis>X509ClientVerify = 0</emphasis> - do not require</member>
   <member><emphasis>X509ClientVerify = 1</emphasis> - ask for trusted certificates</member>
   <member><emphasis>X509ClientVerify = 2</emphasis> - optionally ask, if certificate is given will be verified</member>
   <member><emphasis>X509ClientVerify = 3</emphasis> - accept optionally any certificate even self-signed</member>
  </simplelist>
+  <tip><title>See Also:</title>
+    <para><link linkend="secureodbcx509foafsll">FOAF+SSL ODBC Login</link></para>
+  </tip>
 				</listitem>
 				<listitem id="ini_HTTPServer_X509ClientVerifyDepth">
 					<formalpara>

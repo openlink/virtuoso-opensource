@@ -1724,17 +1724,19 @@ via a plethora of interfaces, to name a few:
     table and column) should preferably be placed in double-quotes, exactly as it appears in
     the catalog.  This way, the object name in the Virtuoso catalog will be correctly
     referenced.  If names are not quoted, then the case of the object name will be
-    determined by the value of the CaseMode property in the virtuoso.ini file.  The
-    default mode is case sensitive (CaseMode = 1).  This means that all unquoted objects
-    names will be processed exactly as supplied.  This may result in messages indicating
-    that an object could not be found.  If CaseMode is set to 0, then all objects will be
-    translated to upper case.  When using certain tools such as Microsoft Query (which is
-    used by Microsoft Excel) object references are not enclosed in quotes.  As a result,
-    it may be necessary to change from CaseMode=1 to CaseMode=0, or vise-verse before starting
-    up the DBMS if the application that you use does not enclose identifiers in double
-    quotes.  Virtuoso itself will always use the object names that were identified when
-    the table was attached when it communicates with a back-end database.</para>
-    <para>The following table describes when an identifier name will
+    determined by the value of the CaseMode property in the virtuoso.ini file:</para>
+<itemizedlist mark="bullet">
+  <listitem>The default files supplied with Virtuoso specify a CaseMode of 2, which is a case insensitive mode that preserves the declaration case of identifiers. If there is no supplied ini file, the default value of CaseMode is 1.</listitem>
+  <listitem>A CaseMode of 1 specifies the upper case mode, which is most commonly used in SQL databases, e.g. Oracle. In the upper case mode, all unquoted identifiers are converted to upper case by the SQL parser. If identifiers are not quoted, the case in which they are entered is irrelevant.</listitem>
+  <listitem>The identifier quote character is the double quote ("). Quoted identifiers are processed in the case they are written in and are thus case sensitive.</listitem>
+  <listitem>SQL reserved words are case insensitive in all case modes.</listitem>    
+  <listitem>If CaseMode is 0 or absent, identifiers will be treated as case sensitive in all situations, whether quoted or not.</listitem>    
+  <listitem>If an identifier's name is equal to a SQL reserved word, e.g. TABLE, it must be quoted ("TABLE") in order to be used as an identifier.</listitem>      
+  <listitem>If an identifier contains non-alphanumeric characters, e.g. space, '-' etc. it must be quoted regardless of CaseMode.</listitem>      
+  <listitem>Although CaseMode can be changed at any time it should only be set at database creation. Changing the CaseMode may result in view or procedure code becoming invalid if it relies on specific case conventions.</listitem>        
+</itemizedlist>
+
+ <!--para The following table describes when an identifier name will
     match the catalog entry.</para>
     <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
 				<title>Case mode options</title>
@@ -1799,11 +1801,13 @@ via a plethora of interfaces, to name a few:
 						</row>
 					</tbody>
 				</tgroup>
-    </table>
+    </table-->
+    
     <figure id="image33" float="1">
       <title>Virtuoso.ini file in notepad</title>
       <graphic fileref="virttour33.gif" width="531px" depth="394px"/>
     </figure>
+    
     </sect2>
   </sect1>
 
