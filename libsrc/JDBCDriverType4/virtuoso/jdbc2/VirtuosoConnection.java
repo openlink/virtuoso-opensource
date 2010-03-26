@@ -843,6 +843,15 @@ public class VirtuosoConnection implements Connection
      return fut;
    }
 
+   protected void clearFutures() 
+   {
+     if (futures != null) 
+        synchronized (futures)
+        {
+	  futures.clear();
+        }
+   }
+
    /**
     * Remove a future from the hashtable.
     *
