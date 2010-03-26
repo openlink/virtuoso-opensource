@@ -732,23 +732,33 @@ RDF.ontologies['wot'] = {"name": 'http://xmlns.com/wot/0.1/', "hidden": 1};
 RDF.ontologies['xhtml'] = {"name": 'http://www.w3.org/1999/xhtml', "hidden": 1};
 RDF.ontologies['xsd'] = {"name": 'http://www.w3.org/2001/XMLSchema#', "hidden": 1};
 
-RDF.loadOntology = function (ontologyName, cbFunction)
+RDF.loadOntology = function (ontologyName, cb)
 {
   var prefix = this.ontologyPrefix(ontologyName);
-  if (!prefix) {return;}
+  if (!prefix) {
+    var N = 0;
+    while (true) {
+      prefix = 'ns' + N;
+      if (!RDF.getOntologyByPrefix(prefix))
+        break;
+      N++;
+    }
+  }
 
   // load ontology classes
-  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName);
+  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
   var x = function(data) {
     var o = null;
     try {
       o = OAT.JSON.parse(data);
     } catch (e) {o = null;}
-    RDF.ontologies[prefix] = o;
     if (o)
     {
+      o.prefix = prefix;
+      RDF.ontologies[prefix] = o;
+
       // load objects (individuals)
-      var S = '/ods/api/ontology.objects?ontology='+encodeURIComponent(ontologyName);
+      var S = '/ods/api/ontology.objects?ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
       var x = function(data) {
         var o = null;
         try {
@@ -758,8 +768,7 @@ RDF.loadOntology = function (ontologyName, cbFunction)
       }
       OAT.AJAX.GET(S, '', x, {});
     }
-    if (cbFunction)
-      cbFunction();
+    if (cb) {cb();}
   }
   OAT.AJAX.GET(S, '', x, {});
 }
@@ -771,19 +780,19 @@ RDF.getOntologyByPrefix = function(prefix)
 
 RDF.getOntologyByName = function(ontologyName)
 {
-  var prefix = RDF.ontologyPrefix(ontologyName);
-  return RDF.ontologies[prefix];
+  var prefix = this.ontologyPrefix(ontologyName);
+  return this.ontologies[prefix];
 }
 
 RDF.getOntologyByClass = function(className)
 {
-  var prefix = RDF.extractPrefix(className);
-  return RDF.ontologies[prefix];
+  var prefix = this.extractPrefix(className);
+  return this.ontologies[prefix];
 }
 
 RDF.getOntologyClass = function(className)
 {
-  var ontology = RDF.getOntologyByClass(className);
+  var ontology = this.getOntologyByClass(className);
   if (ontology)
   {
     var classes = ontology.classes;
@@ -841,9 +850,11 @@ RDF.isKindOfClass = function(objectClassName, propertyClassName)
 {
   if (objectClassName == propertyClassName)
     return true;
+
   var ontologyClass = this.getOntologyClass(objectClassName);
   if (ontologyClass && ontologyClass.subClassOf)
-    return RDF.isKindOfClass (ontologyClass.subClassOf, propertyClassName);
+    return this.isKindOfClass (ontologyClass.subClassOf, propertyClassName);
+
   return false;
 }
 
@@ -853,7 +864,9 @@ RDF.loadClassProperties = function(ontologyClass, cbFunction)
     cbFunction();
     return;
   }
-  var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name);
+  var ontologyName = this.getOntologyByClass(ontologyClass.name).name;
+  var prefix = this.ontologyPrefix(ontologyName);
+  var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name)+'&ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
   var x = function(data) {
     var o = null;
     try {
@@ -1007,15 +1020,13 @@ RDF.addItemType = function(prefix, No)
   var td = $(prefix+'_td_'+No+'_2');
   if (!td) {return;}
 
-    // create new item object
+  // create and add new item object
     var itemType = new Object();
     itemType.ontology = fValue;
     itemType.id = No;
-    this.loadOntology(itemType.ontology, function(){fld1.onclick();});
-
-    // add item
-    this.itemTypes[this.itemTypes.length] = itemType;
-
+  this.loadOntology(itemType.ontology, function() {
+    // add item object
+    RDF.itemTypes[RDF.itemTypes.length] = itemType;
     // clear childs
     td.innerHTML = '';
 
@@ -1024,10 +1035,11 @@ RDF.addItemType = function(prefix, No)
   OAT.Dom.hide(fld2);
 
     // show combo value as text
-    var fld = OAT.Dom.text(fValue+' ('+this.ontologyPrefix(fValue)+')');
-    td.appendChild(fld);
+    td.appendChild(OAT.Dom.text(fValue+' ('+RDF.ontologyPrefix(fValue)+')'));
 
 	OAT.Dom.hide(prefix+'_btn_2_'+No);
+    fld1.onclick();
+	});
 }
 
 // Item functions
@@ -1189,7 +1201,8 @@ RDF.addItem = function(prefix, No)
     itemType.items[itemType.items.length] = item;
 
   // load properties
-  this.loadClassProperties(item.className, function(){fld1.onclick();});
+  var ontologyClass = this.getOntologyClass(item.className);
+  this.loadClassProperties(ontologyClass, function(){fld1.onclick();});
 
     // clear childs
     td.innerHTML = '';

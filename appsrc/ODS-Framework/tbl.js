@@ -38,7 +38,6 @@ TBL.createRow = function (prefix, No, optionObject)
       for (var p in optionObject) {options[p] = optionObject[p]; }
 
       No = options.No;
-      if (!No) {
         if (!$(prefix+'_no')) {
         	var fld = OAT.Dom.create("input");
           fld.type = 'hidden';
@@ -47,6 +46,9 @@ TBL.createRow = function (prefix, No, optionObject)
           fld.value = '0';
           tbl.appendChild(fld);
         }
+      if (No) {
+        $(prefix+'_no').value = No;
+      } else {
         No = $v(prefix+'_no');
       }
       No = parseInt(No)
@@ -166,6 +168,24 @@ TBL.deleteRow = function (prefix, No, ask) {
   return true;
 }
 
+TBL.createCellSelect = function (fldName) {
+	var fld = OAT.Dom.create("select");
+  fld.name = fldName;
+  fld.id = fldName;
+  return fld;
+}
+
+TBL.createCellCombolist = function (td, fldValue, fldOptions) {
+  var fld = new OAT.Combolist([], fldValue, fldOptions);
+  fld.input.id = fld.input.name;
+  td.appendChild(fld.div);
+
+  var dims = OAT.Dom.getWH(td);
+	fld.list.style.width = (dims[0]*0.75)+"px";
+
+  return fld;
+}
+
 TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
   var fld = OAT.Dom.create('input');
   fld.type = (fldOptions.type)? (fldOptions.type): 'text';
@@ -202,27 +222,21 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell2 = function (td, prefix, fldName, No, fldOptions) {
-  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName});
-  fld.input.name = fldName;
-  fld.input.id = fldName;
+  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
   fld.input.style.width = "85%";
   fld.addOption('rdfs:seeAlso');
   fld.addOption('foaf:made');
   fld.addOption('foaf:maker');
 
-  td.appendChild(fld.div);
   return fld.input;
 }
 
 TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
-  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName, onchange: setServiceUrl});
-  fld.input.name = fldName;
-  fld.input.id = fldName;
+  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: setServiceUrl});
   fld.input.setAttribute("autocomplete", "off");
   fld.input.style.width = "85%";
   for (N = 0; N < serviceList.length; N = N + 1)
     fld.addOption('<img src="/ods/images/services/'+serviceList[N][0]+'"/> '+serviceList[N][2], serviceList[N][2]);
-  td.appendChild(fld.div);
 
 	var ta = new TypeAhead(fld.input.id, 'onlineAccounts', '');
 	fld.input.onchange = setServiceUrl2;
@@ -233,9 +247,7 @@ TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell11 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
+	var fld = TBL.createCellSelect(fldName);
   TBL.selectOption(fld, fldOptions.value, 'bio:Birth', 'bio:Birth');
   TBL.selectOption(fld, fldOptions.value, 'bio:Death', 'bio:Death');
   TBL.selectOption(fld, fldOptions.value, 'bio:Marriage', 'bio:Marriage');
@@ -245,10 +257,8 @@ TBL.createCell11 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = new OAT.Combolist( [], fldOptions.value, {name : fldName});
+  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
 
-	fld.input.name = fldName;
-	fld.input.id = fldName;
 	fld.input.style.width = "85%";
 	fld.addOption('rel:acquaintanceOf');
 	fld.addOption('rel:ambivalentOf');
@@ -284,7 +294,6 @@ TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
 	fld.addOption('rel:worksWith');
 	fld.addOption('rel:wouldLikeToKnow');
 
-  td.appendChild(fld.div);
   return fld.input;
 }
 
@@ -295,9 +304,7 @@ TBL.selectOption = function(fld, fldValue, optionName, optionValue) {
 }
 
 TBL.createCell30 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
+	var fld = TBL.createCellSelect(fldName);
 	TBL.selectOption(fld, fldOptions.value, "Person URI", "URI");
 	TBL.selectOption(fld, fldOptions.value, "Relationship Property", "Property");
 
@@ -306,9 +313,7 @@ TBL.createCell30 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell31 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
+	var fld = TBL.createCellSelect(fldName);
 	TBL.selectOption(fld, fldOptions.value, "Grant", "G");
 	TBL.selectOption(fld, fldOptions.value, "Revoke", "R");
 
@@ -334,18 +339,14 @@ TBL.createCell41 = function (td, prefix, fldName, No, fldOptions) {
 	var fld = OAT.Dom.text(fldOptions.labelValue);
   td.appendChild(fld);
 
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
-  fld.style.width = "80%";
-  TBL.selectOption(fld, fldOptions.value, '', '');
+  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
+	fld.input.style.width = "80%";
   for (var prefix in RDF.ontologies) {
     var ontology = RDF.ontologies[prefix];
     if (!ontology.hidden)
-      TBL.selectOption(fld, fldOptions.value, ontology.name+' ('+prefix+')', ontology.name);
+      fld.addOption(ontology.name);
   }
-  td.appendChild(fld);
-  return fld;
+  return fld.input;
 }
 
 TBL.createCell42 = function (td, prefix, fldName, No, fldOptions) {
@@ -382,9 +383,7 @@ TBL.createCell44 = function (td, prefix, fldName, No, fldOptions) {
 	var fld = OAT.Dom.text(fldOptions.labelValue);
   td.appendChild(fld);
 
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
+	var fld = TBL.createCellSelect(fldName);
   fld.style.width = '80%';
   fld.itemType = fldOptions.itemType;
   var fldValue;
@@ -444,9 +443,7 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions) {
     }
   }
 
-	var fld = OAT.Dom.create("select");
-  fld.name = fldName;
-  fld.id = fldName;
+	var fld = TBL.createCellSelect(fldName);
   fld.style.width = '95%';
   fld.item = fldOptions.item;
   var fldValue;
@@ -482,8 +479,7 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
   var ontologyClassProperty = RDF.getOntologyClassProperty(item.className, property.name);
   if (ontologyClassProperty && ontologyClassProperty.objectProperties)
   {
-  	var fld = OAT.Dom.create('select');
-    fld.id = fldName;
+  	var fld = TBL.createCellSelect(fldName);
     fld.name = fld.id;
     fld.style.width = '95%';
     TBL.selectOption(fld, property.value, '', '');
