@@ -132,6 +132,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
     pconn.tmClosed = System.currentTimeMillis();
     pconn.pStmtsPool = StmtsPool;
     pconn.conn.pooled_connection = pconn;
+    pconn.conn.clearFutures();
     return pconn;
   }
 
