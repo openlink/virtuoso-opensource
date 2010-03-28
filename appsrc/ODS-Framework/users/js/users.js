@@ -1402,7 +1402,6 @@ function prepareItems(prefix) {
       if (ctrl.name.indexOf(prefix+"_item_"+ontologyNo+"_fld_2_") != 0)
         continue;
 
-      var itemID = $v(prefix+"_item_"+ontologyNo+"_fld_1_"+itemNo);
       var itemNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_fld_2_", "");
       var itemName = ctrl.value;
       var itemProperties = [];
@@ -1422,9 +1421,14 @@ function prepareItems(prefix) {
         var propertyName = ctrl.value;
         var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
         var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+        if (propertyType == 'object') {
+          var item = RDF.getItemByName(propertyValue);
+          if (item)
+            propertyValue = item.id;
+        }
         itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType});
       }
-      ontologyItems.push({"id": itemID, "className": itemName, "properties": itemProperties});
+      ontologyItems.push({"id": itemNo, "className": itemName, "properties": itemProperties});
     }
     ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
   }
@@ -1433,8 +1437,8 @@ function prepareItems(prefix) {
 
 function updateFavorites(prefix)
 {
-	var S = '/ods/api/user.favorites.delete?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
-	OAT.AJAX.GET(S,null,null,{async:false});
+	// var S = '/ods/api/user.favorites.delete?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
+	// OAT.AJAX.GET(S,null,null,{async:false});
 
   S = '/ods/api/user.favorites.new?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&favorites=' + encodeURIComponent(prepareItems('r'));
   OAT.AJAX.GET(S,null,null,{async:false});

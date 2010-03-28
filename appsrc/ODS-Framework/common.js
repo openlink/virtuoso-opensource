@@ -1111,7 +1111,7 @@ RDF.showItemsTable = function(itemType)
     var prefixItem = prefix + '_item_' + No;
 
     var fld = OAT.Dom.create('span');
-    fld.onclick = function(){TBL.createRow(prefixItem, null, {fld_1: {mode: 45, cssText: 'display: none;'}, fld_2: {mode: 44, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 0}, btn_2: {mode: 42}});};
+    fld.onclick = function(){var id = RDF.newItemId(); TBL.createRow(prefixItem, null, {No: id, fld_1: {mode: 45, cssText: 'display: none;'}, fld_2: {mode: 44, itemType: itemType, labelValue: 'New Item: '}, btn_1: {mode: 42}, btn_2: {mode: 43}});};
     OAT.Dom.addClass(fld, 'button pointer');
 
     var img = OAT.Dom.create('img');
@@ -1143,7 +1143,7 @@ RDF.showItemsTable = function(itemType)
 
 RDF.showItem = function(prefix, item)
 {
-  TBL.createRow(prefix, null, {No: item.id, fld_1: {mode: 45, item: item}, fld_2: {mode: 42, value: item.className, showValue: item.className+' (#'+item.id+')'}});
+  TBL.createRow(prefix, null, {No: item.id, fld_1: {mode: 45, item: item}, fld_2: {mode: 42, value: item.className, showValue: item.className+' (#'+item.id+')'}, btn_1: {mode: 42}});
   if (item.properties)
   {
     var obj = $(prefix+'_fld_1_'+item.id);
@@ -1151,21 +1151,54 @@ RDF.showItem = function(prefix, item)
   }
 }
 
-RDF.getItem = function(No)
-{
-  for (var i = 0; i < this.itemTypes.length; i++)
+RDF.newItemId = function()
   {
+  var id = 0;
+  for (var i = 0; i < this.itemTypes.length; i++) {
     var items = this.itemTypes[i].items;
     if (items)
     {
       for (var j = 0; j < items.length; j++)
       {
+        if (parseInt(items[j].id) > id)
+          id = parseInt(items[j].id);
+      }
+    }
+  }
+  return id+1;
+}
+
+RDF.getItem = function(No)
+{
+  for (var i = 0; i < this.itemTypes.length; i++) {
+    var items = this.itemTypes[i].items;
+    if (items) {
+      for (var j = 0; j < items.length; j++) {
         if (items[j].id == No)
           return items[j];
       }
     }
   }
   return null;
+}
+
+RDF.getItemByName = function(name)
+{
+  for (var i = 0; i < this.itemTypes.length; i++) {
+    var items = this.itemTypes[i].items;
+    if (items) {
+      for (var j = 0; j < items.length; j++) {
+        if (RDF.getItemName(items[j]) == name)
+          return items[j];
+      }
+    }
+  }
+  return null;
+}
+
+RDF.getItemName = function(item)
+{
+  return item.className+' (#'+item.id+')'
 }
 
 RDF.addItem = function(prefix, No)
@@ -1212,7 +1245,7 @@ RDF.addItem = function(prefix, No)
   OAT.Dom.hide(fld2);
 
     // show combo value as text
-    var fld = OAT.Dom.text(fValue);
+  var fld = OAT.Dom.text(fValue+' (#'+item.id+')');
     td.appendChild(fld);
 
     // update selectors
@@ -1221,7 +1254,7 @@ RDF.addItem = function(prefix, No)
 	OAT.Dom.hide(prefix+'_btn_2_'+No);
 }
 
-RDF.addItemToSelects = function(product)
+RDF.addItemToSelects = function(item)
 {
   var tbl = $(this.tablePrefix+'_tbl');
   if (!tbl) {return;}
@@ -1231,18 +1264,18 @@ RDF.addItemToSelects = function(product)
   for (var i = 0; i < selects.length; i++)
   {
     var obj = selects[i];
-    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
+    if ((obj.id.indexOf('_prop_') != -1) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
     {
-      var ontologyClassProperty = this.getOntologyClassProperty(obj.itemType.objectClass, obj.value);
+      var ontologyClassProperty = this.getOntologyClassProperty(obj.item.className, obj.value);
       if (ontologyClassProperty.objectProperties)
       {
         for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++)
         {
-          if (product.objectClass == ontologyClassProperty.objectProperties[j])
+          if (item.className == ontologyClassProperty.objectProperties[j])
           {
       	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
-            if (fld)
-    	        updateComboOption2(fld, fld.value, 'Element #'+itemType.id, itemType.id);
+            if (fld && fld.combolist)
+              fld.combolist.addOption(RDF.getItemName(item));
     	    }
         }
       }
@@ -1250,46 +1283,41 @@ RDF.addItemToSelects = function(product)
   }
 }
 
-RDF.checkItemInSelects = function(product)
+RDF.checkItemInSelects = function(item)
 {
-  return RDF.itemInSelects(product, 'check');
+  return RDF.itemInSelects(item, 'check');
 }
 
-RDF.removeItemInSelects = function(product)
+RDF.removeItemInSelects = function(item)
 {
-  return RDF.itemInSelects(product, 'remove');
+  return RDF.itemInSelects(item, 'remove');
 }
 
-RDF.itemInSelects = function(product, mode)
+RDF.itemInSelects = function(item, mode)
 {
   var tbl = $(this.tablePrefix+'_tbl');
   if (!tbl) {return;}
 
   var selects = tbl.getElementsByTagName('select');
   if (!selects) {return;}
-  for (var i = 0; i < selects.length; i++)
-  {
+  for (var i = 0; i < selects.length; i++) {
     var obj = selects[i];
-    if ((obj.id.indexOf('prop_') == 0) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != ''))
-    {
-      var ontologyClassProperty = this.getOntologyClassProperty(obj.product.objectClass, obj.value);
-      if (ontologyClassProperty.objectProperties)
-      {
-        for (var i = 0; i < ontologyClassProperty.objectProperties.length; i++)
-        {
-          if (product.objectClass == ontologyClassProperty.objectProperties[i])
-          {
+    if ((obj.id.indexOf('_prop_') != -1) && (obj.id.indexOf('_fld_1_') != -1) && (obj.value != '')) {
+      var ontologyClassProperty = this.getOntologyClassProperty(obj.item.className, obj.value);
+      if (ontologyClassProperty.objectProperties) {
+        for (var j = 0; j < ontologyClassProperty.objectProperties.length; j++) {
+          if (item.className == ontologyClassProperty.objectProperties[j]) {
       	    var fld = $(obj.id.replace(/_fld_1_/, '_fld_2_'));
-            if (fld)
-            {
-              for (var j = fld.options.length-1; j >= 0; j--)
-              {
-                if (fld.options[j].value == product.id)
-                {
-                  if ((mode == 'check') && fld.options[j].selected)
+            if (fld && fld.combolist) {
+              if ((fld.value == RDF.getItemName(item)) && (mode == 'check'))
                     return confirm ('The selected object is used. Delete?');
-                  if (mode == 'remove')
-    	              fld.remove(j);
+              if (mode == 'remove') {
+                if (fld.value == RDF.getItemName(item))
+                  fld.value = '';
+                var list = fld.combolist.list;
+                for (var l = 0; l < list.children.length; l++) {
+                  if (list.children[l].value == RDF.getItemName(item))
+      	            OAT.Dom.unlink(list.children[l]);
     	          }
     	        }
     	      }
