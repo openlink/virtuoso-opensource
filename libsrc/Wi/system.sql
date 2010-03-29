@@ -5911,7 +5911,7 @@ create procedure csv_ins_stmt (in tb varchar, out num_cols int)
   declare i int;
   tb := complete_table_name (tb, 0);
   cols := vector ();
-  for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' order by COL_ID do
+  for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' and COL_CHECK <> 'I' order by COL_ID do
     {
       cols := vector_concat (cols, vector (col));
     }
