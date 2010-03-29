@@ -394,13 +394,6 @@
             }
             else if (($_formTab == 0) && ($_formSubtab == 6))
             {
-              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
-              $_retValue = httpRequest ("POST", "user.favorites.delete", params);
-              if ($_retValue.indexOf("<failed>") == 0)
-              {
-    		        $_document = createDocument($_retValue);
-                throw new Exception(xpathEvaluate($_document, "/failed/message"));
-              }
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam("&", "favorites", request.getParameter("favorites"));
               $_retValue = httpRequest ("POST", "user.favorites.new", params);
               if ($_retValue.indexOf("<failed>") == 0)

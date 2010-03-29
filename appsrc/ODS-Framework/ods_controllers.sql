@@ -446,7 +446,7 @@ create procedure ODS.ODS_API."ontology.classProperties" (
 {
   declare N integer;
   declare S, data any;
-  declare tmp, property, properties any;
+  declare tmp, property, propertyName, propertyType, propertyRange, properties any;
 
   -- select class properties ontology
   properties := vector ();
@@ -461,13 +461,13 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
          '\n PREFIX %s: <%s>' ||
-           '\n SELECT distinct ?p ?r1 ?r2' ||
+           '\n SELECT ?p ?tp ?r1' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
-         '\n          {' ||
-         '\n            {' ||
            '\n              ?p rdf:type ?tp .' ||
-           '\n              FILTER (?tp = rdf:ObjectProperty) .' ||
+           '\n          FILTER (?tp = owl:ObjectProperty or   ' ||
+           '\n                  ?tp = owl:DatatypeProperty or ' ||
+           '\n                  ?tp = rdf:Property) .         ' ||
          '\n            ?p rdfs:range ?r1 .' ||
          '\n            {' ||
          '\n              ?p rdfs:domain %s .' ||
@@ -486,65 +486,54 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n              ?_b2 rdf:first %s . '    ||
          '\n            }' ||
          '\n          }' ||
-         '\n          union' ||
-         '\n          {' ||
-           '\n              ?p rdf:type ?tp .' ||
-           '\n              FILTER (?tp = rdf:DatatypeProperty) .' ||
-         '\n            ?p rdfs:domain %s .' ||
-         '\n            ?p rdfs:range ?r2 .' ||
-         '\n          }' ||
-         '\n        }' ||
-         '\n          union' ||
-         '\n          {' ||
-         '\n            {' ||
-           '\n              ?p rdf:type ?tp .' ||
-           '\n              FILTER (?tp = rdf:Property) .' ||
-         '\n              ?p rdfs:range ?r1 .' ||
-         '\n            }' ||
-         '\n            union' ||
-         '\n            {' ||
-           '\n              ?p rdf:type ?tp .' ||
-           '\n              FILTER (?tp = rdf:Property) .' ||
-         '\n              OPTIONAL {?p rdfs:range ?r2 }.' ||
-         '\n              FILTER (!bound(?r2))' ||
-         '\n            }' ||
-         '\n          }' ||
-         '\n        }' ||
-         '\n  ORDER BY ?p ?r1 ?r2',
+           '\n  ORDER BY ?p ?tp ?r1',
          prefix,
          ontology,
          ontology,
          ontologyClass,
          ontologyClass,
-         ontologyClass,
          ontologyClass);
+
   data := ODS.ODS_API."ontology.sparql" (S);
   property := vector ('', vector (), vector ());
   foreach (any item in data) do
   {
-    if (property[0] <> item[0])
+      propertyName := ODS.ODS_API."ontology.normalize"(item[0], ontology, prefix);
+      propertyType := ODS.ODS_API."ontology.normalize"(item[1], ontology, prefix);
+      propertyRange := coalesce (ODS.ODS_API."ontology.normalize"(item[2], ontology, prefix), 'rdf:string');
+      if (property[0] <> propertyName)
     {
       if (property[0] <> '')
-          properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property, ontology, prefix)));
-      property := vector (item[0], vector (), vector ());
+          properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
+        property := vector (propertyName, vector (), vector ());
     }
-    if (not isnull (item[1]))
+      if (propertyType = 'owl:ObjectProperty')
     {
-      tmp := ODS.ODS_API."ontology.normalize"(item[1]);
-      if (tmp not like 'nodeID:%')
+        if (propertyRange not like 'nodeID:%')
       {
-        property[1] := vector_concat (property[1], vector (tmp));
+          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
       } else {
-        property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
+          tmp := ODS.ODS_API."ontology.collection" (ontology, item[2]);
+          for (N := 0; N < length (tmp); N := N + 1)
+            property[1] := ODS.ODS_API.vector_concat (property[1], tmp[N]);
       }
     }
-    else
+      else if (propertyType = 'owl:DatatypeProperty')
+      {
+        property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
+      }
+      else if (propertyType = 'rdf:Property')
+      {
+        if ((propertyRange like 'rdf:%') or (propertyRange like 'rdfs:%'))
     {
-        property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'), ontology, prefix)));
+          property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
+        } else {
+          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
+        }
     }
   }
   if (property[0] <> '')
-      properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property, ontology, prefix)));
+      properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
   }
   return obj2json (properties, 10);
 }
@@ -626,13 +615,11 @@ create procedure ODS.ODS_API."ontology.load" (
 ;
 
 create procedure ODS.ODS_API."ontology.objectProperty" (
-  in property any,
-  in ontology varchar,
-  in prefix varchar)
+  in property any)
 {
   declare retValue any;
 
-  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0], ontology, prefix)));
+  retValue := vector_concat (jsonObject (), vector ('name', property[0]));
   if (length (property[1]))
     retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
   if (length (property[2]))
@@ -2505,9 +2492,11 @@ create procedure ODS.ODS_API."user.favorites.new" (
   in favorites any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc, N, M integer;
+  declare rc, N, M, L integer;
   declare _u_id integer;
-  declare ontologies, ontology, ontologyItems, item any;
+  declare ontologies, ontology, ontologyItems any;
+  declare item, itemID, itemIDs any;
+  declare properties, newProperties, property, propertyType, propertyValue, newProperty any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2517,6 +2506,7 @@ create procedure ODS.ODS_API."user.favorites.new" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
+  itemIDs := vector ();
   ontologies := json_parse (favorites);
   for (N := 0; N < length (ontologies); N := N + 1)
   {
@@ -2525,12 +2515,67 @@ create procedure ODS.ODS_API."user.favorites.new" (
     for (M := 0; M < length (ontologyItems); M := M + 1)
     {
       item := ontologyItems[M];
+      itemID := get_keyword ('id', item);
+      if (not exists (select 1 from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = itemID))
+      {
       insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
         values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize ( get_keyword ('properties', item)), _u_id);
+        itemIDs := vector_concat (itemIDs, vector (itemID, cast (identity_value () as varchar)));
+      } else {
+        itemIDs := vector_concat (itemIDs, vector (itemID, itemID));
     }
   }
-  rc := row_count ();
-  return ods_serialize_int_res (rc);
+  }
+  for (N := 0; N < length (ontologies); N := N + 1)
+  {
+    ontology := ontologies[N];
+    ontologyItems := get_keyword ('items', ontology);
+    for (M := 0; M < length (ontologyItems); M := M + 1)
+    {
+      item := ontologyItems[M];
+      itemID := get_keyword ('id', item);
+      itemID := get_keyword (itemID, itemIDs, itemID);
+      properties := get_keyword ('properties', item);
+      newProperties := vector ();
+      for (L := 0; L < length (properties); L := L + 1)
+      {
+        property := properties[L];
+        newProperty := property;
+        propertyType := get_keyword('type', property);
+        propertyValue := get_keyword ('value', property);
+        if ((propertyType = 'object') and (cast (atoi (propertyValue) as varchar) = propertyValue))
+        {
+          propertyValue := get_keyword (propertyValue, itemIDs, propertyValue);
+          newProperty := vector_concat (
+                                        jsonObject (),
+                                        vector (
+                                                 'name', get_keyword ('name', property),
+                                                 'value', propertyValue,
+                                                 'type', propertyType
+                                               )
+                                       );
+        }
+        newProperties := vector_concat (newProperties, vector (newProperty));
+      }
+      update DB.DBA.WA_USER_FAVORITES
+         set WUF_TYPE = get_keyword ('ontology', ontology),
+             WUF_CLASS = get_keyword ('className', item),
+             WUF_PROPERTIES = serialize (newProperties)
+       where WUF_U_ID = _u_id
+         and WUF_ID = itemID;
+    }
+  }
+  for (select WUF_ID id from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id) do
+  {
+    for (N := 0; N < length (itemIDs); N := N + 2)
+    {
+      if (itemIDs[N+1] = cast (id as varchar))
+        goto _skip;
+    }
+    delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = id;
+  _skip:;
+  }
+  return ods_serialize_int_res (1);
 }
 ;
 
@@ -3069,6 +3114,17 @@ create procedure ODS.ODS_API.vector_contains(
     if (aValue = aVector[N])
       return 1;
   return 0;
+}
+;
+
+create procedure ODS.ODS_API.vector_concat (
+  in aVector any,
+  in aValue any)
+{
+  if (ODS.ODS_API.vector_contains (aVector, aValue))
+    return aVector;
+
+  return vector_concat (aVector, vector (aValue));
 }
 ;
 

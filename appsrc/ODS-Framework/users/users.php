@@ -293,16 +293,6 @@
         }
         else if (($_formTab == 0) && ($_formSubtab == 6))
         {
-          $_url = apiURL()."/user.favorites.delete?sid=".$_sid."&realm=".$_realm;
-          $_result = file_get_contents($_url);
-          if (substr_count($_result, "<failed>") <> 0)
-          {
-            $_xml = simplexml_load_string($_result);
-            $_error = $_xml->failed->message;;
-            $_form = "login";
-          }
-          if ($_form <> "login")
-          {
             $_url = apiURL()."/user.favorites.new?sid=".$_sid."&realm=".$_realm."&favorites=".urlencode (str_replace("\\\"", "\"", $_REQUEST["favorites"]));
             $_result = file_get_contents($_url);
             if (substr_count($_result, "<failed>") <> 0)
@@ -312,7 +302,6 @@
               $_form = "login";
             }
           }
-        }
         else
         {
           $_url = apiURL()."/user.update.fields";

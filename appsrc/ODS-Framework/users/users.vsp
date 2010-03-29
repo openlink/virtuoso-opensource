@@ -309,25 +309,6 @@
         }
         else if ((vFormTab = 0) and (vFormSubtab = 6))
         {
-          vUrl := vHostUrl || '/user.favorites.delete?sid=' || vSid || '&realm=' || vRealm;
-          commit work;
-          vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
-          if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
-          {
-            vError := vRespond[0];
-            vForm := 'login';
-          }
-          else
-          {
-            vXml := xml_tree_doc (vResult);
-            if (xpath_eval ('/failed/message', vXml))
-            {
-              vError := xpath_eval ('string (/failed/message)', vXml);
-              vForm := 'login';
-            }
-          }
-          if (vForm <> 'login')
-          {
             vUrl := vHostUrl || '/user.favorites.new?sid=' || vSid || '&realm=' || vRealm || '&favorites=' || sprintf ('%U', get_keyword ('items', params, ''));
             commit work;
             vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
@@ -346,7 +327,6 @@
               }
             }
           }
-        }
         else
         {
           vUrl := vHostUrl  || '/user.update.fields?sid=' || vSid || '&realm=' || vRealm;
@@ -978,6 +958,10 @@
                     </ul>
                     <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 0))
+                        {
+                        ?>
                     <table class="form" cellspacing="5">
                       <tr>
                             <th>
@@ -1001,8 +985,15 @@
                           <tbody id="i_tbody">
                           </tbody>
                         </table>
+                        <?vsp
+                        }
+                        ?>
                       </div>
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 1))
+                        {
+                        ?>
                         <table class="form" cellspacing="5">
                           <tr>
                             <th>
@@ -1231,9 +1222,16 @@
                             </td>
                           </tr>
                     </table>
+                        <?vsp
+                        }
+                        ?>
                   </div>
 
                       <div id="pf_page_0_2" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 2))
+                        {
+                        ?>
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
@@ -1347,9 +1345,16 @@
                         </td>
                       </tr>
                     </table>
+                        <?vsp
+                        }
+                        ?>
                   </div>
 
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 3))
+                        {
+                        ?>
                     <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">
@@ -1378,9 +1383,16 @@
                             </td>
                           </tr>
                         </table>
+                        <?vsp
+                        }
+                        ?>
                       </div>
 
                       <div id="pf_page_0_4" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 4))
+                        {
+                        ?>
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1412,9 +1424,16 @@
                             </td>
                           </tr>
                         </table>
+                        <?vsp
+                        }
+                        ?>
                       </div>
 
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 5))
+                        {
+                        ?>
                         <table id="x6_tbl" class="form" cellspacing="5">
                           <tr>
                             <th width="30%">
@@ -1468,9 +1487,16 @@
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", "<?V replace(cast (xpath_eval ('string (/user/messaging)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
                         </table>
+                        <?vsp
+                        }
+                        ?>
                       </div>
 
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 6))
+                        {
+                        ?>
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1501,6 +1527,9 @@
                             </td>
                           </tr>
                         </table>
+                        <?vsp
+                        }
+                        ?>
                       </div>
                       <?vsp
                       if (vFormTab = 0)

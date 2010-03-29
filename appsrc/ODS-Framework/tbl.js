@@ -477,52 +477,48 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
   // get property data
   var propertyType;
   var ontologyClassProperty = RDF.getOntologyClassProperty(item.className, property.name);
-  if (ontologyClassProperty && ontologyClassProperty.objectProperties)
-  {
-  	var fld = TBL.createCellSelect(fldName);
-    fld.name = fld.id;
-    fld.style.width = '95%';
-    TBL.selectOption(fld, property.value, '', '');
+  if (ontologyClassProperty && ontologyClassProperty.objectProperties) {
+    var value;
+    var item = RDF.getItem(property.value);
+    if (item) {
+      value = RDF.getItemName(item);
+    } else {
+      value = property.value;
+    }
+    var fld = TBL.createCellCombolist(td, value, {name: fldName});
+    fld.input.style.width = "85%";
+    fld.input.combolist = fld;
     var classNames = ontologyClassProperty.objectProperties;
-    for (var n = 0; n < RDF.itemTypes.length; n++)
-    {
+    for (var n = 0; n < RDF.itemTypes.length; n++) {
       var itemTypes = RDF.itemTypes[n];
-      for (var m = 0; m < itemTypes.items.length; m++)
-      {
-        var item = itemTypes.items[m];
-        for (var j = 0; j < classNames.length; j++)
-        {
+      for (var m = 0; m < itemTypes.items.length; m++) {
+        item = itemTypes.items[m];
+        for (var j = 0; j < classNames.length; j++) {
           if (RDF.isKindOfClass(item.className, classNames[j]))
-  	        TBL.selectOption(fld, property.value, item.className+' (#'+item.id+')', item.id);
+            fld.addOption(RDF.getItemName(item));
   	    }
       }
     }
-    for (var n = 0; n < RDF.ontologies.length; n++)
-    {
+    for (var n = 0; n < RDF.ontologies.length; n++) {
       var ontologyObjects = RDF.ontologies[n].objects;
-      if (ontologyObjects)
-      {
-        for (var i = 0; i < ontologyObjects.length; i++)
-        {
-          for (var j = 0; j < classNames.length; j++)
-          {
+      if (ontologyObjects) {
+        for (var i = 0; i < ontologyObjects.length; i++) {
+          for (var j = 0; j < classNames.length; j++) {
             if (RDF.isKindOfClass(ontologyObjects[i].className, classNames[j]))
-    	        TBL.selectOption(fld, property.value, ontologyObjects[i].id, ontologyObjects[i].id);
+              fld.addOption(ontologyObjects[i].id);
     	    }
         }
       }
     }
-    td.appendChild(fld);
+    td.appendChild(fld.div);
     propertyType = 'object';
   }
-  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties)
-  {
+  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
     var fld = OAT.Dom.create('input');
     fld.type = 'text';
     fld.id = fldName;
     fld.name = fld.id;
-    if (property.value)
-    {
+    if (property.value) {
       fld.value = property.value;
       fld.defaultValue = fld.value;
     }
@@ -617,6 +613,30 @@ TBL.createButton41 = function (td, prefix, fldName, No, fldOptions)
 }
 
 TBL.createButton42 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createButton0(td, prefix, fldName, No, fldOptions);
+  fld.onclick = function(){
+    var item = RDF.getItem(No);
+    if (item) {
+      if (RDF.checkItemInSelects(item)) {
+        RDF.removeItemInSelects(item);
+        var itemType = RDF.getItemTypeByItem(item);
+        for (var i = 0; i < itemType.items.length; i++) {
+          if (itemType.items[i].id == item.id) {
+            itemType.items.splice(i, 1);
+            break;
+          }
+        }
+        TBL.deleteRow(prefix, No);
+      }
+    } else {
+      TBL.deleteRow(prefix, No);
+    }
+  };
+  return fld;
+}
+
+TBL.createButton43 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createButtonAdd(td, prefix, fldName, No, fldOptions);
   fld.onclick = function(){RDF.addItem(prefix, No);};
