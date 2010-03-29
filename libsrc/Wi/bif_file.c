@@ -6017,6 +6017,16 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = NULL;
   int quoted = 0, error = CSV_OK;
   unsigned char c, state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  if (BOX_ELEMENTS (args) > 1)
+    {
+      caddr_t ch = bif_string_or_null_arg (qst, args, 1, "get_csv_row");
+      delim = ch && ch[0] ? ch[0] : CSV_DELIM;
+    }
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      caddr_t ch = bif_string_or_null_arg (qst, args, 2, "get_csv_row");
+      quote = ch && ch[0] ? ch[0] : CSV_QUOTE;
+    }
   fl = strses_allocate ();
   CATCH_READ_FAIL (in)
     {
@@ -6028,7 +6038,7 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      case CSV_ROW_NOT_STARTED:
 	      case CSV_FIELD_NOT_STARTED:
 		    {
-		      if (c == 0x20 || c == 0x09) /* space */
+		      if (delim != c && (c == 0x20 || c == 0x09)) /* space */
 			continue;
 		      else if (c == 0x0d || c == 0x0a)
 			{
