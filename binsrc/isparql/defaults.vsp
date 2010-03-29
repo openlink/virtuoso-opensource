@@ -63,7 +63,7 @@
   declare map_type varchar;
 
   map_type := registry_get ('iSPARQL_MAP_TYPE');
-  if (0 = map_type) map_type := 'GMAP2';
+  if (0 = map_type) map_type := 'GMAP3';
 
   declare api_key varchar;
   api_key := registry_get ('iSPARQL_API_KEY');
