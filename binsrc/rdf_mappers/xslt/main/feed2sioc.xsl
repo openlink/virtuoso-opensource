@@ -41,6 +41,8 @@
 <!ENTITY georss "http://www.georss.org/georss">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
+<!ENTITY d "http://schemas.microsoft.com/ado/2007/08/dataservices">
+<!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 ]>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -64,6 +66,8 @@
 	xmlns:georss="&georss;"
 	xmlns:owl="&owl;"
 	xmlns:awol="&awol;"
+	xmlns:d="&d;"
+	xmlns:m="&m;"	
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />
@@ -95,7 +99,7 @@
 					<rdf:type rdf:resource="&sioct;MessageBoard" />
 				</xsl:when>
 				<xsl:otherwise>
-					<rdf:type rdf:resource="&atom;Feed" />
+					<rdf:type rdf:resource="&sioc;Container" />
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
@@ -106,11 +110,13 @@
 			<xsl:copy-of select="gphoto:*" />
 			<xsl:copy-of select="georss:*" />
 			<xsl:copy-of select="gml:*" />
+			
 			<xsl:copy-of select="media:*[local-name() != 'content']" />
 		</rdf:Description>
 	</xsl:template>
 	<xsl:template match="rdf:li">
 		<xsl:variable name="this" select="@rdf:resource" />
+		<xsl:variable name="pos" />
 		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 			<xsl:if test="@rdf:resource = $this">
 				<xsl:variable name="pos" select="position()" />
@@ -122,13 +128,14 @@
 	</xsl:template>
 	<xsl:template match="rss:item">
 		<xsl:variable name="this" select="@rdf:about" />
+		<xsl:variable name="pos1" />
 		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 			<xsl:if test="@rdf:resource = $this">
-				<xsl:variable name="pos" select="position()" />
+				<xsl:variable name="pos1" select="position()" />
 				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
 			</xsl:if>
 		</xsl:for-each>
-		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}">
+		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos1,')'))}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;BoardPost" />
@@ -137,9 +144,10 @@
 					<rdf:type rdf:resource="&sioc;Thread" />
 				</xsl:when>
 				<xsl:otherwise>
-					<rdf:type rdf:resource="&sioc;Post" />
+					<rdf:type rdf:resource="&sioc;Item" />
 				</xsl:otherwise>
 			</xsl:choose>
+			<xsl:copy-of select="m:properties/d:*" />			
 			<sioc:has_container rdf:resource="{$resourceURL}" />
 			<xsl:apply-templates />
 			<xsl:copy-of select="rss:*" />
@@ -221,6 +229,7 @@
 				    </xsl:if>
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
 						<xsl:variable name="this" select="@rdf:about" />
+						<xsl:variable name="pos" />
 						<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
 							<xsl:if test="@rdf:resource = $this">
 								<xsl:variable name="pos" select="position()" />
