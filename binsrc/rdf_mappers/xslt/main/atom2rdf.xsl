@@ -38,6 +38,8 @@
 <!ENTITY gml "http://www.opengis.net/gml">
 <!ENTITY georss "http://www.georss.org/georss">
 <!ENTITY gphoto "http://schemas.google.com/photos/2007">
+<!ENTITY d "http://schemas.microsoft.com/ado/2007/08/dataservices">
+<!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -64,6 +66,8 @@
   xmlns:gphoto="http://schemas.google.com/photos/2007"
   xmlns:ff="&ff;"
   xmlns:foaf="&foaf;"
+  xmlns:d="&d;"
+  xmlns:m="&m;"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -83,6 +87,7 @@
 
 <xsl:template match="a:feed">
     <channel rdf:about="{a:link[@rel='self']/@href}">
+      <link><xsl:value-of select="a:link[@rel='self']/@href"/></link>
 		<xsl:apply-templates/>
 		<items>
 			<rdf:Seq>
@@ -111,9 +116,7 @@
 <xsl:template match="a:content">
   <dc:description><xsl:call-template name="removeTags" /></dc:description>
   <description><xsl:value-of select="." /></description>
-  <!--xsl:if test="not(../content:encoded)">
-    <content:encoded><xsl:value-of select="." /></content:encoded>
-  </xsl:if-->
+  <xsl:copy-of select="m:properties" />
 </xsl:template>
 
 <xsl:template match="a:published">
@@ -131,8 +134,11 @@
 
 <xsl:template match="a:entry" mode="li">
   <xsl:choose>
-    <xsl:when test="a:link">
+    <xsl:when test="a:link[@rel='alternate']">
 	<rdf:li rdf:resource="{a:link[@rel='alternate']/@href}" />
+    </xsl:when>
+    <xsl:when test="a:link[@rel='http://schemas.microsoft.com/ado/2007/08/dataservices/related/Title']">
+	<rdf:li rdf:resource="{a:link[@rel='edit']/@href}" />
     </xsl:when>
     <xsl:otherwise>
       <rdf:li rdf:parseType="Resource">
@@ -172,7 +178,7 @@
     </xsl:element>
 </xsl:template>
 
-<xsl:template match="ff:*|media:*|gml:*|georss:*|gphoto:*" mode="rdfitem">
+<xsl:template match="ff:*|media:*|gml:*|georss:*|gphoto:*|m:*|d:*" mode="rdfitem">
 	<xsl:copy-of select="." />
 </xsl:template>
 
