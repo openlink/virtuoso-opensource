@@ -228,7 +228,7 @@ function generateAPP(appArea, optObj)
   for (var i = 0; i < appLinks.length; i++)
   {
     var app = appLinks[i];
-    if ((app.id) && (app.href || app.onclick) && !OAT.Dom.isClass(app, 'noapp'))
+    if ((app.id) && (app.id.indexOf('cke_') != 0) && (app.href || app.onclick) && !OAT.Dom.isClass(app, 'noapp'))
     {
     	var img = OAT.Dom.image("/ods/images/icons/rdf_11.png");
     	img.style["border"] = "0px";
