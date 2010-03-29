@@ -330,6 +330,7 @@ create procedure adm_menu_tree ()
    <node name="Import" url="import_csv_1.vspx"  id="271" allowed="cvs_import">
    <node name="Import" url="import_csv_2.vspx"  id="271" place="1" />
    <node name="Import" url="import_csv_3.vspx"  id="271" place="1" />
+   <node name="Import" url="import_csv_opts.vspx"  id="271" place="1" />
    </node>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
@@ -6397,23 +6398,31 @@ create procedure y_csv_cb (inout r any, in inx int, inout cbd any)
 }
 ;
 
-create procedure  y_csv_get_cols (inout ss any)
+create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts any)
 {
   declare h, res any;
   declare inx, j, ncols, no_head int;
   
   h := null;
+  no_head := 0;
+  if (hr < 0)
+    {
+      no_head := 1;
+      hr := 0;
+    }
+  if (offs < 0)
+    offs := 0;
   res := vector ();
-  csv_parse (ss, 'DB.DBA.y_csv_cb', h, 0, 10);
-  if (h is not null and length (h))
+  csv_parse (ss, 'DB.DBA.y_csv_cb', h, 0, offs + 10, opts);
+  if (h is not null and length (h) > offs)
     {
       declare _row any;
-      _row := h[0];
+      _row := h[hr];
       for (j := 0; j < length (_row); j := j + 1)           
         {
-	  res := vector_concat (res, vector (vector (SYS_ALFANUM_NAME (_row[j]), null)));
+	  res := vector_concat (res, vector (vector (SYS_ALFANUM_NAME (cast (_row[j] as varchar)), null)));
         }
-      for (inx := 1; inx < length (h); inx := inx + 1)
+      for (inx := offs; inx < length (h); inx := inx + 1)
        { 
 	 _row := h[inx];
          for (j := 0; j < length (_row); j := j + 1)           
@@ -6429,11 +6438,12 @@ create procedure  y_csv_get_cols (inout ss any)
 	   }
        } 
     }
-  no_head := 0;
   for (inx := 0; inx < length (res); inx := inx + 1)
     { 
-       if (not isstring (res[inx][0]) or trim (res[inx][0]) = '')
+       if (not isstring (res[inx][0]))
          no_head := 1;	 
+       else if (trim (res[inx][0]) = '')
+         res[inx][0] := sprintf ('COL%d', inx);	 
     }  
   for (inx := 0; inx < length (res); inx := inx + 1)
     { 
