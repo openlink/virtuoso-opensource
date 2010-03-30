@@ -24,12 +24,6 @@ if WITH_DEMO_VAD
 nodist_vad_DATA = doc_dav.vad demo_dav.vad
 endif
 
-if WITH_HTMLDOC
-#dist_htmldoc_DATA = $(top_srcdir)/docsrc/html_virt/*.html
-#dist_pdfdoc_DATA = $(top_srcdir)/docsrc/pdf/virtdocs.pdf
-endif
-
-
 # ----------------------------------------------------------------------
 #  Test loading of vad packages by creating demo.db
 # ----------------------------------------------------------------------
@@ -64,7 +58,6 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 DEMO_DEPS=\
 	*.owl \
 	*.sql \
-	*.txt \
 	art.tar.gz \
 	flags.tar.gz \
 	CAT1 \
@@ -84,6 +77,7 @@ DEMO_DEPS=\
 	EMP7 \
 	EMP8 \
 	EMP9 \
+	noise.txt \
 	thalia_test/*.owl \
 	thalia_test/*.rq \
 	thalia_test/*.sql \
