@@ -1,3 +1,57 @@
+March 30, 2010, V5.0.14:
+  * Database engine
+    - Added support for CSV import
+    - Added FOAF+SSL login for SQL clients
+    - Added OPTIONS for http server
+    - Added support for setMaxRows in JDBC driver
+    - Added support for JDBC hibernate
+    - Added support for unzip_file ()
+    - Added swap guard option
+    - Fixed deadlock retry
+    - Fixed memory leaks
+    - Fixed mtx checks for checkpoint and log write
+    - Fixed X509ClientVerify flag of 0/1/2/3 to accept self signed or
+      optional certificates
+    - Fixed several issues with JDBC XA support
+    - Fixed use sk_X509_ALGOR_* macros to support OpenSSL 1.0.0
+    - Fixed wide character when getting procedure columns information.
+    - Fixed remove id from hash before free structure
+
+
+  * SPARQL and RDF
+    - Added support for oData
+    - Added uStream cartridge
+    - Added slidesix cartridge
+    - Added support for Sesame 2 HTTP repository
+    - Fixed incorrect codegen of formatter in ssg_select_known_graphs_codegen
+    - Fixed do not encode default graph
+    - Fixed check if datadump is gz 
+    - Fixed detection of n3 and nt formats
+    - Fixed regex to remove default ns from XML
+    - Fixed run microformats independent of rdfa
+    - Fixed bug with UTF-8 encoded strings in box
+    - Upgraded to Jena 2.6.2
+    - Upgraded to Sesame 2.3.1
+
+  * ODS Applications
+    - Added user's ontologies in favorites
+    - Added a++ otion in user's pages
+    - Added support for WebID
+    - Added support for Google map v3
+    - Added Register to vsp, php etc users pages
+    - Added X.509 create certificate to users pages
+    - Added 'Offers', 'Seeks' etc to user pages
+    - Added 'Import' to user pages (vsp, php etc)
+    - Fixed UI profile
+    - Fixed SIOC subscriptions
+    - Fixed object properties in favorites
+    - Fixed ontology APIs
+    - Fixed use newer OAT functions
+    - Fixed invitation problem with multiple users
+    - Fixed typo in scovo:dimension
+    - Fixed image preview
+
+
 February 03, 2010, V5.0.13:
   * Database engine
     - Added configuration option BuffersAllocation
