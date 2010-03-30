@@ -1,3 +1,193 @@
+2010-03-30 12:42  source
+
+	* Fixed extra define for linux on sparc
+
+2010-03-29 13:56  source
+
+	* Added support for oData
+
+2010-03-29 13:37  source
+
+	* Fixed skip identity columns
+
+2010-03-29 13:33  source
+
+	* Fixed changed default map to Google Maps API v3
+
+2010-03-29 13:32  source
+
+	* Added options page for parser options, preview etc
+	* Fixed IDN col
+
+2010-03-29 13:32  source
+
+	file import_csv_opts.vspx was added on branch V6_0_0-DEVEL on 2010-03-29 13:36:12 +0000
+
+2010-03-28 23:21  source
+
+	* Fixed object properties in favorites
+
+2010-03-28 23:21  source
+
+	* Fixed a++ links
+
+2010-03-26 23:08  source
+
+	* Updated documentation
+
+2010-03-26 23:02  source
+
+	* Added image
+
+2010-03-26 22:53  source
+
+	* Added user's ontologies in favorites
+	* FIxed ontology API
+
+2010-03-26 22:50  source
+
+	* Fixed image preview
+
+2010-03-26 19:46  source
+
+	* Rebuild drivers
+
+2010-03-26 19:43  source
+
+	* Fixed memory leak
+
+2010-03-26 19:43  source
+
+	* Fixed missing check for ROLLEDBACK
+
+2010-03-26 19:35  source
+
+	* Added options to CSV parser for delimiter and quote char
+
+2010-03-26 16:14  source
+
+	* Added support for CSV import
+
+2010-03-26 16:14  source
+
+	file import_csv_1.vspx was added on branch V6_0_0-DEVEL on 2010-03-26 19:31:51 +0000
+
+2010-03-26 16:14  source
+
+	file import_csv_2.vspx was added on branch V6_0_0-DEVEL on 2010-03-26 19:31:51 +0000
+
+2010-03-26 16:14  source
+
+	file import_csv_3.vspx was added on branch V6_0_0-DEVEL on 2010-03-26 19:31:51 +0000
+
+2010-03-25 19:31  source
+
+	* Added csv_parse function
+
+2010-03-24 22:31  source
+
+	* Fixed preserve content-type field
+
+2010-03-24 22:21  source
+
+	* Added support for reading CSV files into tables
+
+2010-03-24 22:18  source
+
+	* Added support for setMaxRows
+	* Fixed check argument values
+
+2010-03-24 21:47  source
+
+	* Regenerated drivers
+
+2010-03-24 16:43  source
+
+	* Fixed typo
+
+2010-03-24 10:23  source
+
+	* Added options for /sparql
+	* Added function http_header_array_get to retrieve headers as an
+	  array of strings
+
+2010-03-24 01:03  source
+
+	* Added optimization of sprintf_inverse(const)
+
+2010-03-24 01:02  source
+
+	* Fixed save the jt before doing ts; this is needed because ic_after_pos
+	  expects in jt but because of in_list it can be modified
+
+2010-03-24 01:00  source
+
+	* Fixed compiler warning
+
+2010-03-23 10:07  source
+
+	* Fixed use globally known dfe for a select even in cond exp, else it
+	  ruins the dt by repeatedly adding the same items when making a second
+	  dfe for the same select
+
+2010-03-23 10:01  source
+
+	* Fixed incorrect codegen of formatter in ssg_select_known_graphs_codegen
+
+2010-03-22 22:29  source
+
+	* Updated documentation
+
+2010-03-22 22:01  source
+
+	* Added a++ otion in user's pages
+	* Fixed ontology APIs
+	* Fixed 'Creator of'
+	* Fixed nickName
+	* Fixed php POST request
+
+2010-03-22 21:48  source
+
+	* Fixed also check for ctype
+
+2010-03-22 21:46  source
+
+	* Fixed Back button
+
+2010-03-22 21:46  source
+
+	* Added support for WebID
+
+2010-03-22 21:43  source
+
+	* Fixed fetching img id
+	* Fixed issue with multiple URL params
+
+2010-03-22 13:40  source
+
+	* Fixed use sk_X509_ALGOR_* macros
+
+2010-03-22 12:36  source
+
+	* Fixed X509ClientVerify flag of 0/1/2/3 to accept self signed or
+	  optional certificates
+
+2010-03-22 12:35  source
+
+	* Added support for FOAF+SSL login for SQL connections
+
+2010-03-22 11:54  source
+
+	* Fixed do not encode default graph
+
+2010-03-22 11:54  source
+
+	* Fixed SPARQL 1.1 compatibility in result set syntax
+
+2010-03-19 14:59  source
+
+	* Fixed use newer OAT functions
+
 2010-03-19 10:08  source
 
 	* Added improved version of xsl:for-each-row for both SPARQL and SQL
