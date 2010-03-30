@@ -1,3 +1,92 @@
+2010-03-29 13:56  source
+
+	* Added support for oData
+
+2010-03-29 13:33  source
+
+	* Fixed changed default map to Google Maps API v3
+
+2010-03-29 13:32  source
+
+	* Added options page for parser options, preview etc
+	* Fixed IDN col
+
+2010-03-29 13:27  source
+
+	* Fixed skip IDN cols
+
+2010-03-29 08:16  source
+
+	* Added CSV parser options
+
+2010-03-28 23:21  source
+
+	* Fixed object properties in favorites
+
+2010-03-28 23:21  source
+
+	* Fixed a++ links
+
+2010-03-26 22:52  source
+
+	* Added user's ontologies in favorites
+	* Fixed ontology APIs
+
+2010-03-26 22:50  source
+
+	* Fixed image preview
+
+2010-03-26 19:46  source
+
+	* Rebuild drivers
+
+2010-03-26 19:43  source
+
+	* Fixed memory leak
+
+2010-03-26 19:43  source
+
+	* Fixed missing check for ROLLEDBACK
+
+2010-03-26 16:14  source
+
+	* Added support for CSV import
+
+2010-03-26 16:10  source
+
+	* Added CSV parser
+
+2010-03-24 22:31  source
+
+	* Fixed preserve content-type field
+
+2010-03-24 22:30  source
+
+	* Fixed X509ClientVerify flag of 0/1/2/3 to accept self signed or
+	  optional certificates
+
+2010-03-24 21:47  source
+
+	* Regenerated drivers
+
+2010-03-24 21:46  source
+
+	* Added support for setMaxRows
+
+2010-03-24 21:45  source
+
+	* Fixed check argument values
+
+2010-03-24 10:23  source
+
+	* Added options for /sparql
+	* Added function http_header_array_get to retrieve headers as an
+	  array of strings
+
+2010-03-23 10:01  source
+
+	* Fixed incorrect codegen of formatter in ssg_select_known_graphs_codegen
+
 2010-03-22 22:01  source
 
 	* Added a++ otion in user's pages
