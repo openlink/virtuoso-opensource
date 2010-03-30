@@ -51,6 +51,7 @@ EXTRA_DIST = \
 	*.vspx \
 	*.xhtml \
 	*.xsl \
+	vad_version \
 	comp/*.xsl \
 	images/*.gif \
 	images/*.jpg \
