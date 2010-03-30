@@ -2439,6 +2439,10 @@ case $host in
 	  CCOPT="$CCOPT -DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT -D_GNU_SOURCE"
 	  VLIBS="-ldl -lrt $VLIBS"
         fi
+	case $host in
+	    sparc*)
+ 	        CCPLATFORMDEFS="$CCPLATFORMDEFS -DNEW_HASH_NEED_ALIGN" ;;
+	esac
 	;;
 
 *-hpux10*)
