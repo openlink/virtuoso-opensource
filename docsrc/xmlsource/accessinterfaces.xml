@@ -122,104 +122,143 @@ jdbc:virtuoso://<Hostname>:<Port#>,<Hostname1>:<Port1#>,<Hostname2>:<Port2#>/
 If Port is omitted, the default port 1111 is used.
 </para>
 
-					<para>Each part of the URL is explained below:</para>
-					<formalpara>
+					<para>Each part of the URL is explained
+       					below:</para> <formalpara>
 						<title>Protocol Identifiers</title>
-						<para>this is a
-    constant value of &quot;jdbc&quot; since JDBC is the protocol in question</para>
-					</formalpara>
-					<formalpara>
-						<title>Sub Protocol Identifier</title>
-						<para>this is a constant value that identifies
-    &quot;virtuoso&quot; as a sub protocol of JDBC</para>
-					</formalpara>
-					<formalpara>
-						<title>Hostname</title>
+   					<para>this is a constant value of
+   					&quot;jdbc&quot; since JDBC is the
+      					protocol in question</para>
+ 					</formalpara> <formalpara> <title>Sub
+ 					Protocol Identifier</title> <para>this
+  					is a constant value that identifies
+ 					&quot;virtuoso&quot; as a sub protocol
+      					of JDBC</para> </formalpara>
+  					<formalpara> <title>Hostname</title>
 						<para>this identifies the machine
-    hosting a server process that speaks the &quot;virtuoso&quot; sub dialect of the
+					hosting a server process that speaks the
+					&quot;virtuoso&quot; sub dialect of the
     &quot;jdbc&quot; protocol</para>
-					</formalpara>
-					<formalpara>
-						<title>Port Number</title>
-						<para>this identifies the port
-    number on the machine from which the server which speaks the &quot;virtuoso&quot; sub
-    dialect of &quot;jdbc&quot; listening for incoming client connections The default port
-    number for a Virtuoso server is &quot;1111&quot;.</para>
-					</formalpara>
-					<formalpara>
-						<title>/DATABASE</title>
+ 					</formalpara> <formalpara> <title>Port
+					Number</title> <para>this identifies the
+ 					port number on the machine from which
+      					the server which speaks the
+  					&quot;virtuoso&quot; sub dialect of
+					&quot;jdbc&quot; listening for incoming
+  					client connections The default port
+    					number for a Virtuoso server is
+ 					&quot;1111&quot;.</para> </formalpara>
+ 					<formalpara> <title>/DATABASE</title>
 						<para>this identifies the database
-    (Qualifier or Catalog) that you are connecting to via a Virtuoso server</para>
-					</formalpara>
-					<formalpara>
-						<title>/UID</title>
-						<para>a valid user name for the
-    Virtuoso database that you are connecting to via JDBC</para>
-					</formalpara>
-					<formalpara>
-						<title>/PWD</title>
-						<para>a valid password for the user name </para>
-					</formalpara>
-  <formalpara><title>/CERT=&lt;certificate_alias&gt;</title>
-    <para>name of the certificate to use for the SSL connection stored in the keystore.
-    This is a required option for an SSL authenticated connection</para>
-  </formalpara>
-  <formalpara><title>/KPATH=&lt;keystore_path&gt;</title>
-    <para>This optional parameter lets you specify the keystore file name
-    (default: $HOME/.keystore).  The path separator is \, and which is then replaced
-    during the connection by the right platform path separator.</para>
-  </formalpara>
-  <formalpara><title>/PASS=&lt;keystore_password&gt;</title>
-    <para>password required for accessing the keystore file.  This is required for
-    the SSL authenticated connection.</para>
-  </formalpara>
-  <formalpara><title>/PROVIDER=&lt;ssl_provider_classname&gt;</title>
-    <para>The class name of the SSL Provider (e.g. com.sun.ssl.net.internal.ssl.Provider)
-    to use for the SSL cryptography.  This parameter is required for SSL connections.</para>
-  </formalpara>
+  					(Qualifier or Catalog) that you are
+      					connecting to via a Virtuoso
+					server</para> </formalpara> <formalpara>
+ 					<title>/UID</title> <para>a valid user
+					name for the Virtuoso database that you
+   					are connecting to via JDBC</para>
+       					</formalpara> <formalpara>
+   					<title>/PWD</title> <para>a valid
+   					password for the user name </para>
+             					</formalpara>
+					<formalpara><title>/CERT=&lt;certificate
+  					_alias&gt;</title> <para>name of the
+     					certificate to use for the SSL
+					connection stored in the keystore. This
+    					is a required option for an SSL
+    					authenticated connection</para>
+             					</formalpara>
+					<formalpara><title>/KPATH=&lt;keystore_p
+  					ath&gt;</title> <para>This optional
+					parameter lets you specify the keystore
+ 					file name (default: $HOME/.keystore).
+ 					The path separator is \, and which is
+ 					then replaced during the connection by
+        					the right platform path
+    					separator.</para> </formalpara>
+					<formalpara><title>/PASS=&lt;keystore_pa
+   					ssword&gt;</title> <para>password
+  					required for accessing the keystore
+  					file.  This is required for the SSL
+    					authenticated connection.</para>
+             					</formalpara>
+					<formalpara><title>/PROVIDER=&lt;ssl_pro
+ 					vider_classname&gt;</title> <para>The
+  					class name of the SSL Provider (e.g.
+ 					com.sun.ssl.net.internal.ssl.Provider)
+ 					to use for the SSL cryptography.  This
+     					parameter is required for SSL
+   					connections.</para> </formalpara>
   <formalpara><title>/SSL</title>
-    <para>The SSL option is used only for SSL connection without user authentication</para>
-  </formalpara>
-  <formalpara><title>/CHARSET=&lt;character set&gt;</title>
-    <para>This allows the client to specify a character set for data encoding.  
-    When this option is set then all Java strings, natively Unicode, are 
-    converted to the character set specified here.</para>
-  </formalpara>
-  <formalpara><title>/TIMEOUT=&lt;timeout_secs&gt;</title>
-    <para>Specifies the maximum amount of time (in seconds) that the driver 
-    will wait for a response to a query.  When this time is exceeded a time-out error 
-    will be reported and the network connection closed, assumed to be broken.</para>
-  </formalpara>
-  <formalpara><title>/PWDCLEAR=&lt;authentication_type&gt;</title>
-    <para>Specifies the authentication mode; how the user credentials may be 
-    transmitted to the server.  This option can be one of the following 3 types: 
-    cleartext, encrypt, digest. The default is digest.</para>
-  </formalpara>
-  <formalpara><title>/log_enable=&lt;integer&gt;</title>
-    <para>Set log_enable=2 in order to auto commit on every changed row. Out of memory cannot be caused as with this setting there is no image in the memory for rollback.</para>
-  </formalpara>
-    <formalpara><title>roundrobin</title>
-    <para>boolean attribute  1 -  for use RoundRobin; 0 -  do not use . (used only if more than one host:post values are in connection string)</para>
-  </formalpara>
-  <formalpara><title>fbs</title>
-    <para>integer attribute, prefetch buffer size (default is 100)</para>
-  </formalpara>
-  <formalpara><title>sendbs</title>
-    <para>integer attribute, socket send buffer size (default is 32768 bytes)</para>
-  </formalpara>
-  <formalpara><title>recvbs</title>
-    <para>integer attribute, socket receive buffer size (default is 32768 bytes)</para>
-  </formalpara>
-  <formalpara><title>usepstmtpool</title>
-    <para>boolean attribute  1 -  for use PreparedStatement pool; 0 -  do not use (Only for Java 1.6 and above)</para>
-  </formalpara>
-  <formalpara><title>pstmtpoolsize</title>
-    <para>integer attribute, PreparedStatement pool size (default is 25)</para>
-  </formalpara>
-    <para>"cleartext" will transfer the password to the server in cleartext</para>
-    <para>"encrypt" will transfer the password to the server using Virtuoso's symmetric encryption technique.</para>
-    <para>"digest" will calculate an MD5 digest of the password (and some additional session variables)
-          that will be sent to the server to be compared with the value calculated server-side.</para>
+ 					<para>The SSL option is used only for
+      					SSL connection without user
+  					authentication</para> </formalpara>
+					<formalpara><title>/CHARSET=&lt;characte
+					r set&gt;</title> <para>This allows the
+ 					client to specify a character set for
+ 					data encoding. When this option is set
+					then all Java strings, natively Unicode,
+   					are converted to the character set
+  					specified here.</para> </formalpara>
+					<formalpara><title>/TIMEOUT=&lt;timeout_
+  					secs&gt;</title> <para>Specifies the
+					maximum amount of time (in seconds) that
+					the driver will wait for a response to a
+  					query.  When this time is exceeded a
+					time-out error will be reported and the
+					network connection closed, assumed to be
+      					broken.</para> </formalpara>
+					<formalpara><title>/PWDCLEAR=&lt;authent
+					ication_type&gt;</title> <para>Specifies
+ 					the authentication mode; how the user
+ 					credentials may be transmitted to the
+ 					server.  This option can be one of the
+ 					following 3 types: cleartext, encrypt,
+ 					digest. The default is digest.</para>
+                                        <para>"cleartext" will transfer the
+       					password to the server in
+ 					cleartext</para> <para>"encrypt" will
+  					transfer the password to the server
+ 					using Virtuoso's symmetric encryption
+ 					technique.</para> <para>"digest" will
+					calculate an MD5 digest of the password
+					(and some additional session variables)
+ 					that will be sent to the server to be
+   					compared with the value calculated
+          					server-side.</para>
+             					</formalpara>
+					<formalpara><title>/log_enable=&lt;integ
+					er&gt;</title> <para>Set log_enable=2 in
+ 					order to auto commit on every changed
+ 					row. Out of memory cannot be caused as
+ 					with this setting there is no image in
+    					the memory for rollback.</para>
+             					</formalpara>
+ 					<formalpara><title>/roundrobin</title>
+ 					<para>boolean attribute  1 -  for use
+					RoundRobin; 0 -  do not use . (used only
+					if more than one host:post values are in
+					connection string)</para> </formalpara>
+    					<formalpara><title>/fbs</title>
+					<para>integer attribute, prefetch buffer
+      					size (default is 100)</para>
+             					</formalpara>
+   					<formalpara><title>/sendbs</title>
+  					<para>integer attribute, socket send
+     					buffer size (default is 32768
+      					bytes)</para> </formalpara>
+   					<formalpara><title>/recvbs</title>
+					<para>integer attribute, socket receive
+     					buffer size (default is 32768
+      					bytes)</para> </formalpara>
+					<formalpara><title>/usepstmtpool</title>
+ 					<para>boolean attribute  1 -  for use
+					PreparedStatement pool; 0 -  do not use
+  					(Only for Java 1.6 and above)</para>
+             					</formalpara>
+					<formalpara><title>/pstmtpoolsize</title>
+        					<para>integer attribute,
+					PreparedStatement pool size (default is
+        					25)</para> </formalpara>
+
 
 <note><title>Note:</title>
 <para>Since JSSE has only incorporated SSL support for JDK 1.2 and above,
@@ -547,8 +586,10 @@ the Virtuoso server running on the same computer on port 1111:</para>
 							</tbody>
 						</tgroup>
 					</table>
-<para>Additionally, the following attributres are supported for SSL enable version:</para>
+<para>Additionally, the following attributres are supported:</para>
 <programlisting><![CDATA[
+
+--- for SSL enabled ---
    public void setCertificate (String value);
    public String getCertificate ();
 
@@ -561,6 +602,7 @@ the Virtuoso server running on the same computer on port 1111:</para>
    public void setProvider (String value);
    public String getProvider ();
 
+----------------------
 
    public void setFbs (int value);
    public int getFbs ();

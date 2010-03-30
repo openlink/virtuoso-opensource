@@ -36416,7 +36416,7 @@ repository:
 <programlisting><![CDATA[
 import virtuoso.sesame2.driver.VirtuosoRepository;
 
-Repository myRepository = VirtuosoRepository("jdbc:virtuoso://localhost:1111”,”dba”,”dba”);
+Repository myRepository = VirtuosoRepository("jdbc:virtuoso://localhost:1111","dba","dba");
 
 myRepository.initialize();
 ]]></programlisting>
@@ -36472,7 +36472,6 @@ File file = new File("/path/to/example.rdf");
 
 String baseURI = "http://example.org/example/localRDF";
 
-?
 
 try {
 
@@ -36560,7 +36559,7 @@ import org.openrdf.query.BindingSet;
 
 import org.openrdf.query.QueryLanguage;
 
-?
+
 
 try {
 
@@ -36740,7 +36739,6 @@ output in Turtle format:
 <programlisting><![CDATA[
 import org.openrdf.rio.turtle.TurtleWriter;
 
-?
 
 RepositoryConnection con = myRepository.getConnection();
 
