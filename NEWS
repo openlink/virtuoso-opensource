@@ -17,7 +17,6 @@ March 30, 2010, V5.0.14:
     - Fixed wide character when getting procedure columns information.
     - Fixed remove id from hash before free structure
 
-
   * SPARQL and RDF
     - Added support for oData
     - Added uStream cartridge

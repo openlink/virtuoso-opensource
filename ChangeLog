@@ -1,3 +1,31 @@
+2010-03-30 13:34  source
+
+	* Updated version to 5.0.14 for final release
+
+2010-03-30 12:46  source
+
+	* Added missing vad_version to distribution
+
+2010-03-30 12:33  source
+
+	* Removed deprecated file
+
+2010-03-30 11:10  source
+
+	* Updated version number
+
+2010-03-30 11:08  source
+
+	* Fixed CRLF
+
+2010-03-30 11:07  source
+
+	* Fixed build rules
+
+2010-03-30 10:47  source
+
+	* Fixed minor issue
+
 2010-03-29 13:56  source
 
 	* Added support for oData
@@ -19945,7 +19973,7 @@
 
 	* Fixed vhost for demo vad package
 
-2007-03-27 12:29  source
+2007-03-27 12:37  source
 
 	* Added scripts for making demo vad package
 
