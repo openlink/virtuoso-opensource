@@ -30,7 +30,7 @@ March 30, 2010, V6.1.1:
     - Added improved version of xsl:for-each-row for both SPARQL and SQL
     - Added DefaultServiceMap and DefaultServiceStorage
     - Added immortal IRI for uname_virtrdf_ns_uri_DefaultServiceStorage
-    - Added proper ASK support in web service endpoing
+    - Added proper ASK support in web service endpoint
     - Fixed SPARQL 1.1 compatibility in result set syntax
     - Fixed incorrect codegen of formatter in ssg_select_known_graphs_codegen
     - Fixed do not encode default graph
