@@ -3872,6 +3872,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	else
 		return 0;
 	delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
+        
 	if (id0 = 'music')
 	{
 		if (id1 is not null and id1 <> '')
@@ -3887,7 +3888,7 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 				}
 				else
 				{
-					if (id2[0] = '+')  -- todo: perhaps it needs some processing?
+					if (strchr(id2, '+') = 0)  -- todo: perhaps it needs some processing?
 					{
 						url := sprintf('http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=%s&api_key=%s', id1, api_key);
 						DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
