@@ -107,7 +107,7 @@
 		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 		 stat := '00000';
 		 msg := 'OK';
-		 exec ('DB.DBA.TTLP (?, \'\', ?)', stat, msg, vector (self.body_o, gr), 0, meta, data);
+		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
 		 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -272,7 +272,7 @@
 			       exec (qr, stat, msg, vector (), 1, meta2, data2);
 			       if (stat = '00000' and length (data2) and length (data2[0]))
 				 {
-				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
 				 }
 			     }
 			 }
@@ -287,7 +287,7 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Statistics Data (VoiD Graph): <br/>');
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
 	        }
@@ -299,7 +299,7 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Ontology: <br/>');
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
 	        }
