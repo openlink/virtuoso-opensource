@@ -46,8 +46,8 @@ March 30, 2010, V6.1.1:
     - Fixed codegen in LIMIT ?:global-variable and OFFSET ?:global-variable
     - Fixed support for positional and named parameters from exec() or
       similar in SPARQL, as if they where global variables of other sorts
-    - Fixed rewriting of group patterns with filters replaced with restrictions on
-      equivs
+    - Fixed rewriting of group patterns with filters replaced with 
+      restrictions on equivs
     - Fixed faster loading of inference sets from single and graph groups
     - Upgraded to Jena 2.6.2
     - Upgraded to Sesame 2.3.1
