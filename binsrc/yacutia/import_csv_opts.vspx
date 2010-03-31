@@ -71,13 +71,13 @@
           <tr>
 	      <td>
 		  <label>Header Row</label>
-		  <v:text name="hrow" value="" default_value="0"/><small>zero if no header</small>
+		  <v:text name="hrow" value="" default_value="1"/><small>zero if no header</small>
              </td>
           </tr>
           <tr>
 	      <td>
 		  <label>Import from line</label>
-		  <v:text name="offs" value="" default_value="1"/>
+		  <v:text name="offs" value="" default_value="2"/>
              </td>
           </tr>
           <tr>
