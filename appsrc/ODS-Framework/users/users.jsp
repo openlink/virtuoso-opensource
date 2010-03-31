@@ -39,12 +39,15 @@
 
 <%@ page import="javax.xml.parsers.*" %>
 <%@ page import="javax.xml.xpath.*" %>
+<%@ page import="javax.servlet.jsp.JspWriter" %>
 
 <%@ page import="org.xml.sax.InputSource" %>
 
 <%@ page import="org.w3c.dom.*" %>
 
-<%@ page import="org.apache.log4j.*" %>
+<%@ page import="org.apache.commons.fileupload.*" %>
+<%@ page import="org.apache.commons.fileupload.disk.*" %>
+<%@ page import="org.apache.commons.fileupload.servlet.*" %>
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
@@ -233,21 +236,66 @@
       } catch (Exception e) {
       }
     }
+
+    String getParameter(List items, HttpServletRequest req, String param)
+      throws IOException, FileUploadException
+    {
+      if (ServletFileUpload.isMultipartContent(req)) {
+        // Process the uploaded items
+        Iterator iter = items.iterator();
+        while (iter.hasNext()) {
+          FileItem item = (FileItem) iter.next();
+
+          if (param.equals(item.getFieldName()))
+            if (item.isFormField()) {
+              return item.getString();
+            } else {
+              return convertStreamToString(item.getInputStream());
+            }
+        }
+      } else {
+        return req.getParameter(param);
+      }
+      return null;
+    }
+
+    public String convertStreamToString(InputStream in)
+      throws IOException
+    {
+      StringBuffer out = new StringBuffer();
+      byte[] b = new byte[4096];
+
+      for (int n; (n = in.read(b)) != -1;)
+        out.append(new String(b, 0, n));
+
+      return out.toString();
+    }
   %>
   <%
-    String $_form = request.getParameter("form");
+    List /* FileItem */ items = null;
+    if (ServletFileUpload.isMultipartContent(request)) {
+      // Create a factory for disk-based file items
+      FileItemFactory factory = new DiskFileItemFactory();
+
+      // Create a new file upload handler
+      ServletFileUpload upload = new ServletFileUpload(factory);
+
+      // Parse the request
+      items = upload.parseRequest(request);
+    }
+    String $_form = getParameter(items, request, "form");
     if ($_form == null)
       $_form = "login";
     int $_formTab = 0;
-    if (request.getParameter("formTab") != null)
-      $_formTab = Integer.parseInt(request.getParameter("formTab"));
+    if (getParameter(items, request, "formTab") != null)
+      $_formTab = Integer.parseInt(getParameter(items, request, "formTab"));
     int $_formSubtab = 0;
-    if (request.getParameter("formSubtab") != null)
-      $_formSubtab = Integer.parseInt(request.getParameter("formSubtab"));
+    if (getParameter(items, request, "formSubtab") != null)
+      $_formSubtab = Integer.parseInt(getParameter(items, request, "formSubtab"));
     String $_formMode = "";
-    if (request.getParameter("formMode") != null)
-      $_formMode = request.getParameter("formMode");
-    String $_sid = request.getParameter("sid");
+    if (getParameter(items, request, "formMode") != null)
+      $_formMode = getParameter(items, request, "formMode");
+    String $_sid = getParameter(items, request, "sid");
     String $_realm = "wa";
     String $_error = "";
     String $_retValue;
@@ -258,20 +306,20 @@
     {
       if ($_form.equals("login"))
       {
-        if (request.getParameter("lf_register") != null)
+        if (getParameter(items, request, "lf_register") != null)
           $_form = "register";
         }
 
       if ($_form.equals("profile"))
       {
-        if (request.getParameter("pf_update07") != null)
+        if (getParameter(items, request, "pf_update07") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", request.getParameter("pf07_id")) +
-                   httpParam("&", "property", request.getParameter("pf07_property")) +
-                   httpParam("&", "url", request.getParameter("pf07_url")) +
-                   httpParam("&", "description", request.getParameter("pf07_description"));
+                   httpParam("&", "id", getParameter(items, request, "pf07_id")) +
+                   httpParam("&", "property", getParameter(items, request, "pf07_property")) +
+                   httpParam("&", "url", getParameter(items, request, "pf07_url")) +
+                   httpParam("&", "description", getParameter(items, request, "pf07_description"));
           $_retValue = httpRequest ("POST", "user.mades."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
@@ -280,14 +328,14 @@
           }
           $_formMode = "";
         }
-        else if (request.getParameter("pf_update08") != null)
+        else if (getParameter(items, request, "pf_update08") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", request.getParameter("pf08_id")) +
-                   httpParam("&", "name", request.getParameter("pf08_name")) +
-                   httpParam("&", "comment", request.getParameter("pf08_comment")) +
-                   httpParam("&", "properties", request.getParameter("items"));
+                   httpParam("&", "id", getParameter(items, request, "pf08_id")) +
+                   httpParam("&", "name", getParameter(items, request, "pf08_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf08_comment")) +
+                   httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.offers."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
@@ -296,14 +344,14 @@
           }
           $_formMode = "";
         }
-        else if (request.getParameter("pf_update09") != null)
+        else if (getParameter(items, request, "pf_update09") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
-                   httpParam("&", "id", request.getParameter("pf09_id")) +
-                   httpParam("&", "name", request.getParameter("pf09_name")) +
-                   httpParam("&", "comment", request.getParameter("pf09_comment")) +
-                   httpParam("&", "properties", request.getParameter("items"));
+                   httpParam("&", "id", getParameter(items, request, "pf09_id")) +
+                   httpParam("&", "name", getParameter(items, request, "pf09_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf09_comment")) +
+                   httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.seeks."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
@@ -312,11 +360,11 @@
           }
           $_formMode = "";
         }
-        else if (request.getParameter("pf_cancel2") != null)
+        else if (getParameter(items, request, "pf_cancel2") != null)
         {
           $_formMode = "";
         }
-        else if ((request.getParameter("pf_update") != null) || (request.getParameter("pf_next") != null))
+        else if ((getParameter(items, request, "pf_update") != null) || (getParameter(items, request, "pf_next") != null))
         {
           $_formMode = "";
           String tmp = "";
@@ -350,8 +398,8 @@
                   params = httpParam( "", "sid", $_sid) +
                            httpParam("&", "realm", $_realm) +
                            httpParam("&", "type", accountType) +
-                           httpParam("&", "name", request.getParameter(key)) +
-                           httpParam("&", "url", request.getParameter(prefix+"_fld_2_"+suffix));
+                           httpParam("&", "name", getParameter(items, request, key)) +
+                           httpParam("&", "url", getParameter(items, request, prefix+"_fld_2_"+suffix));
                   $_retValue = httpRequest ("POST", "user.onlineAccounts.new", params);
                   if ($_retValue.indexOf("<failed>") == 0)
                   {
@@ -380,9 +428,9 @@
                   suffix = key.replace(prefix+"_fld_1_", "");
             params = httpParam ( "", "sid"                   , $_sid) +
                      httpParam ("&", "realm"                 , $_realm) +
-                           httpParam("&", "event", request.getParameter(key)) +
-                           httpParam("&", "date", request.getParameter(prefix+"_fld_2_"+suffix)) +
-                           httpParam("&", "place", request.getParameter(prefix+"_fld_3_"+suffix));
+                           httpParam("&", "event", getParameter(items, request, key)) +
+                           httpParam("&", "date", getParameter(items, request, prefix+"_fld_2_"+suffix)) +
+                           httpParam("&", "place", getParameter(items, request, prefix+"_fld_3_"+suffix));
                   $_retValue = httpRequest ("POST", "user.bioEvents.new", params);
                   if ($_retValue.indexOf("<failed>") == 0)
                   {
@@ -394,7 +442,7 @@
             }
             else if (($_formTab == 0) && ($_formSubtab == 6))
             {
-              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam("&", "favorites", request.getParameter("favorites"));
+              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam("&", "favorites", getParameter(items, request, "favorites"));
               $_retValue = httpRequest ("POST", "user.favorites.new", params);
               if ($_retValue.indexOf("<failed>") == 0)
               {
@@ -410,68 +458,72 @@
                 if ($_formSubtab == 0)
                 {
                   // Import
-                  if ("1".equals(request.getParameter("cb_item_i_name")))
-                    params += httpParam ("&", "nickName", request.getParameter("i_nickName"));
-                  if ("1".equals(request.getParameter("cb_item_i_title")))
-                    params += httpParam ("&", "title=", request.getParameter("i_title"));
-                  if ("1".equals(request.getParameter("cb_item_i_firstName")))
-                    params += httpParam ("&", "firstName", request.getParameter("i_firstName"));
-                  if ("1".equals(request.getParameter("cb_item_i_lastName")))
-                    params += httpParam ("&", "lastName", request.getParameter("i_lastName"));
-                  if ("1".equals(request.getParameter("cb_item_i_fullName")))
-                    params += httpParam ("&", "fullName", request.getParameter("i_fullName"));
-                  if ("1".equals(request.getParameter("cb_item_i_gender")))
-                    params += httpParam ("&", "gender", request.getParameter("i_gender"));
-                  if ("1".equals(request.getParameter("cb_item_i_mail")))
-                    params += httpParam ("&", "mail", request.getParameter("i_mail"));
-                  if ("1".equals(request.getParameter("cb_item_i_birthday")))
-                    params += httpParam ("&", "birthday", request.getParameter("i_birthday"));
-                  if ("1".equals(request.getParameter("cb_item_i_homepage")))
-                    params += httpParam ("&", "homepage", request.getParameter("i_homepage"));
-                  if ("1".equals(request.getParameter("cb_item_i_icq")))
-                    params += httpParam ("&", "icq", request.getParameter("i_icq"));
-                  if ("1".equals(request.getParameter("cb_item_i_aim")))
-                    params += httpParam ("&", "aim", request.getParameter("i_aim"));
-                  if ("1".equals(request.getParameter("cb_item_i_yahoo")))
-                    params += httpParam ("&", "yahoo", request.getParameter("i_yahoo"));
-                  if ("1".equals(request.getParameter("cb_item_i_msn")))
-                    params += httpParam ("&", "msn", request.getParameter("i_msn"));
-                  if ("1".equals(request.getParameter("cb_item_i_skype")))
-                    params += httpParam ("&", "skype", request.getParameter("i_skype"));
-                  if ("1".equals(request.getParameter("cb_item_i_homelat")))
-                    params += httpParam ("&", "homeLatitude", request.getParameter("i_homelat"));
-                  if ("1".equals(request.getParameter("cb_item_i_homelng")))
-                    params += httpParam ("&", "homeLongitude", request.getParameter("i_homelng"));
-                  if ("1".equals(request.getParameter("cb_item_i_homelng")))
-                    params += httpParam ("&", "homePhone", request.getParameter("i_homePhone"));
-                  if ("1".equals(request.getParameter("cb_item_i_businessOrganization")))
-                    params += httpParam ("&", "businessOrganization", request.getParameter("i_businessOrganization"));
-                  if ("1".equals(request.getParameter("cb_item_i_businessHomePage")))
-                    params += httpParam ("&", "businessHomePage", request.getParameter("i_businessHomePage"));
-                  if ("1".equals(request.getParameter("cb_item_i_sumary")))
-                    params += httpParam ("&", "sumary", request.getParameter("i_sumary"));
-                  if ("1".equals(request.getParameter("cb_item_i_tags")))
-                    params += httpParam ("&", "tags", request.getParameter("i_tags"));
-                  if ("1".equals(request.getParameter("cb_item_i_interests")))
-                    params += httpParam ("&", "interests", request.getParameter("i_interests"));
-                  if ("1".equals(request.getParameter("cb_item_i_topicInterests")))
-                    params += httpParam ("&", "topicInterests", request.getParameter("i_topicInterests"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_name")))
+                    params += httpParam ("&", "nickName", getParameter(items, request, "i_nickName"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_title")))
+                    params += httpParam ("&", "title=", getParameter(items, request, "i_title"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_firstName")))
+                    params += httpParam ("&", "firstName", getParameter(items, request, "i_firstName"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_lastName")))
+                    params += httpParam ("&", "lastName", getParameter(items, request, "i_lastName"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_fullName")))
+                    params += httpParam ("&", "fullName", getParameter(items, request, "i_fullName"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_gender")))
+                    params += httpParam ("&", "gender", getParameter(items, request, "i_gender"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_mail")))
+                    params += httpParam ("&", "mail", getParameter(items, request, "i_mail"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_birthday")))
+                    params += httpParam ("&", "birthday", getParameter(items, request, "i_birthday"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_homepage")))
+                    params += httpParam ("&", "homepage", getParameter(items, request, "i_homepage"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_icq")))
+                    params += httpParam ("&", "icq", getParameter(items, request, "i_icq"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_aim")))
+                    params += httpParam ("&", "aim", getParameter(items, request, "i_aim"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_yahoo")))
+                    params += httpParam ("&", "yahoo", getParameter(items, request, "i_yahoo"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_msn")))
+                    params += httpParam ("&", "msn", getParameter(items, request, "i_msn"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_skype")))
+                    params += httpParam ("&", "skype", getParameter(items, request, "i_skype"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_homelat")))
+                    params += httpParam ("&", "homeLatitude", getParameter(items, request, "i_homelat"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_homelng")))
+                    params += httpParam ("&", "homeLongitude", getParameter(items, request, "i_homelng"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_homelng")))
+                    params += httpParam ("&", "homePhone", getParameter(items, request, "i_homePhone"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_businessOrganization")))
+                    params += httpParam ("&", "businessOrganization", getParameter(items, request, "i_businessOrganization"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_businessHomePage")))
+                    params += httpParam ("&", "businessHomePage", getParameter(items, request, "i_businessHomePage"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_sumary")))
+                    params += httpParam ("&", "sumary", getParameter(items, request, "i_sumary"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_tags")))
+                    params += httpParam ("&", "tags", getParameter(items, request, "i_tags"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_interests")))
+                    params += httpParam ("&", "interests", getParameter(items, request, "i_interests"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_topicInterests")))
+                    params += httpParam ("&", "topicInterests", getParameter(items, request, "i_topicInterests"));
                 }
                 else if ($_formSubtab == 1)
                 {
                   params +=
-                       httpParam ("&", "nickName"              , request.getParameter("pf_nickName")) +
-                     httpParam ("&", "mail"                  , request.getParameter("pf_mail")) +
-                     httpParam ("&", "title"                 , request.getParameter("pf_title")) +
-                     httpParam ("&", "firstName"             , request.getParameter("pf_firstName")) +
-                     httpParam ("&", "lastName"              , request.getParameter("pf_lastName")) +
-                     httpParam ("&", "fullName"              , request.getParameter("pf_fullName")) +
-                     httpParam ("&", "gender"                , request.getParameter("pf_gender")) +
-                     httpParam ("&", "birthday"              , request.getParameter("pf_birthday")) +
-                     httpParam ("&", "homepage"              , request.getParameter("pf_homepage")) +
-                       httpParam ("&", "mailSignature"         , request.getParameter("pf_mailSignature")) +
-                       httpParam ("&", "sumary"                , request.getParameter("pf_sumary")) +
-                       httpParam ("&", "appSetting"            , request.getParameter("pf_appSetting"));
+                       httpParam ("&", "nickName"              , getParameter(items, request, "pf_nickName")) +
+                       httpParam ("&", "mail"                  , getParameter(items, request, "pf_mail")) +
+                       httpParam ("&", "title"                 , getParameter(items, request, "pf_title")) +
+                       httpParam ("&", "firstName"             , getParameter(items, request, "pf_firstName")) +
+                       httpParam ("&", "lastName"              , getParameter(items, request, "pf_lastName")) +
+                       httpParam ("&", "fullName"              , getParameter(items, request, "pf_fullName")) +
+                       httpParam ("&", "gender"                , getParameter(items, request, "pf_gender")) +
+                       httpParam ("&", "birthday"              , getParameter(items, request, "pf_birthday")) +
+                       httpParam ("&", "homepage"              , getParameter(items, request, "pf_homepage")) +
+                       httpParam ("&", "mailSignature"         , getParameter(items, request, "pf_mailSignature")) +
+                       httpParam ("&", "sumary"                , getParameter(items, request, "pf_sumary")) +
+                       httpParam ("&", "appSetting"            , getParameter(items, request, "pf_appSetting")) +
+                       httpParam ("&", "photo"                 , getParameter(items, request, "pf_photo")) +
+                       httpParam ("&", "photoContent"          , getParameter(items, request, "pf_photoContent")) +
+                       httpParam ("&", "audio"                 , getParameter(items, request, "pf_audio")) +
+                       httpParam ("&", "audioContent"          , getParameter(items, request, "pf_audioContent"));
 
                   tmp = "";
                   keys = request.getParameterNames();
@@ -479,7 +531,7 @@
           		    {
           		      String key = (String)keys.nextElement();
                     if (key.indexOf("x1_fld_1_") == 0)
-                      tmp += request.getParameter(key) + "\n";
+                      tmp += getParameter(items, request, key) + "\n";
           		    }
                   params += httpParam ("&", "webIDs", tmp);
                   keys = request.getParameterNames();
@@ -490,7 +542,7 @@
                     if (key.indexOf("x2_fld_1_") == 0)
                     {
                       suffix = key.replace("x2_fld_1_", "");
-                      tmp += request.getParameter(key) + ";" + request.getParameter("x2_fld_2_"+suffix) + "\n";
+                      tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "x2_fld_2_"+suffix) + "\n";
                     }
           		    }
                   params += httpParam ("&", "interests", tmp);
@@ -502,7 +554,7 @@
                     if (key.indexOf("x3_fld_1_") == 0)
                     {
                       suffix = key.replace("x3_fld_1_", "");
-                      tmp += request.getParameter(key) + ";" + request.getParameter("x3_fld_2_"+suffix) + "\n";
+                      tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "x3_fld_2_"+suffix) + "\n";
                     }
           		    }
                   params += httpParam ("&", "topicInterests", tmp);
@@ -510,27 +562,27 @@
                 if ($_formSubtab == 2)
                 {
                   params +=
-                     httpParam ("&", "homeDefaultMapLocation", request.getParameter("pf_homeDefaultMapLocation")) +
-                     httpParam ("&", "homeCountry"           , request.getParameter("pf_homecountry")) +
-                     httpParam ("&", "homeState"             , request.getParameter("pf_homestate")) +
-                     httpParam ("&", "homeCity"              , request.getParameter("pf_homecity")) +
-                     httpParam ("&", "homeCode"              , request.getParameter("pf_homecode")) +
-                     httpParam ("&", "homeAddress1"          , request.getParameter("pf_homeaddress1")) +
-                     httpParam ("&", "homeAddress2"          , request.getParameter("pf_homeaddress2")) +
-                     httpParam ("&", "homeTimezone"          , request.getParameter("pf_homeTimezone")) +
-                     httpParam ("&", "homeLatitude"          , request.getParameter("pf_homelat")) +
-                     httpParam ("&", "homeLongitude"         , request.getParameter("pf_homelng")) +
-                     httpParam ("&", "homePhone"             , request.getParameter("pf_homePhone")) +
-                       httpParam ("&", "homeMobile"            , request.getParameter("pf_homeMobile"));
+                       httpParam ("&", "homeDefaultMapLocation", getParameter(items, request, "pf_homeDefaultMapLocation")) +
+                       httpParam ("&", "homeCountry"           , getParameter(items, request, "pf_homecountry")) +
+                       httpParam ("&", "homeState"             , getParameter(items, request, "pf_homestate")) +
+                       httpParam ("&", "homeCity"              , getParameter(items, request, "pf_homecity")) +
+                       httpParam ("&", "homeCode"              , getParameter(items, request, "pf_homecode")) +
+                       httpParam ("&", "homeAddress1"          , getParameter(items, request, "pf_homeaddress1")) +
+                       httpParam ("&", "homeAddress2"          , getParameter(items, request, "pf_homeaddress2")) +
+                       httpParam ("&", "homeTimezone"          , getParameter(items, request, "pf_homeTimezone")) +
+                       httpParam ("&", "homeLatitude"          , getParameter(items, request, "pf_homelat")) +
+                       httpParam ("&", "homeLongitude"         , getParameter(items, request, "pf_homelng")) +
+                       httpParam ("&", "homePhone"             , getParameter(items, request, "pf_homePhone")) +
+                       httpParam ("&", "homeMobile"            , getParameter(items, request, "pf_homeMobile"));
                 }
                 if ($_formSubtab == 5)
                 {
                   params +=
-                       httpParam ("&", "icq"                   , request.getParameter("pf_icq")) +
-                       httpParam ("&", "skype"                 , request.getParameter("pf_skype")) +
-                       httpParam ("&", "yahoo"                 , request.getParameter("pf_yahoo")) +
-                       httpParam ("&", "aim"                   , request.getParameter("pf_aim")) +
-                       httpParam ("&", "msn"                   , request.getParameter("pf_msn"));
+                       httpParam ("&", "icq"                   , getParameter(items, request, "pf_icq")) +
+                       httpParam ("&", "skype"                 , getParameter(items, request, "pf_skype")) +
+                       httpParam ("&", "yahoo"                 , getParameter(items, request, "pf_yahoo")) +
+                       httpParam ("&", "aim"                   , getParameter(items, request, "pf_aim")) +
+                       httpParam ("&", "msn"                   , getParameter(items, request, "pf_msn"));
                   keys = request.getParameterNames();
                   tmp = "";
           		    while (keys.hasMoreElements() )
@@ -539,7 +591,7 @@
                     if (key.indexOf("x6_fld_1_") == 0)
                     {
                       suffix = key.replace("x6_fld_1_", "");
-                      tmp += request.getParameter(key) + ";" + request.getParameter("x6_fld_2_"+suffix) + "\n";
+                      tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "x6_fld_2_"+suffix) + "\n";
                     }
           		    }
                   params += httpParam ("&", "messaging", tmp);
@@ -550,42 +602,42 @@
                 if ($_formSubtab == 0)
                 {
                   params +=
-                     httpParam ("&", "businessIndustry"      , request.getParameter("pf_businessIndustry")) +
-                     httpParam ("&", "businessOrganization"  , request.getParameter("pf_businessOrganization")) +
-                     httpParam ("&", "businessHomePage"      , request.getParameter("pf_businessHomePage")) +
-                     httpParam ("&", "businessJob"           , request.getParameter("pf_businessJob")) +
-                       httpParam ("&", "businessRegNo"         , request.getParameter("pf_businessRegNo")) +
-                       httpParam ("&", "businessCareer"        , request.getParameter("pf_businessCareer")) +
-                       httpParam ("&", "businessEmployees"     , request.getParameter("pf_businessEmployees")) +
-                       httpParam ("&", "businessVendor"        , request.getParameter("pf_businessVendor")) +
-                       httpParam ("&", "businessService"       , request.getParameter("pf_businessService")) +
-                       httpParam ("&", "businessOther"         , request.getParameter("pf_businessOther")) +
-                       httpParam ("&", "businessNetwork"       , request.getParameter("pf_businessNetwork")) +
-                       httpParam ("&", "businessResume"        , request.getParameter("pf_businessResume"));
+                       httpParam ("&", "businessIndustry"      , getParameter(items, request, "pf_businessIndustry")) +
+                       httpParam ("&", "businessOrganization"  , getParameter(items, request, "pf_businessOrganization")) +
+                       httpParam ("&", "businessHomePage"      , getParameter(items, request, "pf_businessHomePage")) +
+                       httpParam ("&", "businessJob"           , getParameter(items, request, "pf_businessJob")) +
+                       httpParam ("&", "businessRegNo"         , getParameter(items, request, "pf_businessRegNo")) +
+                       httpParam ("&", "businessCareer"        , getParameter(items, request, "pf_businessCareer")) +
+                       httpParam ("&", "businessEmployees"     , getParameter(items, request, "pf_businessEmployees")) +
+                       httpParam ("&", "businessVendor"        , getParameter(items, request, "pf_businessVendor")) +
+                       httpParam ("&", "businessService"       , getParameter(items, request, "pf_businessService")) +
+                       httpParam ("&", "businessOther"         , getParameter(items, request, "pf_businessOther")) +
+                       httpParam ("&", "businessNetwork"       , getParameter(items, request, "pf_businessNetwork")) +
+                       httpParam ("&", "businessResume"        , getParameter(items, request, "pf_businessResume"));
                 }
                 if ($_formSubtab == 1)
                 {
                   params +=
-                     httpParam ("&", "businessCountry"       , request.getParameter("pf_businesscountry")) +
-                     httpParam ("&", "businessState"         , request.getParameter("pf_businessstate")) +
-                     httpParam ("&", "businessCity"          , request.getParameter("pf_businesscity")) +
-                     httpParam ("&", "businessCode"          , request.getParameter("pf_businesscode")) +
-                     httpParam ("&", "businessAddress1"      , request.getParameter("pf_businessaddress1")) +
-                     httpParam ("&", "businessAddress2"      , request.getParameter("pf_businessaddress2")) +
-                     httpParam ("&", "businessTimezone"      , request.getParameter("pf_businessTimezone")) +
-                     httpParam ("&", "businessLatitude"      , request.getParameter("pf_businesslat")) +
-                     httpParam ("&", "businessLongitude"     , request.getParameter("pf_businesslng")) +
-                     httpParam ("&", "businessPhone"         , request.getParameter("pf_businessPhone")) +
-                       httpParam ("&", "businessMobile"        , request.getParameter("pf_businessMobile"));
+                       httpParam ("&", "businessCountry"       , getParameter(items, request, "pf_businesscountry")) +
+                       httpParam ("&", "businessState"         , getParameter(items, request, "pf_businessstate")) +
+                       httpParam ("&", "businessCity"          , getParameter(items, request, "pf_businesscity")) +
+                       httpParam ("&", "businessCode"          , getParameter(items, request, "pf_businesscode")) +
+                       httpParam ("&", "businessAddress1"      , getParameter(items, request, "pf_businessaddress1")) +
+                       httpParam ("&", "businessAddress2"      , getParameter(items, request, "pf_businessaddress2")) +
+                       httpParam ("&", "businessTimezone"      , getParameter(items, request, "pf_businessTimezone")) +
+                       httpParam ("&", "businessLatitude"      , getParameter(items, request, "pf_businesslat")) +
+                       httpParam ("&", "businessLongitude"     , getParameter(items, request, "pf_businesslng")) +
+                       httpParam ("&", "businessPhone"         , getParameter(items, request, "pf_businessPhone")) +
+                       httpParam ("&", "businessMobile"        , getParameter(items, request, "pf_businessMobile"));
                 }
                 if ($_formSubtab == 3)
                 {
                   params +=
-                       httpParam ("&", "businessIcq"          , request.getParameter("pf_businessIcq")) +
-                       httpParam ("&", "businessSkype"        , request.getParameter("pf_businessSkype")) +
-                       httpParam ("&", "businessYahoo"        , request.getParameter("pf_businessYahoo")) +
-                       httpParam ("&", "businessAim"          , request.getParameter("pf_businessAim")) +
-                       httpParam ("&", "businessMsn"          , request.getParameter("pf_businessMsn"));
+                       httpParam ("&", "businessIcq"          , getParameter(items, request, "pf_businessIcq")) +
+                       httpParam ("&", "businessSkype"        , getParameter(items, request, "pf_businessSkype")) +
+                       httpParam ("&", "businessYahoo"        , getParameter(items, request, "pf_businessYahoo")) +
+                       httpParam ("&", "businessAim"          , getParameter(items, request, "pf_businessAim")) +
+                       httpParam ("&", "businessMsn"          , getParameter(items, request, "pf_businessMsn"));
                   keys = request.getParameterNames();
                   tmp = "";
           		    while (keys.hasMoreElements() )
@@ -594,7 +646,7 @@
                     if (key.indexOf("y2_fld_1_") == 0)
                     {
                       suffix = key.replace("y2_fld_1_", "");
-                      tmp += request.getParameter(key) + ";" + request.getParameter("y2_fld_2_"+suffix) + "\n";
+                      tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "y2_fld_2_"+suffix) + "\n";
                     }
           		    }
                   params += httpParam ("&", "businessMessaging", tmp);
@@ -602,17 +654,17 @@
               }
               if ($_formTab == 2)
               {
-                String securityNo = request.getParameter("securityNo");
+                String securityNo = getParameter(items, request, "securityNo");
                 if (securityNo == null)
                   securityNo = "";
 
                 if (securityNo.equals("1"))
                   params +=
-                       httpParam ("&", "securityOpenID"     , request.getParameter("pf_securityOpenID"));
+                       httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
 
                 if (securityNo.equals("2"))
                   params +=
-                       httpParam ("&", "securityFacebookID", request.getParameter("pf_securityFacebookID"));
+                       httpParam ("&", "securityFacebookID", getParameter(items, request, "pf_securityFacebookID"));
 
                 if (securityNo.equals("3"))
                   params +=
@@ -620,17 +672,17 @@
 
                 if (securityNo.equals("4"))
                   params +=
-                     httpParam ("&", "securitySecretQuestion", request.getParameter("pf_securitySecretQuestion")) +
-                       httpParam ("&", "securitySecretAnswer"  , request.getParameter("pf_securitySecretAnswer"));
+                       httpParam ("&", "securitySecretQuestion", getParameter(items, request, "pf_securitySecretQuestion")) +
+                       httpParam ("&", "securitySecretAnswer", getParameter(items, request, "pf_securitySecretAnswer"));
 
                 if (securityNo.equals("5"))
                   params +=
-                       httpParam ("&", "securitySiocLimit"     , request.getParameter("pf_securitySiocLimit"));
+                       httpParam ("&", "securitySiocLimit", getParameter(items, request, "pf_securitySiocLimit"));
 
                 if (securityNo.equals("6"))
                   params +=
-                       httpParam ("&", "certificate", request.getParameter("pf_certificate")) +
-                       httpParam ("&", "certificateLogin", (request.getParameter("pf_certificateLogin") != null)? request.getParameter("pf_certificateLogin"): "0");
+                       httpParam ("&", "certificate", getParameter(items, request, "pf_certificate")) +
+                       httpParam ("&", "certificateLogin", (getParameter(items, request, "pf_certificateLogin") != null)? getParameter(items, request, "pf_certificateLogin"): "0");
 
                 if (securityNo.equals("7"))
                   params +=
@@ -644,7 +696,7 @@
               throw new Exception(xpathEvaluate($_document, "/failed/message"));
           }
             }
-            if (request.getParameter("pf_next") != null)
+            if (getParameter(items, request, "pf_next") != null)
             {
               $_formSubtab += 1;
               if (
@@ -663,7 +715,7 @@
             $_form = "login";
           }
         }
-        else if (request.getParameter("pf_cancel") != null)
+        else if (getParameter(items, request, "pf_cancel") != null)
         {
           $_form = "user";
         }
@@ -671,7 +723,7 @@
 
       if ($_form.equals("user"))
       {
-        if (request.getParameter("uf_profile") != null)
+        if (getParameter(items, request, "uf_profile") != null)
         {
           $_form = "profile";
           $_formTab = 0;
@@ -687,7 +739,7 @@
                    httpParam ("&", "realm" , $_realm);
           if ($_form.equals("profile"))
             params += httpParam ("&", "short", "0");
-          $_retValue = httpRequest ("GET", "user.info", params);
+          $_retValue = httpRequest ("POST", "user.info", params);
 		      $_document = createDocument($_retValue);
           if ("".compareTo(xpathEvaluate($_document, "/failed/message")) != 0)
             throw new Exception (xpathEvaluate($_document, "/failed/message"));
@@ -710,7 +762,7 @@
     }
   %>
   <body>
-    <form name="page_form" id="page_form" method="post" action="users.jsp">
+    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formSubtab == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>" action="users.jsp">
       <input type="hidden" name="mode" id="mode" value="jsp" />
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
@@ -1248,6 +1300,38 @@
                       </tr>
                           <tr>
                             <th>
+                              <label for="pf_photoContent">Upload Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_photoContent" id="pf_photoContent"onblur="javascript: getFileName(this.form, this, this.form.pf_photo);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photo">Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_photo" id="pf_photo" value="<% out.print(xpathEvaluate($_document, "/user/photo")); %>" style="width: 400px;" >
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audioContent">Upload Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_audioContent" id="pf_audioContent"onblur="javascript: getFileName(this.form, this, this.form.pf_audio);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audio">Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_audio" id="pf_audio"value="<% out.print(xpathEvaluate($_document, "/user/audio")); %>" style="width: 400px;" >
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
                               <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
                             </th>
                             <td>
@@ -1572,7 +1656,7 @@
                           else
                           {
                             if ($_formMode.equals("edit"))
-                              out.print("<input type=\"hidden\" id=\"pf07_id\" name=\"pf07_id\" value=\"" + ((request.getParameter("pf07_id") != null) ? request.getParameter("pf07_id"): "0") + "\" />");
+                              out.print("<input type=\"hidden\" id=\"pf07_id\" name=\"pf07_id\" value=\"" + ((getParameter(items, request, "pf07_id") != null) ? getParameter(items, request, "pf07_id"): "0") + "\" />");
                         %>
                         <div id="pf07_form">
                           <table class="form" cellspacing="5">
@@ -1666,7 +1750,7 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf08_id\" name=\"pf08_id\" value=\"" + ((request.getParameter("pf08_id") != null) ? request.getParameter("pf08_id"): "0") + "\" />");
+                            out.print("<input type=\"hidden\" id=\"pf08_id\" name=\"pf08_id\" value=\"" + ((getParameter(items, request, "pf08_id") != null) ? getParameter(items, request, "pf08_id"): "0") + "\" />");
                         %>
                         <div id="pf08_form">
                           <table class="form" cellspacing="5">
@@ -1745,7 +1829,7 @@
                           }
                           else
                           {
-                            out.print("<input type=\"hidden\" id=\"pf09_id\" name=\"pf09_id\" value=\"" + ((request.getParameter("pf09_id") != null) ? request.getParameter("pf09_id"): "0") + "\" />");
+                            out.print("<input type=\"hidden\" id=\"pf09_id\" name=\"pf09_id\" value=\"" + ((getParameter(items, request, "pf09_id") != null) ? getParameter(items, request, "pf09_id"): "0") + "\" />");
                         %>
                         <div id="pf09_form">
                           <table class="form" cellspacing="5">
