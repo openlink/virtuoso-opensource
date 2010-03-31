@@ -243,6 +243,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(.+\\.ics\x24)|(.+\\.ics\?.*)', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http[s]*://.*.facebook.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'FaceBook', vector ('secret', '', 'session', ''));
@@ -2060,12 +2063,12 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
-		what_ := 'status';
-		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
-
 		what_ := 'thread2';
 		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
+
+		what_ := 'status';
+		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
 		return 1;
@@ -2080,13 +2083,14 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
+		what_ := 'thread2';
+		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
+
 		what_ := 'status';
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
-		what_ := 'thread2';
-		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
 		return 1;
 	}
@@ -4916,6 +4920,13 @@ create procedure DB.DBA.RDF_LOAD_ICAL (in graph_iri varchar, in new_origin_uri v
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_WEBCAL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  return DB.DBA.RDF_LOAD_ICAL (graph_iri, new_origin_uri, dest, _ret_body, aq, ps, _key, opts);
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
@@ -6372,6 +6383,17 @@ create procedure DB.DBA.SYS_FEED_SPONGE_UP (in local_iri varchar, in get_uri var
 {
   declare url varchar;
   url := 'http:' || subseq (get_uri, 5);
+  options := vector_concat (vector ('get:uri', url), options);
+  return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
+      'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+}
+;
+
+create procedure DB.DBA.SYS_WEBCAL_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare url varchar;
+  url := 'http:' || subseq (get_uri, 7);
+  dbg_obj_print (url);
   options := vector_concat (vector ('get:uri', url), options);
   return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
       'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
