@@ -198,6 +198,8 @@ typedef struct http_cli_ctx_s
   SSL_METHOD *      hcctx_ssl_method;
   caddr_t           hcctx_pkcs12_file;
   caddr_t           hcctx_cert_pass;
+  caddr_t           hcctx_ca_certs;
+  char 		    hcctx_ssl_insecure;
 #endif
   dk_set_t          hcctx_resp_evts;                 /* HTTP Resp evt queues */
   int               hcctx_resp_evt_ret;
