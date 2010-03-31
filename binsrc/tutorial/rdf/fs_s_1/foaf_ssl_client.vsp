@@ -1,0 +1,80 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2010 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+declare res any;
+res := null;
+if ({?'exec'} is not null)
+  {
+    declare url, qr any;
+    url := get_keyword ('sparql_endpoint', params, NULL);
+    qr := get_keyword ('sparql_query', params, NULL);
+    declare exit handler for sqlstate '*'
+    {
+      res := null;
+      goto err;
+    };
+    res := http_client (sprintf ('%s?query=%U&format=text%%2Fhtml', url, qr), cert_file=>'db:demo_client_cert', insecure=>1);
+  }
+err:
+?>
+<html>
+<HEAD><link rel="stylesheet" type="text/css" href="../demo.css" /></HEAD>
+<body>
+<H3>FOAF+SSL client</H3>
+
+<form method="post" action="<?= http_path () ?>">
+<table class="tableentry">
+<tr><td>1. Specify secured SPARQL endpoint </td><td>
+<input type="text" name="sparql_endpoint" value="https://localhost/sparql-ssl" size="70">
+</td></tr>
+<tr><td>2. Specify query</td><td>
+<textarea name="sparql_query" cols="70" rows="5">select * where { ?s ?p ?o } limit 10</textarea>
+</td></tr>
+<tr><td>3. Execute</td><td><input type="submit" name="exec" value="Execute"></td></tr>
+</table>
+</form>
+<?vsp
+  if (res is not null)
+    {
+?>
+<h3>Result</h3>
+<table class=tableresult>
+ <tr>
+   <td>
+   <?vsp
+	http (res);
+   ?>
+   </td>
+ </tr>
+</table>
+<?vsp }
+   else if (res is null and {?'exec'} is not null)
+     {
+?>
+    <p>The query cannot be executed, please check your setup.</p>
+<?vsp
+     }
+?>
+
+</body>
+</html>
