@@ -6003,7 +6003,13 @@ csv_field (dk_session_t * ses)
     }
   else
     {
+      if (0 != str[0])
       ret = str;
+      else
+	{
+	  dk_free_box (str);
+	  ret = NEW_DB_NULL;
+	}
     }
   return ret;
 }
