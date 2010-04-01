@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2008 OpenLink Software
+ *  Copyright (C) 1998-2010 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,9 @@ package virtuoso.jena.driver;
 import java.util.*;
 import java.io.*;
 import java.net.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.sql.ResultSetMetaData;
 
 import virtuoso.sql.*;
 
@@ -74,41 +76,35 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	virt_graph = graph.getGraphName ();
 	prefetchSize = graph.getFetchSize ();
 
-	StringTokenizer tok = new StringTokenizer(query);
-	String s = "";
+	StringBuffer sb = new StringBuffer("sparql\n define output:format '_JAVA_'\n ");
+	if (graph.getRuleSet()!= null)
+          sb.append(" define input:inference '"+graph.getRuleSet()+"'\n ");
 
-	while (tok.hasMoreTokens()) {
-	  s = tok.nextToken().toLowerCase();
-		  if (s.equals("describe") || s.equals("construct") || s.equals("ask"))
-              break;
-	}
+        if (graph.getSameAs())
+          sb.append(" define input:same-as \"yes\"\n ");
 
-	if (s.equals("describe") || s.equals("construct") || s.equals("ask"))
-           virt_query = "sparql\n define output:format '_JAVA_'\n " + query;
-        else
-      	   virt_query = "sparql\n " + query;
+        if (!graph.getReadFromAllGraphs())
+	  sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");
+
+      	sb.append(query);
+      	virt_query = sb.toString();
     }
 
 
     public ResultSet execSelect()
     {
-	ResultSet ret = null;
+      ResultSet ret = null;
 
-	try
-	{
+      try {
+        Connection connection = graph.getConnection();
 
-	    Connection connection = graph.getConnection();
-
-	    stmt = connection.createStatement();
-	    stmt.setFetchSize(prefetchSize);
-	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
-
-	    return new VResultSet(graph, rs);
-	}
-	catch(Exception e)
-	{
-            throw new JenaException("Can not create ResultSet.:"+e);
-	}
+        stmt = connection.createStatement();
+        stmt.setFetchSize(prefetchSize);
+        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        return new VResultSet(graph, rs);
+      }	catch(Exception e) {
+        throw new JenaException("Can not create ResultSet.:"+e);
+      }
     }
 
 
@@ -126,7 +122,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public Dataset getDataset()
     {
-      return null;
+      return new VirtDataSource(graph);
     }
 
 
@@ -138,136 +134,134 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public Model execConstruct() 
     {
-	return execConstruct(ModelFactory.createDefaultModel());
+      return execConstruct(ModelFactory.createDefaultModel());
     }
 
 
     public Model execConstruct(Model model)
     {
-	try {
+      try {
+        Connection connection = graph.getConnection();
 
-	    Connection connection = graph.getConnection();
+        stmt = connection.createStatement();
+        stmt.setFetchSize(prefetchSize);
+        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        ResultSetMetaData rsmd = rs.getMetaData();
 
-	    stmt = connection.createStatement();
-	    stmt.setFetchSize(prefetchSize);
-	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
-	    ResultSetMetaData rsmd = rs.getMetaData();
+        while(rs.next())
+        {
+          Node s = VirtGraph.Object2Node(rs.getObject(1));
+          Node p = VirtGraph.Object2Node(rs.getObject(2));
+          Node o = VirtGraph.Object2Node(rs.getObject(3));
+          com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+          if (st != null)
+            model.add(st);
+        }	
+        stmt.close();
+        stmt = null;
 
-	    while(rs.next())
-	    {
-	      Node s = VirtGraph.Object2Node(rs.getObject(1));
-	      Node p = VirtGraph.Object2Node(rs.getObject(2));
-	      Node o = VirtGraph.Object2Node(rs.getObject(3));
-	      com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
-	      if (st != null)
-	        model.add(st);
-	    }	
-
-	    stmt.close();
-	    stmt = null;
-
-	} catch (Exception e) {
-            throw new JenaException("Convert results are FAILED.:"+e);
-	}
-	return model;
+      } catch (Exception e) {
+        throw new JenaException("Convert results are FAILED.:"+e);
+      }
+      return model;
     }
 
 
 	
-    public Model execDescribe() {
-	return execDescribe(ModelFactory.createDefaultModel());
+    public Model execDescribe() 
+    {
+      return execDescribe(ModelFactory.createDefaultModel());
     }
 
     public Model execDescribe(Model model)
     {
-	try {
-	    Connection connection = graph.getConnection();
+      try {
+        Connection connection = graph.getConnection();
 
-	    stmt = connection.createStatement();
-	    stmt.setFetchSize(prefetchSize);
-	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
-	    ResultSetMetaData rsmd = rs.getMetaData();
-	    while(rs.next())
-	    {
-	      Node s = VirtGraph.Object2Node(rs.getObject(1));
-	      Node p = VirtGraph.Object2Node(rs.getObject(2));
-	      Node o = VirtGraph.Object2Node(rs.getObject(3));
+        stmt = connection.createStatement();
+        stmt.setFetchSize(prefetchSize);
+        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        ResultSetMetaData rsmd = rs.getMetaData();
+        while(rs.next())
+        {
+          Node s = VirtGraph.Object2Node(rs.getObject(1));
+          Node p = VirtGraph.Object2Node(rs.getObject(2));
+          Node o = VirtGraph.Object2Node(rs.getObject(3));
 
-	      com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
-	      if (st != null)
-	        model.add(st);
-	    }	
+          com.hp.hpl.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+          if (st != null)
+            model.add(st);
+        }	
+        stmt.close();
+        stmt = null;
 
-	    stmt.close();
-	    stmt = null;
-
-	} catch (Exception e) {
-            throw new JenaException("Convert results are FAILED.:"+e);
-	}
-	return model;
+      } catch (Exception e) {
+        throw new JenaException("Convert results are FAILED.:"+e);
+      }
+      return model;
     }
 
 
-    public boolean execAsk() {
-        boolean ret = false;
+    public boolean execAsk() 
+    {
+      boolean ret = false;
 
-	try {
-	    Connection connection = graph.getConnection();
+      try {
+        Connection connection = graph.getConnection();
 
-	    stmt = connection.createStatement();
-	    java.sql.ResultSet rs = stmt.executeQuery(virt_query);
-	    ResultSetMetaData rsmd = rs.getMetaData();
+        stmt = connection.createStatement();
+        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        ResultSetMetaData rsmd = rs.getMetaData();
 
-	    while(rs.next())
-	    {
-	      if (rs.getInt(1) == 1)
-	        ret = true;
-	    }	
+        while(rs.next())
+        {
+          if (rs.getInt(1) == 1)
+            ret = true;
+        }	
+        stmt.close();
+        stmt = null;
 
-	    stmt.close();
-	    stmt = null;
-
-	} catch (Exception e) {
-            throw new JenaException("Convert results are FAILED.:"+e);
-	}
-	return ret;
+      } catch (Exception e) {
+        throw new JenaException("Convert results are FAILED.:"+e);
+      }
+      return ret;
     }
 
 
     public void abort() 
     {
-	if (stmt != null)
-	  try {
-	      stmt.cancel();
-	  } catch (Exception e) {}
+      if (stmt != null)
+        try {
+          stmt.cancel();
+        } catch (Exception e) {}
     }
 
 
     public void close() 
     {
-	if (stmt != null)
-	  try {
-	      stmt.cancel();
-	  } catch (Exception e) {}
+      if (stmt != null)
+        try {
+          stmt.cancel();
+          stmt.close();
+        } catch (Exception e) {}
     }
 
 
     ///=== Inner class ===========================================
-    public class VResultSet implements com.hp.hpl.jena.query.ResultSet {
-                                           
-	ResultSetMetaData rsmd;
-        java.sql.ResultSet rs;
-	boolean	  v_finished = false;
-	boolean	  v_prefetched = false;
-	VirtModel m;
-	Binding v_row;
-	List<String> resVars;
-	int row_id = 0;
+    public class VResultSet implements com.hp.hpl.jena.query.ResultSet 
+    {
+      ResultSetMetaData rsmd;
+      java.sql.ResultSet rs;
+      boolean v_finished = false;
+      boolean v_prefetched = false;
+      VirtModel m;
+      Binding v_row;
+      List<String> resVars =new LinkedList();
+      int row_id = 0;
 
 
-	protected VResultSet(VirtGraph _g, java.sql.ResultSet _rs) 
+        protected VResultSet(VirtGraph _g, java.sql.ResultSet _rs) 
 	{
-	  super();
 	  rs = _rs;
 	  m = new VirtModel(_g);
 
@@ -385,6 +379,22 @@ public class VirtuosoQueryExecution  implements QueryExecution
         {
           throw new UnsupportedOperationException(this.getClass().getName()+".remove") ;
         }
+
+        private void close()
+        {
+	  if (!v_finished)
+	  {
+	    if (rs != null)
+	    {
+	      try {
+                rs.close();
+                rs = null;
+              } catch (Exception e) { }
+            }
+          }
+          v_finished = true;
+        }
+
 
     }
 
