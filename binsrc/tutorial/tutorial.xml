@@ -389,6 +389,9 @@
         <group Title="RDF Mappers">
 					<example id="RD-S-1" fspath="rdf/rd_s_1"></example>
         </group>
+        <group Title="RDF Security">
+                                        <example id="FS-S-1" fspath="rdf/fs_s_1"></example>
+        </group>
       </group>
     </subsection>
     <subsection Title="NNTP" fspath="intprot">
