@@ -75,12 +75,14 @@
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-	<xsl:variable name="hash" select="vi:uri_hash (/rdf:RDF/rss:channel/rss:link)"/>
+    
 	<xsl:template match="/">
 		<rdf:RDF>
 		    <rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
-			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+                <dc:title>
+                    <xsl:value-of select="$baseUri"/>
+                </dc:title>
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 		    </rdf:Description>
@@ -103,39 +105,23 @@
 				</xsl:otherwise>
 			</xsl:choose>
 			<sioc:link rdf:resource="{@rdf:about}" />
-                        <!--owl:sameAs  rdf:resource="{vi:proxyIRI ($baseUri)}" /-->
 			<xsl:apply-templates />
 			<xsl:copy-of select="geo:*" />
 			<xsl:copy-of select="openSearch:*" />
 			<xsl:copy-of select="gphoto:*" />
 			<xsl:copy-of select="georss:*" />
 			<xsl:copy-of select="gml:*" />
-			
 			<xsl:copy-of select="media:*[local-name() != 'content']" />
 		</rdf:Description>
 	</xsl:template>
+
 	<xsl:template match="rdf:li">
-		<xsl:variable name="this" select="@rdf:resource" />
-		<xsl:variable name="pos" />
-		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
-			<xsl:if test="@rdf:resource = $this">
-				<xsl:variable name="pos" select="position()" />
-				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
-			</xsl:if>
-		</xsl:for-each>
-		<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
- 	        <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos,')'))}" /> <!--xsl:comment><xsl:value-of select="$this"/></xsl:comment-->
+        <sioc:container_of rdf:resource="{vi:proxyIRI (@rdf:resource)}" />
+        <foaf:topic rdf:resource="{vi:proxyIRI (@rdf:resource)}" />
 	</xsl:template>
+
 	<xsl:template match="rss:item">
-		<xsl:variable name="this" select="@rdf:about" />
-		<xsl:variable name="pos1" />
-		<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
-			<xsl:if test="@rdf:resource = $this">
-				<xsl:variable name="pos1" select="position()" />
-				<!--xsl:message terminate="no"><xsl:value-of select="$this"/>:<xsl:value-of select="$pos"/></xsl:message-->
-			</xsl:if>
-		</xsl:for-each>
-		<rdf:Description rdf:about="{vi:proxyIRI ($baseUri,'', concat ($hash,'(',$pos1,')'))}">
+        <rdf:Description rdf:about="{vi:proxyIRI (@rdf:about)}">
 			<xsl:choose>
 				<xsl:when test="$isDiscussion = '1'">
 					<rdf:type rdf:resource="&sioct;BoardPost" />
@@ -165,6 +151,7 @@
 			</xsl:for-each>
 		</rdf:Description>
 	</xsl:template>
+    
 	<xsl:template match="rss:title[. != '']">
 		<dc:title>
 			<xsl:apply-templates />
@@ -175,11 +162,9 @@
 			<xsl:apply-templates />
 		</dc:description>
 	</xsl:template>
+
 	<xsl:template match="rss:link">
 		<sioc:link rdf:resource="{string(.)}" />
-		<!--xsl:if test="not (../wfw:commentRss)">
-			<rdfs:seeAlso rdf:resource="{vi:proxyIRI (.)}" />
-		</xsl:if-->
 	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
 		<awol:content>
 		    <awol:Content rdf:ID="content{generate-id()}">
@@ -216,6 +201,7 @@
 	<xsl:template match="dc:creator[normalize-space (.) != '']">
 		<foaf:maker rdf:resource="{vi:proxyIRI ($baseUri, '', .)}" />
 	</xsl:template>
+    
 	<xsl:template match="dc:creator[normalize-space (.) != '']" mode="user">
 				<xsl:variable name="uname" select="string(.)" />
 				<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', .)}">
@@ -228,30 +214,28 @@
 			                <foaf:mbox rdf:resource="{//foaf:mbox/@rdf:resource}" />                  
 				    </xsl:if>
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
-						<xsl:variable name="this" select="@rdf:about" />
-						<xsl:variable name="pos" />
-						<xsl:for-each select="/rdf:RDF/rss:channel/rss:items/rdf:Seq/rdf:li">
-							<xsl:if test="@rdf:resource = $this">
-								<xsl:variable name="pos" select="position()" />
-							</xsl:if>
-						</xsl:for-each>
-						<foaf:made rdf:resource="{vi:proxyIRI ($baseUri,'',concat ($hash,'(',$pos,')'))}" />
+                <foaf:made rdf:resource="{vi:proxyIRI (@rdf:about)}" />
 					</xsl:for-each>
 				</foaf:Person>
 	</xsl:template>
+    
 	<xsl:template match="rdf:*">
 		<xsl:apply-templates />
 	</xsl:template>
+    
 	<xsl:template match="rss:items">
 		<xsl:apply-templates />
 	</xsl:template>
+    
 	<xsl:template match="rss:*"></xsl:template>
+    
 	<xsl:template match="text()">
 		<xsl:variable name="txt" select="normalize-space (.)" />
 		<xsl:if test="$txt != ''">
 			<xsl:value-of select="$txt" />
 		</xsl:if>
 	</xsl:template>
+    
 	<xsl:template match="*" />
   <!-- content of html -->
   <xsl:template match="body|html" mode="content">

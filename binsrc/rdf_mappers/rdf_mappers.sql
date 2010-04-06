@@ -243,6 +243,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(.+\\.ics\x24)|(.+\\.ics\?.*)', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http[s]*://.*.facebook.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'FaceBook', vector ('secret', '', 'session', ''));
@@ -2060,12 +2063,12 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
-		what_ := 'status';
-		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
-
 		what_ := 'thread2';
 		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
+
+		what_ := 'status';
+		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
 		return 1;
@@ -2080,13 +2083,14 @@ create procedure DB.DBA.RDF_LOAD_TWITTER(in graph_iri varchar, in new_origin_uri
 
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 
+		what_ := 'thread2';
+		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
+		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
+
 		what_ := 'status';
 		url := sprintf('http://twitter.com/statuses/show/%s.xml', post);
 		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
-		what_ := 'thread2';
-		url := sprintf('http://search.twitter.com/search/thread/%s.atom', post);
-		DB.DBA.RDF_LOAD_TWITTER2(url, id, new_origin_uri, dest, graph_iri, username_, password_, what_, opts);
 
 		return 1;
 	}
@@ -4735,59 +4739,119 @@ create procedure DB.DBA.RDF_LOAD_SOCIALGRAPH (in graph_iri varchar, in new_origi
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+create procedure csv_detect_opts (in s any, in n int := 10)
 {
-    declare xd, xt, url, tmp, api_key, img_id, hdr, exif, header any;
-    declare exit handler for sqlstate '*'
-    {
-        DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
-        return 0;
-    };
-    declare cur, docproxyIRI, resourceURL, baseUri, docIRI varchar;
-    declare xml_entity, myparams, xml1, xml2, xml3 any;
-    xml1 := _ret_body;
-    xml2 := split_and_decode(cast(xml1 as varchar), 0, '\0\r\n');
-    baseUri := RDF_SPONGE_DOC_IRI (dest, graph_iri);
-    docproxyIRI := DB.DBA.RDF_SPONGE_PROXY_IRI(baseUri);
-    resourceURL := DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri);
-    docIRI := DB.DBA.RM_SPONGE_DOC_IRI(baseUri);
+  declare delim, quot char;
+  declare r, delims, seprs, best_match, best_delim, best_quot any;
+  declare i, rws int;
+  declare ss, orig any;
 
-    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/Document');
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, docproxyIRI, 'http://purl.org/dc/elements/1.1/title', RDF_SPONGE_DOC_IRI (dest, graph_iri));
-    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://rdfs.org/sioc/ns#container_of', resourceURL);
-    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://xmlns.com/foaf/0.1/primaryTopic', resourceURL);
-    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://purl.org/dc/terms/subject', resourceURL);
-    DB.DBA.RDF_QUAD_URI (graph_iri, docproxyIRI, 'http://www.w3.org/2002/07/owl#sameAs', docIRI);
-    DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/Document');
-    header := vector();
-    for (declare i int, i := 0; i < length (xml2); i := i + 1)
+  delims := ',\t;:|';
+  seprs  := '"\'';
+  best_match := -1;
+  best_delim := best_quot := null;
+  ss := string_output ();
+  foreach (int d in delims) do
     {
-        cur := trim(cast(xml2[i] as varchar), '\r\n');
-        xml3 := split_and_decode(cur, 0, '\0\0,');
-        for (declare j int, j := 0; j < length (xml3); j := j + 1)
+      foreach (int sp in seprs) do 
+	{
+	  i := 0; rws := 0;
+	  delim := chr (d);
+	  quot := chr (sp);
+	  string_output_flush (ss);
+	  http (s, ss);
+	  while (i < n and isvector (r := get_csv_row (ss, delim, quot)))
         {
+	      dbg_obj_print (r);
             if (i = 0)
+		rws := length (r);
+	      else if (length (r) <> rws)
+		goto fail;   
+	      i := i + 1;
+	    }
+	  if (i < n)
+	    goto fail;
+	  if (best_match < rws)
             {
-                header := vector_concat(header, vector(xml3[j]));
-                --DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))));
-                --DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
-                --DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('col', cast(j as varchar))), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
-                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://purl.org/dc/terms/hasPart', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])));
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://purl.org/ontology/bibo/DocumentPart');
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://purl.org/dc/elements/1.1/title', xml3[j]);
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', xml3[j])), 'http://www.w3.org/2000/01/rdf-schema#label', concat('Column: ', xml3[j]));
+	      best_match := rws;
+	      best_delim := delim;
+	      best_quot := quot;
+	    }
+	  fail:;
             }
+    }
+  return vector (best_delim, best_quot);
+}
+;
+
+create procedure csv_make_head (in r any)
+{
+  declare ret any;
+  ret := make_array (length (r), 'any');      
+  for (declare i int, i := 0; i < length (r); i := i + 1)
+    {
+      if (isstring (r[i]) and length (r[i]))
+	ret[i] := SYS_ALFANUM_NAME (r[i]);
+      else
+        ret[i] := sprintf ('COL%d', i);	
+    }
+  return ret;
+}
+;
+
+create procedure csv_to_xml (in s any)
+{
+  declare r, opts, head, ss, ses any;
+  declare i, rcnt int;
+
+  ses := string_output ();
+  http (s, ses);
+  opts := csv_detect_opts (s);
+  head := null;
+  ss := string_output ();
+  http ('<csv>\n', ss);
+  rcnt := 1;
+  while (isvector (r := get_csv_row (ses, opts[0], opts[1])))
+    {
+      if (head is null)
+	head := csv_make_head (r);
             else
             {
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://rdfs.org/sioc/ns#has_container', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j])));
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://rdfs.org/sioc/ns#has_container', resourceURL);
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://purl.org/ontology/bibo/content', xml3[j]);
-                DB.DBA.RDF_QUAD_URI_L (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))), 'http://www.w3.org/2000/01/rdf-schema#label', concat('Column: ', header[j], ', Row: ', cast(i as varchar)));
-                DB.DBA.RDF_QUAD_URI (graph_iri, DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j])), 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))));
-                DB.DBA.RDF_QUAD_URI (graph_iri, resourceURL, 'http://rdfs.org/sioc/ns#container_of', DB.DBA.RDF_PROXY_ENTITY_IRI(baseUri, '', concat('Column_', header[j], '_row', cast(i as varchar))));
+	  http (sprintf ('\t<row id="%d">\n\t\t', rcnt), ss);
+	  for (i := 0; i < length (head); i := i + 1)
+	     {
+	       if (i < length (r))
+		 {
+		   if (not isnull (r[i]))
+		     http_value (r[i], head[i], ss);
+		 }
+	     }
+	  http ('\n\t</row>\n', ss);
+	  rcnt := rcnt + 1;
             }
         }
+  http ('</csv>', ss);
+  return ss;
     }
+;
+
+create procedure DB.DBA.RDF_LOAD_CSV (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp any;
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+
+  xt := csv_to_xml (_ret_body);  
+  xt := xtree_doc (xt);
+  dbg_obj_print (xt);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/csvxml2rdf.xsl', xt, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+  DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
 }
 ;
@@ -4913,6 +4977,13 @@ create procedure DB.DBA.RDF_LOAD_ICAL (in graph_iri varchar, in new_origin_uri v
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_WEBCAL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  return DB.DBA.RDF_LOAD_ICAL (graph_iri, new_origin_uri, dest, _ret_body, aq, ps, _key, opts);
 }
 ;
 
@@ -6283,6 +6354,15 @@ create procedure DB.DBA.RDF_LOAD_FEED_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
       goto no_feed;
     }
+    else if (xpath_eval ('/service', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/odata2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+      if (xpath_eval ('count(/RDF/*)', xd) > 0)
+	mdta := 1;
+      xd := serialize_to_UTF8_xml (xd);
+      DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      goto no_feed;
+    }
   else
     goto no_feed;
 
@@ -6372,6 +6452,16 @@ create procedure DB.DBA.SYS_FEED_SPONGE_UP (in local_iri varchar, in get_uri var
 {
   declare url varchar;
   url := 'http:' || subseq (get_uri, 5);
+  options := vector_concat (vector ('get:uri', url), options);
+  return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
+      'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+}
+;
+
+create procedure DB.DBA.SYS_WEBCAL_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare url varchar;
+  url := 'http:' || subseq (get_uri, 7);
   options := vector_concat (vector ('get:uri', url), options);
   return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
       'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);

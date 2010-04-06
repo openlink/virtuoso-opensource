@@ -34,6 +34,7 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
@@ -49,6 +50,8 @@
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:batch="http://schemas.google.com/gdata/batch"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+	xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+	xmlns:m="&m;"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -57,6 +60,25 @@
 	<rdf:RDF>
 	    <xsl:apply-templates/>
 	</rdf:RDF>
+    </xsl:template>
+
+	<xsl:template match="a:entry" priority="2">
+	<rdf:Description rdf:about="{id}">
+	    <rdf:type rdf:resource="&bibo;Document"/>
+	    <foaf:topic rdf:resource="{vi:proxyIRI (id)}"/>
+	</rdf:Description>
+	<rdf:Description rdf:about="{vi:proxyIRI (id)}">
+	    <rdf:type rdf:resource="&sioc;Item"/>
+	    <dc:title><xsl:value-of select="a:title"/></dc:title>
+	    <xsl:apply-templates select="g:*"/>
+	    <xsl:apply-templates select="a:*"/>
+		<xsl:for-each select="content/m:properties/d:*">
+			<xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+				<xsl:value-of select="."/>
+			</xsl:element>
+		</xsl:for-each>
+		<!--xsl:copy-of select="content/m:properties/d:*" /-->
+	</rdf:Description>
     </xsl:template>
 
     <xsl:template match="a:entry[g:*]" priority="1">
@@ -81,9 +103,20 @@
     </xsl:template>
 
     <xsl:template match="a:author">
+		<xsl:if test="string-length(name) &gt; 0">
 	<sioc:has_creator>
 	    <xsl:variable name="agent">
+					<xsl:choose>
+					<xsl:when test="starts-with(parent::a:id, 'http://')">
+						<xsl:value-of select="vi:proxyIRI (parent::a:id, '', name)"/>
+					</xsl:when>
+					<xsl:when test="parent::a:entry/link[@rel='self']">
 		<xsl:value-of select="vi:proxyIRI (parent::a:entry/link[@rel='self']/@href,'',name)"/>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="vi:proxyIRI (parent::a:id, '', name)"/>
+					</xsl:otherwise>
+					</xsl:choose>
 	    </xsl:variable>
 	    <rdf:Description rdf:about="{$agent}">
 		<rdf:type rdf:resource="&foaf;Agent"/>
@@ -91,6 +124,7 @@
 		<foaf:mbox rdf:resource="mailto:{email}"/>
 	    </rdf:Description>
 	</sioc:has_creator>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="a:published">

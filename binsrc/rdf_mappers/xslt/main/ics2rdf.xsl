@@ -42,6 +42,7 @@
     version="1.0"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     >
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -152,6 +153,11 @@
 	    <xsl:attribute name="datatype" namespace="&rdf;">&xsd;dateTime</xsl:attribute>
 		<xsl:apply-templates select="val"/>
 	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="GEO"  priority="10">
+	<geo:lat><xsl:value-of select="fld[1]"/></geo:lat>
+	<geo:long><xsl:value-of select="fld[2]"/></geo:long>
     </xsl:template>
 
     <xsl:template match="fld" priority="10">
