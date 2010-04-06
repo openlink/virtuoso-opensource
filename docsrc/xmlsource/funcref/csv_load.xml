@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_csv_load">
+  <refmeta>
+    <refentrytitle>csv_load</refentrytitle>
+    <refmiscinfo>file</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>csv_load</refname>
+    <refpurpose>Import CSV file from string session.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_csv_load">
+      <funcprototype id="fproto_csv_load">
+        <funcdef><function>csv_load</function></funcdef>
+	<paramdef>in <parameter>string_session_input</parameter> any</paramdef>
+	<paramdef><optional>in <parameter>from_line</parameter> integer</optional></paramdef>
+	<paramdef><optional>in <parameter>to_line</parameter> integer</optional></paramdef>
+	<paramdef>in <parameter>table_name</parameter> varchar</paramdef>
+	<paramdef><optional>in <parameter>trx_log_mode</parameter> integer</optional></paramdef>
+	<paramdef><optional>in <parameter>opts</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_csv_load">
+    <title>Description</title>
+    <para>Import CSV file from string session.</para>
+  </refsect1>
+  <refsect1 id="params_csv_load">
+    <title>Parameters</title>
+    <refsect2><title>string_session_input</title>
+      <para>String session containing CSV data will be parsed as CSV where it will
+insert into the table specified as table_name the lines between from_line and to_line offsets.
+      </para>
+    </refsect2>
+    <refsect2><title>from_line</title>
+      <para>Default - 0, This means counted from the begining.</para>
+    </refsect2>
+    <refsect2><title>to_line</title>
+      <para>Default - null, This means counted to the end.</para>
+    </refsect2>
+    <refsect2><title>table_name</title>
+      <para>The table the data to be inserted into.</para>
+    </refsect2>
+    <refsect2><title>trx_log_mode</title>
+      <para>Default - 2. The trx_log_mode is used to do row auto commit and to log
+or not the transaction. The default mode is to do not log and do auto commit.</para>
+    </refsect2>
+    <refsect2><title>opts</title>
+      <para>Default - null. The opts paramater is used to specify the delimiter
+and quote it should look like this:
+</para>
+<programlisting><![CDATA[
+vector ('csv-delimiter', self.delim, 'csv-quote', self.quot)
+]]></programlisting>
+    </refsect2>
+  </refsect1>
+  <!--<refsect1 id="ret_csv_load"><title>Return Types</title>
+    <para>Returns a vector with field values.</para>
+  </refsect1>-->
+  <refsect1 id="errors_csv_load">
+    <title>Errors</title>
+    <para>If table is not suitable in respect of number of columns or
+type of columns error will be signaled.</para>
+  </refsect1>
+  <refsect1 id="examples_csv_load">
+    <title>Examples</title>
+    <example id="ex_csv_load"><title></title>
+    <para></para>
+<programlisting><![CDATA[
+SQL>create procedure my_csv_load (in file_name varchar)
+{
+  declare tb_name varchar;
+  declare sess any;
+  declare ar any;
+
+  sess := file_open(file_name);
+
+
+  -- to get the name of the table
+  ar := csv_table_def(file_name);
+  ar := split_and_decode(ar, 0,'\0\0 ');
+  tb_name := trim (ar[2], '"');
+
+  dbg_obj_print(tb_name);
+
+  -- to create the table
+  exec(csv_table_def(file_name));
+
+  -- loading the data
+  csv_load(sess,0, null, concat('DB.DBA.', tb_name));
+}
+;
+
+Done. -- 10 msec.
+
+SQL>select my_csv_load('tmp/MyContacts.csv');
+callret
+VARCHAR
+_____________________
+
+0
+
+1 Rows. -- 121 msec.
+
+
+SQL>select * from DB.DBA.tmp_MyContacts_csv;
+First_Name_Last_Name_Middle_Name_Name_Nickname_E_mail_Addre
+VARCHAR
+_______________________________________________________________________________
+
+First Name;Last Name;Middle Name;Name;Nickname;E-mail Address;Home Street;Home City;Home Postal Code;Home State;Home Country/Region;Home Phone;Home Fa
+x;Mobile Phone;Personal Web Page;Business Street;Business City;Business Postal Code;Business State;Business Country/Region;Business Web Page;Business
+Phone;Business Fax;Pager;Company;Job Title;Department;Office Location;Notes
+;;; Virtuoso Nightly Builds on  oplusaix2 ;;virtuoso-nightly-builds@openlinksw.com;;;;;;;;;;;;;;;;;;;;;;;
+......
+
+202 Rows. -- 341 msec.
+
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_csv_load">
+    <title>See Also</title>
+    <para><link linkend="fn_get_csv_row"><function>get_csv_row</function></link></para>
+    <para><link linkend="fn_csv_load_file"><function>csv_load_file</function></link></para>
+    <para><link linkend="fn_csv_parse"><function>csv_parse</function></link></para>
+    <para><link linkend="fn_csv_cols_def"><function>csv_cols_def</function></link></para>
+    <para><link linkend="fn_csv_table_def"><function>csv_table_def</function></link></para>
+  </refsect1>
+</refentry>

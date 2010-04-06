@@ -21,51 +21,48 @@
  -
  -
 -->
-<refentry id="fn_gz_file_open">
+<refentry id="fn_file_open">
   <refmeta>
-    <refentrytitle>gz_file_open</refentrytitle>
+    <refentrytitle>file_open</refentrytitle>
     <refmiscinfo>file</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>gz_file_open</refname>
-    <refpurpose>returns the contents of a gzipped file</refpurpose>
+    <refname>file_open</refname>
+    <refpurpose>returns the contents of a file.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_gz_file_open">
-      <funcprototype id="fproto_gz_file_open">
-        <funcdef>varchar <function>gz_file_open</function></funcdef>
+    <funcsynopsis id="fsyn_file_open">
+      <funcprototype id="fproto_file_open">
+        <funcdef>varchar <function>file_open</function></funcdef>
         <paramdef>in <parameter>path</parameter> varchar</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_gz_file_open"><title>Description</title>
+  <refsect1 id="desc_file_open"><title>Description</title>
     <para>Returns the contents of a file. The path is relative to the working directory
     of the database server.</para>
   </refsect1>
-  <refsect1 id="params_gz_file_open"><title>Parameters</title>
+  <refsect1 id="params_file_open"><title>Parameters</title>
     <refsect2>
       <title>path</title>
       <para>Path name of the file to read.</para>
     </refsect2>
   </refsect1>
 
-<refsect1 id="examples_gz_file_open">
+<refsect1 id="examples_file_open">
     <title>Examples</title>
-    <example id="ex_gz_file_open"><title></title>
-      <para>For loading gzipped N3 and Turtle files you can use:</para>
+    <example id="ex_file_open"><title></title>
+      <para>For loading N3 and Turtle files you can use:</para>
 <screen><![CDATA[
-SQL>DB.DBA.TTLP_MT (gz_file_open('path/myfile.n3.gz'), 'base uri', 'graph uri', 255);
+SQL>DB.DBA.TTLP_MT (file_open('tmp/file1.n3'), 'base uri', 'graph uri', 255);
 ]]></screen>
-      <para>Note that the last parameter means the parser uses relaxed parsing rules, the default value
-of 0 means strict syntax rules.</para>
     </example>
   </refsect1>
-  <refsect1 id="seealso_gz_file_open">
+  <refsect1 id="seealso_file_open">
     <title>See Also</title>
+    <para><link linkend="fn_file_delete"><function>file_delete</function></link></para>
     <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
     <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
     <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
   </refsect1>
 </refentry>
-
-

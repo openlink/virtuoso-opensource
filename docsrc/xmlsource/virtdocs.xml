@@ -146,6 +146,7 @@
 <!ENTITY exp					SYSTEM "funcref/exp.xml">
 <!ENTITY explain				SYSTEM "funcref/explain.xml">
 <!ENTITY file_delete				SYSTEM "funcref/file_delete.xml">
+<!ENTITY file_open				SYSTEM	"funcref/file_open.xml">
 <!ENTITY file_stat				SYSTEM "funcref/file_stat.xml">
 <!ENTITY file_to_string				SYSTEM "funcref/file_to_string.xml">
 <!ENTITY file_to_string_output			SYSTEM "funcref/file_to_string_output.xml">
@@ -154,6 +155,14 @@
 <!ENTITY file_mkdir 				SYSTEM "funcref/file_mkdir.xml">
 <!ENTITY file_mkpath				SYSTEM "funcref/file_mkpath.xml">
 <!ENTITY file_dirlist				SYSTEM "funcref/file_dirlist.xml">
+
+<!ENTITY get_csv_row				SYSTEM	"funcref/get_csv_row.xml">
+<!ENTITY csv_load_file				SYSTEM	"funcref/csv_load_file.xml">
+<!ENTITY csv_load				SYSTEM	"funcref/csv_load.xml">
+<!ENTITY csv_parse				SYSTEM	"funcref/csv_parse.xml">
+<!ENTITY csv_cols_def				SYSTEM	"funcref/csv_cols_def.xml">
+<!ENTITY csv_table_def				SYSTEM	"funcref/csv_table_def.xml">
+
 <!ENTITY fk_check_input_values			SYSTEM "funcref/fk_check_input_values.xml">
 <!ENTITY floor					SYSTEM "funcref/floor.xml">
 <!ENTITY ftp_get				SYSTEM "funcref/ftp_get.xml">
