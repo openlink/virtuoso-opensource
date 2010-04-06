@@ -38,6 +38,7 @@
     <v:variable name="hrow" persist="0" type="int" default="0" param-name="hrow"/>
     <v:variable name="offs" persist="0" type="int" default="1" param-name="offs"/>
     <v:variable name="tname" persist="0" type="varchar" default="''" />
+    <v:variable name="enc" persist="0" type="varchar" default='null' param-name="enc"/>
   </vm:variables>
   <vm:menu>
   </vm:menu>
@@ -51,7 +52,12 @@
 	    {
               declare ss, cn, tmp any;
 	      if (self.mode = 0)
+	        {
+		  if (self.path like '%.gz')
+	            ss := gz_file_open (self.path);
+		  else
 	        ss := file_open (self.path);
+	        }
               else
                 {  
 		  ss := string_output ();
@@ -63,9 +69,11 @@
 		  select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
 		  http (cn, ss);
 		}
+              if (self.enc = '')
+                self.enc := null;	      
               tmp := split_and_decode (self.path, 0, '\0\0/');  
               self.tname := SYS_ALFANUM_NAME (tmp[length(tmp) - 1]);		
-	      self.head := y_csv_get_cols (ss, self.hrow, self.offs, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot));
+	      self.head := y_csv_get_cols (ss, self.hrow, self.offs, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot, 'encoding', self.enc));
 	    }
       </v:on-init>
       <v:form name="inx_form" type="simple" method="POST" action="" >
@@ -175,7 +183,12 @@
 		  exec (string_output_string (ss));
 		  commit work;
 		  if (self.mode = 0)
+		    {
+		      if (self.path like '%.gz')
+			s := gz_file_open (self.path);
+		      else
 		    s := file_open (self.path);
+		    }
 		  else
 		    {  
 		      declare cn any;
@@ -188,7 +201,7 @@
 		      select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
 		      http (cn, s);
 		    }
-		  nrec := csv_load (s, self.offs, null, tb, 1, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot));		  
+		  nrec := csv_load (s, self.offs, null, tb, 1, vector ('csv-delimiter', self.delim, 'csv-quote', self.quot, 'encoding', self.enc));  
 		  self.vc_redirect (sprintf ('import_csv_3.vspx?tb=%U&nrec=%d', tb, nrec));
                   ]]>
                 </v:on-post>

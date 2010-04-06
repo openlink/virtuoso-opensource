@@ -6441,9 +6441,9 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
     }
   for (inx := 0; inx < length (res); inx := inx + 1)
     { 
-       if (not isstring (res[inx][0]))
+       if (not isstring (res[inx][0]) and not isnull (res[inx][0]))
          no_head := 1;	 
-       else if (trim (res[inx][0]) = '')
+       else if (trim (res[inx][0]) = '' or isnull (res[inx][0]))
          res[inx][0] := sprintf ('COL%d', inx);	 
     }  
   for (inx := 0; inx < length (res); inx := inx + 1)

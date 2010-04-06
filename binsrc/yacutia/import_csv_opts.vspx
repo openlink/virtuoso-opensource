@@ -70,6 +70,50 @@
           </tr>
           <tr>
 	      <td>
+		  <label>Encoding</label>
+		  <v:select-list name="enc">
+		      <v:item name="Default" value='*default*'/>
+		      <v:item name="UTF-8" value="UTF-8"/>
+		      <v:item name="UTF-16LE" value="UTF-16LE"/>
+		      <v:item name="UTF-16BE" value="UTF-16BE"/>
+		      <v:after-data-bind><![CDATA[
+              declare ss, cn, tmp, r, i, hi, offs, bom, enc any;
+	      if (self.enc.ufl_value is null) 
+	      {
+		  if (self.mode = 0)
+		    {
+		      if (self.path like '%.gz')
+			ss := gz_file_open (self.path);
+		      else
+			ss := file_open (self.path);
+		    }
+		  else
+		    {  
+		      ss := string_output ();
+		      declare exit handler for not found {
+			 self.vc_error_message := 'Invalid path';
+			 self.vc_is_valid := 0;
+			 return 0;
+		      };
+		      select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
+		      http (cn, ss);
+		    }
+		   bom := subseq (ss, 0, 2);		
+		   enc := null;
+		   if (bom[0] = '\xff'[0] and bom[1] = '\xfe'[0])
+		     enc := 'UTF-16LE';
+		   if (bom[0] = '\xfe'[0] and bom[1] = '\xff'[0])
+		     enc := 'UTF-16BE';
+		   if (self.enc.ufl_value is null)
+		     self.enc.ufl_value := enc;   
+		   control.vs_set_selected (); 
+	       }
+			  ]]></v:after-data-bind>
+		  </v:select-list>
+             </td>
+          </tr>
+          <tr>
+	      <td>
 		  <label>Header Row</label>
 		  <v:text name="hrow" value="" default_value="1"/><small>zero if no header</small>
              </td>
@@ -85,9 +129,14 @@
 		  <h3>Sample Data</h3>
 		  <table class="listing">
 	  <?vsp
-              declare ss, cn, tmp, r, i any;
+              declare ss, cn, tmp, r, i, hi, offs, bom, enc any;
 	      if (self.mode = 0)
+	        {
+		  if (self.path like '%.gz')
+	            ss := gz_file_open (self.path);
+		  else
 	        ss := file_open (self.path);
+		}
               else
                 {  
 		  ss := string_output ();
@@ -99,20 +148,37 @@
 		  select RES_CONTENT into cn from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.path;
 		  http (cn, ss);
 		}
+	       if (self.enc.ufl_value = '*default*')
+                 enc := null;
+               else		 
+                 enc := self.enc.ufl_value;	       
 	       i := 0;	
-		while (isvector (r := get_csv_row (ss, self.delim.ufl_value, self.quot.ufl_value)) and i < 10) 	
+	       hi := atoi (coalesce (self.hrow.ufl_value, '1')) - 1;
+	       offs := atoi (coalesce (self.offs.ufl_value, '2')) - 1;
+	       declare exit handler for sqlstate '*'
                 {
-		   if (i = 0)
+		  self.vc_error_message := __SQL_MESSAGE;
+		  self.vc_is_valid := 0;
+		  goto endp;
+		};
+		while (isvector (r := get_csv_row (ss, self.delim.ufl_value, self.quot.ufl_value, enc)) and i < 10 + offs) 	
+                {
+		   if ((i = 0 and hi < 0) or hi = i)
 		     {
 		       declare j int;
 		       http ('<tr class="listing_header_row"><td>Row No</td>');
 		       foreach (any c in r) do
                          {
+			    if (hi < 0 or not isstring (r[j]))
 			    http_value (sprintf ('Column %02d', j), 'td');
+			    else
+			      http_value (SYS_ALFANUM_NAME (r[j]), 'td');   
 			    j := j + 1;
 			 }   
 		       http ('</tr>');
 		     }
+		   if (i >= offs)
+                     {
 		   http (sprintf ('<tr class="%s">', case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end));
 		   http_value (i + 1, 'td');
 		   foreach (any c in r) do
@@ -120,8 +186,10 @@
 		       http_value (c, 'td');
 		     }
 		   http ('</tr>');
+	             }
 	  	   i := i + 1;
 	        }
+		endp:
 		if (i = 0)
 		  http ('<tr><td>The file cannot be parsed</td></tr>');
 	  ?>
@@ -142,13 +210,16 @@
 		  <![CDATA[
 		  if (self.quot.ufl_value = '')
 		    self.quot.ufl_value := '"';
-		  self.vc_redirect (sprintf ('import_csv_2.vspx?path=%s&mode=%d&delim=%U&quot=%U&hrow=%d&offs=%d', 
+		  if (self.enc.ufl_value = '*default*')
+                    self.enc.ufl_value := '';
+		  self.vc_redirect (sprintf ('import_csv_2.vspx?path=%s&mode=%d&delim=%U&quot=%U&hrow=%d&offs=%d&enc=%U', 
 		  	self.path, 
 			self.mode,
 			self.delim.ufl_value,
 			self.quot.ufl_value,
 			atoi(self.hrow.ufl_value) - 1,
-			atoi (self.offs.ufl_value) - 1
+			atoi (self.offs.ufl_value) - 1,
+			self.enc.ufl_value
 			));
                   ]]>
                 </v:on-post>
