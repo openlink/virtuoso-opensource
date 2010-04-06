@@ -43,24 +43,9 @@ public class VirtInfGraph extends VirtGraph implements InfGraph
     protected boolean recordDerivations;
 
 
-    public VirtInfGraph(String _ruleSet, boolean useSameAs)
-    {
-      super();
-      setRuleSet(_ruleSet);
-      setSameAs(useSameAs);
-    }
-
     public VirtInfGraph(String _ruleSet, boolean useSameAs, String graphName)
     {
       super(graphName);
-      setRuleSet(_ruleSet);
-      setSameAs(useSameAs);
-    }
-
-    public VirtInfGraph(String _ruleSet, boolean useSameAs, String url_hostlist, 
-    		String user, String password)
-    {
-      super(url_hostlist, user, password);
       setRuleSet(_ruleSet);
       setSameAs(useSameAs);
     }
@@ -208,7 +193,6 @@ public class VirtInfGraph extends VirtGraph implements InfGraph
      */
     public ExtendedIterator<Triple> find(Node subject, Node property, Node object, Graph param)
     {
-//??checkme
       return cloneWithPremises(param).find(subject, property, object);
     }
     
@@ -219,14 +203,11 @@ public class VirtInfGraph extends VirtGraph implements InfGraph
      * implementation loses ALL partial deductions so far. Some subclasses
      * may be able to a more efficient job.
      */
-//    public InfGraph cloneWithPremises(Graph premises) {
     public Graph cloneWithPremises(Graph premises) {
         MultiUnion union = new MultiUnion();
-//        Graph raw = getRawGraph();
         union.addGraph( this );
         union.setBaseGraph( this );
         union.addGraph( premises );
-  //      return getReasoner().bind(union);
         return union;
     }
     

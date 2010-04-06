@@ -46,7 +46,7 @@ public class VirtModel extends ModelCom {
     }
 
 
-    public static Model openDatabaseModel(String graphName, String url, 
+    public static VirtModel openDatabaseModel(String graphName, String url, 
     	String user, String password) 
     {
 	return new VirtModel(new VirtGraph(graphName, url, user, password));
@@ -62,6 +62,28 @@ public class VirtModel extends ModelCom {
 		super.removeAll();
 	}
 	return this;
+    }
+	
+
+    public void createRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+        ((VirtGraph)this.graph).createRuleSet(ruleSetName, uriGraphRuleSet);
+    }
+
+
+    public void removeRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+        ((VirtGraph)this.graph).removeRuleSet(ruleSetName, uriGraphRuleSet);
+    }
+
+    public void setRuleSet(String _ruleSet)
+    {
+        ((VirtGraph)this.graph).setRuleSet(_ruleSet);
+    }
+
+    public void setSameAs(boolean _sameAs)
+    {
+        ((VirtGraph)this.graph).setSameAs(_sameAs);
     }
 	
 }

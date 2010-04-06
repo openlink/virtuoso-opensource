@@ -220,6 +220,35 @@ public class VirtGraph extends GraphBase
 
 
 
+    public void createRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+      checkOpen();
+
+      try {
+	java.sql.Statement st = connection.createStatement();
+	st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"')");
+	st.close();
+      } catch (Exception e) {
+        throw new JenaException(e);
+      }
+    }
+
+
+    public void removeRuleSet(String ruleSetName, String uriGraphRuleSet) 
+    {
+      checkOpen();
+
+      try {
+	java.sql.Statement st = connection.createStatement();
+	st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"', 1)");
+	st.close();
+      } catch (Exception e) {
+        throw new JenaException(e);
+      }
+    }
+
+
+
 // GraphBase overrides
     String Node2Str(Node n)
     {

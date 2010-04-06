@@ -295,4 +295,3 @@ public class VirtuosoQueryEngine extends QueryEngineMain
     }
 
 }
-
