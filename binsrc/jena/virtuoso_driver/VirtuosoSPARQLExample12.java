@@ -43,7 +43,7 @@ public class VirtuosoSPARQLExample12 {
     {
 	String url;
 	if(args.length == 0)
-	    url = "jdbc:virtuoso://lpcc:1112";
+	    url = "jdbc:virtuoso://localhost:1111";
 	else
 	    url = args[0];
 
