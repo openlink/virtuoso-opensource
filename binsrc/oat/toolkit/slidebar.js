@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -88,7 +88,7 @@ OAT.Slidebar = function (div, optionsObj) {
 		OAT.Event.attach (self.handle_div, "click", self.close);
 		OAT.Style.set (self.content_div, {overflow : "auto"});
 		self.handle_close();
-		OAT.MSG.send (self, "SLB_OPENED", self)
+		OAT.MSG.send (self, "SLB_OPENED", self);
 	}
 
 	this.closed = function (source, message, event) {
@@ -102,7 +102,7 @@ OAT.Slidebar = function (div, optionsObj) {
 
 		OAT.Event.attach (self.handle_div, "click", self.open);
 		self.handle_open();
-		OAT.MSG.send(self, "SLB_CLOSED", self)
+		OAT.MSG.send(self, "SLB_CLOSED", self);
 	}
 
 	this.center_handle_img = function () {

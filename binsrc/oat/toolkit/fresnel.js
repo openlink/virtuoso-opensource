@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -108,8 +108,8 @@ OAT.Fresnel = function(optObj) {
 		var instanceNS = self.ns+"instanceFormatDomain";
 
 		function checkFormat(f) {
-			if (classNS in f.preds && f.preds[classNS].find(item.type) != -1) { format_class = f; }
-			if (instanceNS in f.preds && f.preds[instanceNS].find(item.uri) != -1) { format_instance = f; }
+			if (classNS in f.preds && f.preds[classNS].indexOf(item.type) != -1) { format_class = f; }
+			if (instanceNS in f.preds && f.preds[instanceNS].indexOf(item.uri) != -1) { format_instance = f; }
 		}
 
 		for (var i=0;i<groups.length;i++) { /* first check formats in groups */
@@ -150,8 +150,8 @@ OAT.Fresnel = function(optObj) {
 		var ns = self.ns+"propertyFormatDomain";
 		function checkFormat(f) {
 			if (ns in f.preds) {
-				if (f.preds[ns].find(property) != -1) { format_prop = f; }
-				if (f.preds[ns].find(self.ns+"allProperties") != -1) { format_all = f; }
+				if (f.preds[ns].indexOf(property) != -1) { format_prop = f; }
+				if (f.preds[ns].indexOf(self.ns+"allProperties") != -1) { format_all = f; }
 			}
 		}
 
@@ -184,7 +184,7 @@ OAT.Fresnel = function(optObj) {
 				var values = tmp.preds[self.ns+"stylesheetLink"];
 				for (var j=0;j<values.length;j++) {
 					var s = values[j];
-					if (self.stylesheets.find(s) == -1) { self.stylesheets.push(s); }
+					if (self.stylesheets.indexOf(s) == -1) { self.stylesheets.push(s); }
 				}
 			}
 
@@ -286,8 +286,8 @@ OAT.Fresnel = function(optObj) {
 			var ok_instance = false;
 			var purpose = "";
 			if (self.ns+"purpose" in lens.preds) { purpose = lens.preds[self.ns+"purpose"][0]; }
-			if (self.ns+"classLensDomain" in lens.preds) { ok_class = (lens.preds[self.ns+"classLensDomain"].find(item.type) != -1); }
-			if (self.ns+"classInstanceDomain" in lens.preds) { ok_instance = (lens.preds[self.ns+"classInstanceDomain"].find(item.uri) != -1); }
+			if (self.ns+"classLensDomain" in lens.preds) { ok_class = (lens.preds[self.ns+"classLensDomain"].indexOf(item.type) != -1); }
+			if (self.ns+"classInstanceDomain" in lens.preds) { ok_instance = (lens.preds[self.ns+"classInstanceDomain"].indexOf(item.uri) != -1); }
 
 			if (ok_class) {
 				if (purpose == self.ns+"defaultLens") { d_class = lens; } else { l_class = lens; }
@@ -346,7 +346,7 @@ OAT.Fresnel = function(optObj) {
 
 		if (all) { /* all remaining */
 			for (var p in item.preds) {
-				if (usedProps.find(p) == -1 && hideProps.find(p) == -1) {
+				if (usedProps.indexOf(p) == -1 && hideProps.indexOf(p) == -1) {
 					self.formatProperty(parent,item,lens,p);
 				}
 			}

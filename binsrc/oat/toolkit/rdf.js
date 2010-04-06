@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -71,7 +71,7 @@ OAT.RDF = {
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
 				var local = OAT.Xml.localName(a);
-				if (OAT.RDF.ignoredAttributes.find(local) == -1) {
+				if (OAT.RDF.ignoredAttributes.indexOf(local) == -1) {
 					var pred = a.namespaceURI+OAT.Xml.localName(a);
 					var obj = a.nodeValue;
 					triples.push([subj,pred,obj,1]);

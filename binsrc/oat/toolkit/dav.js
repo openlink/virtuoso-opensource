@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -616,7 +616,7 @@ OAT.WebDav = {
 					var src = this.options.imagePath+"Dav_"+ico_type+"."+this.options.imageExt;
 					var srcB = this.options.imagePath+"Blank.gif";
 					var ico = OAT.Dom.image(src,srcB,32,32);
-					var cube = OAT.Dom.create('div',{"class":"dav_item"});
+					var cube = OAT.Dom.create('div',{className:"dav_item"});
 					OAT.Dom.append([cube,ico,OAT.Dom.create("br"),OAT.Dom.text(item.name)],[content,cube]);
 					content.appendChild(cube);
 					attachClick(cube,item,cubez);

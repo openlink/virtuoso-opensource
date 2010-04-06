@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -290,7 +290,7 @@ OAT.Xmla = {
 		var names=[];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) return names;
-		var index = parsed[0].find("DataSourceInfo");
+		var index = parsed[0].indexOf("DataSourceInfo");
 		for (var i=0;i<parsed[1].length;i++) {
 			names.push(parsed[1][i][index]);
 		}
@@ -302,7 +302,7 @@ OAT.Xmla = {
 		var names=[];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) return names;
-		var index = parsed[0].find("CATALOG_NAME");
+		var index = parsed[0].indexOf("CATALOG_NAME");
 		for (var i=0;i<parsed[1].length;i++) {
 			names.push(parsed[1][i][index]);
 		}
@@ -315,9 +315,9 @@ OAT.Xmla = {
 		var schema_names=[];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) return [names,schema_names];
-		var nameIndex = parsed[0].find("TABLE_NAME");
-		var schemaIndex = parsed[0].find("TABLE_SCHEMA");
-		var typeIndex = parsed[0].find("TABLE_TYPE");
+		var nameIndex = parsed[0].indexOf("TABLE_NAME");
+		var schemaIndex = parsed[0].indexOf("TABLE_SCHEMA");
+		var typeIndex = parsed[0].indexOf("TABLE_TYPE");
 		for (var i=0;i<parsed[1].length;i++) {
 			var name = parsed[1][i][nameIndex];
 			var schema = parsed[1][i][schemaIndex];
@@ -335,11 +335,11 @@ OAT.Xmla = {
 		var columns=[];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) { return columns; }
-		var nameIndex = parsed[0].find("COLUMN_NAME");
-		var defIndex = parsed[0].find("COLUMN_DEFAULT");
-		var typeIndex = parsed[0].find("DATA_TYPE");
-		var nnIndex = parsed[0].find("IS_NULLABLE");
-		var specIndex = parsed[0].find("CHARACTER_MAXIMUM_LENGTH");
+		var nameIndex = parsed[0].indexOf("COLUMN_NAME");
+		var defIndex = parsed[0].indexOf("COLUMN_DEFAULT");
+		var typeIndex = parsed[0].indexOf("DATA_TYPE");
+		var nnIndex = parsed[0].indexOf("IS_NULLABLE");
+		var specIndex = parsed[0].indexOf("CHARACTER_MAXIMUM_LENGTH");
 		for (var i=0;i<parsed[1].length;i++) {
 			var tmpobj = {};
 			tmpobj.name = parsed[1][i][nameIndex];
@@ -356,8 +356,8 @@ OAT.Xmla = {
 		var q = ['"','"'];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) return names;
-		var index1 = parsed[0].find("LiteralName");
-		var index2 = parsed[0].find("LiteralValue");
+		var index1 = parsed[0].indexOf("LiteralName");
+		var index2 = parsed[0].indexOf("LiteralValue");
 		for (var i=0;i<parsed[1].length;i++) {
 			var name = parsed[1][i][index1];
 			var value = parsed[1][i][index2];
@@ -371,11 +371,11 @@ OAT.Xmla = {
 		var types = [];
 		var parsed = OAT.Xmla.parseResponse(data);
 		if (!parsed[1].length) return types;
-		var nameIndex = parsed[0].find("TYPE_NAME");
-		var typeIndex = parsed[0].find("DATA_TYPE");
-		var paramsIndex = parsed[0].find("CREATE_PARAMS");
-		var prefixIndex = parsed[0].find("LITERAL_PREFIX");
-		var suffixIndex = parsed[0].find("LITERAL_SUFFIX");
+		var nameIndex = parsed[0].indexOf("TYPE_NAME");
+		var typeIndex = parsed[0].indexOf("DATA_TYPE");
+		var paramsIndex = parsed[0].indexOf("CREATE_PARAMS");
+		var prefixIndex = parsed[0].indexOf("LITERAL_PREFIX");
+		var suffixIndex = parsed[0].indexOf("LITERAL_SUFFIX");
 		for (var i=0;i<parsed[1].length;i++) {
 			var name = parsed[1][i][nameIndex];
 			var type = parsed[1][i][typeIndex];
@@ -391,7 +391,7 @@ OAT.Xmla = {
 		var columns = [];
 		var result = OAT.Xmla.parseResponse(data);
 		if (!result[1].length) { return columns; }
-		var columnIndex = result[0].find("COLUMN_NAME");
+		var columnIndex = result[0].indexOf("COLUMN_NAME");
 		for (var i=0;i<result[1].length;i++) { columns.push(result[1][i][columnIndex]); }
 		return columns;
 	},
@@ -400,12 +400,12 @@ OAT.Xmla = {
 		var keys = [];
 		var result = OAT.Xmla.parseResponse(data);
 		if (!result[1].length) { return keys; }
-		var pkSchemaIndex = result[0].find("PK_TABLE_SCHEMA");
-		var pkTableIndex = result[0].find("PK_TABLE_NAME");
-		var pkColumnIndex = result[0].find("PK_COLUMN_NAME");
-		var fkSchemaIndex = result[0].find("FK_TABLE_SCHEMA");
-		var fkTableIndex = result[0].find("FK_TABLE_NAME");
-		var fkColumnIndex = result[0].find("FK_COLUMN_NAME");
+		var pkSchemaIndex = result[0].indexOf("PK_TABLE_SCHEMA");
+		var pkTableIndex = result[0].indexOf("PK_TABLE_NAME");
+		var pkColumnIndex = result[0].indexOf("PK_COLUMN_NAME");
+		var fkSchemaIndex = result[0].indexOf("FK_TABLE_SCHEMA");
+		var fkTableIndex = result[0].indexOf("FK_TABLE_NAME");
+		var fkColumnIndex = result[0].indexOf("FK_COLUMN_NAME");
 		for (var i=0;i<result[1].length;i++) {
 			var pk = {};
 			var fk = {};

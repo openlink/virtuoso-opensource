@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -472,8 +472,8 @@ OAT.DataSource = function(type) {
 						var fq = (pk.catalog == "" ? pk.table : pk.catalog+"."+pk.schema+"."+pk.table);
 						if (fq == ds.table) {
 							/* good, let's add binding */
-							var index1 = ds.outputFields.find(pk.column);
-							var index2 = self.inputFields.find(fk.column);
+							var index1 = ds.outputFields.indexOf(pk.column);
+							var index2 = self.inputFields.indexOf(fk.column);
 							self.fieldBinding.masterDSs.push(ds);
 							self.fieldBinding.masterFields.push(index1);
 							self.fieldBinding.selfFields.push(index2);
@@ -495,10 +495,10 @@ OAT.DataSource = function(type) {
 			var value = "false";
 			switch (parseInt(fb.types[j])) {
 				case 1: /* link to datasource */
-					value = datasources.find(fb.masterDSs[j]);
+					value = datasources.indexOf(fb.masterDSs[j]);
 				break;
 				case 3: /* link to uinput */
-					value = objects.find(fb.masterDSs[j]);
+					value = objects.indexOf(fb.masterDSs[j]);
 				break;
 			}
 			tmp.push(value);

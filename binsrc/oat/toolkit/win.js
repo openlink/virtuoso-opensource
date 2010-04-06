@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -329,28 +329,28 @@ OAT.Win.Template = function(obj) {
  */
 OAT.Win.MS = function(obj) {
 	OAT.Style.include('winms.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute","class":"oat_winms_container oat_win_container"});
-	obj.dom.content = OAT.Dom.create("div",{"class":"oat_winms_content"});
-	obj.dom.title = OAT.Dom.create("div",{"class":"oat_winms_title"});
-	obj.dom.caption = OAT.Dom.create("span",{"class":"oat_winms_caption"});
-	obj.dom.status = OAT.Dom.create("div",{"class":"oat_winms_status"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute",className:"oat_winms_container oat_win_container"});
+	obj.dom.content = OAT.Dom.create("div",{className:"oat_winms_content"});
+	obj.dom.title = OAT.Dom.create("div",{className:"oat_winms_title"});
+	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winms_caption"});
+	obj.dom.status = OAT.Dom.create("div",{className:"oat_winms_status"});
 
 	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
 	if (obj.options.buttons.indexOf("c") != -1) {
-		obj.dom.buttons.c = OAT.Dom.create("div",{"class":"oat_winms_close_b"});
+		obj.dom.buttons.c = OAT.Dom.create("div",{className:"oat_winms_close_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
 	}
 	if (obj.options.buttons.indexOf("M") != -1) {
-		obj.dom.buttons.M = OAT.Dom.create("div",{"class":"oat_winms_max_b"});
+		obj.dom.buttons.M = OAT.Dom.create("div",{className:"oat_winms_max_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.M]);
 	}
 	if (obj.options.buttons.indexOf("s") != -1) {
-		obj.dom.buttons.s = OAT.Dom.create("div",{"class":"oat_winms_shade_b"});
+		obj.dom.buttons.s = OAT.Dom.create("div",{className:"oat_winms_shade_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.s]);
 	}
 	if (obj.options.buttons.indexOf("r") != -1) {
-		obj.dom.buttons.r = OAT.Dom.create("div",{"class":"oat_winms_resize_b"});
+		obj.dom.buttons.r = OAT.Dom.create("div",{className:"oat_winms_resize_b"});
 		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
 	}
 
@@ -363,33 +363,33 @@ OAT.Win.MS = function(obj) {
  */
 OAT.Win.Mac = function(obj) {
 	OAT.Style.include('winmac.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute","class":"oat_winmac_container oat_win_container"});
-	obj.dom.content = OAT.Dom.create("div",{"class":"oat_winmac_content"});
-	obj.dom.title = OAT.Dom.create("div",{"class":"oat_winmac_title"});
-	obj.dom.caption = OAT.Dom.create("span",{"class":"oat_winmac_caption"});
-	obj.dom.status = OAT.Dom.create("div",{"class":"oat_winmac_status"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute",className:"oat_winmac_container oat_win_container"});
+	obj.dom.content = OAT.Dom.create("div",{className:"oat_winmac_content"});
+	obj.dom.title = OAT.Dom.create("div",{className:"oat_winmac_title"});
+	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winmac_caption"});
+	obj.dom.status = OAT.Dom.create("div",{className:"oat_winmac_status"});
 
 	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
-	obj.dom.buttons.lc = OAT.Dom.create("div",{"class":"oat_winmac_leftCorner"});
+	obj.dom.buttons.lc = OAT.Dom.create("div",{className:"oat_winmac_leftCorner"});
 	OAT.Dom.append([obj.dom.title,obj.dom.buttons.lc]);
-	obj.dom.buttons.rc = OAT.Dom.create("div",{"class":"oat_winmac_rightCorner"});
+	obj.dom.buttons.rc = OAT.Dom.create("div",{className:"oat_winmac_rightCorner"});
 	OAT.Dom.append([obj.dom.title,obj.dom.buttons.rc]);
 
 	if (obj.options.buttons.indexOf("c") != -1) {
-		obj.dom.buttons.c = OAT.Dom.create("div",{"class":"oat_winmac_close_b"});
+		obj.dom.buttons.c = OAT.Dom.create("div",{className:"oat_winmac_close_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
 	}
 	if (obj.options.buttons.indexOf("M") != -1) {
-		obj.dom.buttons.M = OAT.Dom.create("div",{"class":"oat_winmac_max_b"});
+		obj.dom.buttons.M = OAT.Dom.create("div",{className:"oat_winmac_max_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.M]);
 	}
 	if (obj.options.buttons.indexOf("s") != -1) {
-		obj.dom.buttons.s = OAT.Dom.create("div",{"class":"oat_winmac_shade_b"});
+		obj.dom.buttons.s = OAT.Dom.create("div",{className:"oat_winmac_shade_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.s]);
 	}
 	if (obj.options.buttons.indexOf("r") != -1) {
-		obj.dom.buttons.r = OAT.Dom.create("div",{"class":"oat_winmac_resize_b"});
+		obj.dom.buttons.r = OAT.Dom.create("div",{className:"oat_winmac_resize_b"});
 		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
 	}
 
@@ -402,20 +402,20 @@ OAT.Win.Mac = function(obj) {
  */
 OAT.Win.Rect = function(obj) {
 	OAT.Style.include('winrect.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute", "class":"oat_winrect_container oat_win_container"});
-	obj.dom.content = OAT.Dom.create("div",{"class":"oat_winrect_content"});
-	obj.dom.title = OAT.Dom.create("div",{"class":"oat_winrect_title"});
-	obj.dom.caption = OAT.Dom.create("span",{"class":"oat_winrect_caption"});
-	obj.dom.status = OAT.Dom.create("div",{"class":"oat_winrect_status"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute", className:"oat_winrect_container oat_win_container"});
+	obj.dom.content = OAT.Dom.create("div",{className:"oat_winrect_content"});
+	obj.dom.title = OAT.Dom.create("div",{className:"oat_winrect_title"});
+	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winrect_caption"});
+	obj.dom.status = OAT.Dom.create("div",{className:"oat_winrect_status"});
 
 	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
 	if (obj.options.buttons.indexOf("c") != -1) {
-		obj.dom.buttons.c = OAT.Dom.create("div",{"class":"oat_winrect_close_b"});
+		obj.dom.buttons.c = OAT.Dom.create("div",{className:"oat_winrect_close_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
 	}
 	if (obj.options.buttons.indexOf("r") != -1) {
-		obj.dom.buttons.r = OAT.Dom.create("div",{"class":"oat_winrect_resize_b"});
+		obj.dom.buttons.r = OAT.Dom.create("div",{className:"oat_winrect_resize_b"});
 		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
 	}
 
@@ -428,33 +428,33 @@ OAT.Win.Rect = function(obj) {
 OAT.Win.Round = function(obj) {
 	OAT.Style.include('winround.css');
 
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute", "class":"oat_winround_container oat_win_container"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute", className:"oat_winround_container oat_win_container"});
 
-	obj.dom.table = OAT.Dom.create("table",{"class":"oat_winround_wrapper"});
+	obj.dom.table = OAT.Dom.create("table",{className:"oat_winround_wrapper"});
 	obj.dom.tr_t = OAT.Dom.create("tr",{});
-	obj.dom.td_lt = OAT.Dom.create("td",{"class":"oat_winround_lt"});
-	obj.dom.td_t = OAT.Dom.create("td",{"class":"oat_winround_t"});
-	obj.dom.td_rt = OAT.Dom.create("td",{"class":"oat_winround_rt"});
+	obj.dom.td_lt = OAT.Dom.create("td",{className:"oat_winround_lt"});
+	obj.dom.td_t = OAT.Dom.create("td",{className:"oat_winround_t"});
+	obj.dom.td_rt = OAT.Dom.create("td",{className:"oat_winround_rt"});
 	obj.dom.tr_m = OAT.Dom.create("tr",{});
-	obj.dom.td_l = OAT.Dom.create("td",{"class":"oat_winround_l"});
-	obj.dom.td_m = OAT.Dom.create("td",{"class":"oat_winround_m"});
- 	obj.dom.td_r = OAT.Dom.create("td",{"class":"oat_winround_r"});
+	obj.dom.td_l = OAT.Dom.create("td",{className:"oat_winround_l"});
+	obj.dom.td_m = OAT.Dom.create("td",{className:"oat_winround_m"});
+ 	obj.dom.td_r = OAT.Dom.create("td",{className:"oat_winround_r"});
 	obj.dom.tr_b = OAT.Dom.create("tr",{});
-	obj.dom.td_lb = OAT.Dom.create("td",{"class":"oat_winround_lb"});
-	obj.dom.td_b = OAT.Dom.create("td",{"class":"oat_winround_b"});
-	obj.dom.td_rb = OAT.Dom.create("td",{"class":"oat_winround_rb"});
+	obj.dom.td_lb = OAT.Dom.create("td",{className:"oat_winround_lb"});
+	obj.dom.td_b = OAT.Dom.create("td",{className:"oat_winround_b"});
+	obj.dom.td_rb = OAT.Dom.create("td",{className:"oat_winround_rb"});
 
-	obj.dom.content = OAT.Dom.create("div",{"class":"oat_winround_content"});
-	obj.dom.title = OAT.Dom.create("div",{"class":"oat_winround_title"});
-	obj.dom.caption = OAT.Dom.create("span",{"class":"oat_winround_caption"});
-	obj.dom.status = OAT.Dom.create("div",{"class":"oat_winround_status"});
+	obj.dom.content = OAT.Dom.create("div",{className:"oat_winround_content"});
+	obj.dom.title = OAT.Dom.create("div",{className:"oat_winround_title"});
+	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winround_caption"});
+	obj.dom.status = OAT.Dom.create("div",{className:"oat_winround_status"});
 
 	if (obj.options.buttons.indexOf("c") != -1) {
-		obj.dom.buttons.c = OAT.Dom.create("div",{"class":"oat_winround_close_b"});
+		obj.dom.buttons.c = OAT.Dom.create("div",{className:"oat_winround_close_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
 	}
 	if (obj.options.buttons.indexOf("r") != -1) {
-		obj.dom.buttons.r = OAT.Dom.create("div",{"class":"oat_winround_resize_b"});
+		obj.dom.buttons.r = OAT.Dom.create("div",{className:"oat_winround_resize_b"});
 		OAT.Dom.append([obj.dom.td_rb,obj.dom.buttons.r]);
 	}
 
@@ -487,20 +487,20 @@ OAT.Win.Round = function(obj) {
  */
 OAT.Win.ODS = function(obj) {
 	OAT.Style.include('winods.css');
-	obj.dom.container = OAT.Dom.create("div",{position:"absolute", "class":"oat_winods_container oat_win_container"});
-	obj.dom.content = OAT.Dom.create("div",{"class":"oat_winods_content"});
-	obj.dom.title = OAT.Dom.create("div",{"class":"oat_winods_title"});
-	obj.dom.caption = OAT.Dom.create("span",{"class":"oat_winods_caption"});
-	obj.dom.status = OAT.Dom.create("div",{"class":"oat_winods_status"});
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute", className:"oat_winods_container oat_win_container"});
+	obj.dom.content = OAT.Dom.create("div",{className:"oat_winods_content"});
+	obj.dom.title = OAT.Dom.create("div",{className:"oat_winods_title"});
+	obj.dom.caption = OAT.Dom.create("span",{className:"oat_winods_caption"});
+	obj.dom.status = OAT.Dom.create("div",{className:"oat_winods_status"});
 
 	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
 	if (obj.options.buttons.indexOf("c") != -1) {
-		obj.dom.buttons.c = OAT.Dom.create("div",{"class":"oat_winods_close_b"});
+		obj.dom.buttons.c = OAT.Dom.create("div",{className:"oat_winods_close_b"});
 		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
 	}
 	if (obj.options.buttons.indexOf("r") != -1) {
-		obj.dom.buttons.r = OAT.Dom.create("div",{"class":"oat_winods_resize_b"});
+		obj.dom.buttons.r = OAT.Dom.create("div",{className:"oat_winods_resize_b"});
 		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
 	}
 

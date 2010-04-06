@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -42,18 +42,19 @@ OAT.RSSReader = function(div,options) {
 		}
 
 		var tn = xmlDoc.documentElement.tagName.toLowerCase();
-		if (tn == "rss") { self.parseRSS(xmlDoc,data); }
-		if (tn.match(/rdf/)) { self.parseRDF(xmlDoc,data); }
+		if (tn == "rss") { self._parseRSS(xmlDoc,data); }
+		if (tn.match(/rdf/)) { self._parseRDF(xmlDoc,data); }
+		if (tn == "feed") { self._parseAtom(xmlDoc,data); }
 
 		OAT.Dom.clear(self.div);
 		if (self.options.showTitle) {
-			var title = OAT.Dom.create("h3",{},"rss_header");
+			var title = OAT.Dom.create("h3",{className:"rss_header"});
 			var link = OAT.Dom.create("a");
 			link.href = data.link;
 			link.innerHTML = data.title;
 			OAT.Dom.append([title,link],[self.div,title]);
 		}
-		var body = OAT.Dom.create("ul",{},"rss_body");
+		var body = OAT.Dom.create("ul",{className:"rss_body"});
 		var max = Math.min(data.items.length,self.options.limit);
 		for (var i=0;i<max;i++) {
 			var li = OAT.Dom.create("li");
@@ -65,7 +66,7 @@ OAT.RSSReader = function(div,options) {
 		self.div.appendChild(body);
 	}
 
-	this.parseRSS = function(xmlDoc,result) {
+	this._parseRSS = function(xmlDoc,result) {
 		var titleNode = OAT.Xml.xpath(xmlDoc,"//channel/title")[0];
 		var linkNode = OAT.Xml.xpath(xmlDoc,"//channel/link")[0];
 		result.title = OAT.Xml.textValue(titleNode);
@@ -87,7 +88,32 @@ OAT.RSSReader = function(div,options) {
 		}
 	}
 
-	this.parseRDF = function(xmlDoc,result) {
+	this._parseAtom = function(xmlDoc,result) {
+		var titleNode = OAT.Xml.xpath(xmlDoc,"//feed/title")[0];
+		var linkNode = OAT.Xml.xpath(xmlDoc,"//feed/link")[0];
+		result.title = OAT.Xml.textValue(titleNode);
+		result.link = linkNode.attributes.getNamedItem("href").nodeValue;
+		var itemNodes = OAT.Xml.xpath(xmlDoc,"//entry");
+		for (var i=0;i<itemNodes.length;i++) {
+			var itemNode = itemNodes[i];
+			var item = {};
+			for (var p in result.item) { item[p] = result.item[p]; }
+			var titleNode = itemNode.getElementsByTagName("title");
+			if (titleNode.length) { item.title = OAT.Xml.textValue(titleNode[0]); }
+			var linkNode = itemNode.getElementsByTagName("link");
+			if (linkNode.length) { item.link = linkNode[0].attributes.getNamedItem("href").nodeValue; }
+			var descNode = itemNode.getElementsByTagName("summary");
+			if (descNode.length) { 
+				item.description = OAT.Xml.textValue(descNode[0]); 
+				item.description = OAT.Xml.unescape(item.description);
+			}
+			var dateNode = itemNode.getElementsByTagName("published");
+			if (dateNode.length) { item.date = OAT.Xml.textValue(dateNode[0]); }
+			result.items.push(item);
+		}
+	}
+
+	this._parseRDF = function(xmlDoc,result) {
 		/* create resolver object */
 		var obj = {rdf:"http://www.w3.org/1999/02/22-rdf-syntax-ns#"};
 		var titleNode = OAT.Xml.xpath(xmlDoc,"//channel/title",obj)[0];

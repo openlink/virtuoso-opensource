@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -36,7 +36,7 @@ OAT.RDFMini = function(div,optObj) {
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 
 	this.parent = $(div);
-	this.content = OAT.Dom.create("div",{},"rdf_mini");
+	this.content = OAT.Dom.create("div",{className:"rdf_mini"});
 	this.tabs = [];
 	this.select = false;
 

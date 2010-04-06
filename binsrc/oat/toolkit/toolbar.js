@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -134,7 +134,7 @@ OAT.Toolbar = function(div,optObj) {
     }
 
     this.addSeparator = function() {
-	var div = OAT.Dom.create("div",{"class": "toolbar_separator"});
+	var div = OAT.Dom.create("div",{className: "toolbar_separator"});
 	self.div.appendChild(div);
 	self.separators.push(div);
 	return div;

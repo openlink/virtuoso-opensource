@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -26,9 +26,9 @@ OAT.DockWindow = function(content,options,dock) {
 	for (var p in options) { self.options[p] = options[p]; }
 	this.state = 1;
 
-	this.div = OAT.Dom.create("div",{marginBottom:"3px", border:"1px solid "+self.options.color,backgroundColor:"#fff"},"dock_window");
+	this.div = OAT.Dom.create("div",{marginBottom:"3px", border:"1px solid "+self.options.color,backgroundColor:"#fff",className:"dock_window"});
 
-	this.header = OAT.Dom.create("div",{fontWeight:"bold",padding:"1px",color:self.options.titleColor,backgroundColor:self.options.color},"dock_header");
+	this.header = OAT.Dom.create("div",{fontWeight:"bold",padding:"1px",color:self.options.titleColor,backgroundColor:self.options.color, className:"dock_header"});
 
 	this.toggle = OAT.Dom.create("div",{styleFloat:"left",cssFloat:"left",width:"16px"});
 	this.headerContent = OAT.Dom.create("span");
@@ -38,7 +38,7 @@ OAT.DockWindow = function(content,options,dock) {
 	this.close.innerHTML = "X";
 	OAT.Event.attach(self.close,"click",function(){self.dock.removeObject(self);});
 
-	this.content = OAT.Dom.create("div",{padding:"3px"},"dock_content");
+	this.content = OAT.Dom.create("div",{padding:"3px",className:"dock_content"});
 	this.content.appendChild($(content));
 
 	OAT.Dom.append([self.header,self.toggle,self.close,self.headerContent],[self.div,self.header,self.content]);
@@ -77,7 +77,7 @@ OAT.Dock = function(div,numColumns) {
 	document.body.appendChild(this.ghost);
 	this.lock = 0;
 	for (var i=0;i<numColumns;i++) {
-		var col = OAT.Dom.create("div",{position:"relative"},"dock_column dock_column_"+i);
+		var col = OAT.Dom.create("div",{position:"relative",className:"dock_column dock_column_"+i});
 		this.columns.push(col);
 		this.div.appendChild(col);
 		var dummie = OAT.Dom.create("div",{border:"none",margin:"0px",padding:"0px",backgroundColor:"transparent"});
@@ -119,8 +119,8 @@ OAT.Dock = function(div,numColumns) {
 		if (mover == target) { return; }
 
 		/* coords */
-		var oldX = self.columns.find(mover.parentNode);
-		var newX = self.columns.find(target.parentNode);
+		var oldX = self.columns.indexOf(mover.parentNode);
+		var newX = self.columns.indexOf(target.parentNode);
 		var oldY = -1;
 		var newY = -1;
 		var oldList = self.columns[oldX].childNodes;
@@ -219,7 +219,7 @@ OAT.Dock = function(div,numColumns) {
 
 	this.removeObject = function(win) {
 		OAT.MSG.send(self,"DOCK_REMOVE",win);
-		var index = self.windows.find(win);
+		var index = self.windows.indexOf(win);
 		self.windows.splice(index,1);
 
 		OAT.Dom.unlink(win.div);

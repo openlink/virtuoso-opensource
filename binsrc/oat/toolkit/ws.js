@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -85,7 +85,7 @@ OAT.WS = {
 			var port = OAT.Xml.getElementsByLocalName(root,"portType");
 			var ops = OAT.Xml.getElementsByLocalName(port[0],"operation");
 			for (var i=0;i<ops.length;i++) { opnames.push(ops[i].getAttribute("name")); }
-			var index = opnames.find(service);
+			var index = opnames.indexOf(service);
 			if (index == -1) { return; } /* service does not exist */
 
 			/* get input & output message names */
@@ -97,9 +97,9 @@ OAT.WS = {
 			/* message nodes */
 			var messages = OAT.Xml.getElementsByLocalName(root,"message");
 			for (var i=0;i<messages.length;i++) { msgnames.push(messages[i].getAttribute("name")); }
-			index = msgnames.find(inmsg);
+			index = msgnames.indexOf(inmsg);
 			var inmessage = messages[index];
-			index = msgnames.find(outmsg);
+			index = msgnames.indexOf(outmsg);
 			var outmessage = messages[index];
 
 
