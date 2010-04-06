@@ -869,7 +869,8 @@ sqlo_iri_constant_name_1 (ST* tree)
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name)
-      && (0 == stricmp (tree->_.call.name, "__BFT") || 0 == stricmp (tree->_.call.name, "__box_flags_tweak")))
+      && (0 == stricmp (tree->_.call.name, "__BFT") || 0 == stricmp (tree->_.call.name, "__box_flags_tweak")
+	 || 0 == strnicmp (tree->_.call.name, "__I2ID", 6) || 0 == strnicmp (tree->_.call.name, "IRI_TO_ID", 9)))
     return (caddr_t) sqlo_iri_constant_name_1  (tree->_.call.params[0]);
   return NULL;
 }
