@@ -48,7 +48,7 @@
   </head>
   <?vsp
     declare N integer;
-    declare vHostUrl, vUrl, vResult, vRequest, vRespond any;
+    declare vHostUrl, vUrl, vParams, vResult, vRequest, vRespond any;
     declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vFormMode, vXml, vLists, vList, items any;
 
       vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
@@ -329,63 +329,64 @@
           }
         else
         {
-          vUrl := vHostUrl  || '/user.update.fields?sid=' || vSid || '&realm=' || vRealm;
+          vUrl := vHostUrl  || '/user.update.fields';
+          vParams := 'sid=' || vSid || '&realm=' || vRealm;
           if (vFormTab = 0)
       {
             if (vFormSubtab = 0)
             {
               -- Import
               if (get_keyword ('cb_item_i_name', params, '') = '1')
-                vUrl := vUrl || sprintf ('&nickName=%U', get_keyword ('i_nickName', params, ''));
+                vParams := vParams || sprintf ('&nickName=%U', get_keyword ('i_nickName', params, ''));
               if (get_keyword ('cb_item_i_title', params, '') = '1')
-                vUrl := vUrl || sprintf ('&title=%U', get_keyword ('i_title', params, ''));
+                vParams := vParams || sprintf ('&title=%U', get_keyword ('i_title', params, ''));
               if (get_keyword ('cb_item_i_firstName', params, '') = '1')
-                vUrl := vUrl || sprintf ('&firstName=%U', get_keyword ('i_firstName', params, ''));
+                vParams := vParams || sprintf ('&firstName=%U', get_keyword ('i_firstName', params, ''));
               if (get_keyword ('cb_item_i_lastName', params, '') = '1')
-                vUrl := vUrl || sprintf ('&lastName=%U', get_keyword ('i_lastName', params, ''));
+                vParams := vParams || sprintf ('&lastName=%U', get_keyword ('i_lastName', params, ''));
               if (get_keyword ('cb_item_i_fullName', params, '') = '1')
-                vUrl := vUrl || sprintf ('&fullName=%U', get_keyword ('i_fullName', params, ''));
+                vParams := vParams || sprintf ('&fullName=%U', get_keyword ('i_fullName', params, ''));
               if (get_keyword ('cb_item_i_gender', params, '') = '1')
-                vUrl := vUrl || sprintf ('&gender=%U', get_keyword ('i_gender', params, ''));
+                vParams := vParams || sprintf ('&gender=%U', get_keyword ('i_gender', params, ''));
               if (get_keyword ('cb_item_i_mail', params, '') = '1')
-                vUrl := vUrl || sprintf ('&mail=%U', get_keyword ('i_mail', params, ''));
+                vParams := vParams || sprintf ('&mail=%U', get_keyword ('i_mail', params, ''));
               if (get_keyword ('cb_item_i_birthday', params, '') = '1')
-                vUrl := vUrl || sprintf ('&birthday=%U', get_keyword ('i_birthday', params, ''));
+                vParams := vParams || sprintf ('&birthday=%U', get_keyword ('i_birthday', params, ''));
               if (get_keyword ('cb_item_i_homepage', params, '') = '1')
-                vUrl := vUrl || sprintf ('&homepage=%U', get_keyword ('i_homepage', params, ''));
+                vParams := vParams || sprintf ('&homepage=%U', get_keyword ('i_homepage', params, ''));
               if (get_keyword ('cb_item_i_icq', params, '') = '1')
-                vUrl := vUrl || sprintf ('&icq=%U', get_keyword ('i_icq', params, ''));
+                vParams := vParams || sprintf ('&icq=%U', get_keyword ('i_icq', params, ''));
               if (get_keyword ('cb_item_i_aim', params, '') = '1')
-                vUrl := vUrl || sprintf ('&aim=%U', get_keyword ('i_aim', params, ''));
+                vParams := vParams || sprintf ('&aim=%U', get_keyword ('i_aim', params, ''));
               if (get_keyword ('cb_item_i_yahoo', params, '') = '1')
-                vUrl := vUrl || sprintf ('&yahoo=%U', get_keyword ('i_yahoo', params, ''));
+                vParams := vParams || sprintf ('&yahoo=%U', get_keyword ('i_yahoo', params, ''));
               if (get_keyword ('cb_item_i_msn', params, '') = '1')
-                vUrl := vUrl || sprintf ('&msn=%U', get_keyword ('i_msn', params, ''));
+                vParams := vParams || sprintf ('&msn=%U', get_keyword ('i_msn', params, ''));
               if (get_keyword ('cb_item_i_skype', params, '') = '1')
-                vUrl := vUrl || sprintf ('&skype=%U', get_keyword ('i_skype', params, ''));
+                vParams := vParams || sprintf ('&skype=%U', get_keyword ('i_skype', params, ''));
               if (get_keyword ('cb_item_i_homelat', params, '') = '1')
-                vUrl := vUrl || sprintf ('&homeLatitude=%U', get_keyword ('i_homelat', params, ''));
+                vParams := vParams || sprintf ('&homeLatitude=%U', get_keyword ('i_homelat', params, ''));
               if (get_keyword ('cb_item_i_homelng', params, '') = '1')
-                vUrl := vUrl || sprintf ('&homeLongitude=%U', get_keyword ('i_homelng', params, ''));
+                vParams := vParams || sprintf ('&homeLongitude=%U', get_keyword ('i_homelng', params, ''));
               if (get_keyword ('cb_item_i_homelng', params, '') = '1')
-                vUrl := vUrl || sprintf ('&homePhone=%U', get_keyword ('i_homePhone', params, ''));
+                vParams := vParams || sprintf ('&homePhone=%U', get_keyword ('i_homePhone', params, ''));
               if (get_keyword ('cb_item_i_businessOrganization', params, '') = '1')
-                vUrl := vUrl || sprintf ('&businessOrganization=%U', get_keyword ('i_businessOrganization', params, ''));
+                vParams := vParams || sprintf ('&businessOrganization=%U', get_keyword ('i_businessOrganization', params, ''));
               if (get_keyword ('cb_item_i_businessHomePage', params, '') = '1')
-                vUrl := vUrl || sprintf ('&businessHomePage=%U', get_keyword ('i_businessHomePage', params, ''));
+                vParams := vParams || sprintf ('&businessHomePage=%U', get_keyword ('i_businessHomePage', params, ''));
               if (get_keyword ('cb_item_i_sumary', params, '') = '1')
-                vUrl := vUrl || sprintf ('&sumary=%U', get_keyword ('i_sumary', params, ''));
+                vParams := vParams || sprintf ('&sumary=%U', get_keyword ('i_sumary', params, ''));
               if (get_keyword ('cb_item_i_tags', params, '') = '1')
-                vUrl := vUrl || sprintf ('&tags=%U', get_keyword ('i_tags', params, ''));
+                vParams := vParams || sprintf ('&tags=%U', get_keyword ('i_tags', params, ''));
               if (get_keyword ('cb_item_i_interests', params, '') = '1')
-                vUrl := vUrl || sprintf ('&interests=%U', get_keyword ('i_interests', params, ''));
+                vParams := vParams || sprintf ('&interests=%U', get_keyword ('i_interests', params, ''));
               if (get_keyword ('cb_item_i_topicInterests', params, '') = '1')
-                vUrl := vUrl || sprintf ('&topicInterests=%U', get_keyword ('i_topicInterests', params, ''));
+                vParams := vParams || sprintf ('&topicInterests=%U', get_keyword ('i_topicInterests', params, ''));
             }
             if (vFormSubtab = 1)
             {
               -- Main
-              vUrl := vUrl ||
+              vParams := vParams ||
                   '&nickName=' ||               sprintf ('%U', get_keyword ('pf_nickName', params, '')) ||
                 '&mail=' ||                   sprintf ('%U', get_keyword ('pf_mail', params, '')) ||
                 '&title=' ||                  sprintf ('%U', get_keyword ('pf_title', params, '')) ||
@@ -397,7 +398,11 @@
                 '&homepage=' ||               sprintf ('%U', get_keyword ('pf_homepage', params, '')) ||
                   '&mailSignature=' ||          sprintf ('%U', get_keyword ('pf_mailSignature', params, '')) ||
                   '&sumary=' ||        sprintf ('%U', get_keyword ('pf_sumary', params, '')) ||
-                  '&appSetting=' ||    sprintf ('%U', get_keyword ('pf_appSetting', params, '0'));
+                  '&appSetting=' ||    sprintf ('%U', get_keyword ('pf_appSetting', params, '0')) ||
+                  '&photo=' ||         sprintf ('%U', get_keyword ('pf_photo', params, '')) ||
+                  '&photoContent=' ||  sprintf ('%U', get_keyword ('pf_photoContent', params, '')) ||
+                  '&audio=' ||         sprintf ('%U', get_keyword ('pf_audio', params, '')) ||
+                  '&audioContent=' ||  sprintf ('%U', get_keyword ('pf_audioContent', params, ''));
 
               tmp := '';
               for (N := 0; N < length (params); N := N + 2)
@@ -408,7 +413,7 @@
                   tmp := tmp || trim (params [N+1]) || '\n';
                 }
               }
-              vUrl := vUrl || sprintf ('&webIDs=%U', tmp);
+              vParams := vParams || sprintf ('&webIDs=%U', tmp);
               tmp := '';
               for (N := 0; N < length (params); N := N + 2)
               {
@@ -418,7 +423,7 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x2_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vUrl := vUrl || sprintf ('&interests=%U', tmp);
+              vParams := vParams || sprintf ('&interests=%U', tmp);
               tmp := '';
               for (N := 0; N < length (params); N := N + 2)
               {
@@ -428,11 +433,11 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x3_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vUrl := vUrl || sprintf ('&topicInterests=%U', tmp);
+              vParams := vParams || sprintf ('&topicInterests=%U', tmp);
             }
             if (vFormSubtab = 2)
             {
-              vUrl := vUrl ||
+              vParams := vParams ||
                 '&homeDefaultMapLocation=' || sprintf ('%U', get_keyword ('pf_homeDefaultMapLocation', params, '')) ||
                 '&homeCountry=' ||            sprintf ('%U', get_keyword ('pf_homecountry', params, '')) ||
                 '&homeState=' ||              sprintf ('%U', get_keyword ('pf_homestate', params, '')) ||
@@ -448,7 +453,7 @@
             }
             if (vFormSubtab = 5)
             {
-              vUrl := vUrl ||
+              vParams := vParams ||
                   '&icq=' ||                    sprintf ('%U', get_keyword ('pf_icq', params, '')) ||
                   '&skype=' ||                  sprintf ('%U', get_keyword ('pf_skype', params, '')) ||
                   '&yahoo=' ||                  sprintf ('%U', get_keyword ('pf_yahoo', params, '')) ||
@@ -463,14 +468,14 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x6_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vUrl := vUrl || sprintf ('&messaging=%U', tmp);
+              vParams := vParams || sprintf ('&messaging=%U', tmp);
             }
           }
           if (vFormTab = 1)
           {
             if (vFormSubtab = 0)
             {
-              vUrl := vUrl ||
+              vParams := vParams ||
                 '&businessIndustry=' ||       sprintf ('%U', get_keyword ('pf_businessIndustry', params, '')) ||
                 '&businessOrganization=' ||   sprintf ('%U', get_keyword ('pf_businessOrganization', params, '')) ||
                 '&businessHomePage=' ||       sprintf ('%U', get_keyword ('pf_businessHomePage', params, '')) ||
@@ -486,7 +491,7 @@
             }
             if (vFormSubtab = 1)
             {
-              vUrl := vUrl ||
+              vParams := vParams ||
                 '&businessCountry=' ||        sprintf ('%U', get_keyword ('pf_businesscountry', params, '')) ||
                 '&businessState=' ||          sprintf ('%U', get_keyword ('pf_businessstate', params, '')) ||
                 '&businessCity=' ||           sprintf ('%U', get_keyword ('pf_businesscity', params, '')) ||
@@ -501,7 +506,7 @@
             }
             if (vFormSubtab = 3)
             {
-              vUrl := vUrl ||
+              vParams := vParams ||
                   '&businessIcq=' ||            sprintf ('%U', get_keyword ('pf_businessIcq', params, '')) ||
                   '&businessSkype=' ||          sprintf ('%U', get_keyword ('pf_businessSkype', params, '')) ||
                   '&businessYahoo=' ||          sprintf ('%U', get_keyword ('pf_businessYahoo', params, '')) ||
@@ -516,7 +521,7 @@
                   tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('y2_fld_2_'||suffix, params, '')) || '\n';
                 }
               }
-              vUrl := vUrl || sprintf ('&businessMessaging=%U', tmp);
+              vParams := vParams || sprintf ('&businessMessaging=%U', tmp);
             }
           }
           if (vFormTab = 2)
@@ -525,34 +530,35 @@
 
             securityNo := get_keyword('securityNo', params, '');
             if (securityNo = '1')
-              vUrl := vUrl || '&securityOpenID=' || sprintf ('%U', get_keyword ('pf_openID', params, ''));
+              vParams := vParams || '&securityOpenID=' || sprintf ('%U', get_keyword ('pf_openID', params, ''));
 
             if (securityNo = '2')
-              vUrl := vUrl || '&securityFacebookID=' || sprintf ('%U', get_keyword ('pf_securityFacebookID', params, ''));
+              vParams := vParams || '&securityFacebookID=' || sprintf ('%U', get_keyword ('pf_securityFacebookID', params, ''));
 
             if (securityNo = '3')
-              vUrl := vUrl || '&securityFacebookID=';
+              vParams := vParams || '&securityFacebookID=';
 
             if (securityNo = '4')
-              vUrl := vUrl ||
+              vParams := vParams ||
                 '&securitySecretQuestion=' || sprintf ('%U', get_keyword ('pf_securitySecretQuestion', params, '')) ||
                   '&securitySecretAnswer=' ||   sprintf ('%U', get_keyword ('pf_securitySecretAnswer', params, ''));
 
             if (securityNo = '5')
-              vUrl := vUrl || '&securitySiocLimit=' || sprintf ('%U', get_keyword ('pf_securitySiocLimit', params, ''));
+              vParams := vParams || '&securitySiocLimit=' || sprintf ('%U', get_keyword ('pf_securitySiocLimit', params, ''));
 
             if (securityNo = '6')
-              vUrl := vUrl ||
+              vParams := vParams ||
                   '&certificate=' || sprintf ('%U', get_keyword ('pf_certificate', params, '')) ||
                   '&certificateLogin=' || sprintf ('%U', get_keyword ('pf_certificateLogin', params, '0'));
             if (securityNo = '7')
-              vUrl := vUrl || '&certificate=&certificateLogin=';
+              vParams := vParams || '&certificate=&certificateLogin=';
           }
         commit work;
         vResult := http_client_ext (
                      vUrl,
-                     http_method=>'GET',
+                       http_method=>'POST',
                      http_headers=>vRequest,
+                       body=>vParams,
                      headers=>vRespond
                    );
         if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
@@ -669,7 +675,7 @@
     }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" id="page_form" method="post" action="users.vsp">
+    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data" action="users.vsp">
       <input type="hidden" name="mode" id="mode" value="vsp" />
       <input type="hidden" name="sid" id="sid" value="<?V vSid ?>" />
       <input type="hidden" name="realm" id="realm" value="<?V vRealm ?>" />
@@ -1207,6 +1213,38 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photoContent">Upload Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_photoContent" id="pf_photoContent"onblur="javascript: getFileName(this.form, this, this.form.pf_photo);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photo">Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_photo" id="pf_photo" value="<?V xpath_eval ('string (/user/photo)', vXml) ?>" style="width: 400px;" >
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audioContent">Upload Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_audioContent" id="pf_audioContent"onblur="javascript: getFileName(this.form, this, this.form.pf_audio);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audio">Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_audio" id="pf_audio"value="<?V xpath_eval ('string (/user/audio)', vXml) ?>" style="width: 400px;" >
+                            </td>
+                          </tr>
                           <tr>
                             <th>
                               <label for="pf_appSetting">Show &lt;a&gt;++ links</label>

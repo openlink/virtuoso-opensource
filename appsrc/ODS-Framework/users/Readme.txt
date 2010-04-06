@@ -56,7 +56,8 @@ Note: you should have the users.jsp and users_dsn.jsp (created after installatio
    1. Configuration
       1. Start Virtuoso executive
       1. Install Tomcat
-      1. Copy file 'virtjdbc3.jar' into '[Tomcat installation folder]/common/lib'
+      1. Download 'Apache FileUpload package' from http://commons.apache.org/fileupload/ and next copy file 'commons-fileupload-1.2.1.jar' into '[Tomcat installation folder]/common/lib'
+      1. Download 'Apache IO package' from http://commons.apache.org/io/ and next copy file 'commons-io-1.4.jar' into '[Tomcat installation folder]/common/lib'
       1. Create file with name 'users#jsp.xml' in '[Tomcat installation folder]/conf/Catalina/[host]/' with content:
 
 <!--

@@ -216,7 +216,13 @@
           self.vc_is_valid := 0;
           self.vc_error_message := DAV_PERROR (rc);
         }
+        if (p_path like '/DAV/%')
+          p_path := subseq (p_path, 4);
         WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
+      }
+      else if (get_keyword ('s_audio', params, '') = '')
+      {
+        WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', '');
       }
       if (self.is_org)
       {

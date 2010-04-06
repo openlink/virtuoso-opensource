@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2008 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -373,7 +373,25 @@
                   "&homepage=".               urlencode ($_REQUEST['pf_homepage']).
                   "&mailSignature=".          urlencode ($_REQUEST['pf_mailSignature']).
                   "&sumary=".                 urlencode ($_REQUEST['pf_sumary']).
-                  "&appSetting=".             urlencode ($_REQUEST['pf_appSetting']);
+                  "&appSetting=".             urlencode ($_REQUEST['pf_appSetting']).
+                  "&photo=".                  urlencode ($_REQUEST['pf_photo']).
+                  "&audio=".                  urlencode ($_REQUEST['pf_audio']);
+              if ($_FILES['pf_photoContent']['size'] > 0)
+              {
+                $_tmpName  = $_FILES['pf_photoContent']['tmp_name'];
+                $_fp = fopen($_tmpName, 'r');
+                $_content = fread($_fp, filesize($_tmpName));
+                $_params .=
+                  "&photoContent=".urlencode ($_content);
+              }
+              if ($_FILES['pf_audioContent']['size'] > 0)
+              {
+                $_tmpName  = $_FILES['pf_audioContent']['tmp_name'];
+                $_fp = fopen($_tmpName, 'r');
+                $_content = fread($_fp, filesize($_tmpName));
+                $_params .=
+                  "&audioContent=".urlencode ($_content);
+              }
               $_tmp = "";
               foreach($_REQUEST as $name => $value)
               {
@@ -573,7 +591,7 @@
       }
   ?>
   <body onunload="myCheckLeave (document.forms['page_form'])">
-    <form name="page_form" id="page_form" method="post" action="users.php">
+    <form name="page_form" id="page_form" method="post" enctype="multipart/form-data" action="users.php">
       <input type="hidden" name="mode" id="mode" value="php" />
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
       <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
@@ -1105,6 +1123,38 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photoContent">Upload Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_photoContent" id="pf_photoContent"onblur="javascript: getFileName(this.form, this, this.form.pf_photo);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photo">Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_photo" id="pf_photo" value="<?php print($_xml->photo); ?>" style="width: 400px;" >
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audioContent">Upload Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_audioContent" id="pf_audioContent"onblur="javascript: getFileName(this.form, this, this.form.pf_audio);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audio">Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_audio" id="pf_audio"value="<?php print($_xml->audio); ?>" style="width: 400px;" >
+                            </td>
+                          </tr>
                           <tr>
                             <th>
                               <label for="pf_appSetting">Show &lt;a&gt;++ links</label>

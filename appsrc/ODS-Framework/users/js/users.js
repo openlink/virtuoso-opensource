@@ -1154,6 +1154,10 @@ function ufProfileCallback(data) {
       pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
 			fieldUpdate(user, 'sumary', 'pf_sumary');
+			fieldUpdate(user, 'photo', 'pf_photo');
+			fieldUpdate(user, 'photoContent', 'pf_photoContent');
+			fieldUpdate(user, 'audio', 'pf_audio');
+			fieldUpdate(user, 'audioContent', 'pf_audioContent');
 			fieldUpdate(user, 'appSetting', 'pf_appSetting');
       pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
       pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
@@ -1649,7 +1653,7 @@ function pfUpdateSubmit(No) {
         S += '&certificate=&certificateLogin=0';
     	}
   	}
-  	OAT.AJAX.GET(S, '', function(data){pfUpdateCallback(data, No);});
+  	OAT.AJAX.GET(S, '', function(data){ if((formTab == 0) && (formSubtab == 1)) {$('page_form').submit();}; pfUpdateCallback(data, No);});
   }
   return false;
 }

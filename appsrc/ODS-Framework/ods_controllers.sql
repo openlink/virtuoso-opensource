@@ -382,8 +382,7 @@ create procedure dav_path_normalize (
 
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
-  in ontology varchar,
-  in prefix varchar := null) __soap_http 'application/json'
+  in ontology varchar) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, classes, retValue any;
@@ -431,7 +430,7 @@ create procedure ODS.ODS_API."ontology.classes" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
+    tmp := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize" (item[0]), 'subClassOf', case when isnull (item[1]) then 'rdfs:Class' else ODS.ODS_API."ontology.normalize" (item[1]) end));
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
@@ -440,34 +439,28 @@ create procedure ODS.ODS_API."ontology.classes" (
 ;
 
 create procedure ODS.ODS_API."ontology.classProperties" (
-  in ontologyClass varchar,
-  in ontology varchar := null,
-  in prefix varchar := null) __soap_http 'application/json'
+  in ontologyClass varchar) __soap_http 'application/json'
 {
   declare N integer;
   declare S, data any;
-  declare tmp, property, propertyName, propertyType, propertyRange, properties any;
+  declare prefix, ontology, tmp, property, properties any;
 
   -- select class properties ontology
-  properties := vector ();
-  if (isnull (ontology))
-    ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
-  if (isnull (prefix))
     prefix := ODS.ODS_API."ontology.prefix" (ontologyClass);
-  if (not isnull (ontology)) {
+  ontology := ODS.ODS_API."ontology.byPrefix" (prefix);
+  properties := vector ();
   S := sprintf(
          '\n SPARQL' ||
          '\n PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' ||
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
          '\n PREFIX %s: <%s>' ||
-           '\n SELECT ?p ?tp ?r1' ||
+         '\n SELECT ?p ?r1 ?r2' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
-           '\n              ?p rdf:type ?tp .' ||
-           '\n          FILTER (?tp = owl:ObjectProperty or   ' ||
-           '\n                  ?tp = owl:DatatypeProperty or ' ||
-           '\n                  ?tp = rdf:Property) .         ' ||
+         '\n          {' ||
+         '\n            {' ||
+         '\n              ?p rdf:type owl:ObjectProperty .' ||
          '\n            ?p rdfs:range ?r1 .' ||
          '\n            {' ||
          '\n              ?p rdfs:domain %s .' ||
@@ -486,10 +479,32 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n              ?_b2 rdf:first %s . '    ||
          '\n            }' ||
          '\n          }' ||
-           '\n  ORDER BY ?p ?tp ?r1',
+         '\n            union' ||
+         '\n            {' ||
+         '\n              ?p rdf:type owl:DatatypeProperty .' ||
+         '\n              ?p rdfs:domain %s .' ||
+         '\n              ?p rdfs:range ?r2 .' ||
+         '\n            }' ||
+         '\n          }' ||
+         '\n          union' ||
+         '\n          {' ||
+         '\n            {' ||
+         '\n              ?p rdf:type rdf:Property .' ||
+         '\n              ?p rdfs:range ?r1 .' ||
+         '\n            }' ||
+         '\n            union' ||
+         '\n            {' ||
+         '\n              ?p rdf:type rdf:Property .' ||
+         '\n              OPTIONAL {?p rdfs:range ?r2 }.' ||
+         '\n              FILTER (!bound(?r2))' ||
+         '\n            }' ||
+         '\n          }' ||
+         '\n        }' ||
+         '\n  ORDER BY ?p ?r1 ?r2',
          prefix,
          ontology,
          ontology,
+         ontologyClass,
          ontologyClass,
          ontologyClass,
          ontologyClass);
@@ -498,50 +513,35 @@ create procedure ODS.ODS_API."ontology.classProperties" (
   property := vector ('', vector (), vector ());
   foreach (any item in data) do
   {
-      propertyName := ODS.ODS_API."ontology.normalize"(item[0], ontology, prefix);
-      propertyType := ODS.ODS_API."ontology.normalize"(item[1], ontology, prefix);
-      propertyRange := coalesce (ODS.ODS_API."ontology.normalize"(item[2], ontology, prefix), 'rdf:string');
-      if (property[0] <> propertyName)
+    if (property[0] <> item[0])
     {
       if (property[0] <> '')
           properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-        property := vector (propertyName, vector (), vector ());
+      property := vector (item[0], vector (), vector ());
     }
-      if (propertyType = 'owl:ObjectProperty')
+    if (not isnull (item[1]))
     {
-        if (propertyRange not like 'nodeID:%')
+      tmp := ODS.ODS_API."ontology.normalize"(item[1]);
+      if (tmp not like 'nodeID:%')
       {
-          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
+        property[1] := vector_concat (property[1], vector (tmp));
       } else {
-          tmp := ODS.ODS_API."ontology.collection" (ontology, item[2]);
-          for (N := 0; N < length (tmp); N := N + 1)
-            property[1] := ODS.ODS_API.vector_concat (property[1], tmp[N]);
+        property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
       }
     }
-      else if (propertyType = 'owl:DatatypeProperty')
-      {
-        property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
-      }
-      else if (propertyType = 'rdf:Property')
-      {
-        if ((propertyRange like 'rdf:%') or (propertyRange like 'rdfs:%'))
+    else
     {
-          property[2] := ODS.ODS_API.vector_concat (property[2], propertyRange);
-        } else {
-          property[1] := ODS.ODS_API.vector_concat (property[1], propertyRange);
-        }
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'))));
     }
   }
   if (property[0] <> '')
       properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
-  }
   return obj2json (properties, 10);
 }
 ;
 
 create procedure ODS.ODS_API."ontology.objects" (
-  in ontology varchar,
-  in prefix varchar := null) __soap_http 'application/json'
+  in ontology varchar) __soap_http 'application/json'
 {
   declare S, data any;
   declare tmp, objects any;
@@ -564,7 +564,7 @@ create procedure ODS.ODS_API."ontology.objects" (
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
   {
-    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0], ontology, prefix), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
+    tmp := vector_concat (jsonObject (), vector ('id', ODS.ODS_API."ontology.normalize" (item[0]), 'class', ODS.ODS_API."ontology.normalize" (item[1])));
     objects := vector_concat (objects , vector (tmp));
   }
   return obj2json (objects , 10);
@@ -619,7 +619,7 @@ create procedure ODS.ODS_API."ontology.objectProperty" (
 {
   declare retValue any;
 
-  retValue := vector_concat (jsonObject (), vector ('name', property[0]));
+  retValue := vector_concat (jsonObject (), vector ('name', ODS.ODS_API."ontology.normalize"(property[0])));
   if (length (property[1]))
     retValue := vector_concat (retValue, vector ('objectProperties', property[1]));
   if (length (property[2]))
@@ -681,9 +681,7 @@ create procedure ODS.ODS_API."ontology.byPrefix" (
 ;
 
 create procedure ODS.ODS_API."ontology.normalize" (
-  in inValue varchar,
-  in ontology varchar := null,
-  in prefix varchar := null)
+  in inValue varchar)
 {
   if (not isnull (inValue))
   {
@@ -695,8 +693,6 @@ create procedure ODS.ODS_API."ontology.normalize" (
       if (inValue like (ontologies[N+1] || '%'))
         return ontologies[N] || ':' || subseq (inValue, length (ontologies[N+1]));
     }
-    if (not isnull (ontology) and not isnull (prefix))
-      return prefix || ':' || replace (inValue, ontology, '');
   }
   return inValue;
 }
@@ -1303,7 +1299,13 @@ create procedure ODS.ODS_API."user.update.fields" (
   in securitySiocLimit varchar := null,
 
   in certificate varchar := null,
-  in certificateLogin varchar := null) __soap_http 'text/xml'
+  in certificateLogin varchar := null,
+
+  in photo varchar := null,
+  in photoContent varchar := null,
+
+  in audio varchar := null,
+  in audioContent varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare exit handler for sqlstate '*' {
@@ -1408,6 +1410,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
 
+  -- Photo & Audio
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
   return ods_serialize_int_res (1);
 }
 ;
@@ -1425,6 +1430,7 @@ create procedure ODS.ODS_API."user.password_change" (
   };
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   declare exit handler for sqlstate '*' {
     msg := __SQL_MESSAGE;
     goto ret;
@@ -1434,8 +1440,130 @@ create procedure ODS.ODS_API."user.password_change" (
   set_user_id ('dba');
   DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
   rc := 1;
-  ret:
+ret:
   return ods_serialize_int_res (rc, msg);
+}
+;
+
+create procedure ODS.ODS_API."user.upload" () __soap_http 'text/xml'
+{
+  declare params any;
+  declare photo, photoContent, audio, audioContent any;
+
+  declare uname varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  params := http_param ();
+
+  photo := get_keyword ('pf_photo', params);
+  photoContent := get_keyword ('pf_photoContent', params);
+
+  audio := get_keyword ('pf_audio', params);
+  audioContent := get_keyword ('pf_audioContent', params);
+
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.upload.internal" (
+  in uname varchar,
+  in photo varchar := null,
+  in photoContent varchar := null,
+
+  in audio varchar := null,
+  in audioContent varchar := null)
+{
+  -- Photo
+  -- dbg_obj_print('photo', length(photoContent), length(photo));
+  if (length(photo) and length(photoContent))
+  {
+    declare rc, uid integer;
+    declare dir, path, path_org, path_size2, dotpos any;
+    declare img, thumb, thumb_size2 any;
+    declare ext any;
+
+    ext := split_and_decode (photo, 0, '\0\0.');
+    if (ext is not null and ext[length(ext)-1] is not null and lcase(ext[length(ext)-1]) not in ('jpg', 'png', 'gif'))
+      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility.');
+
+    uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+    dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/')||'/wa/images/';
+    path := photo;
+    if (photo not like '/%')
+      path := dir || path;
+
+    dotpos := regexp_instr (photo,'\..{3}\$')-1;
+    path_org := subseq (photo, 0, dotpos) || '_org' || subseq (photo, dotpos);
+    path_size2 := subseq (photo, 0, dotpos) || '_size2' || subseq (photo, dotpos);
+    if (photo not like '/%')
+    {
+      path_org := dir || path_org;
+      path_size2 := dir || path_size2;
+    }
+    DB.DBA.DAV_MAKE_DIR (dir, uid, http_admin_gid (), '110100100N');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path_org, photoContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, photoContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+
+    img := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_ID = rc);
+    thumb := null;
+    if (img is not null)
+      thumb := DB.DBA.WA_MAKE_THUMBNAIL_1 (img);
+    thumb_size2 := DB.DBA.WA_MAKE_THUMBNAIL_1 (img, 115, 160);
+
+    if (thumb is not null)
+      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, thumb, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+
+    if (thumb_size2 is not null)
+      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path_size2, thumb_size2, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+
+    if (path like '/DAV/%')
+      path := subseq (path, 4);
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', path);
+  }
+  else if (photo = '')
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', '');
+  }
+
+  -- Audio
+  -- dbg_obj_print('audio', length(audioContent), length(audio));
+  if (length(audio) and length (audioContent))
+  {
+    declare rc, uid integer;
+    declare dir, path any;
+
+    uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+    dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/') || '/wa/media/';
+
+    path := audio;
+    if (audio not like '/%')
+      path := dir || path;
+
+    DB.DBA.DAV_MAKE_DIR (dir, uid, http_admin_gid (), '110100100N');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, audioContent, '', '110100100RR', uname, http_nogroup_gid(), null, null, 0);
+    if (rc < 0)
+      signal ('23023', DB.DBA.DAV_PERROR (rc));
+
+    if (path like '/DAV/%')
+      path := subseq (path, 4);
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_AUDIO_CLIP', path);
+  }
+  else if (audio = '')
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_AUDIO_CLIP', '');
+  }
 }
 ;
 
@@ -1654,6 +1782,9 @@ create procedure ODS.ODS_API."user.info" (
       }
       ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
       ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
+
+      ods_xml_item ('photo',                  WAUI_PHOTO_URL);
+      ods_xml_item ('audio',                  WAUI_AUDIO_CLIP);
     }
     http ('</user>');
   }
@@ -2492,11 +2623,9 @@ create procedure ODS.ODS_API."user.favorites.new" (
   in favorites any) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc, N, M, L integer;
+  declare rc, N, M integer;
   declare _u_id integer;
-  declare ontologies, ontology, ontologyItems any;
-  declare item, itemID, itemIDs any;
-  declare properties, newProperties, property, propertyType, propertyValue, newProperty any;
+  declare ontologies, ontology, ontologyItems, item any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2506,7 +2635,6 @@ create procedure ODS.ODS_API."user.favorites.new" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
-  itemIDs := vector ();
   ontologies := json_parse (favorites);
   for (N := 0; N < length (ontologies); N := N + 1)
   {
@@ -2515,67 +2643,12 @@ create procedure ODS.ODS_API."user.favorites.new" (
     for (M := 0; M < length (ontologyItems); M := M + 1)
     {
       item := ontologyItems[M];
-      itemID := get_keyword ('id', item);
-      if (not exists (select 1 from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = itemID))
-      {
       insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
         values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize ( get_keyword ('properties', item)), _u_id);
-        itemIDs := vector_concat (itemIDs, vector (itemID, cast (identity_value () as varchar)));
-      } else {
-        itemIDs := vector_concat (itemIDs, vector (itemID, itemID));
     }
   }
-  }
-  for (N := 0; N < length (ontologies); N := N + 1)
-  {
-    ontology := ontologies[N];
-    ontologyItems := get_keyword ('items', ontology);
-    for (M := 0; M < length (ontologyItems); M := M + 1)
-    {
-      item := ontologyItems[M];
-      itemID := get_keyword ('id', item);
-      itemID := get_keyword (itemID, itemIDs, itemID);
-      properties := get_keyword ('properties', item);
-      newProperties := vector ();
-      for (L := 0; L < length (properties); L := L + 1)
-      {
-        property := properties[L];
-        newProperty := property;
-        propertyType := get_keyword('type', property);
-        propertyValue := get_keyword ('value', property);
-        if ((propertyType = 'object') and (cast (atoi (propertyValue) as varchar) = propertyValue))
-        {
-          propertyValue := get_keyword (propertyValue, itemIDs, propertyValue);
-          newProperty := vector_concat (
-                                        jsonObject (),
-                                        vector (
-                                                 'name', get_keyword ('name', property),
-                                                 'value', propertyValue,
-                                                 'type', propertyType
-                                               )
-                                       );
-        }
-        newProperties := vector_concat (newProperties, vector (newProperty));
-      }
-      update DB.DBA.WA_USER_FAVORITES
-         set WUF_TYPE = get_keyword ('ontology', ontology),
-             WUF_CLASS = get_keyword ('className', item),
-             WUF_PROPERTIES = serialize (newProperties)
-       where WUF_U_ID = _u_id
-         and WUF_ID = itemID;
-    }
-  }
-  for (select WUF_ID id from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id) do
-  {
-    for (N := 0; N < length (itemIDs); N := N + 2)
-    {
-      if (itemIDs[N+1] = cast (id as varchar))
-        goto _skip;
-    }
-    delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id and WUF_ID = id;
-  _skip:;
-  }
-  return ods_serialize_int_res (1);
+  rc := row_count ();
+  return ods_serialize_int_res (rc);
 }
 ;
 
@@ -3114,17 +3187,6 @@ create procedure ODS.ODS_API.vector_contains(
     if (aValue = aVector[N])
       return 1;
   return 0;
-}
-;
-
-create procedure ODS.ODS_API.vector_concat (
-  in aVector any,
-  in aValue any)
-{
-  if (ODS.ODS_API.vector_contains (aVector, aValue))
-    return aVector;
-
-  return vector_concat (aVector, vector (aValue));
 }
 ;
 
@@ -3901,6 +3963,7 @@ grant execute on ODS.ODS_API."user.login" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
+grant execute on ODS.ODS_API."user.upload" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.enable" to ODS_API;

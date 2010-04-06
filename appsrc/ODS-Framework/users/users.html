@@ -41,7 +41,8 @@
   <body>
     <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
     </div>
-    <form name="page_form" id="page_form" method="post">
+    <iframe id="form_target" name="form_target" src="#" style="width:0;height:0;border:0px solid #fff;"></iframe>
+    <form name="page_form" id="page_form" action="/ods/api/user.upload" method="post" enctype="multipart/form-data" target="form_target">
       <input type="hidden" name="mode" id="mode" value="html" />
       <input type="hidden" name="sid" id="sid" value="" />
       <input type="hidden" name="realm" id="realm" value="wa" />
@@ -513,6 +514,38 @@
                               </table>
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photoContent">Upload Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_photoContent" id="pf_photoContent"onblur="javascript: getFileName(this.form, this, this.form.pf_photo);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_photo">Photo</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_photo" id="pf_photo" value="" style="width: 400px;" >
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audioContent">Upload Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="file" name="pf_audioContent" id="pf_audioContent"onblur="javascript: getFileName(this.form, this, this.form.pf_audio);">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_audio">Audio</label>
+                            </th>
+                            <td nowrap="1" class="listing_col">
+                              <input type="text" name="pf_audio" id="pf_audio"value="" style="width: 400px;" >
+                            </td>
+                          </tr>
                           <tr>
                             <th>
                               <label for="pf_appSetting">Show &lt;a&gt;++ links</label>
