@@ -53,6 +53,8 @@
       <v:variable name="_store_fn" type="varchar" default="''" persist="0" />
       <v:variable name="_ext_fn" type="varchar" default="''" persist="0" />
       <v:variable name="_rdf_flw" type="varchar" default="''" persist="0" />
+      <v:variable name="_rdf_graph" type="varchar" default="''" persist="0" />
+      <v:variable name="_html_meta" type="int" default="0" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -108,6 +110,8 @@
 	        self._udata := vector ();
               _tmp := get_keyword ('follow-property', self._udata);                  		
 	      self._rdf_flw := '';
+	      self._html_meta := get_keyword ('follow-meta', self._udata, 0);
+	      self._rdf_graph := get_keyword ('rdf-graph', self._udata, '');
 	      foreach (any x in _tmp) do
 	        {
 		  self._rdf_flw := self._rdf_flw || x || '\r\n';
@@ -317,6 +321,19 @@
               </td>
             </tr>
             <tr>
+		<td>Graph IRI <small>empty to use document URL</small></td>
+              <td>
+                <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
+              </td>
+            </tr>
+            <tr>
+		<td/>
+              <td>
+                <v:check-box name="html_meta" xhtml_id="html_meta" value="1" initial-checked="--self._html_meta" />
+		<label for="html_meta">Follow HTML meta link</label>
+              </td>
+            </tr>
+            <tr>
 		<td>Follow RDF properties<EM><br/>(one IRI per row)</EM></td>
               <td>
                 <v:textarea name="rdf_flw" value="--self._rdf_flw"  xhtml_rows="3" xhtml_cols="70"/>
@@ -515,6 +532,8 @@
 			  }
 			declare farr any;  
 		        self._rdf_flw := get_keyword ('rdf_flw', params, '');	  
+		        self._html_meta := atoi (get_keyword ('html_meta', params, '0'));	  
+		        self._rdf_graph := get_keyword ('rdf_graph', params, '');	  
 			tmp := split_and_decode (self._rdf_flw, 0, '\0\0\n');
 			farr := vector ();
 			foreach (any x in tmp) do
@@ -530,6 +549,9 @@
 			-- 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
                         if (length (farr))
 		          opts := vector_concat (opts, vector ('follow-property', farr));	
+			opts := vector_concat (opts, vector ('follow-meta', self._html_meta));	
+			if (length (self._rdf_graph))
+			  opts := vector_concat (opts, vector ('rdf-graph', self._rdf_graph));
 
 			self._udata := opts;
 
@@ -601,6 +623,7 @@
                               VS_ROOT = self._root;
                           if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
                             update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
+                          insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
                         else
                         {

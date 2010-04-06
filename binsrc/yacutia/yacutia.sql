@@ -6427,7 +6427,7 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
 	 _row := h[inx];
          for (j := 0; j < length (_row); j := j + 1)           
 	   {
-	     if (res[j][1] is null and not (isstring (_row[j]) and _row[j] = ''))
+	     if (res[j][1] is null and not (isstring (_row[j]) and _row[j] = '') and _row[j] is not null)
                res[j][1] := __tag (_row[j]);
              else if (__tag (_row[j]) <> res[j][1] and 189 = res[j][1] and (isdouble (_row[j]) or isfloat (_row[j])))
 	       res[j][1] := __tag (_row[j]);
@@ -6440,14 +6440,14 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
     }
   for (inx := 0; inx < length (res); inx := inx + 1)
     { 
-       if (not isstring (res[inx][0]))
+       if (not isstring (res[inx][0]) and not isnull (res[inx][0]))
          no_head := 1;	 
-       else if (trim (res[inx][0]) = '')
+       else if (trim (res[inx][0]) = '' or isnull (res[inx][0]))
          res[inx][0] := sprintf ('COL%d', inx);	 
     }  
   for (inx := 0; inx < length (res); inx := inx + 1)
     { 
-       if (res[inx][1] = -1)
+       if (res[inx][1] = -1 or res[inx][1] is null)
          res[inx][1] := 'VARCHAR';	 
        else
          res[inx][1] := dv_type_title (res[inx][1]);	 
