@@ -1410,6 +1410,77 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
 
+  -- Photo & Audio
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.password_change" (
+  in old_password varchar,
+	in new_password varchar) __soap_http 'text/xml'
+{
+  declare uname, msg varchar;
+  declare rc integer;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  declare exit handler for sqlstate '*' {
+    msg := __SQL_MESSAGE;
+    goto ret;
+  };
+  rc := -1;
+  msg := 'Success';
+  set_user_id ('dba');
+  DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
+  rc := 1;
+ret:
+  return ods_serialize_int_res (rc, msg);
+}
+;
+
+create procedure ODS.ODS_API."user.upload" () __soap_http 'text/xml'
+{
+  declare params any;
+  declare photo, photoContent, audio, audioContent any;
+
+  declare uname varchar;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  params := http_param ();
+
+  photo := get_keyword ('pf_photo', params);
+  photoContent := get_keyword ('pf_photoContent', params);
+
+  audio := get_keyword ('pf_audio', params);
+  audioContent := get_keyword ('pf_audioContent', params);
+
+  ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
+
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.upload.internal" (
+  in uname varchar,
+  in photo varchar := null,
+  in photoContent varchar := null,
+
+  in audio varchar := null,
+  in audioContent varchar := null)
+{
   -- Photo
   -- dbg_obj_print('photo', length(photoContent), length(photo));
   if (length(photo) and length(photoContent))
@@ -1493,35 +1564,6 @@ create procedure ODS.ODS_API."user.update.fields" (
   {
     ODS.ODS_API."user.update.field" (uname, 'WAUI_AUDIO_CLIP', '');
   }
-
-  return ods_serialize_int_res (1);
-}
-;
-
-create procedure ODS.ODS_API."user.password_change" (
-  in old_password varchar,
-	in new_password varchar) __soap_http 'text/xml'
-{
-  declare uname, msg varchar;
-  declare rc integer;
-  declare exit handler for sqlstate '*'
-  {
-    rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
-  };
-  if (not ods_check_auth (uname))
-    return ods_auth_failed ();
-  declare exit handler for sqlstate '*' {
-    msg := __SQL_MESSAGE;
-    goto ret;
-  };
-  rc := -1;
-  msg := 'Success';
-  set_user_id ('dba');
-  DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
-  rc := 1;
-  ret:
-  return ods_serialize_int_res (rc, msg);
 }
 ;
 
@@ -3921,6 +3963,7 @@ grant execute on ODS.ODS_API."user.login" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
+grant execute on ODS.ODS_API."user.upload" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.enable" to ODS_API;
