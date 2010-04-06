@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -93,17 +93,17 @@ OAT.Timeline = function(contentElm,paramsObj) {
 
 	this.formatSelect = OAT.Dom.create("select",{font:"menu"});
 
-	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px"},"timeline"); /* main axis */
+	this.elm = OAT.Dom.create("div",{position:"absolute",top:"0px",left:"0px",className:"timeline"}); /* main axis */
 	this.elm.style.zIndex = 3;
 	this.content = $(contentElm);
 	OAT.Dom.makePosition(self.content);
 
-	this.port = OAT.Dom.create("div",{cursor:"w-resize",position:"relative"},"timeline_port");
+	this.port = OAT.Dom.create("div",{cursor:"w-resize",position:"relative",className:"timeline_port"});
 	this.port.style.overflow = "hidden"; /* opera sux */
 	this.port.style.overflowX = "hidden";
 	this.port.style.overflowY = "auto";
 	this.sliderElm = OAT.Dom.create("div",{position:"absolute",height:self.options.sliderHeight+"px",left:"0px",bottom:"0px",width:"100%"});
-	this.sliderBtn = OAT.Dom.create("div",{},"timeline_slider");
+	this.sliderBtn = OAT.Dom.create("div",{className:"timeline_slider"});
 
 	OAT.Dom.append([self.content,self.port,self.sliderElm]);
 
@@ -404,14 +404,14 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			var bh = self.bands[p].lines.length * self.options.lineHeight;
 			/* band heading */
 			headerHeights[p] = (self.bands[p].label ? self.options.bandHeight : 0);
-			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:(total-1)+"px",textAlign:"center",fontWeight:"bold"},"timeline_band_header");
+			var elm = OAT.Dom.create("div",{zIndex:4,position:"absolute",width:"100%",left:"0px",top:(total-1)+"px",textAlign:"center",fontWeight:"bold",className:"timeline_band_header"});
 			elm.style.borderTop = "1px solid #000";
 			if (self.bands[p].color) { elm.style.backgroundColor = self.bands[p].color; }
 			elm.style.height = (self.options.bandHeight+1) + "px";
 			elm.innerHTML = self.bands[p].label;
 			if (self.bands[p].label) { self.port.appendChild(elm); }
 			/* band */
-			var elm = OAT.Dom.create("div",{zIndex:1,position:"absolute",left:"0px",width:"100%"},"timeline_band");
+			var elm = OAT.Dom.create("div",{zIndex:1,position:"absolute",left:"0px",width:"100%",className:"timeline_band"});
 			if (self.bands[p].color) { elm.style.backgroundColor = self.bands[p].color; }
 //			elm.style.borderBottom = "1px solid #000";
 			elm.style.top = (total + headerHeights[p]) + "px";

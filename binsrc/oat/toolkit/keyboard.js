@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -22,7 +22,7 @@ OAT.Keyboard = {
 		/* TODO: detect which tab is active */
 		var list = [];
 		for (var p in OAT.Keyboard.groups) {
-			var index = OAT.Keyboard.disabled.find(p);
+			var index = OAT.Keyboard.disabled.indexOf(p);
 			if (index == -1) { list.append(OAT.Keyboard.groups[p]); } /* only non-disabled groups */
 		}
 		/***/
@@ -44,7 +44,7 @@ OAT.Keyboard = {
 	add:function(key, downCallback, upCallback, group, id, obj) {
 		var o = (obj ? $(obj) : document); /* cannot attach to window due to ie */
 		var g = (group ? group : 0);
-		var index = OAT.Keyboard.objects.find(o);
+		var index = OAT.Keyboard.objects.indexOf(o);
 		if (index == -1) {
 			OAT.Keyboard.objects.push(o);
 			OAT.Event.attach(o,"keydown",function(event){OAT.Keyboard.check(event,o);});
@@ -81,12 +81,12 @@ OAT.Keyboard = {
 	load:function(){},
 
 	disable:function(group){
-		var index = OAT.Keyboard.disabled.find(group);
+		var index = OAT.Keyboard.disabled.indexOf(group);
 		if (index == -1) { OAT.Keyboard.disabled.push(group); }
 	},
 
 	enable:function(group){
-		var index = OAT.Keyboard.disabled.find(group);
+		var index = OAT.Keyboard.disabled.indexOf(group);
 		if (index != -1) { OAT.Keyboard.disabled.splice(index,1); }
 	},
 

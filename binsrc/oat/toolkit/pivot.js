@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -75,12 +75,12 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 
 	if (this.chartDiv) {
 		OAT.Dom.clear(self.chartDiv);
-		var c1 = OAT.Dom.create("div",{},"pivot_chart");
-		var c2 = OAT.Dom.create("div",{},"pivot_row_chart");
-		var c3 = OAT.Dom.create("div",{},"pivot_col_chart");
-		var l1 = OAT.Dom.button("");
-		var l2 = OAT.Dom.button("");
-		var l3 = OAT.Dom.button("");
+		var c1 = OAT.Dom.create("div",{className:"pivot_chart"});
+		var c2 = OAT.Dom.create("div",{className:"pivot_row_chart"});
+		var c3 = OAT.Dom.create("div",{className:"pivot_col_chart"});
+		var l1 = OAT.Dom.create("input",{type:"button",value:""});
+		var l2 = OAT.Dom.create("input",{type:"button",value:""});
+		var l3 = OAT.Dom.create("input",{type:"button",value:""});
 
 		OAT.Dom.append([self.chartDiv,l1,c1,l3,c3,l2,c2]);
 		this.charts = {
@@ -201,12 +201,12 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		for (var i=0;i<self.rowConditions.length;i++) { /* row blacklist */
 			var value = row[self.rowConditions[i]];
 			var cond = self.conditions[self.rowConditions[i]];
-			if (cond.blackList.find(value) != -1) { return false; }
+			if (cond.blackList.indexOf(value) != -1) { return false; }
 		}
 		for (var i=0;i<self.colConditions.length;i++) { /* column blacklist */
 			var value = row[self.colConditions[i]];
 			var cond = self.conditions[self.colConditions[i]];
-			if (cond.blackList.find(value) != -1) { return false; }
+			if (cond.blackList.indexOf(value) != -1) { return false; }
 		}
 		return true;
 	}
@@ -224,14 +224,14 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			return coef*(a > b ? 1 : -1);
 		}
 		var dateSort = function(a,b) {
-			var ia = months.find(a.toLowerCase());
-			var ib = months.find(b.toLowerCase());
+			var ia = months.indexOf(a.toLowerCase());
+			var ib = months.indexOf(b.toLowerCase());
 			return numSort(ia,ib);
 		}
 		/* get data type, trial & error... */
 		var testValue = cond.distinctValues[0];
 		if (testValue == parseInt(testValue)) { sortFunc = numSort; } else { sortFunc = dictSort; }
-		if (months.find(testValue.toString().toLowerCase()) != -1) { sortFunc = dateSort; }
+		if (months.indexOf(testValue.toString().toLowerCase()) != -1) { sortFunc = dateSort; }
 
 		cond.distinctValues.sort(sortFunc);
 	} /* sort */
@@ -246,7 +246,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		self.conditions.push(cond);
 		for (var i=0;i<self.allData.length;i++) {
 			var value = self.allData[i][index];
-			if (cond.distinctValues.find(value) == -1) { /* not yet present */
+			if (cond.distinctValues.indexOf(value) == -1) { /* not yet present */
 				cond.distinctValues.push(value);
 			} /* if new value */
 		} /* for all rows */
@@ -345,7 +345,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			close.innerHTML = "X";
 			OAT.Event.attach(close,"click",refresh);
 
-			var asc = OAT.Dom.radio("order");
+			var asc = OAT.Dom.create("input",{type:"radio",name:"order"});
 			asc.id="pivot_order_asc";
 			OAT.Event.attach(asc,"change",function(){cond.sort=1;self.sort(cond);self.go();});
 			OAT.Event.attach(asc,"click",function(){cond.sort=1;self.sort(cond);self.go();});
@@ -353,7 +353,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			alabel.htmlFor = "pivot_order_asc";
 			alabel.innerHTML = "Ascending";
 
-			var desc = OAT.Dom.radio("order");
+			var desc = OAT.Dom.create("input",{type:"radio",name:"order"}); 
 			desc.id="pivot_order_desc";
 			OAT.Event.attach(desc,"change",function(){cond.sort=-1;self.sort(cond);self.go();});
 			OAT.Event.attach(desc,"click",function(){cond.sort=-1;self.sort(cond);self.go();});
@@ -393,7 +393,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 
 	this.getDelFilterReference = function(index) {
 		return function() {
-			var idx = self.filterIndexes.find(index);
+			var idx = self.filterIndexes.indexOf(index);
 			self.filterIndexes.splice(idx,1);
 			self.rowConditions.push(index); /* add to rows */
 			self.go();
@@ -417,7 +417,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var getRef = function(ch,value) {
 			return function() {
 				if (ch.checked) {
-					var index = cond.blackList.find(value);
+					var index = cond.blackList.indexOf(value);
 					cond.blackList.splice(index,1);
 				} else {
 					cond.blackList.push(value);
@@ -443,7 +443,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var newBL = [];
 			for (var i=0;i<cond.distinctValues.length;i++) {
 				var val = cond.distinctValues[i];
-				if (cond.blackList.find(val) == -1) { newBL.push(val); }
+				if (cond.blackList.indexOf(val) == -1) { newBL.push(val); } 
 			}
 			cond.blackList = newBL;
 			self.go();
@@ -453,13 +453,13 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		OAT.Dom.clear(div);
 		var d = OAT.Dom.create("div");
 
-		var all = OAT.Dom.button("All");
+		var all = OAT.Dom.create("input",{type:"button",value:"All"});
 		OAT.Event.attach(all,"click",allRef);
 
-		var none = OAT.Dom.button("None");
+		var none = OAT.Dom.create("input",{type:"button",value:"None"});
 		OAT.Event.attach(none,"click",noneRef);
 
-		var reverse = OAT.Dom.button("Reverse");
+		var reverse = OAT.Dom.create("input",{type:"button",value:"Reverse"});
 		OAT.Event.attach(reverse,"click",reverseRef);
 
 		OAT.Dom.append([d,all,none,reverse],[div,d]);
@@ -467,7 +467,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var value = cond.distinctValues[i];
 			var pair = getPair(value,"pivot_distinct_"+i);
 			div.appendChild(pair[0]);
-			pair[1].checked = (cond.blackList.find(value) == -1);
+			pair[1].checked = (cond.blackList.indexOf(value) == -1);
 			pair[1].__checked = (pair[1].checked ? "1" : "0");
 			OAT.Event.attach(pair[1],"change",getRef(pair[1],value));
 			OAT.Event.attach(pair[1],"click",getRef(pair[1],value));
@@ -751,7 +751,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	}
 
 	this._drawGTotal = function(tr) {
-		var td = OAT.Dom.create("td",{},"gtotal");
+		var td = OAT.Dom.create("td",{className:"gtotal"});
 		td.innerHTML = self.formatValue(self.gTotal);
 		tr.appendChild(td);
 	}
@@ -763,7 +763,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		}
 		var func = OAT.Statistics[OAT.Statistics.list[self.options.aggTotals].func]; /* statistics */
 		if (self.colConditions.length) for (var i=0;i<self.w;i++) {
-			var td = OAT.Dom.create("td",{},"total");
+			var td = OAT.Dom.create("td",{className:"total"});
 			td.innerHTML = self.formatValue(self.colTotals[i]);
 			tr.appendChild(td);
 			if (!self.colPointers.length) { continue; }
@@ -771,7 +771,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			while (item.parent) {
 				var cond = self.conditions[self.colConditions[item.depth]];
 				if (cond.subtotals && item.offset+item.spanData-1 == i) {
-					var td = OAT.Dom.create("td",{},"total");
+					var td = OAT.Dom.create("td",{className:"total"});
 					var tmp = [];
 					for (var l=0;l<item.totals.length;l++) { tmp.append(item.totals[l].array); }
 					td.innerHTML = self.formatValue(func(tmp));
@@ -786,7 +786,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this._drawRowSubtotals = function(tr,i,ptr) { /* subtotals for i-th row */
 		var func = OAT.Statistics[OAT.Statistics.list[self.options.aggTotals].func]; /* statistics */
 		for (var k=0;k<self.w;k++) {
-			var td = OAT.Dom.create("td",{},"subtotal");
+			var td = OAT.Dom.create("td",{className:"subtotal"});
 			td.innerHTML = self.formatValue(ptr.totals[k].value);
 			tr.appendChild(td);
 			if (!self.colPointers.length) { continue; }
@@ -794,7 +794,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			while (item.parent) {
 				var cond = self.conditions[self.colConditions[item.depth]];
 				if (cond.subtotals && item.offset+item.spanData-1 == k) {
-					var td = OAT.Dom.create("td",{},"subtotal");
+					var td = OAT.Dom.create("td",{className:"subtotal"});
 					tr.appendChild(td);
 					var tmp = [];
 					for (var l=0;l<ptr.totals.length;l++) {
@@ -808,7 +808,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		if (self.options.totals && self.colConditions.length) {
 			var tmp = [];
 			for (var l=0;l<ptr.totals.length;l++) { tmp.append(ptr.totals[l].array); }
-			var td = OAT.Dom.create("td",{},"total");
+			var td = OAT.Dom.create("td",{className:"total"});
 			td.innerHTML = self.formatValue(func(tmp));
 			tr.appendChild(td);
 		}
@@ -827,7 +827,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var tr = OAT.Dom.create("tr");
 		for (var j=0;j<self.rowConditions.length;j++) {
 			var cond = self.conditions[self.rowConditions[j]];
-			var th = OAT.Dom.create("th",{cursor:"pointer"},"h1");
+			var th = OAT.Dom.create("th",{cursor:"pointer",className:"h1"});
 			var div = OAT.Dom.create("div");
 			div.innerHTML = self.headerRow[self.rowConditions[j]];
 			var ref = self.getClickReference(cond);
@@ -854,7 +854,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 
 	this._drawColConditionsHeadings = function(tr,i) {
 		var cond = self.conditions[self.colConditions[i]];
-		var th = OAT.Dom.create("th",{cursor:"pointer"},"h1");
+		var th = OAT.Dom.create("th",{cursor:"pointer",className:"h1"});
 		var div = OAT.Dom.create("div");
 		div.innerHTML = self.headerRow[self.colConditions[i]];
 		var ref = self.getClickReference(cond);
@@ -872,12 +872,12 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		var yCounter = 1;
 		if (self.colConditions.length > 1) {
 			var colItem = self.colPointers[self.colConditions.length-1][j].parent;
-			var index = colItem.parent.items.find(colItem);
+			var index = colItem.parent.items.indexOf(colItem);
 			xCounter = (index % 2 ? 1 : -1);
 		}
 		if (self.rowConditions.length > 1) {
 			var rowItem = self.rowPointers[self.rowConditions.length-1][i].parent;
-			var index = rowItem.parent.items.find(rowItem);
+			var index = rowItem.parent.items.indexOf(rowItem);
 			yCounter = (index % 2 ? 1 : -1);
 		}
 		if (xCounter * yCounter == 1) { return "odd"; } else { return "even"; }
@@ -942,7 +942,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 	this.drawTable = function() { /* this is the crucial part */
 
 		OAT.Dom.clear(self.div);
-		var table = OAT.Dom.create("table",{},"pivot_table");
+		var table = OAT.Dom.create("table",{className:"pivot_table"});
 		var tbody = OAT.Dom.create("tbody");
 
 		/* upper part */
@@ -961,20 +961,20 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			var stack = self.colPointers[i];
 			for (var j=0;j<stack.length;j++) { /* column values */
 				var item = stack[j];
-				var th = OAT.Dom.create("th",{},"h2");
+				var th = OAT.Dom.create("th",{className:"h2"});
 				th.innerHTML = item.value;
 				th.colSpan = item.span;
 				tr.appendChild(th);
 				var cond = self.conditions[self.colConditions[item.depth]];
 				if (cond.subtotals && i+1 < self.colConditions.length) { /* subtotal columns */
-					var th = OAT.Dom.create("th",{},"h2");
+					var th = OAT.Dom.create("th",{className:"h2"});
 					th.innerHTML = "Total for "+item.value;
 					th.rowSpan = self.colConditions.length-i;
 					tr.appendChild(th);
 				}
 			}
 			if (self.options.totals && i == 0) {
-				var th = OAT.Dom.create("th",{},"h2");
+				var th = OAT.Dom.create("th",{className:"h2"});
 				th.innerHTML = "TOTAL";
 				th.rowSpan = self.colConditions.length;
 				tr.appendChild(th);
@@ -1006,7 +1006,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			for (var j=0;j<self.rowConditions.length;j++) { /* row header values */
 				var item = ptrArray[j];
 				if (item.offset == i) {
-					var th = OAT.Dom.create("th",{},"h2");
+					var th = OAT.Dom.create("th",{className:"h2"});
 					th.rowSpan = ptrArray[j].span;
 					th.innerHTML = item.value;
 					tr.appendChild(th);
@@ -1024,7 +1024,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			}
 
 			for (var j=0;j<self.w;j++) { /* data */
-				var td = OAT.Dom.create("td",{},self.getClassName(i,j));
+				var td = OAT.Dom.create("td",{className:self.getClassName(i,j)});
 				var result = self.tabularData[j][i];
 				td.innerHTML = self.formatValue(result);
 				tr.appendChild(td);
@@ -1034,7 +1034,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					while (item.parent) {
 						var cond = self.conditions[self.colConditions[item.depth]];
 						if (item.offset+item.spanData-1 == j && cond.subtotals) {
-							var td = OAT.Dom.create("td",{},"subtotal");
+							var td = OAT.Dom.create("td",{className:"subtotal"});
 							td.innerHTML = self.formatValue(item.totals[i].value);
 							tr.appendChild(td);
 						}
@@ -1045,7 +1045,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 
 			if (self.options.totals && self.colConditions.length) { /* totals */
 				if (self.rowConditions.length) {
-					var td = OAT.Dom.create("td",{},"total");
+					var td = OAT.Dom.create("td",{className:"total"});
 					td.innerHTML = self.formatValue(self.rowTotals[i]);
 					tr.appendChild(td);
 				} else { self._drawGTotal(tr); }
@@ -1067,7 +1067,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 				var cond = self.conditions[self.rowConditions[item.depth]];
 				if (cond.subtotals && item.offset+item.spanData-1 == i) {
 					var tr = OAT.Dom.create("tr");
-					var th = OAT.Dom.create("th",{},"h2");
+					var th = OAT.Dom.create("th",{className:"h2"});
 					th.colSpan = self.rowConditions.length-j;
 					th.innerHTML = "Total for "+item.value;
 					tr.appendChild(th);
@@ -1080,7 +1080,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		/* totals row */
 		if (self.options.totals && self.rowConditions.length) {
 			var tr = OAT.Dom.create("tr");
-			var th = OAT.Dom.create("th",{},"h2");
+			var th = OAT.Dom.create("th",{className:"h2"});
 			th.innerHTML = "TOTAL";
 			th.colSpan = self.rowConditions.length;
 			tr.appendChild(th);
@@ -1115,7 +1115,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 					var items = [];
 					for (var k=0;k<cond.distinctValues.length;k++) { /* for all currently distinct values */
 						var value = cond.distinctValues[k];
-						if (cond.blackList.find(value) == -1) {
+						if (cond.blackList.indexOf(value) == -1) {
 							var o = {value:cond.distinctValues[k],parent:stack[j],used:false,items:false,depth:i};
 							items.push(o);
 							newstack.push(o);

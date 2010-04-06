@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -46,7 +46,8 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		       "http://xmlns.com/foaf/0.1/nick": 1,
 		       "http://www.w3.org/2000/01/rdf-schema#label": 2,
 		       "http://purl.org/dc/elements/1.1/title": 3,
-		       "http://www.w3.org/2004/02/skos/core#prefLabel": 4};
+		       "http://www.w3.org/2004/02/skos/core#prefLabel": 4,
+		       "http://www.w3.org/2002/12/cal/ical#summary": 5};
 
 
     this.options = {
@@ -97,11 +98,16 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	    }
     };
 
+//
+// Load triples from URL
+//
+
     this.addURL = function(url, optObj) {
 
-	/* first, deep copy in defaults */
+	var opt = {};
 
-        var opt = OAT.JSON.parse(OAT.JSON.stringify(self.options,-1));
+	for (p in self.options)
+	    opt[p] = self.options[p];
 
 	for (var p in optObj) { opt[p] = optObj[p]; }
 
@@ -291,7 +297,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		if (p in preds)
                   {
 		    var values = preds[p];
-		    if (values.find(o) == -1) { values.push(o); }
+		      if (values.indexOf(o) == -1) { values.push(o); }
 		  }
 		else
 		  {
@@ -354,7 +360,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		    if (value in conversionTable) {
 			var target = conversionTable[value];
 			pred[k] = target;
-			if (target.back.find(item) == -1) { target.back.push(item); }
+			if (target.back.indexOf(item) == -1) { target.back.push(item); }
 		    }
 		}
 	    } /* predicates */
@@ -511,7 +517,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	var preds = item.preds;
 	for (var p in preds) {
 	    var simple = self.simplify(p);
-	    if (self.labelProps.find(simple) != -1) {
+	    if (self.labelProps.indexOf(simple) != -1) { 
 		var x = preds[p][0];
 		if (typeof(x) != "object") { return x; }
 	    }
@@ -526,7 +532,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	var props = ["uri","url"];
 	var preds = item.preds;
 	for (var p in preds) {
-	    if (props.find(p) != -1) { return preds[p][0]; }
+	    if (props.indexOf(p) != -1) { return preds[p][0]; }
 	}
 	return false;
     }

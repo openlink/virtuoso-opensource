@@ -3,80 +3,81 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
-/*
-	OAT.JSON.parse(jsonString)
-	OAT.JSON.stringify(something)
-*/
 
 OAT.JSON = {
-	tt:{'\b':'\\b', '\t':'\\t', '\n':'\\n',	'\f':'\\f',
-		'\r':'\\r',	'"' :'\\"',	'\\':'\\\\' },
+	_table: {
+		'\b': '\\b',
+		'\t': '\\t',
+		'\n': '\\n',
+		'\f': '\\f',
+		'\r': '\\r',
+		'"' : '\\"',
+		'\\': '\\\\'
+	},
 
-	parse:function(jsonString) {
-		/* filter out while statement */
-		var js = jsonString;
+	_sanitize:function(str) {
+		var result = '"';
+		for (var i=0;i<str.length;i++) {
+			var ch = str.charAt(i);
+			result += this._table[ch] || ch;
+		}
+		result += '"';
+		return result;
+	},
+
+	deserialize:function(jsonString) {
+		var js = jsonString; /* various safeguards */
 		if (js.substr(0,9) == "while(1);") { js = js.substr(9); }
 		if (js.substr(0,2) == "/*") { js = js.substr(2,js.length-4); }
 		return eval('('+js+')');
 	},
-	stringify:function(something, mD, c) {
-		var maxDepth = 2;
-		if (typeof(maxDepth) != "undefined") { maxDepth = mD; }
-		if (maxDepth == 0) { return "[maximum depth achieved]"; }
-		var result = "";
-		var cache = [];
-		if (c) { cache = c; }
-		for (var i=0;i<cache.length;i++) {
-			if (cache[i] === something) { return "[recursion]"; }
-		}
-		if (typeof(something) == "object") { cache.push(something); }
+
+	serialize:function(something, c) {
+		var cache = c || [];
+		if (cache.indexOf(something) != -1) { throw new Error("Cannot serialize cyclic structure!"); }
+
 		switch (typeof(something)) {
-			case 'boolean':
+		    case "string": return this._sanitize(something);
+		    case "number":
+		    case "boolean": return something.toString();
+			case "function": throw new Error("Cannot serialize functions");
+		    case "object":
+ 				if (something === null) {
+				    return "null";
+				} else if (something instanceof Number || something instanceof Boolean || something instanceof RegExp)  { 
 				return something.toString();
-			break;
-
-			case 'number':
-				return something.toString();
-			break;
-
-			case 'function':
-				return something.toString();
-			break;
-
-			case 'string':
-				var tmp = "";
+				} else if (something instanceof String) { 
+				    return this._sanitize(something); 
+				} else if (something instanceof Date) { 
+				    return "new Date("+something.getTime()+")"; 
+				} else if (something instanceof Array) {
+				    var arr = [];
+					cache.push(something);
 				for (var i=0;i<something.length;i++) {
-					var r = something.charAt(i);
-					for (var p in OAT.JSON.tt) {
-						if (r==p) { r = OAT.JSON.tt[p]; }
-					}
-					tmp += r;
+						arr.push(arguments.callee.call(this, something[i], cache));
 				}
-				return '"'+tmp+'"';
-			break;
-
-			case 'object':
-				if (something instanceof Array) {
-					var members = [];
-					for (var i=0;i<something.length;i++) {
-						members.push(OAT.JSON.stringify(something[i],maxDepth-1,cache));
-					}
-					result = "["+members.join(",\n")+"]";
-					return result;
-				}
-				if (something instanceof Object) {
-					var members = [];
+				    return "["+arr.join(",")+"]";
+				} else if (something instanceof Object) {
+				    var arr = [];
+					cache.push(something);
 					for (var p in something) {
-						members.push('"'+p+'":'+OAT.JSON.stringify(something[p],maxDepth-1,cache));
+						var str = this._sanitize(p) + ":" + arguments.callee.call(this, something[p], cache);
+						arr.push(str);
 					}
-					result = "{"+members.join(",\n")+"}";
+				    return "{"+arr.join(",")+"}";
 				}
 			break;
+			default: throw new Error("Unknown data type");
 		}
-		return result;
+		return null;
 	}
+
 }
+
+//  Backward compatibility
+OAT.JSON.stringify = OAT.JSON.serialize;
+OAT.JSON.parse     = OAT.JSON.deserialize;

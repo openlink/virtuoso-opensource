@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2009 OpenLink Software
+ *  Copyright (C) 2005-2010 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -65,7 +65,7 @@ OAT.Declarative = {
 			}
 			var jsonParams = elm.getAttribute("openajaxParams");
 			if (jsonParams) {
-				var json = OAT.JSON.parse(jsonParams);
+				var json = OAT.JSON.deserialize(jsonParams);
 				for (var p in json) { params[p] = json[p]; }
 			}
 			var parentArr = queue[0]; /* choose right queue, according to object type */
@@ -113,8 +113,8 @@ OAT.Declarative = {
 					addObject("grid",g);
 				break;
 				case "anchor":
-					o.params.connection = OAT.JSON.parse(o.params.connection);
-					o.params.datasource = OAT.JSON.parse(o.params.datasource);
+					o.params.connection = OAT.JSON.deserialize(o.params.connection);
+					o.params.datasource = OAT.JSON.deserialize(o.params.datasource);
 					OAT.Anchor.assign(o.elm,o.params);
 				break;
 			} /* switch */
