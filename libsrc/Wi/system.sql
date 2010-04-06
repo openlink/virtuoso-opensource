@@ -5172,22 +5172,23 @@ create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := n
 create procedure csv_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
 {
   declare r any;
-  declare stmt varchar;
+  declare stmt, enc varchar;
   declare inx, old_mode, num_cols, nrows int;
   declare delim, quot char;
 
-  delim := quot := null;
+  delim := quot := enc := null;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
     }
 
   stmt := csv_ins_stmt (tb, num_cols);
   old_mode := log_enable (log_mode, 1);
   inx := 0;
   nrows  := 0;
-  while (isvector (r := get_csv_row (s, delim, quot)))
+  while (isvector (r := get_csv_row (s, delim, quot, enc)))
     {
       if (inx >= _from)
 	{
@@ -5221,17 +5222,18 @@ create procedure csv_parse (in s any, in cb varchar, inout cbd any, in _from int
 {
   declare r any;
   declare inx int;
-  declare delim, quot char;
+  declare delim, quot, enc char;
 
-  delim := quot := null;
+  delim := quot := enc := null;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
     }
 
   inx := 0;
-  while (isvector (r := get_csv_row (s, delim, quot)))
+  while (isvector (r := get_csv_row (s, delim, quot, enc)))
     {
       if (inx >= _from)
 	call (cb) (r, inx, cbd);

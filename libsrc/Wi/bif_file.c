@@ -5931,11 +5931,12 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rc = unzOpenCurrentFilePassword (uf, NULL /* password */);
   if (rc != UNZ_OK)
     {
-      *err_ret = srv_make_new_error ("37000", "ZIP01", "Can not open file from archive");
+      *err_ret = srv_make_new_error ("37000", "ZIP02", "Can not open file from archive");
       goto err_end;
     }
 
   ses = strses_allocate ();
+  strses_enable_paging (ses, http_ses_size);
 
   do 
     {
@@ -5950,9 +5951,93 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   while (rc > 0);
 
 err_end:
-  unzCloseCurrentFile (uf);
+  unzClose (uf);
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
+}
+
+
+/**
+   an entry in result consist of:
+   1. file name incl. path
+   2. uncompressed size
+   3. compressed size
+   4. original file date
+ */
+static caddr_t
+bif_unzip_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "unzip_list";
+  caddr_t fname = bif_string_arg (qst, args, 0, szMe);
+  unzFile uf;
+  uint32 i;
+  unz_global_info gi;
+  caddr_t fname_cvt;
+  caddr_t err = NULL;
+  int rc = 0;
+  dk_set_t set = NULL;
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
+    {
+      dk_free_box (fname_cvt);
+      sqlr_resignal (err);
+    }
+  uf = unzOpen (fname);
+  if (!uf)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP03", "Can not open archive");
+      goto err_end;
+    }
+  rc = unzGetGlobalInfo (uf, &gi);
+  if (rc != UNZ_OK)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP04", "error %d with zipfile in unzGetGlobalInfo", rc);
+      goto err_end;
+    }
+  for (i = 0; i < gi.number_entry; i++)
+    {
+      char filename_inzip[PATH_MAX + 1];
+      unz_file_info file_info;
+      TIMESTAMP_STRUCT ts;
+      caddr_t dt;
+
+      rc = unzGetCurrentFileInfo (uf, &file_info, filename_inzip, sizeof (filename_inzip), NULL, 0, NULL, 0);
+      if (rc != UNZ_OK)
+	{
+	  *err_ret = srv_make_new_error ("37000", "ZIP05", "error %d with zipfile in unzGetCurrentFileInfo", rc);
+	  break;
+	}
+      /* convert tmu_date to DV_DATETIME */
+      dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+      ts.year = file_info.tmu_date.tm_year;
+      ts.month = file_info.tmu_date.tm_mon;
+      ts.day = file_info.tmu_date.tm_mday;
+      ts.hour = file_info.tmu_date.tm_hour;
+      ts.minute = file_info.tmu_date.tm_min;
+      ts.second	= file_info.tmu_date.tm_sec;
+      ts.fraction = 0;
+      timestamp_struct_to_dt (&ts, dt);
+      dk_set_push (&set, list (4, box_dv_short_string (filename_inzip),
+	    box_num (file_info.uncompressed_size), box_num (file_info.compressed_size), dt));
+      if ((i+1) < gi.number_entry)
+	{
+	  rc = unzGoToNextFile (uf);
+	  if (rc != UNZ_OK)
+	    {
+	      *err_ret = srv_make_new_error ("37000", "ZIP06", "error %d with zipfile in unzGoToNextFile", rc);
+	      break;
+	    }
+	}
+    }
+
+err_end:
+  unzClose (uf);
+  dk_free_box (fname_cvt);
+  return (caddr_t) list_to_array (dk_set_nreverse (set));
 }
 
 /* tiny CSV parser */
@@ -5974,7 +6059,13 @@ err_end:
 	} \
     while (0)
 
-#define CSV_CHAR(c,ses) session_buffered_write_char (c, ses)
+#define CSV_CHAR(c,ses) \
+    do \
+	{ \
+	  char * tail = eh_encode_char__UTF8 (c, utf8char, utf8char + sizeof (utf8char)); \
+	  session_buffered_write (ses, utf8char, tail - utf8char); \
+	} \
+    while (0)
 
 /* CSV errors */
 #define CSV_OK 		0
@@ -6014,6 +6105,24 @@ csv_field (dk_session_t * ses)
   return ret;
 }
 
+static unichar
+get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
+{
+  unichar c = UNICHAR_EOD;
+  char buf [MAX_ENCODED_CHAR];
+  int readed = 0;
+  do
+    {
+      const char * ptr = &(buf[0]);
+      if ((readed + eh->eh_minsize) > MAX_ENCODED_CHAR)
+	return UNICHAR_BAD_ENCODING;
+      readed += session_buffered_read (in, buf + readed, eh->eh_minsize);
+      c = eh->eh_decode_char (&ptr, buf + readed);
+    }
+  while (c == UNICHAR_NO_DATA);
+  return c;
+}
+
 caddr_t
 bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -6022,7 +6131,10 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t * fl;
   caddr_t res = NULL;
   int quoted = 0, error = CSV_OK;
-  unsigned char c, state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  unichar c;
+  char utf8char[MAX_UTF8_CHAR];
+  encoding_handler_t *eh = &eh__ISO8859_1;
   if (BOX_ELEMENTS (args) > 1)
     {
       caddr_t ch = bif_string_or_null_arg (qst, args, 1, "get_csv_row");
@@ -6033,18 +6145,32 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t ch = bif_string_or_null_arg (qst, args, 2, "get_csv_row");
       quote = ch && ch[0] ? ch[0] : CSV_QUOTE;
     }
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      caddr_t enc = bif_string_or_null_arg (qst, args, 3, "get_csv_row");
+      if (enc && enc[0])
+	eh = eh_get_handler (enc);
+      if (NULL == eh)
+	sqlr_new_error ("42000", "CSV01", "Invalid encoding name '%s' is specified", enc);
+    }
   fl = strses_allocate ();
   CATCH_READ_FAIL (in)
     {
       while (CSV_OK == error)
 	{
-	  c = session_buffered_read_char (in);
+	  c = get_uchar_from_session (in, eh);
+	  if (UNICHAR_BAD_ENCODING == c)
+	    {
+	      *err_ret = srv_make_new_error ("42000", "CSV02", "Invalid character encoding");
+	      error = CSV_ERR_UNK;
+	      goto end;
+	    }
 	  switch (state)
 	    {
 	      case CSV_ROW_NOT_STARTED:
 	      case CSV_FIELD_NOT_STARTED:
 		    {
-		      if (delim != c && (c == 0x20 || c == 0x09)) /* space */
+		      if (delim != c && (c == 0x20 || c == 0x09 || c == 0xfeff)) /* space or BOM at the start */
 			continue;
 		      else if (c == 0x0d || c == 0x0a)
 			{
@@ -6209,6 +6335,7 @@ bif_file_init (void)
   bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
   bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
   bif_define ("unzip_file", bif_unzip_file);
+  bif_define ("unzip_list", bif_unzip_list);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
   bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
