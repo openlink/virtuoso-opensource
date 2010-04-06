@@ -6033,11 +6033,12 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rc = unzOpenCurrentFilePassword (uf, NULL /* password */);
   if (rc != UNZ_OK)
     {
-      *err_ret = srv_make_new_error ("37000", "ZIP01", "Can not open file from archive");
+      *err_ret = srv_make_new_error ("37000", "ZIP02", "Can not open file from archive");
       goto err_end;
     }
 
   ses = strses_allocate ();
+  strses_enable_paging (ses, http_ses_size);
 
   do
     {
@@ -6052,9 +6053,93 @@ bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   while (rc > 0);
 
 err_end:
-  unzCloseCurrentFile (uf);
+  unzClose (uf);
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
+}
+
+
+/**
+   an entry in result consist of:
+   1. file name incl. path
+   2. uncompressed size
+   3. compressed size
+   4. original file date
+ */
+static caddr_t
+bif_unzip_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *szMe = "unzip_list";
+  caddr_t fname = bif_string_arg (qst, args, 0, szMe);
+  unzFile uf;
+  uint32 i;
+  unz_global_info gi;
+  caddr_t fname_cvt;
+  caddr_t err = NULL;
+  int rc = 0;
+  dk_set_t set = NULL;
+
+  sec_check_dba ((query_instance_t *) qst, szMe);
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 1);
+  if (NULL != err)
+    {
+      dk_free_box (fname_cvt);
+      sqlr_resignal (err);
+    }
+  uf = unzOpen (fname);
+  if (!uf)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP03", "Can not open archive");
+      goto err_end;
+    }
+  rc = unzGetGlobalInfo (uf, &gi);
+  if (rc != UNZ_OK)
+    {
+      *err_ret = srv_make_new_error ("37000", "ZIP04", "error %d with zipfile in unzGetGlobalInfo", rc);
+      goto err_end;
+    }
+  for (i = 0; i < gi.number_entry; i++)
+    {
+      char filename_inzip[PATH_MAX + 1];
+      unz_file_info file_info;
+      TIMESTAMP_STRUCT ts;
+      caddr_t dt;
+
+      rc = unzGetCurrentFileInfo (uf, &file_info, filename_inzip, sizeof (filename_inzip), NULL, 0, NULL, 0);
+      if (rc != UNZ_OK)
+	{
+	  *err_ret = srv_make_new_error ("37000", "ZIP05", "error %d with zipfile in unzGetCurrentFileInfo", rc);
+	  break;
+	}
+      /* convert tmu_date to DV_DATETIME */
+      dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+      ts.year = file_info.tmu_date.tm_year;
+      ts.month = file_info.tmu_date.tm_mon;
+      ts.day = file_info.tmu_date.tm_mday;
+      ts.hour = file_info.tmu_date.tm_hour;
+      ts.minute = file_info.tmu_date.tm_min;
+      ts.second	= file_info.tmu_date.tm_sec;
+      ts.fraction = 0;
+      timestamp_struct_to_dt (&ts, dt);
+      dk_set_push (&set, list (4, box_dv_short_string (filename_inzip),
+	    box_num (file_info.uncompressed_size), box_num (file_info.compressed_size), dt));
+      if ((i+1) < gi.number_entry)
+	{
+	  rc = unzGoToNextFile (uf);
+	  if (rc != UNZ_OK)
+	    {
+	      *err_ret = srv_make_new_error ("37000", "ZIP06", "error %d with zipfile in unzGoToNextFile", rc);
+	      break;
+	    }
+	}
+    }
+
+err_end:
+  unzClose (uf);
+  dk_free_box (fname_cvt);
+  return (caddr_t) list_to_array (dk_set_nreverse (set));
 }
 
 /* tiny CSV parser */
@@ -6311,6 +6396,7 @@ bif_file_init (void)
   bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
   bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
   bif_define ("unzip_file", bif_unzip_file);
+  bif_define ("unzip_list", bif_unzip_list);
   bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
   bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
