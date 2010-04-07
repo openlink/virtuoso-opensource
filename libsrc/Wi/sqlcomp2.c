@@ -1536,6 +1536,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    {
 	      MP_DONE();
 	    }
+	  sc_free (&sc);
 	  SCS_STATE_POP;
 	  qr_free (qr);
 	  /*dk_free (string, -1);*/
@@ -1551,6 +1552,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    {
 	      MP_DONE();
 	    }
+	  sc_free (&sc);
 	  SCS_STATE_POP;
 	  qr_free (qr);
 	  POP_CATCH;
