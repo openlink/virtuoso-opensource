@@ -2198,7 +2198,7 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     status += ttl_http_write_prefix_if_needed (qst, ses, env, &(env->te_ns_count_s_o), &(tii.o));
   if ((NULL == env->te_prev_subj_ns) ||
     strcmp (env->te_prev_subj_ns, tii.s.ns) ||
-    strcmp (env->te_prev_subj_loc, tii.s.loc) )
+    strcmp (env->te_prev_subj_loc, ((NULL != tii.s.uri) ? tii.s.uri : tii.s.loc)) )
     {
       if (NULL != env->te_prev_subj_ns)
         {
@@ -2211,11 +2211,14 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ttl_http_write_ref (ses, env, &(tii.s));
       session_buffered_write_char ('\t', ses);
       env->te_prev_subj_ns = tii.s.ns;		tii.s.ns = NULL;
-      env->te_prev_subj_loc = tii.s.loc;	tii.s.loc = NULL;
+      if (NULL != tii.s.uri)
+        { env->te_prev_subj_loc = tii.s.uri;	tii.s.uri = NULL; }
+      else
+        { env->te_prev_subj_loc = tii.s.loc;	tii.s.loc = NULL; }
     }
   if ((NULL == env->te_prev_pred_ns) ||
     strcmp (env->te_prev_pred_ns, tii.p.ns) ||
-    strcmp (env->te_prev_pred_loc, tii.p.loc) )
+    strcmp (env->te_prev_pred_loc, ((NULL != tii.p.uri) ? tii.p.uri : tii.p.loc)) )
     {
       if (NULL != env->te_prev_pred_ns)
         {
@@ -2226,7 +2229,10 @@ bif_http_ttl_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ttl_http_write_ref (ses, env, &(tii.p));
       session_buffered_write_char ('\t', ses);
       env->te_prev_pred_ns = tii.p.ns;		tii.p.ns = NULL;
-      env->te_prev_pred_loc = tii.p.loc;	tii.p.loc = NULL;
+      if (NULL != tii.p.uri)
+        { env->te_prev_pred_loc = tii.p.uri;	tii.p.uri = NULL; }
+      else
+        { env->te_prev_pred_loc = tii.p.loc;	tii.p.loc = NULL; }
     }
   else
     session_buffered_write (ses, " ,\n\t\t", 5);
