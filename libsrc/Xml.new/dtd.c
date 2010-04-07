@@ -1164,7 +1164,10 @@ int replace_entity_common (vxml_parser_t* parser, int is_ge, xml_def_4_entity_t*
   if ((is_ge && test_char (parser, '#')) ||
       (test_class_str(parser, XML_CLASS_NMSTART)))
     {
-      test_class_str(parser, XML_CLASS_NMCHAR) ;
+      if (FINE_XML == parser->cfg.input_is_html)
+        test_class_str(parser, XML_CLASS_NMCHAR) ;
+      else
+        test_class_str_noentity (parser, XML_CLASS_NMCHAR);
       if ( test_char (parser, ';') )
 	{
 	  lenmem_t name_buf;

@@ -1018,6 +1018,41 @@ c_is_in_char_class:
 }
 
 int
+test_class_str_noentity (vxml_parser_t * parser, const xml_char_class_t cclass)
+{
+  unichar c;
+  buf_ptr_t rem = parser->pptr;
+  buf_ptr_t tmp;
+  const xml_char_range_t * cl_ptr;
+  for (;;)
+    {
+      if ((0 != parser->src_eh->eh_stable_ascii7) && (parser->pptr.ptr == parser->eptr.ptr))
+        skip_plain_tok_chars (parser, VXML_CHARPROP_ANY_NONCHAR);
+      tmp = parser->pptr;
+      c = get_tok_char (parser);
+      if (c < 0)
+	return 0;
+      cl_ptr = cclass;
+      for (;;)
+	{
+	  if (c < cl_ptr->start)
+	    break;
+	  if (c <= cl_ptr->end)
+	    goto c_is_in_char_class;
+	  cl_ptr++;
+	  if (cl_ptr->start < 0)
+	    break;
+	}
+/*c_is_not_in_char_class:*/
+      parser->pptr = tmp;
+      return (ptr_diff (tmp, rem));
+
+c_is_in_char_class:
+      ;
+    }
+}
+
+int
 test_xhtml_char_ref (vxml_parser_t * parser)
 {
   const struct xhtml_ent_s *lookup_res;
