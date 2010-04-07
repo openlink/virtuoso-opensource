@@ -516,6 +516,7 @@ it_free (index_tree_t * it)
     }
   if (it->it_lock_release_mtx)
     mutex_free (it->it_lock_release_mtx);
+  dk_free ((void*) it->it_maps, sizeof (it_map_t) * IT_N_MAPS);
   box_tag_modify (it, DV_CUSTOM);
   dk_free_box ((void*) it);
 }
