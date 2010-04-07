@@ -362,6 +362,7 @@ extern int dtd_get_att_type (struct vxml_parser_s* parser,
 extern int dtd_get_def_decl (struct vxml_parser_s * parser, ecm_attr_t* attr, ecm_el_t* el);
 extern int test_string (struct vxml_parser_s * parser, const char * s);
 extern int test_class_str (struct vxml_parser_s * parser, const xml_char_class_t _class);
+extern int test_class_str_noentity (struct vxml_parser_s * parser, const xml_char_class_t _class);
 extern int get_name (struct vxml_parser_s * parser);
 extern int get_value (struct vxml_parser_s * parser, int dtd_body);
 extern int dtd_constraint_check (struct vxml_parser_s *parser, ecm_el_t* elem, ptrlong attr_idx);
