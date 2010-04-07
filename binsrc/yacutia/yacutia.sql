@@ -6476,3 +6476,13 @@ create procedure y_col_dts (in t varchar)
   http (sprintf ('<option %s>ANY</option>', case when 'ANY' = t then 'selected' else '' end));
 }
 ;
+
+create procedure y_tab_or_space (in x any)
+{
+  if (x = 'tab')
+    return '\t';
+  else if (x = 'space')
+    return ' ';
+  return x;
+}
+;

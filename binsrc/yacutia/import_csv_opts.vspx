@@ -52,8 +52,8 @@
 		  <label>Delimiter</label>
 		  <v:select-list name="delim">
 		      <v:item name="," value=','/>
-		      <v:item name="Tab" value='\t'/>
-		      <v:item name="Space" value=' '/>
+		      <v:item name="Tab" value='tab'/>
+		      <v:item name="Space" value='space'/>
 		      <v:item name=";" value=';'/>
 		      <v:item name=":" value=':'/>
 		  </v:select-list>
@@ -161,7 +161,7 @@
 		  self.vc_is_valid := 0;
 		  goto endp;
 		};
-		while (isvector (r := get_csv_row (ss, self.delim.ufl_value, self.quot.ufl_value, enc)) and i < 10 + offs) 	
+		while (isvector (r := get_csv_row (ss, y_tab_or_space (self.delim.ufl_value), self.quot.ufl_value, enc)) and i < 10 + offs) 	
                 {
 		   if ((i = 0 and hi < 0) or hi = i)
 		     {
@@ -215,7 +215,7 @@
 		  self.vc_redirect (sprintf ('import_csv_2.vspx?path=%s&mode=%d&delim=%U&quot=%U&hrow=%d&offs=%d&enc=%U', 
 		  	self.path, 
 			self.mode,
-			self.delim.ufl_value,
+			y_tab_or_space (self.delim.ufl_value),
 			self.quot.ufl_value,
 			atoi(self.hrow.ufl_value) - 1,
 			atoi (self.offs.ufl_value) - 1,
