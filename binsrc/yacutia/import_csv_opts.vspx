@@ -49,6 +49,15 @@
 	  </tr>
           <tr>
 	      <td>
+		  <label>Mode</label>
+		  <v:select-list name="pmode">
+		      <v:item name="Strict" value='1'/>
+		      <v:item name="Lax" value='2'/>
+		  </v:select-list>
+             </td>
+          </tr>
+          <tr>
+	      <td>
 		  <label>Delimiter</label>
 		  <v:select-list name="delim">
 		      <v:item name="," value=','/>
@@ -129,7 +138,7 @@
 		  <h3>Sample Data</h3>
 		  <table class="listing">
 	  <?vsp
-              declare ss, cn, tmp, r, i, hi, offs, bom, enc any;
+              declare ss, cn, tmp, r, i, hi, offs, bom, enc, pmode any;
 	      if (self.mode = 0)
 	        {
 		  if (self.path like '%.gz')
@@ -155,13 +164,14 @@
 	       i := 0;	
 	       hi := atoi (coalesce (self.hrow.ufl_value, '1')) - 1;
 	       offs := atoi (coalesce (self.offs.ufl_value, '2')) - 1;
+	       pmode := atoi (coalesce (self.pmode.ufl_value, '1'));
 	       declare exit handler for sqlstate '*'
                 {
 		  self.vc_error_message := __SQL_MESSAGE;
 		  self.vc_is_valid := 0;
 		  goto endp;
 		};
-		while (isvector (r := get_csv_row (ss, y_tab_or_space (self.delim.ufl_value), self.quot.ufl_value, enc)) and i < 10 + offs) 	
+		while (isvector (r := get_csv_row (ss, y_tab_or_space (self.delim.ufl_value), self.quot.ufl_value, enc, pmode)) and i < 10 + offs) 	
                 {
 		   if ((i = 0 and hi < 0) or hi = i)
 		     {
@@ -212,14 +222,15 @@
 		    self.quot.ufl_value := '"';
 		  if (self.enc.ufl_value = '*default*')
                     self.enc.ufl_value := '';
-		  self.vc_redirect (sprintf ('import_csv_2.vspx?path=%s&mode=%d&delim=%U&quot=%U&hrow=%d&offs=%d&enc=%U', 
+		  self.vc_redirect (sprintf ('import_csv_2.vspx?path=%s&mode=%d&delim=%U&quot=%U&hrow=%d&offs=%d&enc=%U&pmode=%s', 
 		  	self.path, 
 			self.mode,
 			y_tab_or_space (self.delim.ufl_value),
 			self.quot.ufl_value,
 			atoi(self.hrow.ufl_value) - 1,
 			atoi (self.offs.ufl_value) - 1,
-			self.enc.ufl_value
+			self.enc.ufl_value,
+			self.pmode.ufl_value
 			));
                   ]]>
                 </v:on-post>
