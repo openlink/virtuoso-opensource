@@ -6074,6 +6074,10 @@ err_end:
 #define CSV_ERR_UNK 	3
 #define CSV_ERR_END 	4
 
+/* CSV mode */
+#define CSV_STRICT	1
+#define CSV_LAX		2
+
 static caddr_t
 csv_field (dk_session_t * ses)
 {
@@ -6126,11 +6130,11 @@ get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
 caddr_t
 bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
+  dk_session_t *in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
   dk_set_t row = NULL;
-  dk_session_t * fl;
+  dk_session_t *fl;
   caddr_t res = NULL;
-  int quoted = 0, error = CSV_OK;
+  int quoted = 0, error = CSV_OK, mode = CSV_STRICT, signal_error = 0;
   unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
   unichar c;
   char utf8char[MAX_UTF8_CHAR];
@@ -6153,6 +6157,16 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL == eh)
 	sqlr_new_error ("42000", "CSV01", "Invalid encoding name '%s' is specified", enc);
     }
+  if (BOX_ELEMENTS (args) > 4)
+    {
+      int is_null_f = 0;
+      long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
+      signal_error = f & 0x04;
+      f &= 0x03;
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT)
+	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
+      mode = f;
+    }
   fl = strses_allocate ();
   CATCH_READ_FAIL (in)
     {
@@ -6167,115 +6181,124 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    }
 	  switch (state)
 	    {
-	      case CSV_ROW_NOT_STARTED:
-	      case CSV_FIELD_NOT_STARTED:
-		    {
-		      if (delim != c && (c == 0x20 || c == 0x09 || c == 0xfeff)) /* space or BOM at the start */
-			continue;
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  if (state == CSV_ROW_NOT_STARTED) /* skip empty lines */
-			    continue;
-			  else
-			    {
-			      CSV_FIELD (row, fl);
-			      goto end; /* row end */
-			    }
-			}
-		      else if (c == delim)
-			{
-			  CSV_FIELD (row, fl);
-			}
-		      else if (c == quote)
-			{
-			  state = CSV_FIELD_STARTED;
-			  quoted = 1;
-			}
-		      else
-			{
-			  CSV_CHAR (c, fl);
-			  state = CSV_FIELD_STARTED;
-			  quoted = 0;
-			}
-		    }
-		  break;
-	      case CSV_FIELD_STARTED:
-		    {
-		      if (c == quote)
-			{
-			  if (quoted)
-			    {
-			      CSV_CHAR (c, fl);
-			      state = CSV_FIELD_MAY_END;
-			    }
-			  else
-			    {
-			      error = CSV_ERR_ESC;
-			      break;
-			    }
-			}
-		      else if (c == delim)
-			{
-			  if (quoted)
-			    CSV_CHAR (c, fl);
-			  else
-			    CSV_FIELD (row, fl);
-			}
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  if (quoted)
-			    CSV_CHAR (c, fl);
-			  else
-			    {
-			      CSV_FIELD (row, fl);
-			      goto end; /* row end */
-			    }
-			}
-		      else
-			{
-			  CSV_CHAR (c, fl);
-			}
-		    }
-		  break;
-	      case CSV_FIELD_MAY_END:
-		    {
-		      if (c == quote)
-			{
-			  /* skip, double quote */
-			  state = CSV_FIELD_STARTED;
-			}
-		      else if (c == delim)
-			{
-			  fl->dks_out_fill--;
-			  CSV_FIELD (row, fl);
-			}
-		      else if (c == 0x0d || c == 0x0a)
-			{
-			  fl->dks_out_fill--;
-			  CSV_FIELD (row, fl);
-			  goto end; /* row end */
-			}
-		      else
-			{
-			  error = CSV_ERR_ESC;
-			  break;
-			  /*CSV_CHAR (c, fl);*/
-			}
-		    }
-		  break;
-	      default: /* an error */
-		  error = CSV_ERR_UNK;
-		  break;
+	    case CSV_ROW_NOT_STARTED:
+	    case CSV_FIELD_NOT_STARTED:
+	      {
+		if (delim != c && (c == 0x20 || c == 0x09 || c == 0xfeff))	/* space or BOM at the start */
+		  continue;
+		else if (c == 0x0d || c == 0x0a)
+		  {
+		    if (state == CSV_ROW_NOT_STARTED)	/* skip empty lines */
+		      continue;
+		    else
+		      {
+			CSV_FIELD (row, fl);
+			goto end;	/* row end */
+		      }
+		  }
+		else if (c == delim)
+		  {
+		    CSV_FIELD (row, fl);
+		  }
+		else if (c == quote)
+		  {
+		    state = CSV_FIELD_STARTED;
+		    quoted = 1;
+		  }
+		else
+		  {
+		    CSV_CHAR (c, fl);
+		    state = CSV_FIELD_STARTED;
+		    quoted = 0;
+		  }
+	      }
+	      break;
+	    case CSV_FIELD_STARTED:
+	      {
+		if (c == quote)
+		  {
+		    if (quoted)
+		      {
+			CSV_CHAR (c, fl);
+			state = CSV_FIELD_MAY_END;
+		      }
+		    else
+		      {
+			if (CSV_STRICT == mode)
+			  {
+			    error = CSV_ERR_ESC;
+			    break;
+			  }
+			CSV_CHAR (c, fl);
+		      }
+		  }
+		else if (c == delim)
+		  {
+		    if (quoted)
+		      CSV_CHAR (c, fl);
+		    else
+		      CSV_FIELD (row, fl);
+		  }
+		else if (c == 0x0d || c == 0x0a)
+		  {
+		    if (quoted)
+		      CSV_CHAR (c, fl);
+		    else
+		      {
+			CSV_FIELD (row, fl);
+			goto end;	/* row end */
+		      }
+		  }
+		else
+		  {
+		    CSV_CHAR (c, fl);
+		  }
+	      }
+	      break;
+	    case CSV_FIELD_MAY_END:
+	      {
+		if (c == quote)
+		  {
+		    /* skip, double quote */
+		    state = CSV_FIELD_STARTED;
+		  }
+		else if (c == delim)
+		  {
+		    fl->dks_out_fill--;
+		    CSV_FIELD (row, fl);
+		  }
+		else if (c == 0x0d || c == 0x0a)
+		  {
+		    fl->dks_out_fill--;
+		    CSV_FIELD (row, fl);
+		    goto end;	/* row end */
+		  }
+		else
+		  {
+		    /* char after closing quote */
+		    if (CSV_STRICT == mode)
+		      {
+			error = CSV_ERR_ESC;
+			break;
+		      }
+		    CSV_CHAR (c, fl);
+		    quoted = 0;
+		  }
+	      }
+	      break;
+	    default:		/* an error */
+	      error = CSV_ERR_UNK;
+	      break;
 	    }
 	}
     }
   FAILED
     {
-      if (CSV_ROW_NOT_STARTED == state) /* when no one char can be read */
+      if (CSV_ROW_NOT_STARTED == state)	/* when no one char can be read */
 	error = CSV_ERR_END;
     }
   END_READ_FAIL (in);
-  if (state == CSV_FIELD_STARTED) /* case when no cr/lf at the end of file */
+  if (state == CSV_FIELD_STARTED)	/* case when no cr/lf at the end of file */
     {
       CSV_FIELD (row, fl);
     }
@@ -6288,7 +6311,11 @@ end:
   if (CSV_OK == error)
     res = list_to_array (dk_set_nreverse (row));
   else
-    dk_free_tree (list_to_array (dk_set_nreverse (row)));
+    {
+      dk_free_tree (list_to_array (dk_set_nreverse (row)));
+      if (signal_error)
+	*err_ret = srv_make_new_error ("37000", "CSV04", "Error parsing CSV row, error code: %d", error);
+    }
   dk_free_box (fl);
   return res;
 }

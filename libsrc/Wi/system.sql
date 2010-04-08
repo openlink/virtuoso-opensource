@@ -5171,24 +5171,28 @@ create procedure csv_load_file (in f varchar, in _from int := 0, in _to int := n
 
 create procedure csv_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
 {
-  declare r any;
+  declare r, log_ses any;
   declare stmt, enc varchar;
-  declare inx, old_mode, num_cols, nrows int;
+  declare inx, old_mode, num_cols, nrows, mode, log_error int;
   declare delim, quot char;
 
-  delim := quot := enc := null;
+  delim := quot := enc := mode := null;
+  log_error := 0;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
       enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
+      log_error := get_keyword ('log', opts, 0);
     }
 
   stmt := csv_ins_stmt (tb, num_cols);
   old_mode := log_enable (log_mode, 1);
   inx := 0;
   nrows  := 0;
-  while (isvector (r := get_csv_row (s, delim, quot, enc)))
+  log_ses := string_output ();
+  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
     {
       if (inx >= _from)
 	{
@@ -5199,14 +5203,26 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
 	      exec (stmt, stat, message, r, vector ('max_rows', 0, 'use_cache', 1));
 	      if (stat <> '00000')
 		{
-		  log_message (sprintf ('CSV import: error importing row: %d', inx));
-		  log_message (message);
+		  if (log_error)
+		    {
+		      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+		    }
+		  else
+		    {
+		      log_message (sprintf ('CSV import: error importing row: %d', inx));
+		      log_message (message);
+		    }
 		}
 	      else
 		nrows := nrows + 1;
 	    }
 	  else
-	    log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
+	    {
+	      if (log_error)
+		http (sprintf ('<error line="%d">different number of columns</error>', inx), log_ses);
+	      else
+	        log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
+	    }
 	}
       if (inx > _to)
 	goto end_loop;
@@ -5214,6 +5230,8 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
     }
   end_loop:;
   log_enable (old_mode, 1);
+  if (log_error)
+    return vector (nrows, log_ses);
   return nrows;
 }
 ;
@@ -5221,19 +5239,20 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
 create procedure csv_parse (in s any, in cb varchar, inout cbd any, in _from int := 0, in _to int := null, in opts any := null)
 {
   declare r any;
-  declare inx int;
+  declare inx, mode int;
   declare delim, quot, enc char;
 
-  delim := quot := enc := null;
+  delim := quot := enc := mode := null;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       delim := get_keyword ('csv-delimiter', opts);
       quot  := get_keyword ('csv-quote', opts);
       enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
     }
 
   inx := 0;
-  while (isvector (r := get_csv_row (s, delim, quot, enc)))
+  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
     {
       if (inx >= _from)
 	call (cb) (r, inx, cbd);
