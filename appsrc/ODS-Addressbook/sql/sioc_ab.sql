@@ -489,7 +489,7 @@ create procedure contact_insert (
   	  {
   	    if (length (relationship))
   	    {
-  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, relationship, person_iri);
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, ODS.ODS_API."ontology.denormalize"(relationship), person_iri);
   	    }
   	  }
     }
