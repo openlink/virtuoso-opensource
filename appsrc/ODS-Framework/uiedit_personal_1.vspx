@@ -84,7 +84,7 @@
         self.vc_is_valid := 0;
         return;
       }
-      if (exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+      if (exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1) and exists (select 1 from SYS_USERS where U_E_MAIL = self.regmail.ufl_value and U_ID <> self.u_id))
       {
         self.vc_error_message := 'This e-mail address is already registered.';
         self.vc_is_valid := 0;

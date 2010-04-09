@@ -201,6 +201,16 @@
           }
         }
       } else {
+        if (
+            (get_keyword ('cb_item_iMBox', params, '0') = '1') and
+            exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1) and
+            exists (select 1 from SYS_USERS where U_E_MAIL = self.iMBox and U_ID <> self.u_id)
+           )
+        {
+          self.vc_error_message := 'This e-mail address is already registered.';
+          self.vc_is_valid := 0;
+          return;
+        }
         --DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
         if (get_keyword ('cb_item_iTitle', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.iTitle);
