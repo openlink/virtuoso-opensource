@@ -248,12 +248,16 @@
       var toolkitPath="/ods/oat";
       var imagePath="/ods/images/oat/";
 
-      var featureList=["ajax", "combolist", "json", "anchor", "dav", "dialog", "calendar"];
+      var featureList=["ajax", "json", "anchor", "dialog", "dav", "combolist", "calendar"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
       function myInit() {
+        if (!OAT._loaded) {
+          setTimeout(myInit, 50);
+          return;
+        }
         OAT.Preferences.imagePath = '/ods/images/oat/';
         OAT.Preferences.stylePath = '/ods/oat/styles/';
         OAT.Preferences.showAjax = false;
@@ -287,9 +291,10 @@
 
         // Init OMAIL object
         OMAIL.init();
+        OAT.MSG.send(OAT, 'PAGE_LOADED');
       }
-      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+      OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
     </script>
   </xsl:template>
 

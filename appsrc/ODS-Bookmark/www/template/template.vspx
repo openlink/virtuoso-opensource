@@ -50,7 +50,7 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax", "json", "ws", "anchor", "dialog", "dav", "tree", "calendar"];
+        var featureList=["ajax", "json", "anchor", "dialog", "dav", "tree", "calendar"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
@@ -60,8 +60,11 @@
         // publics
         var formDialog;
 
-        function myInit()
-        {
+        function myInit() {
+          if (!OAT._loaded) {
+            setTimeout(myInit, 50);
+            return;
+          }
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Preferences.showAjax = false;
@@ -101,9 +104,10 @@
           // Init left pane - tree and tags
           BMK.initLeftPane();
           setFooter();
+          OAT.MSG.send(OAT, 'PAGE_LOADED');
         }
-        function getWindowHeight()
-        {
+
+        function getWindowHeight() {
           var windowHeight = 0;
           if (typeof(window.innerHeight) == 'number')
           {
@@ -126,8 +130,7 @@
           return windowHeight;
         }
 
-        function setFooter()
-        {
+        function setFooter() {
           if (document.getElementById)
           {
             var windowHeight = getWindowHeight();
@@ -144,8 +147,8 @@
             }
           }
         }
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+        OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
         window.onresize = function() {setFooter();}
       </script>
     ]]>
