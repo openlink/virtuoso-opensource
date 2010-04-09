@@ -852,7 +852,11 @@ cfg_setup (void)
     sqlo_compiler_exceeds_run_factor = 0;
 
   if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
-    sqlo_max_mp_size = 500000000;
+    sqlo_max_mp_size = 200000000;
+
+#ifdef POINTER_64
+  sqlo_max_mp_size *= 2;
+#endif
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
