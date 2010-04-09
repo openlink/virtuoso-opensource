@@ -20,6 +20,442 @@
  *
 */
 
+var ODS = {}
+
+ODS.app = {
+	AddressBook : {
+		menuName : 'AddressBook',
+		icon : '/ods/images/icons/ods_ab_16.png',
+		dsUrl : '#UID#/addressbook/'
+	},
+	Bookmarks : {
+		menuName : 'Bookmarks',
+		icon : '/ods/images/icons/ods_bookmarks_16.png',
+		dsUrl : '#UID#/bookmark/'
+	},
+	Calendar : {
+		menuName : 'Calendar',
+		icon : '/ods/images/icons/ods_calendar_16.png',
+		dsUrl : '#UID#/calendar/'
+	},
+	Community : {
+		menuName : 'Community',
+		icon : '/ods/images/icons/ods_community_16.png',
+		dsUrl : '#UID#/community/'
+	},
+	Discussion : {
+		menuName : 'Discussion',
+		icon : '/ods/images/icons/apps_16.png',
+		dsUrl : '#UID#/discussion/'
+	},
+	Polls : {
+		menuName : 'Polls',
+		icon : '/ods/images/icons/ods_poll_16.png',
+		dsUrl : '#UID#/polls/'
+	},
+	Weblog : {
+		menuName : 'Weblog',
+		icon : '/ods/images/icons/ods_weblog_16.png',
+		dsUrl : '#UID#/weblog/'
+	},
+	FeedManager : {
+		menuName : 'Feed Manager',
+		icon : '/ods/images/icons/ods_feeds_16.png',
+		dsUrl : '#UID#/feed/'
+	},
+	Briefcase : {
+		menuName : 'Briefcase',
+		icon : '/ods/images/icons/ods_briefcase_16.png',
+		dsUrl : '#UID#/briefcase/'
+	},
+	Gallery : {
+		menuName : 'Gallery',
+		icon : '/ods/images/icons/ods_gallery_16.png',
+		dsUrl : '#UID#/gallery/'
+	},
+	Mail : {
+		menuName : 'Mail',
+		icon : '/ods/images/icons/ods_mail_16.png',
+		dsUrl : '#UID#/mail/'
+	},
+	Wiki : {
+		menuName : 'Wiki',
+		icon : '/ods/images/icons/ods_wiki_16.png',
+		dsUrl : '#UID#/wiki/'
+	},
+	InstantMessenger : {
+		menuName : 'Instant Messenger',
+		icon : '/ods/images/icons/ods_wiki_16.png',
+		dsUrl : '#UID#/IM/'
+	},
+	eCRM : {
+		menuName : 'eCRM',
+		icon : '/ods/images/icons/apps_16.png',
+		dsUrl : '#UID#/ecrm/'
+	}
+}
+
+ODS.ico = {
+	addressBook : {
+		alt : 'AddressBook',
+		icon : '/ods/images/icons/ods_ab_16.png'
+	},
+	bookmarks : {
+		alt : 'Bookmarks',
+		icon : '/ods/images/icons/ods_bookmarks_16.png'
+	},
+	calendar : {
+		alt : 'Calendar',
+		icon : '/ods/images/icons/ods_calendar_16.png'
+	},
+	community : {
+		alt : 'Community',
+		icon : '/ods/images/icons/ods_community_16.png'
+	},
+	discussion : {
+		alt : 'Discussion',
+		icon : '/ods/images/icons/apps_16.png'
+	},
+	polls : {
+		alt : 'Polls',
+		icon : '/ods/images/icons/ods_poll_16.png'
+	},
+	weblog : {
+		alt : 'Weblog',
+		icon : '/ods/images/icons/ods_weblog_16.png'
+	},
+	feeds : {
+		alt : 'Feed Manager',
+		icon : '/ods/images/icons/ods_feeds_16.png'
+	},
+	briefcase : {
+		alt : 'Briefcase',
+		icon : '/ods/images/icons/ods_briefcase_16.png'
+	},
+	gallery : {
+		alt : 'Gallery',
+		icon : '/ods/images/icons/ods_gallery_16.png'
+	},
+	mail : {
+		alt : 'Mail',
+		icon : '/ods/images/icons/ods_mail_16.png'
+	},
+	wiki : {
+		alt : 'Wiki',
+		icon : '/ods/images/icons/ods_wiki_16.png'
+	},
+	system : {
+		alt : 'ODS',
+		icon : '/ods/images/icons/apps_16.png'
+	},
+	instantmessenger : {
+		alt : 'InstantMessenger',
+		icon : '/ods/images/icons/ods_im_16.png'
+	}
+};
+
+function eTarget(e) {
+	if (!e)
+		var e = window.event;
+	var t = (e.target) ? e.target : e.srcElement;
+	if (t.nodeType == 3) // defeat Safari bug
+		t = targ.parentNode;
+	return t;
+}
+
+function isErr(xmlDoc) {
+	var errXmlNodes = OAT.Xml.xpath(xmlDoc, '//error_response', {});
+	if (errXmlNodes.length)
+		return 1;
+	return 0;
+}
+
+function widgetToggle (elm)
+{
+  var _divs = elm.parentNode.parentNode.parentNode.getElementsByTagName ('div');
+  for (var i = 0; i < _divs.length; i++)
+  {
+    if (_divs[i].className == 'w_content')
+    {
+       if (_divs[i].style.display == 'none')
+         OAT.Dom.show (_divs[i]);
+       else
+         OAT.Dom.hide (_divs[i]);
+     }
+  }
+}
+
+function renderNewsFeedBlock(xmlString) {
+	var cont = $('notify_content');
+	if (!cont) {return;}
+
+	var actHidden = new Array;
+	if ($v('sid') != '') {
+		self.feedStatus(function(xmlDoc) {
+			var actOpt = OAT.Xml.xpath(xmlDoc, '/feedStatus_response/activity', {});
+			for ( var i = 0; i < actOpt.length; i++) {
+				var act = buildObjByAttributes(actOpt[i]);
+				if (act.status == 0)
+					actHidden.push(act.id);
+			}
+		});
+	}
+	var daily = buildTimeObj();
+
+	var xmlDoc = OAT.Xml.createXmlDoc(OAT.Xml.removeDefaultNamespace(xmlString));
+	var entries = OAT.Xml.xpath(xmlDoc, '/feed/entry', {});
+
+	for ( var i = 0; i < entries.length; i++) {
+		var entry = buildObjByChildNodes(entries[i]);
+		var actImg = false;
+
+		if ((typeof (entry['dc:type']) != 'undefined')
+				&& (typeof (entry['dc:type'].value) != 'undefined')
+				&& (entry['dc:type'].value.length > 0)
+				&& (typeof (ODS.ico[entry['dc:type'].value]) != 'undefined')) {
+			actImg = OAT.Dom.create('img', {}, 'msg_icon');
+			actImg.alt = ODS.ico[entry['dc:type'].value].alt;
+			actImg.src = ODS.ico[entry['dc:type'].value].icon;
+		}
+
+		var feedId = entry.id.split('/');
+		feedId = feedId[feedId.length - 1];
+
+		var ctrl_hide = OAT.Dom.create('img', {
+			width : '16px',
+			height : '16px',
+			cursor : 'pointer'
+		});
+		ctrl_hide.src = '/ods/images/skin/default/notify_remove_btn.png';
+		ctrl_hide.alt = 'Hide';
+		ctrl_hide.feedId = feedId;
+
+		OAT.Event.attach(ctrl_hide, "click", function(e) {
+			var t = eTarget(e);
+			var feedId = t.feedId;
+			t = t.parentNode.parentNode;
+			self.feedStatusSet(feedId, 0, function() {
+				if (t.parentNode.childNodes.length == 1) {
+					if (t.parentNode.previousSibling.tagName == 'H3')
+						OAT.Dom.unlink(t.parentNode.previousSibling);
+					OAT.Dom.unlink(t.parentNode);
+				} else {
+					OAT.Dom.unlink(t);
+				}
+			});
+		});
+
+		var ctrl = OAT.Dom.create('div', {}, 'msg_r')
+		OAT.Dom.append( [ ctrl, ctrl_hide ]);
+
+		var actDiv = OAT.Dom.create('div', {}, 'msg');
+		actDiv.innerHTML = '<span class="time">' + entry.updated.substr(11, 5) + '</span> ' + entry.title;
+
+		var actLi = OAT.Dom.create('li');
+
+		if (actImg)
+			OAT.Dom.append( [ actLi, actImg, actDiv, ctrl ]);
+		else
+			OAT.Dom.append( [ actLi, actDiv, ctrl ]);
+
+		actDiv.childNodes[4].href = actDiv.childNodes[4].href + '?sid=' + $v('sid') + '&realm=wa';
+
+		var actDate = entry.updated.substring(0, 10);
+		if (typeof (daily[actDate]) == 'object' && actHidden.find(feedId) == -1) {
+			OAT.Dom.append( [ daily[actDate].ulObj, actLi ]);
+		} else
+			OAT.Dom.append( [ daily['older'].ulObj, actLi ]);
+	}
+
+	OAT.Dom.clear($('notify_content'));
+
+	for (day in daily) {
+		if (daily[day].ulObj.childNodes.length > 0) {
+			OAT.Dom.append( [ $('notify_content'), daily[day].titleObj, daily[day].ulObj ]);
+		}
+	}
+}
+
+function renderDataspaceUL(xmlString) {
+	var ulDS = $('ds_list');
+	if (!ulDS) {return;}
+
+	OAT.Dom.clear(ulDS);
+	var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+	var resXmlNodes = OAT.Xml.xpath(xmlDoc, '//applicationsGet_response/application', {});
+	for (var i = 0; i < resXmlNodes.length; i++) {
+		var applicationObj = buildObjByAttributes(resXmlNodes[i]);
+
+		applicationObj.selfTextValue = OAT.Xml.textValue(resXmlNodes[i]);
+		if (applicationObj.disable != '0' && applicationObj.url.length > 0) {
+			var packageName = applicationObj.type;
+			packageName = packageName.replace(' ', '');
+
+			var appOpt = {};
+			if (typeof (ODS.app[packageName]) != 'undefined')
+				appOpt = ODS.app[packageName];
+			else
+				appOpt = {
+					menuName : packageName,
+					icon : 'images/icons/apps_16.png',
+					dsUrl : '#UID#/' + packageName + '/'
+				}
+
+			var appDataSpaceItem = OAT.Dom.create('li');
+			var appDataSpaceItemA = OAT.Dom.create('a', {cursor : 'pointer'});
+			appDataSpaceItemA.packageName = packageName;
+			appDataSpaceItemA.href = applicationObj.dataspace + '?sid=' + $v('sid') + '&realm=wa';
+
+			var appDataSpaceItemImg = OAT.Dom.create('img');
+			appDataSpaceItemImg.className = 'app_icon';
+			appDataSpaceItemImg.src = appOpt.icon;
+
+			OAT.Dom.append( [ ulDS, appDataSpaceItem ], [
+					appDataSpaceItem, appDataSpaceItemA ], [
+					appDataSpaceItemA, appDataSpaceItemImg,
+					OAT.Dom.text(' ' + applicationObj.selfTextValue) ]);
+		}
+	}
+}
+
+function feedStatusSet(feedId, feedStatus, cb) {
+	var q = 'sid=' + $v('sid') + '&feedId=' + feedId + '&feedStatus=' + feedStatus;
+	var x = function(xml) {
+		var xmlDoc = OAT.Xml.createXmlDoc(xml);
+		if (!isErr(xmlDoc)) {
+			if (typeof (cb) == "function")
+				cb(xmlDoc);
+		}
+	}
+	OAT.AJAX.POST('/ods_services/Http/feedStatusSet', q, x);
+}
+
+function feedStatus(cb) {
+	var q = 'sid=' + $v('sid');
+	var x = function(xml) {
+		var xmlDoc = OAT.Xml.createXmlDoc(xml);
+		if (!isErr(xmlDoc)) {
+			if (typeof (callbackFunction) == "function")
+				cb(xmlDoc);
+		}
+	}
+	OAT.AJAX.POST('/ods_services/Http/feedStatus', q, x);
+}
+
+function buildTimeObj() {
+	function pZero(val, prec) {
+		if (!prec)
+			prec = 2;
+		if (String(val).length < prec)
+			return '0'.repeat(prec - String(val).length) + String(val);
+		else
+			return val;
+	}
+	var weekday = new Array(7);
+
+	weekday[0] = "Sunday";
+	weekday[1] = "Monday";
+	weekday[2] = "Tuesday";
+	weekday[3] = "Wednesday";
+	weekday[4] = "Thursday";
+	weekday[5] = "Friday";
+	weekday[6] = "Saturday";
+
+	var obj = {};
+	var d = new Date();
+	var titleObj = OAT.Dom.create('h3', {}, 'date');
+
+	OAT.Dom.append( [ titleObj, OAT.Dom.text('Today') ]);
+	obj[d.getFullYear() + '-' + pZero(d.getMonth() + 1) + '-' + pZero(d.getDate())] = {
+		title : 'Today',
+		titleObj : titleObj,
+		ulObj : OAT.Dom.create('ul', {}, 'msgs')
+	};
+
+	d.setDate(d.getDate() - 1);
+
+	var titleObj = OAT.Dom.create('h3', {}, 'date');
+
+	OAT.Dom.append( [ titleObj, OAT.Dom.text('Yesterday') ]);
+
+	obj[d.getFullYear() + '-' + pZero(d.getMonth() + 1) + '-' + pZero(d.getDate())] = {
+		title : 'Yesterday',
+		titleObj : titleObj,
+		ulObj : OAT.Dom.create('ul', {}, 'msgs')
+	}
+
+	for ( var i = 0; i < 5; i++) {
+		d.setDate(d.getDate() - 1);
+		var titleObj = OAT.Dom.create('h3', {}, 'date');
+		OAT.Dom.append( [ titleObj, OAT.Dom.text(weekday[d.getDay()]) ]);
+		obj[d.getFullYear() + '-' + pZero(d.getMonth() + 1) + '-' + pZero(d.getDate())] = {
+			title : weekday[d.getDay()],
+			titleObj : titleObj,
+			ulObj : OAT.Dom.create('ul', {}, 'msgs')
+		}
+	}
+	var titleObj = OAT.Dom.create('h3', {}, 'date');
+	OAT.Dom.append( [ titleObj, OAT.Dom.text('Older') ]);
+	obj['older'] = {
+		title : 'Older',
+		titleObj : titleObj,
+		ulObj : OAT.Dom.create('ul', {}, 'msgs')
+	};
+	return obj;
+}
+
+function buildObjByAttributes(elm) {
+	var obj = {};
+	for ( var i = 0; i < elm.attributes.length; i++) {
+		obj[elm.attributes[i].nodeName] = OAT.Xml.textValue(elm.attributes[i]);
+	}
+	return obj;
+}
+
+function buildObjByChildNodes(elm) {
+	var obj = {};
+	for ( var i = 0; i < elm.childNodes.length; i++) {
+		var pName = elm.childNodes[i].nodeName;
+		var pValue = OAT.Xml.textValue(elm.childNodes[i]);
+		var pAttrib = elm.childNodes[i].attributes;
+
+		if (!(pName == '#text' && pValue == '\n')) {
+			if (typeof (obj[pName]) == 'undefined')
+				obj[pName] = pValue;
+			else {
+				var tmpObj = false;
+
+				if (!(obj[pName] instanceof Array)) {
+					tmpObj = obj[pName];
+					obj[pName] = new Array();
+					obj[pName].push(tmpObj);
+					obj[pName].push(pValue);
+				} else
+					obj[pName].push(pValue);
+			}
+			if (pAttrib.length > 0) {
+				var tmpVal = false;
+				if ((obj[pName] instanceof Array)) {
+					obj[pName][(obj[pName].length - 1)] = {};
+					obj[pName][(obj[pName].length - 1)]['value'] = pValue;
+				} else {
+					obj[pName] = {};
+					obj[pName]['value'] = pValue;
+				}
+				for ( var k = 0; k < pAttrib.length; k++) {
+					if ((obj[pName] instanceof Array))
+						obj[pName][(obj[pName].length - 1)]['@' + pAttrib[k].nodeName] = OAT.Xml.textValue(pAttrib[k]);
+					else
+						obj[pName]['@' + pAttrib[k].nodeName] = OAT.Xml.textValue(pAttrib[k]);
+				}
+			}
+		}
+	}
+	obj.selfTextValue = OAT.Xml.textValue(elm);
+	return obj;
+}
+
+
 // publics
 var lfTab;
 var rfTab;
@@ -52,11 +488,8 @@ function myInit() {
       OAT.Dom.hide('rf');
       lfTab.go(1);
       if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
-        var q = openIdLoginURL(uriParams);
-      OAT.AJAX.POST ("/ods/api/user.authenticate", q, afterLogin);
-    }
-    else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
-  {
+        OAT.AJAX.POST ("/ods/api/user.authenticate", openIdLoginURL(uriParams), afterLogin);
+      } else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel') {
       alert('OpenID Authentication Failed');
     }
 				}
@@ -844,6 +1277,36 @@ function selectProfileCallback(data) {
   	/* user data */
    	var user = xml.getElementsByTagName('user')[0];
 		if (user) {
+		  // width
+			var L = $('u_profile_l');
+  		var R = $('u_profile_r');
+  		var LWidth = OAT.Dom.getWH(L)[0] > 0 ? OAT.Dom.getWH(L)[0] : 200;
+  		var RWidth = OAT.Dom.getWH($('uf_div'))[0] - LWidth;
+
+  		R.style.width = RWidth + 'px';
+   		var widgets = R.getElementsByTagName("div");
+  		for (var i = 0; i < widgets.length; i++) {
+  			if (OAT.Dom.isClass(widgets[i], 'widget'))
+  				widgets[i].style.width = RWidth - 6 + 'px';
+
+  			if (OAT.Dom.isClass(widgets[i], 'tab_deck'))
+  				widgets[i].style.width = RWidth - 8 + 'px';
+  		}
+
+		  // photo
+  		$('userProfilePhotoName').innerHTML = '<h3>' + tagValue(user, 'fullName') + '</h3>';
+
+  		var photo = tagValue(user, 'photo');
+  		$('userProfilePhotoImg').src = photo ? photo: '/ods/images/missing_profile_picture.png';
+  		$('userProfilePhotoImg').alt = tagValue(user, 'fullName');
+
+  		var iri = tagValue(user, 'iri');
+  		var name = tagValue(user, 'name');
+  		$('uf_foaf_gem').href = iri.replace('#this', '');
+  		$('uf_sioc_gem').href = (iri.replace('#this', '')).replace('/person/'+name, '/'+name);
+  		$('uf_vcard_gem').href = '/ods/sn_user_export.vspx?ufid='+tagValue(user, 'uid')+'&ufname='+name;
+
+		  // profile
       var tbl = $('uf_table_0');
 			if (tbl) {
 				try {
@@ -915,6 +1378,12 @@ function selectProfileCallback(data) {
       }
       if (cRDF)
         cRDF.open(tagValue(user, 'iri'));
+
+		  // activities
+ 			OAT.AJAX.GET('/activities/feeds/activities/user/'+name+'/0/', false, renderNewsFeedBlock);
+
+		  // data spaces
+  		OAT.AJAX.POST('/ods_services/Http/applicationsGet?scope=own&sid='+$v('sid'), false, renderDataspaceUL);
     }
   }
 }
