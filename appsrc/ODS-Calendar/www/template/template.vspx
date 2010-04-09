@@ -52,7 +52,7 @@
         var toolkitPath="/ods/oat";
         var imagePath = "/ods/images/oat/";
         
-        var featureList=["ajax", "anchor", "dialog", "dav", "color", "calendar"];
+        var featureList=["ajax", "json", "anchor", "dialog", "dav", "color", "calendar"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
@@ -64,8 +64,11 @@
       	var deleteDialog2;
         var aboutDialog;
       	
-        function myInit()
-        {
+        function myInit() {
+          if (!OAT._loaded) {
+            setTimeout(myInit, 50);
+            return;
+          }
           CAL.weekStartDay = '<?V self.cWeekStarts ?>';
           CAL.dateFormat = '<?V self.cDateFormat ?>';
 
@@ -121,9 +124,9 @@
           }
         }
           setFooter();
+          OAT.MSG.send(OAT, 'PAGE_LOADED');
         }
-    		function getWindowHeight()
-    		{
+        function getWindowHeight() {
     			var windowHeight = 0;
     			if (typeof(window.innerHeight) == 'number')
     			{
@@ -145,8 +148,7 @@
     			}
     			return windowHeight;
     		}
-    		function setFooter()
-    		{
+        function setFooter() {
     			if (document.getElementById)
     			{
     				var windowHeight = getWindowHeight();
@@ -159,8 +161,8 @@
     				}
     			}
     		}
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+        OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
     		window.onresize = function() {setFooter();}
   	</script>
     ]]>

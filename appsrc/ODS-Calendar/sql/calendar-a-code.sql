@@ -1561,8 +1561,14 @@ create procedure CAL.WA.utfClear(
 create procedure CAL.WA.utf2wide (
   inout S any)
 {
+  declare retValue any;
+
   if (isstring (S))
-    return charset_recode (S, 'UTF-8', '_WIDE_');
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
   return S;
 }
 ;
@@ -1572,8 +1578,14 @@ create procedure CAL.WA.utf2wide (
 create procedure CAL.WA.wide2utf (
   inout S any)
 {
+  declare retValue any;
+
   if (iswidestring (S))
-    return charset_recode (S, '_WIDE_', 'UTF-8' );
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
   return charset_recode (S, null, 'UTF-8' );
 }
 ;
