@@ -28,6 +28,7 @@
     <title>Virtuoso Web Applications</title>
     <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
     <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
@@ -803,11 +804,95 @@
               if ($_form == 'user')
               {
               ?>
-
-              <div id="uf" class="form">
+              <div id="uf" class="form" style="width: 100%;">
                 <div class="header">
                   User profile
                 </div>
+
+                <div id="uf_div" style="clear: both;">
+              	  <div id="u_profile_l">
+              	    <div id="user_info_w" class="widget user_info_w">
+              	      <div class="w_title" id="userProfilePhotoName">
+              	        <h3></h3>
+              	      </div>
+              	      <div class="w_content">
+                        <div class="user_img_ctr">
+                          <a href="javascript:void(0)">
+                       		  <img alt="Profile image" id="userProfilePhotoImg" rel="foaf:depiction" class="prof_photo" src="/ods/images/profile.png"/>
+                          </a>
+                        </div> <!-- user_img_ctr -->
+                        <div class="gems_ctr">
+                          <div class="prof_user_gems" id="profileUserGems">
+                            <div class="gem">
+                              <a href="javascript:void(0)" id="uf_foaf_gem" target="_blank"><img src="/ods/images/icons/foaf.png" alt="FOAF"/></a>
+                            </div>
+                            <div class="gem">
+                              <a href="javascript:void(0)" id="uf_sioc_gem" target="_blank"><img src="/ods/images/icons/sioc_button.png" alt="SIOC"/></a>
+                            </div>
+                            <div class="gem">
+                              <a href="javascript:void(0)" id="uf_vcard_gem" target="_blank"><img src="/ods/images/icons/vcard.png" alt="VCARD"/></a>
+                            </div>
+                          </div> <!-- prof_user_gems -->
+                        </div> <!-- gems_ctr -->
+                      </div> <!-- w_content -->
+          	        </div> <!-- .widget -->
+
+            	      <div id="ds_w" class="widget ds_w">
+            	        <div class="w_title">
+                        <h3>Data Space</h3>
+          		          <div class="w_title_bar_btns">
+                    		  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
+                    		</div> <!-- w_title_bar_btns -->
+          	          </div> <!-- w_title -->
+            	        <div class="w_content">
+                        <ul class="ds_list" id="ds_list">
+                        </ul> <!-- ds_list -->
+                        <div class="cmd_ctr">&nbsp;</div>
+                      </div> <!-- w_content -->
+                    </div> <!-- .widget -->
+
+              	    <div id="connections_w" class="widget connections_w" style="display: none;">
+              	      <div class="w_title">
+                        <h3 id="connPTitleTxt">Connections</h3>
+                        <div class="w_title_bar_btns">
+                          <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
+                        </div> <!-- w_title_bar_btns -->
+              	      </div> <!-- w_title -->
+            	        <div class="w_content">
+                        <ul class="tab_bar">
+                          <li id="connT1" class="sel"><a href="javascript:void(0)">Thumbnails</a></li>
+                          <li id="connT2"><a href="javascript:void(0)">Map</a></li>
+                        </ul>
+                        <div class="tab_deck">
+                          <div id="connPCtr" class="tab_page">
+                          </div>
+                          <div class="tab_page" id="connP1">
+                          </div>
+                          <div class="tab_page" id="connP2">
+                            <div id="connP2map" style="height: 200px;"> </div>
+                          </div>
+                        </div> <!-- tab_deck -->
+                      </div> <!-- w_content -->
+            	      </div> <!-- .widget -->
+
+                    <div id="groups_w" class="widget groups_w" style="display: none;">
+            	        <div class="w_title">
+            	          <h3 id="discussionsTitleTxt">Discussion Groups ()</h3>
+            	        </div>
+            	        <div class="w_content" id="discussionsCtr">
+                      </div> <!-- w_content -->
+            	      </div> <!-- .widget -->
+          	      </div>
+
+              	  <div id="u_profile_r" style="width: 100%;">
+                    <div class="widget w_contact" about="#THIS" instanceof="foaf:Person">
+                      <div class="w_title">
+                        <h3>Contact Information</h3>
+                        <div class="w_title_bar_btns">
+                    		  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
+                    		</div>
+                      </div>
+                      <div class="w_content">
                 <ul id="uf_tabs" class="tabs">
                   <li id="uf_tab_0" title="Personal">Personal</li>
                   <li id="uf_tab_1" title="Messaging Services">Messaging Services</li>
@@ -821,19 +906,19 @@
                     <table id="uf_table_0" class="form" cellspacing="5">
                     </table>
                   </div>
-                  <div id="uf_page_1" class="tabContent" >
+                          <div id="uf_page_1" class="tabContent" style="display: none">
                     <table id="uf_table_1" class="form" cellspacing="5">
                     </table>
                   </div>
-                  <div id="uf_page_2" class="tabContent" >
+                          <div id="uf_page_2" class="tabContent" style="display: none">
                     <table id="uf_table_2" class="form" cellspacing="5">
                     </table>
                   </div>
-                  <div id="uf_page_3" class="tabContent" >
+                          <div id="uf_page_3" class="tabContent" style="display: none">
                     <table id="uf_table_3" class="form" cellspacing="5">
                 </table>
                   </div>
-                  <div id="uf_page_4" class="tabContent" >
+                          <div id="uf_page_4" class="tabContent" style="display: none">
                     <div id="uf_rdf_content">
                       &nbsp;
                     </div>
@@ -843,7 +928,23 @@
                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<?php print($_xml->iri); ?>");});
                   </script>
                 </div>
-                <div class="footer">
+                      </div>
+                    </div>
+
+                    <div id="notify" class="notify_w widget">
+                      <div class="w_title">
+                        <h3>Activities</h3>
+                        <div class="w_title_bar_btns">
+                      	  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
+                      	</div> <!-- w_title_bar_btns -->
+                      </div>
+                      <div class="w_content" id="notify_content">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="footer" style="clear: both;">
                   <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
               </div>

@@ -178,10 +178,11 @@ TBL.createCellSelect = function (fldName) {
 TBL.createCellCombolist = function (td, fldValue, fldOptions) {
   var fld = new OAT.Combolist([], fldValue, fldOptions);
   fld.input.id = fld.input.name;
+  fld.input.style.width = "85%";
   td.appendChild(fld.div);
 
   var dims = OAT.Dom.getWH(td);
-	fld.list.style.width = (dims[0]*0.75)+"px";
+  fld.list.style.width = (((dims[0]>250)?dims[0]:250)*0.75)+"px";
 
   return fld;
 }
@@ -223,7 +224,6 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
 
 TBL.createCell2 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
-  fld.input.style.width = "85%";
   fld.addOption('rdfs:seeAlso');
   fld.addOption('foaf:made');
   fld.addOption('foaf:maker');
@@ -234,7 +234,6 @@ TBL.createCell2 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: setServiceUrl});
   fld.input.setAttribute("autocomplete", "off");
-  fld.input.style.width = "85%";
   for (N = 0; N < serviceList.length; N = N + 1)
     fld.addOption('<img src="/ods/images/services/'+serviceList[N][0]+'"/> '+serviceList[N][2], serviceList[N][2]);
 
@@ -259,7 +258,6 @@ TBL.createCell11 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
 
-	fld.input.style.width = "85%";
 	fld.addOption('rel:acquaintanceOf');
 	fld.addOption('rel:ambivalentOf');
 	fld.addOption('rel:ancestorOf');
@@ -486,7 +484,6 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
       value = property.value;
     }
     var fld = TBL.createCellCombolist(td, value, {name: fldName});
-    fld.input.style.width = "85%";
     fld.input.combolist = fld;
     var classNames = ontologyClassProperty.objectProperties;
     for (var n = 0; n < RDF.itemTypes.length; n++) {
