@@ -848,6 +848,12 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_REPLACE1 (in val varchar)
+{
+	return replace (val, '\'', '%27');
+}
+;
+
 create procedure DB.DBA.XSLT_SHA1_HEX (in val varchar)
 {
   return tree_sha1 (val, 1);
@@ -1355,6 +1361,7 @@ grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
 grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
+grant execute on DB.DBA.XSLT_REPLACE1 to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
 grant execute on DB.DBA.XSLT_HTTP_STRING_DATE to public;
 grant execute on DB.DBA.XSLT_STRING2ISO_DATE to public;
@@ -1387,6 +1394,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:replace1', 'DB.DBA.XSLT_REPLACE1');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escape', 'DB.DBA.XSLT_ESCAPE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:string2date', 'DB.DBA.XSLT_STRING2ISO_DATE');
@@ -5000,8 +5008,8 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
       return 0;
     };
-  if (new_origin_uri like 'http://www.bestbuy.com/site/olspage.jsp?%' or
-      new_origin_uri like 'http://www.bestbuy.com/%/%?%')
+  if (new_origin_uri like 'http://%.bestbuy.com/site/olspage.jsp?%' or
+      new_origin_uri like 'http://%.bestbuy.com/%/%?%')
     {
       declare arr any;
       arr := WS.WS.PARSE_URI (new_origin_uri);
@@ -5017,6 +5025,18 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
 	  is_sku := 1;
 	}
     }
+  else if (new_origin_uri like 'http://%.bestbuy.com/%/%/%/')
+    {
+      declare arr any;
+      arr := sprintf_inverse (new_origin_uri, 'http://%s.bestbuy.com/%s/%s/%s/', 0);
+      if (length (arr) = 4)
+	{
+	  asin := arr[3];
+	  is_sku := 1;
+	}
+      else
+	return 0;
+    }
   else
     {
       return 0;
@@ -5025,7 +5045,8 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   if (asin is null or not isstring (api_key))
     return 0;
   if (is_sku)
-    url := sprintf ('http://api.remix.bestbuy.com/v1/products(sku=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
+    -- url := sprintf ('http://api.remix.bestbuy.com/v1/products(sku=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
+    url := sprintf ('http://api.remix.bestbuy.com/v1/products/%s.xml?apiKey=%s', asin, api_key);
   else
     url := sprintf ('http://api.remix.bestbuy.com/v1/products(productId=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));

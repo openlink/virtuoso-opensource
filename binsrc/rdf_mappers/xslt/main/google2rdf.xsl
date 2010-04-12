@@ -63,13 +63,22 @@
     </xsl:template>
 
 	<xsl:template match="a:entry" priority="2">
-	<rdf:Description rdf:about="{id}">
+		<xsl:variable name="id2" select="vi:replace1(a:id)" />
+	<rdf:Description rdf:about="{$id2}">
 	    <rdf:type rdf:resource="&bibo;Document"/>
-	    <foaf:topic rdf:resource="{vi:proxyIRI (id)}"/>
+	    <foaf:topic rdf:resource="{vi:proxyIRI ($id2)}"/>
 	</rdf:Description>
-	<rdf:Description rdf:about="{vi:proxyIRI (id)}">
+	<rdf:Description rdf:about="{vi:proxyIRI ($id2)}">
 	    <rdf:type rdf:resource="&sioc;Item"/>
+	     <xsl:choose>
+			<xsl:when test="string-length(a:title) &gt; 0">
+				<rdfs:label><xsl:value-of select="a:title"/></rdfs:label>
 	    <dc:title><xsl:value-of select="a:title"/></dc:title>
+			</xsl:when>
+			<xsl:otherwise>
+				<rdfs:label><xsl:value-of select="a:id"/></rdfs:label>
+			</xsl:otherwise>
+		</xsl:choose>
 	    <xsl:apply-templates select="g:*"/>
 	    <xsl:apply-templates select="a:*"/>
 		<xsl:for-each select="content/m:properties/d:*">
@@ -107,14 +116,14 @@
 	<sioc:has_creator>
 	    <xsl:variable name="agent">
 					<xsl:choose>
-					<xsl:when test="starts-with(parent::a:id, 'http://')">
-						<xsl:value-of select="vi:proxyIRI (parent::a:id, '', name)"/>
+					<xsl:when test="starts-with(parent::a:entry/a:id, 'http://')">
+						<xsl:value-of select="vi:proxyIRI (parent::a:entry/a:id, '', name)"/>
 					</xsl:when>
 					<xsl:when test="parent::a:entry/link[@rel='self']">
 		<xsl:value-of select="vi:proxyIRI (parent::a:entry/link[@rel='self']/@href,'',name)"/>
 					</xsl:when>
 					<xsl:otherwise>
-						<xsl:value-of select="vi:proxyIRI (parent::a:id, '', name)"/>
+						<xsl:value-of select="vi:proxyIRI (parent::a:entry/link/@href, '', name)"/>
 					</xsl:otherwise>
 					</xsl:choose>
 	    </xsl:variable>

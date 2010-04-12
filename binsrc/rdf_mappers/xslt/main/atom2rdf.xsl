@@ -50,7 +50,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
@@ -134,7 +134,8 @@
 <xsl:template match="a:entry" mode="li">
   <xsl:choose>
         <xsl:when test="starts-with(a:id, 'http://')">
-          <rdf:li rdf:resource="{a:id}" />
+		  <xsl:variable name="id2" select="vi:replace1(a:id)" />
+          <rdf:li rdf:resource="{$id2}" />
         </xsl:when>
     <xsl:when test="a:link[@rel='alternate']">
 	<rdf:li rdf:resource="{a:link[@rel='alternate']/@href}" />
@@ -153,12 +154,13 @@
 <xsl:template match="a:entry" mode="rdfitem">
       <xsl:choose>
         <xsl:when test="starts-with(a:id, 'http://')">
-          <item rdf:about="{a:id}">
+		  <xsl:variable name="id2" select="vi:replace1(a:id)" />
+          <item rdf:about="{$id2}">
             <xsl:apply-templates/>
             <xsl:if test="a:category[@term]">
               <xsl:for-each select="a:category[@term]">
                 <sioc:topic>
-                  <skos:Concept rdf:about="{concat (/a:feed/a:id, '#', @term)}">
+                  <skos:Concept rdf:about="{concat (vi:replace1(/a:feed/a:id), '#', @term)}">
                     <skos:prefLabel>
                       <xsl:value-of select="@term"/>
                     </skos:prefLabel>
