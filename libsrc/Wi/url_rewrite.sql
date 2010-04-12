@@ -968,19 +968,31 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
         else
 	  pars[i] := subseq (str, arr[inx], arr[inx + 1]);
      }
-   arr := regexp_parse ('(\\x24[0-9]+)', format, 0);
+   arr := regexp_parse ('(\\x24U?[0-9]+)', format, 0);
    if (arr is null)
      return format;
    ret := '';
    pos := 0;
    while (arr is not null)
      {
+       declare fmt varchar;
        ret := ret || subseq (format, pos, arr[0]);
-       tmp := atoi(ltrim (subseq (format, arr[0], arr[1]), '\x24'));
+       fmt := subseq (format, arr[0], arr[1]);
+       tmp := atoi(ltrim (fmt, '\x24U'));
+       fmt := ltrim (fmt, '\x24');
        if (tmp > 0 and tmp <= length (pars))
+	 {
+	   if (fmt like 'U%')
+	     {
+	       declare par any;
+	       par := charset_recode (pars[tmp-1], 'UTF-8', '_WIDE_');
+               ret := ret || sprintf ('%U', par);
+	     }
+	   else
          ret := ret || pars[tmp-1];
+	 }
        pos := arr[1];
-       arr := regexp_parse ('(\\x24[0-9]+)', format, pos);
+       arr := regexp_parse ('(\\x24U?[0-9]+)', format, pos);
      }
    if (pos > 0 and pos < length (format))
      ret := ret || subseq (format, pos);
