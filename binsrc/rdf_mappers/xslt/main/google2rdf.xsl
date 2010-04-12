@@ -52,6 +52,7 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
 	xmlns:m="&m;"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -64,9 +65,16 @@
 
 	<xsl:template match="a:entry" priority="2">
 		<xsl:variable name="id2" select="vi:replace1(a:id)" />
-	<rdf:Description rdf:about="{$id2}">
+		<rdf:Description rdf:about="{vi:docproxyIRI ($id2)}">
 	    <rdf:type rdf:resource="&bibo;Document"/>
+		    <xsl:choose>
+			<xsl:when test="count(//a:entry) = 1">
+			    <foaf:primaryTopic rdf:resource="{vi:proxyIRI ($id2)}"/>
+			</xsl:when>
+			<xsl:otherwise>
 	    <foaf:topic rdf:resource="{vi:proxyIRI ($id2)}"/>
+			</xsl:otherwise>
+		    </xsl:choose>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI ($id2)}">
 	    <rdf:type rdf:resource="&sioc;Item"/>
@@ -81,12 +89,19 @@
 		</xsl:choose>
 	    <xsl:apply-templates select="g:*"/>
 	    <xsl:apply-templates select="a:*"/>
-		<xsl:for-each select="content/m:properties/d:*">
-			<xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+			<xsl:for-each select="content/m:properties/d:*[. != '']">
+			    <xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata/">
 				<xsl:value-of select="."/>
 			</xsl:element>
 		</xsl:for-each>
-		<!--xsl:copy-of select="content/m:properties/d:*" /-->
+			<xsl:if test="a:content/m:properties/d:longitude and a:content/m:properties/d:latitude">
+			    <geo:lat><xsl:value-of select="a:content/m:properties/d:latitude"/></geo:lat>
+			    <geo:long><xsl:value-of select="a:content/m:properties/d:longitude"/></geo:long>
+			</xsl:if>
+			<xsl:if test="a:content/m:properties/d:Longitude and a:content/m:properties/d:Latitude">
+			    <geo:lat><xsl:value-of select="a:content/m:properties/d:Latitude"/></geo:lat>
+			    <geo:long><xsl:value-of select="a:content/m:properties/d:Longitude"/></geo:long>
+			</xsl:if>
 	</rdf:Description>
     </xsl:template>
 
@@ -103,7 +118,7 @@
 	</rdf:Description>
     </xsl:template>
 
-    <xsl:template match="a:content">
+    <xsl:template match="a:content[not (m:properties)]">
 	<dc:description><xsl:value-of select="."/></dc:description>
     </xsl:template>
 
