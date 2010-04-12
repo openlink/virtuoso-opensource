@@ -3252,7 +3252,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ECM_MEM_NOT_FOUND == desc_idx)
     sqlr_new_error ("22023", "SR486", "Function xqf_str_parse() does not support XQuery library function '%.300s'", p_name);
   desc = xqf_str_parser_descs + desc_idx;
-  if (3 >= BOX_ELEMENTS (args))
+  if (3 <= BOX_ELEMENTS (args))
     flags = bif_long_arg (qst, args, 2, "xqf_str_parse");
   if ((desc->p_can_default) && (1 == BOX_ELEMENTS (args)))
     arg = NULL;
