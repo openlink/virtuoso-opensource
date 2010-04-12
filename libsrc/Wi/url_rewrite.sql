@@ -1120,7 +1120,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   else
 	     {
 	       s := string_output ();
-	       http_dav_url (variant, null, s);
+	       http_escape (variant, 7, s, 1, 1);
+	       --http_dav_url (variant, null, s);
 	       s := string_output_string (s);
 	       best_variant := s;
 	     }
