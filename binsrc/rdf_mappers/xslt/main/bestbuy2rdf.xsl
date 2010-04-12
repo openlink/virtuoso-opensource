@@ -80,7 +80,7 @@
 			<gr:Offering rdf:about="{$resourceURL}">
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
-			    <rdfs:label><xsl:value-of select="products/product/name"/></rdfs:label>
+			    <rdfs:label><xsl:value-of select="//product/name"/></rdfs:label>
 			    <!-- For testing with standalone XSLT processor
 			    <gr:includes rdf:resource="{concat ($baseUri, '#', 'Product')}"/>
 			    -->
@@ -118,14 +118,14 @@
 	                        <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	                            <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                            <rdf:type rdf:resource="&oplbb;Product"/>
-				    <xsl:apply-templates select="products/product" mode="manufacturer" />
+				    <xsl:apply-templates select="//product" mode="manufacturer" /> 
 		                   <!-- TO DO
 		                   <rdfs:comment>!!#{manufacturer} #{modelNumber}</rdfs:comment>
 		                   -->
 	                       </rdf:Description>
 	                   </gr:hasMakeAndModel>
 
-			   <xsl:apply-templates select="products/product" />
+			   <xsl:apply-templates select="//product" />
 			</rdf:Description>
 
 		</rdf:RDF>
