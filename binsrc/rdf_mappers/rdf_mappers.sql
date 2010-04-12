@@ -850,6 +850,8 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 
 create procedure DB.DBA.XSLT_REPLACE1 (in val varchar)
 {
+  val := replace (val, '(', '%28');
+  val := replace (val, ')', '%29');
 	return replace (val, '\'', '%27');
 }
 ;
