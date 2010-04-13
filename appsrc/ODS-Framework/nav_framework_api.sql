@@ -303,7 +303,7 @@ create procedure sessionValidate (
     if(userName='')
        goto _authbad;
 
-      pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = userName and U_ACCOUNT_DISABLED = 0);
+      pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = userName and U_DAV_ENABLE = 1 and U_ACCOUNT_DISABLED = 0);
       if (_hex_sha1_digest (sid || userName || pwd) <> authStr)
         goto _authbad;
 
