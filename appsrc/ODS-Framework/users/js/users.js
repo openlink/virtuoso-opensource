@@ -318,6 +318,40 @@ function renderDataspaceUL(xmlString) {
 	}
 }
 
+function renderConnectionsWidget(xmlString) {
+	var connTP = $('connP1')
+	if (!connTP) {return;}
+
+	OAT.Dom.clear(connTP);
+	var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+	var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user', {});
+	var invitations = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user/invited', {});
+
+	$('connPTitleTxt').innerHTML = 'Connections (' + (connections.length - invitations.length) + ')';
+
+	var connectionsArr = new Array();
+	for ( var i = 0; i < connections.length; i++) {
+		var connObj = buildObjByChildNodes(connections[i]);
+		if (typeof (connObj.invited) == 'undefined') {
+			var connProfileObj = {};
+			connProfileObj[connObj.uid] = connObj.fullName;
+
+			connectionsArr.push(connObj.uid);
+			var _divC = OAT.Dom.create('div', {cursor : 'pointer'}, 'conn');
+			_divC.id = 'connW_' + connObj.uid;
+		  OAT.Event.attach(_divC, "dblclick", function() {document.location.href = connObj.dataspace;});
+			var tnail = OAT.Dom.create('img', {width : '40px', height : '40px'});
+			tnail.src = (connObj.photo.length > 0 ? connObj.photo: '/ods/images/missing_person_tnail.png'); // images/profile_small.png
+
+			var _divCI = OAT.Dom.create('div', {}, 'conn_info');
+			var cNameA = OAT.Dom.create('a', {cursor : 'pointer'});
+			cNameA.href = connObj.dataspace;
+			cNameA.innerHTML = connObj.fullName;
+			OAT.Dom.append( [ connTP, _divC ], [ _divC, tnail, _divCI ], [ _divCI, cNameA ]);
+		}
+	}
+}
+
 function feedStatusSet(feedId, feedStatus, cb) {
 	var q = 'sid=' + $v('sid') + '&feedId=' + feedId + '&feedStatus=' + feedStatus;
 	var x = function(xml) {
@@ -1384,6 +1418,9 @@ function selectProfileCallback(data) {
 
 		  // data spaces
   		OAT.AJAX.POST('/ods_services/Http/applicationsGet?scope=own&sid='+$v('sid'), false, renderDataspaceUL);
+
+		  // data spaces
+  		OAT.AJAX.POST('/ods_services/Http/connectionsGet?scope=own&sid='+$v('sid'), false, renderConnectionsWidget);
     }
   }
 }
