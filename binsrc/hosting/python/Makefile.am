@@ -23,7 +23,11 @@ if WITH_PYTHON
 hosting_LTLIBRARIES = hosting_python.la
 endif
 
-hosting_python_la_SOURCES	= hosting_python.c
+hosting_python_la_SOURCES	= hosting_python.c \
+			          $(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+
+GEN=$(SHELL) ${top_srcdir}/bin/generate
+
 dist_hosting_python_la_SOURCES	= virt_handler.c
 BUILT_SOURCES		  	= virt_handler.c
 CLEANFILES		  	= virt_handler.c
@@ -40,10 +44,11 @@ hosting_python_la_LDFLAGS = -module -avoid-version -export-dynamic
 hosting_python_la_LDFLAGS += $(PYTHON_LDFLAGS)
 
 virt_handler.c: virt_handler.py py_to_c.awk
-	$(AWK) -f py_to_c.awk virt_handler.py > virt_handler.c.tmp
-	[ -s virt_handler.c.tmp ] && mv virt_handler.c.tmp virt_handler.c
-	touch virt_handler.c
-
+	@${GEN} ${GAWK} \
+		-o virt_handler.c \
+		-f py_to_c.awk \
+		virt_handler.py
+		
 
 # ----------------------------------------------------------------------
 #
