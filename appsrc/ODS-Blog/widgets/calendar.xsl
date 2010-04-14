@@ -507,10 +507,10 @@
                 function getTags ()
                  {
                   oEditor.updateElement();
-                   window.hdntext2=document.page_form['hdntext2'];
+                  // window.hdntext2=document.page_form['hdntext2'];
                    window.post_tags=document.page_form['post_tags'];
                    window.open ('index.vspx?page=get_tags&amp;sid=<?V self.sid ?>&amp;realm=wa&amp;hdntext2=' +
-                   escape (document.page_form['hdntext2'].value) +
+                  escape ($v('text2')) +
                    '&amp;post_tags='+ escape (document.page_form['post_tags'].value),
                    'tags_suggest_window', 'scrollbars=yes, resize=yes, menubar=no, height=200, width=600');
                  }
@@ -518,10 +518,10 @@
                 function getTb ()
                  {
                   oEditor.updateElement();
-                   window.hdntext2=document.page_form['hdntext2'];
+                  // window.hdntext2=document.page_form['hdntext2'];
                    window.tpurl1=document.page_form['tpurl1'];
                    window.open ('index.vspx?page=suggest_tb&sid=<?V self.sid ?>&realm=wa&hdntext2=' +
-                   escape (document.page_form['hdntext2'].value) +
+                  escape ($v('text2')) +
                    '&tpurl1='+ escape (document.page_form['tpurl1'].value),
                    'tags_suggest_window', 'scrollbars=yes, resize=yes, menubar=no, height=200, width=600');
                  }
