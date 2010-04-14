@@ -85,7 +85,7 @@ struct sql_tree_s; /* avoid gcc complaints */
 void sec_check_ddl (query_instance_t * qi, struct sql_tree_s * tree);
 extern int sec_bif_caller_is_dba (query_instance_t * qi);
 oid_t sec_bif_caller_uid (query_instance_t * qi);
-void sec_check_dba (query_instance_t * qi, const char * func);
+EXE_EXPORT (void, sec_check_dba, (query_instance_t * qi, const char * func));
 
 void sec_log_login_failed (char *name, dk_session_t * ses, int mode);
 void failed_login_remove (dk_session_t *ses);
