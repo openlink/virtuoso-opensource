@@ -211,6 +211,6 @@ if __name__ == '__main__':
     if os.environ.has_key ("__VIRT_CGI") and os.environ["__VIRT_CGI"] != '1' and not 12 == 11:
        print ("xx");
        
-    a,b,c = call_file ('/home/O12/binsrc/vsp/admin/python/cgitest.py', { '__VIRT_CGI': '1' }, '', '');
+    a,b,c = call_file ('../lib/suite/admin/cgitest.py', { '__VIRT_CGI': '1' }, '', '');
     d = ''
     sys.stderr.write ('\n['+a+']['+b+']['+c+']['+d+']\n');
