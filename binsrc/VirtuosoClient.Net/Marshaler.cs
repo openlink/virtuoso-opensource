@@ -141,6 +141,11 @@ namespace OpenLink.Data.Virtuoso
 				MarshalInt (stream, (int) value);
 				return;
 
+			case TypeCode.Int64:
+			        stream.WriteByte ((byte) BoxTag.DV_INT64);
+				MarshalLongInt64 (stream, (Int64) value);
+				return;
+
 			case TypeCode.Single:
 				stream.WriteByte ((byte) BoxTag.DV_SINGLE_FLOAT);
 				MarshalSingle (stream, (float) value);
@@ -550,7 +555,7 @@ namespace OpenLink.Data.Virtuoso
 			stream.WriteByte ((byte) value);
 		}
 
-		internal static void MarshalLongInt64 (Stream stream, int value)
+		internal static void MarshalLongInt64 (Stream stream, Int64 value)
 		{
 			stream.WriteByte ((byte) (value >> 56));
 			stream.WriteByte ((byte) (value >> 48));
