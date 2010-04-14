@@ -935,27 +935,14 @@
                       </div> <!-- w_content -->
                     </div> <!-- .widget -->
 
-              	    <div id="connections_w" class="widget connections_w" style="display: none;">
+              	    <div id="connections_w" class="widget connections_w">
               	      <div class="w_title">
                         <h3 id="connPTitleTxt">Connections</h3>
                         <div class="w_title_bar_btns">
                           <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
                         </div> <!-- w_title_bar_btns -->
               	      </div> <!-- w_title -->
-            	        <div class="w_content">
-                        <ul class="tab_bar">
-                          <li id="connT1" class="sel"><a href="javascript:void(0)">Thumbnails</a></li>
-                          <li id="connT2"><a href="javascript:void(0)">Map</a></li>
-                        </ul>
-                        <div class="tab_deck">
-                          <div id="connPCtr" class="tab_page">
-                          </div>
-                          <div class="tab_page" id="connP1">
-                          </div>
-                          <div class="tab_page" id="connP2">
-                            <div id="connP2map" style="height: 200px;"> </div>
-                          </div>
-                        </div> <!-- tab_deck -->
+            	        <div class="w_content" id="connP1" style="height: 200px;">
                       </div> <!-- w_content -->
             	      </div> <!-- .widget -->
 
