@@ -452,7 +452,8 @@ iSPARQL.RecentQueriesUI = function () {
     this._init = function () {
 	var initList = [];
 
-	if (typeof localStorage != 'undefined' && typeof localStorage.iSPARQL_recent_queries != 'undefined') {
+	if (typeof localStorage != 'undefined' && 
+	    typeof localStorage.iSPARQL_recent_queries != 'undefined') {
 	    try {
 		initList = OAT.JSON.parse(localStorage.iSPARQL_recent_queries);
 	    }
@@ -1563,9 +1564,23 @@ iSPARQL.Common = {
 
 	iSPARQL.dialogs.qbe_unsupp.cancel = iSPARQL.dialogs.qbe_unsupp.ok;
 
+	iSPARQL.StatusUI.statMsg ("Prefixes&#8230;");
+	var sel_elm = $("prefix");
+
+	for (var i=0;i<window.defaultPrefixes.length;i++) {
+	    var p_obj = window.defaultPrefixes[i];
+	    if (! (!!p_obj.hidden)) {
+		var opt_val = "PREFIX " + p_obj.label + ": <" + p_obj.uri + ">";
+		var opt_ct  = p_obj.label.toUpperCase();
+		var opt_elm = OAT.Dom.option (opt_ct, opt_val, sel_elm);
+	    }
+	}
+
 	iSPARQL.StatusUI.statMsg ("MetaData UI&#8230;");
 	iSPARQL.mdUI = new iSPARQL.MetaDataOptsUI (iSPARQL.mdOpts,
-						   'mdtoggler', 'mdoptstogglerarrow', 'mdopts_ctr');
+						   'mdtoggler', 
+						   'mdoptstogglerarrow', 
+						   'mdopts_ctr');
 
 	iSPARQL.StatusUI.statMsg ("Endpoint Options UI&#8230;");
 	iSPARQL.epUI = new iSPARQL.EndpointOptsUI (iSPARQL.endpointOpts,
@@ -1576,7 +1591,7 @@ iSPARQL.Common = {
 	iSPARQL.StatusUI.statMsg ("Auth UI&#8230;");
 	iSPARQL.authUI = new iSPARQL.AuthUI (iSPARQL.serverConn);
 
-	iSPARQL.StatusUI.statMsg ("Recent query list&#8230;")
+	iSPARQL.StatusUI.statMsg ("Recent query list&#8230;");
 	iSPARQL.recentQueryUI = new iSPARQL.RecentQueriesUI();
 
 	OAT.Resize.create("query_resizer_area", "query_div", OAT.Resize.TYPE_X);
