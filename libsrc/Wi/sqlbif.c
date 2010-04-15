@@ -11816,24 +11816,29 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err)
+bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warnings)
 {
   char buf[80];
   if ((BOX_ELEMENTS (args) < 3) || !ssl_is_settable (args[1]))
-  sqlr_resignal (err);
-  if (IS_POINTER(err))
-  {
-    qst_set (qst, args[1], ERR_STATE (err));
-    if (ssl_is_settable (args[2]))
-  qst_set (qst, args[2], ERR_MESSAGE (err));
-    dk_free_box(err);
-  } else {
-    qst_set (qst, args[1], IS_POINTER(err) ? ERR_STATE (err) : box_dv_short_string("01W01"));
-    if (ssl_is_settable (args[2]))
-  {
-    snprintf (buf, sizeof (buf), "No WHENEVER statement provided for SQLCODE %d", (int)(ptrlong)(err));
-    qst_set (qst, args[2], box_dv_short_string(buf));
-  }
+    {
+      dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+      sqlr_resignal (err);
+    }
+  if (IS_POINTER (err))
+    {
+      qst_set (qst, args[1], ERR_STATE (err));
+      if (ssl_is_settable (args[2]))
+	qst_set (qst, args[2], ERR_MESSAGE (err));
+      dk_free_box (err);
+    }
+  else
+    {
+      qst_set (qst, args[1], IS_POINTER (err) ? ERR_STATE (err) : box_dv_short_string ("01W01"));
+      if (ssl_is_settable (args[2]))
+	{
+	  snprintf (buf, sizeof (buf), "No WHENEVER statement provided for SQLCODE %d", (int) (ptrlong) (err));
+	  qst_set (qst, args[2], box_dv_short_string (buf));
+	}
     }
   return (box_num (-1));
 }
@@ -11995,7 +12000,6 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   PROC_SAVE_PARENT;
-  warnings = sql_warnings_save (NULL);
   if (n_args > 4)
     {
       dtp_t options_dtp;
@@ -12025,6 +12029,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             }
         }
     }
+  warnings = sql_warnings_save (NULL);
   if (n_args < 8 || !ssl_is_settable (args[7]))
     { /* no cursor for stored procedures */
       if (max_rows_is_set)
@@ -12066,7 +12071,7 @@ qr_set:
 	dk_free_box (text);
       dk_free_tree (list_to_array (proc_resultset));
       dk_free_tree ((caddr_t) proc_comp);
-      res = bif_exec_error (qst, args, err);
+      res = bif_exec_error (qst, args, err, warnings);
       goto done;
     }
   if (text != _text)
@@ -12087,7 +12092,7 @@ qr_set:
       PROC_RESTORE_SAVED;
       dk_free_tree ((caddr_t) proc_comp);
       dk_free_tree (list_to_array (proc_resultset));
-      res = bif_exec_error (qst, args, err);
+      res = bif_exec_error (qst, args, err, warnings);
       goto done;
     }
 
@@ -12133,7 +12138,7 @@ qr_set:
 	      if (DV_TYPE_OF (qst_get (qst, args[7])) != DV_DB_NULL)
 		{
 		  res = bif_exec_error (qst, args,
-		      srv_make_new_error ("22005", "SR078", "The cursor parameter is not settable"));
+		      srv_make_new_error ("22005", "SR078", "The cursor parameter is not settable"), warnings);
 		  goto done;
 		}
 	    }
@@ -12159,7 +12164,7 @@ qr_set:
 		  dk_free_tree (list_to_array (rlist));
 		  lc_free (lc);
 		  res = bif_exec_error (qst, args,
-		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS));
+		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS), warnings);
 		  goto done;
 		}
 	    }
@@ -12174,7 +12179,7 @@ qr_set:
       lc_free (lc);
       if (err)
 	{
-	  res = bif_exec_error (qst, args, err);
+	  res = bif_exec_error (qst, args, err, warnings);
 	  goto done;
 	}
     }
@@ -12217,7 +12222,7 @@ qr_set:
 	  lc_free (lc);
 	  if (err)
 	    {
-	      res = bif_exec_error (qst, args, err);
+	      res = bif_exec_error (qst, args, err, warnings);
 	      goto done;
 	    }
 	}
@@ -12285,7 +12290,7 @@ bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (err)
     {
-      return (bif_exec_error (qst, args, err));
+      return (bif_exec_error (qst, args, err, NULL));
     }
 
   if (qr->qr_select_node)
@@ -12355,7 +12360,7 @@ bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (err)
     {
-      return (bif_exec_error (qst, args, err));
+      return (bif_exec_error (qst, args, err, NULL));
     }
   return (box_float (score));
 }
@@ -12374,11 +12379,11 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (n_args < 4)
   return bif_exec_error (qst, args,
-  srv_make_new_error ("22023", "SR079", "Too few arguments to exec_next(cursor, state, message, row)"));
+	srv_make_new_error ("22023", "SR079", "Too few arguments to exec_next(cursor, state, message, row)"), NULL);
 
   if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
   return bif_exec_error (qst, args,
-  srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"));
+	srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"), NULL);
 
   qr = (query_t *) handle[0];
   lc = (local_cursor_t *) handle[1];
@@ -12390,7 +12395,7 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     lc->lc_error = NULL;
     if (err)
   {
-    return (bif_exec_error (qst, args, err));
+	  return (bif_exec_error (qst, args, err, NULL));
   }
     else
     return (box_num(SQL_NO_DATA_FOUND));
@@ -12408,6 +12413,7 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_free_tree ((caddr_t) row);
     return box_num (0);
   }
+  NO_CADDR_T;
 }
 
 
@@ -12420,7 +12426,7 @@ bif_exec_close (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
   return bif_exec_error (qst, args,
-  srv_make_new_error ("22023", "SR081", "Parameter 1 is not a valid local exec handle"));
+	srv_make_new_error ("22023", "SR081", "Parameter 1 is not a valid local exec handle"), NULL);
 
   qr = (query_t *) handle[0];
   lc = (local_cursor_t *) handle[1];
