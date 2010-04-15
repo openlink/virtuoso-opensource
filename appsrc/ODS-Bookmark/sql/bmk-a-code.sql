@@ -813,13 +813,14 @@ create procedure BMK.WA.user_name(
 --
 -------------------------------------------------------------------------------
 create procedure BMK.WA.bookmark_update (
-  inout id integer,
+  in id integer,
   in domain_id integer,
   in uri any,
   in name any,
   in description any,
   in tags any,
   in folder_id integer,
+  in uid varchar := null,
   in acl any := null)
 {
   declare bookmark_id integer;
@@ -834,11 +835,13 @@ create procedure BMK.WA.bookmark_update (
   if (cast(folder_id as integer) <= 0)
     folder_id := null;
   if (id = -1)
+    id := coalesce ((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_BOOKMARK_ID = bookmark_id and BD_UID = uid), -1);
+  if (id = -1)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   if (id <= 0)
   {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID, BD_ACL)
-      values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id, acl);
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID, BD_UID, BD_ACL)
+      values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id, uid, acl);
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   } else {
     update BMK.WA.BOOKMARK_DOMAIN
@@ -1068,24 +1071,27 @@ create procedure BMK.WA.bookmark_import_delicious(
   in V any,
   in progress_id varchar)
 {
-  declare tmp, T, Q, D, nTags, TG, TGA any;
+  declare tmp, T, Q, D, H, nTags, TG, TGA any;
   declare N, M integer;
 
   if (V is null)
     return;
 
   N := 1;
-  while (1) {
+  while (1)
+  {
     Q := xpath_eval(sprintf('//post[%d]/@href',  N), V, 1);
     if (Q is null)
       goto _exit;
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(//post[%d]/@description)', N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(//post[%d]/@extended)', N), V, 1));
+    H := cast (xpath_eval(sprintf('//post[%d]/@hash',  N), V, 1) as varchar);
     commit work;
 
     nTags := '';
     TG := cast(xpath_eval(sprintf('string(//post[%d]/@tag)', N), V, 1) as varchar);
-    if (TG <> 'system:unfiled') {
+    if (TG <> 'system:unfiled')
+    {
       TGA := split_and_decode(TG, 0, '\0\0 ');
       foreach (any tag in TGA) do
         if (BMK.WA.validate_tag (tag))
@@ -1093,10 +1099,11 @@ create procedure BMK.WA.bookmark_import_delicious(
     }
     nTags := trim(tags || ',' || nTags, ',');
     connection_set ('__bookmark_import', '1');
-    BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, nTags, folder_id);
+    BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), D, nTags, folder_id, H);
     connection_set ('__bookmark_import', '0');
 
-	  if (not is_empty_or_null (progress_id)) {
+	  if (not is_empty_or_null (progress_id))
+	  {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
 	    M := cast (registry_get('bookmark_index_' || progress_id) as integer) + 1;
@@ -1153,7 +1160,7 @@ create procedure BMK.WA.bookmark_export_tmp (
   {
     if (BMK.WA.tags_exchangeTest (BD_TAGS, tagsInclude, tagsExclude))
     {
-      http (sprintf('<bookmark name="%V" uri="%V" id="%s">', BMK.WA.utf2wide (BD_NAME), B_URI, BD_UID), retValue);
+      http (sprintf('<bookmark name="%V" description="%V" uri="%V" id="%V" tags="%V">', BMK.WA.utf2wide (BD_NAME), BMK.WA.utf2wide (BD_DESCRIPTION), B_URI, BD_UID, BD_TAGS), retValue);
     if (coalesce(BD_DESCRIPTION, '') <> '')
       http (sprintf('<desc>%V</desc>', BD_DESCRIPTION), retValue);
     http ('</bookmark>', retValue);
@@ -2434,6 +2441,8 @@ create procedure BMK.WA.exchange_exec_internal (
     -- publish
     if (_direction = 0)
     {
+      if ((_type = 1) or (_type = 2))
+      {
       _content := BMK.WA.export_netscape (_domain_id, _folder_id, _options);
       if (_type = 1)
       {
@@ -2484,14 +2493,59 @@ create procedure BMK.WA.exchange_exec_internal (
         }
       }
     }
+      else if (_type = 3)
+      {
+        -- Delicious
+        declare rc, path, tmp, xt, posts any;
+
+        _name := 'https://api.del.icio.us/v1/posts/add?replace=yes';
+        _content := BMK.WA.bookmark_export (_domain_id, _folder_id, _options);
+        xt := xml_tree_doc (xml_tree (_content));
+        posts := xpath_eval ('//bookmark', xt, 0);
+        foreach (any post in posts) do
+        {
+          commit work;
+          path := _name;
+          tmp := cast (xpath_eval ('@uri', post) as varchar);
+          if (not is_empty_or_null (tmp))
+            path := sprintf ('%s&url=%U', path, tmp);
+          tmp := cast (xpath_eval ('@name', post) as varchar);
+          if (not is_empty_or_null (tmp))
+            path := sprintf ('%s&description=%U', path, tmp);
+          tmp := cast (xpath_eval ('@description', post) as varchar);
+          if (not is_empty_or_null (tmp))
+            path := sprintf ('%s&extended=%U', path, tmp);
+          tmp := cast (xpath_eval ('@tags', post) as varchar);
+          if (not is_empty_or_null (tmp))
+            path := sprintf ('%s&tags=%U', path, tmp);
+
+          rc := http_client (path, _user, _password, 'POST', null, null, null, null);
+        }
+      }
+    }
     -- subscribe
     else if (_direction = 1)
     {
       if (_type = 1)
       {
         _name := BMK.WA.host_url () || _name;
+        _content := BMK.WA.dav_content (_name, _user, _password);
       }
+      else if (_type = 2)
+      {
       _content := BMK.WA.dav_content (_name, _user, _password);
+      }
+      else if (_type = 3)
+      {
+        -- Delicious
+
+        _name := 'https://api.del.icio.us/v1/posts/all';
+        _content := http_client (_name, _user, _password, 'GET', null, null, null, null);
+        if (not is_empty_or_null (xpath_eval('string(//title)', xml_tree_doc (xml_tree (_content, 2)))))
+        {
+          _content := null;
+        }
+      }
       if (isnull(_content))
       {
         signal ('BMK01', 'Bad import/subscription source!<>');

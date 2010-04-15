@@ -135,6 +135,8 @@ a:hover, .link:hover
   font-size: 12px;
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
   padding: 5px;
   margin: 0 0.5em 0.5em 0.5em;
   width: auto;
@@ -461,6 +463,8 @@ input.button {
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
 }
 
 input.nolink {
@@ -909,34 +913,18 @@ div.toolbar {
 
 img.toolbar
 {
-	display: block;
 	float: left;
   margin-top: 10px;
   background-color: #7F94A5;
 }
 
-a.toolbar
-{
-	display: block;
-	float: left;
-	width: 70px;
-	padding: 10px 0 10px 0;
-	color: #4F56A6;
-	font-weight: bold;
-  font-size: 13px;
-	text-decoration: none;
-	text-align: center;
-}
-
 span.toolbar
 {
-	display: block;
 	float: left;
 	width: 70px;
 	padding: 10px 0 10px 0;
 	color: #4F56A6;
 	font-weight: bold;
-  font-size: 13px;
 	text-decoration: none;
 	text-align: center;
 }

@@ -251,7 +251,7 @@
       acl := serialize (vector_concat (vector (vector ('v1.0', length (acl))), acl));
 
       folder_id := BMK.WA.folder_create (_domain_id, folder_name, folder_id);
-      BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, acl);
+      id := BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, null, acl);
       BMK.WA.shareNode (_account_id, BMK.WA.make_node ('b', id), grants, 1);
 	  }
 	  else if (subAction in ('Folder/Create', 'Folder/Edit'))

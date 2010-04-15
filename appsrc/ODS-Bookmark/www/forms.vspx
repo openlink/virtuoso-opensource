@@ -734,7 +734,7 @@
       <v:template type="simple" enabled="--case when self.v_form = 'import' then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
-           if (self.bStep = '')
+           if (self.bStep = '1')
            {
              self.v_sourceParam_2 := get_keyword ('deliciousUser', self.settings, '');
              self.v_sourceParam_3 := get_keyword('deliciousPwd', self.settings, '');
@@ -753,9 +753,10 @@
             <table cellspacing="0">
               <tr>
                 <th rowspan="4" valign="middle">
-                  <v:label for="i_file" value="Source type"/>
+                  Source type
                 </th>
                 <td nowrap="nowarap">
+                  <label>
                   <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
                     <v:before-render>
                       <![CDATA[
@@ -763,12 +764,13 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp"/>
-                  <b><vm:label for="i_source_0" value="--'File'" /></b>
+                    <b>File</b>
+                  </label>
                 </td>
               </tr>
               <tr>
                 <td nowrap="nowarap">
+                  <label>
                   <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
                     <v:before-render>
                       <![CDATA[
@@ -776,12 +778,13 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp"/>
-                  <b><vm:label for="i_source_1" value="--'WebDAV'" /></b>
+                    <b>WebDAV</b>
+                  </label>
                 </td>
               </tr>
               <tr>
                 <td nowrap="nowarap">
+                  <label>
                   <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2">
                     <v:before-render>
                       <![CDATA[
@@ -789,12 +792,13 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp"/>
-                  <b><vm:label for="i_source_2" value="--'URI'" /></b>
+                    <b>URI</b>
+                  </label>
                 </td>
               </tr>
               <tr>
                 <td nowrap="nowarap">
+                  <label>
                   <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3">
                     <v:before-render>
                       <![CDATA[
@@ -802,8 +806,8 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp"/>
-                  <b><vm:label for="i_source_3" value="--'del.icio.us'" /></b>
+                    <b>Delicious</b>
+                  </label>
                 </td>
               </tr>
             </table>
@@ -1341,7 +1345,7 @@
               <td>
                 <vm:if test="self.v_form <> 'Bookmark/View'">
                   <v:text name="b_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                  <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=b_grants:s1;',520)" class="button" />
+                      <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=m&amp;params=b_grants:s1;',520)" class="button" />
                   <input type="button" value="Clear" onClick="javascript: document.F1.elements['b_grants'].value = ''" class="button" />
                 </vm:if>
                 <?vsp self.viewField (self.v_grants); ?>
@@ -1536,7 +1540,7 @@
               </th>
               <td>
                 <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=f_grants:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=m&amp;params=f_grants:s1;',520)" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['f_grants'].value = ''" class="button" />
               </td>
             </tr>
@@ -1666,7 +1670,7 @@
               </th>
               <td>
                 <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=m&amp;params=s_grants:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=s&dst=m&amp;params=s_grants:s1;',520)" class="button" />
               </td>
             </tr>
           </table>
@@ -1809,7 +1813,7 @@
               </th>
               <td>
                 <v:text name="s_share" null-value="--''" value="--self.vs_share" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=s_share:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=m&amp;params=s_share:s1;',520)" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['s_share'].value = ''" class="button" />
               </td>
             </tr>

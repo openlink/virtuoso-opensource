@@ -138,59 +138,65 @@
         ?>
               <!-- Toolbar -->
               <vm:if test="self.account_role not in ('public', 'guest')">
+                <?vsp
+                  declare toolbarWidth varchar;
+
+                  -- toolbarWidth := case when (self.tbLabels = 0) then ' width: 40px;' else '' end;
+                  toolbarWidth := '';
+                ?>
                 <div>
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('import');" alt="Import">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('import');" alt="Import">
                     <img src="image/impt_32.png" border="0" alt="Import" /><?vsp http(self.toolbarLabel('Import'));?>
                   </span>
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('export');" alt="Export">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('export');" alt="Export">
                     <img src="image/exp_32.png" border="0" alt="Export" /><?vsp http(self.toolbarLabel('Export'));?>
                   </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('Bookmark/Create');" title="Create Bookmark">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('Bookmark/Create');" title="Create Bookmark">
                     <img src="image/bmk_add_32.png" border="0" alt="Create Bookmark" /><?vsp http(self.toolbarLabel('New Bookmark'));?>
                   </span>
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('Folder/Create');" title="Create Folder">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('Folder/Create');" title="Create Folder">
                     <img src="image/new_fldr_32.png" border="0" alt="Create Folder" /><?vsp http(self.toolbarLabel('New Folder'));?>
                   </span>
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('Smart Folder/Create');" title="Create Smart Folder">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('Smart Folder/Create');" title="Create Smart Folder">
                     <img src="image/sfolder_32.jpg" border="0" alt="Create Smart Folder" /><?vsp http(self.toolbarLabel('New Smart Folder'));?>
                   </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-                  <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: BMK.formShow('tags');" alt="Tags">
+                  <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('tags');" alt="Tags">
                     <img src="image/tag_32.png" border="0" alt="Tags" /><?vsp http(self.toolbarLabel('Tag'));?>
           </span>
-          <span id="tbTag_gray" class="toolbar" style="display: inline;">
+                  <span id="tbTag_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_tag_32.png" border="0" alt="Tag"/><?vsp http(self.toolbarLabel('Tag'));?>
           </span>
-                  <span id="tbMove" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: BMK.formShow('move');" alt="Move">
+                  <span id="tbMove" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('move');" alt="Move">
                     <img src="image/move_32.png" border="0" alt="move" /><?vsp http(self.toolbarLabel('Move'));?>
           </span>
-          <span id="tbMove_gray" class="toolbar" style="display: inline;">
+                  <span id="tbMove_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_move_32.png" border="0" alt="Move"/><?vsp http(self.toolbarLabel('Move'));?>
           </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-                  <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: BMK.formShow('share');" title="Share">
+                  <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('share');" title="Share">
                     <img src="image/grants_32.png" border="0" alt="Share" /><?vsp http(self.toolbarLabel('Share'));?>
           </span>
-          <span id="tbSharing_gray" class="toolbar" style="display: inline;">
+                  <span id="tbSharing_gray" class="toolbar" style="<?V toolbarWidth ?>">
                     <img src="image/grey_grants_32.png" border="0" alt="Share"/><?vsp http(self.toolbarLabel('Share'));?>
           </span>
-                  <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: if (confirm('Are you sure that you want to delete selected items?')) {BMK.formPost('delete', 'top');}" title="Delete">
+                  <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: if (confirm('Are you sure that you want to delete selected items?')) {BMK.formPost('delete', 'top');}" title="Delete">
                     <img src="image/del_32.png" border="0" alt="Delete" /><?vsp http(self.toolbarLabel('Delete'));?>
           </span>
-          <span id="tbDelete_gray" class="toolbar" style="display: inline;">
+                  <span id="tbDelete_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_del_32.png" border="0" alt="Delete"/><?vsp http(self.toolbarLabel('Delete'));?>
           </span>
 
                   <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
-                  <span class="toolbar" style="cursor: pointer;" onclick="javascript: BMK.formShow('bookmarklet');" title="Bookmarklet">
+                  <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('bookmarklet');" title="Bookmarklet">
                     <img src="image/bmklet_32.png" border="0" alt="Bookmarklet"/><?vsp http(self.toolbarLabel('Bookmarklet'));?>
                   </span>
         </div>
