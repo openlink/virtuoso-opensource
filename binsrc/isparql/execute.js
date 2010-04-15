@@ -47,7 +47,9 @@ window.defaultPrefixes = [
 						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
 						 {"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
 						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
-						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
+    {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1},
+    {"label":'gr', "uri":'http://purl.org/goodrelations/v1#'}
+];
 
 iSPARQL.CircularBuffer = function (len, initList) {
     var self = this;
