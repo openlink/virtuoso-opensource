@@ -125,7 +125,6 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(concat($base, $space, '/', permalink, $suffix))}">
 		    <foaf:page rdf:resource="{$baseUri}"/>
 		    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
-		    <rdf:type rdf:resource="&sioc;Item"/>
 		    <xsl:variable name="type">
 			<xsl:choose>
 			    <xsl:when test="$space = 'company'">
@@ -175,8 +174,17 @@
 		    <xsl:if test="not starts-with ($sas-iri, '#')">
 			<owl:sameAs rdf:resource="{$sas-iri}"/>
 		    </xsl:if>
+		    <xsl:choose>
+			<xsl:when test="$type != ''">
 		    <rdf:type rdf:resource="&foaf;{$type}"/>
+			</xsl:when>
+			<xsl:otherwise>
+			    <rdf:type rdf:resource="&sioc;Item"/>
+			</xsl:otherwise>
+		    </xsl:choose>
+		    <xsl:if test="$type2 != ''">
 		    <rdf:type rdf:resource="&gr;{$type2}"/>
+		    </xsl:if>
 		    <xsl:apply-templates select="*"/>
 		</rdf:Description>
 	    </xsl:for-each>

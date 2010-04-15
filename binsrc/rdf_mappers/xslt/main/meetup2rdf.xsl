@@ -27,6 +27,7 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY sioct "http://rdfs.org/sioc/types#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -35,6 +36,7 @@
 	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:foaf="&foaf;"
 	xmlns:sioc="&sioc;"
+	xmlns:sioct="&sioct;"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -97,15 +99,6 @@
 			</foaf:Group>
 		    </foaf:primaryTopic>
 		    <rdfs:seeAlso rdf:resource="{$base}" />
-		</foaf:Document>
-		<foaf:Document rdf:about="{$docproxyIRI}">
-		    <foaf:primaryTopic>
-			<foaf:Group rdf:about="{vi:proxyIRI($base)}">
-			    <xsl:for-each select="item">
-				<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
-			    </xsl:for-each>
-			</foaf:Group>
-		    </foaf:primaryTopic>
 		</foaf:Document>
 	    </xsl:if>
 	    <xsl:for-each select="item">
@@ -237,9 +230,6 @@
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
 				    <xsl:value-of select="vi:http_string_date (updated)"/>
 				</dcterms:modified>
-				<!--rdfs:seeAlso rdf:resource="{organizerProfileURL}" /-->
-				<!--rdfs:seeAlso rdf:resource="{concat(link, 'members')}" /-->
-				<!--rdfs:seeAlso rdf:resource="{concat(link, 'calendar')}" /-->
 			    </foaf:Group>
 			</xsl:element>
 		    </foaf:Document>

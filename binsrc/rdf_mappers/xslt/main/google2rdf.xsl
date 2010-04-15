@@ -35,6 +35,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY m "http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+<!ENTITY d "http://schemas.microsoft.com/ado/2007/08/dataservices">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
@@ -50,8 +51,8 @@
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:batch="http://schemas.google.com/gdata/batch"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-	xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
 	xmlns:m="&m;"
+    xmlns:d="&d;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     version="1.0">
 
@@ -90,7 +91,7 @@
 	    <xsl:apply-templates select="g:*"/>
 	    <xsl:apply-templates select="a:*"/>
 			<xsl:for-each select="content/m:properties/d:*[. != '']">
-			    <xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata/">
+			    <xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices">
 				<xsl:value-of select="."/>
 			</xsl:element>
 		</xsl:for-each>
