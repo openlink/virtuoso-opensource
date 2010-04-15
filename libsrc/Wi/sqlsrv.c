@@ -874,7 +874,8 @@ srv_client_connection_died (client_connection_t *cli)
 	  cli, cli->cli_tp_data->cli_trx_type,
 	  cli->cli_tp_data->cli_tp_enlisted));
 
-      if (cli->cli_tp_data->cli_trx_type == TP_XA_TYPE ||
+      /* xa or mts transaction is prepared, keep it live */
+      if ((cli->cli_tp_data->cli_trx_type == TP_XA_TYPE && lt->lt_2pc._2pc_wait_commit) ||
 	  (cli->cli_tp_data->cli_trx_type == TP_MTS_TYPE && cli->cli_tp_data->cli_tp_enlisted == CONNECTION_PREPARED))
 	{
 	  lt_log_debug (("srv_client_connection_died %p enlisted=%d : deferred", cli, cli->cli_tp_data->cli_tp_enlisted));
@@ -883,6 +884,13 @@ srv_client_connection_died (client_connection_t *cli)
 	  cli->cli_session = NULL;
 	  LEAVE_TXN;
 	  return;
+	}
+      /* client connection died before prepare, remove xid */
+      if (cli->cli_tp_data->cli_trx_type == TP_XA_TYPE && !lt->lt_2pc._2pc_wait_commit)
+	{
+	  tp_data_free (cli->cli_tp_data);
+	  cli->cli_tp_data = NULL;
+	  virt_xa_remove_xid (lt->lt_2pc._2pc_xid);
 	}
       lt_log_debug (("srv_client_connection_died cli=%p : done", cli));
     }
