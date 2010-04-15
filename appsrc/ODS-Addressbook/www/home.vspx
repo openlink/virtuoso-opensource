@@ -91,16 +91,19 @@
     <![CDATA[
       declare imageSrc, onclickEvent, styleStr varchar;
 
+      styleStr := '';
+      onclickEvent := '';
+      --if (self.abLabels = 0)
+      --  styleStr := styleStr || 'width: 40px;';
       if (self.toolbarEnable(cmd))
       {
         onclickEvent := cmdOnClick;
         imageSrc := cmdImageSrc;
-        styleStr := 'style="cursor: pointer;"';
+        styleStr := styleStr || 'cursor: pointer;';
       } else {
-        onclickEvent := '';
         imageSrc := cmdImageGraySrc;
-        styleStr := '';
       }
+      styleStr := sprintf('style="%s"', styleStr);
       http (sprintf ('<span %s class="toolbar" %s title="%s">', onclickEvent, styleStr, cmdLabel));
         http (sprintf ('<img src="image/%s" border="0" alt="%s" />%s', imageSrc, cmdLabel, self.toolbarLabel(cmdLabel)));
       http ('</span>');
@@ -814,6 +817,10 @@
         ?>
         <div class="toolbar">
         <?vsp
+          declare toolbarWidth varchar;
+
+          --toolbarWidth := case when (self.abLabels = 0) then ' width: 40px;' else '' end;
+          toolbarWidth := '';
           self.toolbarShow ('', 'My Contacts', 'onclick="javascript: toolbarPost(\'MyContacts\');"', 'ab_32.png', '');
           self.toolbarShow ('', 'Shared Contacts', 'onclick="javascript: toolbarPost(\'MySharedContacts\');"', 'ab_shared_32.png', '');
         ?>
@@ -834,29 +841,29 @@
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
         <vm:if test="self.toolbarEnable('tag')">
-          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('tag');" title="Tag">
+          <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: toolbarPost('tag');" title="Tag">
             <img src="image/tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
         </vm:if>
-          <span id="tbTag_gray" class="toolbar" style="display: inline;">
+        <span id="tbTag_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_tag_32.png" border="0" alt="Tag" /><?vsp http (self.toolbarLabel('Tag'));?>
           </span>
 
         <vm:if test="self.toolbarEnable('grants')">
-          <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: toolbarPost('grants');" title="Sharing">
+          <span id="tbSharing" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: toolbarPost('grants');" title="Sharing">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http (self.toolbarLabel('Sharing'));?>
           </span>
         </vm:if>
-          <span id="tbSharing_gray" class="toolbar" style="display: inline;">
+        <span id="tbSharing_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_grants_32.png" border="0" alt="Sharing"/><?vsp http(self.toolbarLabel('Sharing'));?>
           </span>
 
         <vm:if test="self.toolbarEnable('delete')">
-          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
+          <span id="tbDelete" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: if (confirmAction('Are you sure that you want to delete selected items?', document.F1, 'cb_', 'No items were selected for deletion.')) toolbarPost('delete');" title="Delete">
             <img src="image/del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
         </vm:if>
-          <span id="tbDelete_gray" class="toolbar" style="display: inline;">
+        <span id="tbDelete_gray" class="toolbar" style="<?V toolbarWidth ?>">
             <img src="image/grey_del_32.png" border="0" alt="Delete" /><?vsp http (self.toolbarLabel('Delete'));?>
             </span>
 
