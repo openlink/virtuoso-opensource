@@ -67,6 +67,8 @@ namespace OpenLink.Data.Virtuoso
 		private bool isCanceling = false;
 		private WeakReference dataReaderWeakRef = null;
 		private IInnerCommand innerCommand;
+		internal bool executeSecondaryStmt = false;
+                internal string secondaryStmt = null;
 
 		public VirtuosoCommand ()
 			: this ("")
@@ -342,6 +344,9 @@ namespace OpenLink.Data.Virtuoso
 #endif
 			command.Transaction = this.Transaction;
 			command.UpdatedRowSource = this.UpdatedRowSource;
+                        
+		        command.executeSecondaryStmt = this.executeSecondaryStmt;
+                        command.secondaryStmt = this.secondaryStmt;
 
 			foreach (VirtuosoParameter p in this.Parameters)
 				command.Parameters.Add (((ICloneable) p).Clone());
@@ -469,6 +474,11 @@ namespace OpenLink.Data.Virtuoso
 					{
 						isExecuting = true;
 						innerCommand.Execute (text);
+                                                if (executeSecondaryStmt)
+                                                  {
+                                                    innerCommand.CloseCursor(false);
+						    innerCommand.Execute (secondaryStmt);
+                                                  }
 					}
 					finally
 					{
@@ -481,6 +491,11 @@ namespace OpenLink.Data.Virtuoso
 					{
 						isExecuting = true;
 						innerCommand.Execute ();
+                                                if (executeSecondaryStmt)
+                                                  {
+                                                    innerCommand.CloseCursor(false);
+						    innerCommand.Execute (secondaryStmt);
+                                                  }
 					}
 					finally
 					{
