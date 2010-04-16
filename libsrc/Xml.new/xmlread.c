@@ -2446,6 +2446,12 @@ start_token_again:
                       if (!get_to_string (parser, "-->"))
                         parser->pptr = tmp2;
                     }
+                  else if (test_string (parser, "[CDATA["))
+                    { 
+                      buf_ptr_t tmp2 = parser->pptr;
+                      if (!get_to_string (parser, "]]>"))
+                        parser->pptr = tmp2;
+                    }
 		  goto character_data; /* no tags may be closed this way inside <SCRIPT> or <STYLE> */
                 }
 	    }
