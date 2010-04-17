@@ -914,6 +914,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
   hash_row = hash_buf->bd_buffer + hb_fill;
   IE_ROW_VERSION (hash_row) = 0;
   IE_SET_KEY_VERSION (hash_row, 1);
+  memset (hash_row + key->key_null_flag_start[0], 0, key->key_null_flag_bytes[0]);
   rf.rf_row = hash_row;
   rf.rf_space = row_len;
 
