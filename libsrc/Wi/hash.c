@@ -772,7 +772,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
   rd.rd_allocated = RD_AUTO;
   rd.rd_itc = itc;
   rd.rd_key = ha->ha_key;
-  if (HA_PROC_FILL == ha->ha_op)
+  if (HA_PROC_FILL == ha->ha_op || HA_GROUP == ha->ha_op)
     rd.rd_any_ser_flags = DKS_TO_HA_DISK_ROW;
   if (!bp_ref_itc)
     {
