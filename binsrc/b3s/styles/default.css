@@ -171,13 +171,15 @@ div.doc_ctr { margin: 10px; }
 div.main_actions { float: left; clear: left; width: 100%; text-align: left;}
 div.main_expln { float: left; clear: left; text-align: center; width: 100%;}
 
-#res { float: left; clear: left; margin: 5px 0px 0px 0px; width: 70%}
+#res { float: left; clear: left; margin: 5px 0px 0px 0px; width: 80%}
 #res h3 { margin-top: 0; margin-left: 5px;}
 
 #new_search_txt {}
 
 #new_uri_txt {}
 #new_lbl_txt {}
+
+#user_map { position: relative;width: 100%; height:650px; }
 
 input.thr { background-image: url(/fct/images/thrb.gif); 
             background-repeat: no-repeat; 

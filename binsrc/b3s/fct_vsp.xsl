@@ -122,7 +122,7 @@ function init(){
 }
 ]]>
     </script>
-    <div id="user_map" style="position:relative; width:600px; height:400px;"></div>
+    <div id="user_map"></div>
   </xsl:when>
   <xsl:otherwise>
     <xsl:choose>
