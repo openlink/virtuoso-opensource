@@ -1892,7 +1892,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
   int inx;
   cv_refd_slots (sc, qn->src_after_code, res, all_res, non_cl_local);
   cv_refd_slots (sc, qn->src_after_test, res, all_res, non_cl_local);
-  if (IS_TS ((table_source_t*) qn))
+  if (IS_TS ((table_source_t*) qn) || IS_QN (qn, sort_read_input))
     {
       table_source_t * ts = (table_source_t *) qn;
       cv_refd_slots (sc, ts->ts_after_join_test, res, all_res, non_cl_local);
