@@ -2222,7 +2222,7 @@ vspx_result_tbl_hdrs (in m_dta any)
 
 
 create procedure
-vspx_result_row_render (in result any, in m_dta any, in inx int := 0)
+vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset varchar := 'UTF-8')
 {
   declare jnx integer;
   declare res_row varchar;
@@ -2263,7 +2263,11 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0)
 	      http_value (string_output_string (ses));
 	    }
 	  else
-	    http_value (coalesce (res_col, '<DB NULL>'));
+	    {
+	      if (__tag (res_col) = 182 and cset is not null)
+		res_col := charset_recode (res_col, cset, '_WIDE_');
+	      http_value (coalesce (res_col, '<DB NULL>'));
+	    }
 	  next:
 	  http ('</td>');
 	  jnx := jnx + 1;
@@ -6335,7 +6339,8 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
 	      return;
 	    }
 	}
-      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN', 'dav','dav', 'dav', null, 0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
+      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null, 
+	0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
       if (result < 0) 
 	{
 	  signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
