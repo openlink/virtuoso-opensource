@@ -1276,8 +1276,8 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	{
 	  declare fn, tmp, repl any;
 
-	  if (http_headers not like '%\n')
-	    http_headers := http_headers || '\n';
+	  http_headers := rtrim (http_headers, '\r\n');
+	  http_headers := http_headers || '\r\n';
 
 	  tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	  while (tmp is not null)
