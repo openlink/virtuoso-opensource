@@ -137,6 +137,9 @@
 			<xsl:when test="TZID">
 				<xsl:value-of select="TZID/val"/>
 			</xsl:when>
+			<xsl:when test="SUMMARY">
+				<xsl:value-of select="replace(SUMMARY/val, ' ', '_')"/>
+			</xsl:when>
 			 <xsl:otherwise>
                 <xsl:value-of select="UID/val"/>
             </xsl:otherwise>
