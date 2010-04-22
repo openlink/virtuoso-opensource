@@ -42,6 +42,11 @@
   </vm:menu>
   <vm:header caption="SPARQL Execution"/>
   <vm:pagebody>
+  <v:on-init>
+    <![CDATA[
+    set http_charset='utf-8';
+    ]]>
+  </v:on-init>
   <![CDATA[
   <script type="text/javascript">
 function callSparql (graph_id, qry_id, res_id)

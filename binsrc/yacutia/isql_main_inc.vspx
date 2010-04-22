@@ -488,7 +488,7 @@
                       name="isql_c_text_"
 		      xhtml_id="sql_text"
 		      xhtml_language="sql"
-                      value="--self.sql_text"
+                      value="--charset_recode (self.sql_text, 'UTF-8', '_WIDE_')"
                       xhtml_rows="21"
                       xhtml_cols="100"/>
         </td>
