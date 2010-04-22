@@ -91,7 +91,7 @@
 	    <xsl:apply-templates select="g:*"/>
 	    <xsl:apply-templates select="a:*"/>
 			<xsl:for-each select="content/m:properties/d:*[. != '']">
-			    <xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices">
+			    <xsl:element name="{local-name(.)}" namespace="http://schemas.microsoft.com/ado/2007/08/dataservices/">
 				<xsl:value-of select="."/>
 			</xsl:element>
 		</xsl:for-each>
