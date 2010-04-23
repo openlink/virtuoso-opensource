@@ -987,7 +987,7 @@ key_fill_part_cls (dbe_key_t * key)
 }
 
 
-void
+int
 dbe_key_layout_1 (dbe_key_t * key)
 {
   int kf_fill = IE_FIRST_KEY, rf_fill = 0, kv_fill = 0, kv_fill_key = 0;
@@ -1038,7 +1038,7 @@ dbe_key_layout_1 (dbe_key_t * key)
       if (!deps)
 	{
 	  log_info ("Key without parts %s.", key->key_name);
-	  return;
+	  return 0;
 	}
       deps = deps->next;
     }
@@ -1120,6 +1120,7 @@ dbe_key_layout_1 (dbe_key_t * key)
   key_fill_part_cls (key);
   if (key->key_is_bitmap)
     dk_set_free (deps);
+  return 1;
 }
 
 
@@ -1395,7 +1396,8 @@ dbe_key_layout (dbe_key_t * key, dbe_schema_t * sc)
     }
   END_DO_SET();
 
-  dbe_key_layout_1 (key);
+  if (!dbe_key_layout_1 (key)) /* incomplete key, should not continue */
+    return;
   dbe_key_compression (key);
   dbe_key_list_pref_compressible (key);
   if (KI_TEMP == key->key_id)
