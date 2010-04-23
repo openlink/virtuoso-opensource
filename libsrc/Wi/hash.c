@@ -931,6 +931,8 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 
   hi_bp_set (tree->it_hi, bp_ref_itc, code, hash_buf->bd_page, hb_fill);
   rd.rd_non_comp_len = key->key_row_var_start[0];
+  if (HA_GROUP == ha->ha_op)
+    rd.rd_any_ser_flags = 0;
   itc_free_owned_params (itc);
   ITC_START_SEARCH_PARS (itc);
   for (inx = 0; ha->ha_key_cols[inx].cl_col_id; inx++)
@@ -942,6 +944,8 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
       else
 	value = QST_GET (qst, ssl);
       err = NULL;
+      if (inx >= ha->ha_n_keys && HA_GROUP == ha->ha_op)
+	rd.rd_any_ser_flags = DKS_TO_HA_DISK_ROW;
       hash_row_set_col (&rd, &rf, &ha->ha_key_cols[inx], value, feed_temp_blobs);
 
       if (err)
