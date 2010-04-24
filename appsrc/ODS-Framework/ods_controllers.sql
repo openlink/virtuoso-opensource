@@ -272,11 +272,13 @@ create procedure jsonObject ()
 
 create procedure obj2json (
   in o any,
-  in d integer := 5)
+  in d integer := 10,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
 {
   declare N, M integer;
   declare R, T any;
-  declare retValue any;
+  declare S, retValue any;
 
 	if (d = 0)
 	  return '[maximum depth achieved]';
@@ -310,7 +312,18 @@ create procedure obj2json (
   	retValue := '{';
   	for (N := 2; N < length(o); N := N + 2)
   	{
-  	  retValue := retValue || o[N] || ':' || obj2json (o[N+1], d-1);
+  	  S := o[N];
+  	  if (chr (S[0]) = attributePrefix)
+  	    S := subseq (S, length (attributePrefix));
+  	  if (not isnull (nsArray))
+  	  {
+        for (M := 0; M < length (nsArray); M := M + 1)
+    	  {
+          if (S like nsArray[M]||':%')
+  	        S := subseq (S, length (nsArray[M])+1);
+        }
+  	  }
+  	  retValue := retValue || S || ':' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
   	  if (N <> length(o)-2)
   		  retValue := retValue || ', ';
   	}
@@ -321,7 +334,7 @@ create procedure obj2json (
 		retValue := '[';
 		for (N := 0; N < length(o); N := N + 1)
 		{
-		  retValue := retValue || obj2json (o[N], d-1);
+      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
 		  if (N <> length(o)-1)
 			  retValue := retValue || ',\n';
 		}
@@ -434,7 +447,7 @@ create procedure ODS.ODS_API."ontology.classes" (
     classes := vector_concat (classes, vector (tmp));
   }
   retValue := vector_concat (jsonObject (), vector ('name', ontology, 'classes', classes));
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2437,7 +2450,7 @@ create procedure ODS.ODS_API."user.onlineAccounts.list" (
   {
     retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2519,7 +2532,7 @@ create procedure ODS.ODS_API."user.bioEvents.list" () __soap_http 'application/j
   {
     retValue := vector_concat (retValue, vector (vector (WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2705,7 +2718,7 @@ create procedure ODS.ODS_API."user.mades.list" () __soap_http 'application/json'
   {
     retValue := vector_concat (retValue, vector (vector (WUP_ID, WUP_NAME, WUP_URL, WUP_DESC)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2733,7 +2746,7 @@ create procedure ODS.ODS_API."user.mades.get" (
     description := WUP_DESC;
   }
   retValue := vector_concat (jsonObject (), vector ('id', id, 'property', property, 'url', url, 'description', description));
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2897,7 +2910,7 @@ create procedure ODS.ODS_API."user.offers.list" () __soap_http 'application/json
   {
     retValue := vector_concat (retValue, vector (vector (WUOL_ID, WUOL_OFFER, WUOL_COMMENT)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -2932,7 +2945,7 @@ create procedure ODS.ODS_API."user.offers.get" (
                                      'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
                                     )
                             );
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -3036,7 +3049,7 @@ create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
   {
     retValue := vector_concat (retValue, vector (vector (WUWL_ID, WUWL_BARTER, WUWL_COMMENT)));
   }
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
 }
 ;
 
@@ -3071,7 +3084,7 @@ create procedure ODS.ODS_API."user.seeks.get" (
                                      'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://purl.org/goodrelations/v1#', 'items', get_keyword ('products', products, vector ()))))
                                     )
                             );
-  return obj2json (retValue, 10);
+  return obj2json (retValue);
   }
 ;
 
