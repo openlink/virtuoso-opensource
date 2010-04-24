@@ -3131,6 +3131,8 @@ create procedure AB.WA.contact_update2 (
   if (id = -1)
     return id;
 
+  if (pName = 'P_CATEGORY_ID')
+    update AB.WA.PERSONS set P_CATEGORY_ID = pValue where P_ID = id;
   if (pName = 'P_KIND')
     update AB.WA.PERSONS set P_KIND = pValue where P_ID = id;
   if (pName = 'P_NAME')
@@ -3408,9 +3410,10 @@ create procedure AB.WA.contact_field (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.contact_delete (
-  in id integer)
+  in id integer,
+  in domain_id integer)
 {
-  delete from AB.WA.PERSONS where P_ID = id;
+  delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
 }
 ;
 
@@ -3632,7 +3635,7 @@ create procedure AB.WA.import_vcard2 (
 
   declare exit handler for sqlstate '*'
   {
-    dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');
   };
@@ -5319,8 +5322,8 @@ create procedure AB.WA.category_update (
   if (is_empty_or_null (id))
   {
     id := sequence_next ('AB.WA.category_id');
-    insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
-      values (id, domain_id, name);
+    insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+      values (id, domain_id, name, now (), now ());
   }
   return id;
 }
@@ -6094,16 +6097,24 @@ create procedure AB.WA.isApiObject (inout o any)
 --
 create procedure AB.WA.obj2xml (
   in o any,
-  in d integer := 3,
-  in tag varchar := null)
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
 {
   declare N, M integer;
   declare R, T any;
-  declare retValue any;
+  declare S, nsValue, retValue any;
 
   if (d = 0)
     return '[maximum depth achieved]';
 
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
   retValue := '';
   if (isnumeric (o))
   {
@@ -6119,9 +6130,22 @@ create procedure AB.WA.obj2xml (
     {
       if (not AB.WA.isApiObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
       {
-        retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N]);
+        retValue := retValue || AB.WA.obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
       } else {
-        retValue := retValue || sprintf ('<%s>%s</%s>\n', o[N],  AB.WA.obj2xml (o[N+1], d-1), o[N]);
+    	  if (chr (o[N][0]) <> attributePrefix)
+    	  {
+          nsArray := null;
+          S := '';
+          if (not isnull (attributePrefix) and AB.WA.isApiObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+          	  if (chr (o[N+1][M][0]) = attributePrefix)
+          	    S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), AB.WA.obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, AB.WA.obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
       }
     }
   }
@@ -6131,9 +6155,19 @@ create procedure AB.WA.obj2xml (
     {
       if (isnull (tag))
       {
-        retValue := retValue || AB.WA.obj2xml (o[N], d-1);
+        retValue := retValue || AB.WA.obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
       } else {
-        retValue := retValue || sprintf ('<%s>%s</%s>\n', tag,  AB.WA.obj2xml (o[N], d-1), tag);
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and AB.WA.isApiObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+        	  if (chr (o[N][M][0]) = attributePrefix)
+        	    S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), AB.WA.obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, AB.WA.obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
       }
     }
   }
@@ -6642,7 +6676,7 @@ create procedure AB.WA.portablecontacts () __SOAP_HTTP 'text/html'
   {
     http (ODS..obj2json (oResult, 10));
   } else {
-    http (AB.WA.obj2xml (oResult, 10));
+    http (AB.WA.obj2xml (oResult));
   }
   return '';
 }
@@ -6680,7 +6714,7 @@ create procedure AB.WA.lcPredefinedFilters (
 --
 create procedure AB.WA.lcFilterFields_Int (
   in lcFilter varchar,
-  in lcPath varchar,
+  in apiPath varchar,
   inout lcFields any)
 {
   declare L_Brace, R_Brace, L_Comma integer;
@@ -6691,7 +6725,7 @@ create procedure AB.WA.lcFilterFields_Int (
   {
     if (not isnull (L_Comma) and (isnull (L_Brace) or (L_Comma < L_Brace)))
     {
-      lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, l_Comma))));
+      lcFields := vector_concat (lcFields, vector (apiPath || case when apiPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, l_Comma))));
       lcFilter := trim (subseq (lcFilter, L_Comma+1, length (lcFilter)));
       goto _loop;
     }
@@ -6700,14 +6734,14 @@ create procedure AB.WA.lcFilterFields_Int (
       return;
     if (not isnull (L_Brace) and isnull (R_Brace))
       return;
-    AB.WA.lcFilterFields_Int (trim (subseq (lcFilter, L_Brace+1, R_Brace)), lcPath || case when lcPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, L_Brace)), lcFields);
+    AB.WA.lcFilterFields_Int (trim (subseq (lcFilter, L_Brace+1, R_Brace)), apiPath || case when apiPath = '' then '' else '.' end || trim (subseq (lcFilter, 0, L_Brace)), lcFields);
     lcFilter := trim (subseq (lcFilter, R_Brace+1, length (lcFilter)));
   _loop:
     L_Brace := strchr (lcFilter, '(');
     L_Comma := strchr (lcFilter, ',');
   }
   if (lcFilter <> '')
-    lcFields := vector_concat (lcFields, vector (lcPath || case when lcPath = '' then '' else '.' end || lcFilter));
+    lcFields := vector_concat (lcFields, vector (apiPath || case when apiPath = '' then '' else '.' end || lcFilter));
 }
 ;
 
@@ -6716,11 +6750,11 @@ create procedure AB.WA.lcFilterFields_Int (
 create procedure AB.WA.lcFilterFields (
   in lcFilter varchar)
 {
-  declare lcPath, lcFields any;
+  declare apiPath, lcFields any;
 
-  lcPath := '';
+  apiPath := '';
   lcFields := Vector ();
-  AB.WA.lcFilterFields_Int (lcFilter, lcPath, lcFields);
+  AB.WA.lcFilterFields_Int (lcFilter, apiPath, lcFields);
 
   return lcFields;
 }
@@ -6959,8 +6993,8 @@ create procedure AB.WA.lcContactObject (
 --
 create procedure AB.WA.lcPathAnalyze (
   in domainID integer,
-  in lcPath varchar,
-  in lcMethod varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
   inout objectType varchar,
   inout objectBodyXPath any,
   inout objectXPath varchar,
@@ -6974,20 +7008,20 @@ create procedure AB.WA.lcPathAnalyze (
   objectBodyXPath := vector ();
   objectID := null;
 
-  V := split_and_decode (trim (lcPath, '/'), 0, '\0\0/');
-  if ((length (V) <> 2) and (lcMethod = 'DELETE'))
+  V := split_and_decode (trim (apiPath, '/'), 0, '\0\0/');
+  if ((length (V) <> 2) and (apiMethod = 'DELETE'))
     signal ('__400', '');
-  if ((length (V) = 0) and (lcMethod in ('POST', 'PUT')))
+  if ((length (V) = 0) and (apiMethod in ('POST', 'PUT')))
     signal ('__400', '');
   if (length (V) = 0)
     return 1;
   if ((V[0] <> 'owner') and (V[0] <> 'contacts'))
     signal ('__400', '');
-  if ((V[0] = 'owner') and (lcMethod = 'DELETE'))
+  if ((V[0] = 'owner') and (apiMethod = 'DELETE'))
     signal ('__400', '');
   if (V[0] = 'owner')
   {
-    if (lcMethod in ('POST', 'DELETE'))
+    if (apiMethod in ('POST', 'DELETE'))
       signal ('__400', '');
     I := 1;
     objectType := 'o';
@@ -7007,13 +7041,13 @@ create procedure AB.WA.lcPathAnalyze (
       if (length (A) <> 1)
         signal ('__404', '');
       objectID := A[0];
-      if (lcMethod = 'POST')
+      if (apiMethod = 'POST')
         signal ('__400', '');
       if (not exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domainID and P_ID = objectID))
         signal ('__400', '');
       objectXPath := objectXPath || sprintf ('/Contact[ID=%d]', objectID);
     }
-    if (isnull (ObjectID) and (lcMethod = 'PUT'))
+    if (isnull (ObjectID) and (apiMethod = 'PUT'))
       signal ('__400', '');
   }
   for (N := I; N < length (V); N := N + 1)
@@ -7079,43 +7113,43 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
   declare L, N, M, domain_id integer;
   declare xt, objectError, objectType, objectBodyXPath, objectXPath, objectID any;
   declare tmp, uname, V, A, oResult, oContacts, oContact, oTag any;
-  declare lcLines, lcPath, lcParams, lcMethod, lcBody any;
-  declare ocMap, filter, lcFields, lcMap, lcTags, lcField, lcFieldDef, lcMapField, lcXPath any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare ocMap, filter, lcFields, apiMap, lcTags, lcField, lcFieldDef, apiMapField, lcXPath any;
   declare S, st, msg, meta, data any;
 
-  lcLines := http_request_header ();
-  lcPath := http_path ();
-  lcParams := http_param ();
-  lcMethod := ucase (http_request_get ('REQUEST_METHOD'));
-  lcBody := string_output_string (http_body_read ());
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  apiBody := string_output_string (http_body_read ());
 
   -- domain_id := 2;
-  domain_id := atoi (get_keyword_ucase ('inst_id', lcParams));
+  domain_id := atoi (get_keyword_ucase ('inst_id', apiParams));
   if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
     signal ('__401', '');
 
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
     signal ('__401', '');
 
-  if (lcPath not like '/ods/livecontacts%')
+  if (apiPath not like '/ods/livecontacts%')
     signal ('__404', '');
 
-  lcPath := substring (lcPath, length ('/ods/livecontacts')+1, length (lcPath));
-  lcMap := AB.WA.lcMap();
-  AB.WA.lcPathAnalyze (domain_id, lcPath, lcMethod, objectType, objectBodyXPath, objectXPath, objectID);
+  apiPath := substring (apiPath, length ('/ods/livecontacts')+1, length (apiPath));
+  apiMap := AB.WA.lcMap();
+  AB.WA.lcPathAnalyze (domain_id, apiPath, apiMethod, objectType, objectBodyXPath, objectXPath, objectID);
 
   set_user_id ('dba');
-  if (lcMethod = 'GET')
+  if (apiMethod = 'GET')
   {
-    filter := get_keyword ('filter', lcParams);
+    filter := get_keyword ('filter', apiParams);
     tmp := AB.WA.lcPredefinedFilters (filter);
     if (not isnull (tmp))
       filter := tmp;
     lcFields := vector ();
     if (isnull (filter))
     {
-      for (N := 0; N < length (lcMap); N := N + 2)
-        lcFields := vector_concat (lcFields, vector (lcMap[N]));
+      for (N := 0; N < length (apiMap); N := N + 2)
+        lcFields := vector_concat (lcFields, vector (apiMap[N]));
     } else {
       tmp := AB.WA.lcFilterFields(filter);
       for (M := 0; M < length (tmp); M := M + 1)
@@ -7127,14 +7161,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
           lcField := subseq (lcField, length ('Contact.'));
         if (lcField = '')
           goto _next_filterField;
-        for (N := 0; N < length (lcMap); N := N + 2)
+        for (N := 0; N < length (apiMap); N := N + 2)
         {
-          lcMapField := lcase (lcMap[N]);
-          L := strchr (lcMapField, '[');
+          apiMapField := lcase (apiMap[N]);
+          L := strchr (apiMapField, '[');
           if (not isnull (L))
-            lcMapField := subseq (lcMapField, 0, L);
-          if (lcMapField like lcField || '%')
-            lcFields := vector_concat (lcFields, vector (lcMap[N]));
+            apiMapField := subseq (apiMapField, 0, L);
+          if (apiMapField like lcField || '%')
+            lcFields := vector_concat (lcFields, vector (apiMap[N]));
         }
       _next_filterField:;
       }
@@ -7157,7 +7191,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
           if (not isnull (tmp))
             meta[N] := tmp;
         }
-        oContact := AB.WA.lcContactObject (lcFields, data, meta, lcMap, lcTags);
+        oContact := AB.WA.lcContactObject (lcFields, data, meta, apiMap, lcTags);
         if (not isnull (oContact))
           oResult := vector_concat (oResult, vector ('Owner', oContact));
       }
@@ -7175,7 +7209,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
         meta := AB.WA.simplifyMeta (meta);
         for (N := 0; N < length (data); N := N + 1)
         {
-          oContact := AB.WA.lcContactObject (lcFields, data[N], meta, lcMap, lcTags);
+          oContact := AB.WA.lcContactObject (lcFields, data[N], meta, apiMap, lcTags);
           if (not isnull (oContact))
             oContacts := vector_concat (oContacts, vector ('Contact', oContact));
         }
@@ -7199,14 +7233,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
     }
     if (length (oResult) > 2)
       oResult := vector_concat (AB.WA.apiObject (), vector ('LiveContacts', oResult));
-    http (AB.WA.obj2xml (oResult, 10));
+    http (AB.WA.obj2xml (oResult));
   }
-  else if (lcMethod = 'DELETE')
+  else if (apiMethod = 'DELETE')
   {
     delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = objectID;
     signal ('__204', '');
   }
-  else if ((lcMethod = 'POST') or (lcMethod = 'PUT'))
+  else if ((apiMethod = 'POST') or (apiMethod = 'PUT'))
   {
     -- Insert Contact ('POST'), Update Contact/Owner ('PUT')
     declare abID, abPath, abCheckPath, abTmpPath, abNeedAdded, abField, abFields, abValue, abValues any;
@@ -7226,14 +7260,14 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
         abCheckPath := abCheckPath || '/' || objectBodyXPath[N];
       }
     }
-    xt := xtree_doc (lcBody);
+    xt := xtree_doc (apiBody);
     abID := -1;
     abFields := vector ();
     abValues := vector ();
-    for (N := 0; N < length (lcMap); N := N + 2)
+    for (N := 0; N < length (apiMap); N := N + 2)
     {
-      lcField := lcMap[N];
-      lcFieldDef := lcMap[N+1];
+      lcField := apiMap[N];
+      lcFieldDef := apiMap[N+1];
       if (isnull (lcFieldDef))
         goto _next;
       abValue := null;
@@ -7276,7 +7310,7 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
       }
     _next:;
     }
-    if (lcMethod = 'PUT')
+    if (apiMethod = 'PUT')
     {
       if (objectType = 'c')
       {
@@ -7304,4 +7338,790 @@ create procedure AB.WA.livecontacts () __SOAP_HTTP 'text/xml'
 ;
 
 grant execute on AB.WA.livecontacts to SOAP_ADDRESSBOOK
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Yahoo Conatacts API
+--
+----------------------------------------------------------------------------------------
+create procedure AB.WA.yahooOutput (
+  in data any,
+  in options any)
+{
+  if (get_keyword ('format', options, 'xml') = 'xml')
+  {
+    http (AB.WA.obj2xml (data, 10, null, vector ('', 'http://social.yahooapis.com/v1/schema.rng', 'yahoo', 'http://www.yahooapis.com/v1/base.rng', 'ns', 'http://social.yahooapis.com/v1/schema.rng'), '@'));
+  } else {
+    http (ODS..obj2json (data, 10, vector ('yahoo', 'ns'), '@'));
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooMap ()
+{
+  return vector ('id',            vector ('field', 'P_ID'),
+                 'guid',          vector ('field', 'P_UID'),
+                 'nickName',      vector ('field', 'P_NAME'),
+                 'name',          vector ('field', vector ('title', 'P_TITLE', 'givenName', 'P_FIRST_NAME', 'middleName', 'P_MIDDLE_NAME', 'familyName', 'P_LAST_NAME')),
+                 'birthday',      vector ('field', 'P_BIRTHDAY',  'function', 'select AB.WA.yahooDate (?)'),
+                 'email',         vector ('field', 'P_MAIL'),
+                 'phone',         vector ('field', 'P_PHONE'),
+                 'address',       vector ('field', vector ('street', 'P_H_ADDRESS1', 'city', 'P_H_CITY', 'stateOrProvince', 'P_H_STATE', 'postalCode', 'P_H_CODE', 'country', 'P_H_COUNTRY')),
+                 'company',       vector ('field', 'P_B_ORGANIZATION'),
+                 'jobTitle',      vector ('field', 'P_B_JOB')
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooDate (
+  in aValue any)
+{
+  if (isnull (aValue))
+    return null;
+
+  return vector_concat (AB.WA.apiObject (), vector ('day', dayofmonth (aValue), 'month', month (aValue), 'year', year (aValue)));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactField (
+  in field varchar,
+  in map varchar,
+  in fields any := null)
+{
+  if (not isnull (fields) and not AB.WA.vector_contains (fields, field))
+    return null;
+
+  return get_keyword (field, map);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactFieldIndex (
+  in field varchar,
+  in meta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (meta); N := N + 1)
+    if (field = meta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactValue2 (
+  in abField varchar,
+  inout data any,
+  inout meta any)
+{
+  declare abFieldIndex any;
+
+  abFieldIndex := AB.WA.yahooContactFieldIndex (abField, meta);
+  if (not isnull (abFieldIndex))
+    return data[abFieldIndex];
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactValue (
+  in field varchar,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare tmp, fieldDef any;
+  declare abValue, abField, abFieldIndex any;
+
+  abValue := null;
+  fieldDef := AB.WA.yahooContactField (field, map);
+  if (isnull (fieldDef))
+    goto _skip;
+  abField := get_keyword ('field', fieldDef);
+  if (isnull (abField))
+    goto _skip;
+
+  if (isarray (abField) and not isstring (abField))
+  {
+    abValue := AB.WA.apiObject ();
+    for (N := 0; N < length (abField); N := N + 2)
+    {
+      tmp := AB.WA.yahooContactValue2 (abField[N+1], data, meta);
+      if (length (tmp))
+        abValue := vector_concat (abValue, vector (abField[N], tmp));
+    }
+    if (length (abValue) = 2)
+      abValue := null;
+  } else {
+    abValue := AB.WA.yahooContactValue2 (abField, data, meta);
+    if (isnull (abValue))
+      goto _skip;
+    if (not isnull (get_keyword ('function', fieldDef)))
+    {
+      tmp := get_keyword ('function', fieldDef);
+      if (not isnull (tmp))
+      {
+        tmp := AB.WA.exec (tmp, vector (abValue));
+        if (length (tmp))
+          abValue := tmp[0][0];
+      }
+    }
+  }
+_skip:;
+  return abValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooContactObject (
+  inout fields any,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare oEntry any;
+  declare F, C any;
+  declare abValue, field any;
+
+  oEntry := AB.WA.apiObject ();
+  abValue := AB.WA.yahooContactValue ('id', data, meta, map);
+  oEntry := vector_concat (oEntry, vector ('id', abValue));
+  abValue := AB.WA.yahooContactValue ('guid', data, meta, map);
+  oEntry := vector_concat (oEntry, vector ('guid', abValue));
+  abValue := AB.WA.yahooContactValue2 ('P_CREATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:uri', AB.WA.dt_iso8601 (abValue)));
+  abValue := AB.WA.yahooContactValue2 ('P_CREATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:created', date_iso8601 (dt_set_tz (abValue, 0))));
+  abValue := AB.WA.yahooContactValue2 ('P_UPDATED', data, meta);
+  if (not isnull (abValue))
+    oEntry := vector_concat (oEntry, vector ('@yahoo:updated', date_iso8601 (dt_set_tz (abValue, 0))));
+
+  -- fields
+  F := vector ();
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    field := trim (fields[N]);
+    abValue := AB.WA.yahooContactValue (field, data, meta, map);
+    if (is_empty_or_null (abValue))
+      goto _skip;
+    F := vector_concat (F, vector (vector_concat (AB.WA.apiObject(), vector ('type', field, 'value', abValue, 'flags', vector()))));
+
+  _skip:;
+  }
+  oEntry := vector_concat (oEntry, vector ('fields', F));
+
+  -- categories
+  abValue := AB.WA.yahooContactValue2 ('C_ID', data, meta);
+  if (not isnull (abValue))
+  {
+    C := AB.WA.apiObject();
+    C := vector_concat (C, vector ('id', abValue));
+    abValue := AB.WA.yahooContactValue2 ('C_NAME', data, meta);
+    if (not isnull (abValue))
+      C := vector_concat (C, vector ('name', abValue));
+    oEntry := vector_concat (oEntry, vector ('categories', vector (C)));
+  }
+
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooSQL (
+  in sql varchar,
+  in params any,
+  inout options any,
+  inout data any,
+  inout meta any)
+{
+  declare N integer;
+  declare st, msg, _data, _meta, _start, _count, _total, _min any;
+
+  st := '00000';
+  if (get_keyword ('_sqlFilter', options) <> '')
+  {
+    sql := sql || ' and ' || get_keyword ('_sqlFilter', options);
+    params := vector_concat (params, get_keyword ('_sqlParams', options));
+  }
+  _start := atoi (get_keyword ('start', options, '0'));
+  _count := atoi (get_keyword ('count', options, '10'));
+  if (_count = 0)
+    _count := 10;
+  _min := _start + _count;
+  sql := replace (sql, '%TOP%', cast (_min as varchar));
+
+  exec (sql, st, msg, params, 0, _meta, _data);
+  -- dbg_obj_print('', sql, st);
+  if ('00000' <> st)
+    return 0;
+
+  _total := 0;
+  data := vector ();
+  if (_min > length (_data))
+    _min := length (_data);
+  for (N := _start; N < _min; N := N + 1)
+  {
+    data := vector_concat (data, vector (_data[N]));
+    _total := _total + 1;
+  }
+  meta := AB.WA.simplifyMeta (_meta);
+  options := vector_concat (options, vector ('_start', _start));
+  options := vector_concat (options, vector ('_count', _count));
+  options := vector_concat (options, vector ('_total', _total));
+
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahooPathAnalyze (
+  in apiParams varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
+  in apiMap varchar,
+  inout apiCommand varchar,
+  inout apiOptions varchar)
+{
+  declare N, M integer;
+  declare tmp, tmp2, tmp3, V, matrix, query, inverse, field, expression, apiExpressions, apiAction, apiActions, leftPath, rightPath any;
+  declare sqlFilter, sqlParams any;
+
+  apiActions := vector (
+                        'contacts',           vector ('methods', vector ('GET', 'POST', 'PUT'),
+                                                      'regex', '^contacts',
+                                                      'query', vector ('format', 'view', 'start', 'count', 'rev'),
+                                                      'matrix', vector ('start', 'count', 'bucket', 'maxbucketsize', 'minbucketcount', 'sort-fields', 'sort'),
+                                                      'filter', 1
+                                                     ),
+                        'contactField',       vector ('methods', vector ('GET', 'DELETE'),
+                                                      'regex', '^contact/([0-9]*)/(address|anniversary|birthday|company|custom|email|guid|jobTitle|link|name|nickname|notes|otherid|phone|yahooid)\$',
+                                                      'inverse', 'contact/%d/%s',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'contactFields',      vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^contact/([0-9]*)/(addresses|anniversaries|birthdays|companies|customFields|emails|guids|jobTitles|links|names|nicknames|notesFields|otherids|phones|yahooids)\$',
+                                                      'inverse', 'contact/%d/%s',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'categoriesByContact',vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^contact/([0-9]*)/categories',
+                                                      'inverse', 'contact/%d/categories',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'contact',            vector ('methods', vector ('GET', 'DELETE'),
+                                                      'regex', '^contact/([0-9]*)',
+                                                      'inverse', 'contact/%d',
+                                                      'query', vector ('format'),
+                                                      'sqlFilter', 'p.P_ID = ?'
+                                                     ),
+                        'categories',         vector ('methods', vector ('GET', 'POST'),
+                                                      'regex', '^categories',
+                                                      'query', vector ('format'),
+                                                      'matrix', vector ('start', 'count')
+                                                     ),
+                        'contactsByCategory', vector ('methods', vector ('GET'),
+                                                      'regex', '^category/([^/]*)/contacts',
+                                                      'inverse', 'category/%s/contacts',
+                                                      'query', vector ('format', 'bucketinfo'),
+                                                      'matrix', vector ('start', 'count', 'bucket', 'maxbucketsize', 'minbucketcount'),
+                                                      'sqlFilter', 'c.C_NAME = ?'
+                                                     )
+                        );
+
+  apiExpressions := vector (
+                            'is', 'cast (%FIELD% as varchar) = ?',
+                            'startswith', 'cast (%FIELD% as varchar) like ?',
+                            'contains', 'cast (%FIELD% as varchar) like ?',
+                            'cs-is', 'ucase (cast (%FIELD% as varchar)) = ?',
+                            'cs-startswith', 'ucase (cast (%FIELD% as varchar)) like ?',
+                            'cs-contains', 'ucase (cast (%FIELD% as varchar)) like ?',
+                            'present', '%FIELD% is %VALUE% null'
+                           );
+
+  for (N := 0; N < length (apiActions); N := N + 2)
+  {
+    apiCommand := apiActions[N];
+    apiAction := apiActions[N+1];
+    if (regexp_match (get_keyword ('regex', apiAction), apiPath))
+    {
+      if (not AB.WA.vector_contains (get_keyword ('methods', apiAction), apiMethod))
+        signal ('__400', '');
+      goto _correct;
+    }
+  }
+  signal ('__400', '');
+
+_correct:;
+  apiOptions := vector ();
+  query := get_keyword ('query', apiAction);
+  for (N := 0; N < length (query); N := N + 1)
+  {
+    if (get_keyword (query[N], apiParams, '') <> '')
+      apiOptions := vector_concat (apiOptions, vector (query[N], get_keyword (query[N], apiParams)));
+  }
+
+  leftPath := apiPath;
+  rightPath := '';
+  N := strstr (apiPath, ';');
+  if (not isnull (N))
+  {
+    leftPath := subseq (apiPath, 0, N);
+    rightPath := subseq (apiPath, N+1);
+  }
+
+  inverse := vector ();
+  tmp := get_keyword ('inverse', apiAction);
+  if (not isnull (tmp))
+    inverse := sprintf_inverse (leftPath, tmp, 0);
+
+  matrix := get_keyword ('matrix', apiAction);
+  if (isnull (matrix) and rightPath <> '')
+    signal ('__400', '');
+
+  sqlFilter := get_keyword ('sqlFilter', apiAction, '');
+  sqlParams := vector ();
+  if (sqlFilter <> '')
+  {
+    sqlParams := vector_concat (sqlParams, subseq (inverse, 0, 1));
+  }
+  if (rightPath <> '')
+  {
+    tmp := split_and_decode (rightPath, 0, '\0\0;');
+    for (N := 0; N < length (tmp); N := N + 1)
+    {
+      tmp2 := split_and_decode (tmp[N], 0, '\0\0=');
+      if (length (tmp2) <> 2)
+        signal ('__400', '');
+      for (M := 0; M < length (matrix); M := M + 1)
+      {
+        if (matrix[M] = tmp2[0])
+        {
+          apiOptions := vector_concat (apiOptions, vector (tmp2[0], tmp2[1]));
+          goto _skip;
+        }
+      }
+      if (get_keyword ('filter', apiAction, 0) = 0)
+        signal ('__400', '');
+      tmp3 := split_and_decode (tmp2[0], 0, '\0\0.');
+      if (length (tmp3) <> 2)
+        signal ('__400', '');
+
+      field := get_keyword (tmp3[0], apiMap);
+      if (isnull (field))
+        signal ('__400', '');
+
+      expression := get_keyword (tmp3[1], apiExpressions);
+      if (isnull (expression))
+        signal ('__400', '');
+
+      if (tmp3[0] like 'cs-%')
+        tmp3[1] := ucase (tmp3[1]);
+
+      if (tmp3[0] = 'present')
+        tmp3[1] := case when tmp3[1] = '1' then 'NOT' else '' end;
+
+      expression := replace (expression, '%FIELD%', 'p.'||get_keyword ('field', field));
+      expression := replace (expression, '%VALUE%', tmp3[1]);
+
+      if (sqlFilter <> '')
+        sqlFilter := sqlFilter || ' and ';
+      sqlFilter := sqlFilter || expression;
+      if (tmp3[0] <> 'present')
+        sqlParams := vector_concat (sqlParams, vector (tmp2[1]));
+
+    _skip:;
+    }
+  }
+  apiOptions := vector_concat (apiOptions, vector ('_inverse', inverse));
+  apiOptions := vector_concat (apiOptions, vector ('_sqlFilter', sqlFilter));
+  apiOptions := vector_concat (apiOptions, vector ('_sqlParams', sqlParams));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__201')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 201 Creates');
+    }
+    else if (__SQL_STATE = '__204')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 204 No Content');
+    }
+    else if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__406')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 406 Requested representation not available for the resource');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
+  declare N, M, domain_id integer;
+  declare xt any;
+  declare tmp, uname, V, A, oResult, oCategories, oCategory, oContacts, oContact, oTag any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare apiMap, apiCommand, apiOptions, apiFields any;
+  declare sql, st, msg, params, meta, data any;
+
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  apiBody := string_output_string (http_body_read ());
+  if (apiBody = '')
+    apiBody := get_keyword ('content', apiParams);
+  --dbg_obj_print('', apiParams);
+  --dbg_obj_print('', apiBody);
+
+  domain_id := 22;
+  domain_id := atoi (get_keyword_ucase ('inst_id', apiParams));
+  if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    signal ('__401', '');
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  if (apiPath not like '/ods/yahoocontacts/%')
+    signal ('__404', '');
+
+  apiPath := substring (apiPath, length ('/ods/yahoocontacts/')+1, length (apiPath));
+  apiMap := AB.WA.yahooMap();
+  AB.WA.yahooPathAnalyze (apiParams, apiPath, apiMethod, apiMap, apiCommand, apiOptions);
+  -- dbg_obj_print('', apiCommand, apiOptions);
+
+  if (get_keyword ('view', apiOptions, '') = 'rev')
+    signal ('__406', '');
+
+  if (get_keyword ('view', apiOptions, '') = 'sync')
+    signal ('__406', '');
+
+  if (get_keyword ('view', apiOptions, '') = 'tinyusercard')
+  {
+    apiFields := 'nickName,name';
+  } else {
+    apiFields := get_keyword ('out', apiOptions, 'all');
+    if (apiFields = 'all')
+      apiFields := 'guid,nickName,name,birthday,email,phone,address,company,jobTitle';
+  }
+  apiFields := split_and_decode (apiFields, 0, '\0\0,');
+
+  set_user_id ('dba');
+  if (apiCommand = 'contacts')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p left join AB.WA.CATEGORIES c on c.C_ID = p.P_CATEGORY_ID where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+      _contacts:
+        oResult := AB.WA.apiObject();
+        oContacts := vector_concat (AB.WA.apiObject(),
+                                    vector (
+                                            '@yahoo:start', get_keyword ('_start', apiOptions),
+                                            '@yahoo:count', get_keyword ('_count', apiOptions),
+                                            '@yahoo:total', get_keyword ('_total', apiOptions)
+                                           )
+                                   );
+        V := vector ();
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oContact := AB.WA.yahooContactObject(apiFields, data[N], meta, apiMap);
+          V := vector_concat (V, vector (oContact));
+        }
+        oContacts := vector_concat (oContacts, vector ('contact', V));
+        oResult := vector_concat (oResult, vector ('contacts', oContacts));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod in ('PUT', 'POST'))
+    {
+      declare field, fieldDef, apiXPath, tmpXPath any;
+      declare abID, abField, abFields, abValues any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'xml') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+
+      abID := -1;
+      abFields := vector ();
+      abValues := vector ();
+      for (N := 0; N < length (apiMap); N := N + 2)
+      {
+        field := apiMap[N];
+        fieldDef := apiMap[N+1];
+
+        abField := get_keyword ('field', fieldDef);
+        if (isnull (abField))
+          goto _next;
+
+        apiXPath := get_keyword ('xpath', fieldDef);
+        if (isNull (apiXPath))
+          apiXPath := sprintf ('/contact/fields[type = "%s"]/value', field);
+
+        if (not (isarray (abField) and not isstring (abField)))
+          abField := vector (null, abField);
+
+        for (M := 0; M < length (abField); M := M + 2)
+        {
+          tmpXPath := apiXPath;
+          if (not isnull (abField[M]))
+            tmpXPath := tmpXPath || '/' || abField[M];
+          tmp := trim (cast (xquery_eval (tmpXPath, V, 1) as varchar));
+
+          if (is_empty_or_null (tmp))
+            goto _next_xpath;
+
+          if (abField = 'P_BIRTHDAY')
+          {
+            {
+              declare continue handler for sqlstate '*'
+              {
+                tmp := null;
+              };
+              tmp := stringdate (tmp);
+            }
+          }
+          if (not AB.WA.vector_contains (abFields, abField))
+          {
+            abFields := vector_concat (abFields, vector (abField[M+1]));
+            abValues := vector_concat (abValues, vector (tmp));
+          }
+          if (abField = 'P_ID')
+            abID := tmp;
+        _next_xpath:;
+        }
+      _next:;
+      }
+      if ((apiMethod = 'PUT') and not exists (select 1 from AB.WA.PERSONS where P_ID = abID and P_DOMAIN_ID = domain_id))
+        signal ('__404', '');
+
+      abID := AB.WA.contact_update4 (abID, domain_id, abFields, abValues, null);
+    }
+  }
+  if (apiCommand = 'contact')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p left join AB.WA.CATEGORIES c on c.C_ID = p.P_CATEGORY_ID where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        if (length (data) = 0)
+          signal ('__406', '');
+
+        oResult := AB.WA.apiObject();
+        oContact := AB.WA.yahooContactObject(apiFields, data[0], meta, apiMap);
+        oResult := vector_concat (oResult, vector ('contact', oContact));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'DELETE')
+    {
+      V := get_keyword ('_sqlParams', apiOptions);
+      if (length (V) = 0)
+        signal ('__404', '');
+
+      AB.WA.contact_delete (V[0], domain_id);
+    }
+  }
+  else if (apiCommand = 'contactField')
+  {
+    tmp := get_keyword ('_inverse', apiOptions)[1];
+    if (apiMethod = 'GET')
+    {
+    _contactField:
+      if (AB.WA.yahooSQL ('select TOP %TOP% p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        declare abValue any;
+
+        if (length (data) = 0)
+          signal ('__406', '');
+
+        oResult := AB.WA.apiObject();
+        abValue := AB.WA.yahooContactValue (tmp, data[0], meta, apiMap);
+        if (not is_empty_or_null (abValue))
+          oResult := vector_concat (oResult, vector (tmp, vector_concat (AB.WA.apiObject(), vector ('type', tmp, 'value', abValue, 'flags', vector()))));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'DELETE')
+    {
+      declare abID, abField, field, fieldDef any;
+
+      abID := get_keyword ('_inverse', apiOptions)[0];
+      field := get_keyword ('_inverse', apiOptions)[1];
+      fieldDef := get_keyword (field, apiMap);
+      if (not isnull (fieldDef))
+      {
+        abField := get_keyword ('field', fieldDef);
+        if (not isnull (abField))
+        {
+          if (not (isarray (abField) and not isstring (abField)))
+            abField := vector (null, abField);
+
+          for (M := 0; M < length (abField); M := M + 2)
+          {
+            AB.WA.contact_update2 (abID, domain_id, abField[M+1], null);
+          }
+        }
+      }
+    }
+  }
+  else if (apiCommand = 'contactFields')
+  {
+    tmp := get_keyword ('_inverse', apiOptions)[1];
+    V := vector (
+                 'addresses',    'address',
+                 'anniversaries','anniversary',
+                 'birthdays',    'birthday',
+                 'companies',    'company',
+                 'customFields', 'custom',
+                 'emails',       'email',
+                 'guids',        'guid',
+                 'jobTitles',    'jobTitle',
+                 'links',        'link',
+                 'names',        'name',
+                 'nicknames',    'nickname',
+                 'notesFields',  'notes',
+                 'otherids',     'otherid',
+                 'phones',       'phone',
+                 'yahooids',     'yahooid'
+                );
+    tmp := get_keyword (tmp, V);
+    if (apiMethod = 'GET')
+    {
+      goto _contactField;
+    }
+    if (apiMethod = 'POST')
+    {
+      ;
+    }
+  }
+  else if (apiCommand = 'contactsByCategory')
+  {
+    -- GET only
+    if (AB.WA.yahooSQL ('select TOP %TOP% p.*, c.C_ID, c.C_NAME from AB.WA.PERSONS p, AB.WA.CATEGORIES c where p.P_DOMAIN_ID = ? and c.C_ID = p.P_CATEGORY_ID', vector (domain_id), apiOptions, data, meta))
+      goto _contacts;
+  }
+  else if (apiCommand = 'categories')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% c.C_ID, c.C_NAME from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+      _categories:
+        oResult := AB.WA.apiObject();
+        oCategories := vector_concat (AB.WA.apiObject(),
+                                      vector (
+                                              '@yahoo:start', get_keyword ('_start', apiOptions),
+                                              '@yahoo:count', get_keyword ('_count', apiOptions),
+                                              '@yahoo:total', get_keyword ('_total', apiOptions)
+                                             )
+                                     );
+        V := vector ();
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oCategory := vector_concat (AB.WA.apiObject(), vector ('id', data[N][0], 'name', data[N][1]));
+          V := vector_concat (V, vector (oCategory));
+        }
+        oCategories := vector_concat (oCategories, vector ('category', V));
+        oResult := vector_concat (oResult, vector ('categories', oCategories));
+        AB.WA.yahooOutput (oResult, apiOptions);
+      }
+    }
+    if (apiMethod = 'POST')
+    {
+      declare name any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'json') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+      name := cast (xpath_eval('//name', V) as varchar);
+      AB.WA.category_update (domain_id, name);
+    }
+  }
+  else if (apiCommand = 'categoriesByContact')
+  {
+    if (apiMethod = 'GET')
+    {
+      if (AB.WA.yahooSQL ('select TOP %TOP% c.C_ID, c.C_NAME from AB.WA.CATEGORIES c, AB.WA.PERSONS p where c.C_DOMAIN_ID = ? and c.C_ID = p.P_CATEGORY_ID', vector (domain_id), apiOptions, data, meta))
+        goto _categories;
+    }
+    if (apiMethod = 'POST')
+    {
+      declare category_id, name any;
+
+      V := apiBody;
+      if (get_keyword ('format', apiOptions, 'json') = 'json')
+        V := AB.WA.obj2xml (json_parse (V));
+
+      V := xml_tree_doc (xml_tree (V));
+      name := cast (xpath_eval('//name', V) as varchar);
+      category_id := AB.WA.category_update (domain_id, name);
+
+      V := get_keyword ('_sqlParams', apiOptions);
+      if (length (V) = 0)
+        signal ('__404', '');
+
+      AB.WA.contact_update2 (V[0], domain_id, 'P_CATEGORY_ID', category_id);
+    }
+  }
+
+  http_request_status ('HTTP/1.1 200 OK');
+  return '';
+}
+;
+
+grant execute on AB.WA.yahoocontacts to SOAP_ADDRESSBOOK
 ;

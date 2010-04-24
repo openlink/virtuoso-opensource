@@ -126,6 +126,13 @@ create procedure AB.WA.vhost()
                 soap_user => 'SOAP_ADDRESSBOOK',
                 opts      => vector ('atom-pub', 1)
                );
+
+  VHOST_REMOVE (lpath     => '/ods/yahoocontacts');
+  VHOST_DEFINE (lpath     => '/ods/yahoocontacts',
+                ppath     => '/SOAP/Http/yahoocontacts',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                opts      => vector ('atom-pub', 1)
+               );
 }
 ;
 

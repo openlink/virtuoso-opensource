@@ -82,3 +82,18 @@ create procedure AB.WA.tmp_update ()
 --
 AB.WA.tmp_update ()
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tmp_update ()
+{
+  if (registry_get ('ab_categories_update') = '1')
+    return;
+  registry_set ('ab_categories_update', '1');
+
+  update AB.WA.CATEGORIES set C_CREATED = now(), C_UPDATED = now ();
+}
+;
+
+AB.WA.tmp_update ();
+

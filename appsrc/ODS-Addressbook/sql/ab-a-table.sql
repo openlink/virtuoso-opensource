@@ -55,6 +55,8 @@ AB.WA.exec_no_error('
     C_DOMAIN_ID integer not null,
     C_NAME varchar,
     C_COUNT integer,
+    C_CREATED datetime,
+    C_UPDATED datetime,
 
     primary key (C_ID)
   )
@@ -63,6 +65,14 @@ AB.WA.exec_no_error('
 AB.WA.exec_no_error('
   create unique index SK_CATEGORIES_01 on AB.WA.CATEGORIES (C_DOMAIN_ID, C_NAME)
 ');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.CATEGORIES add C_CREATED datetime', 'C', 'AB.WA.CATEGORIES', 'C_CREATED'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.CATEGORIES add C_UPDATED datetime', 'C', 'AB.WA.CATEGORIES', 'C_UPDATED'
+);
 
 -------------------------------------------------------------------------------
 --
@@ -776,7 +786,7 @@ AB.WA.exec_no_error ('
         _syncmlPath := get_keyword (\'name\', _options);
         if (_path = _syncmlPath)
         {
-          AB.WA.contact_delete (P_ID);
+          AB.WA.contact_delete (P_ID, P_DOMAIN_ID);
         }
       }
     }
