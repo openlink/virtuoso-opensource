@@ -774,7 +774,7 @@
                     if (params[N] = 'cb_item')
                     {
                       id := cast(params[N+1] as integer);
-                      AB.WA.contact_delete (id);
+                      AB.WA.contact_delete (id, self.domain_id);
                       }
                     }
                   }
@@ -917,7 +917,7 @@
                     if (action = 'delete')
                     {
                     self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
-                      AB.WA.contact_delete (self.v_id);
+                      AB.WA.contact_delete (self.v_id, self.domain_id);
                     }
                     if (action = 'edit')
                     {
@@ -4394,12 +4394,14 @@
                         if (self.abSubAction = 'categoryCreate')
                         {
                           self.v_id := sequence_next ('AB.WA.category_id');
-                          insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
-                            values (self.v_id, self.domain_id, self.v_name);
+                          insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+                            values (self.v_id, self.domain_id, self.v_name, now (), now ());
                         } else {
                           update AB.WA.CATEGORIES
-                             set C_NAME = self.v_name
-                           where C_ID = self.v_id;
+                             set C_NAME = self.v_name,
+                                 C_UPDATED = now ()
+                           where C_ID = self.v_id
+                             and C_DOMAIN_ID = self.domain_id;
                         }
 
                         self.abSubAction := 'categoryBrowse';
