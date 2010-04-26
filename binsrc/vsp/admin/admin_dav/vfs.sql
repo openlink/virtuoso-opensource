@@ -1745,7 +1745,10 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       u := cast (u as varchar);
       hf := WS.WS.PARSE_URI (u);
       host := hf[1];
-      url := hf[2];
+      hf [0] := '';
+      hf [1] := '';
+      hf [5] := ''; 
+      url := WS.WS.VFS_URI_COMPOSE (hf);
       WS.WS.SITEMAP_ENSURE_NEW_SITE (_host, _root, host, url);
       insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER, VQ_LEVEL) 
 	  values (host, now (), url, 'waiting', _root, 'other', lev); 
@@ -1786,6 +1789,11 @@ create procedure WS.WS.SITEMAP_XML_PARSE (in _host varchar, in _url varchar, in 
 	  xp := xpath_eval ('/sparql/results/result/binding/uri/text()', xt, 0);
 	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev);
 	}
+      else if (xpath_eval ('/urlset/url/loc', xt) is not null)
+	{
+	  xp := xpath_eval ('/urlset/url/loc/text()', xt, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev);
+	}
       if (xpath_eval ('/urlset/dataset/sampleURI', xt) is not null)
 	{
 	  xp := xpath_eval ('/urlset/dataset/sampleURI/text()', xt, 0);
@@ -1799,7 +1807,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
                               inout _content varchar, in _s_etag varchar, in _c_type varchar,
 			      in store_flag int := 1, in udata any := null, in lev int := 0)
 {
-  declare graph, url_ck varchar;
+  declare graph, url_ck, base varchar;
   graph := null;
   declare exit handler for sqlstate '*'
     {
@@ -1810,7 +1818,11 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
       return;
     };
 
-  graph := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  if (isvector (udata) and isstring (get_keyword ('rdf-graph', udata)))
+    graph := get_keyword ('rdf-graph', udata, '');
+  base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  if (not length (graph))  
+    graph := base;
   url_ck := _url;
   if (_url like '%.gz')
     {
@@ -1819,11 +1831,15 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     }
   if (url_ck like '%.rdf' or _c_type = 'application/rdf+xml')
     {
-      DB.DBA.RDF_LOAD_RDFXML (_content, graph, graph, 3);
+      DB.DBA.RDF_LOAD_RDFXML (_content, base, graph, 3);
     }
   else if (url_ck like '%.n3' or url_ck like '%.ttl' or url_ck like '%.nt' or _c_type = 'text/n3' or _c_type = 'text/rdf+n3')
     {
-      DB.DBA.TTLP (_content, graph, graph, 255, 3);
+      DB.DBA.TTLP (_content, base, graph, 255, 3);
+    }
+  else if (_c_type = 'text/html')
+    {
+      DB.DBA.RDF_LOAD_RDFA (_content, base, graph, 2);
     }
   if (isvector (udata) and isvector (get_keyword ('follow-property', udata)))
     {
@@ -1837,6 +1853,13 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
       objs := (select DB.DBA.VECTOR_AGG (id_to_iri (O)) from DB.DBA.RDF_QUAD where G = iri_to_id (graph, 0) and P in (arr) and isiri_id (O));
       WS.WS.SITEMAP_URLS_REGISTER (_host, _root, objs, lev);
     } 
+  if (_c_type = 'text/html' and isvector (udata) and 1 = get_keyword ('follow-meta', udata, 0))
+    {
+      declare xt, xp any;
+      xt := xtree_doc (_content, 2);
+      xp := xpath_eval ('/html/head/link[@rel="meta"]/@href', xt, 0);
+      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev);
+    }
   insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
       values (_host, _url, md5 (_content), now (), _s_etag, _root);
   if (row_count () = 0)
