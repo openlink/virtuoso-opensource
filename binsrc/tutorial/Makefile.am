@@ -79,6 +79,8 @@ EXTRA_DIST= \
 	intprot/sm_s_7/*.xml \
 	make_vad.sh \
 	rdf/*.xml \
+	rdf/fs_s_1/*.vsp \
+	rdf/fs_s_1/*.xml \
 	rdf/rd_s_1/*.sql \
 	rdf/rd_s_1/*.xml \
 	rdf/ri_s_1/*.gif \
