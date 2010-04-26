@@ -3978,6 +3978,9 @@ create procedure DB.DBA.RDF_LOAD_LASTFM (in graph_iri varchar, in new_origin_uri
 	{
 		if (id1 is not null and id1 <> '')
 		{
+			pos := strchr(id1, '+');
+			if (pos > 0)
+				id1 := left(id1, pos);
 			url := sprintf('http://ws.audioscrobbler.com/2.0/?method=event.getinfo&event=%s&api_key=%s', id1, api_key);
 			return DB.DBA.RDF_LOAD_LASTFM2(url, new_origin_uri,  dest, graph_iri, what_, opts);
 		}
