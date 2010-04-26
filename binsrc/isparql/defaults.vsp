@@ -29,10 +29,10 @@
   default_dgu := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'DefaultGraph');
   if (default_dgu is null)
   {
-    default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
-    if (default_dgu is not null)
-      default_dgu := 'http://' || default_dgu || '/dataspace';
-    else
+    --default_dgu := cfg_item_value (virtuoso_ini_path(), 'URIQA', 'DefaultHost');
+    --if (default_dgu is not null)
+    --  default_dgu := 'http://' || default_dgu || '/dataspace';
+    --else
       default_dgu := '';
   }
 
