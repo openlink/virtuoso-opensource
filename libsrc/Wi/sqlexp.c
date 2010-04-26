@@ -712,7 +712,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
       ins->_.artm.right = right;
       ins->_.artm.result = sqlc_new_temp (sc, "temp", DV_UNKNOWN);
       if (ins->ins_type == INS_NOT_VALID)
-	sqlc_new_error (sc->sc_cc, "37000", "SQ460", "Invalid arithmetic operation");
+	{
+	  t_set_pop (code);
+	  sqlc_new_error (sc->sc_cc, "37000", "SQ460", "Invalid arithmetic operation");
+	}
       cv_artm_set_type (ins);
       seg_return (ins->_.artm.result);
     }
