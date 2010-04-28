@@ -4898,25 +4898,17 @@ create procedure
 HTTP_GET_HOST ()
 {
   declare ret varchar;
+  ret := null;
   if (is_http_ctx ())
     {
       ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
-      if (isstring (ret) and strchr (ret, ':') is null)
-        {
-          declare hp varchar;
-          declare hpa any;
-          hp := sys_connected_server_address ();
-          hpa := split_and_decode (hp, 0, '\0\0:');
-          ret := ret || ':' || hpa[1];
-        }
     }
   else
-   {
-     ret := sys_connected_server_address ();
-     if (ret is null)
-       ret := sys_stat ('st_host_name')||':'||server_http_port ();
-   }
-
+    {
+      ret := sys_connected_server_address ();
+    }
+  if (ret is null)
+    ret := sys_stat ('st_host_name')||':'||server_http_port ();
   return ret;
 }
 ;
