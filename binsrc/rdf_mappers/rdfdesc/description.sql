@@ -35,6 +35,7 @@ TTLP (
 @prefix cb: <http://www.crunchbase.com/> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -59,6 +60,10 @@ foaf:maker rdfs:subClassOf dc:creator .
 <http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
 foaf:topic rdfs:subPropertyOf dcterms:references .
 <http://opengraphprotocol.org/schema/title> owl:equivalentProperty <http://opengraphprotocol.org/schema/title#this> .
+<http://rdfs.org/ns/void#vocabulary> owl:equivalentProperty <http://www.openlinksw.com/schema/attribution/isDescribedUsing> .
+<http://aims.fao.org/aos/geopolitical.owl#nameListEN> rdfs:subPropertyOf rdfs:label .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> owl:equivalentProperty geo:long .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLatitude> owl:equivalentProperty geo:lat .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
