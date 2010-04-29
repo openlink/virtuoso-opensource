@@ -34,6 +34,7 @@
    declare inf_parm varchar;
   declare ses_parms varchar;
   declare all_langs, dset any;
+  declare iri_type, iri_uri varchar;
 
    dbg_enable := get_keyword ('dbg', params);
    if (dbg_enable = '1') 
@@ -49,6 +50,7 @@
   white_page := 1;
   sid := null;
   inf := '';
+  iri_type := 'unknown';
 
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
@@ -103,6 +105,7 @@
 
    label := b3s_label_get (data, langs);
    true_label := label;
+  iri_type := b3s_type (_S, iri_uri);
 
    qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S);
 --    dbg_obj_print (qry_str);
@@ -184,7 +187,9 @@
     <div id="MD">
         <div class="page_resource_info">
           <h2>About <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
-      <div class="ds_inf_info"> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a>
+      <div class="ds_inf_info"> 
+	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a>
       </div>
         </div>
           <?vsp if (_subject <> '') { ?>

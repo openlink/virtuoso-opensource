@@ -148,6 +148,43 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 }
 ;
 
+create procedure b3s_type (in subj varchar, out url varchar)
+{
+  declare meta, data, ll any;
+  ll := 'unknown';
+  url := 'javascript:void()';
+  if (length (subj))
+    {
+      exec (sprintf ('sparql select ?l ?tp  { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', subj), 
+	  null, null, vector (), 0, meta, data);
+      if (length (data))
+	{
+	  if (data[0][0] is not null)
+  	    ll := data[0][0];
+	  else  
+	    ll := b3s_uri_local_part (data[0][1]);
+	  url := b3s_http_url (data[0][1]);
+	}
+    }
+  return ll;
+}
+;
+
+create procedure b3s_uri_local_part (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch varchar;
+  delim := -1;
+  uriSearch := uri;
+  delim := coalesce (strrchr (uriSearch, '/'), 0);
+  delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+  delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+  if (delim > 0)
+    uriSearch := subseq (uri, delim + 1);
+  return uriSearch;
+}
+;
+
 create procedure
 b3s_render_fct_link ()
 {
@@ -353,6 +390,8 @@ create procedure b3s_label_get (inout data any, in langs any)
 	    }
 	 }
      }
+   if (not isstring (label))
+     label := cast (label as varchar);
    return label;
 }
 ;
