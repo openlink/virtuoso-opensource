@@ -1195,6 +1195,8 @@ fct_bold_tags (in s varchar)
       return s;
     };
 
+  if (not isstring (s))
+    return s;
   ret := xtree_doc (sprintf ('<span class="srch_xerpt">%s</span>', s));
 
   return ret;
