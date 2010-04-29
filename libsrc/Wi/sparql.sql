@@ -403,6 +403,8 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   delete from DB.DBA.RDF_GRAPH_GROUP;
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER;
   delete from DB.DBA.RDF_GRAPH_USER;
+  delete from DB.DBA.RDF_LABEL;
+  delete from DB.DBA.RDF_GEO;
   dict_zap (__rdf_graph_group_dict(), 2);
   dict_zap (__rdf_graph_group_of_privates_dict(), 2);
   dict_zap (__rdf_graph_default_perms_of_user_dict(0), 2);
@@ -415,6 +417,7 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       delete from DB.DBA.RDF_IRI;
       delete from DB.DBA.RDF_PREFIX;
       delete from DB.DBA.RDF_OBJ;
+      delete from DB.DBA.RO_START;
       delete from DB.DBA.RDF_DATATYPE;
       delete from DB.DBA.RDF_LANGUAGE;
       --__rdf_twobyte_cache_zap();
