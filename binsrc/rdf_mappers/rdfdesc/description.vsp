@@ -286,7 +286,9 @@
         <div id="homelink">
         </div>
         <div class="page-resource-uri">
-	    An Entity of Type: <a href="<?V iri_uri ?>"><?V iri_type ?></a>, in Data Space: <a href="http://<?V dspace ?>"><?V host ?></a>
+	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
+	    from Data Source URL : <a href="<?V _G ?>"><?V _G ?></a>, 
+	    within Data Space : <a href="http://<?V dspace ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
