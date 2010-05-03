@@ -882,6 +882,24 @@ bif_dbg_obj_print (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_dbg_obj_print_vars (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int inx;
+
+  DO_BOX (state_slot_t *, arg, inx, args)
+    {
+      if (SSL_HAS_NAME (arg))
+	fprintf (stdout, "%s: ", arg->ssl_name);
+      printf ("[");
+      dbg_print_box (qst_get (qst, arg), stdout);
+      printf ("]\n");
+    }
+  END_DO_BOX;
+  fflush (stdout);
+  return NULL;
+}
+
 
 caddr_t
 bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -14117,6 +14135,7 @@ sql_bif_init (void)
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
   bif_define ("dbg_obj_princ", bif_dbg_obj_princ);
   bif_define ("dbg_obj_prin1", bif_dbg_obj_princ);
+  bif_define ("dbg_obj_print_vars", bif_dbg_obj_print_vars);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("partition_def", bif_partition_def);
   bif_define ("dpipe_define_1", bif_dpipe_define);
