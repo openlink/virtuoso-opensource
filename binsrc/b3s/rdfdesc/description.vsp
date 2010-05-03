@@ -60,6 +60,8 @@
 
   ses_parms := b3s_render_ses_params ();
 
+  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);  
+  if (host is null)
    host := http_request_header (http_request_header (), 'Host');  
    langs := http_request_header_full (lines, 'Accept-Language', 'en');
   all_langs := b3s_get_lang_acc (lines);
