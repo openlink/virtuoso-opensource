@@ -392,8 +392,8 @@ DBG_NAME (box_dv_dict_iterator) (DBG_PARAMS caddr_t ht_box)
   id_hash_iterator_t *res = (id_hash_iterator_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (id_hash_iterator_t), DV_DICT_ITERATOR);
   id_hash_t *ht = (id_hash_t *) ht_box;
   res->hit_hash = ht;
-  res->hit_bucket = 0;
-  res->hit_chilum = NULL;
+  res->hit_bucket = -1;
+  res->hit_chilum = (void *)(-1);
   if (NULL != ht)
     {
       if (NULL != ht->ht_mutex)

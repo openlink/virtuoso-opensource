@@ -324,7 +324,7 @@ DBG_HASHEXT_NAME (id_hash_copy) (DBG_PARAMS id_hash_t * to, id_hash_t * from)
 /*#define ID_HT_STATS*/
 void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key_t new_sz)
 {
-  long o1, o2, o3, o4, o5;
+  long o_ins, o_del, o_ovf, o_refc, o_ver, o_mmem, o_mem, o_c;
   id_hash_t ht_buffer;
   new_sz = hash_nextprime (new_sz);
 
@@ -359,19 +359,25 @@ void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key
 	DBG_HASHEXT_NAME (id_hash_add_new) (DBG_ARGS & ht_buffer, kp, dp);
     }
   while (0);
-  o1 = ht->ht_inserts;
-  o2 = ht->ht_deletes;
-  o3 = ht->ht_overflows;
-  o4 = ht->ht_dict_refctr;
-  o5 = ht->ht_count;
+  o_ins = ht->ht_inserts;
+  o_del = ht->ht_deletes;
+  o_ovf = ht->ht_overflows;
+  o_refc = ht->ht_dict_refctr;
+  o_ver = ht->ht_dict_version;
+  o_mmem = ht->ht_dict_max_mem_in_use;
+  o_mem = ht->ht_dict_mem_in_use;
+  o_c = ht->ht_count;
   DBG_HASHEXT_NAME (id_hash_clear) (DBG_ARGS ht);
   ID_HASH_FREE_INTERNALS (ht);
   ht->ht_array = ht_buffer.ht_array;
   ht->ht_buckets = ht_buffer.ht_buckets;
-  ht->ht_inserts = o1;
-  ht->ht_deletes = o2;
-  ht->ht_overflows = o3;
-  ht->ht_dict_refctr = o4;
-  ht->ht_count = o5;
+  ht->ht_inserts = o_ins;
+  ht->ht_deletes = o_del;
+  ht->ht_overflows = o_ovf;
+  ht->ht_dict_refctr = o_refc;
+  ht->ht_dict_version = o_ver + 1;
+  ht->ht_dict_max_mem_in_use = o_mmem;
+  ht->ht_dict_mem_in_use = o_mem;
+  ht->ht_count = o_c;
 }
 #endif

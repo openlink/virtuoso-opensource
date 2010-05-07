@@ -3497,7 +3497,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_put");
   caddr_t val = bif_arg (qst, args, 2, "dict_put");
-  caddr_t *old_val;
+  caddr_t *old_val_ptr;
   long res;
   if (ht->ht_mutex)
     {
@@ -3518,16 +3518,16 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((0 < ht->ht_dict_max_mem_in_use) &&
       (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use) )
     goto skip_insertion; /* see below */
-  old_val = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
-  if (NULL != old_val)
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL != old_val_ptr)
     {
       if (0 < ht->ht_dict_max_mem_in_use)
-        ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val[0]);
-      dk_free_tree (old_val[0]);
+        ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val_ptr[0]);
+      dk_free_tree (old_val_ptr[0]);
       val = box_copy_tree (val);
       if (ht->ht_mutex)
         box_make_tree_mt_safe (val);
-      old_val[0] = val;
+      old_val_ptr[0] = val;
     }
   else
     {
@@ -3557,7 +3557,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
-  hit->hit_dict_version = ht->ht_dict_version;
+  hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
 skip_insertion:
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
@@ -3618,8 +3618,114 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (old_val);
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
-      hit->hit_dict_version = ht->ht_dict_version;
+      if (hit->hit_chilum != old_key_ptr)
+        hit->hit_dict_version++;
       res = 1;
+    }
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_inc_or_put", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_inc_or_put");
+  boxint inc_val = bif_long_range_arg (qst, args, 2, "dict_inc_or_put", 0, 0xffff);
+  boxint res;
+  caddr_t *old_val_ptr;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  if ((0 < ht->ht_dict_max_entries) &&
+      ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) )
+    goto skip_insertion; /* see below */
+  if ((0 < ht->ht_dict_max_mem_in_use) &&
+      (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use) )
+    goto skip_insertion; /* see below */
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL != old_val_ptr)
+    {
+      boxint old_int;
+      if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
+              sqlr_new_error ("42000", "SR627",
+                "dict_inc_or_put() can not increment a noninteger value" );
+      old_int = unbox (old_val_ptr[0]);
+      if (0 >= old_int)
+        sqlr_new_error ("42000", "SR628",
+          "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
+      dk_free_tree (old_val_ptr[0]);
+      res = old_int + inc_val;
+      old_val_ptr[0] = box_num (res);
+    }
+  else
+    {
+      caddr_t val = box_num (inc_val);
+      key = box_copy_tree (key);
+      res = inc_val;
+      if (ht->ht_mutex)
+        box_make_tree_mt_safe (key);
+      id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
+      if (0 < ht->ht_dict_max_mem_in_use)
+        ht->ht_dict_mem_in_use += raw_length (val) + raw_length (key) + 3 * sizeof (caddr_t);
+    }
+  id_hash_iterator (hit, ht);
+  ht->ht_dict_version++;
+  hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
+skip_insertion:
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  res = ht->ht_inserts - ht->ht_deletes;
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_dec_or_remove", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_dec_or_remove");
+  boxint dec_val = bif_long_range_arg (qst, args, 2, "dict_dec_or_remove", 0, 0xffff);
+  caddr_t *old_key_ptr, *old_val_ptr;
+  boxint res;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (NULL == old_val_ptr)
+    res = 0;
+  else if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
+    sqlr_new_error ("42000", "SR629",
+      "dict_dec_or_remove() can not decrement a noninteger value" );
+  else if (unbox (old_val_ptr[0]) > dec_val)
+    {
+      boxint old_int;
+      old_int = unbox (old_val_ptr[0]);
+      if (0 >= old_int)
+        sqlr_new_error ("42000", "SR628",
+          "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
+      dk_free_tree (old_val_ptr[0]);
+      res = old_int - dec_val;
+      old_val_ptr[0] = box_num (res);
+      ht->ht_dict_version++;
+      hit->hit_dict_version++;
+    }
+  else
+    {
+      caddr_t old_key, old_val;
+      old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
+      old_key = old_key_ptr[0];
+      old_val = old_val_ptr[0];
+      id_hash_remove (ht, (caddr_t)(&key));
+      if (ht->ht_dict_max_mem_in_use > 0)
+        ht->ht_dict_mem_in_use -= (raw_length (old_key) + raw_length (old_val) + 3 * sizeof (caddr_t));
+      dk_free_tree (old_key);
+      dk_free_tree (old_val);
+      id_hash_iterator (hit, ht);
+      ht->ht_dict_version++;
+      if (hit->hit_chilum != old_key_ptr)
+        hit->hit_dict_version++;
+      res = 0;
     }
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
@@ -3759,6 +3865,7 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
   GPF_T1 ("bif_" "dict_destructive_list_rnd_keys(): corrupted hashtable");
   return NULL; /* never reached */
 res_done:
+  ht->ht_dict_version++;
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
   return (caddr_t)res;
@@ -3803,6 +3910,58 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
   return (caddr_t)res;
+}
+
+caddr_t
+bif_dict_iter_rewind (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_iter_rewind", 0);
+  id_hash_t *ht;
+  if (NULL == hit)
+    return box_num (0);
+  ht = hit->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  hit->hit_bucket = 0;
+  hit->hit_chilum = NULL;
+  hit->hit_dict_version = ht->ht_dict_version;
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return box_num (ht->ht_inserts - ht->ht_deletes);
+}
+
+caddr_t
+bif_dict_iter_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_iter_next", 0);
+  id_hash_t *ht;
+  int res = 0;
+  if (3 > BOX_ELEMENTS(args))
+    sqlr_new_error ("22003", "SR345", "Too few arguments for dict_iter_next ()");
+  if (NULL == hit)
+    return box_num (0);
+  ht = hit->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  if (hit->hit_dict_version == ht->ht_dict_version)
+    {
+      caddr_t *key, *data;
+      res = hit_next (hit, &key, &data);
+      if (res)
+        {
+          if ((SSL_VARIABLE == args[1]->ssl_type) || (IS_SSL_REF_PARAMETER (args[1]->ssl_type)))
+            qst_set (qst, args[1], box_copy_tree (key[0]));
+          if ((SSL_VARIABLE == args[2]->ssl_type) || (IS_SSL_REF_PARAMETER (args[2]->ssl_type)))
+            qst_set (qst, args[2], box_copy_tree (data[0]));
+        }
+    }
+  else
+    {
+      if (ht->ht_mutex)
+        mutex_leave (ht->ht_mutex);
+      sqlr_new_error ("22023", "SR630", "Function dict_iter_next() tries to iterate a volatile dictionary changed after last dict_iter_rewind()");
+    }
+  return box_num (res);
 }
 
 /*#define GVECTOR_SORT_DEBUG*/
@@ -4583,11 +4742,15 @@ xslt_init (void)
   bif_define ("dict_put", bif_dict_put);
   bif_define ("dict_get", bif_dict_get);
   bif_define ("dict_remove", bif_dict_remove);
+  bif_define ("dict_inc_or_put", bif_dict_inc_or_put);
+  bif_define ("dict_dec_or_remove", bif_dict_dec_or_remove);
   bif_define ("dict_size", bif_dict_size);
   bif_define ("dict_list_keys", bif_dict_list_keys);
   bif_define ("dict_destructive_list_rnd_keys", bif_dict_destructive_list_rnd_keys);
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("dict_zap", bif_dict_zap);
+  bif_define ("dict_iter_rewind", bif_dict_iter_rewind);
+  bif_define ("dict_iter_next", bif_dict_iter_next);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);

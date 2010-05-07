@@ -1736,7 +1736,7 @@ iri_cast_nt_absname (query_instance_t *qi, caddr_t iri, caddr_t *iri_ret, ptrlon
             is_bnode_ret[0] = 1;
             return 1;
           }
-        iri_ret[0] = iri;
+        iri_ret[0] = box_copy (iri);
         is_bnode_ret[0] = 0 /* Maybe this would be more accurate, but there are questions with named bnodes: ((('_' == iri[0]) && (':' == iri[1])) ? 1 : 0) */;
         return 1;
       }
@@ -2256,16 +2256,15 @@ typedef struct nt_env_s {
 } nt_env_t;
 
 void
-nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_loc)
+nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
 {
   caddr_t full_uri;
-  caddr_t loc = ti->loc;
-  if (NULL == loc)
-    loc = dflt_loc;
+  caddr_t uri = ti->uri;
+  if (NULL == uri)
+    uri = dflt_uri;
   if (ti->is_bnode)
     {
-      session_buffered_write (ses, "_:", 2);
-      session_buffered_write (ses, loc, strlen (loc));
+      session_buffered_write (ses, uri, strlen (uri));
       return;
     }
 #ifndef NDEBUG
@@ -2273,8 +2272,7 @@ nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t d
     GPF_T;
 #endif
   session_buffered_write_char ('<', ses);
-  full_uri = ((NULL != ti->uri) ? ti->uri : loc);
-  dks_esc_write (ses, full_uri, box_length (full_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+  dks_esc_write (ses, uri, box_length (uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
   session_buffered_write_char ('>', ses);
 }
 
@@ -2323,6 +2321,11 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
+    case DV_STRING_SESSION:
+      session_buffered_write_char ('"', ses);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+      session_buffered_write_char ('"', ses);
+      break;
     default:
       {
         ccaddr_t iri = xsd_type_of_box (obj_box_value);
@@ -2366,11 +2369,11 @@ caddr_t
 bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  nt_env_t *env = (nt_env_t *)bif_arg (qst, args, 0, "http_ttl_triple");
-  caddr_t subj = bif_arg (qst, args, 1, "http_ttl_triple");
-  caddr_t pred = bif_arg (qst, args, 2, "http_ttl_triple");
-  caddr_t obj = bif_arg (qst, args, 3, "http_ttl_triple");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ttl_triple");
+  nt_env_t *env = (nt_env_t *)bif_arg (qst, args, 0, "http_nt_triple");
+  caddr_t subj = bif_arg (qst, args, 1, "http_nt_triple");
+  caddr_t pred = bif_arg (qst, args, 2, "http_nt_triple");
+  caddr_t obj = bif_arg (qst, args, 3, "http_nt_triple");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_nt_triple");
   int status = 0;
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
@@ -2379,9 +2382,9 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (nt_env_t) != box_length ((caddr_t)env)) )
     sqlr_new_error ("22023", "SR601", "Argument 1 of http_nt_triple() should be an array of special format");
-  if (!iri_cast_nt_absname (qi, subj, &tii.s.loc, &tii.s.is_bnode))
+  if (!iri_cast_nt_absname (qi, subj, &tii.s.uri, &tii.s.is_bnode))
     goto fail; /* see below */
-  if (!iri_cast_nt_absname (qi, pred, &tii.p.loc, &tii.p.is_bnode))
+  if (!iri_cast_nt_absname (qi, pred, &tii.p.uri, &tii.p.is_bnode))
     goto fail; /* see below */
   obj_dtp = DV_TYPE_OF (obj);
   switch (obj_dtp)
@@ -2392,7 +2395,7 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (obj_is_iri)
     {
-      if (!iri_cast_nt_absname (qi, obj, &tii.o.loc, &tii.o.is_bnode))
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
         goto fail; /* see below */
     }
   else
@@ -2409,10 +2412,10 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt);
   SES_PRINT (ses, " .\n");
 fail:
-  dk_free_box (tii.s.loc);
-  dk_free_box (tii.p.loc);
-  dk_free_box (tii.o.loc);
-  dk_free_box (tii.dt.loc);
+  dk_free_box (tii.s.uri);
+  dk_free_box (tii.p.uri);
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
   return (caddr_t)(ptrlong)(status);
 }
 
@@ -2438,7 +2441,7 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (obj_is_iri)
     {
-      if (!iri_cast_nt_absname (qi, obj, &tii.o.loc, &tii.o.is_bnode))
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
         goto fail; /* see below */
     }
   else
@@ -2450,7 +2453,8 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt);
 fail:
-  dk_free_box (tii.dt.loc);
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
   return (caddr_t)(ptrlong)(status);
 }
 
@@ -2851,7 +2855,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       col_ti->is_iri = obj_is_iri;
       if (obj_is_iri)
         {
-          iri_is_ok = iri_cast_nt_absname (qi, obj, &(col_ti->loc), &(col_ti->is_bnode));
+          iri_is_ok = iri_cast_nt_absname (qi, obj, &(col_ti->uri), &(col_ti->is_bnode));
           if (col_ti->loc == obj)
             col_ti->loc = NULL; /* If obj is used unchanged so there was no memory allocation then col_ti->uri is unused in order to avoid double free at signalled error. */
         }
@@ -2875,7 +2879,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       else
         http_nt_write_obj (ses, env, qi, obj, obj_dtp, col_ti);
       SES_PRINT (ses, " .\n");
-      dk_free_box (col_ti->loc); col_ti->loc = NULL;
+      dk_free_box (col_ti->uri); col_ti->uri = NULL;
     }
   return NULL;
 }

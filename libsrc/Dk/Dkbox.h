@@ -490,7 +490,9 @@ typedef int64 boxint;
 
 typedef unsigned int64 iri_id_t;
 #define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
+#define MAX_32BIT_BNODE_IRI_ID ((iri_id_t)1999999999)
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
+#define MAX_64BIT_BNODE_IRI_ID ((((iri_id_t)1) << 63)-1)
 #define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
 #define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)

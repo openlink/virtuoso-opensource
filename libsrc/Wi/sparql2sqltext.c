@@ -3613,20 +3613,21 @@ xqf_str_parser_desc_t *function_is_xqf_str_parser (caddr_t name)
 static ssg_valmode_t
 sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t dflt)
 {
-  if (!strncmp (name, "SQLVAL::", 8))
-    return SSG_VALMODE_SQLVAL;
-  if (!strncmp (name, "LONG::", 6))
-    return SSG_VALMODE_LONG;
-  if (!strncmp (name, "BOOL::", 6))
-    return SSG_VALMODE_BOOL;
-  if (!strncmp (name, "SHORT::", 7))
-    return qm_format_default;
-  if (!strncmp (name, "SPECIAL::", 9))
-    return SSG_VALMODE_SPECIAL;
+  char *name_begin;
+  if ((':' == name[0]) && (':' != name[1]))
+    name_begin = name+1;
+  else
+    name_begin = name;
 /*                     0         1      */
 /*                     0123456789012345 */
-  if (!strncmp (name, "SHORT_OR_LONG::", 15))
-    return SSG_VALMODE_SHORT_OR_LONG;
+  if (!strncmp (name_begin, "SQLVAL::"		, 8))	return SSG_VALMODE_SQLVAL;
+  if (!strncmp (name_begin, "LONG::"		, 6))	return SSG_VALMODE_LONG;
+  if (!strncmp (name_begin, "BOOL::"		, 6))	return SSG_VALMODE_BOOL;
+  if (!strncmp (name_begin, "SHORT::"		, 7))	return qm_format_default;
+  if (!strncmp (name_begin, "SPECIAL::"		, 9))	return SSG_VALMODE_SPECIAL;
+  if (!strncmp (name_begin, "SHORT_OR_LONG::"	, 15))	return SSG_VALMODE_SHORT_OR_LONG;
+/*                           0123456789012345 */
+/*                           0         1      */
   if (NULL != strstr (name, "::"))
     spar_error (sparp, "Unsupported prefix before '::' in name '%.200s'", name);
   return dflt;

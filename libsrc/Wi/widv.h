@@ -208,6 +208,7 @@ User-level object is of type DV_XML_ENTITY. */
 
 #define bnode_iri_ids_are_huge  (wi_inst.wi_master->dbs_stripe_unit != 1) /* stay compatible with some older 6 databases w/ 64 bits ids but bnodes starting at wrong place.  Temporary  */
 #define min_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_BNODE_IRI_ID : MIN_32BIT_BNODE_IRI_ID)
+#define max_bnode_iri_id() (bnode_iri_ids_are_huge ? MAX_64BIT_BNODE_IRI_ID : MAX_32BIT_BNODE_IRI_ID)
 #define min_named_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_NAMED_BNODE_IRI_ID : MIN_32BIT_NAMED_BNODE_IRI_ID)
 
 

@@ -5848,6 +5848,12 @@ bif_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_max_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (max_bnode_iri_id());
+}
+
+caddr_t
 bif_min_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return box_iri_id (min_named_bnode_iri_id());
@@ -14256,6 +14262,7 @@ sql_bif_init (void)
   bif_define_typed ("iri_id_from_num", bif_iri_id_from_num, &bt_iri);
   bif_define ("__set_64bit_min_bnode_iri_id", bif_set_64bit_min_bnode_iri_id);
   bif_define_typed ("min_bnode_iri_id", bif_min_bnode_iri_id, &bt_iri);
+  bif_define_typed ("max_bnode_iri_id", bif_max_bnode_iri_id, &bt_iri);
   bif_define_typed ("min_named_bnode_iri_id", bif_min_named_bnode_iri_id, &bt_iri);
   bif_define_typed ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, &bt_iri);
   bif_define_typed ("min_32bit_named_bnode_iri_id", bif_min_32bit_named_bnode_iri_id, &bt_iri);
