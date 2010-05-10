@@ -4026,7 +4026,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
          w := trim (w, '"'' ');
          if (upper(w) not in ('AND', 'NOT', 'NEAR', 'OR')
 	     and length (w) > 1
-             and not vt_is_noise (w, 'utf-8', 'x-any'))
+             and not vt_is_noise (w, 'utf-8', 'x-ViAny'))
            {
              exp1 := concat (exp1, sprintf ('"%s" AND ', w));
              words := vector_concat (words, vector (w));
@@ -4040,7 +4040,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
        }
    }
 
- vt := vt_batch (100, 'x-any', 'UTF-8');
+ vt := vt_batch (100, 'x-ViAny', 'UTF-8');
  vt_batch_feed (vt, exp, 0, 0);
 
  war := vt_batch_strings_array (vt);
@@ -4054,12 +4054,12 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
      declare word1 varchar;
      if (war[n] not in ('AND', 'NOT', 'NEAR', 'OR')
 	 and length (war[n]) > 1
-	 and not vt_is_noise (war[n], 'utf-8', 'x-any'))
+	 and not vt_is_noise (war[n], 'utf-8', 'x-ViAny'))
        {
          word1 := war[n];
          words := vector_concat (words, vector (word1));
-         if (strchr (word1, '.') is not null
-	     or regexp_match ('[A-Za-z_][A-Za-z0-9_-]*', word1) is null)
+         if (strchr (word1, '.') is not null or strchr (word1, '-') is not null
+	     or regexp_match ('^[A-Za-z_][A-Za-z0-9_-]*', word1) is null)
            word1 := concat ('"', word1, '"');
          exp1 := concat (exp1, word1, ' AND ');
        }
