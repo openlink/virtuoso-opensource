@@ -47,11 +47,9 @@
   </refsect1>
   <refsect1 id="params_vector"><title>Parameters</title>
     <refsect2><title><parameter>elem1..n</parameter></title>
-      <para>
-        <type>array</type>, <type>vector</type> or <type>string</type>.
+      <para>Values of any types (not necessarily of one and the same type).
       </para>
     </refsect2>
-
   </refsect1>
   <refsect1 id="ret_vector"><title>Return Values</title>
     <para>A vector (heterogeneous array) of as many elements as there

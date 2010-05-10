@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2006 OpenLink Software
+  Copyright (C) 1998-2009 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -19,67 +19,77 @@
   with this program; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-  : template.sh,v 1.4 2006/04/17 22:58:08 ivan Exp $
+  : template.sh,v 1.6 2009/04/14 11:39:26 source Exp $
 -->
-<refentry id="fn_dict_put">
+<refentry id="fn_dict_dec_or_remove">
   <refmeta>
-    <refentrytitle>dict_put</refentrytitle>
+    <refentrytitle>dict_dec_or_remove</refentrytitle>
     <refmiscinfo>dict</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>dict_put</refname>
-    <refpurpose>Adds a key-value pair to a dictionary</refpurpose>
+    <refname>dict_dec_or_remove</refname>
+    <refpurpose>Decrement a counter in a dictionary of counters or deletes it if it becomes zero or negative.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_dict_put">
-      <funcprototype id="fproto_dict_put">
-        <funcdef>int <function>dict_put</function></funcdef>
+    <funcsynopsis id="fsyn_dict_dec_or_remove">
+      <funcprototype id="fproto_dict_dec_or_remove">
+        <funcdef><function>dict_dec_or_remove</function></funcdef>
 	<paramdef>inout <parameter>dict</parameter> dictionary</paramdef>
 	<paramdef>in <parameter>key</parameter> any</paramdef>
-	<paramdef>in <parameter>value</parameter> any</paramdef>
+	<paramdef>in <parameter>value_decrement</parameter> integer</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_dict_put">
+  <refsect1 id="desc_dict_dec_or_remove">
     <title>Description</title>
-    <para>The function adds or updates a key-value pair in the given dictionary.
-If the dictionary contains a pair with the key part equivalent to the given one then old value is replaced with a new one.
-Otherwise, a new pair is added to the dictionary.</para>
+    <para>The function checks whether <parameter>dict</parameter> contains <parameter>key</parameter>.
+If it isn&apos;t so then the function checks the datatype of the value associated with the key.
+An error 42000 is signalled in case of non-integer value or a negative integer value.
+If the value is positive and greater than <parameter>value_decrement</parameter> then <parameter>value_decrement</parameter> is subtracted from it and the result become the new value associated with <parameter>key</parameter> in <parameter>dict</parameter>.
+If the value is positive and less than or equal to <parameter>value_decrement</parameter> then <parameter>key</parameter> is removed from <parameter>dict</parameter>.
+If key is not in the dictionary then the dictionary remains unchanged.
+</para>
+    <para>Informally, the function reverts the effect of <link linkend="fn_dict_inc_or_add"><function>dict_inc_or_add</function></link>.</para>
   </refsect1>
-  <refsect1 id="params_dict_put">
+  <refsect1 id="params_dict_dec_or_remove">
     <title>Parameters</title>
     <refsect2><title>dict</title>
-      <para>The dictionary to be updated or extended.</para>
+      <para>Dictionary of counters. The NULL value is equivalent to an empty dictionary.</para>
     </refsect2>
     <refsect2><title>key</title>
-      <para>The key part of the dictionary pair to be added or updated.</para>
+      <para>Key of a dictionary item to process.</para>
     </refsect2>
-    <refsect2><title>value</title>
-      <para>The dependent part of the pair.</para>
+    <refsect2><title>value decrement</title>
+      <para>A nonnegative integer (typically 1) that is subtracted from the value associated with <parameter>key</parameter>.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_dict_put"><title>Return Types</title>
-    <para>The function returns the total number of pairs stored in the dictionary as counted after the modification.</para>
+  <refsect1 id="ret_dict_dec_or_remove"><title>Return Types</title>
+    <para>The function returns the changed value associated with the <parameter>key</parameter>, or zero in any other case.</para>
   </refsect1>
 <!--
-  <refsect1 id="examples_dict_put">
-    <title>Examples</title>
-    <example id="ex_dict_put"><title></title>
+  <refsect1 id="errors_dict_dec_or_remove">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1> -->
+<!--
+  <refsect1 id="examples_dict_dec_or_remove">
+    <title>Example</title>
+    <example id="ex_dict_dec_or_remove"><title></title>
       <para></para>
       <screen><![CDATA[
-
 ]]>
 </screen>
     </example>
   </refsect1> -->
-  <refsect1 id="seealso_dict_put">
+  <refsect1 id="seealso_dict_dec_or_remove">
     <title>See Also</title>
     <para><link linkend="fn_dict_new"><function>dict_new</function></link></para>
     <para><link linkend="fn_dict_zap"><function>dict_zap</function></link></para>
+    <para><link linkend="fn_dict_put"><function>dict_put</function></link></para>
     <para><link linkend="fn_dict_get"><function>dict_get</function></link></para>
     <para><link linkend="fn_dict_remove"><function>dict_remove</function></link></para>
     <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put</function></link></para>
-    <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove</function></link></para>
     <para><link linkend="fn_dict_size"><function>dict_size</function></link></para>
     <para><link linkend="fn_dict_duplicate"><function>dict_duplicate</function></link></para>
     <para><link linkend="fn_dict_to_vector"><function>dict_to_vector</function></link></para>

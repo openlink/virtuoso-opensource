@@ -106,8 +106,10 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &dav_exp; &dayname; &dayofmonth; &dayofweek; &dayofyear;
 &dbg_obj_print; &dbg_printf;
 &dbname; &delay;
-&dict_duplicate; &dict_get; &dict_list_keys; &dict_new;
-&dict_put; &dict_remove; &dict_to_vector;
+&dict_dec_or_remove; &dict_duplicate; &dict_get; &dict_inc_or_put;
+&dict_iter_next; &dict_iter_rewind;
+&dict_list_keys; &dict_destructive_list_keys; &dict_new;
+&dict_put; &dict_remove; &dict_size; &dict_to_vector; &dict_zap;
 &disconnect_user; &dt_set_tz; &dvector;
 
 &end_result; &either; &elh_get_handler; &elh_load_handler; &encode_base64;
@@ -123,7 +125,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 
 &get_certificate_info; &get_keyword; &get_keyword_ucase; &get_timestamp;
-&getdate; &gz_compress; &gz_uncompress;
+&getdate; &gvector_sort; &gvector_digit_sort; &gz_compress; &gz_uncompress;
 
 &hour; &http; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip;
 &http_debug_log; &http_enable_gz; &http_file; &http_flush;
@@ -165,7 +167,8 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;&ttlp_mt_local_file;
 &rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
-&rdf_convert_rdfxml_to_ttl;rdf_graph_group_create;rdf_graph_group_ins;&rdfs_rule_set;
+&rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdfs_rule_set;
+&rowvector_digit_sort; <!-- &rowvector_subj_sort; -->
 &isref;
 
 &ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;

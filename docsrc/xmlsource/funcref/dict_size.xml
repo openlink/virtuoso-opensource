@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2006 OpenLink Software
+  Copyright (C) 1998-2009 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -19,68 +19,63 @@
   with this program; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-  : template.sh,v 1.4 2006/04/17 22:58:08 ivan Exp $
+  : template.sh,v 1.6 2009/04/14 11:39:26 source Exp $
 -->
-<refentry id="fn_dict_get">
+<refentry id="fn_dict_size">
   <refmeta>
-    <refentrytitle>dict_get</refentrytitle>
+    <refentrytitle>dict_size</refentrytitle>
     <refmiscinfo>dict</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>dict_get</refname>
-    <refpurpose>Returns the dependent part that corresponds to the given key in the given dictionary.</refpurpose>
+    <refname>dict_size</refname>
+    <refpurpose>Returns the number of items in the given dictionary.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_dict_get">
-      <funcprototype id="fproto_dict_get">
-        <funcdef>any <function>dict_get</function></funcdef>
-	<paramdef>in <parameter>dict</parameter> dictionary</paramdef>
-	<paramdef>in <parameter>key</parameter> any</paramdef>
-	<paramdef><optional>in <parameter>default_value</parameter> any</optional></paramdef>
+    <funcsynopsis id="fsyn_dict_size">
+      <funcprototype id="fproto_dict_size">
+        <funcdef><function>dict_size</function></funcdef>
+	<paramdef>inout <parameter>dict</parameter> dictionary</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_dict_get">
+  <refsect1 id="desc_dict_size">
     <title>Description</title>
-    <para>The function returns the dependent part that corresponds to the given key in the given dictionary.
-The function returns <parameter>default_value</parameter> if the dictionary does not contain a pair whose key is equivalent to the given one.
-When only two arguments are passed to the function the default value is integer zero.</para>
+    <para>The function returns the number of items in the <parameter>dict</parameter> dictionary.
+For NULL value of <parameter>dict</parameter>, zero is returned.</para>
   </refsect1>
-  <refsect1 id="params_dict_get">
+  <refsect1 id="params_dict_size">
     <title>Parameters</title>
     <refsect2><title>dict</title>
-      <para>Dictionary object to search in.</para>
-    </refsect2>
-    <refsect2><title>key</title>
-      <para>Key whose dependent part should be found.</para>
-    </refsect2>
-    <refsect2><title>default_value</title>
-      <para>The default value to be returned if the key is not found in the dictionary.</para>
+      <para>Reference to the dictionary in question.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_dict_get"><title>Return Types</title>
-    <para>The function can return a value of any type.</para>
+  <refsect1 id="ret_dict_size"><title>Return Types</title>
+    <para>The function returns an interger.</para>
   </refsect1>
 <!--
-  <refsect1 id="examples_dict_get">
+  <refsect1 id="errors_dict_size">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_dict_size">
     <title>Examples</title>
-    <example id="ex_dict_get"><title></title>
+    <example id="ex_dict_size"><title></title>
       <para></para>
       <screen><![CDATA[
 ]]>
 </screen>
     </example>
-  </refsect1>
--->
-  <refsect1 id="seealso_dict_get">
+  </refsect1> -->
+  <refsect1 id="seealso_dict_size">
     <title>See Also</title>
     <para><link linkend="fn_dict_new"><function>dict_new</function></link></para>
     <para><link linkend="fn_dict_zap"><function>dict_zap</function></link></para>
     <para><link linkend="fn_dict_put"><function>dict_put</function></link></para>
+    <para><link linkend="fn_dict_get"><function>dict_get</function></link></para>
     <para><link linkend="fn_dict_remove"><function>dict_remove</function></link></para>
     <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put</function></link></para>
     <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove</function></link></para>
-    <para><link linkend="fn_dict_size"><function>dict_size</function></link></para>
     <para><link linkend="fn_dict_duplicate"><function>dict_duplicate</function></link></para>
     <para><link linkend="fn_dict_to_vector"><function>dict_to_vector</function></link></para>
     <para><link linkend="fn_dict_list_keys"><function>dict_list_keys</function></link></para>

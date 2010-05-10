@@ -748,7 +748,7 @@ used for filtering out redundant hits but it does not affect the scoring.
 	</member>
 </simplelist>
 			<para>
-The xcCONTAINS predicate can also return scores. These scores are somewhat similar to scores
+The XCONTAINS predicate can also return scores. These scores are somewhat similar to scores
 made by CONTAINS but rules for them are too complicated to be explained here.
 	</para>
 </sect2>

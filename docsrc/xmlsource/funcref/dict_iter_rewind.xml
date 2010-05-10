@@ -19,64 +19,69 @@
   with this program; if not, write to the Free Software Foundation, Inc.,
   51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-  : template.sh,v 1.4 2006/04/17 22:58:08 ivan Exp $
+  : template.sh,v 1.6 2009/04/14 11:39:26 source Exp $
 -->
-<refentry id="fn_dict_get">
+<refentry id="fn_dict_iter_rewind">
   <refmeta>
-    <refentrytitle>dict_get</refentrytitle>
+    <refentrytitle>dict_iter_rewind</refentrytitle>
     <refmiscinfo>dict</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>dict_get</refname>
-    <refpurpose>Returns the dependent part that corresponds to the given key in the given dictionary.</refpurpose>
+    <refname>dict_iter_rewind</refname>
+    <refpurpose>Resets the iterator before fetching keys and values by dict_iter_next()</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_dict_get">
-      <funcprototype id="fproto_dict_get">
-        <funcdef>any <function>dict_get</function></funcdef>
-	<paramdef>in <parameter>dict</parameter> dictionary</paramdef>
-	<paramdef>in <parameter>key</parameter> any</paramdef>
-	<paramdef><optional>in <parameter>default_value</parameter> any</optional></paramdef>
+    <funcsynopsis id="fsyn_dict_iter_rewind">
+      <funcprototype id="fproto_dict_iter_rewind">
+        <funcdef><function>dict_iter_rewind</function></funcdef>
+	<paramdef>inout <parameter>dict</parameter> dictionary</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_dict_get">
+  <refsect1 id="desc_dict_iter_rewind">
     <title>Description</title>
-    <para>The function returns the dependent part that corresponds to the given key in the given dictionary.
-The function returns <parameter>default_value</parameter> if the dictionary does not contain a pair whose key is equivalent to the given one.
-When only two arguments are passed to the function the default value is integer zero.</para>
+    <para>The dictionary is always passed by reference, due to its (potentialy big) size.
+The reference variable contains not only pointer to the whole dictionary but also a forward-only iterator (a "cursor") that can be used to retrieve items of the dictionary one after the other.
+The function sets the iterator to the very first item of the dictionary.</para>
   </refsect1>
-  <refsect1 id="params_dict_get">
+  <refsect1 id="params_dict_iter_rewind">
     <title>Parameters</title>
     <refsect2><title>dict</title>
-      <para>Dictionary object to search in.</para>
-    </refsect2>
-    <refsect2><title>key</title>
-      <para>Key whose dependent part should be found.</para>
-    </refsect2>
-    <refsect2><title>default_value</title>
-      <para>The default value to be returned if the key is not found in the dictionary.</para>
+      <para>The reference to a dictionary to use as an iterator</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_dict_get"><title>Return Types</title>
-    <para>The function can return a value of any type.</para>
+  <refsect1 id="ret_dict_iter_rewind"><title>Return Types</title>
+    <para>The function returns an integer that is the expected number of items in the dictionary; the value may not match to the number of items retrieved later by dict_iter_next() if a dictionary is edited by some thread.</para>
   </refsect1>
-<!--
-  <refsect1 id="examples_dict_get">
-    <title>Examples</title>
-    <example id="ex_dict_get"><title></title>
-      <para></para>
+<!--  <refsect1 id="errors_dict_iter_rewind">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1> -->
+  <refsect1 id="examples_dict_iter_rewind">
+    <title>Example</title>
+    <example id="ex_dict_iter_rewind"><title>Simplest read throughout the dictionary.</title>
+      <para>The procedure creates a dictionary, puts couple of items into it and then print them to the server's console</para>
       <screen><![CDATA[
+create function dict_iterator_test ()
+{
+  declare dict, dkey, dvalue any;
+  dict := dict_new (10);
+  dict_put (dict, 'a', 1); dict_put (dict, 'b', 2);
+  dict_iter_rewind (dict);
+  while (dict_iter_next (dict, dkey, dvalue))
+    dbg_obj_princ (' key is ' dkey, ', corresponding value is ', dvalue);
+}
 ]]>
 </screen>
     </example>
   </refsect1>
--->
-  <refsect1 id="seealso_dict_get">
+  <refsect1 id="seealso_dict_iter_rewind">
     <title>See Also</title>
     <para><link linkend="fn_dict_new"><function>dict_new</function></link></para>
     <para><link linkend="fn_dict_zap"><function>dict_zap</function></link></para>
     <para><link linkend="fn_dict_put"><function>dict_put</function></link></para>
+    <para><link linkend="fn_dict_get"><function>dict_get</function></link></para>
     <para><link linkend="fn_dict_remove"><function>dict_remove</function></link></para>
     <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put</function></link></para>
     <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove</function></link></para>
@@ -85,7 +90,6 @@ When only two arguments are passed to the function the default value is integer 
     <para><link linkend="fn_dict_to_vector"><function>dict_to_vector</function></link></para>
     <para><link linkend="fn_dict_list_keys"><function>dict_list_keys</function></link></para>
     <para><link linkend="fn_dict_destructive_list_rnd_keys"><function>dict_destructive_list_rnd_keys</function></link></para>
-    <para><link linkend="fn_dict_iter_rewind"><function>dict_iter_rewind</function></link></para>
     <para><link linkend="fn_dict_iter_next"><function>dict_iter_next</function></link></para>
   </refsect1>
 </refentry>
