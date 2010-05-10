@@ -2325,6 +2325,7 @@ ODS.Nav = function(navOptions) {
       }
       OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
     } else {
+			if (!self.userLogged) {
       var x = function (data) {
         var o = null;
         try {
@@ -2340,18 +2341,13 @@ ODS.Nav = function(navOptions) {
 		  self.alog = false;
 		  OAT.Dom.hide ($('login_page'));
 		  self.showLoginThrobber ();
-							OAT.MSG.attach(self.session,
-									"WA_SES_TOKEN_RECEIVED", function() {
-										self.session.validate();
-									});
+  							OAT.MSG.attach(self.session, "WA_SES_TOKEN_RECEIVED", function() {self.session.validate();});
 						}
 		}
 	    }
         }
-			OAT.AJAX
-					.GET(
-							'/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1',
-							false, x);
+			  OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
+			}
       }
 		self.loadFacebookData(function() {
 			if (self.facebookData)

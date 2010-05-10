@@ -2083,13 +2083,15 @@ create procedure fill_ods_sioc (in doall int := 0)
   -- delete all
   {
     deadl := 3;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001' 
+    {
       if (deadl <= 0)
 	resignal;
       rollback work;
       deadl := deadl - 1;
       goto l0;
     };
+    
     l0:
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (fix_graph (graph_iri));
     commit work;
@@ -2106,7 +2108,8 @@ create procedure fill_ods_sioc (in doall int := 0)
     declare _u_name varchar;
     _u_name := '';
     deadl := 3;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001' 
+    {
       if (deadl <= 0)
 	resignal;
       rollback work;
@@ -2271,42 +2274,38 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
 		}
 
-
-	      for select WAI_NAME, WAI_TYPE_NAME, WAI_ID, WAM_USER
-		    from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
-		   where WAM_USER = U_ID and WAM_INST = WAI_NAME and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
+	  for select WAI_ID,
+	             WAI_TYPE_NAME, 
+	             WAI_NAME,
+	             WAM_INST,
+               WAM_APP_TYPE,
+               WAM_USER,
+               WAM_MEMBER_TYPE,
+               WAI_IS_PUBLIC,
+               WAI_DESCRIPTION,
+               WAI_LICENSE
+		      from DB.DBA.WA_MEMBER, 
+		           DB.DBA.WA_INSTANCE
+		     where WAM_USER = U_ID 
+		       and WAM_INST = WAI_NAME 
+		       and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
 		{
-		  declare riri, firi, _wai_type varchar;
-		  _wai_type := WAI_TYPE_NAME;
-		  do_social:
-		  riri := role_iri (WAI_ID, WAM_USER);
-		  firi := forum_iri (_wai_type, WAI_NAME);
-		  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
-		  DB.DBA.ODS_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), iri);
+		  instance_sioc_data (
+                          WAM_INST,
+                          WAM_APP_TYPE,
+                          WAM_USER,
+                          WAM_MEMBER_TYPE,
+                          WAI_IS_PUBLIC,
+                          WAI_DESCRIPTION,
+                          WAI_LICENSE
+                         );
 
-		  DB.DBA.ODS_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
-		  DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
+		  declare firi varchar;
 
-		  if (riri like '%#owner')
-		    {
-		      DB.DBA.ODS_QUAD_URI (graph_iri, firi, sioc_iri ('has_owner'), iri);
-		      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
-		    }
-
-		  if (_wai_type = 'AddressBook')
-		    {
-		      _wai_type := 'SocialNetwork';
-		      goto do_social;
-		    }
-		  if (_wai_type = 'Community')
-		    {
-		      DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (firi), foaf_iri ('member'), person_iri);
-		    }
+		  firi := forum_iri (WAI_TYPE_NAME, WAI_NAME);
 		  for select RA_URI, RA_LABEL from DB.DBA.WA_RELATED_APPS where RA_WAI_ID = WAI_ID do
-		    {
 		      sioc_app_related (graph_iri, firi, RA_LABEL, RA_URI);
 		    }
-		}
 	      for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = U_ID and length (US_IRI) do
 		{
 		  declare sas_iri any;
@@ -2366,21 +2365,26 @@ create procedure fill_ods_sioc (in doall int := 0)
 
   {
     declare _from, _to, _serial any;
+    
     _from := _to := _serial := -1;
     deadl := 3;
-    declare exit handler for sqlstate '40001' {
+    declare exit handler for sqlstate '40001' 
+    {
       if (deadl <= 0)
 	resignal;
       rollback work;
       deadl := deadl - 1;
       goto l3;
     };
+    
     l3:
   -- sioc:knows
-  for select snr_from, snr_to, snr_serial from DB.DBA.sn_related
+    for select snr_from, snr_to, snr_serial 
+          from DB.DBA.sn_related
     where snr_from > _from and snr_to > _to and snr_serial > _serial do
     {
       declare _from_iri, _to_iri varchar;
+      
       _from_iri := user_iri_ent (snr_from);
       _to_iri := user_iri_ent (snr_to);
       sioc_knows (graph_iri, _from_iri, _to_iri);
@@ -2396,46 +2400,41 @@ create procedure fill_ods_sioc (in doall int := 0)
     commit work;
   }
 
-  {
-    declare _wai_name varchar;
-    _wai_name := '';
-    deadl := 3;
-    declare exit handler for sqlstate '40001' {
-      if (deadl <= 0)
-	resignal;
-      rollback work;
-      deadl := deadl - 1;
-      goto l4;
-    };
-    l4:
-
-  -- sioc:Forum
-  for select WAI_TYPE_NAME, WAI_ID, WAI_NAME, WAI_DESCRIPTION, WAI_LICENSE from DB.DBA.WA_INSTANCE
-    where WAI_NAME > _wai_name and WAI_IS_PUBLIC = 1 or WAI_TYPE_NAME = 'oDrive' do
-    {
-      iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
-      if (iri is not null)
-	{
-	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_ID);
-	  cc_work_lic (graph_iri, iri, WAI_LICENSE);
-
-	  --for select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME do
 	  --  {
-	  --    declare miri varchar;
-	  --    miri := user_iri (WAM_USER);
-	  --    if (miri is not null)
-	  --      DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_member'), miri);
+  --   declare _wai_name varchar;
+  --   _wai_name := '';
+  --   deadl := 3;
+  --   declare exit handler for sqlstate '40001' 
+  --   {
+  --     if (deadl <= 0)
+	--       resignal;
+  --     rollback work;
+  --     deadl := deadl - 1;
+  --     goto l4;
+  --   };
+  --   l4:
+  -- 
+  -- -- sioc:Forum
+  -- for select WAI_TYPE_NAME, WAI_ID, WAI_NAME, WAI_DESCRIPTION, WAI_LICENSE 
+  --       from DB.DBA.WA_INSTANCE
+  --      where WAI_NAME > _wai_name and WAI_IS_PUBLIC = 1 or WAI_TYPE_NAME = 'oDrive' do
+  --   {
+  --     iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+  --     if (iri is not null)
+	--     {
+  --   	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_ID);
+  --   	  cc_work_lic (graph_iri, iri, WAI_LICENSE);
+  --   
+  --   	}
+  --     cnt := cnt + 1;
+  --     if (mod (cnt, 500) = 0)
+  --   	{
+  --   	  commit work;
+  --   	  _wai_name := WAI_NAME;
+  --   	}
+  --   }
+  --   commit work;
 	  --  }
-	}
-      cnt := cnt + 1;
-      if (mod (cnt, 500) = 0)
-	{
-	  commit work;
-	  _wai_name := WAI_NAME;
-	}
-    }
-    commit work;
-  }
 
   if (doall)
     {
@@ -3308,7 +3307,7 @@ create procedure instance_sioc_data (
   in N_WAM_DESCRIPTION varchar := null,
   in N_WAM_LICENSE varchar := null)
 {
-  declare graph_iri, user_iri, role_iri, forum_iri, site_iri, svc_iri varchar;
+  declare graph_iri, user_iri, role_iri, forum_iri, site_iri, svc_proc_name varchar;
   declare exit handler for sqlstate '*'
 {
     sioc_log_message (__SQL_MESSAGE);
@@ -3325,11 +3324,9 @@ create procedure instance_sioc_data (
       cc_work_lic (graph_iri, forum_iri, N_WAM_LICENSE);
 
       -- add services here
-    if (N_WAM_APP_TYPE = 'oDrive')
-	{
-	  svc_iri := sprintf ('http://%s%s/services/briefcase', get_cname(), get_base_path ());
-	    ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
-	}
+    svc_proc_name := sprintf ('SIOC.DBA.ods_%s_services', DB.DBA.wa_type_to_app (N_WAM_APP_TYPE));
+    if (__proc_exists (svc_proc_name))
+	    call (svc_proc_name) (graph_iri, forum_iri, N_WAM_USER, N_WAM_INST);
     }
 
   user_iri := user_iri (N_WAM_USER);
@@ -4633,6 +4630,7 @@ create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any,
       else
 	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+	  http ('\n', ses);
     }
     }
 };
