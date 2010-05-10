@@ -861,3 +861,14 @@ virt_proxy_init_about ()
 ;
 
 drop procedure virt_proxy_init_about;
+
+create procedure rdfdesc_virt_info ()
+{
+  http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); 
+  http (sys_stat ('st_dbms_ver')); 
+  http (', on ');
+  http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ())); 
+  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single' else 'Cluster' end); http (' Edition ');
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end); 
+}
+;
