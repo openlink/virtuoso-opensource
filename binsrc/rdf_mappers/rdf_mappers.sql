@@ -142,6 +142,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_RADIOPOP', null, 'Radio Pop');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://www.idiomag.com/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_IDIOMAG', null, 'Idio Your Magazine');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://www.rhapsody.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_RHAPSODY', null, 'Rhapsody');
 
@@ -637,6 +641,11 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('XFN Profile2', 'http://gmpg.org/xfn/1', registry_get ('_rdf_mappers_path_') || 'xslt/main/xfn2rdf.xsl')
+;
+
+
+insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+    values ('HTML5 Microdata', 'http://dev.w3.org/html5/md', registry_get ('_rdf_mappers_path_') || 'xslt/main/html5md2rdf.xsl')
 ;
 
 insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
@@ -1269,6 +1278,30 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
 }
 ;
 
+create procedure DB.DBA.GET_HTML5MD_LOCALNAME(in elem varchar) returns varchar
+{
+    declare pos1, pos2 integer;
+    pos1 := strrchr(elem, '/');
+    pos2 := strrchr(elem, '#');
+    if (pos2 > 0)
+        return subseq(elem, pos2+1);    
+    if (pos1 > 0)
+        return subseq(elem, pos1+1);    
+}
+;
+
+create procedure DB.DBA.GET_HTML5MD_NAMESPACE(in elem varchar) returns varchar
+{
+    declare pos1, pos2 integer;
+    pos1 := strrchr(elem, '/');
+    pos2 := strrchr(elem, '#');
+    if (pos2 > 0)
+        return subseq(elem, 0, pos2+1);    
+    if (pos1 > 0)
+        return subseq(elem, 0, pos1+1);    
+}
+;
+
 create procedure DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME(in elem varchar) returns varchar
 {
     declare cur, result varchar;
@@ -1378,6 +1411,8 @@ grant execute on DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN to public;
 grant execute on DB.DBA.GET_XBRL_ONTOLOGY_VALUE_NAME to public;
 grant execute on DB.DBA.GET_XBRL_ONTOLOGY_VALUE_DATATYPE to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public;
+grant execute on DB.DBA.GET_HTML5MD_LOCALNAME to public;
+grant execute on DB.DBA.GET_HTML5MD_NAMESPACE to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_LABEL_NAME to public;
 grant execute on DB.DBA.GET_XBRL_NAME_BY_CIK to public;
 grant execute on DB.DBA.GET_XBRL_CANONICAL_DATATYPE to public;
@@ -1394,6 +1429,8 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_value_nam
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_ontology_domain', fix_identifier_case ('DB.DBA.GET_XBRL_ONTOLOGY_DOMAIN'));
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html5md_localname', 'DB.DBA.GET_HTML5MD_LOCALNAME');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html5md_namespace', 'DB.DBA.GET_HTML5MD_NAMESPACE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:replace1', 'DB.DBA.XSLT_REPLACE1');
@@ -3293,6 +3330,60 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_IDIOMAG (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare xd, xt, urls, url, tmp, id, id2, indicators any;
+    declare pos, i, l int;
+    declare exit handler for sqlstate '*'
+    {
+		DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+    };
+    urls := vector();
+    if (new_origin_uri like 'http://www.idiomag.com/artist/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.idiomag.com/artist/%s/%s', 0);
+		id := trim (tmp[0], '#');
+		id := replace (id, '_', '+');
+		if (id is null)
+			return 0;
+		url := sprintf ('http://www.idiomag.com/api/artist/info/xml?key=%s&artist=%s', _key, id);
+		urls := vector_concat(urls, vector(url));
+		url := sprintf ('http://www.idiomag.com/api/artist/playlist/xml?key=%s&artist=%s', _key, id);
+		urls := vector_concat(urls, vector(url));
+		url := sprintf ('http://www.idiomag.com/api/artist/photos/xml?key=%s&artist=%s', _key, id);
+		urls := vector_concat(urls, vector(url));
+		url := sprintf ('http://www.idiomag.com/api/artist/videos/xml?key=%s&artist=%s', _key, id);
+		urls := vector_concat(urls, vector(url));
+		url := sprintf ('http://www.idiomag.com/api/artist/articles/xml?key=%s&artist=%s', _key, id);
+		urls := vector_concat(urls, vector(url));
+	}
+	else if (new_origin_uri like 'http://www.idiomag.com/user/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.idiomag.com/user/%s/%s', 0);
+		id := trim (tmp[0], '#');
+		id := replace (id, '_', '+');
+		if (id is null)
+			return 0;
+		url := sprintf ('http://www.idiomag.com/api/artist/info/xml?key=%s&artist=%s', _key, id);
+	}
+	else
+	  return 0;
+
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	for (i := 0, l := length (urls); i < l; i := i + 1)
+	{
+		url := urls[i];
+		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+		xd := xtree_doc (tmp);
+		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/idiomag2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+		xd := serialize_to_UTF8_xml (xt);
+		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	}
+	return 1;
 }
 ;
 

@@ -334,7 +334,7 @@
     </xsl:template>
 
     <xsl:template match="product/shippingWeight">
-        <oplbb:shippingWeight> <!-- or cl:??? -->
+        <oplbb:shippingWeight> <!-- or cl -->
 	  <!-- For testing with standalone XSLT processor
 	  <gr:QuantitativeValueFloat rdf:about="{concat ($baseUri, '#', 'ShippingWeight')}">
 	  -->
