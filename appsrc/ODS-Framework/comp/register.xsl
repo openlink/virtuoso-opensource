@@ -209,7 +209,7 @@
           <div class="<?V case when self.uoid = 1 then 'login_tabactive' else 'login_tab' end ?>" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
           <?vsp
             if (length (self.reg_foafData))
-              http (sprintf ('<div class="%s" id="tabSSL" onclick="loginTabToggle(this);">FOAF+SSL</div>', case when self.uoid = 2 then 'login_tabactive' else 'login_tab' end));
+              http (sprintf ('<div class="%s" id="tabSSL" onclick="loginTabToggle(this);">WebID</div>', case when self.uoid = 2 then 'login_tabactive' else 'login_tab' end));
             if (not isnull(self.fb))
               http (sprintf ('<div class="%s" id="tabFB" onclick="loginTabToggle(this);">Facebook</div>', case when self.uoid = 3 then 'login_tabactive' else 'login_tab' end));
           ?>
@@ -434,7 +434,7 @@
             if ((self.uoid in (0, 2, 3)) or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.uoid))
 {
              declare u_name1, u_mail1, u_password1, u_password2, dom_reg varchar;
-              declare country, city, lat, lng, xt, xp any;
+              declare tmp, country, city, lat, lng, xt, xp any;
 
              declare exit handler for sqlstate '*'
    {
@@ -449,6 +449,11 @@
                 data := self.reg_foafData;
                 u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
                 u_mail1 := get_keyword ('mbox', data);
+                if (isnull (u_mail1))
+                {
+                  tmp := self.decodeName(get_certificate_info (2));
+                  u_mail1 := get_keyword ('emailAddress', tmp);
+                }
                u_password1 := uuid ();
                u_password2 := u_password1;
               }

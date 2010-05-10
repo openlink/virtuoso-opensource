@@ -3219,6 +3219,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
   declare "vInterest", "vTopic_interest", "vOnlineAccounts", "vSameAs" any;
   declare host, port, arr any;
+  declare info any;
 
   set_user_id ('dba');
   _identity := trim (foafIRI);
@@ -3253,8 +3254,6 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   set isolation='committed';
   if (sslFOAFCheck)
   {
-    declare info any;
-
     info := get_certificate_info (9);
     st := '00000';
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
@@ -3383,6 +3382,19 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "givenname" := data[N][5];
         "family_name" := data[N][6];
         "mbox" := data[N][7];
+        if (isnull ("mbox"))
+        {
+          declare L integer;
+          declare V, X any;
+  
+          X := vector ();
+          info := get_certificate_info (2);
+          V := split_and_decode (info, 0, '\0\0/');
+          for (L := 0; L < length (V); L := L + 1)
+            X := vector_concat (X, split_and_decode (V[L], 0, '\0\0='));
+            
+          "mbox" := get_keyword ('emailAddress', X);
+        }       
         "gender" := lcase (data[N][8]);
         "birthday" := data[N][9];
         "lat" := data[N][10];
