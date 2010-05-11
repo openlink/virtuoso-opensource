@@ -1717,7 +1717,8 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                           -- dbg_obj_princ ('1: ', st, msg);
                           if (__proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is not null and
                               __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
-			      st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+			      st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and 
+			      lower (regexp_replace (data[0][1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
                             {
                               declare resMode varchar;
 
