@@ -4529,6 +4529,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
     'get:refresh', -1,
     'get:error-recovery', 'signal',
     -- 'flags', flags,
+    'get:strategy', 'rdfa-only',
     'grabbed', grabbed );
   commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
