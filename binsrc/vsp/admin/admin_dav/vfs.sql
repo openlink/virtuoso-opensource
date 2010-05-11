@@ -1826,7 +1826,13 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
   url_ck := _url;
   if (_url like '%.gz')
     {
+      if (length (_content) > 2)
+	{
+	  declare magic varchar;
+	  magic := subseq (_content, 0, 2);
+	  if (magic[0] = 0hex1f and magic[1] = 0hex8b) 
       _content := gzip_uncompress (_content);
+	}
       url_ck := regexp_replace (_url, '\.gz\x24', '');  
     }
   if (url_ck like '%.rdf' or _c_type = 'application/rdf+xml')
