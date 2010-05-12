@@ -257,7 +257,7 @@ log_commit (lock_trx_t * lt)
   long bytes = strses_length (lt->lt_log);
   caddr_t *cbox;
   if (lt->lt_replicate == REPL_NO_LOG
-      || (LT_CL_PREPARED != lt->lt_status && !bytes))
+      || (LT_CL_PREPARED != lt->lt_status && !bytes) || cl_non_logged_write_mode)
     return LTE_OK;
   if (dbf_log_no_disk)
     return LTE_LOG_FAILED;
@@ -411,7 +411,7 @@ log_text_array_sync (lock_trx_t * lt, caddr_t box)
   int rc;
   dk_session_t * lt_log;
   dk_set_t blob_log;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return LTE_OK;
   ASSERT_IN_MTX (log_write_mtx);
   lt_log = lt->lt_log;
@@ -438,7 +438,7 @@ log_insert_sync (lock_trx_t * lt, row_delta_t * rd, int flag)
   int rc;
   dk_session_t * lt_log;
   dk_set_t blob_log;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return LTE_OK;
   mutex_enter (log_write_mtx);
   lt_log = lt->lt_log;
@@ -465,7 +465,7 @@ log_sequence_sync (lock_trx_t * lt, caddr_t seq, boxint count)
   int rc;
   dk_session_t * lt_log;
   dk_set_t blob_log;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return LTE_OK;
   mutex_enter (log_write_mtx);
   lt_log = lt->lt_log;
@@ -700,7 +700,7 @@ log_insert (lock_trx_t * lt, row_delta_t * rd, int flag)
   int inx;
   dk_session_t *log;
   lt_hi_row_change (lt, rd->rd_key->key_super_id, LOG_INSERT, NULL);
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   if (LOG_SYNC & flag)
     {
@@ -736,7 +736,7 @@ void
 log_delete (lock_trx_t * lt, row_delta_t * rd, int this_key_only)
 {
   lt_hi_row_change (lt, rd->rd_key->key_super_id, LOG_DELETE, NULL);
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
 
@@ -753,7 +753,7 @@ void
 log_text (lock_trx_t * lt, char *text)
 {
   caddr_t box;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
 
@@ -769,7 +769,7 @@ log_text (lock_trx_t * lt, char *text)
 void
 log_text_array (lock_trx_t * lt, caddr_t box)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_TEXT, lt->lt_log);
@@ -781,7 +781,7 @@ log_text_array (lock_trx_t * lt, caddr_t box)
 void
 log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_USER_TEXT, lt->lt_log);
@@ -796,7 +796,7 @@ log_text_array_as_user (user_t * usr, lock_trx_t * lt, caddr_t box)
 void
 log_sequence (lock_trx_t * lt, char *text, boxint count)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_SEQUENCE_64, lt->lt_log);
@@ -821,7 +821,7 @@ log_update (lock_trx_t * lt, row_delta_t * rd,
     update_node_t * upd, caddr_t * qst)
 {
   int inx;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   mutex_enter (lt->lt_log_mtx);
   session_buffered_write_char (LOG_UPDATE, lt->lt_log);
@@ -892,7 +892,7 @@ log_sc_change_2 (lock_trx_t * lt)
 void
 log_dd_change (lock_trx_t * lt, char * tb)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
 
   if (tb)
@@ -911,7 +911,7 @@ log_dd_change (lock_trx_t * lt, char * tb)
 void
 log_dd_type_change (lock_trx_t * lt, char * udt_name, caddr_t tree)
 {
-  if (!lt || lt->lt_replicate == REPL_NO_LOG)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
 
   if (tree)

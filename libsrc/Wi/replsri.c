@@ -559,7 +559,7 @@ log_repl_text_array (lock_trx_t * lt, char * srv, char * acct, caddr_t box)
   if (!srv)
     srv = db_name;
 
-  if (lt->lt_replicate == REPL_NO_LOG)
+  if (lt->lt_replicate == REPL_NO_LOG || cl_non_logged_write_mode)
     return;
   if (0 != strcmp(srv, db_name) && lt->lt_repl_is_raw)
     {
@@ -746,7 +746,7 @@ int
 lt_log_replication (lock_trx_t * lt)
 {
   int rc = LTE_OK;
-  if (REPL_NO_LOG == lt->lt_replicate)
+  if (REPL_NO_LOG == lt->lt_replicate || cl_non_logged_write_mode)
     return LTE_OK;
   DO_SET (repl_message_t *, rm, &lt->lt_repl_logs)
     {

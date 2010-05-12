@@ -89,5 +89,6 @@ int log_write_replication (caddr_t * header, char * string, long bytes);
 void tcpses_set_fd (session_t * ses, int fd);
 int tcpses_get_fd (session_t * ses);
 void dbs_sys_db_check (caddr_t file);
+extern int32 cl_non_logged_write_mode;
 
 #endif /* _WI_LOG_H */

@@ -549,7 +549,7 @@ log_registry_set (lock_trx_t * lt, char * k, const char * d)
   int llen = 0;
   char temp[2000];
 
-  if (!lt || lt->lt_replicate == REPL_NO_LOG || !d || !k || in_log_replay)
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || !d || !k || in_log_replay || cl_non_logged_write_mode)
     return;
 
   ASSERT_IN_TXN;

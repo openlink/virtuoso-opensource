@@ -1296,7 +1296,7 @@ blob_log_replace (it_cursor_t * it, blob_layout_t * bl)
 {
   dp_addr_t start = bl->bl_start;
   s_node_t *iter;
-  if (REPL_NO_LOG == it->itc_ltrx->lt_replicate)
+  if (REPL_NO_LOG == it->itc_ltrx->lt_replicate || cl_non_logged_write_mode)
     return;
   DO_SET_WRITABLE (blob_log_t *, blob_log, iter, &(it->itc_ltrx->lt_blob_log))
   {
@@ -1409,7 +1409,7 @@ blob_log_write (it_cursor_t * it, dp_addr_t start, dtp_t blob_dtp, dp_addr_t dir
 		oid_t col_id, char * table_name)
 {
   it->itc_has_blob_logged = 1;
-  if (REPL_NO_LOG == it->itc_ltrx->lt_replicate)
+  if (REPL_NO_LOG == it->itc_ltrx->lt_replicate || cl_non_logged_write_mode)
     return;
   else
     {
