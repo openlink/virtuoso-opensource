@@ -763,7 +763,12 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *call = retvals [retvals_count-1];
+      if (SPAR_ALIAS == SPART_TYPE (call))
+        call = call->_.alias.arg;
+      known_vars = call->_.funcall.argtrees;
+    }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
   all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);
