@@ -608,7 +608,7 @@ is_in_backup_set  (ol_backup_context_t * octx, dp_addr_t page)
 
   IN_DBS (octx->octx_dbs);
   dbs_locate_page_bit (octx->octx_dbs, &octx->octx_dbs->dbs_incbackup_set,
-		       page, &array, &array_page, &inx, &bit, V_EXT_OFFSET_INCB_SET);
+		       page, &array, &array_page, &inx, &bit, V_EXT_OFFSET_INCB_SET, 1);
   x = (array[inx] & (1 << bit));
   LEAVE_DBS (octx->octx_dbs);
   if (x)

@@ -3090,12 +3090,16 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 	  for (page_no = 2; page_no < storage->dbs_n_pages; page_no++)
 	    {
 	      dp_addr_t page;
-	      int inx, bit;
+	      int inx, bit, rc;
 	      uint32 *array, alloc;
 	      IN_DBS (storage);
-	      dbs_locate_page_bit (storage, &free_set, page_no, &array, &page, &inx, &bit, V_EXT_OFFSET_FREE_SET);
-	      alloc = (array[inx] & (1 << bit));
+	      rc = dbs_locate_page_bit (storage, &free_set, page_no, &array, &page, &inx, &bit, V_EXT_OFFSET_FREE_SET, 0);
 	      LEAVE_DBS (storage);
+	      /* it may happen that dbs_n_pages is out of sync from the free_set which we read from disk.
+		 thus in this case we just stop reading */
+	      if (!rc)
+		break;
+	      alloc = (array[inx] & (1 << bit));
 	      if (0 != alloc &&
 		  !gethash (DP_ADDR2VOID (page_no), storage->dbs_cpt_remap))
 		{

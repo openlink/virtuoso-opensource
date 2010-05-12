@@ -340,13 +340,13 @@ void dbs_locate_free_bit (dbe_storage_t * dbs, dp_addr_t near_dp,
 #define V_EXT_OFFSET_UNK_SET -1
 
 #define dbs_locate_free_bit(dbs, near_dp, array, page_no, inx, bit) \
-  dbs_locate_page_bit(dbs, &(dbs)->dbs_free_set, near_dp, array, page_no, inx, bit, V_EXT_OFFSET_FREE_SET)
+  dbs_locate_page_bit(dbs, &(dbs)->dbs_free_set, near_dp, array, page_no, inx, bit, V_EXT_OFFSET_FREE_SET, 1)
 #define dbs_locate_incbackup_bit(dbs, near_dp, array, page_no, inx, bit) \
-  dbs_locate_page_bit(dbs, &(dbs)->dbs_incbackup_set, near_dp, array, page_no, inx, bit, V_EXT_OFFSET_INCB_SET)
+  dbs_locate_page_bit(dbs, &(dbs)->dbs_incbackup_set, near_dp, array, page_no, inx, bit, V_EXT_OFFSET_INCB_SET, 1)
 
-void
+int
 dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** free_set, dp_addr_t near_dp,
-	uint32 **array, dp_addr_t *page_no, int *inx, int *bit, int offset);
+	uint32 **array, dp_addr_t *page_no, int *inx, int *bit, int offset, int assert_on_out_of_range);
 
 void pg_init_new_root (buffer_desc_t * buf);
 void itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n);

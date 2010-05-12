@@ -2030,9 +2030,9 @@ dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 }
 
 
-void
+int
 dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t near_dp,
-    uint32 **array, dp_addr_t *page_no, int *inx, int *bit, int offset)
+    uint32 **array, dp_addr_t *page_no, int *inx, int *bit, int offset, int assert_on_out_of_range)
 {
   dp_addr_t near_page;
   dp_addr_t n;
@@ -2046,7 +2046,10 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
     {
       if (!free_set->bd_next)
 	{
+	  if (assert_on_out_of_range)
 	  GPF_T1 ("looking for a dp allocation bit that is out of range");
+	  else
+	    return 0;
 	}
       free_set = free_set->bd_next;
     }
@@ -2054,6 +2057,7 @@ dbs_locate_page_bit (dbe_storage_t* dbs, buffer_desc_t** ppage_set, dp_addr_t ne
   *array = (dp_addr_t *) (free_set->bd_buffer + DP_DATA);
   *inx = (int) ((near_dp % BITS_ON_PAGE) / BITS_IN_LONG);
   *bit = (int) ((near_dp % BITS_ON_PAGE) % BITS_IN_LONG);
+  return 1;
 }
 
 
