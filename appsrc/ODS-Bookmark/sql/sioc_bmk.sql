@@ -117,8 +117,8 @@ create procedure fill_ods_bookmark_sioc2 (
       deadl := deadl - 1;
       goto l0;
     };
-    l0:
 
+  l0:
     for (select WAI_NAME,
                 WAM_USER,
                 WAI_IS_PUBLIC,
@@ -165,41 +165,6 @@ create procedure fill_ods_bookmark_sioc2 (
       }
   }
   commit work;
-
-		id := -1;
-		deadl := 3;
-		cnt := 0;
-		declare exit handler for sqlstate '40001'
-		{
-			if (deadl <= 0)
-				resignal;
-			rollback work;
-			deadl := deadl - 1;
-			goto l1;
-		};
-	l1:
-		for (select WAI_ID,
-                WAI_IS_PUBLIC,
-								WAI_NAME
-					 from DB.DBA.WA_INSTANCE
-          where ((WAI_IS_PUBLIC > 0 and _wai_name is null) or WAI_NAME = _wai_name)
-					  and WAI_TYPE_NAME = 'Bookmark'
-					  and WAI_ID > id
-					order by WAI_ID) do
-		{
-      forum_iri := SIOC..bmk_iri (WAI_NAME);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), forum_iri);
-      iri := sprintf ('http://%s%s/services/bookmark', get_cname(), get_base_path ());
-      ods_sioc_service (graph_iri, iri, forum_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
-
-			cnt := cnt + 1;
-			if (mod (cnt, 500) = 0)
-			{
-				commit work;
-				id := WAI_ID;
-			}
-    }
-		commit work;
         }
     }
 ;
@@ -225,8 +190,8 @@ create procedure clean_ods_bookmark_sioc2 (
       deadl := deadl - 1;
       goto l0;
     };
-  l0:
 
+  l0:
     for (select WAI_NAME,
                 WAM_USER,
                 WAI_ID,
@@ -257,6 +222,22 @@ create procedure clean_ods_bookmark_sioc2 (
     }
     commit work;
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ods_bookmark_services (
+  in graph_iri varchar, 
+  in forum_iri varchar,
+  in wai_id varchar := null,
+  in wai_name varchar := null)
+{
+  declare svc_iri varchar;
+  
+  -- dbg_obj_print (now (), 'ods_bookmark_services');
+  svc_iri := sprintf ('http://%s%s/services/bookmark', get_cname(), get_base_path ());
+  ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
 }
 ;
 

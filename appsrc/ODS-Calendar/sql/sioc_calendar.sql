@@ -270,6 +270,22 @@ create procedure fill_ods_calendar_sioc (
 
 -------------------------------------------------------------------------------
 --
+create procedure ods_calendar_services (
+  in graph_iri varchar, 
+  in forum_iri varchar,
+  in wai_id varchar := null,
+  in wai_name varchar := null)
+{
+  declare svc_iri varchar;
+  
+  -- dbg_obj_print (now (), 'ods_calendar_services');
+  svc_iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', get_cname(), get_base_path (), CAL.WA.domain_owner_name (wai_id), wai_name);
+  ods_sioc_service (graph_iri, svc_iri, forum_iri, null, null, null, svc_iri, 'Atom');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure event_insert (
   in graph_iri varchar,
   in c_iri varchar,

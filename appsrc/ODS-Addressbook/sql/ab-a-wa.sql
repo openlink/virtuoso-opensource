@@ -265,14 +265,6 @@ create method wa_new_inst (in login varchar) for wa_AddressBook
   AB.WA.domain_update (iWaiID, iUserID);
   retValue := (self as web_app).wa_new_inst(login);
 
-  --  SIOC service
-  declare  graph_iri, iri, ab_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s%s/services/addressbook', SIOC..get_cname(), SIOC..get_base_path ());
-  ab_iri := SIOC..addressbook_iri (self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, ab_iri, null, null, null, iri, 'SOAP');
-
   return retValue;
 }
 ;

@@ -173,23 +173,10 @@ create constructor method wa_photo (inout stream any) for wa_photo
 };
 
 -------------------------------------------------------------------------------
-create procedure PHOTO.WA.photo_sioc_services(in inst_name varchar)
-{
-  --  SIOC service
-  declare  graph_iri, iri, photo_iri varchar;
-  graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s/photos/SOAP', SIOC..get_cname());
-  photo_iri := SIOC..photo_iri (inst_name);
-  SIOC..ods_sioc_service (graph_iri, iri, photo_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
-}
-;
-
--------------------------------------------------------------------------------
 create method wa_new_inst (in login varchar) for wa_photo
 {
-  declare
-    iUserID,
-    iWaiID int;
+  declare iUserID, iWaiID integer;
+  declare retValue any;
 
   if (self.wa_member_model is null)
     self.wa_member_model := 0;
@@ -199,15 +186,8 @@ create method wa_new_inst (in login varchar) for wa_photo
 
   select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
 
- -- iUserID := (select U_ID from SYS_USERS where U_NAME = login);
-
   PHOTO.WA.photo_init_user_data(iWaiID,self.wa_name,login);
-
-  declare retValue any;
   retValue := (self as web_app).wa_new_inst(login);
-
-  if (coalesce((select WAI_IS_PUBLIC from WA_INSTANCE where WAI_NAME = self.wa_name),0) = 1)
-    PHOTO.WA.photo_sioc_services (self.wa_name);
 
   return retValue;
 };
@@ -215,10 +195,8 @@ create method wa_new_inst (in login varchar) for wa_photo
 -------------------------------------------------------------------------------
 create method wa_update_instance (in oldValues any, in newValues any) for wa_photo
 {
-  if (newValues[1] = 1)
-    PHOTO.WA.photo_sioc_services (newValues[0]);
-
   declare domainID, ownerID integer;
+  
   domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
   ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
 

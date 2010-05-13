@@ -258,16 +258,7 @@ create method wa_new_inst (in login varchar) for wa_bookmark
              );
 
   BMK.WA.domain_update (iWaiID, iUserID);
-
   retValue := (self as web_app).wa_new_inst(login);
-
-  --  SIOC service
-  declare  graph_iri, iri, bmk_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s%s/services/bookmark', SIOC..get_cname(), SIOC..get_base_path ());
-  bmk_iri := SIOC..bmk_iri (self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, bmk_iri, null, null, null, iri, 'SOAP');
 
   return retValue;
 }
