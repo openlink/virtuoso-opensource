@@ -1059,8 +1059,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   pos := strrchr (tmp, '/');
   if (pos is not null)
     rel_uri := subseq (path, pos + 1);
-  if (length (rel_uri))
-    rel_uri := aref (split_and_decode (rel_uri), 0);
+  --if (length (rel_uri))
+  --  rel_uri := aref (split_and_decode (rel_uri), 0);
   mime := http_request_header_full (lines, 'Accept', '*/*'); -- /* the accept header */
   if (registry_get ('__debug_url_rewrite') in ('1', '2'))
     dbg_printf ('Accept: [%s]', mime);
@@ -1127,16 +1127,16 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   declare s any;
 	   best_q := curr;
 	   best_ct := VM_TYPE;
-	   if (VM_URI like '/%')
 	     best_variant := variant;
-	   else
-	     {
-	       s := string_output ();
-	       http_escape (variant, 7, s, 1, 1);
-	       --http_dav_url (variant, null, s);
-	       s := string_output_string (s);
-	       best_variant := s;
-	     }
+	   --if (VM_URI like '/%')
+	   --  best_variant := variant;
+	   --else
+	   --  {
+	   --    s := string_output ();
+	   --    http_escape (variant, 7, s, 1, 1);
+	   --    s := string_output_string (s);
+	   --    best_variant := s;
+	   --  }
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;
 	 }
