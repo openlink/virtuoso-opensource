@@ -34,10 +34,24 @@ create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
 }
 ;
 
+create procedure DB.DBA.FOAF_MOD (in m any)
+{
+  declare modulus any;
+  modulus := lower (regexp_replace (m, '[^A-Z0-9a-f]', '', 1, null));	      
+  --dbg_obj_print_vars (modulus);
+  return modulus;
+}
+;
 
 create procedure FOAF_SSL_AUTH (in realm varchar)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr any;
+  return FOAF_SSL_AUTH_GEN (realm, 0);
+}
+;
+
+create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
+{
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus any;
   declare agent varchar;
   declare acc int;
   acc := 0;
@@ -77,11 +91,12 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
   again_check:;
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
     {
       declare arr, uid any;
-      whenever not found goto err_ret;
-      select FS_UID into uid from FOAF_SSL_ACL where FS_URI = agent;
+      uid := coalesce ((select FS_UID from FOAF_SSL_ACL where FS_URI = agent), 'nobody');
+      if ('nobody' = uid and allow_nobody = 0)
+	goto err_ret;
       connection_set ('SPARQLUserId', uid);
       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'foaf+ssl', uid, now ());
       exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);

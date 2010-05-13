@@ -3259,7 +3259,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
-    if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2])))
+    if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2])))
       goto _exit;
   }
   if (sslLoginCheck)
