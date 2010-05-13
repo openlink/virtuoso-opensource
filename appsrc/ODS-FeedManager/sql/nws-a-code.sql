@@ -1261,6 +1261,36 @@ again:
 ;
 
 -------------------------------------------------------------------------------
+-- /* callback */
+create procedure ENEWS.WA.feed_callback (in url varchar, in content varchar) 
+{
+  declare xt any;
+  declare items any;
+  declare N, L, id integer;
+
+  id := (select EF_ID from ENEWS.WA.FEED where EF_URI = url);
+  xt := ENEWS.WA.string2xml (content);
+  if (xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt) is not null)
+  {
+    -- RSS formats
+    items := xpath_eval ('/rss/channel/item|/rss/item|/RDF/item|/Channel/items/item', xt, 0);
+    L := length (items);
+    for (N := 0; N < L; N := N + 1)
+      ENEWS.WA.process_rss_item(xml_cut(items[N]), id);
+  }
+  else if (xpath_eval ('/feed/entry', xt) is not null)
+  {
+    -- Atom format
+    items := xpath_eval ('/feed/entry', xt, 0);
+    L := length (items);
+    for (N := 0; N < L; N := N + 1)
+      ENEWS.WA.process_atom_item(xml_cut(items[N]), id);
+  }
+  return;
+}
+;
+
+-------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.process_rss_item(
   inout xt any,
