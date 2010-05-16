@@ -178,3 +178,4 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
 ;
 
 grant execute on DB.DBA.IRI_AUTOCOMPLETE to PROXY;
+grant execute on DB.DBA.IR_SRV to "PROXY";
