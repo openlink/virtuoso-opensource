@@ -96,6 +96,7 @@ static caddr_t *local_interfaces;
 caddr_t dns_host_name;
 caddr_t temp_aspx_dir;
 char *www_maintenance_page = NULL;
+char *http_proxy_address = NULL;
 
 static id_hash_t * http_acls = NULL; /* ACL lists */
 static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
@@ -3762,6 +3763,18 @@ http_client_ip (session_t * ses)
   return (box_dv_short_string (buf));
 }
 
+void
+http_set_client_address (ws_connection_t * ws)
+{
+  caddr_t xfwd;
+  if (!http_proxy_address || (ws && ws->ws_client_ip && strcmp (ws->ws_client_ip, http_proxy_address)))
+    return;
+  if (ws && ws->ws_lines  && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
+    {
+      dk_free_box (ws->ws_client_ip);
+      ws->ws_client_ip = xfwd;
+    }
+}
 
 void
 ws_read_req (ws_connection_t * ws)
@@ -3853,6 +3866,7 @@ ws_read_req (ws_connection_t * ws)
 		}
 	    }
 	  ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
+	  http_set_client_address (ws);
 	  ws_path_and_params (ws);
 	  if (ws_url_rewrite (ws))
 	    goto end_req;
@@ -4757,6 +4771,21 @@ bif_http_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_free_tree (qi->qi_client->cli_ws->ws_header); /*we must clear old value*/
   qi->qi_client->cli_ws->ws_header = box_copy (new_hdr);
   return 0;
+}
+
+/* implements a transparent Host header access */
+caddr_t
+bif_http_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t deflt = ((BOX_ELEMENTS (args) > 0) ? bif_arg (qst, args, 0, "http_host") : NULL);
+  caddr_t host = NULL;
+  ws_connection_t * ws = qi->qi_client->cli_ws;
+  if (ws && ws->ws_lines && NULL != (host = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
+    host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
+  if (!host)
+    host = box_copy (deflt);
+  return host;
 }
 
 caddr_t
@@ -9810,6 +9839,7 @@ http_init_part_one ()
   bif_define ("http_rewrite", bif_http_rewrite);
   bif_define ("http_enable_gz", bif_http_enable_gz);
   bif_define ("http_header", bif_http_header);
+  bif_define ("http_host", bif_http_host);
   bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
   bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
   bif_define ("http", bif_http_result);

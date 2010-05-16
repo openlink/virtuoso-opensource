@@ -231,6 +231,7 @@ extern int32 http_thread_sz;
 extern char * dav_root;
 extern char * http_server_id_string;
 extern char * www_maintenance_page;
+extern char * http_proxy_address;
 
 void http_timeout_keep_alives (int must_kill);
 void ws_keep_alive_ready (dk_session_t * ses);
