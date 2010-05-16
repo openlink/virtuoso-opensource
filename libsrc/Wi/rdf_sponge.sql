@@ -88,7 +88,8 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:refresh', get_keyword_ucase ('get:refresh', env),
         'get:method', get_method,
         'get:destination', final_dest,
-        'get:group-destination', final_gdest
+        'get:group-destination', final_gdest,
+        'get:strategy', get_keyword_ucase ('get:strategy', env)
 	 );
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env))(url, opts);
@@ -1073,7 +1074,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode integer;
+  declare saved_log_mode, only_rdfa integer;
   aq := null;
   ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
   if (length (ps))
@@ -1086,6 +1087,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
   groupdest := get_keyword_ucase ('get:group-destination', options);
+  if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
+    only_rdfa := 1;
+  else
+    only_rdfa := 0;
   if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
     signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
@@ -1101,7 +1106,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
       if (groupdest is not null)
         DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
-      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
@@ -1126,8 +1131,20 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri), 255);
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
-      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+      log_enable (saved_log_mode, 1);
+      if (aq is not null)
+        aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+      return 1;
+    }
+  else if (only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null)
+    {
+      whenever sqlstate '*' goto load_grddl;
+      log_enable (2, 1);
+      DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, coalesce (dest, graph_iri), 2);
+      if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
+	DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, groupdest, 2);
       log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
