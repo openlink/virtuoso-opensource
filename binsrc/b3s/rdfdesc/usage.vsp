@@ -116,22 +116,7 @@
 </head>
 <body class="usage_page">
   <div id="HD">
-    <div id="hd_l">
-      <h1>
-        <div id="logo">
-          <a href="/fct/facet.vsp">
-            <img src="/fct/images/openlink_site_logo.png" 
-                 alt="OpenLink Software"/>
-          </a>
-        </div>
-      </h1>
-    </div> <!-- hd_l -->
-    <div id="hd_r">
-      <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso" 
-         title="OpenLink Virtuoso">
-        <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
-      </a>
-    </div> <!-- hd_r -->
+    <?vsp fct_page_head (); ?>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
@@ -274,7 +259,9 @@
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" border="0"></a>
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]"></a>
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/fct/images/od_80x15_red_green.png" border="0"></a>
-	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="/fct/images/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
+      <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="/fct/images/creativecommons.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. <br/>
+      <?vsp fct_virt_info (); ?><br /> 
+      <span class="copyright">Copyright &copy; 2010 OpenLink Software</span>
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
  </body>

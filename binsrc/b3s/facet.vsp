@@ -4,7 +4,7 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>Entity Search, Find, and Explore</title>
+<title>Precision Search &amp; Find</title>
 <link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
 
 <?vsp
@@ -32,23 +32,7 @@
 <body>
 <div id="PG">
 <div id="HD">
-  <div id="hd_l">
-    <h1>
-      <div id="logo">
-        <a href="/fct/facet.vsp">
-          <img src="/fct/images/openlink_site_logo.png" 
-               alt="OpenLink Software"/>
-  </a>
-      </div>
-    </h1>
-    <div id="homelink"></div>
-  </div> <!-- hd_l -->
-  <div id="hd_r">
-    <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso" 
-       title="OpenLink Virtuoso">
-      <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
-    </a>
-  </div> <!-- hd_r -->	
+  <?vsp fct_page_head (); ?>  
   <ul id="main_menu">
     <?vsp if (sid is not null) { ?>
       <!--li class="sel"><a href="<?= b3s_render_fct_link() ?>" class="sel">Facets</a></li-->
@@ -171,6 +155,7 @@ footer:;
   Faceted Search &amp; Find service<br/>
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
   <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a><br/>
+  <?vsp fct_virt_info (); ?><br /> 
   <span class="copyright">Copyright &copy; 2010 OpenLink Software</span>
   <div id="FT_L"></div>
   <div id="FT_R"></div>

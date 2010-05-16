@@ -975,7 +975,7 @@ fct_new ()
     <div id="TAB_CTR">
     </div> <!-- #TAB_CTR -->
     <div id="TAB_PAGE_TXT" class="tab_page" style="display: none">
-      <h2>Entity Search, Find, and Explore</h2>
+      <h2>Precision Search &amp; Find</h2>
       <form method="post"
             action="/fct/facet.vsp?cmd=text&sid='); 
   http_value ( sid ); 
@@ -992,7 +992,7 @@ fct_new ()
       </form>
     </div> <!-- #TAB_PAGE_TXT -->
     <div id="TAB_PAGE_URILBL" class="tab_page" style="display: none">
-      <h2>Entity Search, Find, and Explore</h2>
+      <h2>Precision Search &amp; Find</h2>
       <form method="get" action="/describe/" id="new_lbl_fm">
         <input type="hidden" name="url" id="new_lbl_val"/>
 	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
@@ -1017,7 +1017,7 @@ fct_new ()
       '); } http ('
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
-      <h2>Entity Search, Find, and Explore</h2>
+      <h2>Precision Search &amp; Find</h2>
       <form method="get" action="/describe/" id="new_uri_fm">
         <input type="hidden" name="url" id="new_uri_val"/>
 	<input type="hidden" name="sid" value="'); http_value ( sid ); http ('"/>
@@ -1410,5 +1410,38 @@ exec:;
   do_new_ses:
   http (sprintf ('<div class="ses_info">Session id %d lost. New search started</div>', sid));
   fct_new ();
+}
+;
+
+create procedure fct_virt_info ()
+{
+  http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); 
+  http (sys_stat ('st_dbms_ver')); 
+  http (', on ');
+  http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ())); 
+  http (case when sys_stat ('cl_run_local_only') = 1 then 'Standard Edition' else 'Cluster Edition' end);
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end); 
+}
+;
+
+-- /* page header */
+create procedure fct_page_head ()
+{
+  http ('<div id="hd_l">
+    <h1>
+      <div id="logo">
+        <a href="/fct/facet.vsp">
+	   <img src="/fct/images/openlink_site_logo.png" alt="OpenLink Software"/>
+        </a>
+      </div>
+    </h1>
+    <div id="homelink"></div>
+  </div> <!-- hd_l -->
+  <div id="hd_r">
+    <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso"
+    title="OpenLink Virtuoso">
+    <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
+    </a>
+  </div> <!-- hd_r -->');
 }
 ;
