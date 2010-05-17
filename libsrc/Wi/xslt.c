@@ -3702,8 +3702,8 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       boxint old_int;
       old_int = unbox (old_val_ptr[0]);
       if (0 >= old_int)
-        sqlr_new_error ("42000", "SR628",
-          "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
+        sqlr_new_error ("42000", "SR631",
+          "dict_dec_or_remove() can not decrement a value if it is less than or equal to zero" );
       dk_free_tree (old_val_ptr[0]);
       res = old_int - dec_val;
       old_val_ptr[0] = box_num (res);
@@ -3751,7 +3751,7 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ht->ht_mutex)
         mutex_leave (ht->ht_mutex);
-      sqlr_new_error ("22023", "SR...", "dict_zap() can not zap a dictionary that is used in amy places, if second parameter is 0 or 1");
+      sqlr_new_error ("22023", "SR632", "dict_zap() can not zap a dictionary that is used in many places, if second parameter is 0 or 1");
     }
   while (hit_next (&hit, (char **)&keyp, (char **)&valp))
     {
