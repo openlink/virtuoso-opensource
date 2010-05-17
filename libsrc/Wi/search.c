@@ -528,13 +528,15 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short o
   dtp_t dv1_flags = 0, dv2_flags = 0;
   if (DV_BOX_FLAGS == dtp1)
     {
-      dv1_flags = dv1[1];
-      dv1 += 2;
+      dv1_flags = dv1[4];
+      dv1 += 5;
+      dtp1 = *dv1;
     }
   if (DV_BOX_FLAGS == dtp2)
     {
-      dv2_flags = dv2[1];
-      dv2 += 2;
+      dv2_flags = dv2[4];
+      dv2 += 5;
+      dtp2 = *dv2;
     }
   if (dtp1 == dtp2)
     {
