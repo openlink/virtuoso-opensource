@@ -5308,6 +5308,30 @@ create procedure AB.WA.search_sql (
 
 -----------------------------------------------------------------------------------------
 --
+create procedure AB.WA.category_insert (
+  in domain_id integer,
+  in name varchar)
+{
+  declare id integer;
+
+  name := trim (name);
+  if (is_empty_or_null (name))
+    return null;
+
+  id := (select C_ID from AB.WA.CATEGORIES where C_DOMAIN_ID = domain_id and C_NAME = name);
+  if (not is_empty_or_null (id))
+    return null;
+
+  id := sequence_next ('AB.WA.category_id');
+  insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME, C_CREATED, C_UPDATED)
+    values (id, domain_id, name, now (), now ());
+
+  return id;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure AB.WA.category_update (
   in domain_id integer,
   in name varchar)
@@ -8124,4 +8148,696 @@ create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
 ;
 
 grant execute on AB.WA.yahoocontacts to SOAP_ADDRESSBOOK
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Google Conatacts API
+--
+----------------------------------------------------------------------------------------
+create procedure AB.WA.googleOutput (
+  in data any,
+  in options any)
+{
+  if (get_keyword ('out', options, 'atom') = 'atom')
+  {
+    http (AB.WA.obj2xml (
+                         data,
+                         10,
+                         null,
+                         vector ('',           'http://www.w3.org/2005/Atom',
+                                 'openSearch', 'http://a9.com/-/spec/opensearch/1.1/',
+                                 'gContact',   'http://schemas.google.com/contact/2008',
+                                 'batch',      'http://schemas.google.com/gdata/batch',
+                                 'gd',         'http://schemas.google.com/g/2005'
+                                ),
+                         '@')
+                        );
+  }
+  else if (get_keyword ('out', options) = 'json')
+  {
+    http (ODS..obj2json (
+                         data,
+                         10,
+                         vector ('openSearch', 'http://a9.com/-/spec/opensearch/1.1/',
+                                 'gContact',   'http://schemas.google.com/contact/2008',
+                                 'batch',      'http://schemas.google.com/gdata/batch',
+                                 'gd',         'http://schemas.google.com/g/2005'
+                                ),
+                         '@')
+                        );
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleMap ()
+{
+  return vector (
+                 'id',                                        vector ('field', 'P_ID'),
+                 '@gd:etag',                                  vector ('field', 'P_UID', 'xpath', '@gd:etag'),
+                 'published',                                 vector ('field', 'P_CREATED', 'function', 'select date_iso8601 (dt_set_tz (?, 0))'),
+                 'updated',                                   vector ('field', 'P_UPDATED', 'function', 'select date_iso8601 (dt_set_tz (?, 0))'),
+                 'title',                                     vector ('field', 'P_NAME'),
+                 'gd:name/gd:givenName',                      vector ('field', 'P_FIRST_NAME'),
+                 'gd:name/gd:familyName',                     vector ('field', 'P_LAST_NAME'),
+                 'gd:name/gd:fullName',                       vector ('field', 'P_FULL_NAME'),
+                 'gd:email',                                  vector ('field', 'P_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#other"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#other', '@primary', 'true')), 'value', '@address'),
+                 'gd:email[2]',                               vector ('field', 'P_H_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home')), 'value', '@address'),
+                 'gd:email[3]',                               vector ('field', 'P_B_MAIL', 'xpath', 'gd:email[@rel = "http://schemas.google.com/g/2005#work"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work')), 'value', '@address'),
+                 'gd:phoneNumber',                            vector ('field', 'P_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#other"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#other', '@primary', 'true'))),
+                 'gd:phoneNumber[2]',                         vector ('field', 'P_H_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#home"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home'))),
+                 'gd:phoneNumber[3]',                         vector ('field', 'P_B_PHONE', 'xpath', 'gd:phoneNumber[@rel = "http://schemas.google.com/g/2005#work"]', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:im',                                     vector ('field', 'P_ICQ', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#ICQ" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#ICQ')), 'value', '@address'),
+                 'gd:im[2]',                                  vector ('field', 'P_SKYPE', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#SKYPE" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#SKYPE')), 'value', '@address'),
+                 'gd:im[3]',                                  vector ('field', 'P_AIM', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#AIM" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#AIM')), 'value', '@address'),
+                 'gd:im[4]',                                  vector ('field', 'P_YAHOO', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#YAHOO" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#YAHOO')), 'value', '@address'),
+                 'gd:im[5]',                                  vector ('field', 'P_MSN', 'xpath', 'gd:im[@protocol = "http://schemas.google.com/g/2005#MSN" and @rel = "http://schemas.google.com/g/2005#home"]/@address', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@protocol', 'http://schemas.google.com/g/2005#MSN')), 'value', '@address'),
+                 'gd:structuredPostalAddress/gd:city',        vector ('field', 'P_H_CITY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:city', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:street',      vector ('field', 'P_H_ADDRESS1', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:street', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:region',      vector ('field', 'P_H_STATE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:region', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:postcode',    vector ('field', 'P_H_CODE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:postcode', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:country',     vector ('field', 'P_H_COUNTRY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#home"]/gd:country', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#home', '@primary', 'true'))),
+                 'gd:structuredPostalAddress/gd:city[2]',     vector ('field', 'P_B_CITY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:city', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:street[2]',   vector ('field', 'P_B_ADDRESS1', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:street', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:region[2]',   vector ('field', 'P_B_STATE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:region', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:postcode[2]', vector ('field', 'P_B_CODE', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:postcode', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:structuredPostalAddress/gd:country[2]',  vector ('field', 'P_B_COUNTRY', 'xpath', 'gd:structuredPostalAddress[@rel = "http://schemas.google.com/g/2005#work"]/gd:country', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work'))),
+                 'gd:organization/gd:orgName',                vector ('field', 'P_B_ORGANIZATION', 'template', vector_concat (AB.WA.apiObject (), vector ('@rel', 'http://schemas.google.com/g/2005#work', '@label', 'Work', '@primary', 'true')))
+                );
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactField (
+  in field varchar,
+  in map varchar,
+  in fields any := null)
+{
+  if (not isnull (fields) and not AB.WA.vector_contains (fields, field))
+    return null;
+
+  return get_keyword (field, map);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactFieldIndex (
+  in field varchar,
+  in meta any)
+{
+  declare N integer;
+
+  for (N := 0; N < length (meta); N := N + 1)
+    if (field = meta[N])
+      return N;
+
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactValue (
+  in field varchar,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N integer;
+  declare tmp, fieldDef any;
+  declare abValue, abField, abFieldIndex any;
+
+  abValue := null;
+  fieldDef := AB.WA.googleContactField (field, map);
+  if (isnull (fieldDef))
+    goto _skip;
+  abField := get_keyword ('field', fieldDef);
+  if (isnull (abField))
+    goto _skip;
+
+  abValue := AB.WA.googleContactValue2 (abField, data, meta);
+  if (isnull (abValue))
+    goto _skip;
+  if (not isnull (get_keyword ('function', fieldDef)))
+  {
+    tmp := get_keyword ('function', fieldDef);
+    if (not isnull (tmp))
+    {
+      tmp := AB.WA.exec (tmp, vector (abValue));
+      if (length (tmp))
+        abValue := tmp[0][0];
+    }
+  }
+
+_skip:;
+  return abValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactValue2 (
+  in abField varchar,
+  inout data any,
+  inout meta any)
+{
+  declare abFieldIndex any;
+
+  abFieldIndex := AB.WA.googleContactFieldIndex (abField, meta);
+  if (not isnull (abFieldIndex))
+    return data[abFieldIndex];
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactProperty (
+  in property varchar,
+  in oEntry any,
+  in template any := null,
+  in mode integer := 1)
+{
+  declare N, M integer;
+
+  for (N := 0; N < length (oEntry); N := N + 2)
+  {
+    if (oEntry[N] = property)
+    {
+      if (not (isnull (template) or (isstring (oEntry[N+1]) and not isarray (oEntry[N+1]))))
+      {
+        for (M := 0; M < length (template); M := M + 2)
+        {
+          if (get_keyword (template[M], oEntry[N+1]) <> template[M+1])
+            goto _skip;
+        }
+      }
+      if (mode)
+        return oEntry[N+1];
+      return N+1;
+    }
+  _skip:;
+  }
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleFeedObject (
+  inout oFeed any,
+  inout domain_id integer,
+  inout options any)
+{
+  declare owner_id, V any;
+
+  oFeed := vector_concat (oFeed, vector ('id', AB.WA.domain_name (domain_id)));
+  oFeed := vector_concat (oFeed, vector ('title', AB.WA.domain_description (domain_id)));
+  V := vector_concat (AB.WA.apiObject(), vector ('@scheme', 'http://schemas.google.com/g/2005#kind', '@term', 'http://schemas.google.com/contact/2008#group'));
+  oFeed := vector_concat (oFeed, vector ('category', V));
+  owner_id := AB.WA.domain_owner_id (domain_id);
+  V := vector_concat (AB.WA.apiObject(), vector ('name', AB.WA.account_name (owner_id), 'email', AB.WA.account_mail (owner_id)));
+  oFeed := vector_concat (oFeed, vector ('author', V));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:startIndex', get_keyword ('_start', options)));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:itemsPerPage', get_keyword ('_count', options)));
+  oFeed := vector_concat (oFeed, vector ('@openSearch:totalResults', get_keyword ('_total', options)));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleContactObject (
+  in fields any,
+  inout data any,
+  inout meta any,
+  inout map any)
+{
+  declare N, L integer;
+  declare oEntry any;
+  declare V, T any;
+  declare abValue, field, fieldDef, template any;
+
+  oEntry := AB.WA.apiObject ();
+  fields := split_and_decode (fields, 0, '\0\0,');
+  for (N := 0; N < length (fields); N := N + 1)
+  {
+    field := fields[N];
+    abValue := AB.WA.googleContactValue (field, data, meta, map);
+    if (is_empty_or_null (abValue))
+      goto _skip;
+
+    fieldDef := AB.WA.googleContactField (field, map);
+    L := strchr (field, '[');
+    if (not isnull (L))
+      field := subseq (field, 0, L);
+
+    if (isnull (strchr (field, '/')))
+    {
+      template := get_keyword ('template', fieldDef);
+      if (isnull (template))
+      {
+        oEntry := vector_concat (oEntry, vector (field, abValue));
+      } else {
+        V := get_keyword ('value', fieldDef, '@value');
+        template := vector_concat (template, vector (V, abValue));
+        oEntry := vector_concat (oEntry, vector (field, template));
+      }
+    }
+    else
+    {
+      template := get_keyword ('template', fieldDef, AB.WA.apiObject ());
+      V := split_and_decode (field, 0, '\0\0/');
+      if (length (V) <> 2)
+        goto _skip;
+
+      if (isnull (AB.WA.googleContactProperty (V[0], oEntry, template)))
+        oEntry := vector_concat (oEntry, vector (V[0], template));
+
+      T := AB.WA.googleContactProperty (V[0], oEntry, template);
+      T := AB.WA.set_keyword (V[1], T, abValue);
+      L := AB.WA.googleContactProperty (V[0], oEntry, template, 0);
+      oEntry[L] := T;
+    }
+
+  _skip:;
+  }
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleGroupObject (
+  inout data any,
+  inout meta any)
+{
+  declare N, tmp, oEntry any;
+
+  oEntry := AB.WA.apiObject ();
+
+  N := AB.WA.vector_index (meta, 'C_ID');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('id', data[N]));
+  N := AB.WA.vector_index (meta, 'C_NAME');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('title', data[N]));
+  N := AB.WA.vector_index (meta, 'C_NAME');
+  if (not isnull (N) and not isnull (data[N]))
+    oEntry := vector_concat (oEntry, vector ('content', data[N]));
+
+  if (length (oEntry) > 2)
+    return oEntry;
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googleSQL (
+  in sql varchar,
+  in params any,
+  inout options any,
+  inout data any,
+  inout meta any)
+{
+  declare N integer;
+  declare st, msg, _data, _meta, _start, _count, _total, _min any;
+
+  st := '00000';
+  if (get_keyword ('updated-min', options) <> '')
+  {
+    sql := sql || ' and P_UPDATED > ?';
+    params := vector_concat (params, get_keyword ('updated-min', options));
+  }
+  if (get_keyword ('orderby', options) <> '')
+  {
+    sql := sql || ' order by P_UPDATED';
+    if (get_keyword ('sortorder', options) = 'descending')
+      sql := sql || ' desc';
+  }
+  _start := atoi (get_keyword ('start-index', options, '0'));
+  _count := atoi (get_keyword ('max-results', options, '25'));
+  if (_count = 0)
+    _count := 25;
+  _min := _start + _count;
+  sql := replace (sql, '%TOP%', cast (_min as varchar));
+
+  exec (sql, st, msg, params, 0, _meta, _data);
+  -- dbg_obj_print('', st, msg);
+  if ('00000' <> st)
+    return 0;
+
+  _total := 0;
+  data := vector ();
+  if (_min > length (_data))
+    _min := length (_data);
+  for (N := _start; N < _min; N := N + 1)
+  {
+    data := vector_concat (data, vector (_data[N]));
+    _total := _total + 1;
+  }
+  meta := AB.WA.simplifyMeta (_meta);
+  options := vector_concat (options, vector ('_start', _start));
+  options := vector_concat (options, vector ('_count', _count));
+  options := vector_concat (options, vector ('_total', _total));
+
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googlePathAnalyze (
+  in apiParams varchar,
+  in apiPath varchar,
+  in apiMethod varchar,
+  inout apiMap any,
+  inout apiCommand varchar,
+  inout apiOptions any)
+{
+  apiMap := AB.WA.googleMap ();
+  apiOptions := vector ();
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.googlecontacts () __SOAP_HTTP 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '__201')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 201 Creates');
+    }
+    else if (__SQL_STATE = '__204')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 204 No Content');
+    }
+    else if (__SQL_STATE = '__400')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 400 Bad Request');
+    }
+    else if (__SQL_STATE = '__401')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 401 Unauthorized');
+    }
+    else if (__SQL_STATE = '__404')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 404 Not Found');
+    }
+    else if (__SQL_STATE = '__406')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 406 Requested representation not available for the resource');
+    }
+    else if (__SQL_STATE = '__500')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 500 Not Found');
+    }
+    else if (__SQL_STATE = '__503')
+    {
+      AB.WA.apiHTTPError ('HTTP/1.1 503 Service Unavailable');
+    }
+    else
+    {
+      dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    }
+    return null;
+  };
+  declare N, M, domain_id integer;
+  declare domain_mode, xt any;
+  declare tmp, uname, V, A, oResult, oFeed, oGroups, oGroup, oContacts, oContact, oTag any;
+  declare apiLines, apiPath, apiParams, apiMethod, apiBody any;
+  declare apiMap, apiCommand, apiOptions, apiFields any;
+  declare params, meta, data any;
+
+  apiLines := http_request_header ();
+  apiPath := http_path ();
+  apiParams := http_param ();
+  apiMethod := ucase (http_request_get ('REQUEST_METHOD'));
+  --if (apiMethod <> 'application/atom+xml')
+  --  signal ('__404', '');
+  apiBody := string_output_string (http_body_read ());
+  if (apiBody = '')
+    apiBody := get_keyword ('content', apiParams);
+
+  V := sprintf_inverse (apiPath, '/ods/google/%s/%d/full', 0);
+  if (isnull (V) or (length (V) <> 2))
+    signal ('__404', '');
+  domain_mode := V[0];
+  domain_id := V[1];
+
+  if (not ODS..ods_check_auth (uname, domain_id, 'reader'))
+    signal ('__401', '');
+
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
+    signal ('__401', '');
+
+  AB.WA.googlePathAnalyze (apiParams, apiPath, apiMethod, apiMap, apiCommand, apiOptions);
+  if (domain_mode = 'contacts')
+  {
+    apiFields := '';
+    for (N := 0; N < length (apiMap); N := N + 2)
+      apiFields := apiFields || apiMap[N] || ',';
+    apiFields := trim (apiFields, ',');
+
+    -- dbg_obj_print('', apiMethod);
+    set_user_id ('dba');
+    if (apiMethod = 'GET')
+    {
+      -- retrieve
+
+      oResult := AB.WA.apiObject();
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select TOP %TOP% p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oContact := AB.WA.googleContactObject(apiFields, data[N], meta, apiMap);
+          oFeed := vector_concat (oFeed, vector ('entry', oContact));
+        }
+      }
+      AB.WA.googleFeedObject (oFeed, domain_id, apiOptions);
+      oResult := vector_concat (oResult, vector ('feed', oFeed));
+      AB.WA.googleOutput (oResult, apiParams);
+    }
+    else if ((apiMethod = 'POST') or (apiMethod = 'PUT'))
+    {
+      -- Insert Contact ('POST'), Update Contact ('PUT')
+      declare field, fieldDef, objectID, abPath, abField, abFields, abValue, abValues any;
+
+      xt := xtree_doc (apiBody);
+      objectID := -1;
+      abFields := vector ();
+      abValues := vector ();
+      for (N := 0; N < length (apiMap); N := N + 2)
+      {
+        field := apiMap[N];
+        fieldDef := apiMap[N+1];
+        if (isnull (fieldDef))
+          goto _next;
+
+        abValue := null;
+        abField := get_keyword ('field', fieldDef);
+        if (isnull (abField))
+          goto _next;
+
+        abPath := get_keyword ('xpath', fieldDef);
+        if (isNull (abPath))
+          abPath := field;
+
+        tmp := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/' || abPath, xt, 1) as varchar);
+        if (is_empty_or_null (tmp))
+          goto _next;
+
+        if (abField = 'P_BIRTHDAY')
+        {
+          tmp := AB.WA.dt_reformat (tmp, 'YMD');
+          if (is_empty_or_null (tmp))
+            goto _next;
+        }
+        if (not AB.WA.vector_contains (abFields, abField))
+        {
+          abFields := vector_concat (abFields, vector (abField));
+          abValues := vector_concat (abValues, vector (tmp));
+        }
+      _next:;
+      }
+      M := AB.WA.vector_index (abFields, 'P_NAME');
+      if (isnull (M))
+      {
+        V := vector ('P_TITLE', 'P_FULL_NAME', 'P_FIRST_NAME', 'P_MIDDLE_NAME', 'P_LAST_NAME');
+        for (N := 0; N < length (V); N := N + 1)
+        {
+          M := AB.WA.vector_index (abFields, V[N]);
+          if (not isnull (M))
+          {
+            abFields := vector_concat (abFields, vector ('P_NAME'));
+            abValues := vector_concat (abValues, vector (abValues[M]));
+            goto _exit;
+          }
+        }
+      _exit:;
+      }
+      if (apiMethod = 'PUT')
+      {
+        M := AB.WA.vector_index (abFields, 'P_UID');
+        if (isnull (M))
+          signal ('__404', '');
+        objectID := (select P_ID from AB.WA.PERSONS where P_UID = abValues[M] and P_DOMAIN_ID = domain_id);
+        if (isnull (objectID))
+          signal ('__404', '');
+        AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+      } else {
+        objectID := AB.WA.contact_update4 (objectID, domain_id, abFields, abValues, null);
+        if (isarray (objectID) and length (objectID) = 1)
+          objectID := objectID[0];
+      }
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select p.* from AB.WA.PERSONS p where p.P_DOMAIN_ID = ? and p.P_ID = ?', vector (domain_id, objectID), vector(), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oContact := AB.WA.googleContactObject(apiFields, data[0], meta, apiMap);
+          oFeed := vector_concat (oFeed, vector ('entry', oContact));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'DELETE')
+    {
+      -- Delete Contact ('DELETE')
+      declare field, fieldDef, objectID, abPath, abField, abValue any;
+
+      xt := xtree_doc (apiBody);
+      field := '@gd:etag';
+      fieldDef := get_keyword (field, apiMap);
+      if (isnull (fieldDef))
+        signal ('__404', '');
+
+      abValue := null;
+      abField := get_keyword ('field', fieldDef);
+      if (isnull (abField))
+        signal ('__404', '');
+
+      abPath := get_keyword ('xpath', fieldDef);
+      if (isNull (abPath))
+        abPath := field;
+
+      tmp := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/' || abPath, xt, 1) as varchar);
+      if (is_empty_or_null (tmp))
+        signal ('__404', '');
+
+      objectID := (select P_ID from AB.WA.PERSONS where P_UID = tmp and P_DOMAIN_ID = domain_id);
+      if (isnull (objectID))
+        signal ('__404', '');
+
+      AB.WA.contact_delete (objectID, domain_id);
+    }
+  }
+  else if (domain_mode = 'groups')
+  {
+    set_user_id ('dba');
+    if (apiMethod = 'GET')
+    {
+      -- retrieve Groups
+
+      oResult := AB.WA.apiObject();
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select TOP %TOP% c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ?', vector (domain_id), apiOptions, data, meta))
+      {
+        for (N := 0; N < length (data); N := N + 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[N], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleFeedObject (oFeed, domain_id, apiOptions);
+      oResult := vector_concat (oResult, vector ('feed', oFeed));
+      AB.WA.googleOutput (oResult, apiParams);
+    }
+    else if (apiMethod = 'POST')
+    {
+      -- Insert Group ('POST')
+      declare gID, gName any;
+
+      xt := xtree_doc (apiBody);
+      gName := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/atom:title', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+
+      gID := AB.WA.category_insert (domain_id, gName);
+      if (isnull (gID))
+        signal ('__400', '');
+
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ? and c.C_ID = ?', vector (domain_id, gID), vector (), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[0], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'PUT')
+    {
+      -- Update Group ('PUT')
+      declare gID, gName any;
+
+      xt := xtree_doc (apiBody);
+      gID := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/id', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+      if (not exists (select 1 from AB.WA.CATEGORIES where C_ID = gID and C_DOMAIN_ID = domain_id))
+        signal ('__404', '');
+
+      gName := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/title', xt, 1) as varchar);
+      if (isnull (gName))
+        signal ('__400', '');
+
+      update AB.WA.CATEGORIES
+         set C_NAME = gName,
+             C_UPDATED = now ()
+       where C_ID = gID
+         and C_DOMAIN_ID = domain_id;
+
+      oFeed := AB.WA.apiObject();
+      if (AB.WA.googleSQL ('select c.* from AB.WA.CATEGORIES c where c.C_DOMAIN_ID = ? and c.C_ID = ?', vector (domain_id, gID), vector (), data, meta))
+      {
+        if (length (data) = 1)
+        {
+          oGroup := AB.WA.googleGroupObject(data[0], meta);
+          oFeed := vector_concat (oFeed, vector ('entry', oGroup));
+        }
+      }
+      AB.WA.googleOutput (oFeed, apiParams);
+    }
+    else if (apiMethod = 'DELETE')
+    {
+      -- Delete Group ('DELETE')
+      declare gID any;
+
+      xt := xtree_doc (apiBody);
+      gID := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /atom:entry/id', xt, 1) as varchar);
+      if (isnull (gID))
+        signal ('__400', '');
+
+      delete from AB.WA.CATEGORIES where C_ID = gID and C_DOMAIN_ID = domain_id;
+    }
+  }
+
+  http_request_status ('HTTP/1.1 200 OK');
+  return '';
+}
+;
+
+grant execute on AB.WA.googlecontacts to SOAP_ADDRESSBOOK
 ;
