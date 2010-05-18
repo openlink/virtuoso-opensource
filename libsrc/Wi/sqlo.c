@@ -2296,6 +2296,33 @@ sqlo_bop_expand_or_exp (sqlo_t *so, ST *tree)
   return tree;
 }
 
+static int
+sqlo_has_implicit_gby (sqlo_t *so, ST *tree, ST ** group, op_table_t *dt_ot)
+{
+  int inx;
+
+  if (group) /* not implicit */
+    return 0;
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  else if (ST_P (tree, FUN_REF))
+    return 0;
+  if (ST_COLUMN (tree, COL_DOTTED) && tree->_.col_ref.prefix)
+    {
+      DO_SET (op_table_t *, ot, &dt_ot->ot_from_ots)
+	{
+	  if (!strcmp (tree->_.col_ref.prefix, ot->ot_new_prefix))
+	    return 1;
+	}
+      END_DO_SET ();
+    }
+  DO_BOX (ST *, exp, inx, ((ST **)tree))
+    {
+      return sqlo_has_implicit_gby (so, exp, group, dt_ot);
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 static void
 sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST *** group, op_table_t *dt_ot)
@@ -2649,7 +2676,8 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       END_DO_BOX;
       sqlo_scope_array  (so, (ST**) tree->_.select_stmt.selection);
       /* if a single row is to be returned the order by really does not matter */
-      if (ot->ot_fun_refs && !texp->_.table_exp.group_by)
+      if (ot->ot_fun_refs && !texp->_.table_exp.group_by &&
+	 !sqlo_has_implicit_gby (so, (ST *) tree->_.select_stmt.selection, texp->_.table_exp.group_by, ot))
 	texp->_.table_exp.order_by = NULL;
       sqlo_replace_as_exps (&(texp->_.table_exp.having), so->so_scope);
       sqlo_scope (so, &(texp->_.table_exp.having));
