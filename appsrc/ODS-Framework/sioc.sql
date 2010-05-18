@@ -4079,10 +4079,14 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   iri_pref := graph; --get_graph ();
   ses := string_output ();
 
-  if (fmt = 'text/rdf+n3')
+  if (fmt = 'text/rdf+n3' or fmt = 'text/n3')
     fmt := 'n3';
   else if (fmt = 'application/rdf+xml')
     fmt := 'rdf';
+  else if (fmt = 'text/plain')  
+    fmt := 'text';
+  else if (fmt = 'application/json')  
+    fmt := 'json';
 
   dociri := person_iri (user_obj_iri(u_name), '');
 
@@ -4093,11 +4097,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   pers_iri := person_iri (user_obj_iri(u_name));
 
-  if (fmt not in ('n3', 'ttl', 'rdf'))
+  if (fmt not in ('n3', 'ttl', 'rdf', 'text', 'json'))
     fmt := 'rdf';
 
-  if (fmt = 'n3' or fmt = 'ttl')
+  if (fmt = 'n3' or fmt = 'ttl' or fmt = 'nt')
     accept := 'text/rdf+n3';
+  else if (fmt = 'text') 
+    accept := 'text/plain';
+  else if (fmt = 'json') 
+    accept := 'application/json';
   else
     accept := 'application/rdf+xml';
 
