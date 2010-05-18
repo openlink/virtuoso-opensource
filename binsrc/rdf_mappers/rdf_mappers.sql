@@ -66,6 +66,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
 	values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION', null, 'Facebook Open Graph');
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('(text/html)|(text/xml)|(application/xml)|(application/rdf.xml)',
 	'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML', vector ('add-html-meta', 'yes', 'get-feeds', 'no'));
@@ -249,6 +252,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(text/calendar)', 'MIME', 'DB.DBA.RDF_LOAD_WEBCAL', null, 'WebCal');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+	values ('http[s]*://.*.facebook.com/.*',
+	'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH', null, 'FaceBook', vector ('secret', '', 'session', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
 	values ('http[s]*://.*.facebook.com/.*',
@@ -451,7 +458,7 @@ DB.DBA.MIGRATE_CALAIS ();
 create procedure DB.DBA.RM_MAPPERS_SET_ORDER ()
 {
    declare inx int;
-   declare top_arr, arr, http, html, feed, calais, num any;
+   declare top_arr, arr, http, html, feed, calais, fb_og, num any;
 
    if (exists (select RM_PID, count(*) from DB.DBA.SYS_RDF_MAPPERS group by RM_PID having count(*) > 1))
      {
@@ -467,8 +474,9 @@ create procedure DB.DBA.RM_MAPPERS_SET_ORDER ()
    http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
    html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
    feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
+   fb_og := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION');
 --   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
-   top_arr := vector (http, html, feed);
+   top_arr := vector (http, html, feed, fb_og);
 
    arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
    inx := 1;
@@ -2769,6 +2777,103 @@ end_sp:
   return 1;
 };
 
+create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare qr, path any;
+    declare tree, xt, xd, types, hdr any;
+    declare k, cnt, url, tmp varchar;
+    declare pos integer;
+    declare exit handler for sqlstate '*'
+    {
+        DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        return 0;
+    };
+    url := concat('http://graph.facebook.com/?ids=', new_origin_uri);
+    cnt := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+  	if (hdr[0] not like 'HTTP/1._ 200 %')
+    {
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+        return 0;
+    }
+    tree := json_parse (cnt);
+    if (tree is null)
+        return 0;
+    declare ses any;
+    ses := string_output ();
+    DB.DBA.SOCIAL_TREE_TO_XML_REC (tree, 'results', ses);
+    ses := string_output_string (ses);
+    xt := xtree_doc (ses, 2);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_ogs2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    return 0;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+    declare qr, path any;
+    declare tree, xt, xd, types any;
+    declare id, cnt, url, tmp, access_token, client_id, client_secret, code varchar;
+    declare pos integer;
+    declare exit handler for sqlstate '*'
+    {
+        DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+        return 0;
+    };
+    
+    --client_id := get_keyword ('client_id', opts);
+    --client_secret := get_keyword ('client_secret', opts);
+	--code := get_keyword ('code', opts);
+    
+    --url := sprintf('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=http://www.openlinksw.com/oauth_redirect&client_secret=%s&code=%s', client_id, client_secret, code);
+    --access_token := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    --if (access_token is null)
+    --    return 0;
+    
+    if (new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
+        id := rtrim(tmp[0], '&/');
+        pos := strchr(id, '&');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+	}
+    else if (new_origin_uri like 'http://www.facebook.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/%s', 0);
+        id := rtrim(tmp[0], '&/');
+        pos := strchr(id, '?');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+	}
+    else if (new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
+        id := rtrim(tmp[1], '&/');
+        pos := strchr(id, '?');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+	}
+    else
+        return 0;
+    url := sprintf ('https://graph.facebook.com/%s', id);
+    cnt := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+    tree := json_parse (cnt);
+    xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/fb_og2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_ZILLOW (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
     declare xd, xt, url, url2, tmp, api_key, full_address, address, citystatezip, zpid, hdr any;
@@ -3346,7 +3451,10 @@ create procedure DB.DBA.RDF_LOAD_IDIOMAG (in graph_iri varchar, in new_origin_ur
     if (new_origin_uri like 'http://www.idiomag.com/artist/%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.idiomag.com/artist/%s/%s', 0);
-		id := trim (tmp[0], '#');
+		if (tmp is null)
+			tmp := sprintf_inverse (new_origin_uri, 'http://www.idiomag.com/artist/%s', 0);
+		id := trim (tmp[0], '/');
+		id := trim (id, '#');
 		id := replace (id, '_', '+');
 		if (id is null)
 			return 0;
