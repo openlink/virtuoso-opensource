@@ -76,6 +76,10 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<xsl:apply-templates select="ss:Workbook/o:DocumentProperties" mode="doc"/>
+				<xsl:for-each select="ss:Workbook/ss:Worksheet">
+					<dcterms:hasPart rdf:resource="{vi:proxyIRI($baseUri, '', @ss:Name)}"/>
+					<sioc:container_of rdf:resource="{vi:proxyIRI($baseUri, '', @ss:Name)}"/>
+				</xsl:for-each>
 			</rdf:Description>
 			<xsl:for-each select="ss:Workbook/ss:Worksheet">
 				<xsl:apply-templates select="." mode="doc"/>
