@@ -200,7 +200,7 @@ create procedure WV..PROCESS_ATOM_ENTRY (
   in topic WV.WIKI.TOPICINFO,
   in localName varchar)
 {
-  declare resHdr, reqHdr, rc any;
+  declare resHdr, reqHdr, rc, resp any;
   declare attachments_path varchar;
   declare attachments_list any;
    declare ss any;
@@ -249,7 +249,7 @@ create procedure WV..PROCESS_ATOM_ENTRY (
     ss := string_output_string (ss);
 
     reqHdr := WV..HDR_TERM (UP_USER, UP_PASSWD);
-    http_client_ext (url=>UP_URI,
+    resp := http_client_ext (url=>UP_URI,
                      http_method=>reqAction,
                      http_headers=>reqHdr,
                      headers=>resHdr,
