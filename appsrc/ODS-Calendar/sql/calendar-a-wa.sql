@@ -265,14 +265,6 @@ create method wa_new_inst (in login varchar) for wa_Calendar
   CAL.WA.domain_update (iWaiID, iUserID);
   retValue := (self as web_app).wa_new_inst(login);
 
-  --  SIOC service
-  declare  graph_iri, iri, c_iri varchar;
-
-  graph_iri := SIOC..get_graph ();
-	c_iri := SIOC..calendar_iri (self.wa_name);
-  iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', SIOC..get_cname(), SIOC..get_base_path (), login, self.wa_name);
-  SIOC..ods_sioc_service (graph_iri, iri, c_iri, null, null, null, iri, 'Atom');
-
   return retValue;
 }
 ;
