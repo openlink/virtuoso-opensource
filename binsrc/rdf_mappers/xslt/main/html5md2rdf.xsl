@@ -102,10 +102,11 @@
 		</xsl:choose>
 
 		<rdf:Description rdf:about="{$resourceURL}">
-			<md:item rdf:resource="{$itemid}"/>
+			<sioc:container_of rdf:resource="{$itemid}"/>
 		</rdf:Description>
 				
 		<rdf:Description rdf:about="{$itemid}">
+            <rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:if test="$itemtype">
 				<rdf:type>
 					<xsl:attribute name="rdf:resource">

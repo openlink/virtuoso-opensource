@@ -6405,7 +6405,7 @@ try_grddl:
           if (position (GM_PROFILE, profs_done) > 0)
 	    goto try_next1;
           declare exit handler for sqlstate '*' { goto try_next1; };
-          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', DB.DBA.RDF_PROXY_ENTITY_IRI (coalesce (dest, graph_iri)), 'nss', nss));
+          xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	    {
 	      mdta := mdta + 1;
