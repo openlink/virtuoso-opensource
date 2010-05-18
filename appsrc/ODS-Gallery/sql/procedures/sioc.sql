@@ -64,6 +64,20 @@ create procedure SIOC..fill_ods_photos_sioc (in graph_iri varchar, in site_iri v
   }
 ;
 
+create procedure SIOC..ods_photo_services (
+  in graph_iri varchar, 
+  in forum_iri varchar,
+  in wai_id varchar := null,
+  in wai_name varchar := null)
+{
+  declare svc_iri varchar;
+  
+  -- dbg_obj_print (now (), 'ods_addressbook_services');
+  svc_iri := sprintf ('http://%s/photos/SOAP', SIOC..get_cname());
+  ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
+}
+;
+
 create procedure SIOC..photo_insert (
   in res_id integer,
   in res_name varchar,
