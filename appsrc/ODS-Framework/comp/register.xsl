@@ -318,13 +318,19 @@
                 if (length (self.reg_foafData))
                 {
                   if (get_keyword ('iri', self.reg_foafData, '') <> '')
-                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'IRI', get_keyword ('iri', self.reg_foafData)));
+                    http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'WebID', get_keyword ('iri', self.reg_foafData)));
                   if (get_keyword ('firstName', self.reg_foafData, '') <> '')
                     http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'First Name', get_keyword ('firstName', self.reg_foafData)));
                   if (get_keyword ('family_name', self.reg_foafData, '') <> '')
                     http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'Family name', get_keyword ('family_name', self.reg_foafData)));
+                  if (isnull (get_keyword ('nick', self.reg_foafData)) and isnull (get_keyword ('name', self.reg_foafData)))
+                    http (sprintf ('<tr><th width="30%%"><label>%s<div style="font-weight: normal; display: inline; color: red;"> *</div></label></th><td><input type="text" name="webid_uid" id="webid_uid" value="%s" style="width:270px" /></td></tr>', 'Login Name', get_keyword ('webid_uid', self.vc_page.vc_event.ve_params, '')));
                   if (get_keyword ('mbox', self.reg_foafData, '') <> '')
+                  {
                     http (sprintf ('<tr><th width="30%%"><label>%s</label></th><td>%s</td></tr>', 'E-Mail', get_keyword ('mbox', self.reg_foafData)));
+                  } else {
+                    http (sprintf ('<tr><th width="30%%"><label>%s<div style="font-weight: normal; display: inline; color: red;"> *</div></label></th><td><input type="text" name="webid_mbox" id="webid_mail" value="%s" style="width:270px" /></td></tr>', 'E-Mail', get_keyword ('webid_mbox', self.vc_page.vc_event.ve_params, '')));
+                  }
                 }
               ?>
             </table>
@@ -428,8 +434,9 @@
         </script>
       <v:on-post>
    <![CDATA[
-            declare data any;
+            declare data, params any;
 
+            params := e.ve_params;
             data := vector ();
             if ((self.uoid in (0, 2, 3)) or (self.oid_mode = 'id_res' and self.oid_sig is not null and self.uoid))
 {
@@ -447,12 +454,20 @@
               if (self.uoid = 2)
        {
                 data := self.reg_foafData;
+                u_name1 := get_keyword ('webid_uid', params);
+                if (isnull (u_name1))
+                {
                 u_name1 := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+                }
+                u_mail1 := get_keyword ('webid_mbox', params);
+                if (isnull (u_mail1))
+                {
                 u_mail1 := get_keyword ('mbox', data);
                 if (isnull (u_mail1))
                 {
                   tmp := self.decodeName(get_certificate_info (2));
                   u_mail1 := get_keyword ('emailAddress', tmp);
+                }
                 }
                u_password1 := uuid ();
                u_password2 := u_password1;

@@ -4042,7 +4042,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
 --  dbg_obj_print (data);
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
     rc := 1;
 --  dbg_obj_print (stat, data);
   --dbg_obj_print (rc);
