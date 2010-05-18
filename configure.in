@@ -1733,9 +1733,57 @@ AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
 
 ##########################################################################
 ##									##
-##  Check out readline 							##
+##  Check out editline / readline					##
 ##									##
 ##########################################################################
+
+LIBRDL=""
+_save_LIBS=$LIBS
+
+AC_MSG_CHECKING(for --with-editline)
+AC_ARG_WITH(editline, [dnl
+AC_HELP_STRING([--with-editline(=DIR)], [use editline library])dnl
+], [
+  AC_MSG_RESULT($withval)
+  AC_DEFINE(WITH_EDITLINE, 1, [editline])
+  if test -d "$withval"
+  then
+      LDFLAGS="$LDFLAGS -L$withval"
+  fi
+  # first check if we can compile without lib termcap
+  AC_MSG_CHECKING(for -ledit without -ltermcap)
+  # check if libedit exists
+  LIBS="$LIBS -ledit"
+  AC_TRY_LINK(extern char *readline();,char *line=readline();,
+  [
+	BUILD_OPTS="$BUILD_OPTS editline"
+	LIBRDL="-ledit"
+	AC_MSG_RESULT(yes)
+  ], [
+	AC_MSG_RESULT(no)
+	AC_CHECKING(for -ledit that needs -ltermcap)
+	termcap=
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
+	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-editline)])])])])
+	LIBS="$LIBS -l$termcap"
+	AC_MSG_CHECKING(for -ledit)
+	AC_TRY_LINK(extern char *readline();, char *line=readline();,
+	[
+	   BUILD_OPTS="$BUILD_OPTS editline"
+	   LIBRDL="-ledit -l$termcap"
+	   AC_MSG_RESULT(yes)
+	], [
+	   AC_ERROR(no working editline library found -- do not use --with-editline)
+	])
+  ])
+  ], [
+    AC_MSG_RESULT(no)
+  ]
+)
+
 
 AC_MSG_CHECKING(for --with-readline)
 AC_ARG_WITH(readline, [dnl
@@ -1750,36 +1798,34 @@ AC_HELP_STRING([--with-readline(=DIR)], [use GNU readline library])dnl
   # first check if we can compile without lib termcap
   AC_MSG_CHECKING(for -lreadline without -ltermcap)
   # check if a libreadline exists
-  _save_LIBS=$LIBS
   LIBS="$LIBS -lreadline"
-  AC_TRY_LINK(extern char *readline();,char *line=readline();,[
+  AC_TRY_LINK(extern char *readline();,char *line=readline();,
+  [
 	BUILD_OPTS="$BUILD_OPTS readline"
 	LIBRDL="-lreadline"
-	AC_MSG_RESULT(yes)], [
+	AC_MSG_RESULT(yes)
+  ], [
 	AC_MSG_RESULT(no)
 	AC_CHECKING(for -lreadline that needs -ltermcap)
 	termcap=
 	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
 	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
-	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-readline)])])
-	# Avoid possible conflict between shared libraries termcap and gl
-	# on IRIX 5: both contain a routine called clear.
-	#if test -f /usr/lib/lib$termcap.a
-	#then LIBS="$LIBS /usr/lib/lib$termcap.a"
-	#else LIBS="$LIBS -l$termcap"
-	#fi
+	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses], [
+	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-readline)])])])])
 	LIBS="$LIBS -l$termcap"
 	AC_MSG_CHECKING(for -lreadline)
 	AC_TRY_LINK(extern char *readline();, char *line=readline();,[
 	   BUILD_OPTS="$BUILD_OPTS readline"
 	   LIBRDL="-lreadline -lhistory -l$termcap"
 	   AC_MSG_RESULT(yes)], [
-	   LIBRDL=""
 	   AC_ERROR(no working GNU readline library found -- do not use --with-readline)])
-	])
-],
-LIBRDL=""
-AC_MSG_RESULT(no))
+  ])
+  ],[
+    AC_MSG_RESULT(no)
+  ]
+)
+
 LIBS=$_save_LIBS
 AC_SUBST(LIBRDL)
 

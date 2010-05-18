@@ -47,10 +47,15 @@
 #endif
 
 
-#ifdef WITH_READLINE
+#if defined(WITH_READLINE)
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+
+#if defined(WITH_EDITLINE)
+#include <editline/readline.h>
+#endif
+
 /* Changed from 0.9845b at 07-DEC-1997 */
 /* Changed from 0.9846b at 26-JAN-1998 */
 /* Changed from 0.9847b at 12-FEB-1998 */
@@ -512,7 +517,7 @@ int pwd_cleartext = 0;
 #define empty_stringp(X) (!*(X))
 
 
-#ifdef WITH_READLINE
+#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
 /* The following declaration should be located before loading Dk.h */
 static void readline_free(void *ptr) { free(ptr); }
 
@@ -917,7 +922,7 @@ void
 isql_exit (int status)
 {
 
-#ifdef WITH_READLINE
+#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
   if (isqlhist[0])
     {
       write_history (isqlhist);
@@ -6297,7 +6302,7 @@ error:;
 TCHAR *
 isql_fgets (TCHAR *inbuf, int maxbytes, FILE * fp, TCHAR *prompt)
 {
-#ifdef WITH_READLINE
+#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
 
   static TCHAR *previous_inbuf = NULL;
 
@@ -6550,7 +6555,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	    input );
 	}
       fflush (stdout);
-#ifdef WITH_READLINE
+#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
       if (using_readline (inpiece) && (input[0]))	/* Something read in really? */
 	{			/* Then add it to history. */
 	  int len = isqlt_tcslen (input);
