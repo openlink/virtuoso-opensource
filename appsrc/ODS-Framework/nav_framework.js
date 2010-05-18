@@ -641,9 +641,7 @@ ODS.session = function(customEndpoint) {
 
           OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 				} else {
-					OAT.MSG.send(self, "WA_SES_INVALID", {
-						retryLogIn : true
-					});
+					OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn: true});
         }
       };
 			OAT.AJAX.POST(self.endpoint + "sessionValidate", data, callback,
@@ -695,9 +693,7 @@ ODS.session = function(customEndpoint) {
 
 			    document.location = checkImmediate;
 				} else {
-					OAT.MSG.send(self, "WA_SES_INVALID", {
-						retryLogIn : true
-					});
+					OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn: true});
 			}
 		};
 			OAT.AJAX.POST(self.endpoint + "openIdServer", data, callback,
@@ -722,9 +718,7 @@ ODS.session = function(customEndpoint) {
 
           OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 				} else {
-					OAT.MSG.send(self, "WA_SES_INVALID", {
-						retryLogIn : true
-					});
+					OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn: true});
         }
       };
 			OAT.AJAX.POST(self.endpoint + "sessionValidate", data, callback,
@@ -744,9 +738,7 @@ ODS.session = function(customEndpoint) {
 
           OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 				} else {
-					OAT.MSG.send(self, "WA_SES_INVALID", {
-						retryLogIn : true
-					});
+					OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn : true});
         }
       };
 			OAT.AJAX.POST(self.endpoint + "sessionValidate", data, callback,
@@ -790,9 +782,7 @@ ODS.session = function(customEndpoint) {
 		    self.userName  = false;
 		    self.userId    = false;
 		    self.userIsDba = false;
-				OAT.MSG.send(self, "WA_SES_INVALID", {
-					sessionEnd : true
-				});
+				OAT.MSG.send(self, "WA_SES_INVALID", {sessionEnd: true});
 		}
 	};
 	OAT.AJAX.POST (self.endpoint+"sessionEnd", data, callback, options);
@@ -1082,8 +1072,7 @@ ODS.Nav = function(navOptions) {
 
 			self.createCookie ('sid', '', 1);
 
-		if (typeof (event.retryLogIn) != 'undefined'
-				&& event.retryLogIn == true) {
+		if (typeof (event.retryLogIn) != 'undefined' && event.retryLogIn == true) {
 				self.wait('hide');
 
 				if (typeof (event.msg) != 'undefined' && event.msg.length>0)
@@ -1100,9 +1089,7 @@ ODS.Nav = function(navOptions) {
 				   document.location.hash = '';
 				   document.location.href = 'index.html';
 			} else {
-				OAT.MSG.send(self.session, "WA_SES_VALIDATION_END", {
-					sessionValid : 0
-				});
+				OAT.MSG.send(self.session, "WA_SES_VALIDATION_END", {sessionValid: 0});
 			}
     }
 	});

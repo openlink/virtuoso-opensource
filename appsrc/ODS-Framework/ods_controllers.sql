@@ -1031,7 +1031,9 @@ create procedure ODS.ODS_API."user.register" (
 	{
 	  -- FOAF+SSL
 	  data := json_parse (data);
+	  if (isnull (name))
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+	  if (isnull ("email"))
     "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}

@@ -562,7 +562,7 @@ function myInit() {
         $('lf_openId').value = uriParams['openid.identity'];
         $('rf_openId').value = uriParams['openid.identity'];
         $('rf_is_agreed').checked = true;
-        var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data, 10));
+        var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
         OAT.AJAX.POST ("/ods/api/user.register", q, afterSignup);
       }
       else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
@@ -597,6 +597,12 @@ function myInit() {
 						addProfileRowValue(tbl, 'Family Name', sslData.family_name);
 					if (sslData.mbox)
 						addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
+				  if (prefix == "rf") {
+					  if (!sslData.nick && !sslData.name)
+              addProfileRowInput(tbl, 'Login Name', 'rf_webid_uid');
+					  if (!sslData.mbox)
+              addProfileRowInput(tbl, 'E-Mail', 'rf_webid_email');
+          }
 			  }
 		  }
 
@@ -1448,6 +1454,25 @@ function addProfileRowValue(tbl, label, value, leftTag) {
   tbl.appendChild(tr);
 }
 
+function addProfileRowInput(tbl, label, fName) {
+	var tr = OAT.Dom.create('tr');
+	var th = OAT.Dom.create('th');
+	th.width = '30%';
+	th.innerHTML = label + '<div style="font-weight: normal; display: inline; color: red;"> *</div>';
+	tr.appendChild(th);
+
+	var td = OAT.Dom.create('td');
+  tr.appendChild(td);
+
+  var fld = OAT.Dom.create('input');
+  fld.type = 'type';
+  fld.id = fName;
+  fld.name = fld.id;
+  td.appendChild(fld);
+
+	tbl.appendChild(tr);
+}
+
 function addProfileTableValues(tbl, label, values, headers, delimiters) {
 	if (values) {
     var tr = OAT.Dom.create('tr');
@@ -1942,7 +1967,7 @@ function prepareItems(prefix) {
     }
     ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
   }
-  return OAT.JSON.stringify(ontologies, 10);
+  return OAT.JSON.stringify(ontologies);
 }
 
 function updateFavorites(prefix)
@@ -2405,10 +2430,14 @@ function rfSignupSubmit(event) {
 		return false;
 	}
 	else if (rfTab.selectedIndex == 2) {
-		q +='&data=' + encodeURIComponent(OAT.JSON.stringify(facebookData, 10))
+		q += '&data=' + encodeURIComponent(OAT.JSON.stringify(facebookData))
 	}
 	else if (rfTab.selectedIndex == 3) {
-		q +='&data=' + encodeURIComponent(OAT.JSON.stringify(sslData, 10))
+		q +='&data=' + encodeURIComponent(OAT.JSON.stringify(sslData));
+		if ($('rf_webid_uid'))
+		  q +='&name=' + encodeURIComponent($v('rf_webid_uid'));
+		if ($('rf_webid_email'))
+		  q +='&email=' + encodeURIComponent($v('rf_webid_email'));
 	}
 	OAT.AJAX.POST("/ods/api/user.register", q, afterSignup);
 	return false;
