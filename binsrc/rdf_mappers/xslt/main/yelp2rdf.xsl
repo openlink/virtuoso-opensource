@@ -29,6 +29,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -41,6 +42,7 @@
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
     xmlns:review="&review;"
+    xmlns:gr="&gr;"    
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dcterms="http://purl.org/dc/terms/">
 
@@ -63,7 +65,6 @@
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&gr;BusinessEntity"/>
-				<rdf:type rdf:resource="&sioc;Thread"/>
 				<dc:title>
 					<xsl:value-of select="title" />
 				</dc:title>
@@ -72,13 +73,12 @@
 				</dc:description>
 			        <bibo:uri rdf:resource="{link}" />
 				<xsl:for-each select="item">
-				    	<foaf:topic rdf:resource="{vi:proxyIRI (link)}" />
-					<sioc:container_of rdf:resource="{vi:proxyIRI (link)}" />
+				    <review:hasReview rdf:resource="{vi:proxyIRI (link)}" />
 				</xsl:for-each>
 			</rdf:Description>
 			<xsl:for-each select="item">
 				<rdf:Description rdf:about="{vi:proxyIRI (link)}">
-					<rdf:type rdf:resource="&sioct;BoardPost"/>
+					<rdf:type rdf:resource="&review;Review"/>
 					<sioc:has_container rdf:resource="{$resourceURL}"/>
 					<dc:title>
 						<xsl:value-of select="title" />
