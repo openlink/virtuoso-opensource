@@ -35,6 +35,7 @@
       <v:variable name="_newd" type="varchar" default="''" persist="0" />
       <v:variable name="_flow" type="varchar" default="''" persist="0" />
       <v:variable name="_dflow" type="varchar" default="''" persist="0" />
+      <v:variable name="_intv" type="int" default="0" persist="0" />
       <v:variable name="_opage" type="varchar" default="''" persist="0" />
       <v:variable name="_img" type="varchar" default="''" persist="0" />
       <v:variable name="_dav" type="varchar" default="''" persist="0" />
@@ -84,7 +85,7 @@
         <v:script>
           <![CDATA[
             declare _idx, _oth varchar;
-            declare _n_own integer;
+            declare _n_own, ename integer;
             self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
             if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
             {
@@ -101,7 +102,9 @@
                 self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._ask_rdf, self._udata, self._store_fn, self._ext_fn
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
-              update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
+	      ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
+	      self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
+              --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
               self._root := concat('/DAV/', self._root);
               self._newd := subseq(datestring(self._newd), 0, 19);
               self._old_url := self._url;
@@ -290,6 +293,12 @@
               </td>
             </tr>
             <tr>
+              <td>Update Interval (minutes)</td>
+              <td>
+                <v:text name="intv" value="--self._intv"  />
+              </td>
+            </tr>
+            <tr>
               <td>Store Function</td>
               <td>
                 <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
@@ -451,10 +460,11 @@
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                        declare item, idx, len, _idx, _oth, tar_url, sav_host varchar;
+                        declare item, idx, len, _idx, _oth, tar_url, sav_host, desc_save varchar;
                         declare ret_arr, opts, tmp any;
                         declare pos integer;
                         tar_url := trim (get_keyword ('tar_url', params, ''));
+			desc_save := self._descr;
                         if (length(tar_url) <= 0)
                         {
                           self.vc_error_message := 'Incorrect target URL';
@@ -505,6 +515,8 @@
                         self._dflow := get_keyword ('dflow', params);
                         self._store_fn := get_keyword ('store_fn', params);
                         self._ext_fn := get_keyword ('ext_fn', params);
+			self._intv := atoi (get_keyword ('intv', params, '0'));
+
                         self._del := get_keyword ('del', params);
                         if (self.mode = 'edit')
                           self._opage := self._opage;
@@ -642,7 +654,7 @@
                           insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
 
-			declare _mp, _idx, p_id, _seq any;
+			declare _mp, _idx, p_id, _seq, ename, ename_old any;
 			_seq := _idx := 0;
 			delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
 			if (self._get_rdf)
@@ -655,6 +667,22 @@
 				    values (self._host,self._root,p_id,_seq);
 			       }
 		  	  }
+			ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+			if (desc_save <> '')
+			  {
+			    ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+                            if (ename_old <> ename)
+			      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;   
+			  }  
+                        if (self._intv = 0)
+			  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
+			else 
+			  {
+			    insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) 
+			       values (ename, now (), self._intv, 
+			          concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)')
+				 ); 
+		          }	  
 			commit work;
 
                         http_request_status ('HTTP/1.1 302 Found');
