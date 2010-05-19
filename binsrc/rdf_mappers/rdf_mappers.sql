@@ -4764,7 +4764,7 @@ create procedure DB.DBA.RDF_LOAD_CNET (in graph_iri varchar, in new_origin_uri v
 		pos := strrchr(soft_id, '-');
 		if (pos is not null and pos <> 0)
 			soft_id := right(soft_id, length(soft_id) - (pos + 1));
-		url := sprintf('http://developer.api.cnet.com/rest/v1.0/softwareProduct?iod=none&partKey=%s&partTag=%s&productSetId=%s', _key, _key, soft_id);
+		url := sprintf('http://developer.api.cnet.com/rest/v1.0/softwareProduct?iod=none&partKey=%s&partTag=%s&productId=%s', _key, _key, soft_id);
 	}
     else if (new_origin_uri like 'http://shopper.cnet.com/%/%.html%')
 	{
