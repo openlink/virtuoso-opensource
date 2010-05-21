@@ -1188,7 +1188,7 @@ void dbs_cpt_write_extents (dbe_storage_t * dbs);
 void em_check_dp (extent_map_t * em, dp_addr_t dp);
 void em_free (extent_map_t * em);
 void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
-
+void clear_old_root_images  ();
 
 extern dk_mutex_t * extent_map_create_mtx;
 

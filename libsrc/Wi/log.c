@@ -2116,7 +2116,10 @@ read_again:
       dk_free_tree ((caddr_t) header);
 
       if (0 == rfwd_ctr % 1000)
-	REPORT_PROGRESS;
+	{
+	  REPORT_PROGRESS;
+	  clear_old_root_images ();
+	}
     }
   if (rfwd_ctr)
     REPORT_PROGRESS;

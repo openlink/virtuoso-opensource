@@ -1901,6 +1901,31 @@ extern uint32 cl_last_wait_query;
 uint32 prev_reaper_time;
 
 void
+clear_old_root_images ()
+{
+  long now = approx_msec_real_time ();
+  mutex_enter (old_roots_mtx);
+  {
+    buffer_desc_t ** prev = &old_root_images;
+    buffer_desc_t * old_img = old_root_images;
+    while (old_img)
+      {
+	buffer_desc_t * next = old_img->bd_next;
+	if ((bp_ts_t)now - old_img->bd_timestamp > 30000)
+	  {
+	    *prev = old_img->bd_next;
+	    resource_store (PM_RC (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
+	    buffer_free (old_img);
+	  }
+	else
+	  prev = &old_img->bd_next;
+	old_img = next;
+      }
+  }
+  mutex_leave (old_roots_mtx);
+}
+
+void
 the_grim_lock_reaper (void)
 {
   static int auto_f_count = 0;
@@ -2020,26 +2045,7 @@ the_grim_lock_reaper (void)
 	  schedule_last_time = (unsigned long int) now;
 	}
     }
-
-  mutex_enter (old_roots_mtx);
-  {
-    buffer_desc_t ** prev = &old_root_images;
-    buffer_desc_t * old_img = old_root_images;
-    while (old_img)
-      {
-	buffer_desc_t * next = old_img->bd_next;
-	if ((bp_ts_t)now - old_img->bd_timestamp > 30000)
-	  {
-	    *prev = old_img->bd_next;
-	    resource_store (PM_RC (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
-	    buffer_free (old_img);
-	  }
-	else
-	  prev = &old_img->bd_next;
-	old_img = next;
-      }
-  }
-  mutex_leave (old_roots_mtx);
+  clear_old_root_images ();
   http_reaper ();
   if (cfg_thread_live_period)
     {
