@@ -448,7 +448,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   long helper;
 
   int fd = open (CFG_FILE, O_RDWR);
-  if (-1 == fd)
+  if (fd < 0)
     {
     cfg_file_error:
       log_error ( "There must be a valid %s file in the server's working "
@@ -775,7 +775,7 @@ _dbs_read_cfg (dbe_storage_t * dbs, char *file)
     file = "wi.cfg";
 
   fd = open (file, O_RDWR);
-  if (-1 == fd)
+  if (fd < 0)
     {
     cfg_file_error:
       log_error ( "There must be a valid %s file in the server's working "

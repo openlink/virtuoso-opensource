@@ -71,7 +71,7 @@ repl_write_extra_log (repl_acct_t *ra, caddr_t * head, dk_session_t * string)
 
       file_set_rw (f_name);
       fd = fd_open (f_name, OPEN_FLAGS);
-      if (-1 == fd)
+      if (fd < 0)
 	{
 	  log_error ("Can't open replication log '%s'.", f_name);
 	  return LTE_LOG_FAILED;
@@ -262,7 +262,7 @@ repl_trail_new_file (repl_acct_t *ra, char *file, int lock)
 
       file_set_rw (file);
       new_fd = fd_open (file, OPEN_FLAGS);
-      if (-1 == new_fd)
+      if (new_fd < 0)
 	{
 	  log_error ("Cannot open new replication log '%s': %s (errno %d).",
               file, strerror(errno), errno);

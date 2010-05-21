@@ -2642,7 +2642,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 	  for (inx = 0; inx < n_fds_per_file; inx++)
 	    {
 	      int fd = fd_open (dst->dst_file, DB_OPEN_FLAGS);
-	      if (-1 == fd)
+	      if (fd < 0)
 		{
 		  log_error ("Cannot open stripe on %s (%d)",
 			     dst->dst_file, errno);
@@ -3362,7 +3362,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	    }
 	}
       fd = fd_open (dbs->dbs_file, of);
-      if (-1 == fd)
+      if (fd < 0)
 	{
 	  log_error ("Cannot open database in %s (%d)", dbs->dbs_file, errno);
 	  call_exit (1);

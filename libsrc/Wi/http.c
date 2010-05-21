@@ -2459,7 +2459,7 @@ ws_file (ws_connection_t * ws)
 
   snprintf (path, sizeof (path), "%s%s", www_root, fname);
   ctype = ws_file_ctype (fname);
-  if ((fd = open (path, OPEN_FLAGS_RO)) == -1)
+  if ((fd = open (path, OPEN_FLAGS_RO)) < 0)
     {
       ws_http_error (ws, "HTTP/1.1 404 File not found", "The requested URL was not found", lfname, path);
       HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 404 File not found", 0);
@@ -4857,7 +4857,7 @@ ws_lt_trace (lock_trx_t * lt)
   ses = lt->lt_client->cli_ws->ws_req_log;
   len = strses_length (ses), ofs = 0;
   fd = fd_open (fname, OPEN_FLAGS);
-  if (fd == -1)
+  if (fd < 0)
     {
       log_error ("Can not open ws trace file %s", fname);
       goto err;

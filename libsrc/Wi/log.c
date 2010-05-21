@@ -564,7 +564,7 @@ log_2pc_archive (int64 trx_id)
       int fd;
       file_set_rw (dbs->dbs_2pc_file_name);
       fd = fd_open (dbs->dbs_2pc_file_name, LOG_OPEN_FLAGS);
-      if (fd <= 0)
+      if (fd < 0)
 	{
 	  int errn = errno;
 	  log_error ("Cannot open 2pc log %s, error : %s.  Exiting", dbs->dbs_2pc_file_name, virt_strerror (errn));
@@ -600,7 +600,7 @@ log_2pc_archive_check (int64 trx_id, int64 * max_id_ret)
     return 0;
   file_set_rw (dbs->dbs_2pc_file_name);
   fd  = fd_open (dbs->dbs_2pc_file_name, OPEN_FLAGS_RO);
-  if (fd <= 0)
+  if (fd < 0)
     {
       *max_id_ret = 0;
       return 0;
@@ -1915,7 +1915,7 @@ log_check_trx (int64 trx_no)
   if (log_2pc_archive_check (trx_no, &max))
     return 1;
   fd = fd_open (dbs->dbs_log_name, OPEN_FLAGS_RO);
-  if (fd <= 0)
+  if (fd < 0)
     return 0;
   file_in = dk_session_allocate (SESCLASS_TCPIP);
   tcpses_set_fd (file_in->dks_session, fd);
@@ -2166,7 +2166,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  int new_fd;
 	  file_set_rw (new_log);
 	  new_fd = fd_open (new_log, LOG_OPEN_FLAGS);
-	  if (-1 == new_fd)
+	  if (new_fd < 0)
 	    {
 	      log_error ("Cannot change to log file %s", new_log);
 	      call_exit (1);
@@ -2235,7 +2235,7 @@ log_init (dbe_storage_t * dbs)
       int log_fd;
       file_set_rw (dbs->dbs_log_name);
       log_fd = fd_open (dbs->dbs_log_name, LOG_OPEN_FLAGS);
-      if (log_fd == -1)
+      if (log_fd < 0)
 	{
 	  log_error ("Can't open log : %m");
 	  call_exit (1);
@@ -2264,7 +2264,7 @@ log_init (dbe_storage_t * dbs)
 	  log_info ("Processing log segment %s", ls->ls_file);
 	  file_set_rw (ls->ls_file);
 	  log_fd = fd_open (ls->ls_file, LOG_OPEN_FLAGS);
-	  if (log_fd == -1)
+	  if (log_fd < 0)
 	    {
 	      log_error ("Can't open log segment : %m");
 	      call_exit (1);

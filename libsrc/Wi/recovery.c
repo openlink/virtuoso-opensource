@@ -832,7 +832,7 @@ backup_prepare (query_instance_t * qi, char * file)
        */
 
       file_set_rw (fname);
-      if ((fd = fd_open (fname, LOG_OPEN_FLAGS)) == -1)
+      if ((fd = fd_open (fname, LOG_OPEN_FLAGS)) < 0)
 	{
 	  char *errmsg = strerror(errno);
 

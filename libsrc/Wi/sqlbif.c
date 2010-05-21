@@ -8556,7 +8556,7 @@ bif_mem_all_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   FILE *fd = dp ? fopen (dp, "at") : NULL;
   dbg_malstats (fd ? fd : stderr, DBG_MALSTATS_ALL);
   if (fd)
-  fclose (fd);
+    fclose (fd);
   return NULL;
 }
 
@@ -8568,7 +8568,7 @@ bif_mem_new_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   FILE *fd = dp ? fopen (dp, "at") : NULL;
   dbg_malstats (fd ? fd : stderr, DBG_MALSTATS_NEW);
   if (fd)
-  fclose (fd);
+    fclose (fd);
   return NULL;
 }
 
@@ -8580,7 +8580,7 @@ bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   FILE *fd = dp ? fopen (dp, "at") : NULL;
   dbg_malstats (fd ? fd : stderr, DBG_MALSTATS_LEAKS);
   if (fd)
-  fclose (fd);
+    fclose (fd);
   return NULL;
 }
 
@@ -11226,7 +11226,7 @@ bif_replay (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("25000", "SR074", "replay must be run in a fresh transaction.");
 
   fd = open (fname, O_RDONLY | O_BINARY);
-  if (-1 == fd)
+  if (fd < 0)
     {
       int errno_save = errno;
       sqlr_new_error ("42000", "FA002", "Can't open file %s, error %d (%s)", fname, errno, strerror (errno_save));

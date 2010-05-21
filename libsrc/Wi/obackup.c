@@ -723,7 +723,7 @@ backup_context_increment (ol_backup_context_t* ctx, int is_restore)
   fd = fd_open (ctx->octx_curr_file,
 		is_restore ? OPEN_FLAGS_RO : (OPEN_FLAGS | O_TRUNC));
 
-  if (fd > 0)
+  if (fd >= 0)
     {
       ctx->octx_num = new_num;
       dk_set_push (&ctx->octx_backup_files, box_string (ctx->octx_curr_file));

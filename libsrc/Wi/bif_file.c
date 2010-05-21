@@ -591,7 +591,7 @@ bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fname_cvt = file_native_name (fname);
   file_path_assert (fname_cvt, NULL, 1);
   fd = open (fname_cvt, OPEN_FLAGS_RO);
-  if (-1 == fd)
+  if (fd < 0)
     {
       err = srv_make_new_error ("39000", "FA005", "Can't open file '%.1000s', error %d", fname_cvt,
 	errno);
@@ -752,7 +752,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
   else
     to = st.st_size;
   fd = open (fname, OPEN_FLAGS_RO);
-  if (fd == -1)
+  if (fd < 0)
     {
       int eno = errno;
       err = srv_make_new_error ("42000", "FA012", "Can't open file '%.1000s', error (%d) : %s", fname_cvt,
@@ -1468,7 +1468,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     fd = fd_open (fname_cvt, OPEN_FLAGS);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
@@ -4224,7 +4224,7 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       dk_free_box (dname_cvt);
@@ -4283,7 +4283,7 @@ bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_resignal (err);
     }
   fd = fd_open (fname_cvt, OPEN_FLAGS | O_TRUNC);
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       dk_free_box (dname_cvt);
@@ -5768,7 +5768,7 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fd = fd_open (fname, OPEN_FLAGS_RO);
 #endif
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       sqlr_new_error ("39000", "FA003", "Can't open file %s, error : %s",
@@ -5881,7 +5881,7 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
@@ -5955,7 +5955,7 @@ bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
 
-  if (fd == -1)
+  if (fd < 0)
     {
       int errn = errno;
       err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
