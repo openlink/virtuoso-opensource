@@ -4082,6 +4082,67 @@ zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+void
+zlib_strses_gzip_uncompress (dk_session_t * ses, dk_session_t * out, caddr_t *err_ret)
+{
+  z_stream zs;
+  int rc, started = 0;
+  char out_buffer[DKSES_OUT_BUFFER_LENGTH];
+  char in_buffer[DKSES_OUT_BUFFER_LENGTH];
+  long ofs = 0, unread_bytes;
+
+  ZLIB_INIT_DK_STREAM (zs);
+  inflateInit2 (&zs, -MAX_WBITS);
+  while (sizeof (in_buffer) > (unread_bytes = strses_get_part (ses, in_buffer, ofs, sizeof (in_buffer))))
+    {
+      ofs += sizeof (in_buffer) - unread_bytes;
+
+      if (out)
+	session_flush_1 (out);
+
+      zs.next_in = (Bytef *) in_buffer;
+      zs.avail_in = sizeof (in_buffer) - unread_bytes;
+      if (!started)
+	{
+	  zcheck_header (&zs, err_ret);
+	  if (err_ret && *err_ret)
+	    {
+	      inflateEnd (&zs);
+	      return;
+	    }
+	  started = 1;
+	}
+      do
+	{
+	  zs.next_out = (Bytef *) out_buffer;
+	  zs.avail_out = sizeof (out_buffer);
+	  rc = inflate (&zs, Z_NO_FLUSH);
+	  if (rc != Z_OK && rc != Z_STREAM_END)
+	    goto error;
+
+	  if (sizeof (out_buffer) - zs.avail_out > 0 && out)
+	    session_buffered_write (out, out_buffer, sizeof (out_buffer) - zs.avail_out);
+	}
+      while (zs.avail_in && rc != Z_STREAM_END);
+    }
+  zs.next_in = (Bytef *) in_buffer;
+  zs.avail_in = 0;
+  zs.next_out = (Bytef *) out_buffer;
+  zs.avail_out = sizeof (out_buffer);
+  rc = inflate (&zs, Z_FINISH);
+  if (rc != Z_OK && rc != Z_STREAM_END)
+    goto error;
+  if (sizeof (out_buffer) - zs.avail_out > 0 && out)
+    session_buffered_write (out, out_buffer, sizeof (out_buffer) - zs.avail_out);
+
+error:
+  inflateEnd (&zs);
+  if (rc != Z_OK && rc != Z_STREAM_END)
+    *err_ret = srv_make_new_error ("22000", "SR093", "Error in de-compressing");
+  return;
+}
+
+
 long
 strses_write_out_compressed (dk_session_t * ses, dk_session_t * out)
 {
@@ -4190,11 +4251,21 @@ static caddr_t
 bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char *szMe = "gzip_uncompress";
-  caddr_t src = bif_string_arg (qst, args, 0, szMe);
-  dk_session_t *out = strses_allocate ();
+  caddr_t src = bif_arg (qst, args, 0, szMe);
+  dk_session_t *out;
+  dtp_t dtp = DV_TYPE_OF (src);
+
+  if (DV_STRING_SESSION != dtp && !DV_STRINGP (src))
+    sqlr_new_error ("22023", "SR095",
+	"%s needs a string_output or string as a first argument,"
+	" not an argument of type %s (%d)", szMe, dv_type_title (dtp), dtp);
+  out = strses_allocate ();
   strses_enable_paging (out, http_ses_size);
 
-  zlib_box_gzip_uncompress (src, out, err_ret);
+  if (DV_STRING_SESSION != dtp)
+    zlib_box_gzip_uncompress (src, out, err_ret);
+  else
+    zlib_strses_gzip_uncompress ((dk_session_t *) src, out, err_ret);
   return (caddr_t) out;
 }
 
