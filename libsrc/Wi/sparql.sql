@@ -11244,8 +11244,7 @@ alter index SYS_RDF_SCHEMA on DB.DBA.SYS_RDF_SCHEMA partition cluster replicated
 ;
 
 
-
-create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
+create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) returns integer
 {
   declare gr iri_id;
   declare visited any;
@@ -11256,15 +11255,29 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
   declare cc, res, st, msg, meta  any;
   declare v any;
   declare inx int;
-
-  gr := iri_to_id (gn, 0, 0);
-  if (isinteger (gr))
-    return;
+  declare from_text varchar;
+  from_text := '';
+  if (gn is null)
+    {
+      for (select rs_uri from sys_rdf_schema where rs_name=ri_name) do
+        {
+          from_text := from_text || sprintf (' from <%s>', rs_uri);
+        }
+    }
+  else
+    {
+      if (isiri_id (gn))
+        from_text := from_text || sprintf (' from <%s>', id_to_iri (gn));
+      else
+        from_text := from_text || sprintf (' from <%s>', gn);
+    }
+  if ('' = from_text)
+    return 0;
 
   for (idx := 0; idx <= 4; idx := idx + 1)
     {
-      txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s ?o from <%s> where { ?s <%s> ?o . filter (!isLITERAL (?o)) }',
-        id_to_iri (gr), id_to_iri (case (idx) when 4 then rdf_sas_iri () else rdf_owl_iri (idx) end) );
+      txt := sprintf ('sparql define output:valmode "LONG" define input:storage "" select ?s ?o %s where { ?s <%s> ?o . filter (!isLITERAL (?o)) }',
+        from_text, id_to_iri (case (idx) when 4 then rdf_sas_iri () else rdf_owl_iri (idx) end) );
       exec (txt, null, null, vector (), 0, meta, null, cc);
   while (0 = exec_next (cc, null, null, res))
     {
@@ -11282,34 +11295,80 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
   exec_close (cc);
 -- Loading inverse functional properties
   txt := sprintf ('select DB.DBA.VECTOR_AGG (sub."s") from
-  (sparql define output:valmode "LONG" select ?s from <%s> where { ?s a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> }) sub option (QUIETCAST)',
-    id_to_iri (gr) );
+  (sparql define output:valmode "LONG" define input:storage ""
+    select distinct ?s %s
+    where {
+          { ?s a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> }
+        union
+          { ?s a <http://www.w3.org/2002/07/owl#FunctionalProperty> , <http://www.w3.org/2002/07/owl#SymmetricProperty> }
+        union
+          { ?s1 a <http://www.w3.org/2002/07/owl#FunctionalProperty> .
+	    ?s <http://www.w3.org/2002/07/owl#inverseOf> ?s1 } }
+    ) sub option (QUIETCAST)',
+    from_text );
   exec (txt, null, null, vector (), 0, meta, res);
   v := res[0][0];
   if (0 < length (v))
     {
-      rdf_inf_set_ifp_list (ri_name, v);
+      txt := sprintf ('select DB.DBA.VECTOR_AGG (sub."s") from
+      (sparql define output:valmode "LONG" define input:storage ""
+        select ?s %s
+        where {
+            ?s <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> ?sp option (TRANSITIVE, T_MIN 1) .
+            filter (?sp = iri (??)) } ) sub option (QUIETCAST)',
+        from_text );
+      for (inx := length (v) - 1; 0 <= inx; inx := inx - 1)
+        {
+          declare meta1, res1 any;
+          declare subprops any;
+          exec (txt, null, null, vector (v[inx]), 0, meta1, res1);
+          subprops := res1[0][0];
+          foreach (IRI_ID subp in subprops) do
+            {
+              -- dbg_obj_princ ('Handled subproperty ', id_to_iri (subp), ' of ifp ', id_to_iri (v[inx]));
+              if (0 >= position (subp, v))
+                v := vector_concat (v, vector (subp));
+            }
+        }
+      -- dbg_obj_princ ('known ifps are: '); foreach (IRI_ID i in v) do dbg_obj_princ (id_to_iri(i));
+      gvector_digit_sort (v, 1, 0, 1);
+      rdf_inf_set_ifp_list (ri_name, v); --- Note that this should be after all super/sub relations in order to fill ric_iid_to_rel_ifp
+      txt := sprintf ('
+        select vector_agg (sub."o") from
+          (sparql define output:valmode "LONG" define input:storage ""
+            select distinct ?o %s where {
+                  { ?::0 <http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> ?o .
+                    filter (isREF (?o)) }
+                union
+                  {
+                    ?subp <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> ?superp option (TRANSITIVE, T_MIN 1) .
+                    ?subp <http://www.openlinksw.com/schemas/virtrdf#nullIFPValue> ?o .
+                    filter (?superp = ?::0)
+                    filter (isREF (?o)) } } ) sub option (QUIETCAST)',
+        from_text );
       for (inx := 0; inx < length (v); inx := inx + 1)
         {
+          declare meta1, res1 any;
           declare excl any;
-          excl := (select vector_agg (O) from RDF_QUAD where S = v[inx] and P = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#nullIFPValue') and G = gr option (QUIETCAST));
+          exec (txt, null, null, vector (v[inx]), 0, meta1, res1);
+          excl := meta1[0][0];
           if (length (excl) > 0)
           rdf_inf_set_ifp_exclude_list (ri_name, v[inx], excl);
         }
     }
 -- Loading inverse functions
   txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."o", sub."o", sub."s")) from
-  (sparql define input:storage "" select ?s ?o from <%s> where {
+  (sparql define input:storage "" select ?s ?o %s where {
     ?s <http://www.w3.org/2002/07/owl#inverseOf> ?o .
     optional { ?o <http://www.w3.org/2002/07/owl#inverseOf> ?s2 . filter (?s2 = ?s ) }
     filter ((str (?s) <= str (?o)) || !BOUND(?s2)) }) sub option (QUIETCAST)',
-    id_to_iri (gr) );
+    from_text );
   exec (txt, null, null, vector (), 0, meta, res);
   v := res[0][0];
   txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", sub."s")) from
-  (sparql define input:storage "" select ?s from <%s> where {
+  (sparql define input:storage "" select ?s %s where {
     ?s a <http://www.w3.org/2002/07/owl#SymmetricProperty> }) sub option (QUIETCAST)',
-    id_to_iri (gr) );
+    from_text );
   exec (txt, null, null, vector (), 0, meta, res);
   v := vector_concat (v, res[0][0]);
   if (0 < length (v))
@@ -11319,9 +11378,9 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
     }
 -- Loading bitmask properties of functions
   txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", 1)) from
-  (sparql define input:storage "" select ?s from <%s> where {
+  (sparql define input:storage "" select ?s %s where {
     ?s a <http://www.w3.org/2002/07/owl#TransitiveProperty> }) sub option (QUIETCAST)',
-    id_to_iri (gr) );
+    from_text );
   exec (txt, null, null, vector (), 0, meta, res);
   v := res[0][0];
   if (0 < length (v))
@@ -11329,6 +11388,7 @@ create procedure rdfs_load_schema (in ri_name varchar, in gn varchar)
       gvector_sort (v, 2, 0, 1);
       rdf_inf_set_prop_props (ri_name, v);
     }
+  return 1;
 }
 ;
 
@@ -11337,7 +11397,7 @@ create procedure rdf_schema_ld ()
 {
   if (1 <> sys_stat ('cl_run_local_only'))
     return 0;
-  return (select  count (*) from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri));
+  return (select count (*) from (select distinct s.rs_name from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.rs_name));
 }
 ;
 
@@ -11348,7 +11408,9 @@ rdf_schema_ld ()
 create procedure CL_RDF_INF_CHANGED_SRV (in name varchar)
 {
   set isolation = 'committed';
-  return (select  count (*) from sys_rdf_schema where rs_name = name and 0 = rdfs_load_schema (rs_name, rs_uri));
+  rdf_inf_clear (name);
+  return case (rdfs_load_schema (name)) when 0 then 1 else 0 end;
+  jso_mark_affected (name);
 }
 ;
 
@@ -11365,11 +11427,9 @@ create procedure CL_RDF_INF_CHANGED (in name varchar)
 
 create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0)
 {
-  if (remove)
     delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
-  else
+  if (not remove)
     {
-      delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
       insert into sys_rdf_schema (rs_name, rs_uri) values (name, gn);
     }
   commit work;
@@ -11378,8 +11438,8 @@ create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int :=
   else
     {
       rdf_inf_clear (name);
-      rdfs_load_schema (name, gn);
-      log_text ('db.dba.rdfs_load_schema (?, ?)', name, gn);
+      rdfs_load_schema (name);
+      log_text ('db.dba.rdfs_load_schema (?)', name);
     }
 }
 ;

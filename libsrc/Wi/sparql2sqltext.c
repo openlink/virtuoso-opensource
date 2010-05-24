@@ -7836,6 +7836,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     }
   else
     ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadStorage);
+  if (NULL != ssg->ssg_sparp->sparp_env->spare_inference_name)
+    ssg_qr_uses_jso (ssg, NULL, box_dv_uname_string (ssg->ssg_sparp->sparp_env->spare_inference_name));
   ssg->ssg_equiv_count = ssg->ssg_sparp->sparp_sg->sg_equiv_count;
   ssg->ssg_equivs = ssg->ssg_sparp->sparp_sg->sg_equivs;
   ssg_find_formatter_by_name_and_subtype (tree->_.req_top.formatmode_name, tree->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);

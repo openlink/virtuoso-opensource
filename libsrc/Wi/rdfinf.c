@@ -320,20 +320,37 @@ iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret)
 }
 
 
-char * sas_1_text = "select s from rdf_quad where g = ? and o = ? and p = ? option (quietcast)";
-char * sas_2_text = "select o from rdf_quad where g = ? and s = ? and p = ? option (quietcast)";
-char * sas_tn_text = "select O from RDF_QUAD where S = :0 and P = rdf_sas_iri () and G = :1 union all select S from RDF_QUAD where O = :0 and P = rdf_sas_iri () and G = :1 option (quietcast, array)";
-char * sas_tn_no_graph_text = "select O from RDF_QUAD where S = :0 and P = rdf_sas_iri () union all select S from RDF_QUAD where O = :0 and P = rdf_sas_iri () option (quietcast, array)";
-char * tn_ifp_text = "select s from rdf_quad where p in (rdf_inf_ifp_list (:1)) and o = :0 and not isiri_id (:0) and G in (:2) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
-  " union all select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and org.G in (:2) and syn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) option (any order)";
-char * tn_ifp_no_graph_text = "select s from rdf_quad where p in (rdf_inf_ifp_list (:1)) and o = :0 and not isiri_id (:0) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
-" union all select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) option (any order)";
+char * sas_1_text = "select S from DB.DBA.RDF_QUAD where G = ? and O = ? and P = ? option (quietcast)";
+char * sas_2_text = "select O from DB.DBA.RDF_QUAD where G = ? and S = ? and P = ? option (quietcast)";
+char * sas_tn_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () and G = :1 union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () and G = :1 option (quietcast, array)";
+char * sas_tn_no_graph_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () option (quietcast, array)";
+char * tn_ifp_text =
+  " select S from DB.DBA.RDF_QUAD "
+  " where P in (rdf_inf_ifp_list (:1)) and O = :0 and not isiri_id (:0) and G in (:2) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
+  " union all select syn.S from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn "
+  " where org.P in (rdf_inf_ifp_list (:1)) and syn.P = org.P and org.S = :0 and isiri_id (:0) and syn.O = org.O and org.G in (:2) and syn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, org.P, org.O)"
+  " union all select rsyn.S from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.O = rorg.O and rorg.G in (:2) and rsyn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
+  " option (any order)";
+char * tn_ifp_no_graph_text =
+  "select S from DB.DBA.RDF_QUAD "
+  " where P in (rdf_inf_ifp_list (:1)) and o = :0 and not isiri_id (:0) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
+  " union all select syn.s from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn "
+  " where org.P in (rdf_inf_ifp_list (:1)) and syn.P = org.P and org.S = :0 and isiri_id (:0) and syn.o = org.O and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
+  " union all select rsyn.s from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.o = rorg.O and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
+  " option (any order)";
 char * tn_ifp_dist_text =
-  " select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and org.G in (:2) and syn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) option (any order)";
+  " select syn.s from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn "
+  " where org.P in (rdf_inf_ifp_list (:1)) and syn.P = org.P and org.s = :0 and isiri_id (:0) and syn.O = org.O and org.G in (:2) and syn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
+  " union all select rsyn.S from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.O = rorg.O and rorg.G in (:2) and rsyn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
+  " option (any order)";
 char * tn_ifp_dist_no_graph_text =
-" select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) option (any order)";
-
-
+  " select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
+  " union all select rsyn.s from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.o = rorg.O and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
+  " option (any order)";
 
 query_t * sas_1_qr;
 query_t * sas_2_qr;
@@ -724,7 +741,7 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
   caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
   rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
   if (!place && !create)
-    sqlr_new_error ("42000", "RDFI.", "No rdf inf ctx %.200s", ctx_name);
+    sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s'", ctx_name);
   if (!place)
     {
       caddr_t n2 = box_copy (ctx_name);
@@ -732,13 +749,15 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
       c1->ric_name = n2;
       id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&c1);
       ctx = c1;
-      ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
-      ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
+      ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (text_count_t), treehash, treehashcmp);
       /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);*/
-      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
+      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
       id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
+      id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
       id_hash_set_rehash_pct (ctx->ric_samples, 200);
       id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
       /*id_hash_set_rehash_pct (ctx->ric_prop_props, 200);*/
@@ -780,11 +799,11 @@ bif_rdf_is_sub (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ri_iterator_t * rit;
   caddr_t sub_iri = bif_arg (qst, args, 1, "rdf_is_sub");
   caddr_t iri = bif_arg (qst, args, 2, "rdf_is_sub");
-  int mode = bif_long_arg (qst, args, 3, "rdf_is_sub_list");
+  int mode = bif_long_arg (qst, args, 3, "rdf_is_sub");
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "", 0);
   rdf_sub_t * sub;
   if (mode != RI_SUBCLASS && mode != RI_SUBPROPERTY)
-    sqlr_new_error ("42000", "RDF..", "RDF inference type for rdf_is_sub must be  1 for subclass  or 3 for subproperty");
+    sqlr_new_error ("42000", "RDF..", "RDF inference type for rdf_is_sub() must be 1 for subclass  or 3 for subproperty");
   mode = mode == RI_SUBCLASS ? RI_SUPERCLASS : RI_SUPERPROPERTY;
   sub = ric_iri_to_sub (ctx, sub_iri, mode, 0);
   if (sub)
@@ -832,25 +851,265 @@ bif_rdf_inf_dir (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (0);
 }
 
+caddr_t
+bif_rdf_inf_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_dump", 0);
+  int ctr;
+  dk_set_t res_triples = NULL;
+  id_hash_iterator_t hiter;
+  caddr_t *key_ptr, *data_ptr;
+  rdf_sub_t **rsub_ptr;
+  iri_id_t **rels_ptr;
+  id_hash_iterator (&hiter, ctx->ric_iri_to_subclass);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&rsub_ptr)))
+    {
+      rdf_sub_t *rsub = rsub_ptr[0];
+      DO_SET (rdf_sub_t *, sub_rs, &(rsub->rs_sub))
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (sub_rs->rs_iri), box_dv_uname_string ("http://www.w3.org/2000/01/rdf-schema#subClassOf"), box_copy_tree(key_ptr[0])));
+        }
+      END_DO_SET ()
+      DO_SET (rdf_sub_t *, equiv_rs, &(rsub->rs_equiv))
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (equiv_rs->rs_iri), box_dv_uname_string ("http://www.w3.org/2002/07/owl#equivalentClass"), box_copy_tree(key_ptr[0])));
+        }
+      END_DO_SET ()
+    }
+  id_hash_iterator (&hiter, ctx->ric_iri_to_subproperty);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&rsub_ptr)))
+    {
+      rdf_sub_t *rsub = rsub_ptr[0];
+      DO_SET (rdf_sub_t *, sub_rs, &(rsub->rs_sub))
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (sub_rs->rs_iri), box_dv_uname_string ("http://www.w3.org/2000/01/rdf-schema#subPropertyOf"), box_copy_tree(key_ptr[0])));
+        }
+      END_DO_SET ()
+      DO_SET (rdf_sub_t *, equiv_rs, &(rsub->rs_equiv))
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree (equiv_rs->rs_iri), box_dv_uname_string ("http://www.w3.org/2002/07/owl#equivalentProperty"), box_copy_tree(key_ptr[0])));
+        }
+      END_DO_SET ()
+    }
+  DO_BOX_FAST_REV (caddr_t, iid, ctr, ctx->ric_ifp_list)
+    {
+      dk_set_push (&res_triples, list (3, box_copy_tree(iid), uname_rdf_ns_uri_type, box_dv_uname_string ("http://www.w3.org/2002/07/owl#InverseFunctionalProperty"), box_dv_uname_string ("http://www.w3.org/2002/07/owl#InverseFunctionalProperty")));
+    }
+  END_DO_BOX_FAST;
+  data_ptr = ctx->ric_inverse_prop_pair_sortedalist;
+  for (ctr = BOX_ELEMENTS_0 (data_ptr) - 2; ctr >= 0; ctr -= 2)
+    {
+      dk_set_push (&res_triples, list (3, box_copy_tree (data_ptr[ctr]), box_dv_uname_string ("http://www.w3.org/2002/07/owl#inverseOf"), box_copy_tree (data_ptr[ctr+1])));
+    }
+  data_ptr = ctx->ric_prop_props;
+  for (ctr = BOX_ELEMENTS_0 (data_ptr) - 2; ctr >= 0; ctr -= 2)
+    {
+      if (0x1 & (ptrlong)(data_ptr[ctr+1]))
+        dk_set_push (&res_triples, list (3, box_copy_tree (data_ptr[ctr]), uname_rdf_ns_uri_type, box_dv_uname_string ("http://www.w3.org/2002/07/owl#InverseFunctionalProperty"), box_dv_uname_string ("http://www.w3.org/2002/07/owl#TransitiveProperty")));
+    }
+  id_hash_iterator (&hiter, ctx->ric_ifp_exclude);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&data_ptr)))
+    {
+      caddr_t *data = (caddr_t *)data_ptr;
+      DO_BOX_FAST_REV (caddr_t, iid, ctr, data)
+        {
+          dk_set_push (&res_triples, list (3, box_copy_tree(key_ptr[0]), box_dv_uname_string ("http://www.openlinksw.com/schemas/virtrdf#nullIFPValue"), box_copy_tree (iid)));
+        }
+      END_DO_BOX_FAST;
+    }
+#ifndef NDEBUG
+  id_hash_iterator (&hiter, ctx->ric_iid_to_rel_ifp);
+  while (hit_next (&hiter, (char **)(&key_ptr), (char **)(&rels_ptr)))
+    {
+      iri_id_t *rels = rels_ptr[0];
+      int rel_ctr, rels_count = box_length (rels) / sizeof (iri_id_t);
+      for (rel_ctr = rels_count; rel_ctr--; /*no step*/)
+        dk_set_push (&res_triples, list (3, box_copy_tree(key_ptr[0]), box_dv_uname_string ("http://www.openlinksw.com/schemas/virtrdf#relatedIFP"), box_iri_id (rels[rel_ctr])));
+    }
+#endif
+  return list_to_array (res_triples);
+}
 
 caddr_t
 bif_rdf_inf_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_inf_ctx_t * ctx;
   ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_list", 0);
-  if (ctx->ric_ifp_list)
-    return box_copy_tree (ctx->ric_ifp_list);
+  if (NULL == ctx->ric_ifp_list)
   return list (0);
+  return box_copy_tree (ctx->ric_ifp_list);
 }
 
+caddr_t
+bif_rdf_inf_ifp_rel_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_inf_ctx_t * ctx;
+  ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_rel_list", 0);
+  if (NULL == ctx->ric_ifp_rel_list)
+    return NULL;
+  if (1 == BOX_ELEMENTS (args))
+    return box_copy_tree (ctx->ric_ifp_rel_list);
+  else
+    {
+      caddr_t arg = bif_arg (qst, args, 1, "rdf_inf_ifp_rel_list");
+      iri_id_t arg_iid, **rels_ptr, *rels;
+      caddr_t *res_boxes;
+      int rel_ctr, rels_count, res_boxes_ctr;
+      if (DV_IRI_ID != DV_TYPE_OF (arg))
+        return NEW_DB_NULL;
+      rels_ptr = (iri_id_t **)id_hash_get (ctx->ric_iid_to_rel_ifp, (caddr_t)(&arg));
+      if (NULL == rels_ptr)
+        return NEW_DB_NULL;
+      rels = rels_ptr[0];
+      rels_count = box_length (rels) / sizeof (iri_id_t);
+      arg_iid = unbox_iri_int64 (arg);
+      res_boxes = dk_alloc_box ((rels_count-1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      for (rel_ctr = res_boxes_ctr = 0; rel_ctr < rels_count; rel_ctr++)
+        {
+          if (rels[rel_ctr] != arg_iid)
+            res_boxes [res_boxes_ctr++] = box_iri_id (rels[rel_ctr]);
+        }
+      if (res_boxes_ctr != (rels_count-1))
+        sqlr_new_error ("22023", "SR634", "Corrupted inference rule set '%.200s', please report the ontology and the query", ctx->ric_name);
+      return (caddr_t)res_boxes;
+    }
+}
 
 caddr_t
 bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_list", 1);
+#ifdef RDFINF_DEBUG
+  query_instance_t *qi = (query_instance_t *)qst;
+#endif
+  int ifp_count, ifp_ctr;
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_ifp_list", 1);
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_ifp_list");
+  caddr_t * grps = box_copy /*_tree*/ (arr);
+  int dirt;
+  dk_set_t ifp_rel_acc = NULL;
   ctx->ric_ifp_list = box_copy_tree ((caddr_t)arr);
+  ifp_count = BOX_ELEMENTS_0 (arr);
+  if (ctx->ric_iid_to_rel_ifp->ht_inserts != ctx->ric_iid_to_rel_ifp->ht_deletes)
+    {
+      caddr_t *keyp, *valp;
+      id_hash_iterator_t hit;
+      id_hash_iterator (&hit, ctx->ric_iid_to_rel_ifp);
+      while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+        {
+           dk_free_tree (keyp[0]);
+           /*dk_free_tree (valp[0]);*/
+        }
+      id_hash_clear (ctx->ric_iid_to_rel_ifp);
+    }
+  do {
+      dirt = 0;
+      for (ifp_ctr = ifp_count; ifp_ctr--; /*no step*/)
+        {
+          rdf_sub_t **rsub_ptr;
+          caddr_t ifp_boxed_iid = arr[ifp_ctr];
+          iri_id_t ifp_iid = unbox_iri_int64 (ifp_boxed_iid);
+          iri_id_t grp_iid = unbox_iri_int64 (grps[ifp_ctr]);
+          dk_set_t subs;
+          rsub_ptr = (rdf_sub_t **)id_hash_get (ctx->ric_iri_to_subproperty, (char *)(&ifp_boxed_iid));
+          if (NULL == rsub_ptr)
+            continue;
+          subs = rsub_ptr[0]->rs_sub;
+          DO_SET (rdf_sub_t *, sub_rsub, &subs)
+            {
+              int sub_ifp_pos;
+              iri_id_t sub_iid, sub_grp_iid;
+              sub_iid = unbox_iri_int64 (sub_rsub->rs_iri);
+              for (sub_ifp_pos = ifp_count; sub_ifp_pos--; /*no step*/)
+                {
+                  if (unbox_iri_int64 (arr[sub_ifp_pos]) == sub_iid)
+                    break;
+                }
+              if (0 > sub_ifp_pos)
+                sqlr_new_error ("22023", "SR633", "Inconsistent inference rule set '%.200s' in rdf_inf_set_ifp_list(), loading is aborted, please report the ontology", ctx->ric_name);
+              sub_grp_iid = unbox_iri_int64 (grps[sub_ifp_pos]);
+              if (sub_grp_iid != grp_iid)
+                {
+                  int ctr;
+                  dirt = 1;
+                  for (ctr = ifp_count; ctr--; /*no step*/)
+                    {
+                      if (unbox_iri_int64 (grps[ctr]) == sub_grp_iid)
+                        {
+#ifdef RDFINF_DEBUG
+                          query_instance_t *qi = (query_instance_t *)qst;
+                          caddr_t main_iri = key_id_to_iri (qi, ifp_iid);
+                          caddr_t sub_iri = key_id_to_iri (qi, ifp_iid);
+                          caddr_t attach_iri = key_id_to_iri (qi, unbox_iri_int64 (arr[ctr]));
+                          printf ("INF '%s' loading: IFP <%s> is attached to <%s> via <%s>\n", ctx->ric_name, attach_iri, main_iri, sub_iri);
+                          dk_free_box (main_iri);
+                          dk_free_box (sub_iri);
+                          dk_free_box (attach_iri);
+
+#endif
+                          grps[ctr] = grps[ifp_ctr];
+                        }
+                    }
+                }
+            }
+          END_DO_SET()
+        }
+    } while (dirt);
+#ifdef RDFINF_DEBUG
+  for (ifp_ctr = ifp_count; ifp_ctr--; /*no step*/)
+    {
+      caddr_t ifp_iri = key_id_to_iri (qi, unbox_iri_int64 (arr[ifp_ctr]));
+      caddr_t grp_iri = key_id_to_iri (qi, unbox_iri_int64 (grps[ifp_ctr]));
+      printf ("INF '%s' loading: IFP <%s> belongs to <%s> group\n", ctx->ric_name, ifp_iri, grp_iri);
+    }
+#endif
+
+/* At this point, every group in grps[ctr] is labeled by exactly one its representative. Now it's easy to fill in the hashtable */
+  for (ifp_ctr = ifp_count; ifp_ctr--; /*no step*/)
+    {
+      caddr_t ifp_boxed_iid = arr[ifp_ctr];
+      dk_set_t acc;
+      int grpsize, ctr;
+      iri_id_t *val;
+      iri_id_t ifp_iid = unbox_iri_int64 (ifp_boxed_iid);
+      iri_id_t grp_iid = unbox_iri_int64 (grps[ifp_ctr]);
+      if (ifp_iid != grp_iid)
+        continue; /* This is not a canonical rep of the group */
+      acc = NULL;
+      grpsize = 0;
+      for (ctr = ifp_count; ctr--; /*no step*/)
+        if (unbox_iri_int64 (grps[ctr]) == grp_iid)
+          {
+            dk_set_push (&acc, arr[ctr]);
+            grpsize++;
+          }
+      if (1 == grpsize)
+        {
+          dk_set_pop (&acc);
+          continue;
+        }
+      val = dk_alloc_box (grpsize * sizeof (iri_id_t), DV_ARRAY_OF_LONG);
+      for (ctr = 0; ctr < grpsize; ctr++)
+        {
+          caddr_t member_boxed_iid = box_copy_tree (dk_set_pop (&acc));
+          dk_set_push (&ifp_rel_acc, member_boxed_iid);
+          val[ctr] = unbox_iri_int64 (member_boxed_iid);
+          id_hash_set (ctx->ric_iid_to_rel_ifp, (caddr_t)(&member_boxed_iid), (caddr_t)(&val));
+        }
+    }
+  ctx->ric_ifp_rel_list = revlist_to_array (ifp_rel_acc);
   return NULL;
+}
+
+caddr_t
+bif_rdf_inf_ifp_exclude_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_exclude_list", 1);
+  iri_id_t ifp = bif_iri_id_arg (qst, args, 1, "rdf_inf_ifp_exclude_list");
+  caddr_t box = box_iri_id (ifp);
+  caddr_t *place = (caddr_t *)id_hash_get (ctx->ric_ifp_exclude, (void *)(&box));
+  if (NULL == place)
+    return list (0);
+  return box_copy_tree (place[0]);
 }
 
 
@@ -915,6 +1174,13 @@ bif_rdf_inf_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t ctx_name = bif_string_arg (qst, args, 0, "rdf_inf_clear");
   id_hash_remove (rdf_name_to_ric, (caddr_t)&ctx_name);
   return 0;
+}
+
+caddr_t
+bif_rdf_inf_is_loaded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ctx_name = bif_string_arg (qst, args, 0, "rdf_inf_is_loaded");
+  return box_num ((NULL != id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name)) ? 1 : 0);
 }
 
 
@@ -1173,11 +1439,13 @@ rdf_inf_init ()
   bif_define ("rdf_inf_dir", bif_rdf_inf_dir);
   bif_define ("rdf_inf_const_init", bif_rdf_inf_const_init);
   bif_define ("rdf_inf_clear", bif_rdf_inf_clear);
+  bif_define ("rdf_inf_is_loaded", bif_rdf_inf_is_loaded);
   bif_define ("rdf_sas_iri", bif_rdf_sas_iri);
   bif_set_uses_index (bif_rdf_sas_iri);
   bif_define ("rdf_owl_iri", bif_rdf_owl_iri);
   bif_set_uses_index (bif_rdf_owl_iri);
   bif_define ("rdf_inf_ifp_list", bif_rdf_inf_ifp_list);
+  bif_define ("rdf_inf_ifp_rel_list", bif_rdf_inf_ifp_rel_list);
   bif_define ("rdf_inf_set_ifp_list", bif_rdf_inf_set_ifp_list);
   bif_define ("rdf_inf_set_ifp_exclude_list", bif_rdf_inf_set_ifp_exclude_list);
   bif_define ("rdf_inf_ifp_is_excluded", bif_rdf_inf_ifp_is_excluded);
@@ -1187,6 +1455,7 @@ rdf_inf_init ()
   bif_set_uses_index (bif_rdf_check_init);
   bif_define ("rdf_super_sub_list", bif_rdf_super_sub_list);
   bif_define ("rdf_is_sub", bif_rdf_is_sub);
+  bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
   sas_init ();
 }

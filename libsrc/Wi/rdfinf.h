@@ -25,11 +25,11 @@
 
 typedef struct rdf_sub_s
 {
-  caddr_t	rs_iri;
-  dk_set_t	rs_super;
-  dk_set_t	rs_sub;
-  dk_set_t	rs_equiv;
-  int32		rs_n_subs;  /* count of distinct subs recursively.  Filled in on traversal */
+  caddr_t	rs_iri;			/*!< Boxed IRI_ID of self */
+  dk_set_t	rs_super;		/*!< Direct superproperties or superclasses (set of pointers to their rdf_sub_t) */
+  dk_set_t	rs_sub;			/*!< Direct subproperties or subclasses (set of pointers to their rdf_sub_t) */
+  dk_set_t	rs_equiv;		/*!< Equivalent prperties or classes (set of pointers to their rdf_sub_t) */
+  int32		rs_n_subs;		/*!< Count of distinct subproperties or subclasses, recursively.  Filled in on traversal */
   char		rs_flags;
 } rdf_sub_t;
 
@@ -37,14 +37,16 @@ typedef struct rdf_sub_s
 typedef struct rdf_inf_ctx_s
 {
   caddr_t	ric_name;
-  id_hash_t *	ric_iri_to_subclass;
-  id_hash_t *	ric_iri_to_subproperty;
-  caddr_t *	ric_ifp_list;
+  id_hash_t *	ric_iri_to_subclass;			/*!< Map from IRI of class to pointer to rdf_sub_t */
+  id_hash_t *	ric_iri_to_subproperty;			/*!< Map from IRI of property to pointer to rdf_sub_t */
+  id_hash_t *	ric_iid_to_rel_ifp;			/*!< Map from IRI_ID of an IFP to array of IFPs of all IFPs with a common IFP superproperty */
+  caddr_t *	ric_ifp_list;				/*!< Array of IRI_IDs of inverse functional properties */
+  caddr_t *	ric_ifp_rel_list;			/*!< Array of IRI_IDs of inverse functional properties that have related IFPs (i.e. IFP super- and/or sub- properties) */
   caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys */
   caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted, only bit1 is used atm means transitive */
-  id_hash_t *	ric_ifp_exclude; /* from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of mailto:// */
-  id_hash_t *	ric_samples; /* cardinality estimates with this inf ctx enabled */
-  dk_mutex_t *	ric_mtx; /* for sample cache */
+  id_hash_t *	ric_ifp_exclude;			/*!< Map from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of "mailto://" */
+  id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
+  dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */
 } rdf_inf_ctx_t;
 
 
