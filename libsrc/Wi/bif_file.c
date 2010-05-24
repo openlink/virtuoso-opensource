@@ -825,6 +825,7 @@ bif_file_to_string_session_impl (caddr_t * qst, caddr_t * err_ret,
       goto signal_error;
     }
   close (fd);
+  dk_free_box (fname_cvt);
   if (is_utf8)
     strses_set_utf8 (res, 1);
   if (ses_exists)
