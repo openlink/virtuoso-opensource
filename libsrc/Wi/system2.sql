@@ -633,15 +633,25 @@ decode_b32_num (in s varchar) returns integer
   declare x integer; x := 0;
   declare y integer;
 
-  declare b32_s varchar;
+  declare b32_s, typo_s, corr_s varchar;
+
   b32_s := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  typo_s := '1089';
+  corr_s := 'IOBG';
 
   declare i integer;
+  declare c varchar;
+
   i := 0;
 
   while (i < length(s))
     {
-      y := locate (chr (aref (s, i)), b32_s);
+      c := chr (aref (s, i));
+
+      y := locate (c, typo_s);
+      if (y > 0) c := chr(aref (corr_s, y - 1));
+
+      y := locate (c, b32_s);
 
       if (y > 0)
 	    x := (x * 32) + y - 1;
