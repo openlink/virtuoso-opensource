@@ -7117,7 +7117,7 @@ bif_http_xslt (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 #ifdef BIF_XML
   query_instance_t * qi = (query_instance_t *) qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
-  caddr_t xslt_url = bif_string_arg (qst, args, 0, "http_xslt");
+  caddr_t xslt_url = bif_string_or_null_arg (qst, args, 0, "http_xslt");
   caddr_t params = NULL;
 
   if (BOX_ELEMENTS (args) > 1)
@@ -7127,7 +7127,7 @@ bif_http_xslt (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     sqlr_new_error ("42000", "HT039", "Not allowed to call the http_xslt in an non VSP context");
 
   dk_free_tree (ws->ws_xslt_url);
-  ws->ws_xslt_url = box_dv_short_string (xslt_url);
+  ws->ws_xslt_url = xslt_url ? box_dv_short_string (xslt_url) : NULL;
   dk_free_tree (ws->ws_xslt_params);
   ws->ws_xslt_params = box_copy_tree (params);
 #endif
