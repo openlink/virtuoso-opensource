@@ -801,7 +801,7 @@ create procedure waGroup (
   in id integer,
   in name varchar)
 {
-  return sprintf ('%s/%s#%s', waGraph (), ODRIVE.WA.account_name (id), name);
+  return sprintf ('%s/%s#%U', waGraph (), ODRIVE.WA.account_name (id), name);
 }
 ;
 
