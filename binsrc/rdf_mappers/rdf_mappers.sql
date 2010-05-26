@@ -670,7 +670,8 @@ create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
     return x;
   if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
     return x;
-  return DB.DBA.RDF_SPONGE_PROXY_IRI (x);
+  return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
+  --return DB.DBA.RDF_SPONGE_PROXY_IRI (x);
 }
 ;
 
