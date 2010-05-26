@@ -43,15 +43,15 @@ create method ti_register_for_upstream (in action varchar(1)) returns any for WV
     {
     if (action = 'D')
     {
-      if (exists (select 1 from UPSTREAM_ENTRY where UE_TOPIC_ID = self.ti_id and UE_OP = 'I' and UE_STATUS is null))
+      if (exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'I' and UE_STATUS is null))
       {
-        delete from UPSTREAM_ENTRY where UE_TOPIC_ID = self.ti_id and UE_STATUS is null;
+        delete from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_STATUS is null;
       }
       else 
       {
-        if (exists (select 1 from UPSTREAM_ENTRY where UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null))
+        if (exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null))
         {
-          delete from UPSTREAM_ENTRY where UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null;
+          delete from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and UE_OP = 'U' and UE_STATUS is null;
         }
         insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
           values (UP_ID, self.ti_cluster_name, self.ti_local_name, action);
@@ -64,7 +64,7 @@ create method ti_register_for_upstream (in action varchar(1)) returns any for WV
     }
     else if (action = 'U')
     {
-      if (not exists (select 1 from UPSTREAM_ENTRY where UE_TOPIC_ID = self.ti_id and (UE_OP = 'I' or UE_OP = 'U') and UE_STATUS is null))
+      if (not exists (select 1 from UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID and UE_TOPIC_ID = self.ti_id and (UE_OP = 'I' or UE_OP = 'U') and UE_STATUS is null))
       {
         insert into UPSTREAM_ENTRY (UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP)
           values (UP_ID, self.ti_id, self.ti_cluster_name, self.ti_local_name, action);
