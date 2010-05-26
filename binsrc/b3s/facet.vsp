@@ -154,13 +154,28 @@ footer:;
 <div id="FT">
   Faceted Search &amp; Find service<br/>
   <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
-  <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a><br/>
+  <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a>
+  <?vsp 
+    if (isstring (registry_get ('fst_hosted'))) { http (registry_get ('fst_hosted')); }
+  ?>
+  <br/>
   <?vsp fct_virt_info (); ?><br /> 
   <span class="copyright">Copyright &copy; 2010 OpenLink Software</span>
   <div id="FT_L"></div>
   <div id="FT_R"></div>
 </div>
 </div> <!-- #PG -->
+    <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>
+    <script type="text/javascript">
+	var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+	document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+	try {
+	var pageTracker = _gat._getTracker("<?V registry_get ('urchinTracker')  ?>");
+	pageTracker._trackPageview();
+	} catch(err) {}</script>
+    <?vsp } ?>
 </body>
 </html>
 <?vsp

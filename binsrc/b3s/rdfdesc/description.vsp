@@ -162,7 +162,7 @@
               <label for="sas_ckb">owl:sameAs</label>
             </li>
             <li>
-              <label for="inf_sel">IFP rule:</label>
+              <label for="inf_sel">Inference Rule:</label>
               <select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select><br/>
             </li>
           </ul>

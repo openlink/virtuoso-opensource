@@ -62,7 +62,7 @@
             <td><input class="ckb" id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
           </tr>
           <tr>
-            <td><label for="inf_sel">IFP rule:</label></td>
+            <td><label for="inf_sel">Inference Rule:</label></td>
             <td><select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select></td>
           </tr>
         </table>

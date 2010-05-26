@@ -61,18 +61,19 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('list-count' = mode)
     {
-      http (sprintf ('List of distinct %s%d with counts', connection_get ('s_term'), pos), txt);
+      http ('Displaying List of Distinct Entity Names ordered by Count', txt);
+    }
+  if ('geo' = mode)
+    {
+      http ('Displaying Places associated with Entities', txt);
     }
   if ('properties' = mode)
     {
-      http (sprintf ('Properties of %s%d', connection_get ('s_term'), pos), txt);
+      http ('Displaying Attributes of Entities', txt);
     }
   if ('properties-in' = mode)
     {
-      http (sprintf ('showing %s where %s%d is the value',
-      	   	     connection_get ('c_term'),
-                     connection_get ('s_term'),
-		     pos), txt);
+      http ('Displaying Attributes with Entity Reference Values', txt);
     }
 
   if ('text-properties' = mode)
@@ -85,12 +86,11 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('classes' = mode)
     {
-      http (sprintf ('Displaying types of %s%d', connection_get ('s_term'), pos), txt);
+      http ('Displaying Entity Types', txt);
     }
   if ('text' = mode or 'text-d' = mode)
     {
-      http (sprintf ('Displaying values and text summaries associated with pattern %s%d', 
-	             connection_get ('s_term'), pos), txt);
+      http ('Displaying Ranked Enitity Names and Text summaries', txt);
     }
 --  if (offs)
 --    http (sprintf ('  values %d - %d', 1 + offs, lim), txt);
@@ -204,7 +204,7 @@ fct_query_info (in tree any,
                        fct_short_form (prop),
                        charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
       else
-        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any property</a> containing text <span class="value">"%s"</span>. ', 
+        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any Attribute</a> with Value <span class="value">"%s"</span>. ', 
                       fct_var_tag (this_s, ctx), 
                       connection_get('sid'), 
                       cno,
@@ -296,11 +296,12 @@ fct_top (in tree any, in txt any)
 ;
 
 create procedure
-fct_view_link (in tp varchar, in msg varchar, in txt any)
+fct_view_link (in tp varchar, in msg varchar, in txt any, in tip any := null)
 {
-  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0">%s</a></li>',
-                 connection_get ('sid'), tp, msg),
-        txt);
+  if (tip is null)
+    tip := msg;
+  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0" title="%V">%s</a></li>',
+                 connection_get ('sid'), tp, tip, msg), txt);
 }
 ;
 
@@ -329,7 +330,7 @@ fct_nav (in tree any,
   fct_set_conn_tlogy (tree);
 
   http ('<div id="fct_nav">', txt);
-  http ('<h3>Navigation</h3>', txt);
+  http ('<h3>Entity Relations Navigation</h3>', txt);
   http ('<ul class="n1">', txt);
 
   if ('text-properties' = tp)
@@ -338,33 +339,33 @@ fct_nav (in tree any,
       return;
     }
 
+  if ('classes' <> tp)
+    if (connection_get('c_term') = 'class') 
+	fct_view_link ('classes', 'Classes', txt);
+    else 
+	fct_view_link ('classes', 'Types', txt, 'Entity Category or Class');
+
   if ('properties' <> tp)
-    fct_view_link ('properties', 'Properties', txt);
+    fct_view_link ('properties', 'Attributes', txt, 'Entity Characteristic or Property');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
-    fct_view_link ('properties-in', 'Referencing properties', txt);
+    fct_view_link ('properties-in', 'Referencing Attributes', txt, 'Characteristics or Properties with Entity References as values');
 
   if ('text' <> tp and tp <> 'text-d')
     {
       if (tp <> 'list-count')
-	fct_view_link ('list-count', 'Distinct values with counts', txt);
+	fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
       if (tp <> 'list')
-	fct_view_link ('list', 'Show values', txt);
+	fct_view_link ('list', 'Show Matching Values', txt, 'Displaying Ranked Enitity Names and Text summaries');
     }
-
-  if ('classes' <> tp)
-    if (connection_get('c_term') = 'class') 
-	fct_view_link ('classes', 'Classes', txt);
-    else 
-	fct_view_link ('classes', 'Types', txt);
 
   if ('geo' <> tp)
     {
       --fct_view_link ('geo', 'Map', txt);
-      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0">%s</a>&nbsp;'||
+      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0" title="%V">%s</a>&nbsp;'||
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="">Shown items</option>'||
 	    		'<option value="any">Any location</option>'||
@@ -379,7 +380,7 @@ fct_nav (in tree any,
 	    		'<option value="dbpprop:placeOfDeath">dbpedia:placeOfDeath</option>'||
 	    		'<option value="dbpprop:deathPlace">dbpedia:deathPlace</option>'||
 			'</select></li>',
-                 connection_get ('sid'), 'geo', 'Map'), txt);
+                 connection_get ('sid'), 'geo', 'Geospatial Entities projected over Map overlays', 'Places'), txt);
     }
 
   http ('</ul><ul class="n2">', txt);
@@ -1311,7 +1312,7 @@ exec:;
   connection_set ('sid', sid);
 
   s_term := cast (xpath_eval ('/query/@s-term', tree) as varchar);
-  if ('' = s_term) s_term := 'e';
+  if ('' = s_term) s_term := 'Entity';
   connection_set ('s_term', s_term);
 
   declare c_term varchar;

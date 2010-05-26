@@ -206,7 +206,7 @@ b3s_render_inf_opts ()
   f := 0;
   inf := connection_get ('inf');
 
-  for select RS_NAME from SYS_RDF_SCHEMA do 
+  for select distinct RS_NAME as RS_NAME from SYS_RDF_SCHEMA do 
     {
       if (RS_NAME = inf) 
         {
