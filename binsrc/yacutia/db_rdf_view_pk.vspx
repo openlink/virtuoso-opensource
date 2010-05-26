@@ -45,7 +45,7 @@
     </vm:menu>
     <vm:header caption="External Data Sources">
     </vm:header>
-    <vm:pagebody vdb_check="1">
+    <vm:pagebody>
       <script language="JavaScript">
       function selectAllCheckboxes (form, btn)
       {
