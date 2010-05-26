@@ -958,6 +958,19 @@ create procedure ODS.ODS_API."server.getInfo" (
    	  }
     }
   }
+  else if (info = 'regData')
+  {
+    for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
+    {
+  	  retValue := vector (
+  	                      'register', WS_REGISTER,
+  	                      'openidEnable', WS_REGISTER_OPENID,
+  	                      'facebookEnable', WS_REGISTER_FACEBOOK,
+  	                      'sslEnable', WS_REGISTER_SSL,
+  	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
+  	                     );
+  	}
+  }
   return params2json (retValue);
 }
 ;
@@ -1105,6 +1118,7 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HPHONE'       , get_keyword ('phone', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
   }
@@ -1321,7 +1335,10 @@ create procedure ODS.ODS_API."user.update.fields" (
   in photoContent varchar := null,
 
   in audio varchar := null,
-  in audioContent varchar := null) __soap_http 'text/xml'
+  in audioContent varchar := null,
+
+  in mode varchar := null,
+  in onlineAccounts varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare exit handler for sqlstate '*' {
@@ -1429,6 +1446,20 @@ create procedure ODS.ODS_API."user.update.fields" (
   -- Photo & Audio
   ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
 
+  if (not isnull (onlineAccounts))
+  {
+    declare _u_id integere;
+
+    _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+    for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = onlineAccounts) do
+	  {
+	    if (length (fld1) and not exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _u_id and WUO_TYPE = 'P' and WUO_NAME = fld1 and WUO_URL = fld2))
+	    {
+        insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
+          values (fld1, fld2, _u_id, 'P');
+	    }
+	  }
+  }
   return ods_serialize_int_res (1);
 }
 ;
@@ -2472,10 +2503,13 @@ create procedure ODS.ODS_API."user.onlineAccounts.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
+  rc := (select WUO_ID from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _u_id and WUO_TYPE = "type" and WUO_NAME = name and WUO_URL = url);
+  if (isnull (rc))
+  {
   insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
     values (_u_id, "type", name, url);
   rc := (select max (WUO_ID) from DB.DBA.WA_USER_OL_ACCOUNTS);
+  }
   return ods_serialize_int_res (rc);
 }
 ;
@@ -3215,7 +3249,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   declare N, M integer;
   declare S, IRI, foafGraph, _identity, _loc_idn varchar;
   declare V, st, msg, data, meta any;
-  declare certLogin any;
+  declare certLogin, certLoginEnable any;
   declare "title", "name", "nick", "firstName", "givenname", "family_name", "mbox", "gender", "birthday", "lat", "lng" any;
   declare "icqChatID", "msnChatID", "aimChatID", "yahooChatID", "skypeChatID", "workplaceHomepage", "homepage", "phone", "organizationTitle", "keywords", "depiction", "resume" any;
   declare "interest", "topic_interest", "onlineAccounts", "sameAs" any;
@@ -3256,6 +3290,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
   set isolation='committed';
   if (sslFOAFCheck)
   {
+    if (not is_https_ctx ())
+      goto _exit;
     info := get_certificate_info (9);
     st := '00000';
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
@@ -3264,16 +3300,14 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2])))
       goto _exit;
   }
-  if (sslLoginCheck)
+  certLogin := 0;
+  certLoginEnable := 0;
+  if (is_https_ctx ())
   {
-    certLogin := null;
     for (select WAUI_CERT_LOGIN from DB.DBA.WA_USER_INFO where WAUI_CERT_FINGERPRINT = get_certificate_info (6)) do
     {
-      certLogin := coalesce (WAUI_CERT_LOGIN, 0);
-    }
-    if (isnull (certLogin))
-      {
-      goto _exit;
+      certLogin := 1;
+      certLoginEnable := coalesce (WAUI_CERT_LOGIN, 0);
   }
   }
   S := sprintf ('sparql
@@ -3384,7 +3418,7 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "givenname" := data[N][5];
         "family_name" := data[N][6];
         "mbox" := data[N][7];
-        if (isnull ("mbox"))
+        if (isnull ("mbox") and is_https_ctx ())
         {
           declare L integer;
           declare V, X any;
@@ -3414,8 +3448,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
         "depiction" := data[N][22];
         "resume" := data[N][23];
 
-        if (sslLoginCheck)
           appendProperty (V, 'certLogin', certLogin);
+        appendProperty (V, 'certLoginEnable', certLoginEnable);
         appendProperty (V, 'iri', foafIRI);                                   -- FOAF IRI
         appendProperty (V, 'nickName', coalesce ("nick", "name"));            -- WAUI_NICK
     appendProperty (V, 'title', "title");		   -- WAUI_TITLE
@@ -3462,6 +3496,8 @@ create procedure ODS.ODS_API.get_foaf_data_array (
       }
   }
   }
+  if (certLogin <> '')
+    appendProperty (V, 'certLogin', certLogin);
   if ("interest" <> '')
     appendProperty (V, 'interest', "interest");
   if ("topic_interest" <> '')
@@ -3479,7 +3515,7 @@ _exit:;
 
 create procedure ODS.ODS_API."user.getFOAFData" (
   in foafIRI varchar,
-  in spongerMode integer := 1,
+  in spongerMode integer := 0,
   in sslFOAFCheck integer := 0,
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'

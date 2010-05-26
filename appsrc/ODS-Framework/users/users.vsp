@@ -379,10 +379,14 @@
                 vParams := vParams || sprintf ('&sumary=%U', get_keyword ('i_sumary', params, ''));
               if (get_keyword ('cb_item_i_tags', params, '') = '1')
                 vParams := vParams || sprintf ('&tags=%U', get_keyword ('i_tags', params, ''));
+              if (get_keyword ('cb_item_i_sameAs', params, '') = '1')
+                vParams := vParams || sprintf ('&webIDs=%U', get_keyword ('i_sameAs', params, ''));
               if (get_keyword ('cb_item_i_interests', params, '') = '1')
                 vParams := vParams || sprintf ('&interests=%U', get_keyword ('i_interests', params, ''));
               if (get_keyword ('cb_item_i_topicInterests', params, '') = '1')
                 vParams := vParams || sprintf ('&topicInterests=%U', get_keyword ('i_topicInterests', params, ''));
+              if (get_keyword ('cb_item_i_onlineAccounts', params, '') = '1')
+                vParams := vParams || sprintf ('&onlineAccounts=%U', get_keyword ('i_onlineAccounts', params, ''));
             }
             if (vFormSubtab = 1)
             {
@@ -722,7 +726,7 @@
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="ODS">ODS</li>
-                  <li id="lf_tab_1" title="OpenID">OpenID</li>
+                  <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -795,7 +799,7 @@
                 </div>
                 <ul id="rf_tabs" class="tabs">
                   <li id="rf_tab_0" title="ODS">ODS</li>
-                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -1041,7 +1045,7 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Import">Import</li>
+                      <li id="pf_tab_0_0" title="Import">Profile Import</li>
                       <li id="pf_tab_0_1" title="Main">Main</li>
                       <li id="pf_tab_0_2" title="Address">Address</li>
                       <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
@@ -1061,7 +1065,7 @@
                     <table class="form" cellspacing="5">
                       <tr>
                             <th>
-                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                              <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />

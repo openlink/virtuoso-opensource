@@ -102,7 +102,7 @@
     <br />
     <div id="p" class="c1">
       <div class="tabs">
-      <v:url name="p_url_0" xhtml_id="p_url_0" value="Import" url="--sprintf('uiedit.vspx?page=1&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_0" xhtml_id="p_url_0" value="Profile Import" url="--sprintf('uiedit.vspx?page=1&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_1" xhtml_id="p_url_1" value="Main" url="--sprintf('uiedit.vspx?page=1&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_2" xhtml_id="p_url_2" value="Address" url="--sprintf('uiedit.vspx?page=1&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_3" xhtml_id="p_url_3" value="Online Accounts" url="--sprintf('uiedit.vspx?page=1&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>

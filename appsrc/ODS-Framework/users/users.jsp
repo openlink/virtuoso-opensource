@@ -501,10 +501,14 @@
                     params += httpParam ("&", "sumary", getParameter(items, request, "i_sumary"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_tags")))
                     params += httpParam ("&", "tags", getParameter(items, request, "i_tags"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_sameAs")))
+                    params += httpParam ("&", "webIDs", getParameter(items, request, "i_sameAs"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_interests")))
                     params += httpParam ("&", "interests", getParameter(items, request, "i_interests"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_topicInterests")))
                     params += httpParam ("&", "topicInterests", getParameter(items, request, "i_topicInterests"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_onlineAccounts")))
+                    params += httpParam ("&", "onlineAccounts", getParameter(items, request, "i_onlineAccounts"));
                 }
                 else if ($_formSubtab == 1)
                 {
@@ -809,7 +813,7 @@
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="ODS">ODS</li>
-                  <li id="lf_tab_1" title="OpenID">OpenID</li>
+                  <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -882,7 +886,7 @@
                 </div>
                 <ul id="rf_tabs" class="tabs">
                   <li id="rf_tab_0" title="ODS">ODS</li>
-                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -1129,7 +1133,7 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Import">Import</li>
+                      <li id="pf_tab_0_0" title="Import">Profile Import</li>
                       <li id="pf_tab_0_1" title="Main">Main</li>
                       <li id="pf_tab_0_2" title="Address">Address</li>
                       <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
@@ -1145,7 +1149,7 @@
                     <table class="form" cellspacing="5">
                       <tr>
                         <th>
-                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                              <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />

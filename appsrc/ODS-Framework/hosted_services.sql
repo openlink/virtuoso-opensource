@@ -558,7 +558,12 @@ wa_exec_no_error(
    WS_COPYRIGHT varchar,
    WS_DISCLAIMER varchar,
    WS_DEFAULT_MAIL_DOMAIN varchar,
-   WS_HTTPS integer default 0
+   WS_HTTPS integer default 0,
+   WS_REGISTER_OPENID integer default 1,
+   WS_REGISTER_FACEBOOK integer default 1,
+   WS_REGISTER_SSL integer default 1,
+   WS_REGISTER_AUTOMATIC_SSL integer default 1,
+   WS_FEEDS_HUB varchar default null
  )
 ')
 ;
@@ -617,10 +622,25 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'ho
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB', 'varchar default null')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_STORE_DAYS', 'integer default 30')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_HTTPS', 'integer default 0')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_OPENID', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FACEBOOK', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_AUTOMATIC_SSL', 'integer default 1')
 ;
 
 wa_exec_no_error(
@@ -1873,6 +1893,10 @@ create procedure INIT_SERVER_SETTINGS ()
     insert soft WA_SETTINGS
   	  (
   	   WS_REGISTER,
+       WS_REGISTER_OPENID,
+       WS_REGISTER_FACEBOOK,
+       WS_REGISTER_SSL,
+       WS_REGISTER_AUTOMATIC_SSL,
   	   WS_MAIL_VERIFY,
   	   WS_REGISTRATION_EMAIL_EXPIRY,
   	   WS_JOIN_EXPIRY,
@@ -1889,6 +1913,10 @@ create procedure INIT_SERVER_SETTINGS ()
   	  )
 	  values
 	    (
+	     1,
+	     1,
+	     1,
+	     1,
 	     1,
 	     0,
 	     24,
@@ -1952,6 +1980,24 @@ Collaborate with authoring information on Wikis, and much more!
 
 INIT_SERVER_SETTINGS ();
 
+create procedure wa_register_upgrade() {
+
+  if (registry_get ('__wa_register_upgrade') = 'done')
+    return;
+
+  update WA_SETTINGS
+  	 set WS_REGISTER_OPENID = 1,
+         WS_REGISTER_FACEBOOK = 1,
+         WS_REGISTER_SSL = 1,
+         WS_REGISTER_AUTOMATIC_SSL = 1;
+
+  registry_set ('__wa_register_upgrade', 'done');
+}
+;
+
+wa_register_upgrade()
+;
+
 create procedure WA_RETRIEVE_MESSAGE (in str any)
 {
   declare pos1, pos2 any;
@@ -1966,26 +2012,19 @@ create procedure WA_RETRIEVE_MESSAGE (in str any)
 create procedure WA_STATUS_NAME(in status int)
 {
   if (status = 1)
-  {
     return 'Application owner';
-  }
-  else if (status = 2)
-  {
+
+  if (status = 2)
     return 'Approved';
-  }
-  else if (status = 3)
-  {
+
+  if (status = 3)
     return 'Owner approval pending';
-  }
-  else if (status = 4)
-  {
+
+  if (status = 4)
     return 'User approval pending';
-  }
-  else
-  {
+
     return 'Invalid status';
   }
-}
 ;
 
 create procedure WA_USER_GET_OPTION(in _name varchar,in _key varchar)
@@ -3290,7 +3329,7 @@ create procedure WA_MAKE_NICK (in nick varchar)
       i := i + 1;
       nick := nick || cast (i as varchar);
     }
-  return nick;
+  return subseq (nick, 0, 20);
 }
 ;
 
