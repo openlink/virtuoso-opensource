@@ -6487,3 +6487,78 @@ create procedure y_tab_or_space (in x any)
   return x;
 }
 ;
+
+create procedure WS.WS.VFS_EXPORT_DEFS ()
+{
+  declare ses any;
+  ses := string_output ();
+  for select * from WS.WS.VFS_SITE do 
+    {
+      http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
+      http ('INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
+		'\tVS_DEL,\n\tVS_FOLLOW,\n\tVS_NFOLLOW,\n\tVS_SRC,\n\tVS_OPTIONS,\n\tVS_METHOD,\n\tVS_OTHER,\n\tVS_OPAGE,\n\tVS_REDIRECT,\n'||
+		'\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH)\n VALUES (\n',
+            ses			 
+	  );
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DESCR),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HOST),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_URL),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INX),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OWN),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROOT),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (cast (VS_NEWER as varchar)),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEL),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_FOLLOW),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_NFOLLOW),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_SRC),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPTIONS),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_METHOD),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OTHER),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPAGE),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_REDIRECT),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (sprintf ('serialize (%s)', DB.DBA.SYS_SQL_VAL_PRINT (deserialize (VS_UDATA))),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DLOAD_META),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INST_ID),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_EXTRACT_FN),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE_FN),ses); http (',\n', ses);
+      http ('\t', ses);	  
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEPTH),ses); http ('\n', ses);
+      http (');\n\n\n', ses);
+    }
+  http ('WS.WS.VFS_INIT_QUEUE ();\n', ses);
+  return ses;
+}
+;
+
+create procedure WS.WS.VFS_INIT_QUEUE ()
+{
+  for select * from WS.WS.VFS_SITE do
+    {
+      insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_TS, VQ_STAT, VQ_OTHER) values
+	  (VS_HOST, VS_ROOT, VS_URL, now (), 'waiting', case VS_OTHER when 'checked' then 'other' else null end);
+    }
+}
+;

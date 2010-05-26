@@ -56,6 +56,7 @@
       <v:variable name="_rdf_flw" type="varchar" default="''" persist="0" />
       <v:variable name="_rdf_graph" type="varchar" default="''" persist="0" />
       <v:variable name="_html_meta" type="int" default="0" persist="0" />
+      <v:variable name="_other" type="int" default="0" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -84,23 +85,28 @@
       <v:before-data-bind>
         <v:script>
           <![CDATA[
-            declare _idx, _oth varchar;
+            declare _idx varchar;
             declare _n_own, ename integer;
             self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
             if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
             {
 	      declare _host, _root, _tmp any;
-              _oth := '';
               _n_own := 0;
 	      _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
 	      _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
               select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
                 VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-                VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN
+		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
+		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN
                 into self._descr, self._host, self._url, _idx, self._root,
                 self._newd, self._del, self._flow, self._dflow, self._auth,
-                self._img, self._dav, _n_own, _oth, self._opage, self._redir, self._store, self._ask_rdf, self._udata, self._store_fn, self._ext_fn
+		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
+		self._ask_rdf, self._udata, self._store_fn, self._ext_fn
                 from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+              if (self._other is null) 
+	        self._other := 0;	      
+              else if (self._other = 'checked')
+	        self._other := 1;
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
 	      ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
 	      self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
@@ -338,6 +344,13 @@
             <tr>
 		<td/>
               <td>
+                <v:check-box name="other" value="1" initial-checked="--self._other" xhtml_id="other"/>
+                <label for="other">Follow URLs outside of the target host</label>
+              </td>
+            </tr>
+            <tr>
+		<td/>
+              <td>
                 <v:check-box name="html_meta" xhtml_id="html_meta" value="1" initial-checked="--self._html_meta" />
 		<label for="html_meta">Follow HTML meta link</label>
               </td>
@@ -460,7 +473,7 @@
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                        declare item, idx, len, _idx, _oth, tar_url, sav_host, desc_save varchar;
+                        declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
                         declare ret_arr, opts, tmp any;
                         declare pos integer;
                         tar_url := trim (get_keyword ('tar_url', params, ''));
@@ -516,6 +529,7 @@
                         self._store_fn := get_keyword ('store_fn', params);
                         self._ext_fn := get_keyword ('ext_fn', params);
 			self._intv := atoi (get_keyword ('intv', params, '0'));
+                        self._other := atoi (get_keyword ('other', params, '0'));
 
                         self._del := get_keyword ('del', params);
                         if (self.mode = 'edit')
@@ -571,7 +585,6 @@
                         if (self._del = '1') self._del := 'checked';
                         if (self._img = '1') self._img := 'checked';
                         if (self._dav = '1') self._dav := 'checked';
-                        _oth := null;
                         if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
                         {
                           self.vc_error_message := 'Host, Target collection and Start path must be specified';
@@ -621,7 +634,6 @@
                               VS_SRC = self._img,
                               VS_OPAGE = self._opage,
                               VS_METHOD = self._dav,
-                              VS_OTHER = _oth,
                               VS_OPTIONS = self._auth,
                               VS_URL = self._url,
                               VS_REDIRECT = self._redir,
@@ -629,7 +641,8 @@
 			      VS_DLOAD_META = self._ask_rdf,
 			      VS_UDATA = serialize (self._udata),
 			      VS_STORE_FN = self._store_fn,
-			      VS_EXTRACT_FN = self._ext_fn
+			      VS_EXTRACT_FN = self._ext_fn,
+			      VS_OTHER = case when self._other = 1 then 'checked' else NULL end
                             where
                               VS_HOST = self._host and
                               VS_ROOT = self._root;
@@ -643,15 +656,21 @@
                           hinf := WS.WS.PARSE_URI(self._host);
                           if (lower(hinf[0]) = 'http' and hinf[1] <> '')
                             self._host := hinf[1];
-                          insert into WS.WS.VFS_SITE(
-                            VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
+			  insert into WS.WS.VFS_SITE
+			    (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
                             VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
+			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
+			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
 			    VS_STORE_FN, VS_EXTRACT_FN)
-                            values(self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth,
-			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), self._store_fn, self._ext_fn);
-                          insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+			    values
+			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
+			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
+			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
+			    self._store_fn, self._ext_fn);
+
+			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
+			    values (self._host, self._url, now(), 'waiting', self._root);
                         }
 
 			declare _mp, _idx, p_id, _seq, ename, ename_old any;

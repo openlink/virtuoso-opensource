@@ -113,9 +113,7 @@
       <table class="listing">
         <tr class="listing_header_row">
           <th>Description</th>
-          <th>Host</th>
           <th>URL</th>
-          <th>Collection</th>
           <th>Total pages</th>
           <th>Action</th>
         </tr>
@@ -130,9 +128,7 @@
           http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
         ?>
               <td class="listing_col"><?V VS_DESCR ?></td>
-              <td class="listing_col"><?V VS_HOST ?></td>
-              <td class="listing_col"><?V y_trunc_uri (VS_URL) ?></td>
-              <td class="listing_col"><?V VS_ROOT ?></td>
+	      <td class="listing_col"><?V y_trunc_uri ('http://' || VS_HOST || VS_URL) ?></td>
               <td class="listing_col_num"><?V cast(_count as varchar) ?></td>
               <td class="listing_col_action">
                 <?vsp
@@ -149,7 +145,7 @@
           {
         ?>
         <tr class="listing_count">
-          <td class="listing_count" colspan="6">There are no retrieved sites</td>
+          <td class="listing_count" colspan="4">There are no retrieved sites</td>
         </tr>
         <?vsp
           }

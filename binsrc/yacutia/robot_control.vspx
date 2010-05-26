@@ -88,10 +88,10 @@
           <table class="listing">
             <tr class="listing_header_row">
               <th>Description</th>
-              <th>Host</th>
-              <th>Start Path</th>
-              <th>Target Collection</th>
-              <th>Action</th>
+              <th>URL</th>
+	      <th>
+		  <v:url name="exprt" value="Export" url="vfs_export.vspx" /> 
+	      </th>
             </tr>
           </table>
         </v:template>
@@ -99,7 +99,7 @@
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set2_if_not_exists_template">
             <table>
               <tr class="listing_count">
-                <td align="center" colspan="5" class="listing_row_count">
+                <td align="center" colspan="3" class="listing_row_count">
                   No rows selected
                 </td>
               </tr>
@@ -115,13 +115,10 @@
                   <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td align="left">
-                  <v:label format="%s" name="data_set2_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
-                </td>
-                <td align="left">
-                  <v:label format="%s" name="data_set2_browse_label_3" value="--y_trunc_uri((control.vc_parent as vspx_row_template).te_rowset[2], 50)" />
-                </td>
-                <td align="left">
-                  <v:label format="%s" name="data_set2_browse_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset[3])" />
+		    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ('http://', 
+				(control.vc_parent as vspx_row_template).te_rowset[1],
+                                (control.vc_parent as vspx_row_template).te_rowset[2]
+				), 50)" />
                 </td>
                 <td nowrap="0"  class="listing_col_action">
 		    <v:button action="simple" style="image" name="url1"
@@ -141,12 +138,22 @@
                       <v:script>
                       <![CDATA[
                         declare _root, _host varchar;
+                        declare old_mode int;
                         _root := (control.vc_parent as vspx_row_template).te_rowset[3];
                         _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+			declare exit handler for sqlstate '*'
+			{
+                          log_enable (old_mode, 1);
+			  self.vs_is_valid := 0;
+			  self.vs_error_message := 'The delete failed. You must manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.';
+			  return;
+			};
+                        old_mode := log_enable (3, 1);
                         delete from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
                         delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
                         delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root;
                         delete from SYS_SCHEDULED_EVENT where SE_SQL = concat('WS.WS.SERV_QUEUE_TOP (\'',(control.vc_parent as vspx_row_template).te_rowset[2],'\',\'',_root,'\', 1, 0, null, null)');
+                        log_enable (old_mode, 1);
                         self.data_set2.vc_data_bind(e);
                       ]]>
                     </v:script>
@@ -162,7 +169,7 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set2_footer_template">
           <table>
             <tr>
-              <td colspan="5" align="center"  class="listing_col_action">
+              <td colspan="3" align="center"  class="listing_col_action">
 		<vm:ds-navigation data-set="data_set2"/>
               </td>
             </tr>
