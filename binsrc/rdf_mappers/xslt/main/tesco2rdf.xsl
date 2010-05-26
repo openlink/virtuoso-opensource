@@ -52,13 +52,14 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://schemas.datacontract.org/2004/07/tesco_cloudapp_net_WebRole</xsl:variable>
+    <xsl:variable name="ns">http://www.tesco.com/</xsl:variable>
 
-    <xsl:template match="ProductSearchResponse|products|Product" priority="1">
+    <xsl:template match="results|Products" priority="1">
 		<xsl:apply-templates select="*"/>
     </xsl:template>
 
     <xsl:template match="/">
+		<xsl:if test="results/StatusCode='0'">
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
@@ -74,6 +75,7 @@
 				<xsl:apply-templates/>
 			</rdf:Description>
 		</rdf:RDF>
+		</xsl:if>
     </xsl:template>
 
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">

@@ -112,6 +112,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_YOUTUBE', null, 'YouTube');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+	values ('(http://.*vimeo.com/.*)',
+	'URL', 'DB.DBA.RDF_LOAD_VIMEO', null, 'Vimeo');
+	
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('(http://delicious.com/.*)|(http://feeds.delicious.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_DELICIOUS', null, 'Delicious');
 
@@ -153,7 +157,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	'URL', 'DB.DBA.RDF_LOAD_RHAPSODY', null, 'Rhapsody');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://www.tesco.com/.*)',
+	values ('http://.*tesco.com/.*',
 	'URL', 'DB.DBA.RDF_LOAD_TESCO', null, 'Tesco');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
@@ -3387,8 +3391,8 @@ create procedure DB.DBA.RDF_LOAD_RHAPSODY (in graph_iri varchar, in new_origin_u
 
 create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
-    declare xd, xt, tmp, id, ses any;
-    declare email_, password_, developer_key_, application_key_ varchar;
+    declare xd, xt, tmp, id, ses, hdr, tree any;
+    declare email_, password_, developer_key_, application_key_, session_key_, url varchar;
     declare exit handler for sqlstate '*'
       {
 	DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
@@ -3398,39 +3402,45 @@ create procedure DB.DBA.RDF_LOAD_TESCO (in graph_iri varchar, in new_origin_uri 
     password_ := get_keyword ('password', opts);
     developer_key_ := get_keyword ('developerKey', opts);
     application_key_ := get_keyword ('applicationKey', opts);
+    
     if (not isstring (email_) and isstring (password_) and isstring (developer_key_) and isstring (application_key_))
       return 0;
-    if (new_origin_uri like 'http://www.tesco.com/superstore/product/promo.aspx?prodId=%')
+    
+    url := sprintf('https://secure.techfortesco.com/groceryapi_b1/restservice.aspx?command=LOGIN&email=%s&password=%s&developerkey=%s&applicationkey=%s', email_, password_, developer_key_, application_key_);
+  	tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    tree := json_parse (tmp);
+    session_key_ := get_keyword ('SessionKey', tree);
+    if (session_key_ is null or length(session_key_) = 0)
+        return 0;
+    if (new_origin_uri like 'http://%tesco.com/%?prodId=%')
       {
-	tmp := sprintf_inverse (new_origin_uri, 'http://www.tesco.com/superstore/product/promo.aspx?prodId=%s', 0);
-	id := tmp[0];
+        tmp := sprintf_inverse (new_origin_uri, 'http://%stesco.com/%s?prodId=%s', 0);
+        id := tmp[2];
       }
     else if (new_origin_uri like 'http://www.tesco.com/superstore/xpi/%/xpi%.htm')
       {
 	tmp := sprintf_inverse (new_origin_uri, 'http://www.tesco.com/superstore/xpi/%s/xpi%s.htm', 0);
 	id := tmp[1];
       }
+    else if (new_origin_uri like 'http://www.tesco.com/%?id=%')
+    {
+        tmp := sprintf_inverse (new_origin_uri, 'http://www.tesco.com/%s?id=%s', 0);
+        id := tmp[1];
+    }
     else
       return 0;
-    xd := xml_tree_doc(SOAP_CLIENT (
-      url=>'http://www.techfortesco.com/TescoAPI/TescoAPI.svc',
-      operation=>'Login',
-      soap_action=>'http://tesco.cloudapp.net/IAccount/Login',
-      parameters=>vector ('email', email_, 'password', password_, 'developerKey', developer_key_, 'applicationKey', application_key_),
-      target_namespace=>'http://tesco.cloudapp.net',
-      style=>21));
-    ses := xpath_eval('/LoginResponse/session', xd);
-    tmp := serialize_to_UTF8_xml(ses);
-    tmp := replace(tmp, 'http://tesco.cloudapp.net', 'http://www.tesco.com');
-    ses := xtree_doc (tmp);
-    xd := xml_tree_doc(SOAP_CLIENT (
-	url=>'http://www.techfortesco.com/TescoAPI/TescoAPI.svc',
-	operation=>'ProductSearch',
-	soap_action=>'http://www.tesco.com/IGrocery/ProductSearch',
-	parameters=>vector ('session', ses, 'searchString', id, 'getRatings', soap_boolean(0)),
-	target_namespace=>'http://www.tesco.com',
-	style=>21));
-    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/tesco2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    url := sprintf('http://www.techfortesco.com/groceryapi_b1/restservice.aspx?command=PRODUCTSEARCH&searchtext=%s&page=1&sessionkey=%s', id, session_key_);
+    tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+	if (hdr[0] not like 'HTTP/1._ 200 %')
+	{
+		signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+		return 0;
+	}
+    tree := json_parse (tmp);
+    xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/tesco2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
     xd := serialize_to_UTF8_xml (xt);
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -4336,6 +4346,48 @@ create procedure DB.DBA.RDF_LOAD_GEONAMES (in graph_iri varchar, in new_origin_u
 	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/geonames2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 	xd := serialize_to_UTF8_xml (xt);
         delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_VIMEO (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+	declare xd, xt, url, tmp, hdr, id any;
+	declare pos int;
+	declare exit handler for sqlstate '*'
+	{
+        DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+		return 0;
+	};
+	if (new_origin_uri like 'http://vimeo.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://vimeo.com/%s', 0);
+        id := rtrim(tmp[0], '&/');
+        pos := strchr(id, '/');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+        pos := strchr(id, '?');
+        if (pos > 0)
+			id := left(id, pos);
+		if (id is null)
+			return 0;
+        if (atoi(id) > 0)
+            url := sprintf('http://vimeo.com/api/v2/video/%s.xml', id);
+        else
+            url := sprintf('http://vimeo.com/api/v2/%s/info.xml', id);
+	}
+	else
+		return 0;
+    tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+	xd := xtree_doc (tmp);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/vimeo2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+	xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
