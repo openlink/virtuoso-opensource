@@ -459,43 +459,41 @@ create procedure BLOG2_GET_PPATH_URL (in f any)
 ;
 
 
-create procedure BLOG2_RSS2WML_PP() {
+create procedure BLOG2_RSS2WML_PP () 
+{
   declare accept, upar, pars any;
   declare lines any;
+  declare bid, rss, modif, match, stag, ohdr varchar;
+  declare xt, xp, ss, psh any;
+  declare xsl any;
+
+  set isolation='committed';
   lines := http_request_header ();
   accept := http_request_header (lines, 'Accept');
-  if (not isstring (accept)) accept := '';
+  if (not isstring (accept)) 
+    accept := '';
   upar := http_request_get ('QUERY_STRING');
-  if(regexp_match ('text/vnd\.wap\.wml', accept) is not null) {
-    if (http_path () like '%/rss.xml') {
-      declare opts, filt, bid any;
+  if (regexp_match ('text/vnd\.wap\.wml', accept) is not null) 
+    {
+      if (http_path () like '%/rss.xml') 
+	{
+	  declare opts, filt any;
       whenever not found goto exitp;
-      select top 1
-        BI_BLOG_ID
-      into
-        bid
-      from
-        BLOG..SYS_BLOG_INFO
-      where
-        http_path () like BI_HOME || '%'
-      order by
-        length(BI_HOME) desc;
-      select
-        deserialize (blob_to_string (BI_OPTIONS))
-      into
-        opts
-      from
-        BLOG..SYS_BLOG_INFO where BI_BLOG_ID = bid;
+	  select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where http_path () like BI_HOME || '%' order by length(BI_HOME) desc;
+	  select deserialize (blob_to_string (BI_OPTIONS)) into opts from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = bid;
 
       if (not isarray(opts)) opts := vector ();
       filt := get_keyword ('RSSFilter', opts, '');
-      if (filt = '*wml-default*') filt := BLOG2_GET_PPATH_URL ('widgets/rss2wml.xsl');
-      if (not isstring (filt) or not xslt_is_sheet (filt)) goto exitp;
-      if(length(upar) = 0) {
+	  if (filt = '*wml-default*') 
+	    filt := BLOG2_GET_PPATH_URL ('widgets/rss2wml.xsl');
+	  if (not isstring (filt) or not xslt_is_sheet (filt)) 
+	    goto exitp;
+	  if (length(upar) = 0) 
+	    {
         http_xslt (filt);
       }
-      else {
-        declare rss, xt, xsl any;
+	  else 
+	    {
         rss := http_get_string_output ();
         xt := xml_tree_doc (rss);
         http_rewrite ();
@@ -507,20 +505,27 @@ create procedure BLOG2_RSS2WML_PP() {
       exitp:;
     }
   }
-  else if (http_path () like '%/rss%.xml') {
-    declare bid, rss, modif, match, stag, ohdr varchar;
-    declare xt, xp, ss any;
-
+  else if (http_path () like '%/rss%.xml' or http_path () like '%/atom%.xml') 
+    {
     -- Get the body and calculate md5 over the 1-st item
     rss := http_get_string_output ();
     xt := xml_tree_doc (rss);
+      if (http_path () like '%/rss%.xml')
     xp := xpath_eval ('//item[1]', xt);
+      else
+        xp := xpath_eval ('//entry[1]', xt);	
     ss := string_output ();
     http_value (xp, null, ss);
     stag := md5(ss);
 
     -- prepare standard header
     ohdr := http_header_get ();
+      psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+      if (length (psh))
+	{
+	  http_header (ohdr || sprintf ('Link: <%s>; rel="hub"; title="PubSubHub"\r\n', psh));
+	  ohdr := http_header_get ();
+	}
     if (strcasestr (ohdr, 'Content-Type:') is not null)
       {
 	http_header (ohdr || sprintf ('ETag: %s\r\nLast-Modified: %s\r\n',
@@ -531,25 +536,27 @@ create procedure BLOG2_RSS2WML_PP() {
 	http_header (sprintf ('Content-Type: text/xml\r\nETag: %s\r\nLast-Modified: %s\r\n',
                           stag, BLOG.DBA.date_rfc1123 (now ())));
       }
-    match := http_request_header (lines, 'If-None-Match');
-    modif := http_request_header (lines, 'If-Modified-Since');
+      match := http_request_header (lines, 'If-None-Match', null, null);
+      modif := http_request_header (lines, 'If-Modified-Since', null, null);
 
     -- if Etag is same; do nothing
-    if (match = stag) {
+      if (match = stag) 
+	{
+	  http_xslt (null);
       http_request_status ('HTTP/1.1 304 Not Modified');
-      http_header ('Content-Type: text/xml\r\n');
       http_rewrite ();
     }
-    else if (match is null and isstring (modif)) {
+      else if (match is null and isstring (modif)) 
+	{
       declare modifd datetime;
       modifd := http_string_date (modif);
       whenever not found goto exitp1;
-      select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where
-      http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
+	  select top 1 BI_BLOG_ID into bid from BLOG..SYS_BLOG_INFO where http_path () like BI_HOME || '%' order by length (BI_HOME) desc;
       -- if no newest items; do nothing
-      if (not exists (select 1 from BLOG..SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = bid and B_MODIFIED > modifd)) {
+	  if (not exists (select 1 from BLOG..SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = bid and B_MODIFIED > modifd)) 
+	    {
+	      http_xslt (null);
         http_request_status ('HTTP/1.1 304 Not Modified');
-        http_header ('Content-Type: text/xml\r\n');
         http_rewrite ();
       }
       exitp1:;

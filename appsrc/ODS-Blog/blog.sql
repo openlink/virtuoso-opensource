@@ -6891,6 +6891,9 @@ create procedure BLOG.DBA.BLOG_RSS2WML_PP ()
   {
     declare accept, upar, pars any;
     declare lines any;
+
+    set isolation='committed';
+    --dbg_obj_print (current_proc_name ());
     lines := http_request_header ();
     accept := http_request_header (lines, 'Accept');
     if (not isstring (accept))
@@ -6936,7 +6939,7 @@ create procedure BLOG.DBA.BLOG_RSS2WML_PP ()
       }
     else if (http_path () like '%/rss%.xml')
       {
-  declare bid, rss, modif, match, stag varchar;
+	declare bid, rss, modif, match, stag, psh, link varchar;
         declare xt, xp, ss any;
 
   -- Get the body and calculate md5 over the 1-st item
@@ -6949,6 +6952,11 @@ create procedure BLOG.DBA.BLOG_RSS2WML_PP ()
   -- prepare standard header
   http_header (sprintf ('Content-Type: text/xml\r\nETag: %s\r\nLast-Modified: %s\r\n',
     stag, date_rfc1123 (now ())));
+	psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+	if (length (psh))
+	  {
+	    http_header (http_header_get () || sprintf ('Link: <%s>; rel="hub"; title="PubSubHub"\r\n', psh));
+	  }
 
   match := http_request_header (lines, 'If-None-Match');
   modif := http_request_header (lines, 'If-Modified-Since');
