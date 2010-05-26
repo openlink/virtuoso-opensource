@@ -59,7 +59,7 @@
 	<xsl:template match="/">
 	    <rdf:RDF>
 		<xsl:variable name="doc">
-		    <xsl:apply-templates />
+		    <xsl:apply-templates mode="test"/>
 		</xsl:variable>
 		<xsl:if test="$doc/*">
 		    <rdf:Description rdf:about="{$docproxyIRI}">
@@ -78,10 +78,30 @@
 	    </rdf:RDF>
 	</xsl:template>
 
-	<xsl:template match="*[@itemscope]" priority="1">
+	<xsl:template match="*[@itemscope and not @itemprop and not @itemref]" mode="test">
+        <xsl:variable name="itemid" select="@itemid"/>
+        <xsl:choose>
+			<xsl:when test="@id">
+				<xsl:variable name="item_id" select="@id"/>
+				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
+			</xsl:when>
+            <xsl:when test="not $itemid">
+				<xsl:variable name="item_id" select="generate-id(.)"/>
+				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $itemid)"/>
+			</xsl:otherwise>
+		</xsl:choose>
+        
+        <rdf:Description rdf:about="{$resourceURL}">
+			<sioc:container_of rdf:resource="{$itemid}"/>
+		</rdf:Description>
+        
 		<xsl:call-template name="itemscope">                                       
 	        <xsl:with-param name="cur" select="." />
 		</xsl:call-template>
+    
 	</xsl:template>
 
 	<xsl:template name="itemscope">
@@ -92,6 +112,10 @@
 		<xsl:variable name="root" select="/"/>
 		
 		<xsl:choose>
+            <xsl:when test="@id">
+				<xsl:variable name="item_id" select="@id"/>
+				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
+			</xsl:when>
 			<xsl:when test="not $itemid">
 				<xsl:variable name="item_id" select="generate-id(.)"/>
 				<xsl:variable name="itemid" select="vi:proxyIRI ($baseUri, '', $item_id)"/>
@@ -101,10 +125,6 @@
 			</xsl:otherwise>
 		</xsl:choose>
 
-		<rdf:Description rdf:about="{$resourceURL}">
-			<sioc:container_of rdf:resource="{$itemid}"/>
-		</rdf:Description>
-				
 		<rdf:Description rdf:about="{$itemid}">
             <rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:if test="$itemtype">
@@ -123,11 +143,12 @@
 					</xsl:call-template>
 				</xsl:for-each>
 			</xsl:for-each-->
-			<xsl:apply-templates mode="prop"/>
+            
+			<xsl:apply-templates mode="prop" select="$cur/child::*"/>
 		</rdf:Description>
 	</xsl:template>
 	
-	<xsl:template match="*[@itemprop]" priority="1" mode="prop">
+	<xsl:template match="*[@itemprop]" mode="prop">
 		<xsl:call-template name="itemprop">                                       
 	        <xsl:with-param name="cur" select="." />
 		</xsl:call-template>
@@ -150,7 +171,15 @@
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:variable name="elem-name" select="." />
+                    <xsl:choose>
+                        <xsl:when test="$elem-name = 'image'">
+                            <xsl:variable name="elem-name" select="'img'" />
+                            <xsl:variable name="elem-nss">&foaf;</xsl:variable>
+                        </xsl:when>
+                        <xsl:otherwise>
 					<xsl:variable name="elem-nss">&md;</xsl:variable>
+				</xsl:otherwise>
+			</xsl:choose>
 				</xsl:otherwise>
 			</xsl:choose>
 			
@@ -180,7 +209,7 @@
 						<xsl:value-of select="$obj/@datetime"/>
 					</xsl:when>
 					<xsl:when test="$itemscope">
-						<xsl:attribute name="rdf:resource">
+						<!--xsl:attribute name="rdf:resource">
 							<xsl:choose>
 								<xsl:when test="not $obj/@itemid">
 									<xsl:variable name="item_id" select="generate-id()"/>
@@ -193,10 +222,10 @@
 							<xsl:call-template name="uri-or-curie">
 								<xsl:with-param name="uri"><xsl:value-of select="$itemid"/></xsl:with-param>
 							</xsl:call-template>
-						</xsl:attribute>
-						<!--xsl:call-template name="itemscope">                                       
+						</xsl:attribute-->
+						<xsl:call-template name="itemscope">                                       
 							<xsl:with-param name="cur" select="$obj" />
-						</xsl:call-template-->
+						</xsl:call-template>
 					</xsl:when>
 					<xsl:otherwise>
 						<xsl:value-of select="$obj"/>
@@ -227,6 +256,8 @@
 		</xsl:choose>
 	</xsl:template>
 
-	<xsl:template match="text()" />
-	<xsl:template match="text()"  mode="prop"/>
+    <xsl:template match="*|text()"/>
+    <xsl:template match="text()" mode="test"/>
+	<xsl:template match="text()|@*" />
+    <xsl:template match="text()|@*" mode="prop"/>
 </xsl:stylesheet>
