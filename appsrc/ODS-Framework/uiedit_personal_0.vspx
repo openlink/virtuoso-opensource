@@ -332,7 +332,7 @@
                 </v:before-render>
               </v:radio-button>
               <![CDATA[&nbsp;]]>
-              <b><label for="i_source_0">Personal URI (Web ID)</label></b>
+              <b><label for="i_source_0">Profile Document URL</label></b>
             </td>
             <td>
               <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_onfocus="javascript: document.forms[0].i_source[0].checked=true;" xhtml_size="70"/>
@@ -492,9 +492,27 @@
               <td><?V self.iTags ?></td>
             </tr>
           </v:template>
+          <v:template name="iTemplate_20" type="simple" condition="length (self.iSameAs)">
+            <tr>
+              <td valign="top"><input type="checkbox" name="cb_item_iSameAs" id="cb_item_iSameAs" value="1" /></td>
+              <td valign="top">Other Personal URIs (WebIDs)</td>
+              <td>
+                <?vsp
+                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iSameAs) do
+              	  {
+              	    if (length (fld1))
+              	    {
+              	      http (fld1);
+              	      http ('<br />');
+              	    }
+              	  }
+                ?>
+              </td>
+            </tr>
+          </v:template>
           <v:template name="iTemplate_17" type="simple" condition="length (self.iInterests)">
             <tr>
-              <td><input type="checkbox" name="cb_item_iInterests" id="cb_item_iInterests" value="1" /></td>
+              <td valign="top"><input type="checkbox" name="cb_item_iInterests" id="cb_item_iInterests" value="1" /></td>
               <td valign="top">Resource URI indicating thing of interest</td>
               <td>
                 <?vsp
@@ -514,7 +532,7 @@
           </v:template>
           <v:template name="iTemplate_18" type="simple" condition="length (self.iTopicInterests)">
             <tr>
-              <td><input type="checkbox" name="cb_item_iTopicInterests" id="cb_item_iTopicInterests" value="1" /></td>
+              <td valign="top"><input type="checkbox" name="cb_item_iTopicInterests" id="cb_item_iTopicInterests" value="1" /></td>
               <td valign="top">Web page URL indicating a topic of interest   </td>
               <td>
                 <?vsp
@@ -534,7 +552,7 @@
           </v:template>
           <v:template name="iTemplate_19" type="simple" condition="length (self.iOnlineAccounts)">
             <tr>
-              <td><input type="checkbox" name="cb_item_iOnlineAccounts" id="cb_item_iOnlineAccounts" value="1" /></td>
+              <td valign="top"><input type="checkbox" name="cb_item_iOnlineAccounts" id="cb_item_iOnlineAccounts" value="1" /></td>
               <td valign="top">Online Accounts</td>
               <td>
                 <?vsp
@@ -545,24 +563,6 @@
               	      http (fld1);
               	      if (length (fld2))
               		      http (sprintf (' (%s)', fld2));
-              	      http ('<br />');
-              	    }
-              	  }
-                ?>
-              </td>
-            </tr>
-          </v:template>
-          <v:template name="iTemplate_20" type="simple" condition="length (self.iSameAs)">
-            <tr>
-              <td><input type="checkbox" name="cb_item_iSameAs" id="cb_item_iSameAs" value="1" /></td>
-              <td valign="top">Other Identity URIs (synonyms)</td>
-              <td>
-                <?vsp
-                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iSameAs) do
-              	  {
-              	    if (length (fld1))
-              	    {
-              	      http (fld1);
               	      http ('<br />');
               	    }
               	  }

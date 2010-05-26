@@ -2286,6 +2286,13 @@ ODS.Nav = function(navOptions) {
 						aSignUp, aHelp ]);
       }
     }
+    var x = function (data) {
+      try {
+        self.regData = OAT.JSON.parse(data);
+      } catch (e) { self.regData = {}; }
+    }
+    OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
+
 		if (document.location.protocol != 'https:') {
       var x = function (data) {
         var o = null;
@@ -2963,16 +2970,17 @@ ODS.Nav = function(navOptions) {
 		var loginTab = new OAT.Tab ('loginPCtr');
 		loginTab.add ('loginT1', 'loginP1');
 		loginTab.add ('loginT2', 'loginP2');
-		loginTab.go (0);
-			if (self.facebookData) {
+			if (self.regData.openidEnable)
+				OAT.Dom.show('loginT2');
+			loginTab.add('loginT3', 'loginP3');
+			if (self.facebookData && self.regData.facebookEnable) {
         self.showFacebookData(true);
         OAT.Dom.show('loginT3');
-        loginTab.add('loginT3', 'loginP3');
         $('loginBtn').value = 'Facebook Login';
       }
-			if ((document.location.protocol == 'https:') && self.sslData) {
-        OAT.Dom.show('loginT4');
         loginTab.add('loginT4', 'loginP4');
+			if ((document.location.protocol == 'https:') && self.sslData && self.sslData.certLogin && self.regData.sslEnable) {
+				OAT.Dom.show('loginT4');
 				$('loginBtn').value = 'WebID Login';
 
 				if (self.sslData.iri) {
@@ -3004,6 +3012,7 @@ ODS.Nav = function(navOptions) {
           OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
       }
+			loginTab.go(0);
 
 			OAT.Event.attach('loginT1', 'click', function() {
                         $('loginBtn').value = 'Login';

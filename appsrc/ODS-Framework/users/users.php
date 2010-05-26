@@ -354,10 +354,14 @@
                 $_params .= '&sumary=' . urlencode ($_REQUEST['i_sumary']);
               if ($_REQUEST['cb_item_i_tags'] == '1')
                 $_params .= '&tags=' . urlencode ($_REQUEST['i_tags']);
+              if ($_REQUEST['cb_item_i_sameAs'] == '1')
+                $_params .= '&webIDs=' . urlencode ($_REQUEST['i_sameAs']);
               if ($_REQUEST['cb_item_i_interests'] == '1')
                 $_params .= '&interests=' . urlencode ($_REQUEST['i_interests']);
               if ($_REQUEST['cb_item_i_topicInterests'] == '1')
                 $_params .= '&topicInterests=' . urlencode ($_REQUEST['i_topicInterests']);
+              if ($_REQUEST['cb_item_i_onlineAccounts'] == '1')
+                $_params .= '&onlineAccounts=' . urlencode ($_REQUEST['i_onlineAccounts']);
             }
             else if ($_formSubtab == 1)
             {
@@ -638,7 +642,7 @@
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="ODS">ODS</li>
-                  <li id="lf_tab_1" title="OpenID">OpenID</li>
+                  <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -711,7 +715,7 @@
                 </div>
                 <ul id="rf_tabs" class="tabs">
                   <li id="rf_tab_0" title="ODS">ODS</li>
-                  <li id="rf_tab_1" title="OpenID">OpenID</li>
+                  <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                 </ul>
@@ -960,7 +964,7 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Import">Import</li>
+                      <li id="pf_tab_0_0" title="Import">Profile Import</li>
                       <li id="pf_tab_0_1" title="Main">Main</li>
                       <li id="pf_tab_0_2" title="Address">Address</li>
                       <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
@@ -976,7 +980,7 @@
                     <table class="form" cellspacing="5">
                       <tr>
                             <th>
-                              <label for="pf_foaf">Personal URI (Web ID)</label>
+                              <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />

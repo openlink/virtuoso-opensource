@@ -1461,9 +1461,33 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+      <th>Allow OpenID Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc2" value="1" initial-checked="--(select top 1 WS_REGISTER_OPENID from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow Facebook Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_REGISTER_FACEBOOK from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow WebID (FOAF+SSL) Login/Registration</th>
+      <td>
+        <v:check-box name="ssetc4" value="1" initial-checked="--(select top 1 WS_REGISTER_SSL from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
+      <th>Allow Automatic WebID (FOAF+SSL) Registration</th>
+      <td>
+        <v:check-box name="ssetc5" value="1" initial-checked="--(select top 1 WS_REGISTER_AUTOMATIC_SSL from WA_SETTINGS)" />
+      </td>
+    </tr>
+    <tr>
       <th>Verify registration by email</th>
       <td>
-        <v:check-box name="ssetc2" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
+        <v:check-box name="ssetc6" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1475,10 +1499,9 @@ if (i > 0)
         <v:check-box name="unique_mail" value="1" initial-checked="--(select top 1 WS_UNIQUE_MAIL from WA_SETTINGS)" xhtml_id="unique_mail"/>
         </td>
         <td valign="top">
-        <v:template name="nonunique_warr" type="simple"
-		                enabled="--(select 1 from(select count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount>1)
-                                "
-			  >
+              <v:template name="nonunique_warr"
+                          type="simple"
+      		                enabled="--(select 1 from(select count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount>1)">
 			  <div style="padding: 0px 0px 0px 10px;display:none;color:red;" id="dublicate_warrning">
 			  There are e-mail addresses that are registered to more than on one account.<br/>
 			  If you set this option :<br/>
@@ -1497,7 +1520,7 @@ if (i > 0)
     <tr>
       <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
       <td>
-        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
+        <v:check-box name="ssetc7" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
@@ -1521,18 +1544,16 @@ if (i > 0)
       <span class="fm_ctl_btn">
         <v:button name="ssetb1" action="simple" value="Set">
           <v:on-post>
-            <v:script>
               <![CDATA[
-                if (wa_user_is_dba (self.u_name, self.u_group))
-                  goto admin_user;
-                else
+                if (not wa_user_is_dba (self.u_name, self.u_group))
                 {
                   self.vc_is_valid := 0;
                   control.vc_parent.vc_error_message := 'Only admin user can change global settings';
                   return;
                 }
-                admin_user:;
+
                 declare _reg, _join integer;
+
                 _reg := atoi(self.t_reg_expiry.ufl_value);
                 _join := atoi(self.t_join_expiry.ufl_value);
                 if (_reg = 0)
@@ -1547,12 +1568,9 @@ if (i > 0)
                   control.vc_parent.vc_error_message := 'Membership (Join) expiry time should be positive integer and greater then 0';
                   return;
                 }
-
                 if(self.unique_mail.ufl_selected and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 0))
                 {
-                  for select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp
-                                      where mailcount>1
-                  do
+                  for (select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount > 1) do
                   {
                    declare i integer;
                    declare account_notchanged,accounts_reset varchar;
@@ -1573,9 +1591,7 @@ if (i > 0)
                      if(i=0)
                      {
                       account_notchanged:=U_NAME;
-                     }else
-                     {
---                        dbg_obj_print('');
+                      } else {
                        WA_USER_EDIT (U_NAME, 'E_MAIL', '');
                      }
                      i:=i+1;
@@ -1593,26 +1609,25 @@ if (i > 0)
                   WA_SEND_MAIL (admin_email_address, _email ,_subject, _msg);
 
                   _skip_mail:;
-
                   }
                 }
-
-                update WA_SETTINGS set
-                  WS_REGISTER = self.ssetc1.ufl_selected,
-                  WS_MAIL_VERIFY = self.ssetc2.ufl_selected,
+                update WA_SETTINGS
+                   set WS_REGISTER = self.ssetc1.ufl_selected,
+                       WS_REGISTER_OPENID = self.ssetc2.ufl_selected,
+                       WS_REGISTER_FACEBOOK = self.ssetc3.ufl_selected,
+                       WS_REGISTER_SSL = self.ssetc4.ufl_selected,
+                       WS_REGISTER_AUTOMATIC_SSL = self.ssetc5.ufl_selected,
+                       WS_MAIL_VERIFY = self.ssetc6.ufl_selected,
                   WS_UNIQUE_MAIL = self.unique_mail.ufl_selected,
-                  WS_VERIFY_TIP = self.ssetc3.ufl_selected,
+                       WS_VERIFY_TIP = self.ssetc7.ufl_selected,
                   WS_REGISTRATION_EMAIL_EXPIRY = _reg,
                   WS_JOIN_EXPIRY = _join;
                 if (row_count() = 0)
                 {
-                  insert into WA_SETTINGS
-                    (WS_REGISTER, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
-		    values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected,
-		    self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc3.ufl_selected);
+                  insert into WA_SETTINGS (WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
+  	                values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.ssetc3.ufl_selected, self.ssetc4.ufl_selected, self.ssetc5.ufl_selected, self.ssetc6.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc7.ufl_selected);
                 }
               ]]>
-            </v:script>
           </v:on-post>
 	 </v:button>
 	</span>
@@ -2168,6 +2183,18 @@ if (i > 0)
               </v:text>
             </td>
           </tr>
+          <tr>
+            <td>
+              PubSubHub
+            </td>
+            <td>
+              <v:text name="s_psh" xhtml_class="textbox" xhtml_size="70">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_FEEDS_HUB from WA_SETTINGS), '') as varchar);
+                </v:before-data-bind>
+              </v:text>
+            </td>
+          </tr>
         </table>
         <br />
           <v:button name="set2" action="simple" value="Set">
@@ -2217,6 +2244,7 @@ if (i > 0)
                   {
                   insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD) values (self.s_update_period.ufl_value);
                   }
+		update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
                 update WA_SETTINGS set WS_FEEDS_UPDATE_FREQ = f;
                   if (row_count() = 0)
                   {

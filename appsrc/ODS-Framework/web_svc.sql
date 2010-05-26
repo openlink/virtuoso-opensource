@@ -183,6 +183,15 @@ again:
 			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
 			}
 		    }
+		  else if (SH_PROTO = 'PubSubHub')
+		    {
+		      declare hf any;
+		      http_get (SH_URL, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', url || 'gems/rss.xml'));
+		      if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 204 %')
+			{
+			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
+			}
+		    }
 		}
 
 	      if (isarray(rc))
@@ -221,7 +230,7 @@ create procedure APP_PING
 {
   if (svc_name is null)
     {
-      for select AP_HOST_ID, WAI_ID from APP_PING_REG, DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name do
+      for select AP_HOST_ID, WAI_ID from APP_PING_REG, DB.DBA.WA_INSTANCE where WAI_ID = AP_WAI_ID and WAI_NAME = _wai_name do
 	{
 	  if (not exists (select 1 from APP_PING_LOG where APL_WAI_ID = WAI_ID and APL_HOST_ID = AP_HOST_ID and APL_STAT = 0))
 	    insert into APP_PING_LOG (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_P_TITLE, APL_P_URL)

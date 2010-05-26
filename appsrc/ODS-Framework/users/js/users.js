@@ -499,6 +499,7 @@ var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_
 var setupWin;
 var cRDF;
 
+var regData;
 var sslData;
 var facebookData;
 
@@ -509,9 +510,18 @@ function myInit() {
 	OAT.Preferences.stylePath = "/ods/oat/styles/";
 	OAT.Preferences.showAjax = false;
 
+  var x = function (data) {
+    try {
+      regData = OAT.JSON.parse(data);
+    } catch (e) { regData = {}; }
+  }
+  OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
+
 	if ($("lf")) {
 		lfTab = new OAT.Tab("lf_content");
 		lfTab.add("lf_tab_0", "lf_page_0");
+		if (regData.openidEnable)
+      OAT.Dom.show('lf_tab_1');
 		lfTab.add("lf_tab_1", "lf_page_1");
 		lfTab.add("lf_tab_2", "lf_page_2");
 		lfTab.add("lf_tab_3", "lf_page_3");
@@ -531,6 +541,8 @@ function myInit() {
 	if ($("rf")) {
 		rfTab = new OAT.Tab("rf_content");
 		rfTab.add("rf_tab_0", "rf_page_0");
+		if (regData.openidEnable)
+      OAT.Dom.show('rf_tab_1');
 		rfTab.add("rf_tab_1", "rf_page_1");
 		rfTab.add("rf_tab_2", "rf_page_2");
 		rfTab.add("rf_tab_3", "rf_page_3");
@@ -584,7 +596,7 @@ function myInit() {
 				});
 		});
 	}
-	if (($("lf") || $("rf")) && (document.location.protocol == 'https:')) {
+	if (($("lf") || $("rf")) && (document.location.protocol == 'https:') && regData.sslEnable) {
 		var x = function(data) {
 		  var x2 = function(prefix) {
 		  	OAT.Dom.show(prefix+"_tab_3");
@@ -602,6 +614,8 @@ function myInit() {
               addProfileRowInput(tbl, 'Login Name', 'rf_webid_uid');
 					  if (!sslData.mbox)
               addProfileRowInput(tbl, 'E-Mail', 'rf_webid_email');
+            if (!$("lf"))
+              rfSSLAutomaticLogin();
           }
 			  }
 		  }
@@ -612,7 +626,9 @@ function myInit() {
 				sslData = null;
 			}
 			if (sslData && sslData.iri) {
+			  if (sslData.certLogin)
 			  x2('lf');
+			  if (!sslData.certLogin)
 			  x2('rf');
 			}
 		}
@@ -1126,7 +1142,7 @@ function loadFacebookData(cb) {
 		} catch (e) {
 			facebookData = null;
 		}
-		if (facebookData) {
+		if (facebookData && regData.facebookEnable) {
 			OAT.Dom.show("lf_tab_2");
 			OAT.Dom.show("rf_tab_2");
 			OAT.Dom.show("pf_facebook");
@@ -2056,10 +2072,14 @@ function pfUpdateSubmit(No) {
           S += '&sumary=' + encodeURIComponent($v('i_sumary'));
         if ($v('cb_item_i_tags') == '1')
           S += '&tags=' + encodeURIComponent($v('i_tags'));
+        if ($v('cb_item_i_sameAs') == '1')
+          S += '&webIDs=' + encodeURIComponent($v('i_sameAs'));
         if ($v('cb_item_i_interests') == '1')
           S += '&interests=' + encodeURIComponent($v('i_interests'));
         if ($v('cb_item_i_topicInterests') == '1')
           S += '&topicInterests=' + encodeURIComponent($v('i_topicInterests'));
+        if ($v('cb_item_i_onlineAccounts') == '1')
+          S += '&onlineAccounts=' + encodeURIComponent($v('i_onlineAccounts'));
       }
       if (formSubtab == 1)
       {
@@ -2275,8 +2295,10 @@ function pfGetFOAFData(iri) {
 			pfSetFOAFValue(tbody, o.organizationHomepage, 'Organization Homepage', 'i_businessHomePage');
 			pfSetFOAFValue(tbody, o.resume,               'Resume',                'i_sumary');
 			pfSetFOAFValue(tbody, o.tags,                 'Tags',                  'i_tags');
+			pfSetFOAFValue(tbody, o.sameAs,               'Other Personal URIs (WebIDs)', 'i_sameAs', ['URI'], ['\n']);
 			pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',     'i_interests', ['URL', 'Label'], ['\n', ';']);
 			pfSetFOAFValue(tbody, o.topic_interest,       'Thing of Interest',     'i_topicInterests', ['URI', 'Label'], ['\n', ';']);
+			pfSetFOAFValue(tbody, o.onlineAccounts,       'Online Accounts',              'i_onlineAccounts', ['Label', 'URI'], ['\n', ';']);
 		} else {
 			alert('No data founded for \'' + iri + '\'');
 		}
@@ -2386,14 +2408,31 @@ function lfRegisterSubmit(event) {
   OAT.Dom.hide("lf");
   OAT.Dom.show("rf");
 
+  rfResetData();
+  rfSSLAutomaticLogin();
+
+  return false;
+}
+
+function rfResetData() {
   $('rf_uid').value = '';
   $('rf_email').value = '';
   $('rf_password').value = '';
   $('rf_password2').value = '';
   $('rf_openId').value = '';
   $('rf_is_agreed').checked = false;
+  if ($("rf_webid_uid"))
+    $('rf_webid_uid').value = '';
+  if ($("rf_webid_email"))
+    $('rf_webid_email').value = '';
+}
 
-  return false;
+function rfSSLAutomaticLogin() {
+  if (regData.sslAutomaticEnable && !$("rf_webid_uid") && !$("rf_webid_email")) {
+    $('rf_is_agreed').checked = true;
+    rfTab.go(3);
+    rfSignupSubmit();
+  }
 }
 
 function rfSignupSubmit(event) {
@@ -2446,12 +2485,7 @@ function rfSignupSubmit(event) {
 function afterSignup(data) {
  	var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
-    $('rf_uid').value = '';
-    $('rf_email').value = '';
-    $('rf_password').value = '';
-    $('rf_password2').value = '';
-    $('rf_openID').value = '';
-    $('rf_is_agreed').checked = false;
+    rfResetData();
     afterLogin(data, 'rf');
   }
 }
