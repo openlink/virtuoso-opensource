@@ -236,7 +236,14 @@ get_again:
 	    }
 	  else if (_other = 'checked')
 	    {
-	      WS.WS.VFS_ENSURE_NEW_SITE (_host, _root, new_host, new_url);
+	      if (ext_hook is not null and __proc_exists (ext_hook))
+		{
+		  WS.WS.SITEMAP_ENSURE_NEW_SITE (_host, _root, new_host, new_url); 
+	        }
+	      else
+		{
+	          WS.WS.VFS_ENSURE_NEW_SITE (_host, _root, new_host, new_url);
+		}
 	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER, VQ_LEVEL)
 		  values (new_host, now (), new_url, 'waiting', new_host, 'other', lev + 1);
     }
@@ -323,6 +330,13 @@ do_again1:
 	}
       commit work;
     }
+  oq := (select DB.DBA.VECTOR_AGG (vector (HOST, ROOT)) from (select distinct VQ_HOST as HOST, VQ_ROOT as ROOT 
+  	from VFS_QUEUE where VQ_STAT = 'waiting' and VQ_OTHER = 'other') x);
+  if (length (oq) > 0)
+    {
+      commit work;
+      goto do_again1;
+    }    
   --dbg_obj_print ('COMPLETED WITH STATUS: ', _stat, ' ', _msg);
 }
 ;
@@ -856,9 +870,11 @@ not_ini:
 
   if (_img is not null and substring (http_mime_type (_t_url), 1, 6) = 'image/')
     return 1;
+  else if (0 = length (_nflw_s) and 0 = length (_img) and substring (http_mime_type (_t_url), 1, 6) = 'image/')
+    return 0;
 
   if (_flw_s is null or _flw_s = '')
-    _flw_s := concat (_url, '%');
+    _flw_s := '/%';
 
   if (_nflw_s is null or _nflw_s = '')
     _nflw_s := ('');
@@ -1749,9 +1765,12 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       hf [1] := '';
       hf [5] := ''; 
       url := WS.WS.VFS_URI_COMPOSE (hf);
-      WS.WS.SITEMAP_ENSURE_NEW_SITE (_host, _root, host, url);
-      insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER, VQ_LEVEL) 
-	  values (host, now (), url, 'waiting', _root, 'other', lev); 
+      if (WS.WS.FOLLOW (_host, _root, url))
+	{
+	  WS.WS.SITEMAP_ENSURE_NEW_SITE (_host, _root, host, url);
+	  insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_OTHER, VQ_LEVEL)
+	      values (host, now (), url, 'waiting', _root, 'other', lev); 
+	}
     }
   commit work;
 }
