@@ -52,6 +52,7 @@ public class VirtuosoRdfBox implements RdfBox
     public static final int RBS_HAS_TYPE = 0x08;
     public static final int RBS_CHKSUM   = 0x10;
     public static final int RBS_64   	  = 0x20;
+    public static final int RBS_SKIP_DTP = 0x40;
 
     private VirtuosoConnection connection = null;
 
