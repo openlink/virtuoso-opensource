@@ -2827,15 +2827,6 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
         return 0;
     };
     
-    --client_id := get_keyword ('client_id', opts);
-    --client_secret := get_keyword ('client_secret', opts);
-	--code := get_keyword ('code', opts);
-    
-    --url := sprintf('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=http://www.openlinksw.com/oauth_redirect&client_secret=%s&code=%s', client_id, client_secret, code);
-    --access_token := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
-    --if (access_token is null)
-    --    return 0;
-    
     if (new_origin_uri like 'http://www.facebook.com/profile.php?id=%')
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/profile.php?id=%s', 0);
@@ -2846,20 +2837,20 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH (in graph_iri varchar, in ne
 		if (id is null)
 			return 0;
 	}
-    else if (new_origin_uri like 'http://www.facebook.com/%')
+    else if (new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
 	{
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/%s', 0);
-        id := rtrim(tmp[0], '&/');
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
+        id := rtrim(tmp[1], '&/');
         pos := strchr(id, '?');
         if (pos > 0)
 			id := left(id, pos);
 		if (id is null)
 			return 0;
 	}
-    else if (new_origin_uri like 'http://www.facebook.com/album.php?aid=%&id=%')
+    else if (new_origin_uri like 'http://www.facebook.com/%')
 	{
-		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
-        id := rtrim(tmp[1], '&/');
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.facebook.com/%s', 0);
+        id := rtrim(tmp[0], '&/');
         pos := strchr(id, '?');
         if (pos > 0)
 			id := left(id, pos);

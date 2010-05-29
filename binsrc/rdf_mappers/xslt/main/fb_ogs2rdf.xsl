@@ -75,7 +75,7 @@
                     <og:id><xsl:value-of select="//id"/></og:id>
                 </xsl:if>
                 <xsl:if test="//picture">
-                    <foaf:img rdf:resouce="{//picture}"/>
+                    <foaf:img rdf:resource="{//picture}"/>
                 </xsl:if>
                 <xsl:if test="//name">
     				<dc:title><xsl:value-of select="//name"/></dc:title>
