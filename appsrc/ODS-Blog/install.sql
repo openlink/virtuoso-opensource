@@ -520,10 +520,23 @@ create procedure BLOG2_RSS2WML_PP ()
 
     -- prepare standard header
     ohdr := http_header_get ();
-      psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+      --psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+      declare links varchar;
+      links := '';
+      for select SH_URL from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER 
+	where SH_PROTO = 'PubSubHub' and SH_ID = AP_HOST_ID and AP_WAI_ID = WAI_ID 
+	    and WAI_NAME = WAM_INST and http_path () like WAM_HOME_PAGE || '%' do
+	{ 
+	  psh := SH_URL;
       if (length (psh))
 	{
-	  http_header (ohdr || sprintf ('Link: <%s>; rel="hub"; title="PubSubHub"\r\n', psh));
+	      links := links || sprintf (' <%s>; rel="hub"; title="PubSubHub",\r\n', psh);
+	    }
+	}
+      links := rtrim (links, ',\r\n');
+      if (links <> '')
+	{
+	  http_header (ohdr || sprintf ('Link:%s\r\n', links));
 	  ohdr := http_header_get ();
 	}
     if (strcasestr (ohdr, 'Content-Type:') is not null)
@@ -1103,6 +1116,7 @@ http ('XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st
 http ('XMLELEMENT(\'webMaster\', BI_E_MAIL), \n', ses);
 http ('XMLELEMENT(\'copyright\', BLOG..blog_utf2wide (BI_COPYRIGHTS)), \n', ses);
 http ('XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (\'http://\' || BLOG.DBA.BLOG2_GET_HOST () || http_path() as "href", \'self\' as "rel", \'application/rss+xml\' as "type", BLOG..blog_utf2wide (BI_TITLE) as "title")), \n', ses);
+http ('(select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG, DB.DBA.WA_INSTANCE where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = WAI_ID and WAI_NAME = BI_WAI_NAME), \n', ses);
 http ('(select XMLAGG (XMLELEMENT (\'category\', BI_KWD)) from BLOG.DBA.BLOG_GET_BLOG_KWDS where kwds = BI_KEYWORDS) ,\n', ses);
 http ('\n', ses);
 http ('XMLELEMENT(\'language\', \'en-us\'), \n', ses);
