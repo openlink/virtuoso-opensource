@@ -555,11 +555,11 @@ vad_create() {
 generate_files() {
   do_command_safe $DSN "load dev.sql"
   do_command_safe $DSN "TUT_generate_files('/vad_files/vsp/tutorial')"
-    if [ "x$HOST_OS" = "x" ]
-    then
+    #if [ "x$HOST_OS" = "x" ]
+    #then
       #tar xzf $HOME/binsrc/samples/IBuySpy/ibuyspy_mono_virtuoso_client.tar.gz
       #mv PortalCS $LOGDIR/vad_files/vsp 
-    fi
+    #fi
 }
 
 $myrm "$LOGFILE" 2>/dev/null
