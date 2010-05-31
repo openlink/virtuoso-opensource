@@ -1,0 +1,22 @@
+#
+# Sesame configuration template for a virtuoso repository
+#
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rep: <http://www.openrdf.org/config/repository#>.
+@prefix vr: <http://www.openrdf.org/config/repository/virtuoso#>.
+
+[] a rep:Repository ;
+   rep:repositoryID "virtuoso" ;
+   rep:repositoryTitle "Virtuoso repository" ;
+   rep:repositoryImpl [
+      rep:repositoryType "openrdf:VirtuosoRepository" ;
+      vr:hostList "localhost:1111" ;
+      vr:username "dba" ;
+      vr:password "dba" ;
+      vr:defGraph "sesame:nil" ;
+      vr:useLazyAdd false ;
+      vr:roundRobin false ;
+      vr:fetchSize 200 ;
+      vr:ruleSet "null"
+   ].

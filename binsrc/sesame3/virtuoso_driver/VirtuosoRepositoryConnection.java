@@ -71,8 +71,13 @@ import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
+import org.openrdf.model.URIFactory;
+import org.openrdf.model.LiteralFactory;
 import org.openrdf.model.impl.StatementImpl;
 import org.openrdf.model.impl.NamespaceImpl;
+import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.model.impl.LiteralFactoryImpl;
+import org.openrdf.model.impl.URIFactoryImpl;
 import org.openrdf.query.Dataset;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.BooleanQuery;
@@ -162,6 +167,7 @@ import virtuoso.sql.RdfBox;
  * 
  */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
+	private ValueFactoryImpl vf;
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
@@ -172,6 +178,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+	private String ruleSet;
 
 
 
@@ -180,8 +187,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
+		URIFactory uf = repository.getURIFactory();
+		LiteralFactory lf = repository.getLiteralFactory();
+		this.vf = new ValueFactoryImpl(uf, lf);
 		this.nilContext = getValueFactory().createURI(repository.defGraph);
+		this.ruleSet = repository.ruleSet;
 		this.repository.initialize();
+
 	}
 
 	/**
@@ -235,7 +247,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * @return A repository-specific ValueFactory.
 	 */
 	public ValueFactory getValueFactory() {
-		return repository.getValueFactory();
+		return vf;
         }
 
 	/**
@@ -536,7 +548,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleResult evaluate() throws StoreException
 			{
-				return executeSPARQLForTupleResult(query, getDataset());
+				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -589,7 +601,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphResult evaluate() throws StoreException {
-				return executeSPARQLForGraphResult(query, getDataset());
+				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -642,7 +654,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean ask() throws StoreException {
-				return executeSPARQLForBooleanResult(query, getDataset());
+				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings());
 			}
 		};
 		return q;
@@ -2218,7 +2230,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleResult executeSPARQLForTupleResult(String query, Dataset dataset) throws StoreException
+	protected TupleResult executeSPARQLForTupleResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		List<String> names = new LinkedList<String>();
 		try {
@@ -2226,7 +2238,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -2239,34 +2251,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return new TupleResultImpl(names, new CursorBindingSet(rs));
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 	
-	protected GraphResult executeSPARQLForGraphResult(String query, Dataset dataset) throws StoreException
+	protected GraphResult executeSPARQLForGraphResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
 			stmt.setFetchSize(prefetchSize);
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 			return new GraphResultImpl(new HashMap<String,String>(), new CursorGraphResult(rs));
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 		
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset) throws StoreException
+	protected boolean executeSPARQLForBooleanResult(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws StoreException
 	{
 		boolean result = false;
 		try {
 			verifyIsOpen();
 			sendDelayAdd();
 			java.sql.Statement stmt = getQuadStoreConnection().createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset));
+			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
 
 			while(rs.next())
 			{
@@ -2278,7 +2290,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return result;
 		}
 		catch (SQLException e) {
-			throw new StoreException(e);
+			throw new StoreException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
 
@@ -2334,11 +2346,52 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.quadStoreConnection = quadStoreConnection;
 	}
 
-	private String fixQuery(String query, Dataset dataset) 
+	private String substBindings(String query, BindingSet bindings) 
+	{
+		StringBuffer buf = new StringBuffer();
+		String delim = " ,)(;.";
+	  	int i = 0;
+	  	char ch;
+	  	while( i < query.length()) {
+	    		ch = query.charAt(i++);
+	    		if (ch == '"' || ch == '\'') {
+	      			char end = ch;
+	      			buf.append(ch);
+	      			while (i < query.length()) {
+	        			ch = query.charAt(i++);
+	        			buf.append(ch);
+	        			if (ch == end)
+	          				break;
+	      			}
+	    		} else  if ( ch == '?' ) {  //Parameter
+	      			String varData = null;
+	      			int j = i;
+	      			while(j < query.length() && delim.indexOf(query.charAt(j)) < 0) j++;
+	      			if (j != i) {
+	        			String varName = query.substring(i, j);
+	        			Value val = bindings.getValue(varName);
+	        			if (val != null) {
+                  				varData = stringForValue(val);
+                  				i=j;
+                			}
+	      			}
+	      			if (varData != null)
+	        			buf.append(varData);
+	      			else
+	        			buf.append(ch);
+	    		} else {
+	      			buf.append(ch);
+	    		}
+	  	}
+		return buf.toString();
+	}
+
+	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
 		StringTokenizer tok = new StringTokenizer(query);
 		String s = "";
 
+/*****
 		while(tok.hasMoreTokens()) {
 		    s = tok.nextToken().toLowerCase();
 		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
@@ -2350,6 +2403,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ret.append("sparql\n define output:format '_JAVA_'\n ");
 		else 
 			ret.append("sparql\n ");
+*******/
+		StringBuffer ret = new StringBuffer("sparql\n ");
+
+		if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
+		  ret.append("define input:inference '"+ruleSet+"'\n ");
+
+		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{
@@ -2375,7 +2435,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		     }
 		   }
 		}
-		ret.append(query);
+		ret.append(substBindings(query, bindings));
 		return ret.toString();
 	}
 
