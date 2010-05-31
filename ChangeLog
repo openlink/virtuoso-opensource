@@ -1,3 +1,820 @@
+2010-05-31 22:04  source
+
+	* Updated version to 6.1.2-rc1
+
+2010-05-31 21:55  source
+
+	* Added common PubSubHub procedures
+	* Fixed use notify services for PubSubHub settings
+	* Fixed publish atom feed too
+	* Fixed PHP ssl
+
+2010-05-31 21:53  source
+
+	* Fixed link re=hub
+	* Fixed check individual settings
+
+2010-05-31 21:49  source
+
+	* Added support for PubSubHub
+
+2010-05-31 20:49  source
+
+	* Added setting for GatewayIpAddress
+
+2010-05-31 20:48  source
+
+	* Fixed missing external
+
+2010-05-31 20:47  source
+
+	* Fixed incomplete check condition as locks with pos at end do not
+	  count
+
+2010-05-31 20:45  source
+
+	* Fixed use request line for ID
+
+2010-05-31 14:27  source
+
+	* Merged enhancements from sesame2
+
+2010-05-31 14:26  source
+
+	* Rebuild driver
+
+2010-05-31 14:26  source
+
+	* Fixed isue with variable binding
+
+2010-05-31 14:07  source
+
+	file VirtuosoRepositoryConfig.java was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file VirtuosoRepositoryFactory.java was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file VirtuosoRepositorySchema.java was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file org.openrdf.repository.config.RepositoryFactory was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file org.openrdf.repository.templates was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file org.openrdf.store.schemas was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file virtuoso-schema.ttl was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 14:07  source
+
+	file virtuoso.ttl was added on branch V6_0_0-DEVEL on 2010-05-31 14:27:52 +0000
+
+2010-05-31 11:08  source
+
+	* Added initial support for OData atom serialization
+	* Use CBG describe for OData format
+	* Use EMD types for generic types
+
+2010-05-31 11:00  source
+
+	* Added option DensePageAllocation which offers up some near page
+	  locality so resulting db uses less disk space
+
+2010-05-31 11:00  source
+
+	* Fixed issue with ?? with sparql compiler inside sql query
+
+2010-05-29 12:25  source
+
+	* Fixed when traverse foreigh sites, check if they add something
+	  more, such as redirects back to origin
+
+2010-05-29 12:09  source
+
+	* Rebuild driver
+
+2010-05-29 12:07  source
+
+	* Added check for inline string flag
+
+2010-05-29 12:00  source
+
+	* Fixed minor issues
+
+2010-05-28 16:56  source
+
+	* Fixed small issues
+
+2010-05-26 21:48  source
+
+	* Fixed use distinct as many graphs can be in same rule
+	* Minor UI tweaks
+
+2010-05-26 21:41  source
+
+	* Fixed report proper version
+	* Fixed compatibility with later JRE
+	* Fixed buffer length
+
+2010-05-26 21:37  source
+
+	* Fixed RM_XLAT_CONCAT
+
+2010-05-26 15:23  source
+
+	* Added Vimeo cartridge
+	* Fixed Tesco cartridge
+	* Fixed html2 cartridge
+
+2010-05-26 15:21  source
+
+	* Added support to export queues
+	* Fixed view in crawler UI
+
+2010-05-26 15:21  source
+
+	* Fixed incorrect check for VDB functionality
+
+2010-05-26 08:16  source
+
+	file vimeo2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-05-26 15:23:14 +0000
+
+2010-05-26 08:11  source
+
+	* Added automatic FOAF+SSL
+	* Added ping service to do PubSubHub
+	* Added PubSubHub settings in ODS
+	* Fixed collecting FOAF data
+	* Fixed casemode problem
+	* Fixed bad join
+	* Fixed typo
+
+2010-05-26 08:08  source
+
+	* Fixed group IRI
+
+2010-05-26 08:07  source
+
+	* Added PubSubHub setting in ODS
+
+2010-05-26 08:07  source
+
+	* Fixed upstreaming
+
+2010-05-26 07:57  source
+
+	file vfs_export.vspx was added on branch V6_0_0-DEVEL on 2010-05-26 15:21:53 +0000
+
+2010-05-24 22:36  source
+
+	* Fixed memleak
+
+2010-05-24 18:02  source
+
+	* Added improvements in inference handling
+	* FIxed support for subproperties of inverse functional properties
+	* Fixed support for loading aaa ruleset from multiple contology graphs
+
+2010-05-22 19:18  source
+
+	* Added support for gunzip session
+
+2010-05-21 12:40  source
+
+	* Fixed checking return code from fd_open call
+
+2010-05-21 12:27  source
+
+	* Added automatic error correction for some common typos in
+	  decode_b32_num
+
+2010-05-21 12:26  source
+
+	* Fixed when doing log replay, we should remove old roots to free
+	  memory as at this time the grim reaper is not available
+
+2010-05-21 12:24  source
+
+	* Fixed allow reset of xslt in PP hook
+
+2010-05-19 10:19  source
+
+	* Merged b32 encoding/decoding from HEAD
+
+2010-05-19 10:13  source
+
+	* Added support for editing update interval from site settings
+
+2010-05-19 10:04  source
+
+	* Fixed urchinTracker setting
+
+2010-05-18 22:29  source
+
+	* Added support for editline
+
+2010-05-18 19:33  source
+
+	* Added Google API
+
+2010-05-18 19:22  source
+
+	* Fixed minor issue
+
+2010-05-18 19:21  source
+
+	* Added support for additional types
+	* Fixed do not decode variants as we do not know if sender encoded
+	  special symbols or not
+
+2010-05-18 19:18  source
+
+	* Added more ctypes
+
+2010-05-18 13:01  source
+
+	* Fixed dependency list
+
+2010-05-18 10:52  source
+
+	* Fixed remove FACEBOOK_OPENGRAPH from tests as it is not related
+	  to RDFA
+
+2010-05-18 10:42  source
+
+	* Added FOAF+SSL registration for users pages (jsp, php, vsp etc)
+	* Fixed FOAF+SSL registration code
+	* Fixed modulus should be cleaned from garbage
+	* Fixed function to test w/o sparql acl table
+
+2010-05-18 10:41  source
+
+	* Updated SIOC service procedures
+
+2010-05-18 10:41  source
+
+	* Fixed get responce back so it can be traced if needed
+
+2010-05-18 10:40  source
+
+	* Updated SIOC services procedures
+
+2010-05-18 10:40  source
+
+	* Added FeedManager callback
+
+2010-05-18 10:39  source
+
+	* Fixed problem with atom feed
+
+2010-05-18 10:30  source
+
+	* Added Facebook Open Graph cartridge
+
+2010-05-18 10:30  source
+
+	file fb_og2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-05-18 10:44:45 +0000
+
+2010-05-18 10:30  source
+
+	file fb_ogs2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-05-18 10:44:45 +0000
+
+2010-05-18 10:30  source
+
+	* Fixed minor issues
+
+2010-05-18 09:08  source
+
+	* Fixed when statement has implicit group by, do not remove order by
+
+2010-05-17 08:21  source
+
+	* Fixed error messages
+
+2010-05-17 08:21  source
+
+	* Fixed wrong dv_compare on boxes with box flags
+
+2010-05-16 18:57  source
+
+	* Fixed page footer and labels
+
+2010-05-16 18:56  source
+
+	* Added missing grant
+
+2010-05-16 17:56  source
+
+	* Fixed index for better queue ordering
+
+2010-05-13 19:38  source
+
+	* Fixed do not decode anything. We just match what is in and print
+	  it out, if source is bad encoded, the result is bad encoded,
+	  otherwise can not figure-out what was it before and what should
+	  be after, so we keep it simple
+
+2010-05-12 22:46  source
+
+	* Fixed GPF when weird (but formally legal) head of composite XML contains
+	  two declarations of external entities with different entity names but
+	  same URI to resolve
+
+2010-05-12 12:24  source
+
+	* Fixed use special cl_non_logged_write_mode used to load extrememly
+	  large datasets needs to ensure no log will be made at all. If one
+	  node dies, the rest will do same. Use this flag only in safe
+	  environment
+
+2010-05-12 12:17  source
+
+	* Fixed GPF in SPARUL INSERT optimization that happens when an
+	  auxiliary retval with vector of variables is wrapped in alias
+
+2010-05-12 12:16  source
+
+	* Fixed when looking at free set from disk must stop at last, as
+	  the dbs pages can be out of sync. Do this only when reading from
+	  disk otherwise error
+
+2010-05-11 16:53  source
+
+	* Added option to skip sponger and do RDFa along with other rdf
+	  formats
+
+2010-05-11 12:46  source
+
+	* Fixed modulus should be cleaned from garbage
+
+2010-05-11 11:15  source
+
+	* Fixed check magic to make sure data is gzip compressed
+
+2010-05-10 10:02  source
+
+	* Optimized FOAF+SSL login
+	* Updated SIOC service procedures
+	* Fixed CR/LF to make proper N3 syntax
+	* Fixed bad email in WebID
+
+2010-05-10 09:55  source
+
+	* Added Idiomag cartridge
+	* Added HTML5 Microdata cartridge
+
+2010-05-10 09:55  source
+
+	file html5md2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-05-10 12:20:23 +0000
+
+2010-05-10 09:55  source
+
+	file idiomag2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-05-10 12:20:23 +0000
+
+2010-05-10 09:54  source
+
+	* Fixed minor issues
+
+2010-05-10 09:49  source
+
+	* Updated documentation
+
+2010-05-10 09:39  source
+
+	* Fixed keep dashes in words and use escape whenever it occurs;
+	  words starting with numbers should also be escaped
+
+2010-05-07 09:14  source
+
+	* Added new bifs for graph diff functionality, iteration over
+	 dictionary and obtaining biggest possible IRI_ID on 32/64bit
+	 platforms
+
+2010-05-03 23:54  source
+
+	* FIxed use X-Forwarded-Host to handle proxy
+
+2010-05-03 19:31  source
+
+	* Added support for logging x-forwarded-for when instance is using
+	  a proxy
+
+2010-05-03 08:54  source
+
+	* Added shortcut for debugging variables
+
+2010-04-29 10:54  source
+
+	* Fixed cleaning new schema properly
+
+2010-04-29 10:00  source
+
+	* Added type
+	* Fixed labels
+	* Minor fixes
+
+2010-04-29 09:59  source
+
+	* Fixed print string without waiting for error
+
+2010-04-29 08:29  source
+
+	* Added more properties
+
+2010-04-29 08:28  source
+
+	* Fixed About header
+
+2010-04-28 15:21  source
+
+	* Fixed if Host header is present use that, and do not add port as may be
+	  behind proxy
+
+2010-04-26 14:41  source
+
+	* Fixed when a signal error arrives, pop the bad instruction so the
+	  free is not confused by dk_set when IS_NULL
+
+2010-04-26 07:57  source
+
+	* Fixed crawling of RDFa
+
+2010-04-26 07:56  source
+
+	* Added FOAF+SSL client demo
+
+2010-04-26 07:53  source
+
+	* Fixed if no DefaultGraph, do not assume anything about /dataspace
+
+2010-04-26 07:51  source
+
+	* Fixed minor issue
+
+2010-04-24 14:01  source
+
+	* Added import/export support using Yahoo Contacts API
+
+2010-04-24 13:56  source
+
+	* Fixed obj2json function
+
+2010-04-23 20:03  source
+
+	* Fixed do not continue when missing part of key, as it is uninitialized
+	  and needs to be dropped before causing a gpf
+
+2010-04-23 20:02  source
+
+	* Fixed only serialize box flags for dependant part
+
+2010-04-22 14:12  source
+
+	* Added cset to render function to recode string results
+
+2010-04-22 12:41  source
+
+	* FIxed url must end in slash or hash
+
+2010-04-22 12:40  source
+
+	* Fixed unicode handling in isql and sparql UI
+
+2010-04-22 12:35  source
+
+	* Fixed minor issue
+
+2010-04-22 12:35  source
+
+	* Removed debugging
+
+2010-04-22 11:12  source
+
+	* Fixed http header ends with proper CRLF sequence
+
+2010-04-21 16:18  source
+
+	* Fixed when doing something that may reference the control_exp
+	  private elements set the so_df_private_elts, otherwise may get a
+	  new df which is in global so df hash
+
+2010-04-21 12:44  source
+
+	* Fixed treat sort read node like a ts in tracking ssl refs, else
+	  partitioned top oby goes wrong
+
+2010-04-20 19:27  source
+
+	* Fixed resize map width to width of result div
+
+2010-04-20 19:24  source
+
+	* Fixed when gby serialize box flag if any
+
+2010-04-17 23:23  source
+
+	* Fixed can have uninitialized null flag in hash temp; can be extra
+	  nulls in gby or hash join
+
+2010-04-16 12:35  source
+
+	* Added hook to execute secondary statement
+
+2010-04-16 12:33  source
+
+	* FIxed missing definition for bigint
+
+2010-04-16 11:40  source
+
+	* Fix for <![CDATA[ inside <script> in HTML and dirty HTML modes.
+
+2010-04-15 18:46  source
+
+	* Fixed export to Del.icio.us
+
+2010-04-15 18:42  source
+
+	* Fixed use global list of prefixes for advanced query helper as well
+	  as other parts
+
+2010-04-15 18:24  source
+
+	* Fixed minor issues
+
+2010-04-15 18:23  source
+
+	* Fixed support for foaf:maker
+
+2010-04-15 18:20  source
+
+	* Updated CSS for buttons
+
+2010-04-15 18:20  source
+
+	* Updated toolbar
+
+2010-04-15 14:05  source
+
+	* Fixed memleak when error in bif and no error var given
+
+2010-04-15 14:03  source
+
+	* Fixed memleak when client drops conneciton before prepare
+
+2010-04-14 13:47  source
+
+	* Added initial support for bif_python_exec
+
+2010-04-14 13:19  source
+
+	* Fixed export check to call in plugins
+
+2010-04-14 10:48  source
+
+	* Fixed support for bigint in parameter marshalling
+
+2010-04-14 10:47  source
+
+	* Fixed UI profileCVS: ----------------------------------------------------------------------
+
+2010-04-13 12:19  source
+
+	* Fixed issue with ckeditor
+
+2010-04-13 12:18  source
+
+	* Fixed login with non WebDav accounts
+
+2010-04-13 12:17  source
+
+	* Updated CKEditor to version 3.2.1
+
+2010-04-13 12:17  source
+
+	file default.js was added on branch V6_0_0-DEVEL on 2010-04-14 10:47:31 +0000
+
+2010-04-12 19:42  source
+
+	* Added possibility to do URL encoding in TCN rules
+
+2010-04-12 19:41  source
+
+	* FIxed odata cartridge
+
+2010-04-12 19:39  source
+
+	* Fixed extra replacements
+
+2010-04-12 19:39  source
+
+	* Minor fix
+
+2010-04-12 12:37  source
+
+	* Fixed use UTF-8 as source and dest charsets when doing urls
+
+2010-04-12 07:28  source
+
+	* Fixed check for third argument
+
+2010-04-12 07:26  source
+
+	* Fixed query string for product description from BestBuy API
+	* Minor fixes
+
+2010-04-09 14:46  source
+
+	* Fixed use default MaxMemPoolSize of 200000000
+	* Fixed double MaxMemPoolSize on 64bit systems
+
+2010-04-09 14:43  source
+
+	* Fixed if we got a single ts as first and it is outer, put a dummy in
+	  front
+
+2010-04-09 14:36  source
+
+	* Fixed problem with Chrome browser and JS loading
+
+2010-04-09 14:34  source
+
+	* Fixed problem with Chrome browser and JS loading
+	* Fixed Relation ontology data
+
+2010-04-09 13:01  source
+
+	* Added Relation ontology
+	* Updated UI profile for vsp, php etc
+
+2010-04-09 13:01  source
+
+	* Fixed check for unique email address
+
+2010-04-08 14:40  source
+
+	* Added CSV parser mode option
+	* Fixed error reporting
+
+2010-04-08 14:30  source
+
+	* Added CSV parser lax mode
+	* FIxed log errors from loading
+
+2010-04-07 21:48  source
+
+	* Fixed issue with tab and space handling
+
+2010-04-07 19:27  source
+
+	* Fixed abnormal long RDFa parsing of document with i18n URIs
+
+2010-04-07 19:25  source
+
+	* Fixed memleak
+
+2010-04-07 19:25  source
+
+	* Fixed release it_maps as it is allocated dynamic
+
+2010-04-07 07:56  source
+
+	* Fixed wrong TTL output of CONSTRUCT of wierd IRIs
+
+2010-04-06 16:47  source
+
+	* Fixed shortcut comparing version numbers during package upgrade
+
+2010-04-06 16:41  source
+
+	* Updated documentation
+
+2010-04-06 16:33  source
+
+	* Added photo and audio upload for jtml, vsp, php and jsp pages
+
+2010-04-06 16:31  source
+
+	* Added CSV cartridge
+	* Fixed odata cartridge
+	* Fixed webcal support
+	* Fixed geo coords
+
+2010-04-06 16:29  source
+
+	* Added support for encodings
+	* Added support for gz and zip compressed CSV
+	* Fixed view to have col names
+	* Fixed catch db nulls
+	* Fixed crawling opts
+
+2010-04-06 15:51  source
+
+	file csvxml2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-04-06 16:31:40 +0000
+
+2010-04-06 15:51  source
+
+	file odata2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-04-06 16:31:40 +0000
+
+2010-04-06 14:43  source
+
+	* Fixed find const iri when nested call of i2id is used
+
+2010-04-06 13:47  source
+
+	* Rebuild driver
+
+2010-04-06 13:46  source
+
+	* Added additional support for inferencing
+	* Added new inferencing sample
+
+2010-04-06 13:46  source
+
+	file VirtuosoSPARQLExample13.java was added on branch V6_0_0-DEVEL on 2010-04-06 14:35:46 +0000
+
+2010-04-06 13:38  source
+
+	* Added rdftabs timeline support for ical properties
+	* Added ical:summary as one of recognized title properties
+	* Added support for ATOM feeds
+	* Fixed copy of defaults
+	* Fixed url encoding
+	* Fixed move OAT.Dom.decodeImage to OAT.Formobject
+	* Fixed use new OAT.Dom.create (..., {className:"XXX"}) method
+	* Fixed JSON serialize/deserialize
+	* Fixed rename find to indexOf
+
+2010-04-06 12:16  source
+
+	* Added support for listing content of zip file
+	* Fixed memleak in unzip_file
+
+2010-04-01 10:44  source
+
+	* Rebuild provider
+
+2010-04-01 10:43  source
+
+	file VirtuosoSPARQLExample12.java was added on branch V6_0_0-DEVEL on 2010-04-01 10:54:36 +0000
+
+2010-04-01 10:43  source
+
+	* Added support for inference graph
+	* Added support for inference and query execution
+	* Added support for QueryEngine interface, so now Jena provider support
+	  next query execution mode:
+	   a) parse and execute query via ARQ
+	   b) parse query via ARQ and execute query directly via Virtuoso(new mode)
+	   c) parse and execute query directly via Virtuoso
+	* Fixed small bugs
+
+2010-04-01 10:43  source
+
+	file VirtInfGraph.java was added on branch V6_0_0-DEVEL on 2010-04-01 10:54:36 +0000
+
+2010-04-01 10:43  source
+
+	file VirtuosoQueryEngine.java was added on branch V6_0_0-DEVEL on 2010-04-01 10:54:36 +0000
+
+2010-03-31 22:45  source
+
+	file foaf_ssl_client.vsp was added on branch V6_0_0-DEVEL on 2010-04-26 07:56:09 +0000
+
+2010-03-31 22:45  source
+
+	file fs_s_1.xml was added on branch V6_0_0-DEVEL on 2010-04-26 07:56:09 +0000
+
+2010-03-31 22:45  source
+
+	file register_cert.vsp was added on branch V6_0_0-DEVEL on 2010-04-26 07:56:09 +0000
+
+2010-03-31 22:07  source
+
+	* Fixed insecure https client connections
+	* Fixed memleaks on connection error
+
+2010-03-31 22:06  source
+
+	* Fixed no value is null
+
+2010-03-30 20:52  source
+
+	* Fixed PACKAGE_VERSION
+
+2010-03-30 17:59  source
+
+	* Updated documentation
+
 2010-03-30 15:34  source
 
 	* Updated version to 6.1.1 for final release
