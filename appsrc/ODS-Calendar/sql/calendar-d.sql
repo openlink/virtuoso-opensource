@@ -32,6 +32,18 @@ create procedure CAL.WA.uninstall ()
 CAL.WA.uninstall ()
 ;
 
+create procedure CAL.WA.uninstall ()
+{
+  for select DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C') path from WS.WS.SYS_DAV_COL where COL_DET = 'Calendar' do
+  {
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+    commit work;
+  }
+}
+;
+CAL.WA.uninstall ()
+;
+                                                                                            -- Scheduler
 VHOST_REMOVE (lpath => '/calendar');
 VHOST_REMOVE (lpath => '/calendar/atom-pub');
 
@@ -154,6 +166,42 @@ CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.subscription.edit"')
 CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.subscription.delete"');
 CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.options.set"');
 CAL.WA.exec_no_error ('DROP procedure ODS.ODS_API."calendar.options.get"');
+
+-- dropping DET procs
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_FIXNAME"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_COMPOSE_ICS_NAME"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_ACCESS_PARAMS"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_AUTHENTICATE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_AUTHENTICATE_HTTP"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_GET_PARENT"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_COL_CREATE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_COL_MOUNT"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_COL_MOUNT_HERE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_DELETE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_RES_UPLOAD"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_PROP_REMOVE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_PROP_SET"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_PROP_GET"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_PROP_LIST"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_DIR_SINGLE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_DIR_LIST"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_FC_PRED_METAS"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_FC_TABLE_METAS"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_FC_PRINT_WHERE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_DIR_FILTER"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_SEARCH_ID_IMPL"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_SEARCH_ID"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_SEARCH_PATH"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_RES_UPLOAD_COPY"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_RES_UPLOAD_MOVE"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_RES_CONTENT"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_SYMLINK"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_DEREFERENCE_LIST"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_RESOLVE_PATH"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_LOCK"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_UNLOCK"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_IS_LOCKED"');
+CAL.WA.exec_no_error('DROP procedure DB.DBA."calendar_DAV_LIST_LOCKS"');
 
 -- final proc
 CAL.WA.exec_no_error('DROP procedure CAL.WA.exec_no_error');

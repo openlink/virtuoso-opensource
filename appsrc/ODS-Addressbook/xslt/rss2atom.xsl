@@ -32,6 +32,7 @@
   xmlns:ods="http://www.openlinksw.com/ods/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
+  exclude-result-prefixes="atom"
   version="1.0">
 
 <xsl:output indent="yes" encoding="UTF-8"/>
@@ -54,11 +55,13 @@
     <link href="{.}" type="text/html" rel="alternate"/>
     <xsl:if test="parent::channel">
 	<link href="{ods:getHttpUrl()}" type="application/atom+xml" rel="self"/>
+	  <xsl:copy-of select="parent::channel/atom:link[@rel='hub' and @href]"/>
     </xsl:if>
 </xsl:template>
 
 <xsl:template match="channel/itunes:*" />
 <xsl:template match="item/itunes:*" />
+<xsl:template match="atom:*" />
 
 <xsl:template match="channel/description[.!='']">
     <subtitle><xsl:apply-templates /></subtitle>

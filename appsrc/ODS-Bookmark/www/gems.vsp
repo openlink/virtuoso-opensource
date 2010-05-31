@@ -76,7 +76,7 @@
       _gems := get_keyword('type', params);
       if (_gems in ('Bookmark.rss', 'Bookmark.atom', 'Bookmark.rdf', 'Bookmark.comment', 'Bookmark.opml', 'Bookmark.ocs'))
       {
-        declare _result, _path, _content, _type, _xslt any;
+        declare _header, _links, _result, _path, _content, _type, _xslt any;
 
         _user_id := BMK.WA.domain_owner_id (_domain_id);
         _path := BMK.WA.dav_home (_user_id) || 'Gems/' || BMK.WA.domain_name (_domain_id) || '/' || _gems;
@@ -107,8 +107,15 @@
           _result := xslt (_xslt, _result);
         }
 
+        _header := case when (_gems like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        if (_gems in ('Bookmark.rss', 'Bookmark.atom'))
+        {
+          _links := ODS..PSH_HEADER_LINKS (_domain_id);
+          if (length (_links))
+            _header := _header || sprintf ('Link: %s\r\n', _links);
+        }
         http_request_status ('HTTP/1.1 200 OK');
-        http_header ('Content-Type: text/xml\r\n');
+        http_header (_header);
         http_value (_result);
       }
     }

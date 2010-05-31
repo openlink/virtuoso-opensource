@@ -47,7 +47,6 @@
       set http_charset = 'UTF-8';
       http_rewrite ();
       http_request_status ('HTTP/1.1 200 OK');
-      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
       self.domain_id := ENEWS.WA.session_domain (params);
       self.account_id := ENEWS.WA.domain_owner_id (self.domain_id);
@@ -69,14 +68,11 @@
         http (         '<SyndicationRight>open</SyndicationRight>');
         http (         '<AdultContent>false</AdultContent>');
         http (         '</OpenSearchDescription>');
-
-        goto _end;
       }
       else if (self.v_output = 'OPML')
       {
+        http_header ('Content-Type: text/xml\r\n');
         http(ENEWS.WA.xml2string(ENEWS.WA.export_opml_xml(self.domain_id, self.account_id)));
-        goto _end;
-
       }
       else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
       {
@@ -101,8 +97,14 @@
         if (state <> '00000')
           goto _error;
 
-        if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
-        {
+        declare _header, _links varchar;
+
+        _header := case when (self.v_output like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        _links := ODS..PSH_HEADER_LINKS (self.domain_id);
+        if (length (_links))
+          _header := _header || sprintf ('Link: %s\r\n', _links);
+        http_header (_header);
+
           http ('<?xml version="1.0" encoding="UTF-8"?>\n');
           http ('<rss version="2.0">\n');
           http ('<channel>\n');
@@ -129,6 +131,12 @@
             http ('<link>');
               http_value (ENEWS.WA.enews_url(self.domain_id));
             http ('</link>\n');
+          if (self.v_output like '%atom%')
+          {
+            _links := ODS..PSH_ATOM_LINKS (self.domain_id);
+            if (length (_links))
+              http (_links);
+          }
           }
           foreach (any row in result) do
           {
@@ -137,7 +145,7 @@
                 http_value (row[1]);
               http ('</title>\n');
               http ('<description>');
-                http_value (charset_recode(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0])), null, 'UTF-8'));
+              http_value (ENEWS.WA.utf2wide(ENEWS.WA.xml2string(ENEWS.WA.feed_description(row[0]))));
               http ('</description>\n');
               http ('<link>');
                 http_value (row[4]);
@@ -170,15 +178,12 @@
 
           else if (self.v_output = 'xbel')
     	      http_xslt (ENEWS.WA.xslt_full ('rss2xbel.xsl'));
-
-    	    goto _end;
-        }
       }
-    _error:
-      http('<?xml version="1.0" ?><empty />');
-
     _end:
       return;
+
+    _error:
+      http('<?xml version="1.0" ?><empty />');
     ?>
   ]]>
 </v:page>

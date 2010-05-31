@@ -21,7 +21,7 @@
 --
 
 -- dropping nntp procedure
-create procedure ENEWS.WA.drop_nntp ()
+create procedure ENEWS.WA.uninstall ()
 {
   for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do
   {
@@ -30,7 +30,7 @@ create procedure ENEWS.WA.drop_nntp ()
   }
 }
 ;
-ENEWS.WA.drop_nntp ()
+ENEWS.WA.uninstall ()
 ;
 
 create procedure ENEWS.WA.uninstall ()
@@ -43,6 +43,18 @@ create procedure ENEWS.WA.uninstall ()
 ENEWS.WA.uninstall ()
 ;
 
+create procedure ENEWS.WA.uninstall ()
+{
+  for select DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C') path from WS.WS.SYS_DAV_COL where COL_DET = 'News3' do
+  {
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+    commit work;
+  }
+}
+;
+ENEWS.WA.uninstall ()
+;
+                                                                                            -- Scheduler
 VHOST_REMOVE (lpath => '/enews2');
 
 -- Scheduler
@@ -189,6 +201,45 @@ ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.blog.unsubscribe"');
 ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.blog.refresh"');
 ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.options.set"');
 ENEWS.WA.exec_no_error ('DROP procedure ODS.ODS_API."feeds.options.get"');
+
+-- dropping DET procs
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_FIXNAME"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_COMPOSE_NAME"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_GET_USER_ID"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_ACCESS_PARAMS"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_AUTHENTICATE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_AUTHENTICATE_HTTP"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_GET_PARENT"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_COL_CREATE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_COL_MOUNT"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_COL_MOUNT_HERE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_DELETE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_RES_UPLOAD"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_PROP_REMOVE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_PROP_SET"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_PROP_GET"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_PROP_LIST"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_DIR_SINGLE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_DIR_LIST"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_DIR_FILTER"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_SEARCH_ID"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_SEARCH_PATH"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_RES_UPLOAD_COPY"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_RES_UPLOAD_MOVE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_RES_CONTENT"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_SYMLINK"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_DEREFERENCE_LIST"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_RESOLVE_PATH"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_LOCK"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_UNLOCK"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_IS_LOCKED"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_DAV_LIST_LOCKS"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_CF_PROPNAME_TO_COLNAME"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_CF_FEED_FROM_AND_WHERE"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_CF_LIST_PROP_DISTVALS"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_CF_GET_RDF_HITS"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3_RF_ID2SUFFIX"');
+ENEWS.WA.exec_no_error('DROP procedure DB.DBA."News3Feed_RF_SUFFIX2ID"');
 
 -- final proc
 ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.exec_no_error');

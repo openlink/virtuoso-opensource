@@ -29,16 +29,13 @@
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns="http://www.w3.org/2005/Atom"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:ods="http://www.openlinksw.com/ods/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   exclude-result-prefixes="atom"
   version="1.0">
 
-<xsl:output indent="yes" />
-<xsl:param name="httpUrl" select="vi:getHttpUrl()"/>
-<xsl:param name="isRegularFeed" select="boolean(vi:isRegularFeed())"/>
-
+<xsl:output indent="yes" encoding="UTF-8"/>
 
 <!-- general element conversions -->
 
@@ -53,24 +50,12 @@
 <xsl:template match="title">
     <title><xsl:apply-templates /></title>
 </xsl:template>
-<xsl:template match="ttl">
-</xsl:template>
 
 <xsl:template match="link">
     <link href="{.}" type="text/html" rel="alternate"/>
     <xsl:if test="parent::channel">
-	<link href="{$httpUrl}" type="application/atom+xml" rel="self"/>
-    </xsl:if>
-    <xsl:if test="parent::item and not ($isRegularFeed)">
-	<xsl:choose>
-	    <xsl:when test="parent::item/vi:version">
-		<xsl:variable name="ver" select="parent::item/vi:version"/>
-	    </xsl:when>
-	    <xsl:otherwise>
-		<xsl:variable name="ver">1</xsl:variable>
-	    </xsl:otherwise>
-	</xsl:choose>
-	<link href="{$httpUrl}/{substring-after (., '?id=')}/{$ver}" rel="edit"/>
+	  <link href="{ods:getHttpUrl()}" type="application/atom+xml" rel="self"/>
+	  <xsl:copy-of select="parent::channel/atom:link[@rel='hub' and @href]"/>
     </xsl:if>
 </xsl:template>
 
@@ -132,7 +117,7 @@
     <published><xsl:call-template name="date"/></published>
 </xsl:template>
 
-<xsl:template match="item/vi:modified">
+<xsl:template match="item/ods:modified">
     <updated><xsl:apply-templates /></updated>
 </xsl:template>
 
@@ -154,22 +139,16 @@
     </entry>
 </xsl:template>
 
-<xsl:template match="openSearch:*">
-    <xsl:copy>
-	<xsl:copy-of select="@*|text()"/>
-    </xsl:copy>
-</xsl:template>
-
 <xsl:template match="channel/language" />
 <xsl:template match="channel/webMaster" />
 <xsl:template match="channel/cloud" />
 <xsl:template match="wfw:*" />
 <xsl:template match="dc:*" />
+<xsl:template match="openSearch:*" />
 <xsl:template match="slash:*" />
 <xsl:template match="item/comments" />
 <xsl:template match="item/enclosure" />
 <xsl:template match="itunes:*" />
-<xsl:template match="vi:version" />
 
 <xsl:template match="@*" />
 
