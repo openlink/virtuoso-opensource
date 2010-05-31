@@ -107,6 +107,7 @@ extern char *vdb_odbc_error_file; /* from sqlrrun.c */
 extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
 extern long cfg_disable_vdb_stat_refresh;
 extern char *www_maintenance_page;
+extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
@@ -1202,6 +1203,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "MaintenancePage", &www_maintenance_page) == -1)
     www_maintenance_page = NULL;
+
+  if (cfg_getstring (pconfig, section, "GatewayIpAddress", &http_proxy_address) == -1)
+    http_proxy_address = NULL;
 
   if (cfg_getlong (pconfig, section, "RDFContentNegotiation", &c_http_check_rdf_accept) == -1)
     c_http_check_rdf_accept = 1;
