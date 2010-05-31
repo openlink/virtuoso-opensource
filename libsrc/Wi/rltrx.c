@@ -157,7 +157,7 @@ pg_move_lock (it_cursor_t * itc, row_lock_t ** locks, int n_locks, int from, int
 	  if (is_to_extend)
 	    {
 	      if (ITC_AT_END == to)
-		log_info ("Mildly suspect to shift a deleted rl to the right side of a split");
+		log_info ("Unusual to shift a deleted rl to the right side of a split");
 	      rl_add_pl_to_owners (itc, rl, pl_to);
 	    }
 	  return;
@@ -1061,7 +1061,17 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
   else
     {
       if (pl->pl_n_row_locks > buf->bd_content_map->pm_count)
-	GPF_T1 ("more locks than rows");
+	{
+	  int n_row_locks = 0;
+	  DO_RLOCK (rl, pl)
+	    {
+	      if (rl->rl_pos != ITC_AT_END)
+		n_row_locks ++;
+	    }
+	  END_DO_RLOCK;
+	  if (n_row_locks > buf->bd_content_map->pm_count)
+	    GPF_T1 ("more locks than rows");
+	}
       DO_RLOCK (rl, pl)
       {
 	if (rl->pl_owner == lt)
