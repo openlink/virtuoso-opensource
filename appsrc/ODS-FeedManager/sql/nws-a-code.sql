@@ -544,35 +544,36 @@ create procedure ENEWS.WA.domain_gems_delete(
   in appGems varchar := null,
   in fileName varchar := 'OFM')
 {
-  declare tmp, davHome, home, path varchar;
+  declare tmp, home, appHome, path varchar;
 
-  davHome := ENEWS.WA.dav_home(account_id);
-  if (isnull(davHome))
+  home := ENEWS.WA.dav_home(account_id);
+  if (isnull (home))
     return;
 
   if (isnull (appName))
     appName := ENEWS.WA.domain_gems_folder (domain_id);
 
   if (isnull (appGems))
-    appName := ENEWS.WA.domain_gems_name (domain_id);
+    appGems := ENEWS.WA.domain_gems_name (domain_id);
 
-  home := davHome || appName || '/';
+  appHome := home || appName || '/';
+  home := appHome || appGems || '/';
 
-  path := home || appGems || '/' || fileName || '.rss';
+  path := home || fileName || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.rdf';
+  path := home || fileName || '.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.atom';
+  path := home || fileName || '.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.ocs';
+  path := home || fileName || '.ocs';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.opml';
+  path := home || fileName || '.opml';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.foaf';
+  path := home || fileName || '.foaf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.comment';
+  path := home || fileName || '.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appGems || '/' || fileName || '.podcast';
+  path := home || fileName || '.podcast';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid integer;
@@ -4563,11 +4564,13 @@ create procedure ENEWS.WA.export_rss_sqlx_int(
   http('select \n', retValue);
   http('  XMLELEMENT(\'title\', ENEWS.WA.utf2wide(ENEWS.WA.domain_name(<DOMAIN_ID>))), \n', retValue);
   http('  XMLELEMENT(\'description\', ENEWS.WA.utf2wide(ENEWS.WA.domain_description(<DOMAIN_ID>))), \n', retValue);
-  http('  XMLELEMENT(\'managingEditor\', U_E_MAIL), \n', retValue);
+  http ('  XMLELEMENT(\'managingEditor\', ENEWS.WA.utf2wide (U_FULL_NAME || \' <\' || U_E_MAIL || \'>\')), \n', retValue);
   http('  XMLELEMENT(\'pubDate\', ENEWS.WA.dt_rfc1123(now())), \n', retValue);
   http('  XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\')), \n', retValue);
   http('  XMLELEMENT(\'webMaster\', U_E_MAIL), \n', retValue);
-  http('  XMLELEMENT(\'link\', ENEWS.WA.enews_url(<DOMAIN_ID>)) \n', retValue);
+  http ('  XMLELEMENT(\'link\', ENEWS.WA.enews_url(<DOMAIN_ID>)), \n', retValue);
+  http ('  (select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = <DOMAIN_ID>), \n', retValue);
+  http ('  XMLELEMENT(\'language\', \'en-us\') \n', retValue);
   http('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http(']]></sql:sqlx>\n', retValue);
 

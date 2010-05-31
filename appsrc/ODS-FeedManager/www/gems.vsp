@@ -76,7 +76,7 @@
       _gems := get_keyword('type', params);
       if (_gems in ('OFM.rss', 'OFM.atom', 'OFM.rdf', 'OFM.comment', 'OFM.opml', 'OFM.ocs'))
       {
-        declare _result, _path, _content, _type, _xslt any;
+        declare _header, _links, _result, _path, _content, _type, _xslt any;
 
         _user_id := ENEWS.WA.domain_owner_id (_domain_id);
         _path := ENEWS.WA.dav_home (_user_id) || 'Gems/' || ENEWS.WA.domain_name (_domain_id) || '/' || _gems;
@@ -96,19 +96,26 @@
           {
             _xslt := ENEWS.WA.xslt_full ('rss2rdf.xsl');
           }
-          else
-          {
-            _xslt := ENEWS.WA.xslt_full ('rss2atom03.xsl');
-            if (ENEWS.WA.settings_atomVersion (ENEWS.WA.settings (_domain_id, _user_id)) = '1.0')
+          else if (ENEWS.WA.settings_atomVersion (ENEWS.WA.settings (_domain_id, _user_id)) = '1.0')
             {
               _xslt := ENEWS.WA.xslt_full ('rss2atom.xsl');
             }
+          else
+          {
+            _xslt := ENEWS.WA.xslt_full ('rss2atom03.xsl');
           }
           _result := xslt (_xslt, _result);
         }
 
+        _header := case when (_gems like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        if (_gems in ('OFM.rss', 'OFM.atom'))
+        {
+          _links := ODS..PSH_HEADER_LINKS (_domain_id);
+          if (length (_links))
+            _header := _header || sprintf ('Link: %s\r\n', _links);
+        }
         http_request_status ('HTTP/1.1 200 OK');
-        http_header ('Content-Type: text/xml\r\n');
+        http_header (_header);
         http_value (_result);
       }
     }

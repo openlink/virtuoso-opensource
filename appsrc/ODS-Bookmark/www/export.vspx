@@ -72,10 +72,8 @@
         http (         '<SyndicationRight>open</SyndicationRight>');
         http (         '<AdultContent>false</AdultContent>');
         http (         '</OpenSearchDescription>');
-        
-        goto _end;
-      } else {
-      if (self.v_output = 'BMK')
+      }
+      else if (self.v_output = 'BMK')
       {
         declare params any;
 
@@ -84,17 +82,23 @@
         http_header(sprintf ('Content-type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword('file', params, 'Bookmarks.html')));
         http_value(xslt (BMK.WA.xslt_full (get_keyword('format', params, 'Netscape') || '.xsl'), xtree_doc(BMK.WA.bookmark_export(self.domain_id, null))));
       }
-      else
-      {
-        http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
-
-        if (self.v_output = 'OPML')
+      else if (self.v_output = 'OPML')
         {
           http(BMK.WA.xml2string(BMK.WA.export_opml_xml(self.domain_id, self.account_id)));
-          goto _end;
         }
         else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
         {
+        declare _header, _links varchar;
+
+        _header := case when (self.v_output like '%atom%') then 'Content-Type: application/atom+xml\r\n' else 'Content-Type: text/xml\r\n' end;
+        if (self.v_output <> 'xbel')
+        {
+          _links := ODS..PSH_HEADER_LINKS (self.domain_id);
+          if (length (_links))
+            _header := _header || sprintf ('Link: %s\r\n', _links);
+        }
+        http_header (_header);
+
           BMK.WA.xml_set('keywords', data, self.v_keywords);
           BMK.WA.xml_set('expression', data, self.v_expression);
           BMK.WA.xml_set('tags', data, self.v_tags);
@@ -130,8 +134,6 @@
           if (state <> '00000')
             goto _error;
 
-          if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
-          {
             http ('<?xml version="1.0" encoding="UTF-8"?>\n');
             http ('<rss version="2.0">\n');
             http ('<channel>\n');
@@ -158,6 +160,12 @@
               http ('<link>');
                 http_value (BMK.WA.bookmarks_url (self.domain_id));
               http ('</link>\n');
+          if (self.v_output like '%atom%')
+          {
+            _links := ODS..PSH_ATOM_LINKS (self.domain_id);
+            if (length (_links))
+              http (_links);
+          }
             }
             foreach (any row in rows) do
             {
@@ -191,7 +199,6 @@
                 }
               http ('</item>\n');
             }
-           _xx:
             http ('</channel>\n');
             http ('</rss>');
 
@@ -206,16 +213,12 @@
 
             else if (self.v_output = 'xbel')
               http_xslt (BMK.WA.xslt_full ('rss2xbel.xsl'));
-
-      	    goto _end;
-          }
-        }
-      _error:
-        http('<?xml version="1.0" ?><empty />');
-      }
       }
     _end:
       return;
+
+    _error:
+      http('<?xml version="1.0" ?><empty />');
     ?>
   ]]>
 </v:page>

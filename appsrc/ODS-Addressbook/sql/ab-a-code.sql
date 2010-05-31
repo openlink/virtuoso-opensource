@@ -446,11 +446,13 @@ create procedure AB.WA.export_rss_sqlx_int (
   http ('select \n', retValue);
   http ('  XMLELEMENT(\'title\', AB.WA.utf2wide(AB.WA.domain_name (<DOMAIN_ID>))), \n', retValue);
   http ('  XMLELEMENT(\'description\', AB.WA.utf2wide(AB.WA.domain_description (<DOMAIN_ID>))), \n', retValue);
-  http ('  XMLELEMENT(\'managingEditor\', U_E_MAIL), \n', retValue);
+  http ('  XMLELEMENT(\'managingEditor\', AB.WA.utf2wide (U_FULL_NAME || \' <\' || U_E_MAIL || \'>\')), \n', retValue);
   http ('  XMLELEMENT(\'pubDate\', AB.WA.dt_rfc1123(now())), \n', retValue);
   http ('  XMLELEMENT(\'generator\', \'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\')), \n', retValue);
   http ('  XMLELEMENT(\'webMaster\', U_E_MAIL), \n', retValue);
-  http ('  XMLELEMENT(\'link\', AB.WA.ab_url (<DOMAIN_ID>)) \n', retValue);
+  http ('  XMLELEMENT(\'link\', AB.WA.ab_url (<DOMAIN_ID>)), \n', retValue);
+  http ('  (select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = <DOMAIN_ID>), \n', retValue);
+  http ('  XMLELEMENT(\'language\', \'en-us\') \n', retValue);
   http ('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);
 
@@ -664,7 +666,7 @@ create procedure AB.WA.domain_gems_create (
 create procedure AB.WA.domain_gems_delete (
   in domain_id integer,
   in account_id integer := null,
-  in appName varchar := 'AddressBook',
+  in appName varchar := 'Gems',
   in appGems varchar := null)
 {
   declare tmp, home, appHome, path varchar;
@@ -679,15 +681,16 @@ create procedure AB.WA.domain_gems_delete (
 
   if (isnull (appGems))
     appGems := AB.WA.domain_gems_name (domain_id);
+  appHome := home || appName || '/';
   home := appHome || appGems || '/';
 
-  path := home || appName || '.rss';
+  path := home || 'AddressBook.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.rdf';
+  path := home || 'AddressBook.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.atom';
+  path := home || 'AddressBook.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.comment';
+  path := home || 'AddressBook.comment';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;

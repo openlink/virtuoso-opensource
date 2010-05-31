@@ -28,14 +28,20 @@ create procedure PHOTO.WA.trigger_thumbnail (
   inout _res_content any)
 {
   declare parent_id,parent_name integer;
-
-  select COL_PARENT into parent_id from WS.WS.SYS_DAV_COL WHERE COL_ID = _res_col;
-  parent_name := DB.DBA.DAV_SEARCH_PATH (parent_id, 'C');
   declare current_user photo_user;
+
+  parent_id := (select COL_PARENT from WS.WS.SYS_DAV_COL WHERE COL_ID = _res_col);
+  parent_name := DB.DBA.DAV_SEARCH_PATH (parent_id, 'C');
   current_user := new photo_user (cast (_res_owner as integer));
 
   if (parent_name = current_user.gallery_dir)
   {
+    declare photo_id integer;
+
+    photo_id := (select GALLERY_ID from PHOTO.WA.SYS_INFO where HOME_PATH = parent_name);
+    for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = photo_id and WAI_IS_PUBLIC = 1) do
+      ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), SIOC..photo_iri (WAI_NAME));
+
     PHOTO.WA.root_comment (parent_id, _res_id);
     PHOTO.WA.make_thumbnail (current_user, _res_id, 0);
     PHOTO.WA.save_meta_data_trigger (_res_id, _res_content);

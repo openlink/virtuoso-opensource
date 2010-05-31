@@ -6660,6 +6660,17 @@ create procedure OMAIL.WA.omail_export(
     set http_charset = 'UTF-8';
     http_rewrite ();
     http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
+    -- update standard header
+    declare psh, hdr varchar;
+
+    psh := (select WS_FEEDS_HUB from DB.DBA.WA_SETTINGS);
+    if (length (psh))
+    {
+      hdr := http_header_get ();
+  	  http_header (hdr || sprintf ('Link: <%s>; rel="hub"; title="PubSubHub"\r\n', psh));
+  	}
+
     http ('<rss version="2.0">\n');
     http ('<channel>\n');
     for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do

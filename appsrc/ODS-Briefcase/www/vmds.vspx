@@ -47,7 +47,7 @@
         } else {
           if (internal_type (fValue) = 211)
           {
-            http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
+            http (ODRIVE.WA.dt_format (fValue));
           } else {
             http (cast (fValue as varchar));
           }

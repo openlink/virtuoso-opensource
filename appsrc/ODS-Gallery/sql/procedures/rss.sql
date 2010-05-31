@@ -63,6 +63,7 @@ create procedure PHOTO.WA.rss_output(in current_instance photo_instance,inout pa
                          XMLELEMENT("managingEditor",coalesce(UserFullName,'') ||' <'||coalesce(eMail,'')||'>'),
                          XMLELEMENT("webMaster",coalesce(eMail,'')),
                          XMLELEMENT("generator",sprintf('Virtuoso Universal Server %s',sys_stat('st_dbms_ver'))),
+                        (select XMLAGG (XMLELEMENT ("http://www.w3.org/2005/Atom:link", XMLATTRIBUTES (SH_URL as "href", 'hub' as "rel", 'PubSubHub' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG where SH_PROTO = 'PubSubHub' and SH_ID = AP_HOST_ID and AP_WAI_ID = current_instance.gallery_id),
             (SELECT
                     XMLAGG(XMLELEMENT('item',
                               XMLELEMENT("pubDate",PHOTO.WA.date_2_humans(RES_MOD_TIME)),
