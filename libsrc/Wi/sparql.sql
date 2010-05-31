@@ -11315,7 +11315,7 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
         select ?s %s
         where {
             ?s <http://www.w3.org/2000/01/rdf-schema#subPropertyOf> ?sp option (TRANSITIVE, T_MIN 1) .
-            filter (?sp = iri (??)) } ) sub option (QUIETCAST)',
+            filter (?sp = iri (?::0)) } ) sub option (QUIETCAST)',
         from_text );
       for (inx := length (v) - 1; 0 <= inx; inx := inx - 1)
         {
