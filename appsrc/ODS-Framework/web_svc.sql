@@ -191,6 +191,11 @@ again:
 			{
 			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
 			}
+		      http_get (SH_URL, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', url || 'gems/atom.xml'));
+		      if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 204 %')
+			{
+			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
+			}
 		    }
 		}
 
@@ -251,6 +256,43 @@ create procedure APP_PING
     }
 };
 
+create procedure PSH_HEADER_LINKS (in inst_id integer)
+{
+  declare psh, links varchar;
+
+  links := '';
+  for select SH_URL
+        from ODS.DBA.SVC_HOST,
+             ODS.DBA.APP_PING_REG
+	     where SH_PROTO = 'PubSubHub'
+	       and SH_ID = AP_HOST_ID
+	       and AP_WAI_ID = inst_id do
+	{
+	  psh := SH_URL;
+	  if (length (psh))
+      links := links || sprintf (' <%s>; rel="hub"; title="PubSubHub",\r\n', psh);
+	}
+  return rtrim (links, ',\r\n');
+};
+
+create procedure PSH_ATOM_LINKS (in inst_id integer)
+{
+  declare psh, links varchar;
+
+  links := '';
+  for select SH_URL
+        from ODS.DBA.SVC_HOST,
+             ODS.DBA.APP_PING_REG
+	     where SH_PROTO = 'PubSubHub'
+	       and SH_ID = AP_HOST_ID
+	       and AP_WAI_ID = inst_id do
+	{
+	  psh := SH_URL;
+	  if (length (psh))
+      links := links || sprintf ('<atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="%s" rel="hub" title="PubSubHub" />', psh);
+	}
+  return links;
+};
 
 use DB;
 

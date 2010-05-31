@@ -48,7 +48,7 @@
     </script>
   </head>
   <?php
-    function postRequest($url, $data) {
+    function parseUrl($url) {
       // parse the given URL
       $url = parse_url($url);
       if (!isset($url['port'])) {
@@ -59,19 +59,21 @@
           $url['port']=443;
         }
       }
+      if ($url['scheme'] == 'https')
+        $url['scheme'] = 'ssl';
+
       $url['query'] = isset($url['query'])? $url['query']: '';
       $url['protocol'] = $url['scheme'] . '://';
 
-      $content = '';
-      $eol="\r\n";
-      $headers = "POST " . $url['path'] . " HTTP/1.0" . $eol.
-                 "Host: " . $url['host'].":".$url['port'] . $eol.
-                 "Referer: " . $url['protocol'].$url['host'] . ":" . $url['port'] . $url['path'] . $eol.
-                 "Content-Type: application/x-www-form-urlencoded" . $eol.
-                 "Content-Length: " . strlen($data) . $eol . $eol . $data;
-      $fp = fsockopen($url['host'], $url['port'], $errno, $errstr, 30);
+      return $url;
+    }
+
+    function makeRequest($url, $headers) {
+      // parse the given URL
+      $content = "";
+      $fp = fsockopen($url['protocol'] . $url['host'], $url['port'], $errno, $errstr, 30);
       if ($fp) {
-        fputs($fp, $headers);
+        if (fwrite($fp, $headers)) {
         while (!feof($fp)) {
           $result .= fgets($fp, 128);
         }
@@ -82,15 +84,41 @@
 
         $header = isset($result[0]) ? $result[0] : '';
         $content = isset($result[1]) ? $result[1] : '';
+        } else {
+          fclose($fp);
+        }
       }
       return $content;
+    }
+
+    function getRequest($url) {
+      $url = parseUrl($url);
+      $eol = "\r\n";
+      $headers = "GET " . $url['path'] . "?" . $url['query'] . " HTTP/1.1" . $eol .
+                 "Host: " . $url['host'].":".$url['port'] . $eol .
+                 "Connection: close"  . $eol . $eol;
+      return makeRequest ($url, $headers);
+    }
+
+    function postRequest($url, $data) {
+      $url = parseUrl($url);
+      $eol = "\r\n";
+      $headers = "POST " . $url['path'] . " HTTP/1.1" . $eol.
+                 "Host: " . $url['host'] . ":" . $url['port'] . $eol.
+                 "Referer: " . $url['protocol'].$url['host'] . ":" . $url['port'] . $url['path'] . $eol.
+                 "Content-Type: application/x-www-form-urlencoded" . $eol.
+                 "Content-Length: " . strlen($data) . $eol . $eol . $data;
+      return makeRequest ($url, $headers);
     }
 
     function selectList ($list, $param)
     {
       $V = Array ();
-      $url = sprintf ("%s/lookup.list?key=%s&param=%s", apiURL(), urlencode ($list), urlencode ($param));
-      $result = file_get_contents ($url);
+      $url = sprintf ("%s/lookup.list?key=%s", apiURL(), urlencode ($list));
+      if ($param != "")
+        $url = $url . sprintf ("&param=%s", urlencode ($param));
+      $result = getRequest ($url);
+      if ($result != "") {
       $xml = new SimpleXMLElement ($result);
       $items = $xml->xpath("/items/item");
       $N = 1;
@@ -99,6 +127,7 @@
         if ($S <> "0")
           $V[$N] = $S;
         $N++;
+      }
       }
       return $V;
     }
@@ -570,19 +599,17 @@
           }
         }
 
-    if (($_form == "user") || ($_form == "profile"))
+    if ($_form == "profile")
         {
       $_url = sprintf ("%s/user.info?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
-      if ($_form == "profile")
-        $_url = $_url."&short=1";
-      $_result = file_get_contents($_url);
+      $_result = getRequest ($_url);
       $_xml = simplexml_load_string($_result);
       if (substr_count($_result, "<failed>") <> 0)
           {
         $_error = $_xml->failed->message;
             $_form = "login";
           }
-      else if ($_form == "profile")
+      else
         {
         $_industries = selectList ('Industry', '');
         $_countries = selectList ('Country', '');

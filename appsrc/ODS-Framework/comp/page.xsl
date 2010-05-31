@@ -2183,7 +2183,7 @@ if (i > 0)
               </v:text>
             </td>
           </tr>
-          <tr>
+          <!--tr>
             <td>
               PubSubHub
             </td>
@@ -2194,7 +2194,7 @@ if (i > 0)
                 </v:before-data-bind>
               </v:text>
             </td>
-          </tr>
+          </tr-->
         </table>
         <br />
           <v:button name="set2" action="simple" value="Set">
@@ -2244,7 +2244,7 @@ if (i > 0)
                   {
                   insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD) values (self.s_update_period.ufl_value);
                   }
-		update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
+		--update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
                 update WA_SETTINGS set WS_FEEDS_UPDATE_FREQ = f;
                   if (row_count() = 0)
                   {
