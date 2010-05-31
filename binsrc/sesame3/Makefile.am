@@ -36,9 +36,12 @@ SESAME_SRC= \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
 	virtuoso_driver/VirtuosoQuery.java \
+	virtuoso_driver/VirtuosoRepositoryConfig.java \
 	virtuoso_driver/VirtuosoRepositoryConnection.java \
+	virtuoso_driver/VirtuosoRepositoryFactory.java \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositoryMetaData.java \
+	virtuoso_driver/VirtuosoRepositorySchema.java \
 	virtuoso_driver/VirtuosoTupleQuery.java
 
 SAMPLES_SOURCE= \
@@ -61,6 +64,15 @@ lib:
 virt_sesame3.jar: $(SESAME_SRC)
 	-rm -rf out.driver
 	-mkdir out.driver
+	-mkdir out.driver/META-INF
+	-mkdir out.driver/META-INF/schemas
+	-mkdir out.driver/META-INF/services
+	-mkdir out.driver/META-INF/templates
+	-cp META-INF/schemas/virtuoso-schema.ttl out.driver/META-INF/schemas
+	-cp META-INF/services/org.openrdf.repository.config.RepositoryFactory out.driver/META-INF/services
+	-cp META-INF/templates/virtuoso.ttl out.driver/META-INF/templates
+	-cp META-INF/org.openrdf.repository.templates out.driver/META-INF
+	-cp META-INF/org.openrdf.store.schemas out.driver/META-INF
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)

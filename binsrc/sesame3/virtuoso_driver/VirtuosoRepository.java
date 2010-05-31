@@ -55,7 +55,8 @@ import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
  */
 public class VirtuosoRepository implements Repository {
 	
-	private ValueFactoryImpl vf = new ValueFactoryImpl();
+	private URIFactory uf = new URIFactoryImpl();
+	private LiteralFactory lf = new LiteralFactoryImpl();
 
 	File dataDir;
 	
@@ -74,6 +75,7 @@ public class VirtuosoRepository implements Repository {
 	boolean useLazyAdd = false;
 	int prefetchSize = 200;
 	private boolean initialized = false;
+	String ruleSet;
     
 	
 
@@ -104,7 +106,6 @@ public class VirtuosoRepository implements Repository {
          *
 	 */
 	public VirtuosoRepository(String hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
-
 	        super();
 		this.host = hostlist;
 		this.user = user;
@@ -375,7 +376,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	@Deprecated
 	public ValueFactory getValueFactory() {
-		return vf;
+		return new ValueFactoryImpl(uf, lf);
 	}
 
 	/**
@@ -385,7 +386,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public URIFactory getURIFactory()
 	{
-		return vf.getURIFactory();
+		return uf;
 	}
 
 	/**
@@ -395,7 +396,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public LiteralFactory getLiteralFactory()
 	{
-		return vf.getLiteralFactory();
+		return lf;
 	}
 
 	/**
@@ -410,6 +411,26 @@ public class VirtuosoRepository implements Repository {
 	}
 
 
+	/**
+	 * Set inference RuleSet name
+	 * 
+	 * @param name
+	 *        RuleSet name.
+	 */
+	public void setRuleSet(String name) {
+		if (name != null && name.equals("null"))
+		  	name = null;
+		this.ruleSet = name;
+	}
+
+	/**
+	 * Get the RoundRobin state for connection
+	 */
+	public String getRuleSet() {
+		return this.ruleSet;
+	}
+
+	
 	/**
 	 * Get the directory where data and logging for this repository is stored.
 	 * 

@@ -1,0 +1,49 @@
+#
+# Sesame configuration schema for remote RDF Repositories
+#
+@prefix xsd: <http://www.w3.org/ 2001/XMLSchema#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix rep: <http://www.openrdf.org/config/repository#>.
+@prefix vr: <http://www.openrdf.org/config/repository/virtuoso#>.
+
+
+vr:hostList a rdf:Property ;
+	rdfs:label "Host List"@en ;
+	rdfs:comment "Location of the Virtuoso server like: localhost:1111"@en ;
+	rdfs:range xsd:string .
+
+vr:username a rdf:Property ;
+	rdfs:label "Username"@en ;
+	rdfs:comment "Authentication username."@en ;
+	rdfs:range xsd:string .
+
+vr:password a rdf:Property ;
+	rdfs:label "Password"@en ;
+	rdfs:comment "Authentication password"@en ;
+	rdfs:range xsd:string .
+
+vr:defGraph a rdf:Property ;
+	rdfs:label "Default graph name"@en ;
+	rdfs:comment "Default graph name"@en ;
+	rdfs:range xsd:string .
+
+vr:useLazyAdd a rdf:Property ;
+	rdfs:label "Enable using batch optimization"@en ;
+	rdfs:comment "Enable using batch optimization"@en ;
+	rdfs:range xsd:boolean .
+
+vr:roundRobin a rdf:Property ;
+	rdfs:label "Use RoundRobin for connection"@en ;
+	rdfs:comment "Use RoundRobin for connection"@en ;
+	rdfs:range xsd:boolean .
+
+vr:fetchSize a rdf:Property ;
+	rdfs:label "Buffer fetch size"@en ;
+	rdfs:comment "Buffer fetch size"@en ;
+	rdfs:range xsd:nonNegativeInteger .
+
+vr:ruleSet a rdf:Property ;
+	rdfs:label "Inference RuleSet name"@en ;
+	rdfs:comment "Inference RuleSet name"@en ;
+	rdfs:range xsd:string .
