@@ -3635,13 +3635,17 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
   http ('>\n', ses);
   if (is_http_ctx ())
     {
-      declare q varchar;
+      declare q, u, h, id varchar;
       q := http_request_get ('QUERY_STRING');
       if (length (q))
 	q := '?' || q;
       else
         q := '';
-      http (sprintf ('\t<id>%V%V</id>\n', http_requested_url (), q), ses);
+      u := http_request_get ('REQUEST_URI');
+      h := WS.WS.PARSE_URI (http_requested_url () || q);
+      h [2] := u; h [4] := '';
+      id := WS.WS.VFS_URI_COMPOSE (h);
+      http (sprintf ('\t<id>%V</id>\n', id), ses);
     }
   else
     http ('\t<id/>\n', ses);
