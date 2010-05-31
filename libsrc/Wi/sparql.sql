@@ -3536,6 +3536,220 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
 }
 ;
 
+-- /* OData ATOM format */
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.ODATA_EDM_TYPE (in obj any)
+{
+  if (__tag of int = __tag (obj))
+    return 'Int32';
+  else if (__tag of smallint  = __tag (obj))
+    return 'Int16';
+  else if (__tag of bigint = __tag (obj))
+    return 'Int64';
+  else if (__tag of numeric = __tag (obj))
+    return 'Decimal';
+  else if (__tag of double precision = __tag (obj))
+    return 'Double';
+  else if (__tag of real = __tag (obj))
+    return 'Double';
+  else if (__tag of datetime = __tag (obj))
+    return 'DateTime';
+  else if (__tag of date = __tag (obj))
+    return 'Date';
+  else if (__tag of time = __tag (obj))
+    return 'Time';
+  else if (__tag of varbinary = __tag (obj))
+    return 'Binary';
+  return null;
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in print_top_level integer, inout ses any)
+{
+  declare tcount, tctr, ns_ctr integer;
+  declare dict, entries any;
+  declare subj, pred, obj any;
+  declare entry_dict, ns_dict, ns_arr any;
+  declare pred_tagname varchar;
+  declare p_ns_uri, p_ns_pref varchar;
+
+  dict := dict_new ();
+  ns_dict := dict_new ();
+  ns_ctr := 0;
+  tcount := length (triples);
+  if (print_top_level)
+    {
+       http ('<?xml version="1.0" encoding="utf-8" ?>\n<feed \n\t xmlns="http://www.w3.org/2005/Atom" \n'||
+      			'\t xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" \n'||
+			'\t xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" \n', ses);
+    }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      entry_dict := dict_get (dict, subj);
+      if (entry_dict is null)
+	{
+	  entry_dict := dict_new ();
+	  dict_put (dict, subj, entry_dict);
+	}
+      dict_put (entry_dict, vector (pred, obj), 1);
+
+      if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	goto next;
+      if (isiri_id (pred)) pred := id_to_iri (pred);
+
+      p_ns_uri := iri_split (pred, pred_tagname);
+      if (length (p_ns_uri) > 0 and dict_get (ns_dict, p_ns_uri) is null)
+	{
+	  p_ns_pref := __xml_get_ns_prefix (p_ns_uri, 3);
+	  if (p_ns_pref is null)
+	    {
+	      p_ns_pref := sprintf ('ns%dpred', ns_ctr);
+	      ns_ctr := ns_ctr + 1;
+	    }
+	  dict_put (ns_dict, p_ns_uri, p_ns_pref);
+	}
+      next:;
+    }
+  ns_arr := dict_to_vector (ns_dict, 0);
+  for (declare i int, i := 0; i < length (ns_arr); i := i + 2)
+    {
+      http (sprintf ('\t xmlns:%s="%s"\n', ns_arr[i+1], ns_arr[i]), ses);
+    }
+  http ('>\n', ses);
+  if (is_http_ctx ())
+    {
+      declare q varchar;
+      q := http_request_get ('QUERY_STRING');
+      if (length (q))
+	q := '?' || q;
+      else
+        q := '';
+      http (sprintf ('\t<id>%V%V</id>\n', http_requested_url (), q), ses);
+    }
+  else
+    http ('\t<id/>\n', ses);
+  http (sprintf ('\t<updated>%s</updated>\n', date_iso8601 (dt_set_tz (now (), 0))), ses);
+  http ('\t<author><name /></author>\n', ses);
+  http (sprintf ('\t<title type="text">OData Service and Descriptor Document</title>\n'), ses);
+  entries := dict_list_keys (dict, 0);
+  tcount := length (entries);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare meta any;
+      declare has_meta int;
+      declare title, content varchar;
+
+      has_meta := 0; title := null; content := null;
+      subj := entries[tctr];
+      entry_dict := dict_get (dict, subj);
+      meta := dict_list_keys (entry_dict, 1);
+      http ('\t<entry>\n', ses);
+      if (isiri_id (subj)) subj := id_to_iri (subj);
+      http (sprintf ('\t\t<id>%s</id>\n', subj), ses);
+      --http (sprintf ('\t\t<link rel="self" href="%s"/>\n', subj), ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	    {
+	      if (isiri_id (obj)) obj := id_to_iri (obj);
+	      if (isiri_id (pred)) pred := id_to_iri (pred);
+              --p_ns_uri := iri_split (pred, pred_tagname);
+	      --if (length (p_ns_uri) > 0)
+	      --{
+              --  p_ns_pref := dict_get (ns_dict, p_ns_uri);
+	      --  pred_tagname := p_ns_pref || ':' || pred_tagname;
+              --}
+	      http (sprintf ('\t\t<link rel="%s" href="%s"/>\n', pred, obj), ses);
+	    }
+	  else
+	    {
+	      if (title is null and
+		(
+		 pred = iri_to_id ('http://purl.org/dc/terms/title') or
+	      	 pred = iri_to_id ('http://www.w3.org/2000/01/rdf-schema#label'))
+		)
+		title := __rdf_strsqlval (obj);
+	      has_meta := 1;
+	    }
+	}
+      if (title is not null)
+	http (sprintf ('\t\t<title>%s</title>\n', title), ses);
+      http (sprintf ('\t\t<updated>%s</updated>\n', date_iso8601 (dt_set_tz (now (), 0))), ses);
+      http ('\t\t<author><name /></author>\n', ses);
+      if (has_meta)
+	http ('\t\t<content type="application/xml">\n\t\t\t<m:properties>\n', ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (pred)) pred := id_to_iri (pred);
+	  if (not (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1)))
+	    {
+
+              p_ns_uri := iri_split (pred, pred_tagname);
+	      if (length (p_ns_uri) = 0)
+		{
+		  http ('<', ses); http (pred_tagname, ses);
+		}
+	      else
+		{
+		  p_ns_pref := dict_get (ns_dict, p_ns_uri);
+		  pred_tagname := p_ns_pref || ':' || pred_tagname;
+		  http ('\t\t\t\t<', ses); http (pred_tagname, ses);
+		  if (__tag of rdf_box = __tag (obj))
+		    {
+		      declare tmp any;
+		      tmp := __rdf_strsqlval (obj);
+		      if (__tag of varchar = __tag (tmp))
+			tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+		      http ('>', ses);
+		      http_value (tmp, 0, ses);
+		    }
+		  else
+		    {
+		      declare tp varchar;
+		      tp := ODATA_EDM_TYPE (obj);
+		      if (tp is not null)
+                        http (sprintf (' m:type="Edm.%s"', tp), ses);
+		      http ('>', ses);
+		      if (__tag of varbinary = __tag (obj))
+			obj := encode_base64 (cast (obj as varchar));
+		      http_value (obj, 0, ses);
+		    }
+		  http ('</', ses); http (pred_tagname, ses); http ('>\n', ses);
+		}
+	    }
+	}
+      if (has_meta)
+	http ('\t\t\t</m:properties>\n\t\t</content>\n', ses);
+      http ('\t</entry>\n', ses);
+    }
+  if (print_top_level)
+    {
+      http ('</feed>', ses);
+    }
+}
+;
+
 
 
 -----
@@ -4096,6 +4310,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
         goto do_insert;
       if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iri, p_iid))
         ro_id_dict := dict_new ();
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES got ', graph_iri, triples[ctr][0], p_iid, o_final);
       need_digest := rdf_box_needs_digest (o_final, ro_id_dict);
       if (1 < need_digest)
         {
@@ -10821,6 +11036,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN to SPARQL_SELECT',

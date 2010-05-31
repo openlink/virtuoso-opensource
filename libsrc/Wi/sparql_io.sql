@@ -1325,6 +1325,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'RDFA;XHTML')
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+      else if (ret_format = 'ATOM;XML')
+        DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1774,6 +1776,10 @@ http('		legend { font-size: 12pt; color: #86b9d9; }\n');
 http('		label { font-weight: bold; }\n');
 http('		h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }\n');
 http('		textarea { width: 100%; padding: 3px; }\n');
+http('          #footer { width: 100%; float: left; clear: left; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}\n');
+http('          #ft_r { float: right; clear: right;}\n');
+http('          #ft_t { text-align: center; }\n');
+http('          #ft_b { text-align: center; margin-top: 0.7ex }\n');
 http('		</style>\n');
 http('		<script language="JavaScript">\n');
 http('var last_format = 1;\n');
@@ -1790,6 +1796,7 @@ http('    format.options[2] = new Option(\'JSON\',\'application/rdf+json\');\n')
 http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
+http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1918,6 +1925,14 @@ http('			  <input type="submit" value="Run Query"/>');
 http('&nbsp;<input type="reset" value="Reset"/>\n');
 http('			</fieldset>\n');
 http('			</form>\n');
+http('		</div>\n');
+http('		<div id="footer">\n');
+http('		<div id="ft_b">\n');
+http('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version '); http(sys_stat ('st_dbms_ver')); http(', on ');
+http(sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
+http(case when sys_stat ('cl_run_local_only') = 1 then 'Single' else 'Cluster' end); http (' Edition ');
+http(case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+http('		</div>\n');
 http('		</div>\n');
 http('	</body>\n');
 http('</html>\n');
@@ -2254,6 +2269,11 @@ host_found:
             }
     --    }
     ;
+    }
+  -- if odata asked we imply CBD
+  if (accept = 'application/atom+xml')
+    {
+      full_query := 'define sql:describe-mode "CBD" ' || full_query;
     }
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('full_query = ', full_query);

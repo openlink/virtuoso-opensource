@@ -1779,7 +1779,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (20*2,
+      tmp = (caddr_t *)list (21*2,
         "text/rdf+n3"				, "TTL"		,
         "text/rdf+ttl"				, "TTL"		,
         "text/rdf+turtle"			, "TTL"		,
@@ -1798,6 +1798,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/rdf+json"			, "JSON;TALIS"	,
         "application/x-rdf+json"		, "JSON;TALIS"	,
         "application/rdf+xml"			, "RDFXML"	,
+        "application/atom+xml"			, "ATOM;XML"	,
 	"text/rdf+nt"				, "NT"		,
         "text/plain"				, "NT"	/* Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
@@ -1808,7 +1809,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (20*2,
+      tmp = (caddr_t *)list (21*2,
         "text/rdf+n3"				, "TTL"		,
         "text/rdf+ttl"				, "TTL"		,
         "text/rdf+turtle"			, "TTL"		,
@@ -1829,6 +1830,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/html"				, "HTML"	,
         "application/vnd.ms-excel"		, "HTML"	,
         "application/javascript"		, "JS"		,
+        "application/atom+xml"			, "ATOM;XML"	,
         "application/sparql-results+xml"	, "XML"		/* Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);

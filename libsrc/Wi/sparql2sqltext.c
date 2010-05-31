@@ -327,6 +327,12 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: ret_formatter[0] = "COUNT"; return;
       default: return;
       }
+  if (!strcmp (name, "ATOM;XML"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML"; return;
+      default: return;
+      }
   spar_error (NULL, "Unsupported format name '%.40s'", name);
 bad_ask:
   spar_error (NULL, "Format name '%.30s' is not supported for boolean results made by SPARQL %s", name, spart_dump_opname (subtype, 0));
