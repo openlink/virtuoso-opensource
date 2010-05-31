@@ -1041,6 +1041,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
 
+  if (cfg_getlong (pconfig, section, "DensePageAllocation", &c_dense_page_allocation) == -1)
+    c_dense_page_allocation = 0;
 
   section = "HTTPServer";
 

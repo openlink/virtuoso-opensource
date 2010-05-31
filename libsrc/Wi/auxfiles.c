@@ -126,6 +126,8 @@ int c_stripe_unit = 256;
 
 extern int32 sqlo_compiler_exceeds_run_factor;
 
+int32 c_dense_page_allocation = 0;
+
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
 void _dbs_read_cfg (dbe_storage_t * dbs, char *file);

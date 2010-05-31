@@ -63,6 +63,7 @@ extent_t * em_new_extent (extent_map_t * em, int type, dp_addr_t extends);
 dp_addr_t em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near);
 dp_addr_t em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near);
 
+extern int32 c_dense_page_allocation;
 
 int
 fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
@@ -854,7 +855,7 @@ em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near)
 	  return dp;
 	}
     }
-  new_ext = em_new_extent (em, ext_type, near_ext ? near_ext->ext_dp : 0);
+  new_ext = em_new_extent (em, ext_type, near_ext ? near_ext->ext_dp : EXT_EXTENDS_NONE);
   if (!new_ext)
     {
       return 0;
@@ -1015,7 +1016,7 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
   else if (EXT_BLOB == type)
     dp = em_new_blob (em, near);
   else
-    dp = em_new_dp_1 (em, type, near);
+    dp = em_new_dp_1 (em, type, c_dense_page_allocation ? DP_ANY : near);
   if (EXT_INDEX == type && em != em->em_dbs->dbs_extent_map)
     sethash (DP_ADDR2VOID(dp), em->em_uninitialized, (void*) 1);
   em_printf ((" alloc L=%d t=%d\n", dp, type));
