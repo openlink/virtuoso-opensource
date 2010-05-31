@@ -337,6 +337,7 @@ int32 c_lite_mode = 0;
 int32 c_uriqa_dynamic_local = 0;
 int32 c_rdf_obj_ft_rules_size = 0;
 int32 c_it_n_maps = 0;
+extern int32 c_dense_page_allocation;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
