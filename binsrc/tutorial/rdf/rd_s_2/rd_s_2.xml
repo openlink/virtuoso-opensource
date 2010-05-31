@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="RD-S-2">
+  <refmeta>
+    <refentrytitle>RDF Cartridges (RDF Mappers or RDFizers)</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>RDF Cartridges</refname>
+    <refpurpose>This article explains how to implement a Python based RDFa Cartridge based on pyRDFa library.</refpurpose>
+  </refnamediv>
+  <refsect1 id="RD-S-2a">
+    <title>Setting up server</title>
+    <para>
+	This tutorial explain steps to use the Python language to extend the Virtuoso Sponger.
+    </para>
+    <para>
+	The server must have installed latest Python hosting plugin. When it is installed and registered in the configuration file 
+	a new function python_exec will be available for developers. 	
+    </para>
+    <para>
+	Setup the Virtuoso server INI to include python module
+    </para>
+    <programlisting><![CDATA[
+	[Plugins]
+	LoadPath = ../lib
+	Load1    = Hosting, hosting_python.so
+	...
+    ]]></programlisting>
+    <para>
+	The python_exec takes following arguments:
+    </para>
+    <itemizedlist mark="bullet">
+	<listitem>
+	    code - a string containing the Python code
+	</listitem>
+	<listitem>
+	    function_name - a string containing the name of Python function to be executed
+	</listitem>
+	<listitem>
+	    param1 : a string containing first parameter
+	</listitem>
+	<listitem>
+	    param2 : a string containing second parameter
+	</listitem>
+	<listitem>
+	    as many parameters as Python function has
+	</listitem>
+    </itemizedlist>
+    <para>
+	The Python based function must return a single string value.
+    </para>
+  </refsect1>
+  <refsect1 id="RD-S-2b">
+    <title>Setting up environment</title>
+    <para>
+	Before to write cartridge you need to setup Python environment. To do this you need to download and install rdflib, pyRDFa. 
+	Read the pyRDFa paper for what additional libraries are needed. 
+    </para>
+    <para>
+	If your Python installation have Zope support, you should disable the zope interfaces in rdflib. This is needed because Python C-API expirence problems when using sub modules within C code. In order to disable you can comment out following lines in [rdflib_home]/rdflib/__init__.py : 
+    </para>
+    <programlisting><![CDATA[
+    36 #from rdflib.interfaces import IIdentifier, classImplements
+    37 #classImplements(URIRef, IIdentifier)
+    38 #classImplements(BNode, IIdentifier)
+    39 #classImplements(Literal, IIdentifier)
+    ]]></programlisting>
+
+<para>then do:</para>
+
+    <programlisting><![CDATA[
+    perl setup.py build
+    perl setup.py --user install
+    ]]></programlisting>
+  </refsect1>
+  <refsect1 id="RD-S-2c">
+    <title>RDF Cartridge implementation notes</title>
+    <para>
+	The implementation consist of two steps:
+    </para>
+    <itemizedlist mark="bullet">
+	<listitem>
+	    Make a copy of the localRDFa.py and use as template to run pyRDFa extractor over single string stream. 
+	    The details can be seen in source of pyRDFa.py code attached to this tutorial.
+	</listitem>
+	<listitem>
+	    Make a Virtuoso/PL based stored procedure to call the Pyhton based extractor. The source of this function can be seen in rdf_cartridge.sql script.
+	</listitem>
+    </itemizedlist>
+    <para>
+	The stored procedure is used to do two main operations: to call 'processString' Python function inside pyRDFa.py script and to load the result in the Virtuoso RDF store.
+    </para>
+    <para>
+	Another important item is to register the cartridge with Sponger. this is done by insert statement into DB.DBA.SYS_RDF_MAPPERS table.
+	Note that in this example the new cartridge will be disabled if you run that code, if you want to enable and test the cartridge the flag in RM_ENABLED column must be 1. or enable the crtridge via conductor.
+    </para>
+  </refsect1>
+</refentry>
