@@ -61,7 +61,7 @@ System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }")
 		Query sparql = QueryFactory.create("SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
 
 /*			STEP 4			*/
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		QueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
 
 		ResultSet results = vqe.execSelect();
 		while (results.hasNext()) {

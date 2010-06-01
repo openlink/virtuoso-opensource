@@ -52,7 +52,7 @@ public class VirtuosoSPARQLExample10 {
 		String query = "SELECT * WHERE { ?s ?p ?o } limit 100";
 
 /*			STEP 4			*/
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (query, set);
+		QueryExecution vqe = VirtuosoQueryExecutionFactory.create (query, set);
 
 		ResultSet results = vqe.execSelect();
 		while (results.hasNext()) {

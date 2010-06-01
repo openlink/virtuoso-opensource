@@ -62,12 +62,13 @@ import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 public class VirtuosoQueryExecution  implements QueryExecution
 {
     private QueryIterConcat output = null;
-    String virt_graph = null;
+    private String virt_graph = null;
     private VirtGraph graph;
     private String virt_query;
+    private QuerySolution m_arg = null;
 
-    int prefetchSize = 200;
-    java.sql.Statement stmt = null;
+    private int prefetchSize = 200;
+    private java.sql.Statement stmt = null;
 
 
     public VirtuosoQueryExecution (String query, VirtGraph _graph)
@@ -75,19 +76,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	graph = _graph;
 	virt_graph = graph.getGraphName ();
 	prefetchSize = graph.getFetchSize ();
-
-	StringBuffer sb = new StringBuffer("sparql\n define output:format '_JAVA_'\n ");
-	if (graph.getRuleSet()!= null)
-          sb.append(" define input:inference '"+graph.getRuleSet()+"'\n ");
-
-        if (graph.getSameAs())
-          sb.append(" define input:same-as \"yes\"\n ");
-
-        if (!graph.getReadFromAllGraphs())
-	  sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");
-
-      	sb.append(query);
-      	virt_query = sb.toString();
+	virt_query = query;
     }
 
 
@@ -100,7 +89,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
         stmt = connection.createStatement();
         stmt.setFetchSize(prefetchSize);
-        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         return new VResultSet(graph, rs);
       }	catch(Exception e) {
         throw new JenaException("Can not create ResultSet.:"+e);
@@ -117,7 +106,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public void setInitialBinding(QuerySolution arg)
     {
-      throw new JenaException("UnsupportedMethodException");
+      m_arg = arg;
     }
 
     public Dataset getDataset()
@@ -145,7 +134,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
         stmt = connection.createStatement();
         stmt.setFetchSize(prefetchSize);
-        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
 
         while(rs.next())
@@ -180,7 +169,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
         stmt = connection.createStatement();
         stmt.setFetchSize(prefetchSize);
-        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
         while(rs.next())
         {
@@ -210,7 +199,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         Connection connection = graph.getConnection();
 
         stmt = connection.createStatement();
-        java.sql.ResultSet rs = stmt.executeQuery(virt_query);
+        java.sql.ResultSet rs = stmt.executeQuery(getQuery());
         ResultSetMetaData rsmd = rs.getMetaData();
 
         while(rs.next())
@@ -247,6 +236,68 @@ public class VirtuosoQueryExecution  implements QueryExecution
     }
 
 
+    private String substBindings(String query) 
+    {
+      if (m_arg == null)
+        return query;
+
+      StringBuffer buf = new StringBuffer();
+      String delim = " ,)(;.";
+      int i = 0;
+      char ch;
+      while( i < query.length()) {
+        ch = query.charAt(i++);
+    	if (ch == '"' || ch == '\'') {
+          char end = ch;
+      	  buf.append(ch);
+      	  while (i < query.length()) {
+            ch = query.charAt(i++);
+            buf.append(ch);
+            if (ch == end)
+              break;
+      	  }
+        } else  if ( ch == '?' ) {  //Parameter
+      	  String varData = null;
+      	  int j = i;
+      	  while(j < query.length() && delim.indexOf(query.charAt(j)) < 0) j++;
+      	  if (j != i) {
+            String varName = query.substring(i, j);
+            RDFNode val = m_arg.get(varName);
+            if (val != null) {
+              varData = VirtGraph.Node2Str(val.asNode());
+              i=j;
+            }
+          }
+          if (varData != null)
+            buf.append(varData);
+          else
+            buf.append(ch);
+	} else {
+      	  buf.append(ch);
+    	}
+      }
+      return buf.toString();
+    }
+
+    
+    private String getQuery()
+    {
+	StringBuffer sb = new StringBuffer("sparql\n define output:format '_JAVA_'\n");
+	if (graph.getRuleSet()!= null)
+          sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
+
+        if (graph.getSameAs())
+          sb.append(" define input:same-as \"yes\"\n");
+
+        if (!graph.getReadFromAllGraphs())
+	  sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");
+
+      	sb.append(substBindings(virt_query));
+
+      	return sb.toString();
+    }
+
+    
     ///=== Inner class ===========================================
     public class VResultSet implements com.hp.hpl.jena.query.ResultSet 
     {
@@ -267,7 +318,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
           try {
             rsmd = rs.getMetaData();
-
 	    for(int i = 1; i <= rsmd.getColumnCount(); i++)
 	      resVars.add(rsmd.getColumnLabel(i));
 
@@ -349,11 +399,11 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    }
 	    else
 		close();
-	    }
-	    catch (Exception e)
-	    {
-              throw new JenaException("Convert results are FAILED.:"+e);
-	    }
+	  }
+	  catch (Exception e)
+	  {
+            throw new JenaException("Convert results are FAILED.:"+e);
+	  }
 	}
 
 	protected void extractRow() throws Exception 

@@ -52,7 +52,7 @@ public class VirtuosoSPARQLExample1 {
 		Query sparql = QueryFactory.create("SELECT * WHERE { GRAPH ?graph { ?s ?p ?o } } limit 100");
 
 /*			STEP 4			*/
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		QueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
 
 		ResultSet results = vqe.execSelect();
 		while (results.hasNext()) {

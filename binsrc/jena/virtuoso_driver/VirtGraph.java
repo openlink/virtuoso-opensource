@@ -250,7 +250,7 @@ public class VirtGraph extends GraphBase
 
 
 // GraphBase overrides
-    String Node2Str(Node n)
+    public static String Node2Str(Node n)
     {
       if (n.isURI()) {
         return "<"+n+">";
