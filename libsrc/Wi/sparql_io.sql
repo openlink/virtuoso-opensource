@@ -1327,6 +1327,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
       else if (ret_format = 'ATOM;XML')
         DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
+      else if (ret_format = 'JSON;ODATA')
+        DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1797,6 +1799,7 @@ http('    format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n
 http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
+http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -2271,7 +2274,7 @@ host_found:
     ;
     }
   -- if odata asked we imply CBD
-  if (accept = 'application/atom+xml')
+  if (accept = 'application/atom+xml' or accept = 'application/odata+json')
     {
       full_query := 'define sql:describe-mode "CBD" ' || full_query;
     }

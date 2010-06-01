@@ -3578,6 +3578,105 @@ create procedure DB.DBA.ODATA_EDM_TYPE (in obj any)
 }
 ;
 
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses any)
+{
+  declare tcount, tctr, ns_ctr integer;
+  declare dict, entries any;
+  declare subj, pred, obj any;
+  declare entry_dict, ns_dict, ns_arr any;
+  declare pred_tagname varchar;
+  declare p_ns_uri, p_ns_pref varchar;
+
+  dict := dict_new ();
+  ns_dict := dict_new ();
+  ns_ctr := 0;
+  tcount := length (triples);
+  http ('{ "d" : { \n  "results": [ \n', ses);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      subj := triples[tctr][0];
+      pred := triples[tctr][1];
+      obj := triples[tctr][2];
+      entry_dict := dict_get (dict, subj);
+      if (entry_dict is null)
+	{
+	  entry_dict := dict_new ();
+	  dict_put (dict, subj, entry_dict);
+	}
+      dict_put (entry_dict, vector (pred, obj), 1);
+    }
+  entries := dict_list_keys (dict, 0);
+  tcount := length (entries);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare meta any;
+      declare has_meta, mcount int;
+      declare title, content varchar;
+
+      has_meta := 0; title := null; content := null;
+      subj := entries[tctr];
+      entry_dict := dict_get (dict, subj);
+      meta := dict_list_keys (entry_dict, 1);
+
+      if (isiri_id (subj)) subj := id_to_iri (subj);
+      http ('    { ', ses);
+      http (sprintf ('"__metadata": { "uri": "%s" }, \n', subj), ses);
+      for (declare i, l int, i := 0, l := length (meta); i < l; i := i + 1)
+        {
+	  pred := meta[i][0];
+	  obj := meta[i][1];
+	  if (isiri_id (pred)) pred := id_to_iri (pred);
+	  if (isiri_id (obj) or (isstring (obj) and __box_flags (obj) = 1))
+	    {
+	      -- links
+	      if (isiri_id (obj)) obj := id_to_iri (obj);
+	      http (sprintf ('      "%s": { "__deferred": { "uri": "%s" } }', pred, obj), ses);
+	    }
+	  else
+	    {
+	      -- data
+	      declare tmp any;
+	      http (sprintf ('      "%s": ', pred), ses);
+	      if (__tag of rdf_box = __tag (obj))
+		{
+		  tmp := __rdf_strsqlval (obj);
+		  if (__tag of varchar = __tag (tmp))
+		    tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+		}
+	      else
+		{
+		  tmp := obj;
+		}
+	      http ('"', ses);
+	      http_value (tmp, 0, ses);
+	      http ('"', ses);
+	    }
+	  if (i < l - 1)
+  	    http (', \n', ses);
+	}
+      http ('\n     } ', ses);
+      if (tctr < tcount - 1)
+	http (', ', ses);
+    }
+  http (sprintf ('\n ], "__count": "%d"\n } }', tcount), ses);
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in print_top_level integer, inout ses any)
 {
   declare tcount, tctr, ns_ctr integer;
@@ -11041,6 +11140,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_ODATA_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN to SPARQL_SELECT',
