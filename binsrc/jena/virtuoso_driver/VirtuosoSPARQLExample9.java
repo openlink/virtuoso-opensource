@@ -61,7 +61,7 @@ public class VirtuosoSPARQLExample9 {
 
 /*		Select all data in virtuoso	*/
 		Query sparql = QueryFactory.create("SELECT * FROM <http://test1> WHERE { ?s ?p ?o }");
-		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
+		QueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
 		ResultSet results = vqe.execSelect();
                 System.out.println("\nSELECT results:");
 		while (results.hasNext()) {

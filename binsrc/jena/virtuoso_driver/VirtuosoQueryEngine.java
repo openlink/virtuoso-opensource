@@ -78,8 +78,72 @@ public class VirtuosoQueryEngine extends QueryEngineMain
         op = Transformer.transform(transform, op) ;
         
         VirtGraph vg = (VirtGraph)dsg.getDefaultGraph();
+        String query = fixQuery(eQuery.toString(), initial, vg);
+	
+	prefetchSize = vg.getFetchSize ();
 
-	StringTokenizer tok = new StringTokenizer(eQuery.toString());
+	try
+	{
+	    java.sql.Connection connection = vg.getConnection();
+	    java.sql.Statement  stmt = connection.createStatement();
+	    stmt.setFetchSize(prefetchSize);
+	    java.sql.ResultSet rs = stmt.executeQuery(query);
+	    return (QueryIterator)new VQueryIterator(vg, rs);
+	}
+	catch(Exception e)
+	{
+            throw new JenaException("Can not create QueryIterator.:"+e);
+	}
+    }
+    
+
+    private String substBindings(String query, Binding args) 
+    {
+      if (args == null)
+        return query;
+      
+      StringBuffer buf = new StringBuffer();
+      String delim = " ,)(;.";
+      int i = 0;
+      char ch;
+      while( i < query.length()) {
+        ch = query.charAt(i++);
+    	if (ch == '"' || ch == '\'') {
+          char end = ch;
+      	  buf.append(ch);
+      	  while (i < query.length()) {
+            ch = query.charAt(i++);
+            buf.append(ch);
+            if (ch == end)
+              break;
+      	  }
+        } else  if ( ch == '?' ) {  //Parameter
+      	  String varData = null;
+      	  int j = i;
+      	  while(j < query.length() && delim.indexOf(query.charAt(j)) < 0) j++;
+      	  if (j != i) {
+            String varName = query.substring(i, j);
+            Node val = args.get(Var.alloc(varName));
+            if (val != null) {
+              varData = VirtGraph.Node2Str(val);
+              i=j;
+            }
+          }
+          if (varData != null)
+            buf.append(varData);
+          else
+            buf.append(ch);
+	} else {
+      	  buf.append(ch);
+    	}
+      }
+      return buf.toString();
+    }
+
+    
+    private String fixQuery(String query, Binding args, VirtGraph vg)
+    {
+	StringTokenizer tok = new StringTokenizer(query);
 	String s = "";
 	StringBuffer sb = new StringBuffer("sparql\n ");
 
@@ -101,23 +165,12 @@ public class VirtuosoQueryEngine extends QueryEngineMain
         if (!vg.getReadFromAllGraphs())
 	  sb.append(" define input:default-graph-uri <" + vg.getGraphName() + "> \n");
 
-        sb.append(eQuery);
-	prefetchSize = vg.getFetchSize ();
+        sb.append(substBindings(query, args));
 
-	try
-	{
-	    java.sql.Connection connection = vg.getConnection();
-	    java.sql.Statement  stmt = connection.createStatement();
-	    stmt.setFetchSize(prefetchSize);
-	    java.sql.ResultSet rs = stmt.executeQuery(sb.toString());
-	    return (QueryIterator)new VQueryIterator(vg, rs);
-	}
-	catch(Exception e)
-	{
-            throw new JenaException("Can not create QueryIterator.:"+e);
-	}
+      	return sb.toString();
     }
-    
+
+
     @Override
     protected Op modifyOp(Op op)
     {

@@ -91,8 +91,8 @@ public class VirtDataSource extends VirtGraph implements DataSource {
         java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
         ps.setString(1, name);
         rs = ps.executeQuery();
-        rs.next();
-        ret = rs.getInt(1);
+        if (rs.next())
+          ret = rs.getInt(1);
         rs.close();
       } catch (Exception e) {
         throw new JenaException(e);
@@ -198,8 +198,8 @@ public class VirtDataSource extends VirtGraph implements DataSource {
         java.sql.PreparedStatement ps = getConnection().prepareStatement(query);
         ps.setString(1, name);
         rs = ps.executeQuery();
-        rs.next();
-        ret = rs.getInt(1);
+        if (rs.next())
+          ret = rs.getInt(1);
         rs.close();
       } catch (Exception e) {
         throw new JenaException(e);
@@ -289,7 +289,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	  rs = stmt.executeQuery(exec_text);
 	  while(rs.next())
 	    names.add(Node.createURI(rs.getString(1)));
-	    return names.iterator();
+	  return names.iterator();
 	} catch (Exception e) {
 	  throw new JenaException(e);
         }
