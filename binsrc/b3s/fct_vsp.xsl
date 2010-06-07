@@ -232,7 +232,7 @@ function init(){
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Property</th><th></th><th>Count</th></tr>
+	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
@@ -240,11 +240,11 @@ function init(){
       </xsl:when>
       <xsl:when test="$view-type = 'text-properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Property</th><th>Label</th><th>Count</th></tr>
+	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'properties-in'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Property</th><th>Label</th><th>Count</th></tr>
+	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>

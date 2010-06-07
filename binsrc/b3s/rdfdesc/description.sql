@@ -156,7 +156,7 @@ create procedure b3s_type (in subj varchar, out url varchar)
   if (length (subj))
     {
       exec (sprintf ('sparql select ?l ?tp  { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', subj), 
-	  null, null, vector (), 0, meta, data);
+	  null, null, vector (), 100, meta, data);
       if (length (data))
 	{
 	  if (data[0][0] is not null)
@@ -551,6 +551,8 @@ b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in 
        rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
        endg:;
      }
+   if (__tag of IRI_ID = __tag (rdfs_type))
+     rdfs_type := id_to_iri (rdfs_type);
 
    rdfa := b3s_rel_print (prop, rel, 1);
    visible := b3s_str_lang_check (lang, acc);

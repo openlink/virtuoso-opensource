@@ -186,7 +186,7 @@
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
 <!-- proptable -->
       <table class="description">
-        <tr><th class="property">Property</th><th class="value">Value</th></tr>
+      <tr><th class="property">Attributes</th><th class="value">Values</th></tr>
 
 <?vsp
       declare vis, printed int;
