@@ -75,6 +75,8 @@
 
    if (_S like 'feed:%')
      _S := 'http:' || subseq (_S, 5);
+   if (_S like 'webcal:%')
+     _S := 'http:' || subseq (_S, 7);
 
    arr := rfc1808_parse_uri (_G);
    dspace := arr[1];
@@ -215,9 +217,10 @@
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
 
-   links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link);
-   links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link);
-   links := links||sprintf ('<http://%s%s&output=application%%2Frdf%%2Bjson>;\r\n rel="alternate"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link);
+   links := sprintf ('Link: <http://%s%s&output=rdf>;\r\n rel="alternate"; type="application/rdf+xml"; title="Metadata in RDF/XML format",\r\n ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=n3>;\r\n rel="alternate"; type="text/n3"; title="Metadata in N3/Turtle format",\r\n ', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Fjson>;\r\n rel="alternate"; type="application/json"; title="Metadata in RDF/JSON format"\r\n', host, rdf_link); 
+   links := links||sprintf ('<http://%s%s&output=application%%2Fatom%%2Bxml>;\r\n rel="alternate"; type="application/atom+xml"; title="OData (Atom feed) format"\r\n', host, rdf_link); 
    http_header (http_header_get () || links);
    errors:
    if (not length (label))
@@ -235,6 +238,7 @@
     <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />
     <link rel="alternate" type="application/json+rdf" href="<?=rdf_link?>&output=application%2Frdf%2Bjson" title="Metadata in RDF/JSON format" />
     <link rel="alternate" type="application/json" href="<?=rdf_link?>&output=application%2Fjson" title="Metadata in RDF/JSON format" />
+    <link rel="alternate" type="application/atom+xml" href="<?=rdf_link?>&output=application%2Fatom%2Bxml" title="OData (Atom feed) format" />
     <link rel="stylesheet" type="text/css" href="statics/slidebar.css" />
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -401,6 +405,8 @@
        &nbsp; &nbsp; Raw Linked Data formats:
        <a href="<?=rdf_link || '&output=n3'?>">N3/Turtle</a> |
        <a href="<?=rdf_link || '&output=application%2Frdf%2Bjson'?>">RDF/JSON</a> |
+       <a href="<?=rdf_link || '&output=application%2Fatom%2Bxml'?>">ODATA/ATOM</a> |
+       <a href="<?=rdf_link || '&output=application%2Fodata%2Bjson'?>">ODATA/JSON</a> |
        <a href="<?=rdf_link || '&output=rdf'?>">RDF/XML</a>
       </div> <!-- #ft_t -->
       <?vsp } ?>
