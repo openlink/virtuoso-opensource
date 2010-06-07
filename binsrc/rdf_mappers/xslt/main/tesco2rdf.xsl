@@ -29,6 +29,7 @@
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -40,6 +41,7 @@
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
+    xmlns:oplbb="&oplbb;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:tesco="http://www.tesco.com/">
@@ -63,17 +65,38 @@
 		<rdf:RDF>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
-				<sioc:container_of rdf:resource="{$resourceURL}"/>
-				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 				<dcterms:subject rdf:resource="{$resourceURL}"/>
+					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
-			<rdf:Description rdf:about="{$resourceURL}">
-				<rdf:type rdf:resource="&gr;ProductOrService"/>
+				<gr:Offering rdf:about="{$resourceURL}">
+					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
+					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
+					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
+					<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+					<!--gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom-->
+					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
+					<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
+					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+					<!--xsl:apply-templates mode="offering" /-->
+				</gr:Offering>
+				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+					<rdf:type rdf:resource="&oplbb;Product" />
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<xsl:apply-templates/>
 			</rdf:Description>
+				<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
+					<rdfs:comment>The legal agent making the offering</rdfs:comment>
+					<rdfs:label>Tesco PLC</rdfs:label>
+					<gr:legalName>Tesco PLC</gr:legalName>
+					<gr:offers rdf:resource="{$resourceURL}"/>
+					<foaf:homepage rdf:resource="http://www.tesco.com" />
+					<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.tesco.com')}"/>
+				</gr:BusinessEntity>
 		</rdf:RDF>
 		</xsl:if>
     </xsl:template>
@@ -99,7 +122,7 @@
 
     <xsl:template match="manufacturer">
 		<gr:hasManufacturer>
-		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'manufacturer')}">
+		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
 	    <rdfs:label><xsl:value-of select="concat('Manufacturer ', .)"/></rdfs:label>
             <gr:legalName><xsl:value-of select="."/></gr:legalName>
           </gr:BusinessEntity>
