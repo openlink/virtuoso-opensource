@@ -1072,6 +1072,8 @@ end_loop:;
                 accept := 'text/n3';
               else if ("output-format" = 'json')
                 accept := 'application/json';
+              else
+                accept := "output-format";
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
