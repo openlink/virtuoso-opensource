@@ -46,6 +46,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_CNET', null, 'CNET');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://www.wine.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_WINE', null, 'Wine');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*yelp.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_YELP', null, 'Yelp');
 
@@ -4388,7 +4392,8 @@ create procedure DB.DBA.RDF_LOAD_VIMEO (in graph_iri varchar, in new_origin_uri 
 create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, img_id, hdr, exif any;
-  declare xsl2 varchar;
+  declare xsl2, user_id varchar;
+  declare pos int;
   declare exit handler for sqlstate '*'
     {
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
@@ -4413,13 +4418,42 @@ create procedure DB.DBA.RDF_LOAD_YOUTUBE (in graph_iri varchar, in new_origin_ur
     ar := ar[4];
     ar := split_and_decode (ar);
     img_id := get_keyword ('v', ar);
-    --tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/watch?v=%s', 0);
-    --img_id :=  tmp[2];
     if (img_id is null)
         return 0;
     url := concat('http://gdata.youtube.com/feeds/api/videos/', img_id);
     tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
     xsl2 := 'xslt/main/atomentry2rdf.xsl';
+  }
+   else if (new_origin_uri like 'http://%.youtube.com/%' or new_origin_uri like 'http://%.youtube.com/user/%')
+  {
+    if (new_origin_uri like 'http://%.youtube.com/user/%')
+        tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/user/%s', 0);
+    else if (new_origin_uri like 'http://%.youtube.com/%')
+        tmp := sprintf_inverse (new_origin_uri, '%s://%s.youtube.com/%s', 0);
+    user_id := trim(tmp[2], '/');
+    if (user_id is null)
+        return 0;
+    pos := strchr(user_id, '/');
+    if (pos is not null and pos <> 0)
+        user_id := left(user_id, pos);
+    pos := strchr(user_id, '&');
+    if (pos is not null and pos <> 0)
+        user_id := left(user_id, pos);
+    pos := strchr(user_id, '?');
+    if (pos is not null and pos <> 0)
+        user_id := left(user_id, pos);
+    pos := strchr(user_id, '#');
+    if (pos is not null and pos <> 0)
+        user_id := left(user_id, pos);
+    url := concat('http://gdata.youtube.com/feeds/api/users/', user_id);
+    tmp := DB.DBA.RDF_HTTP_URL_GET (url, url, hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/youtube2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    return 1;
   }
   else
     return 0;
@@ -4766,6 +4800,37 @@ create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_WINE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, hdr, exif any;
+  declare wine_id varchar;
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    if (new_origin_uri like 'http://www.wine.com/V6/%/wine/%/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.wine.com/V6/%s/wine/%s/%s', 0);
+		wine_id := tmp[1];
+		if (wine_id is null)
+			return 0;
+		url := sprintf('http://services.wine.com/api/beta/service.svc/xml/catalog?filter=product(%s)&apikey=%s', wine_id, _key);
+	}
+	else
+		return 0;
+    tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/wine2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_CNET (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, api_key, hdr, exif any;
@@ -4919,6 +4984,8 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
       return 0;
     };
   tmp := sprintf_inverse (new_origin_uri, '%s://%s/show_bug.cgi?id=%s', 0);
+  if (length(tmp) < 2)
+	return 0;
   img_id := tmp[2];
   host_part := tmp[1];
   if (img_id is null)

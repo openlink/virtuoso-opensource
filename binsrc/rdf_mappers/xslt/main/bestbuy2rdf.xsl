@@ -46,7 +46,6 @@
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
-    xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
     xmlns:oplbb="&oplbb;">
@@ -58,11 +57,6 @@
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
-    <!-- TO DO: For testing with standalone XSLT processor
-    <xsl:variable name="resourceURL" select="$baseUri"/>
-    <xsl:variable  name="docIRI" select="$baseUri"/>
-    <xsl:variable  name="docproxyIRI" select="$baseUri"/>
-    -->
 
     <xsl:variable name="quote"><xsl:text>"</xsl:text></xsl:variable>
 

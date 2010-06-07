@@ -93,11 +93,9 @@
 				<dc:date rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dc:date>
-				<dc:creator>
-					<xsl:value-of select="who"/>
-				</dc:creator>
+				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
-				<sioc:has_creator rdf:resource="{concat(who/@name, ' (', who, ')' )}"/>
+				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
@@ -105,6 +103,14 @@
 				<dcterms:created rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (issue_when)"/>
 				</dcterms:created>
+			</rdf:Description>
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}">
+				<rdf:type rdf:resource="&foaf;Person"/>
+				<sioc:creator_of rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}"/>
+			    <xsl:if test="who/@name">
+					<foaf:name><xsl:value-of select="who/@name"/></foaf:name>
+			    </xsl:if>
+			    <foaf:mbox rdf:resource="mailto:{who}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
@@ -135,11 +141,9 @@
 				<dc:date rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dc:date>
-				<dc:creator>
-					<xsl:value-of select="who"/>
-				</dc:creator>
+				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
-				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}"/>
+				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:reply_of rdf:resource="{$baseUri}"/>
 				<dc:description>
 					<xsl:value-of select="thetext"/>
@@ -148,10 +152,13 @@
 					<xsl:value-of select="vi:http_string_date (bug_when)"/>
 				</dcterms:created>
 			</rdf:Description>
-			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', urlify (replace(who/@name, ' ', '_')))}">
+			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}">
 			    <rdf:type rdf:resource="&foaf;Person"/>
+			    <xsl:if test="who/@name">
 			    <foaf:name><xsl:value-of select="who/@name"/></foaf:name>
+			    </xsl:if>
 			    <foaf:mbox rdf:resource="mailto:{who}"/>
+			    <sioc:creator_of rdf:resource="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}"/>
 			</rdf:Description>
 		</xsl:for-each>
     </xsl:template>
