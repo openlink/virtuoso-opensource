@@ -3684,11 +3684,13 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
   declare subj, pred, obj any;
   declare entry_dict, ns_dict, ns_arr any;
   declare pred_tagname varchar;
-  declare p_ns_uri, p_ns_pref varchar;
+  declare p_ns_uri, p_ns_pref, lang, range varchar;
+  declare pct integer;
+  declare twobyte integer;
 
   dict := dict_new ();
   ns_dict := dict_new ();
-  ns_ctr := 0;
+  ns_ctr := 0; pct := 0;
   tcount := length (triples);
   if (print_top_level)
     {
@@ -3735,6 +3737,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
   if (is_http_ctx ())
     {
       declare q, u, h, id varchar;
+      declare lines any;
       q := http_request_get ('QUERY_STRING');
       if (length (q))
 	q := '?' || q;
@@ -3745,9 +3748,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
       h [2] := u; h [4] := '';
       id := WS.WS.VFS_URI_COMPOSE (h);
       http (sprintf ('\t<id>%V</id>\n', id), ses);
+      lines := http_request_header ();
+      range := http_request_header_full (lines, 'Accept-Language', 'en');
     }
   else
+    {
     http ('\t<id/>\n', ses);
+      range := 'en, */*;0.1';
+    }
   http (sprintf ('\t<updated>%s</updated>\n', date_iso8601 (dt_set_tz (now (), 0))), ses);
   http ('\t<author><name /></author>\n', ses);
   http (sprintf ('\t<title type="text">OData Service and Descriptor Document</title>\n'), ses);
@@ -3759,6 +3767,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
       declare has_meta int;
       declare title, content varchar;
 
+      pct := 0;
       has_meta := 0; title := null; content := null;
       subj := entries[tctr];
       entry_dict := dict_get (dict, subj);
@@ -3790,7 +3799,24 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
 		 pred = iri_to_id ('http://purl.org/dc/terms/title') or
 	      	 pred = iri_to_id ('http://www.w3.org/2000/01/rdf-schema#label'))
 		)
+		{
+		   declare rc int;
+		   lang := 'en';
+		   if (__tag of rdf_box = __tag (obj))
+		     {
+		       twobyte := rdf_box_lang (obj);
+		       if (twobyte <> 257)
+		         {
+			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			 }
+		     }
+		   rc := langmatches_pct_http (lang, range);
+		   if (pct < rc)
+		     {
 		title := __rdf_strsqlval (obj);
+		       pct := rc;
+		     }
+		}
 	      has_meta := 1;
 	    }
 	}
@@ -3822,9 +3848,15 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
 		    {
 		      declare tmp any;
 		      tmp := __rdf_strsqlval (obj);
+		       twobyte := rdf_box_lang (obj);
+		       if (twobyte <> 257)
+			 {
+			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			   http (sprintf (' xml:lang="%s"', lang), ses);
+			 }
+		      http ('>', ses);
 		      if (__tag of varchar = __tag (tmp))
 			tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
-		      http ('>', ses);
 		      http_value (tmp, 0, ses);
 		    }
 		  else
