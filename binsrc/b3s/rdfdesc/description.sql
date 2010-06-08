@@ -245,8 +245,12 @@ b3s_parse_inf (in sid varchar, inout params any)
     { 
       for select fct_state from fct_state where fct_sid = sid do
         {
+	  declare i varchar;
           connection_set('inf', fct_inf_val (fct_state));
           connection_set('sas', fct_sas_val (fct_state));
+	  i := cast (xpath_eval ('/query/@s-term', fct_state) as varchar);
+	  if (length (i))
+            connection_set('s_term', i);
         }
     }
 
@@ -512,6 +516,9 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    p_prefix := b3s_uri_curie (p_text);
    url := b3s_http_url (p_text, sid);
 
+   if (not length (p_text))
+     return;
+
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
 
    if (r) http ('is ');
@@ -573,6 +580,11 @@ again:
 	 _url := id_to_iri (_object);
        else
 	 _url := _object;
+
+       if (not length (_url))
+         return;	 
+
+       http (sprintf ('<!-- %d -->', length (_url)));
 
        rdfa := b3s_rel_print (prop, rel, 0);
        http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid), b3s_uri_curie(_url)));

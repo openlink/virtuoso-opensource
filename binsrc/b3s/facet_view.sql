@@ -98,6 +98,42 @@ fct_view_info (in tree any, in ctx int, in txt any)
 }
 ;
 
+create procedure fct_s_term ()
+{
+  declare s_term varchar;
+  s_term := connection_get ('s_term');
+  if (s_term = 's') return 'Subject';
+  return 'Entity';
+}
+;
+
+create procedure fct_p_term ()
+{
+  declare s_term varchar;
+  s_term := connection_get ('s_term');
+  if (s_term = 's') return 'Property';
+  return 'Attribute';
+}
+;
+
+create procedure fct_o_term ()
+{
+  declare s_term varchar;
+  s_term := connection_get ('s_term');
+  if (s_term = 's') return 'Object';
+  return 'Value';
+}
+;
+
+create procedure fct_t_term ()
+{
+  declare s_term varchar;
+  s_term := connection_get ('s_term');
+  if (s_term = 's') return 'Class';
+  return 'Type';
+}
+;
+
 create procedure
 fct_var_tag (in this_s int, in ctx int)
 {
@@ -105,9 +141,9 @@ fct_var_tag (in this_s int, in ctx int)
     return sprintf ('<a href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Focus on %s%d">%s%d</a>',
                     connection_get ('sid'),
 		    this_s,
-		    connection_get ('s_term'),
+		    fct_s_term (),
 		    this_s,
-		    connection_get ('s_term'),
+		    fct_s_term (),
 		    this_s);
   else
     return sprintf ('%s%d', connection_get ('s_term'), this_s);
@@ -204,10 +240,12 @@ fct_query_info (in tree any,
                        fct_short_form (prop),
                        charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
       else
-        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any Attribute</a> with Value <span class="value">"%s"</span>. ', 
+        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span>. ', 
                       fct_var_tag (this_s, ctx), 
                       connection_get('sid'), 
                       cno,
+		      fct_p_term (),
+		      fct_o_term (),
 		      charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
 
     }
@@ -232,7 +270,7 @@ fct_query_info (in tree any,
 	}
       if (ctx)
 	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
-	               connection_get ('sid'), new_s, connection_get('s_term'), new_s), txt);
+	               connection_get ('sid'), new_s, fct_s_term (), new_s), txt);
       fct_query_info_1 (tree, new_s, max_s, level, ctx, txt, cno);
     }
   else if ('property-of' = n)
@@ -249,7 +287,7 @@ fct_query_info (in tree any,
       if (ctx)
 	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
 	connection_get ('sid'),
-	new_s, connection_get ('s_term'), new_s), txt);
+	new_s, fct_s_term (), new_s), txt);
       fct_query_info_1 (tree, new_s, max_s, ctx, level, txt, cno);
     }
   if ('value' = n)
@@ -346,19 +384,31 @@ fct_nav (in tree any,
 	fct_view_link ('classes', 'Types', txt, 'Entity Category or Class');
 
   if ('properties' <> tp)
+    if (connection_get('s_term') = 's') 
+      fct_view_link ('properties', 'Properties', txt, 'Entity Characteristic or Property');
+    else
     fct_view_link ('properties', 'Attributes', txt, 'Entity Characteristic or Property');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
+    if (connection_get('s_term') = 's') 
+      fct_view_link ('properties-in', 'Referencing Properties', txt, 'Characteristics or Properties with Entity References as values');
+    else
     fct_view_link ('properties-in', 'Referencing Attributes', txt, 'Characteristics or Properties with Entity References as values');
 
   if ('text' <> tp and tp <> 'text-d')
     {
       if (tp <> 'list-count')
+	if (connection_get('s_term') = 's') 
+	  fct_view_link ('list-count', 'Distinct objects (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	else
 	fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
       if (tp <> 'list')
+	if (connection_get('s_term') = 's') 
+	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
+	else
 	fct_view_link ('list', 'Show Matching Values', txt, 'Displaying Ranked Enitity Names and Text summaries');
     }
 
@@ -470,7 +520,15 @@ fct_web (in tree any)
 			    'timeout',
 			    _min (timeout*2, atoi (registry_get ('fct_timeout_max'))),
 			    'query',
-			    tree
+			    tree,
+			    's_term', 
+			    fct_p_term (),
+			    'p_term', 
+			    fct_s_term (),
+			    'o_term', 
+			    fct_o_term (),
+			    't_term', 
+			    fct_t_term ()
 			    )),
 	      null, txt);
 
@@ -1312,7 +1370,7 @@ exec:;
   connection_set ('sid', sid);
 
   s_term := cast (xpath_eval ('/query/@s-term', tree) as varchar);
-  if ('' = s_term) s_term := 'Entity';
+  if ('' = s_term) s_term := 'e';
   connection_set ('s_term', s_term);
 
   declare c_term varchar;

@@ -186,11 +186,15 @@
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
 <!-- proptable -->
       <table class="description">
-      <tr><th class="property">Attributes</th><th class="value">Values</th></tr>
 
 <?vsp
       declare vis, printed int;
       declare all_lang any;
+
+      if (connection_get ('s_term') = 's')
+        http ('<tr><th class="property">Properties</th><th class="value">Objects</th></tr>');
+      else
+        http ('<tr><th class="property">Attributes</th><th class="value">Values</th></tr>');
 
       all_lang := vector ('*', 1.0);
       qry_str := sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { <%S> ?p ?o }) sp order by 1', inf, _S);
@@ -203,6 +207,8 @@
 	{
            declare PRED any;
 	   pred := data[0];  
+	   if (not length (PRED))
+	     goto nxt1;
 	   b3s_http_print_l (PRED, odd_position, 0, sid);
 
            qry_str := sprintf ('sparql %s select distinct ?o where { <%S> <%S> ?o } limit 300', inf, _S, PRED);
@@ -233,6 +239,7 @@
 	     }
 
 	   http ('</ul></td></tr>');
+	   nxt1:;
 	}
       exec_close (h1);
 
@@ -245,7 +252,7 @@
       while (0 = exec_next (h1, null, null, data))	
 	{
            declare PRED any;
-	   pred := data[0];  
+	   PRED := data[0];  
 	   --if (inx = 0)
 	   --  {
 	   --    http ('<tr><th width="25%">Reverse links</th><th>&nbsp;</th></tr>');

@@ -28,6 +28,10 @@
 <xsl:variable name="page_len" select="20"/>
 <xsl:variable name="offs" select="if(or(/facets/view/@offset = '', not(/facets/view/@offset)), 1, /facets/view/@offset + 1)"/>
 <xsl:variable name="rowcnt" select="count(/facets/result/row)"/>
+<xsl:param name="s_term"/>
+<xsl:param name="p_term"/>
+<xsl:param name="o_term"/>
+<xsl:param name="t_term"/>
 
 <xsl:template match = "facets">
 <div id="res">
@@ -232,19 +236,19 @@ function init(){
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Entity</th><th>Title</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text-properties'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'properties-in'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Attribute</th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$p_term"/></th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
@@ -252,11 +256,11 @@ function init(){
       </xsl:when>
       <xsl:when test="$view-type = 'classes'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Type</th><th>Label</th><th>Count</th></tr>
+	<tr><th><xsl:value-of select="$t_term"/></th><th>Label</th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
 	<div class="dbg"><xsl:value-of select="$view-type"/></div>
-	<tr><th>Entity</th><th>Title</th><th>Text excerpt</th></tr>
+	<tr><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Text excerpt</th></tr>
       </xsl:when>
     </xsl:choose>
   </thead>
