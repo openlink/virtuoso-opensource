@@ -51,6 +51,7 @@ DB.DBA.wa_exec_no_error_log(
  APL_WAI_ID int references DB.DBA.WA_INSTANCE (WAI_ID) on update cascade on delete cascade,
  APL_P_TITLE varchar default null,
  APL_P_URL varchar default null,
+ APL_FEED_URL varchar default null,
  APL_STAT int default 0, -- 1 sent, 2 error, 0 pending
  APL_TS timestamp,
  APL_SENT datetime,
@@ -58,6 +59,8 @@ DB.DBA.wa_exec_no_error_log(
  APL_SEQ integer identity,
  primary key (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_SEQ)
 )');
+
+DB.DBA.wa_add_col ('ODS.DBA.APP_PING_LOG', 'APL_FEED_URL', 'varchar default null');
 
 DB.DBA.wa_exec_no_error_log('create index APP_PING_LOG_IDX1 on ODS.DBA.APP_PING_LOG (APL_STAT, APL_WAI_ID)');
 
@@ -98,10 +101,10 @@ SVC_HOST_INIT ();
 create procedure SVC_PROCESS_PINGS ()
 {
   declare _host_id, _wai_id, dedl, seq int;
-  declare nam, use_pings, _url, _title varchar;
+  declare nam, use_pings, _url, _title, _feed_url varchar;
   declare _inst DB.DBA.web_app;
 
-  declare cr cursor for select APL_HOST_ID, APL_WAI_ID, WAI_DESCRIPTION, WAI_INST, APL_P_TITLE, APL_P_URL, APL_SEQ from
+  declare cr cursor for select APL_HOST_ID, APL_WAI_ID, WAI_DESCRIPTION, WAI_INST, APL_P_TITLE, APL_P_URL, APL_SEQ, APL_FEED_URL from
       APP_PING_LOG, DB.DBA.WA_INSTANCE where WAI_ID = APL_WAI_ID and APL_STAT = 0;
 
   dedl := 0;
@@ -121,7 +124,7 @@ again:
   while (1)
     {
       _inst := null;
-      fetch cr into _host_id, _wai_id, nam, _inst, _title, _url, seq;
+      fetch cr into _host_id, _wai_id, nam, _inst, _title, _url, seq, _feed_url;
       commit work;
       for select SH_URL, SH_PROTO, SH_METHOD from SVC_HOST where SH_ID = _host_id do
 	  {
@@ -138,6 +141,9 @@ again:
 		  }
 		else
 		  url := DB.DBA.WA_LINK (1, _url);
+
+		if (length (_feed_url))
+		  _feed_url := DB.DBA.WA_LINK (1, _feed_url);  
 
 		if (length (_title))
 		  nam := _title;
@@ -167,10 +173,9 @@ again:
 			{
 			  rc := DB.DBA.XMLRPC_CALL (SH_URL, 'weblogUpdates.ping', vector (nam, url));
 			}
-		      else
+		      else if (length (_feed_url))
 			{
-			  rc := DB.DBA.XMLRPC_CALL (SH_URL, 'weblogUpdates.extendedPing',
-			  vector (nam, url, url, url || 'gems/rss.xml'));
+			  rc := DB.DBA.XMLRPC_CALL (SH_URL, 'weblogUpdates.extendedPing', vector (nam, url, url, _feed_url));
 			}
 		    }
 		  else if (SH_PROTO = 'REST')
@@ -183,15 +188,10 @@ again:
 			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
 			}
 		    }
-		  else if (SH_PROTO = 'PubSubHub')
+		  else if (SH_PROTO = 'PubSubHub' and length (_feed_url))
 		    {
 		      declare hf any;
-		      http_get (SH_URL, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', url || 'gems/rss.xml'));
-		      if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 204 %')
-			{
-			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
-			}
-		      http_get (SH_URL, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', url || 'gems/atom.xml'));
+		      http_get (SH_URL, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', _feed_url));
 		      if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 204 %')
 			{
 			  rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
@@ -230,16 +230,20 @@ create procedure APP_PING
 	in _wai_name varchar,
 	in _post_title varchar := null,
 	in _post_url varchar := null,
-	in svc_name varchar := null
+	in svc_name varchar := null,
+	in _feed_url varchar := null
 	)
 {
+  if (_feed_url is null) 
+    _feed_url := '';
   if (svc_name is null)
     {
       for select AP_HOST_ID, WAI_ID from APP_PING_REG, DB.DBA.WA_INSTANCE where WAI_ID = AP_WAI_ID and WAI_NAME = _wai_name do
 	{
-	  if (not exists (select 1 from APP_PING_LOG where APL_WAI_ID = WAI_ID and APL_HOST_ID = AP_HOST_ID and APL_STAT = 0))
-	    insert into APP_PING_LOG (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_P_TITLE, APL_P_URL)
-		values (WAI_ID, AP_HOST_ID, 0, _post_title, _post_url);
+	  if (not exists 
+	      (select 1 from APP_PING_LOG where APL_WAI_ID = WAI_ID and APL_HOST_ID = AP_HOST_ID and APL_STAT = 0 and APL_FEED_URL = _feed_url))
+	    insert into APP_PING_LOG (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_P_TITLE, APL_P_URL, APL_FEED_URL)
+		values (WAI_ID, AP_HOST_ID, 0, _post_title, _post_url, _feed_url);
 	}
     }
   else
@@ -248,10 +252,10 @@ create procedure APP_PING
       s_id := (select SH_ID from SVC_HOST where SH_NAME = svc_name);
       _wai_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name);
       if (s_id is not null and _wai_id is not null and
-	  not exists (select 1 from APP_PING_LOG where APL_WAI_ID = _wai_id and APL_HOST_ID = s_id and APL_STAT = 0)
+	  not exists (select 1 from APP_PING_LOG where APL_WAI_ID = _wai_id and APL_HOST_ID = s_id and APL_STAT = 0 and APL_FEED_URL = _feed_url)
 	  )
-	insert into APP_PING_LOG (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_P_TITLE, APL_P_URL)
-	    values (_wai_id, s_id, 0, _post_title, _post_url);
+	insert into APP_PING_LOG (APL_WAI_ID, APL_HOST_ID, APL_STAT, APL_P_TITLE, APL_P_URL, APL_FEED_URL)
+	    values (_wai_id, s_id, 0, _post_title, _post_url, _feed_url);
 
     }
 };
@@ -292,6 +296,16 @@ create procedure PSH_ATOM_LINKS (in inst_id integer)
       links := links || sprintf ('<atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="%s" rel="hub" title="PubSubHub" />', psh);
 	}
   return links;
+};
+
+create procedure PSH_CALLBACK_LINK ()
+{
+  return 'http://' || DB.DBA.WA_CNAME() || '/psh/callback.vsp';
+};
+
+create procedure PSH_SUBSCRIBE_LINK ()
+{
+  return 'http://' || DB.DBA.WA_CNAME() || '/psh/subscribe.vsp';
 };
 
 use DB;

@@ -423,6 +423,13 @@ if (typeof (OAT) == 'undefined')
           <vm:odsbar_navigation_level1/>
           <div id="ods_bar_top_cmds">
 
+            <vm:if test = " length (self.sid) > 0 "> <!-- user is logged on -->
+              <v:url name="app_settings_lnk"
+                     url="--self.odsbar_ods_gpath||'app_settings.vspx'"
+                     value="Application Settings"
+                     is-local="1"/>
+            </vm:if>
+
             <!-- Site admin settings link -->
 
             <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
@@ -432,13 +439,6 @@ if (typeof (OAT) == 'undefined')
                      render-only="1"
                      is-local="1"/>
               |
-            </vm:if>
-
-            <vm:if test = " length (self.sid) > 0 "> <!-- user is logged on -->
-              <v:url name="app_settings_lnk"
-                     url="--self.odsbar_ods_gpath||'app_settings.vspx'"
-                     value="Application Settings"
-                     is-local="1"/>
             </vm:if>
 
             <vm:if test=" length (self.sid) ">

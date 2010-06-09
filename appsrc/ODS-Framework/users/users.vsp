@@ -50,7 +50,7 @@
   <?vsp
     declare N integer;
     declare vHostUrl, vUrl, vParams, vResult, vRequest, vRespond any;
-    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vFormMode, vXml, vLists, vList, items any;
+    declare tmp, suffix, vSid, vRealm, vError, vForm, vFormTab, vFormSubtab, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
 
       vHostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
       if (isstring (vHostUrl) and strchr (vHostUrl , ':') is null)
@@ -89,6 +89,7 @@
     vFormMode := get_keyword ('formMode', params, '');
     vSid := get_keyword ('sid', params);
     vRealm := 'wa';
+    xAcl := vector ('public', '1', 'friends', '2', 'private', '3');
 
     if (vForm = 'login')
     {
@@ -369,14 +370,14 @@
                 vParams := vParams || sprintf ('&homeLatitude=%U', get_keyword ('i_homelat', params, ''));
               if (get_keyword ('cb_item_i_homelng', params, '') = '1')
                 vParams := vParams || sprintf ('&homeLongitude=%U', get_keyword ('i_homelng', params, ''));
-              if (get_keyword ('cb_item_i_homelng', params, '') = '1')
+              if (get_keyword ('cb_item_i_homePhone', params, '') = '1')
                 vParams := vParams || sprintf ('&homePhone=%U', get_keyword ('i_homePhone', params, ''));
               if (get_keyword ('cb_item_i_businessOrganization', params, '') = '1')
                 vParams := vParams || sprintf ('&businessOrganization=%U', get_keyword ('i_businessOrganization', params, ''));
               if (get_keyword ('cb_item_i_businessHomePage', params, '') = '1')
                 vParams := vParams || sprintf ('&businessHomePage=%U', get_keyword ('i_businessHomePage', params, ''));
-              if (get_keyword ('cb_item_i_sumary', params, '') = '1')
-                vParams := vParams || sprintf ('&sumary=%U', get_keyword ('i_sumary', params, ''));
+              if (get_keyword ('cb_item_i_summary', params, '') = '1')
+                vParams := vParams || sprintf ('&summary=%U', get_keyword ('i_summary', params, ''));
               if (get_keyword ('cb_item_i_tags', params, '') = '1')
                 vParams := vParams || sprintf ('&tags=%U', get_keyword ('i_tags', params, ''));
               if (get_keyword ('cb_item_i_sameAs', params, '') = '1')
@@ -402,7 +403,7 @@
                 '&birthday=' ||               sprintf ('%U', get_keyword ('pf_birthday', params, '')) ||
                 '&homepage=' ||               sprintf ('%U', get_keyword ('pf_homepage', params, '')) ||
                   '&mailSignature=' ||          sprintf ('%U', get_keyword ('pf_mailSignature', params, '')) ||
-                  '&sumary=' ||        sprintf ('%U', get_keyword ('pf_sumary', params, '')) ||
+                  '&summary=' ||       sprintf ('%U', get_keyword ('pf_summary', params, '')) ||
                   '&appSetting=' ||    sprintf ('%U', get_keyword ('pf_appSetting', params, '0')) ||
                   '&photo=' ||         sprintf ('%U', get_keyword ('pf_photo', params, '')) ||
                   '&photoContent=' ||  sprintf ('%U', get_keyword ('pf_photoContent', params, '')) ||
@@ -454,6 +455,7 @@
                 '&homeLatitude=' ||           sprintf ('%U', get_keyword ('pf_homelat', params, '')) ||
                 '&homeLongitude=' ||          sprintf ('%U', get_keyword ('pf_homelng', params, '')) ||
                 '&homePhone=' ||              sprintf ('%U', get_keyword ('pf_homePhone', params, '')) ||
+                  '&homePhoneExt=' ||           sprintf ('%U', get_keyword ('pf_homePhoneExt', params, '')) ||
                   '&homeMobile=' ||             sprintf ('%U', get_keyword ('pf_homeMobile', params, ''));
             }
             if (vFormSubtab = 5)
@@ -507,6 +509,7 @@
                 '&businessLatitude=' ||       sprintf ('%U', get_keyword ('pf_businesslat', params, '')) ||
                 '&businessLongitude=' ||      sprintf ('%U', get_keyword ('pf_businesslng', params, '')) ||
                 '&businessPhone=' ||          sprintf ('%U', get_keyword ('pf_businessPhone', params, '')) ||
+                  '&businessPhoneExt=' ||  sprintf ('%U', get_keyword ('pf_businessPhoneExt', params, '')) ||
                   '&businessMobile=' ||         sprintf ('%U', get_keyword ('pf_businessMobile', params, ''));
             }
             if (vFormSubtab = 3)
@@ -580,6 +583,36 @@
             vForm := 'login';
             }
           }
+          vUrl := vHostUrl  || '/user.acl.update';
+          tmp := '';
+          for (N := 0; N < length (params); N := N + 2)
+          {
+            if (params [N] like 'pf_acl_%')
+              tmp := tmp || replace (params [N], 'pf_acl_', '') || '=' || trim (params [N+1]) || '&';
+          }
+          vParams := 'sid=' || vSid || '&realm=' || vRealm || sprintf ('&acls=%U', rtrim (tmp, '&'));
+          commit work;
+          vResult := http_client_ext (
+                       vUrl,
+                       http_method=>'POST',
+                       http_headers=>vRequest,
+                       body=>vParams,
+                       headers=>vRespond
+                     );
+          if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+          {
+            vError := vRespond[0];
+            vForm := 'login';
+          }
+          else
+          {
+            vXml := xml_tree_doc (vResult);
+            if (xpath_eval ('/failed/message', vXml))
+            {
+              vError := xpath_eval ('string (/failed/message)', vXml);
+              vForm := 'login';
+            }
+          }
         }
         if (get_keyword ('pf_next', params, '') <> '')
         {
@@ -614,8 +647,7 @@
     {
       vUrl := sprintf ('%s/user.info?sid=%s&realm=%s', vHostUrl, vSid, vRealm);
       if (vForm = 'profile')
-        vUrl := vUrl || '&short=1';
-
+        vUrl := vUrl || '&short=0';
       commit work;
       vResult := http_client_ext (
                    vUrl,
@@ -627,22 +659,42 @@
       {
         vError := vRespond[0];
         vForm := 'login';
+        goto _end;
       }
-      else
-      {
         vXml := xml_tree_doc (vResult);
         if (xpath_eval ('/failed/message', vXml))
         {
           vError := xpath_eval ('string (/failed/message)', vXml);
           vForm := 'login';
+        goto _end;
         }
-        else if (vForm = 'profile')
+      if (vForm = 'profile')
         {
+        vUrl := sprintf ('%s/user.acl.info?sid=%s&realm=%s', vHostUrl, vSid, vRealm);
+        commit work;
+        vResult := http_client_ext (
+                     vUrl,
+                     http_method=>'GET',
+                     http_headers=>vRequest,
+                     headers=>vRespond
+                   );
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+          goto _end;
+        }
+        vAcl := xml_tree_doc (vResult);
+        if (xpath_eval ('/failed/message', vAcl))
+        {
+          vError := xpath_eval ('string (/failed/message)', vAcl);
+          vForm := 'login';
+          goto _end;
+        }
+
           declare tmp, listItems any;
 
-          items := vector (vector ('Industry', ''),
-                           vector ('Country', '')
-                          );
+        items := vector (vector ('Industry', ''), vector ('Country', ''));
           vLists := vector ();
           foreach (any item in items) do
           {
@@ -664,14 +716,12 @@
             tmp := xml_tree_doc (vResult);
             listItems := xpath_eval ('/items/item', tmp, 0);
             foreach (any listItem in listItems) do
-            {
               vList := vector_concat (vList, vector (cast (listItem as varchar)));
-            }
+
             vLists := vector_concat (vLists, vector (vList));
           }
         }
       }
-    }
   _end:;
     if (vForm = 'login')
     {
@@ -738,7 +788,7 @@
                     <th width="30%">
                       <label for="lf_uid">Member ID</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="text" name="lf_uid" value="" id="lf_uid" />
                     </td>
                   </tr>
@@ -746,7 +796,7 @@
                     <th>
                       <label for="lf_password">Password</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="password" name="lf_password" value="" id="lf_password" />
                     </td>
                   </tr>
@@ -758,7 +808,7 @@
                         <th width="30%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
                         </td>
                   </tr>
@@ -769,7 +819,7 @@
                   <tr>
                         <th width="30%">
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -811,7 +861,7 @@
                         <th>
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_uid" value="" id="rf_uid" />
                         </td>
                       </tr>
@@ -819,7 +869,7 @@
                         <th>
                           <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
                         </td>
                       </tr>
@@ -827,7 +877,7 @@
                         <th>
                           <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password" value="" id="rf_password" />
                         </td>
                       </tr>
@@ -835,7 +885,7 @@
                         <th>
                           <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password2" value="" id="rf_password2" />
                         </td>
                       </tr>
@@ -847,7 +897,7 @@
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
                         </td>
                       </tr>
@@ -858,7 +908,7 @@
                       <tr>
                         <th width="30%">
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -877,7 +927,7 @@
                     <tr>
                       <th width="30%">
                       </th>
-                      <td nowrap="nowrap">
+                      <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
                       </td>
                     </tr>
@@ -1124,6 +1174,12 @@
                                 http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/title)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
+                              <select name="pf_acl_title" id="pf_acl_title">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/title)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1132,6 +1188,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_firstName" value="<?V xpath_eval ('string (/user/firstName)', vXml) ?>" id="pf_firstName" style="width: 220px;" />
+                              <select name="pf_acl_firstName" id="pf_acl_firstName">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/firstName)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1140,6 +1202,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_lastName" value="<?V xpath_eval ('string (/user/lastName)', vXml) ?>" id="pf_lastName" style="width: 220px;" />
+                              <select name="pf_acl_lastName" id="pf_acl_lastName">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/lastName)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1148,6 +1216,12 @@
                         </th>
                         <td>
                               <input type="text" name="pf_fullName" value="<?V xpath_eval ('string (/user/fullName)', vXml) ?>" id="pf_fullName" style="width: 400px;" />
+                              <select name="pf_acl_fullName" id="pf_acl_fullName">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/fullName)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1156,6 +1230,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_mail" value="<?V xpath_eval ('string (/user/mail)', vXml) ?>" id="pf_mail" style="width: 220px;" />
+                              <select name="pf_acl_mail" id="pf_acl_mail">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/mail)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1171,6 +1251,12 @@
                                 http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/gender)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
+                              <select name="pf_acl_gender" id="pf_acl_gender">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/gender)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1179,6 +1265,12 @@
                         </th>
                         <td>
                           <input name="pf_birthday" id="pf_birthday" value="<?V xpath_eval ('string (/user/birthday)', vXml) ?>" onclick="datePopup('pf_birthday');"/>
+                              <select name="pf_acl_birthday" id="pf_acl_birthday">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/birthday)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1187,16 +1279,22 @@
                         </th>
                         <td>
                               <input type="text" name="pf_homepage" value="<?V xpath_eval ('string (/user/homepage)', vXml) ?>" id="pf_mail" style="width: 400px;" />
+                              <select name="pf_acl_homepage" id="pf_acl_homepage">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homepage)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                             <th>
                               <label for="pf_foaf">Other Personal URIs (Web IDs)</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td valign="top">
                               <table>
                                 <tr>
-                                  <td width="600px" style="padding: 0px;">
+                                  <td width="500px" style="padding: 0px;">
                                     <table id="x1_tbl" class="listing">
                                       <thead>
                                         <tr class="listing_header_row">
@@ -1216,6 +1314,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
+                                      <?vsp
+                                        for (N := 0; N < length (xAcl); N := N + 2)
+                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/webIDs)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1233,18 +1337,24 @@
                         <th>
                               <label for="pf_summary">Summary</label>
                         </th>
-                        <td>
+                            <td valign="top" >
                               <textarea name="pf_summary" id="pf_summary" style="width: 400px;"><?vsp xpath_eval ('string (/user/summary)', vXml); ?></textarea>
+                              <select name="pf_acl_summary" id="pf_acl_summary">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/summary)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
-                              <label for="pf_foaf">Web page URL indicating a topic of interest</label>
+                              <label>Web page URL indicating a topic of interest</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td valign="top">
                               <table>
                                 <tr>
-                                  <td width="600px" style="padding: 0px;">
+                                  <td width="500px" style="padding: 0px;">
                                     <table id="x2_tbl" class="listing">
                                       <thead>
                                         <tr class="listing_header_row">
@@ -1267,6 +1377,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                      <?vsp
+                                        for (N := 0; N < length (xAcl); N := N + 2)
+                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/interests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1274,12 +1390,12 @@
                       </tr>
                       <tr>
                         <th>
-                              <label for="pf_foaf">Resource URI indicating thing of interest</label>
+                              <label>Resource URI indicating thing of interest</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td valign="top">
                               <table>
                                 <tr>
-                                  <td width="600px" style="padding: 0px;">
+                                  <td width="500px" style="padding: 0px;">
                                     <table id="x3_tbl" class="listing">
                                       <thead>
                                         <tr class="listing_header_row">
@@ -1302,6 +1418,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                      <?vsp
+                                        for (N := 0; N < length (xAcl); N := N + 2)
+                                          http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/topicInterests)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1321,6 +1443,12 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_photo" id="pf_photo" value="<?V xpath_eval ('string (/user/photo)', vXml) ?>" style="width: 400px;" >
+                              <select name="pf_acl_photo" id="pf_acl_photo">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/photo)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1337,6 +1465,12 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_audio" id="pf_audio"value="<?V xpath_eval ('string (/user/audio)', vXml) ?>" style="width: 400px;" >
+                              <select name="pf_acl_audio" id="pf_acl_audio">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/audio)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1350,6 +1484,19 @@
                                   foreach (any item in items) do
                                     http (sprintf('<option value="%s" %s>%s</option>', item[0], case when (item[0] = xpath_eval ('string (/user/appSetting)', vXml)) then 'selected="selected"' else '' end, item[1]));
                                 ?>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_1" id="pf_set_0_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
                               </select>
                             </td>
                           </tr>
@@ -1369,7 +1516,7 @@
                         <th width="30%">
                           <label for="pf_homecountry">Country</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
                             <option></option>
                             <?vsp
@@ -1378,26 +1525,44 @@
                                 http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/homeCountry)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
+                              <select name="pf_acl_homecountry" id="pf_acl_homecountry">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeCountry)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeState">State/Province</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <span id="span_pf_homestate">
                             <script type="text/javascript">
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_homecountry", "pf_homestate", "<?V xpath_eval ('string (/user/homeState)', vXml) ?>");});
                             </script>
                           </span>
+                              <select name="pf_acl_homeState" id="pf_acl_homeState">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeState)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeCity">City/Town</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCity" value="<?V xpath_eval ('string (/user/homeCity)', vXml) ?>" id="pf_homeCity" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeCity" value="<?V xpath_eval ('string (/user/homeCity)', vXml) ?>" id="pf_homeCity" style="width: 216px;" />
+                              <select name="pf_acl_homeCity" id="pf_acl_homeCity">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeCity)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1405,23 +1570,35 @@
                           <label for="pf_homeCode">Zip/Postal Code</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeCode" value="<?V xpath_eval ('string (/user/homeCode)', vXml) ?>" id="pf_homeCode" style="width: 220px;" />
+                              <input type="text" name="pf_homeCode" value="<?V xpath_eval ('string (/user/homeCode)', vXml) ?>" id="pf_homeCode" style="width: 216px;" />
+                              <select name="pf_acl_homeCode" id="pf_acl_homeCode">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeCode)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeAddress1">Address1</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress1" value="<?V xpath_eval ('string (/user/homeAddress1)', vXml) ?>" id="pf_homeAddress1" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeAddress1" value="<?V xpath_eval ('string (/user/homeAddress1)', vXml) ?>" id="pf_homeAddress1" style="width: 216px;" />
+                              <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeAddress1)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeAddress2">Address2</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress2" value="<?V xpath_eval ('string (/user/homeAddress2)', vXml) ?>" id="pf_homeAddress2" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeAddress2" value="<?V xpath_eval ('string (/user/homeAddress2)', vXml) ?>" id="pf_homeAddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1429,7 +1606,7 @@
                           <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimezone" id="pf_homeTimezone">
+                              <select name="pf_homeTimezone" id="pf_homeTimezone" style="width: 114px;" >
                             <?vsp
                               declare N integer;
                               for (N := -12; N <= 12; N := N + 1)
@@ -1438,18 +1615,26 @@
                               }
                             ?>
                           </select>
+                              <select name="pf_acl_homeTimezone" id="pf_acl_homeTimezone">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeTimezone)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homelat">Latitude</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homelat" value="<?V xpath_eval ('string (/user/homeLatitude)', vXml) ?>" id="pf_homelat" />
-                          <label>
-                            <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                            Default Map Location
-                          </label>
+                            <td>
+                              <input type="text" name="pf_homelat" value="<?V xpath_eval ('string (/user/homeLatitude)', vXml) ?>" id="pf_homelat" style="width: 110px;" />
+                              <select name="pf_acl_homeLatitude" id="pf_acl_homeLatitude">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homeLatitude)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -1457,7 +1642,11 @@
                           <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelng" value="<?V xpath_eval ('string (/user/homeLongitude)', vXml) ?>" id="pf_homelng" />
+                              <input type="text" name="pf_homelng" value="<?V xpath_eval ('string (/user/homeLongitude)', vXml) ?>" id="pf_homelng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                                Default Map Location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -1465,7 +1654,15 @@
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="<?V xpath_eval ('string (/user/homePhone)', vXml) ?>" id="pf_homePhone" />
+                              <input type="text" name="pf_homePhone" value="<?V xpath_eval ('string (/user/homePhone)', vXml) ?>" id="pf_homePhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_homePhoneExt" value="<?V xpath_eval ('string (/user/homePhoneExt)', vXml) ?>" id="pf_homePhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_homePhone" id="pf_acl_homePhone">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/homePhone)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1473,7 +1670,20 @@
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="<?V xpath_eval ('string (/user/homeMobile)', vXml) ?>" id="pf_homeMobile" />
+                              <input type="text" name="pf_homeMobile" value="<?V xpath_eval ('string (/user/homeMobile)', vXml) ?>" id="pf_homeMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_2">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                     </table>
@@ -1573,6 +1783,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_icq" value="<?V xpath_eval ('string (/user/icq)', vXml) ?>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_icq" id="pf_acl_icq">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/icq)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1581,6 +1797,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_skype" value="<?V xpath_eval ('string (/user/skype)', vXml) ?>" id="pf_skype" style="width: 220px;" />
+                              <select name="pf_acl_skype" id="pf_acl_skype">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/skype)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1589,6 +1811,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_yahoo" value="<?V xpath_eval ('string (/user/yahoo)', vXml) ?>" id="pf_yahoo" style="width: 220px;" />
+                              <select name="pf_acl_yahoo" id="pf_acl_yahoo">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/yahoo)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1597,6 +1825,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_aim" value="<?V xpath_eval ('string (/user/aim)', vXml) ?>" id="pf_aim" style="width: 220px;" />
+                              <select name="pf_acl_aim" id="pf_acl_aim">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/aim)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1605,6 +1839,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_msn" value="<?V xpath_eval ('string (/user/msn)', vXml) ?>" id="pf_msn" style="width: 220px;" />
+                              <select name="pf_acl_msn" id="pf_acl_msn">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/msn)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1613,6 +1853,19 @@
                               <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                             <td width="40%">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_5">Set access for all fields as </label>
+                            </th>
+                            <td colspan="2">
+                              <select name="pf_set_0_5" id="pf_set_0_5" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                           <script type="text/javascript">
@@ -1654,7 +1907,7 @@
                                 </tbody>
                               </table>
                             </td>
-                            <td valign="top" nowrap="nowrap">
+                            <td valign="top">
                               <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
@@ -1957,6 +2210,12 @@
                                     http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessIndustry)', vXml)) then 'selected="selected"' else '' end, item));
                                 ?>
                               </select>
+                              <select name="pf_acl_businessIndustry" id="pf_acl_businessIndustry">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessIndustry)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                       </tr>
                       <tr>
@@ -1964,15 +2223,21 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOrganization" value="<?V xpath_eval ('string (/user/businessOrganization)', vXml) ?>" id="pf_businessOrganization" style="width: 220px;" />
+                              <input type="text" name="pf_businessOrganization" value="<?V xpath_eval ('string (/user/businessOrganization)', vXml) ?>" id="pf_businessOrganization" style="width: 216px;" />
+                              <select name="pf_acl_businessOrganization" id="pf_acl_businessOrganization">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessOrganization)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="<?V xpath_eval ('string (/user/businessHomePage)', vXml) ?>" id="pf_businessNetwork" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_businessHomePage" value="<?V xpath_eval ('string (/user/businessHomePage)', vXml) ?>" id="pf_businessNetwork" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1980,7 +2245,13 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessJob" value="<?V xpath_eval ('string (/user/businessJob)', vXml) ?>" id="pf_businessJob" style="width: 220px;" />
+                              <input type="text" name="pf_businessJob" value="<?V xpath_eval ('string (/user/businessJob)', vXml) ?>" id="pf_businessJob" style="width: 216px;" />
+                              <select name="pf_acl_businessJob" id="pf_acl_businessJob">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessJob)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1988,7 +2259,13 @@
                               <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessRegNo" value="<?V xpath_eval ('string (/user/businessRegNo)', vXml) ?>" id="pf_businessRegNo" style="width: 220px;" />
+                              <input type="text" name="pf_businessRegNo" value="<?V xpath_eval ('string (/user/businessRegNo)', vXml) ?>" id="pf_businessRegNo" style="width: 216px;" />
+                              <select name="pf_acl_businessRegNo" id="pf_acl_businessRegNo">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessRegNo)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1997,11 +2274,17 @@
                             </th>
                             <td>
                               <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?vsp
                                   items := vector ('Job seeker-Permanent', 'Job seeker-Temporary', 'Job seeker-Temp/perm', 'Employed-Unavailable', 'Employer', 'Agency', 'Resourcing supplier');
                                   foreach (any item in items) do
                                     http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessCareer)', vXml)) then 'selected="selected"' else '' end, item));
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessCareer" id="pf_acl_businessCareer">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessCareer)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                 ?>
                               </select>
                             </td>
@@ -2012,11 +2295,17 @@
                             </th>
                             <td>
                               <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?vsp
                                   items := vector ('1-100', '101-250', '251-500', '501-1000', '>1000');
                                   foreach (any item in items) do
                                     http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessEmployees)', vXml)) then 'selected="selected"' else '' end, item));
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessEmployees" id="pf_acl_businessEmployees">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessEmployees)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                 ?>
                               </select>
                             </td>
@@ -2027,11 +2316,17 @@
                             </th>
                             <td>
                               <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?vsp
                                   items := vector ('Not a Vendor', 'Vendor', 'VAR', 'Consultancy');
                                   foreach (any item in items) do
                                     http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessVendor)', vXml)) then 'selected="selected"' else '' end, item));
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessVendor" id="pf_acl_businessVendor">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessVendor)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                 ?>
                               </select>
                             </td>
@@ -2042,11 +2337,17 @@
                             </th>
                             <td>
                               <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?vsp
                                   items := vector ('Enterprise Data Integration', 'Business Process Management', 'Other');
                                   foreach (any item in items) do
                                     http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessService)', vXml)) then 'selected="selected"' else '' end, item));
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessService" id="pf_acl_businessService">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessService)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
                                 ?>
                               </select>
                             </td>
@@ -2056,7 +2357,13 @@
                               <label for="pf_businessOther">Other Technology service</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessOther" value="<?V xpath_eval ('string (/user/businessOther)', vXml) ?>" id="pf_businessOther" style="width: 220px;" />
+                              <input type="text" name="pf_businessOther" value="<?V xpath_eval ('string (/user/businessOther)', vXml) ?>" id="pf_businessOther" style="width: 216px;" />
+                              <select name="pf_acl_businessOther" id="pf_acl_businessOther">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessOther)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2064,7 +2371,13 @@
                               <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessNetwork" value="<?V xpath_eval ('string (/user/businessNetwork)', vXml) ?>" id="pf_businessNetwork" style="width: 220px;" />
+                              <input type="text" name="pf_businessNetwork" value="<?V xpath_eval ('string (/user/businessNetwork)', vXml) ?>" id="pf_businessNetwork" style="width: 216px;" />
+                              <select name="pf_acl_businessNetwork" id="pf_acl_businessNetwork">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessNetwork)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2073,6 +2386,25 @@
                             </th>
                             <td>
                               <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"><?vsp xpath_eval ('string (/user/businessResume)', vXml); ?></textarea>
+                              <select name="pf_acl_businessResume" id="pf_acl_businessResume">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessResume)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_0">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_0" id="pf_set_1_0" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                         </table>
@@ -2093,6 +2425,12 @@
                                 http (sprintf('<option %s>%s</option>', case when (item = xpath_eval ('string (/user/businessCountry)', vXml)) then 'selected="selected"' else '' end, item));
                             ?>
                           </select>
+                              <select name="pf_acl_businessCountry" id="pf_acl_businessCountry">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessCountry)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2105,6 +2443,12 @@
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_businesscountry", "pf_businessstate", "<?V xpath_eval ('string (/user/businessState)', vXml) ?>");});
                             </script>
                           </span>
+                              <select name="pf_acl_businessState" id="pf_acl_businessState">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessState)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2112,7 +2456,13 @@
                           <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesscity" value="<?V xpath_eval ('string (/user/businessCity)', vXml) ?>" id="pf_businesscity" style="width: 220px;" />
+                              <input type="text" name="pf_businesscity" value="<?V xpath_eval ('string (/user/businessCity)', vXml) ?>" id="pf_businesscity" style="width: 216px;" />
+                              <select name="pf_acl_businessCity" id="pf_acl_businessCity">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessCity)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2120,7 +2470,13 @@
                           <label for="pf_businessCode">Zip/Postal Code</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessCode" value="<?V xpath_eval ('string (/user/businessCode)', vXml) ?>" id="pf_businessCode"  style="width: 220px;" />
+                              <input type="text" name="pf_businessCode" value="<?V xpath_eval ('string (/user/businessCode)', vXml) ?>" id="pf_businessCode"  style="width: 216px;" />
+                              <select name="pf_acl_businessCode" id="pf_acl_businessCode">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessCode)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2128,7 +2484,13 @@
                           <label for="pf_businessAddress1">Address1</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessAddress1" value="<?V xpath_eval ('string (/user/businessAddress1)', vXml) ?>" id="pf_businessAddress1" style="width: 220px;" />
+                              <input type="text" name="pf_businessAddress1" value="<?V xpath_eval ('string (/user/businessAddress1)', vXml) ?>" id="pf_businessAddress1" style="width: 216px;" />
+                              <select name="pf_acl_businessAddress1" id="pf_acl_businessAddress1">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessAddress1)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2136,7 +2498,7 @@
                           <label for="pf_businessAddress2">Address2</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessAddress2" value="<?V xpath_eval ('string (/user/businessAddress2)', vXml) ?>" id="pf_businessAddress2" style="width: 220px;" />
+                              <input type="text" name="pf_businessAddress2" value="<?V xpath_eval ('string (/user/businessAddress2)', vXml) ?>" id="pf_businessAddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -2144,13 +2506,19 @@
                           <label for="pf_businessTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimezone" id="pf_businessTimezone">
+                              <select name="pf_businessTimezone" id="pf_businessTimezone" style="width: 114px;">
                             <?vsp
                               declare N integer;
                               for (N := -12; N <= 12; N := N + 1)
                                 http (sprintf ('<option value="%d" %s>GMT %d:00</option>', N, case when (N = xpath_eval ('string (/user/businessTimezone)', vXml)) then 'selected="selected"' else '' end, N));
                             ?>
                           </select>
+                              <select name="pf_acl_businessTimezone" id="pf_acl_businessTimezone">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessTimezone)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2158,11 +2526,13 @@
                           <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslat" value="<?V xpath_eval ('string (/user/businessLatitude)', vXml) ?>" id="pf_businesslat" />
-                          <label>
-                            <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
-                            Default Map Location
-                          </label>
+                              <input type="text" name="pf_businesslat" value="<?V xpath_eval ('string (/user/businessLatitude)', vXml) ?>" id="pf_businesslat" style="width: 110px;" />
+                              <select name="pf_acl_businessLatitude" id="pf_acl_businessLatitude">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessLatitude)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -2170,7 +2540,11 @@
                           <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslng" value="<?V xpath_eval ('string (/user/businessLongitude)', vXml) ?>" id="pf_businesslng" />
+                              <input type="text" name="pf_businesslng" value="<?V xpath_eval ('string (/user/businessLongitude)', vXml) ?>" id="pf_businesslng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
+                                Default Map Location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -2178,7 +2552,15 @@
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessPhone" value="<?V xpath_eval ('string (/user/businessPhone)', vXml) ?>" id="pf_businessPhone" />
+                              <input type="text" name="pf_businessPhone" value="<?V xpath_eval ('string (/user/businessPhone)', vXml) ?>" id="pf_businessPhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_businessPhoneExt" value="<?V xpath_eval ('string (/user/businessPhoneExt)', vXml) ?>" id="pf_businessPhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_businessPhone" id="pf_acl_businessPhone">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessPhone)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2186,7 +2568,20 @@
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessMobile" value="<?V xpath_eval ('string (/user/businessMobile)', vXml) ?>" id="pf_businessMobile" />
+                              <input type="text" name="pf_businessMobile" value="<?V xpath_eval ('string (/user/businessMobile)', vXml) ?>" id="pf_businessMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_1" id="pf_set_1_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                         </table>
@@ -2231,6 +2626,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessIcq" value="<?V xpath_eval ('string (/user/businessIcq)', vXml) ?>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_businessIcq" id="pf_acl_businessIcq">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessIcq)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2239,6 +2640,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessSkype" value="<?V xpath_eval ('string (/user/businessSkype)', vXml) ?>" id="pf_businessSkype" style="width: 220px;" />
+                              <select name="pf_acl_businessSkype" id="pf_acl_businessSkype">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessSkype)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2247,6 +2654,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessYahoo" value="<?V xpath_eval ('string (/user/businessYahoo)', vXml) ?>" id="pf_businessYahoo" style="width: 220px;" />
+                              <select name="pf_acl_businessYahoo" id="pf_acl_businessYahoo">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessYahoo)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2255,6 +2668,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessAim" value="<?V xpath_eval ('string (/user/businessAim)', vXml) ?>" id="pf_businessAim" style="width: 220px;" />
+                              <select name="pf_acl_businessAim" id="pf_acl_businessAim">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessAim)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2263,6 +2682,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="<?V xpath_eval ('string (/user/businessMsn)', vXml) ?>" id="pf_businessMsn" style="width: 220px;" />
+                              <select name="pf_acl_businessMsn" id="pf_acl_businessMsn">
+                                <?vsp
+                                  for (N := 0; N < length (xAcl); N := N + 2)
+                                    http (sprintf('<option value="%s" %s>%s</option>', xAcl[N+1], case when (xAcl[N+1] = xpath_eval ('string (/acl/businessMsn)', vAcl)) then 'selected="selected"' else '' end, xAcl[N]));
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2273,6 +2698,19 @@
                             <td width="40%">
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_3">Set access for all fields as </label>
+                            </th>
+                            <td colspan="2">
+                              <select name="pf_set_1_3" id="pf_set_1_3" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                           <script type="text/javascript">
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("y2", "<?V replace(cast (xpath_eval ('string (/user/businessMessaging)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
@@ -2300,10 +2738,10 @@
                         </th>
                       </tr>
                       <tr>
-                        <th width="30%" nowrap="nowrap">
+                        <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
@@ -2311,7 +2749,7 @@
                         <th>
                           <label for="pf_newPassword">New Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword" value="" id="pf_newPassword" />
                         </td>
                       </tr>
@@ -2319,14 +2757,14 @@
                         <th>
                           <label for="pf_password">Repeat Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
                         </td>
                       </tr>
@@ -2339,14 +2777,14 @@
                         <th>
                           <label for="pf_openID">OpenID URL</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_openID" value="<?V xpath_eval ('string (/user/securityOpenID)', vXml) ?>" id="pf_openID" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2359,13 +2797,13 @@
                         <th>
                           Saved Facebook ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                         </td>
                       </tr>
                       <tr id="pf_facebook2" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="pf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -2375,7 +2813,7 @@
                       <tr id="pf_facebook3" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
                           <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(33);" />
                         </td>
@@ -2389,7 +2827,7 @@
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
-                        <td id="td_securitySecretQuestion" nowrap="nowrap">
+                        <td id="td_securitySecretQuestion">
                           <script type="text/javascript">
                             function categoryCombo ()
                             {
@@ -2412,14 +2850,14 @@
                         <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySecretAnswer" value="<?V xpath_eval ('string (/user/securitySecretAnswer)', vXml) ?>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
                         </td>
                       </tr>
@@ -2432,14 +2870,14 @@
                         <th>
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySiocLimit" value="<?V xpath_eval ('string (/user/securitySiocLimit)', vXml) ?>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2460,7 +2898,7 @@
                         <th>
                 	    	  Subject
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <?vsp http_value (xpath_eval ('string (/user/certificateSubject)', vXml), 'b'); ?>
                     		</td>
                       </tr>
@@ -2468,7 +2906,7 @@
                         <th>
                 	    	  Agent ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <?vsp http_value (xpath_eval ('string (/user/certificateAgentID)', vXml),'b'); ?>
                     		</td>
                       </tr>
@@ -2479,7 +2917,7 @@
                         <th valign="top">
                           <label for="pf_certificate">Certificate  </label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><?V certificate ?></textarea>
               	          <?vsp
               	            if (not length (certificate) and xenc_key_exists ('id_rsa'))
@@ -2494,8 +2932,8 @@
                         </td>
                       </tr>
                       <tr>
-                        <th />
-                        <td nowrap="nowrap">
+                        <th></th>
+                        <td>
                           <label>
                             <?vsp http (sprintf ('<input type="checkbox" name="pf_certificateLogin" id="pf_certificateLogin" value="1" %s/>', case when certificateLogin = '1' then 'checked="checked"' else '' end)); ?>
                             Enable Automatic WebID Login
@@ -2505,7 +2943,7 @@
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />

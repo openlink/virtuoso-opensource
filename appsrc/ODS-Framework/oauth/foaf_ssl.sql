@@ -72,7 +72,7 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 
   agent := subseq (agent, 4);
 
-  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'foaf+ssl' do
+  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
     {
       connection_set ('SPARQLUserId', VS_UID);
       return 1;
@@ -98,7 +98,7 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       if ('nobody' = uid and allow_nobody = 0)
 	goto err_ret;
       connection_set ('SPARQLUserId', uid);
-      insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'foaf+ssl', uid, now ());
+      insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'FOAF+SSL', uid, now ());
       exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       commit work;
       return 1;
@@ -174,3 +174,69 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
 DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-ssl');
 DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-ssl',
     ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1), auth_fn=>'DB.DBA.FOAF_SSL_AUTH');
+
+create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
+{
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus any;
+  declare agent varchar;
+  declare acc, rc int;
+  acc := 0;
+  rc := 0;
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      goto err_ret;
+    }
+  ;
+
+  info := get_certificate_info (9);
+  fing := get_certificate_info (6);
+  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+
+  if (not isarray (info) or agent is null or agent not like 'URI:%')
+    return 0;
+
+  agent := subseq (agent, 4);
+
+  if (http_acl_get (acl, agent, '*') <> 0)
+    {
+      return 0;
+    }
+
+  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = realm do
+    {
+      return 1;
+    }
+
+  hf := rfc1808_parse_uri (agent);
+  hf[5] := '';
+  gr := uuid ();
+  graph := DB.DBA.vspx_uri_compose (hf);
+  qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
+  stat := '00000';
+  exec (qr, stat, msg);
+  commit work;
+  qr := FOAF_SSL_QR (gr, agent);    
+  stat := '00000';
+  exec (qr, stat, msg, vector (), 0, meta, data);
+  again_check:; 
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
+    {
+      insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, realm, 'nobody', now ());
+      rc := 1;
+      goto err_ret;
+    }
+  else if (acc = 0)
+    {
+      qr := FOAF_SSL_QR_BY_ACCOUNT (gr, agent);
+      stat := '00000';
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      acc := 1;
+      goto again_check;
+    }
+  err_ret:
+  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  commit work;
+  return rc;
+}
+;

@@ -50,7 +50,7 @@ Load9    = Hosting, hosting_php.dll
 
 Note: you should have the users.jsp and users_dsn.jsp (created after installation) file physically located on your machine.
 
-   1. The implementation uses Java version 1.5 (version 5), so you should run the corresponding Virtuoso executive. You need also to have installed Tomcat version 5.5.x.
+   1. The implementation uses Java version 1.5 (version 5), so you should run the corresponding Virtuoso executive. You need also to have installed Tomcat version 5.5.x. Download and install following packages: Commons FileUpload, Commons IO.
    1. The page name is 'users.jsp'.
    1. The Endpoint URL is http://[host]:[port]/jsp/users/users.jsp
    1. Configuration

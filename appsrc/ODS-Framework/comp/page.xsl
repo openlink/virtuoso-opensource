@@ -2195,6 +2195,17 @@ if (i > 0)
               </v:text>
             </td>
           </tr-->
+          <v:template type="simple" enabled="--case when isnull (DB.DBA.VAD_CHECK_VERSION ('pubsubhub')) then 0 else 1 end">
+            <tr>
+              <td>
+                Use PubSubHub Callback
+              </td>
+              <td>
+                <v:check-box name="s_psh_callback" value="1" initial-checked="--(select top 1 coalesce (WS_FEEDS_HUB_CALLBACK, 1) from WA_SETTINGS)" />
+                (<b><v:label format="%s" value="-- ODS..PSH_CALLBACK_LINK ()" /></b>)
+              </td>
+            </tr>
+          </v:template>
         </table>
         <br />
           <v:button name="set2" action="simple" value="Set">
@@ -2244,7 +2255,6 @@ if (i > 0)
                   {
                   insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD) values (self.s_update_period.ufl_value);
                   }
-		--update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
                 update WA_SETTINGS set WS_FEEDS_UPDATE_FREQ = f;
                   if (row_count() = 0)
                   {
@@ -2255,6 +2265,12 @@ if (i > 0)
                 {
                   insert into WA_SETTINGS (WS_STORE_DAYS) values (d);
                   }
+		            --update WA_SETTINGS set WS_FEEDS_HUB = self.s_psh.ufl_value;
+                update WA_SETTINGS set WS_FEEDS_HUB_CALLBACK = self.s_psh_callback.ufl_selected;
+                if (row_count() = 0)
+                {
+                  insert into WA_SETTINGS (WS_FEEDS_HUB_CALLBACK) values (self.s_psh_callback.ufl_selected);
+                }
                 ]]>
               </v:script>
             </v:on-post>

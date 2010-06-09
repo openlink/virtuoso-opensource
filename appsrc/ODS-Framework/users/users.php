@@ -62,6 +62,9 @@
       if ($url['scheme'] == 'https')
         $url['scheme'] = 'ssl';
 
+      elseif ($url['scheme'] == 'http')
+        $url['scheme'] = 'tcp';
+
       $url['query'] = isset($url['query'])? $url['query']: '';
       $url['protocol'] = $url['scheme'] . '://';
 
@@ -373,14 +376,14 @@
                 $_params .= '&homeLatitude=' . urlencode ($_REQUEST['i_homelat']);
               if ($_REQUEST['cb_item_i_homelng'] == '1')
                 $_params .= '&homeLongitude=' . urlencode ($_REQUEST['i_homelng']);
-              if ($_REQUEST['cb_item_i_homelng'] == '1')
+              if ($_REQUEST['cb_item_i_homePhone'] == '1')
                 $_params .= '&homePhone=' . urlencode ($_REQUEST['i_homePhone']);
               if ($_REQUEST['cb_item_i_businessOrganization'] == '1')
                 $_params .= '&businessOrganization=' . urlencode ($_REQUEST['i_businessOrganization']);
               if ($_REQUEST['cb_item_i_businessHomePage'] == '1')
                 $_params .= '&businessHomePage=' . urlencode ($_REQUEST['i_businessHomePage']);
-              if ($_REQUEST['cb_item_i_sumary'] == '1')
-                $_params .= '&sumary=' . urlencode ($_REQUEST['i_sumary']);
+              if ($_REQUEST['cb_item_i_summary'] == '1')
+                $_params .= '&summary=' . urlencode ($_REQUEST['i_summary']);
               if ($_REQUEST['cb_item_i_tags'] == '1')
                 $_params .= '&tags=' . urlencode ($_REQUEST['i_tags']);
               if ($_REQUEST['cb_item_i_sameAs'] == '1')
@@ -406,7 +409,7 @@
                   "&birthday=".               urlencode ($_REQUEST['pf_birthday']).
                   "&homepage=".               urlencode ($_REQUEST['pf_homepage']).
                   "&mailSignature=".          urlencode ($_REQUEST['pf_mailSignature']).
-                  "&sumary=".                 urlencode ($_REQUEST['pf_sumary']).
+                  "&summary=".                urlencode ($_REQUEST['pf_summary']).
                   "&appSetting=".             urlencode ($_REQUEST['pf_appSetting']).
                   "&photo=".                  urlencode ($_REQUEST['pf_photo']).
                   "&audio=".                  urlencode ($_REQUEST['pf_audio']);
@@ -468,6 +471,7 @@
                   "&homeLatitude=".           urlencode ($_REQUEST['pf_homelat']).
                   "&homeLongitude=".          urlencode ($_REQUEST['pf_homelng']).
                   "&homePhone=".              urlencode ($_REQUEST['pf_homePhone']).
+                  "&homePhoneExt=".           urlencode ($_REQUEST['pf_homePhoneExt']).
                   "&homeMobile=".             urlencode ($_REQUEST['pf_homeMobile']);
             }
             if ($_formSubtab == 5)
@@ -521,6 +525,7 @@
                   "&businessLatitude=".       urlencode ($_REQUEST['pf_businesslat']).
                   "&businessLongitude=".      urlencode ($_REQUEST['pf_businesslng']).
                   "&businessPhone=".          urlencode ($_REQUEST['pf_businessPhone']).
+                  "&businessPhoneExt=".       urlencode ($_REQUEST['pf_businessPhoneExt']).
                   "&businessMobile=".         urlencode ($_REQUEST['pf_businessMobile']);
             }
             if ($_formSubtab == 3)
@@ -579,6 +584,21 @@
             $_error = $_xml->failed->message;;
             $_form = "login";
           }
+          $_url = apiURL()."/user.acl.update";
+          $_tmp = "";
+          foreach($_REQUEST as $name => $value)
+          {
+            if (substr_count($name, 'pf_acl_') <> 0)
+              $_tmp = $_tmp . str_replace("pf_acl_", "", $name) . "=" . $value . '&';
+          }
+          $_params = "sid=".$_sid."&realm=".$_realm."&acls=" . urlencode ($_tmp);;
+          $_result = postRequest($_url, $_params);
+          if (substr_count($_result, "<failed>") <> 0)
+          {
+            $_xml = simplexml_load_string($_result);
+            $_error = $_xml->failed->message;;
+            $_form = "login";
+          }
         }
         if (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))
         {
@@ -599,9 +619,11 @@
           }
         }
 
-    if ($_form == "profile")
+    if (($_form == "user") || ($_form == "profile"))
         {
       $_url = sprintf ("%s/user.info?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
+      if ($_form == "profile")
+        $_url .= "&short=0";
       $_result = getRequest ($_url);
       $_xml = simplexml_load_string($_result);
       if (substr_count($_result, "<failed>") <> 0)
@@ -609,11 +631,23 @@
         $_error = $_xml->failed->message;
             $_form = "login";
           }
+      elseif ($_form == "profile")
+      {
+        $_url = sprintf ("%s/user.acl.info?sid=%s&realm=%s", apiURL(), $_sid, $_realm);
+        $_result = getRequest ($_url);
+        $_acl = simplexml_load_string($_result);
+        if (substr_count($_result, "<failed>") <> 0)
+        {
+          $_error = $_xml->failed->message;
+          $_form = "login";
+        }
       else
         {
         $_industries = selectList ('Industry', '');
         $_countries = selectList ('Country', '');
         }
+        $ACL = array ('public', '1', 'friends', '2', 'private', '3');
+      }
       }
 
       if ($_form == "login")
@@ -681,7 +715,7 @@
                     <th width="30%">
                       <label for="lf_uid">Member ID</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="text" name="lf_uid" value="" id="lf_uid" />
                     </td>
                   </tr>
@@ -689,7 +723,7 @@
                     <th>
                       <label for="lf_password">Password</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="password" name="lf_password" value="" id="lf_password" />
                     </td>
                   </tr>
@@ -701,7 +735,7 @@
                         <th width="30%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
                         </td>
                   </tr>
@@ -712,7 +746,7 @@
                   <tr>
                         <th width="30%">
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -754,7 +788,7 @@
                         <th width="30%">
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_uid" value="" id="rf_uid" />
                         </td>
                       </tr>
@@ -762,7 +796,7 @@
                         <th>
                           <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
                         </td>
                       </tr>
@@ -770,7 +804,7 @@
                         <th>
                           <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password" value="" id="rf_password" />
                         </td>
                       </tr>
@@ -778,7 +812,7 @@
                         <th>
                           <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password2" value="" id="rf_password2" />
                         </td>
                       </tr>
@@ -790,7 +824,7 @@
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
                         </td>
                       </tr>
@@ -801,7 +835,7 @@
                       <tr>
                         <th width="30%">
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -820,7 +854,7 @@
                     <tr>
                       <th width="30%">
                       </th>
-                      <td nowrap="nowrap">
+                      <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
                       </td>
                     </tr>
@@ -1047,18 +1081,24 @@
                             </td>
                           </tr>
                           <tr>
-                        <th width="30%" nowrap="nowrap">
+                            <th width="30%">
                           <label for="pf_title">Title</label>
                         </th>
                         <td>
                           <select name="pf_title" id="pf_title">
-                            <option></option>s
+                                <option></option>
                             <?php
                               $X = array ("Mr", "Mrs", "Dr", "Ms");
                               for ($N = 0; $N < count ($X); $N += 1)
                                 print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->title) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
                             ?>
                           </select>
+                              <select name="pf_acl_title" id="pf_acl_title">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->title) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1067,6 +1107,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_firstName" value="<?php print($_xml->firstName); ?>" id="pf_firstName" style="width: 220px;" />
+                              <select name="pf_acl_firstName" id="pf_acl_firstName">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->firstName) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1075,6 +1121,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_lastName" value="<?php print($_xml->lastName); ?>" id="pf_lastName" style="width: 220px;" />
+                              <select name="pf_acl_lastName" id="pf_acl_lastName">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->lastName) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1083,6 +1135,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_fullName" value="<?php print($_xml->fullName); ?>" id="pf_fullName" size="60" />
+                              <select name="pf_acl_fullName" id="pf_acl_fullName">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->fullName) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1091,6 +1149,12 @@
                         </th>
                         <td>
                           <input type="text" name="pf_mail" value="<?php print($_xml->mail); ?>" id="pf_mail" style="width: 220px;" />
+                              <select name="pf_acl_mail" id="pf_acl_mail">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->mail) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1106,6 +1170,12 @@
                                 print sprintf("<option value=\"%s\" %s>%s</option>", strtolower($X[$N]), ((strcmp(strtolower($X[$N]), $_xml->gender) == 0) ? "selected=\"selected\"": ""), $X[$N]);
                             ?>
                           </select>
+                              <select name="pf_acl_gender" id="pf_acl_gender">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->gender) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1114,6 +1184,12 @@
                         </th>
                         <td>
                           <input name="pf_birthday" id="pf_birthday" value="<?php print($_xml->birthday); ?>" onclick="datePopup('pf_birthday');"/>
+                              <select name="pf_acl_birthday" id="pf_acl_birthday">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->birthday) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1122,13 +1198,19 @@
                         </th>
                         <td>
                           <input type="text" name="pf_homepage" value="<?php print($_xml->homepage); ?>" id="pf_homepage" style="width: 220px;" />
+                              <select name="pf_acl_homepage" id="pf_acl_homepage">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homepage) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                             <th>
                               <label for="pf_foaf">Other Personal URIs (Web IDs)</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1151,6 +1233,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
+                                      <?php
+                                        for ($N = 0; $N < count ($ACL); $N += 2)
+                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->webIDs) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1170,13 +1258,19 @@
                         </th>
                         <td>
                               <textarea name="pf_summary" id="pf_summary" style="width: 400px;"><?php print($_xml->summary); ?></textarea>
+                              <select name="pf_acl_summary" id="pf_acl_summary">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->summary) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                               <label for="pf_foaf">Web page URL indicating a topic of interest</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1202,6 +1296,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                      <?php
+                                        for ($N = 0; $N < count ($ACL); $N += 2)
+                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->interests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1211,7 +1311,7 @@
                         <th>
                               <label for="pf_foaf">Resource URI indicating thing of interest</label>
                         </th>
-                            <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1237,6 +1337,12 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                      <?php
+                                        for ($N = 0; $N < count ($ACL); $N += 2)
+                                          print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->topicInterests) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                      ?>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1256,6 +1362,12 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_photo" id="pf_photo" value="<?php print($_xml->photo); ?>" style="width: 400px;" >
+                              <select name="pf_acl_photo" id="pf_acl_photo">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->photo) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1272,6 +1384,12 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_audio" id="pf_audio"value="<?php print($_xml->audio); ?>" style="width: 400px;" >
+                              <select name="pf_acl_audio" id="pf_acl_audio">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->audio) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1288,6 +1406,19 @@
                               </select>
                             </td>
                           </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_1" id="pf_set_0_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 
@@ -1297,7 +1428,7 @@
                         <th width="30%">
                           <label for="pf_homecountry">Country</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
                             <option></option>
                             <?php
@@ -1305,6 +1436,12 @@
                                 print sprintf("<option %s>%s</option>", ((strcmp($_countries[$N], $_xml->homeCountry) == 0) ? "selected=\"selected\"" : ""), $_countries[$N]);
                             ?>
                           </select>
+                              <select name="pf_acl_homeCountry" id="pf_acl_homeCountry">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeCountry) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1317,6 +1454,12 @@
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_homecountry", "pf_homestate", "<?php print($_xml->homeState); ?>");});
                             </script>
                           </span>
+                              <select name="pf_acl_homeState" id="pf_acl_homeState">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeState) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1324,7 +1467,13 @@
                           <label for="pf_homecity">City/Town</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homecity" value="<?php print($_xml->homeCity); ?>" id="pf_homecity" style="width: 220px;" />
+                              <input type="text" name="pf_homecity" value="<?php print($_xml->homeCity); ?>" id="pf_homecity" style="width: 216px;" />
+                              <select name="pf_acl_homeCity" id="pf_acl_homeCity">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeCity) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1332,23 +1481,35 @@
                           <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homecode" value="<?php print($_xml->homeCode); ?>" id="pf_homecode" style="width: 220px;"/>
+                              <input type="text" name="pf_homecode" value="<?php print($_xml->homeCode); ?>" id="pf_homecode" style="width: 216px;"/>
+                              <select name="pf_acl_homeCode" id="pf_acl_homeCode">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeCode) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeaddress1">Address1</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress1" value="<?php print($_xml->homeAddress1); ?>" id="pf_homeaddress1" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeaddress1" value="<?php print($_xml->homeAddress1); ?>" id="pf_homeaddress1" style="width: 216px;" />
+                              <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeAddress1) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeaddress2">Address2</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress2" value="<?php print($_xml->homeAddress2); ?>" id="pf_homeaddress2" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeaddress2" value="<?php print($_xml->homeAddress2); ?>" id="pf_homeaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1356,24 +1517,32 @@
                           <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimezone" id="pf_homeTimezone">
+                              <select name="pf_homeTimezone" id="pf_homeTimezone" style="width: 114px;" >
                             <?php
                               for ($N = -12; $N <= 12; $N += 1)
                                 print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->homeTimezone) ? "selected=\"selected\"" : ""), $N);
                             ?>
                           </select>
+                              <select name="pf_acl_homeTimezone" id="pf_acl_homeTimezone">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeTimezone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homelat">Latitude</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homelat" value="<?php print($_xml->homeLatitude); ?>" id="pf_homelat" />
-                          <label>
-                          <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                            Default Map Location
-                          </label>
+                            <td>
+                              <input type="text" name="pf_homelat" value="<?php print($_xml->homeLatitude); ?>" id="pf_homelat" style="width: 110px;" />
+                              <select name="pf_acl_homeLatitude" id="pf_acl_homeLatitude">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeLatitude) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -1381,7 +1550,11 @@
                           <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelng" value="<?php print($_xml->homeLongitude); ?>" id="pf_homelng" />
+                              <input type="text" name="pf_homelng" value="<?php print($_xml->homeLongitude); ?>" id="pf_homelng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                                Default Map Location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -1389,7 +1562,15 @@
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="<?php print($_xml->homePhone); ?>" id="pf_homePhone" />
+                              <input type="text" name="pf_homePhone" value="<?php print($_xml->homePhone); ?>" id="pf_homePhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_homePhoneExt" value="<?php print($_xml->homePhoneExt); ?>" id="pf_homePhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_homePhone" id="pf_acl_homePhone">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homePhone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1397,7 +1578,20 @@
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="<?php print($_xml->homeMobile); ?>" id="pf_homeMobile" />
+                              <input type="text" name="pf_homeMobile" value="<?php print($_xml->homeMobile); ?>" id="pf_homeMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_2">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                     </table>
@@ -1474,32 +1668,56 @@
                             <th width="30%">
                               <label for="pf_icq">ICQ</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_icq" value="<?php print($_xml->icq); ?>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_icq" id="pf_acl_icq">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->icq) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
                             <th>
                               <label for="pf_skype">Skype</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_skype" value="<?php print($_xml->skype); ?>" id="pf_skype" style="width: 220px;" />
+                              <select name="pf_acl_skype" id="pf_acl_skype">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->skype) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
                             <th>
                               <label for="pf_yahoo">Yahoo</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_yahoo" value="<?php print($_xml->yahoo); ?>" id="pf_yahoo" style="width: 220px;" />
+                              <select name="pf_acl_yahoo" id="pf_acl_yahoo">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->yahoo) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
                             <th>
                               <label for="pf_aim">AIM</label>
                             </th>
-                            <td>
+                            <td colspan="2">
                               <input type="text" name="pf_aim" value="<?php print($_xml->aim); ?>" id="pf_aim" style="width: 220px;" />
+                              <select name="pf_acl_aim" id="pf_acl_aim">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->aim) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1508,6 +1726,12 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_msn" value="<?php print($_xml->msn); ?>" id="pf_msn" style="width: 220px;" />
+                              <select name="pf_acl_msn" id="pf_acl_msn">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->msn) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1516,6 +1740,19 @@
                               <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 220px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                             <td width="40%">
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_5">Set access for all fields as </label>
+                            </th>
+                            <td colspan="2">
+                              <select name="pf_set_0_5" id="pf_set_0_5" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                           <script type="text/javascript">
@@ -1550,7 +1787,7 @@
                                 </tbody>
                               </table>
                             </td>
-                            <td valign="top" nowrap="nowrap">
+                            <td valign="top">
                               <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
@@ -1842,13 +2079,19 @@
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
                         <td>
-                          <select name="pf_businessIndustry" id="pf_businessIndustry">
+                              <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
                             <option></option>
                             <?php
                               for ($N = 1; $N <= count ($_industries); $N += 1)
                                 print sprintf("<option %s>%s</option>", ((strcmp($_industries[$N], $_xml->businessIndustry) == 0) ? "selected=\"selected\"" : ""), $_industries[$N]);
                             ?>
                           </select>
+                              <select name="pf_acl_businessIndustry" id="pf_acl_businessIndustry">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessIndustry) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1856,15 +2099,21 @@
                           <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOrganization" value="<?php print($_xml->businessOrganization); ?>" id="pf_businessOrganization" style="width: 220px;" />
+                              <input type="text" name="pf_businessOrganization" value="<?php print($_xml->businessOrganization); ?>" id="pf_businessOrganization" style="width: 216px;" />
+                              <select name="pf_acl_businessOrganization" id="pf_acl_businessOrganization">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessOrganization) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_businessHomePage" value="<?php print($_xml->businessHomePage); ?>" id="pf_businessNetwork" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_businessHomePage" value="<?php print($_xml->businessHomePage); ?>" id="pf_businessNetwork" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1872,7 +2121,13 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessJob" value="<?php print($_xml->businessJob); ?>" id="pf_businessJob" style="width: 220px;" />
+                              <input type="text" name="pf_businessJob" value="<?php print($_xml->businessJob); ?>" id="pf_businessJob" style="width: 216px;" />
+                              <select name="pf_acl_businessJob" id="pf_acl_businessJob">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessJob) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1880,7 +2135,13 @@
                               <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessRegNo" value="<?php print($_xml->businessRegNo); ?>" id="pf_businessRegNo" style="width: 220px;" />
+                              <input type="text" name="pf_businessRegNo" value="<?php print($_xml->businessRegNo); ?>" id="pf_businessRegNo" style="width: 216px;" />
+                              <select name="pf_acl_businessRegNo" id="pf_acl_businessRegNo">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessRegNo) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1889,11 +2150,17 @@
                             </th>
                             <td>
                               <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?php
                                   $X = array ("Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier");
                                   for ($N = 0; $N < count ($X); $N += 1)
                                     print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessCareer) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessCareer" id="pf_acl_businessCareer">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessCareer) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
                             </td>
@@ -1904,11 +2171,17 @@
                             </th>
                             <td>
                               <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?php
                                   $X = array ("1-100", "101-250", "251-500", "501-1000", ">1000");
                                   for ($N = 0; $N < count ($X); $N += 1)
                                     print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessEmployees) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessEmployees" id="pf_acl_businessEmployees">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessEmployees) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
                             </td>
@@ -1919,11 +2192,17 @@
                             </th>
                             <td>
                               <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?php
                                   $X = array ("Not a Vendor", "Vendor", "VAR", "Consultancy");
                                   for ($N = 0; $N < count ($X); $N += 1)
                                     print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessVendor) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessVendor" id="pf_acl_businessVendor">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessVendor) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
                             </td>
@@ -1934,11 +2213,17 @@
                             </th>
                             <td>
                               <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
-                                <option />
+                                <option></option>
                                 <?php
                                   $X = array ("Enterprise Data Integration", "Business Process Management", "Other");
                                   for ($N = 0; $N < count ($X); $N += 1)
                                     print sprintf("<option %s>%s</option>", ((strcmp($X[$N], $_xml->businessService) == 0) ? "selected=\"selected\"" : ""), $X[$N]);
+                                ?>
+                              </select>
+                              <select name="pf_acl_businessService" id="pf_acl_businessService">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessService) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
                             </td>
@@ -1948,7 +2233,13 @@
                               <label for="pf_businessOther">Other Technology service</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessOther" value="<?php print($_xml->businessOther); ?>" id="pf_businessOther" style="width: 220px;" />
+                              <input type="text" name="pf_businessOther" value="<?php print($_xml->businessOther); ?>" id="pf_businessOther" style="width: 216px;" />
+                              <select name="pf_acl_businessOther" id="pf_acl_businessOther">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessOther) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1956,7 +2247,13 @@
                               <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessNetwork" value="<?php print($_xml->businessNetwork); ?>" id="pf_businessNetwork" style="width: 220px;" />
+                              <input type="text" name="pf_businessNetwork" value="<?php print($_xml->businessNetwork); ?>" id="pf_businessNetwork" style="width: 216px;" />
+                              <select name="pf_acl_businessNetwork" id="pf_acl_businessNetwork">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessNetwork) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1965,6 +2262,25 @@
                             </th>
                             <td>
                               <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"><?php print($_xml->businessResume); ?></textarea>
+                              <select name="pf_acl_businessResume" id="pf_acl_businessResume">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessResume) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_0">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_0" id="pf_set_1_0" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                         </table>
@@ -1984,6 +2300,12 @@
                                 print sprintf("<option %s>%s</option>", ((strcmp($_countries[$N], $_xml->businessCountry) == 0) ? "selected=\"selected\"" : ""), $_countries[$N]);
                             ?>
                           </select>
+                              <select name="pf_acl_businessCountry" id="pf_acl_businessCountry">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessCountry) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1996,6 +2318,12 @@
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_businesscountry", "pf_businessstate", "<?php print($_xml->businessState); ?>");});
                             </script>
                           </span>
+                              <select name="pf_acl_businessState" id="pf_acl_businessState">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessState) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2003,7 +2331,13 @@
                           <label for="pf_businesscity">City/Town</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesscity" value="<?php print($_xml->businessCity); ?>" id="pf_businesscity" style="width: 220px;" />
+                              <input type="text" name="pf_businesscity" value="<?php print($_xml->businessCity); ?>" id="pf_businesscity" style="width: 216px;" />
+                              <select name="pf_acl_businessCity" id="pf_acl_businessCity">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessCity) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2011,7 +2345,13 @@
                           <label for="pf_businesscode">Zip/Postal Code</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesscode" value="<?php print($_xml->businessCode); ?>" id="pf_businesscode" style="width: 220px;" />
+                              <input type="text" name="pf_businesscode" value="<?php print($_xml->businessCode); ?>" id="pf_businesscode" style="width: 216px;" />
+                              <select name="pf_acl_businessCode" id="pf_acl_businessCode">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessCode) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2019,7 +2359,13 @@
                           <label for="pf_businessaddress1">Address1</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress1" value="<?php print($_xml->businessAddress1); ?>" id="pf_businessaddress1" style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress1" value="<?php print($_xml->businessAddress1); ?>" id="pf_businessaddress1" style="width: 216px;" />
+                              <select name="pf_acl_businessAddress1" id="pf_acl_businessAddress1">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessAddress1) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2027,7 +2373,7 @@
                           <label for="pf_businessaddress2">Address2</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessaddress2" value="<?php print($_xml->businessAddress2); ?>" id="pf_businessaddress2" style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress2" value="<?php print($_xml->businessAddress2); ?>" id="pf_businessaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -2035,12 +2381,18 @@
                           <label for="pf_businessTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_businessTimezone" id="pf_businessTimezone" style="width: 220px;">
+                              <select name="pf_businessTimezone" id="pf_businessTimezone" style="width: 114px;">
                             <?php
                               for ($N = -12; $N <= 12; $N += 1)
                                 print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->businessTimezone) ? "selected=\"selected\"": ""), $N);
                             ?>
                           </select>
+                              <select name="pf_acl_businessTimezone" id="pf_acl_businessTimezone">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessTimezone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2048,11 +2400,13 @@
                           <label for="pf_businesslat">Latitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslat" value="<?php print($_xml->businessLatitude); ?>" id="pf_businesslat" />
-                          <label>
-                          <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
-                            Default Map Location
-                          </label>
+                              <input type="text" name="pf_businesslat" value="<?php print($_xml->businessLatitude); ?>" id="pf_businesslat" style="width: 110px;" />
+                              <select name="pf_acl_businessLatitude" id="pf_acl_businessLatitude">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessLatitude) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         <td>
                           </tr>
                       <tr>
@@ -2060,7 +2414,11 @@
                           <label for="pf_businesslng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businesslng" value="<?php print($_xml->businessLongitude); ?>" id="pf_businesslng" />
+                              <input type="text" name="pf_businesslng" value="<?php print($_xml->businessLongitude); ?>" id="pf_businesslng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
+                                Default Map Location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -2068,7 +2426,15 @@
                           <label for="pf_businessPhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessPhone" value="<?php print($_xml->businessPhone); ?>" id="pf_businessPhone" />
+                              <input type="text" name="pf_businessPhone" value="<?php print($_xml->businessPhone); ?>" id="pf_businessPhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_businessPhoneExt" value="<?php print($_xml->businessPhoneExt); ?>" id="pf_businessPhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_businessPhone" id="pf_acl_businessPhone">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessPhone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2076,7 +2442,20 @@
                           <label for="pf_businessMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessMobile" value="<?php print($_xml->businessMobile); ?>" id="pf_businessMobile" />
+                              <input type="text" name="pf_businessMobile" value="<?php print($_xml->businessMobile); ?>" id="pf_businessMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_1" id="pf_set_1_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                         </table>
@@ -2121,6 +2500,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessIcq" value="<?php print($_xml->businessIcq); ?>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_businessIcq" id="pf_acl_businessIcq">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessIcq) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2129,6 +2514,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessSkype" value="<?php print($_xml->businessSkype); ?>" id="pf_businessSkype" style="width: 220px;" />
+                              <select name="pf_acl_businessSkype" id="pf_acl_businessSkype">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessSkype) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2137,6 +2528,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessYahoo" value="<?php print($_xml->businessYahoo); ?>" id="pf_businessYahoo" style="width: 220px;" />
+                              <select name="pf_acl_businessYahoo" id="pf_acl_businessYahoo">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessYahoo) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2145,6 +2542,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessAim" value="<?php print($_xml->businessAim); ?>" id="pf_businessAim" style="width: 220px;" />
+                              <select name="pf_acl_businessAim" id="pf_acl_businessAim">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessAim) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2153,6 +2556,12 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="<?php print($_xml->businessMsn); ?>" id="pf_businessMsn" style="width: 220px;" />
+                              <select name="pf_acl_businessMsn" id="pf_acl_businessMsn">
+                                <?php
+                                  for ($N = 0; $N < count ($ACL); $N += 2)
+                                    print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessMsn) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
+                                ?>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2163,6 +2572,19 @@
                             <td width="40%">
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_3">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_3" id="pf_set_1_3" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                           <script type="text/javascript">
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("y2", '<?php print(str_replace("\n", "\\n", $_xml->businessMessaging)); ?>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
@@ -2190,10 +2612,10 @@
                         </th>
                       </tr>
                       <tr>
-                        <th width="30%" nowrap="nowrap">
+                        <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
@@ -2201,7 +2623,7 @@
                         <th>
                           <label for="pf_newPassword">New Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword" value="" id="pf_newPassword" />
                         </td>
                       </tr>
@@ -2209,14 +2631,14 @@
                         <th>
                           <label for="pf_password">Repeat Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
                         </td>
                       </tr>
@@ -2229,14 +2651,14 @@
                         <th>
                           <label for="pf_openID">OpenID URL</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securityOpenID" value="<?php print($_xml->securityOpenID); ?>" id="pf_securityOpenID" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2249,13 +2671,13 @@
                         <th>
                           Saved Facebook ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                         </td>
                       </tr>
                       <tr id="pf_facebook2" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="pf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -2265,7 +2687,7 @@
                       <tr id="pf_facebook3" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
                           <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
                         </td>
@@ -2279,7 +2701,7 @@
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
-                        <td id="td_securitySecretQuestion" nowrap="nowrap">
+                        <td id="td_securitySecretQuestion">
                           <script type="text/javascript">
                             function categoryCombo ()
                             {
@@ -2302,14 +2724,14 @@
                         <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySecretAnswer" value="<?php print($_xml->securitySecretAnswer); ?>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2322,14 +2744,14 @@
                         <th>
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySiocLimit" value="<?php print($_xml->securitySiocLimit); ?>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2346,7 +2768,7 @@
                         <th>
                 	    	  Subject
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <?php print($_xml->certificateSubject); ?>
                     		</td>
                       </tr>
@@ -2354,7 +2776,7 @@
                         <th>
                 	    	  Agent ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <?php print($_xml->certificateAgentID); ?>
                     		</td>
                       </tr>
@@ -2365,7 +2787,7 @@
                         <th valign="top">
                           <label for="pf_certificate">Certificate</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><?php print($_xml->certificate); ?></textarea>
               	          <?php
               	            if (strlen($_xml->certificate) == 0)
@@ -2380,8 +2802,8 @@
                         </td>
                       </tr>
                       <tr>
-                        <th />
-                        <td nowrap="nowrap">
+                        <th></th>
+                        <td>
                           <label>
                             <?php print (sprintf ("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\" %s/>", ($_xml->certificateLogin == '1')? "checked=\"checked\"": "")); ?>
                             Enable Automatic WebID Login
@@ -2391,7 +2813,7 @@
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />
