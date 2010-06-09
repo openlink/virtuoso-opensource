@@ -106,7 +106,7 @@
 			</rdf:Description>
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}">
 				<rdf:type rdf:resource="&foaf;Person"/>
-				<sioc:creator_of rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}"/>
+				<sioc:creator_of rdf:resource="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}"/>
 			    <xsl:if test="who/@name">
 					<foaf:name><xsl:value-of select="who/@name"/></foaf:name>
 			    </xsl:if>

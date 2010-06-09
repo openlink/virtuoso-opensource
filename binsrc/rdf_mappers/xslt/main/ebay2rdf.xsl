@@ -149,6 +149,13 @@
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
+                <xsl:variable name="brand" 
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value"/>
+					<xsl:variable name="make"
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
+					<xsl:variable name="model"
+						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
+                <xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
                 <gr:hasMakeAndModel>
 				<!-- Xalan
 	            <rdf:Description rdf:about="{concat ($baseUri, '#', 'MakeAndModel')}">
@@ -157,12 +164,6 @@
 	                <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	                <rdf:type rdf:resource="&oplebay;Product"/>
 
-					<xsl:variable name="brand"
-						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value"/>
-					<xsl:variable name="make"
-						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
-					<xsl:variable name="model"
-						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
 					<xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
 		            	<rdfs:comment>
 							<xsl:choose>
@@ -188,6 +189,7 @@
 				    <xsl:apply-templates select="ebay:Item" mode="manufacturer" />
                  </rdf:Description>
                </gr:hasMakeAndModel>
+               </xsl:if>
                <xsl:choose>
 					<!-- Remove
 					<xsl:when test="substring-before(ebay:GetSingleItemResponse/ebay:Item/ebay:PrimaryCategoryName, ':') = 'Books'">
