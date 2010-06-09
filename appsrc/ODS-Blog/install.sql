@@ -510,9 +510,8 @@ create procedure BLOG2_RSS2WML_PP ()
     -- Get the body and calculate md5 over the 1-st item
     rss := http_get_string_output ();
     xt := xml_tree_doc (rss);
-      if (http_path () like '%/rss%.xml')
     xp := xpath_eval ('//item[1]', xt);
-      else
+      if (xp is null)
         xp := xpath_eval ('//entry[1]', xt);	
     ss := string_output ();
     http_value (xp, null, ss);
@@ -3665,7 +3664,8 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
 	}
     }
 
-  ODS..APP_PING (_wai_name, title, home);
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/rss.xml');
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/atom.xml');
 
   -- WA widgets
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
@@ -3770,7 +3770,8 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	    make_dasboard_item ('post', N.B_TS, N.B_TITLE, author, post_iri, '', BI_DASHBOARD, N.B_POST_ID, 'update', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
-  ODS..APP_PING (_wai_name, title, home);
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/rss.xml');
+  ODS..APP_PING (_wai_name, title, home, null, home || 'gems/atom.xml');
 
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {

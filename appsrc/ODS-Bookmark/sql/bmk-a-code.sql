@@ -631,9 +631,11 @@ create procedure BMK.WA.domain_is_public (
 create procedure BMK.WA.domain_ping (
   in domain_id integer)
 {
-	return;
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), BMK.WA.sioc_url (domain_id));
+  {
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), BMK.WA.forum_iri (domain_id), null, BMK.WA.gems_url (domain_id) || 'Bookmark.rss');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), BMK.WA.forum_iri (domain_id), null, BMK.WA.gems_url (domain_id) || 'Bookmark.atom');
+  }
 }
 ;
 
