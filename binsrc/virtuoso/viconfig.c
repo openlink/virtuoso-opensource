@@ -204,6 +204,7 @@ int32 c_null_unspecified_params;
 int32 c_prefix_resultnames;
 int32 c_disable_mt_write;
 int32 c_bad_parent_links;
+extern int32 dbs_check_extent_free_pages;
 #if 0/*obsoleted*/
 int32 c_bad_dtp;
 int32 c_atomic_dive;
@@ -1233,6 +1234,8 @@ cfg_setup (void)
     c_bad_parent_links = 0;
   if (cfg_getlong (pconfig, section, "DuplicateCheckpointRemaps", &cpt_remap_recovery) == -1)
     cpt_remap_recovery = 0;
+  if (cfg_getlong (pconfig, section, "CheckExtentFreePages", &dbs_check_extent_free_pages) == -1)
+    dbs_check_extent_free_pages = 0;
 
 
 #if 0/*obsoleted*/
