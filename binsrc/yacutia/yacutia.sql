@@ -787,6 +787,7 @@ none:
 }
 ;
 
+--/* login */
 create procedure
 y_sql_user_password_check (in name varchar, in pass varchar)
 {

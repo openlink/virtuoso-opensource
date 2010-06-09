@@ -57,6 +57,23 @@
 	    e.ve_params := pars;
 	    params := pars;
 	  }
+	if (is_https_ctx () and __proc_exists ('DB.DBA.FOAF_SSL_AUTH_ACL'))
+	  {
+  	    if (FOAF_SSL_AUTH_ACL ('CONDUCTOR', 'virtuoso_admin'))
+	      {
+	        declare pars, fing any;
+                fing := get_certificate_info (6);
+		sid := vspx_sid_generate ();
+		update VSPX_SESSION set VS_SID = sid, VS_UID = 'dba', VS_STATE = serialize (vector ('vspx_user', 'dba')) 
+			where VS_SID = fing and VS_REALM = 'virtuoso_admin';	
+		commit work;
+		connection_set ('vspx_user', 'dba');
+	        pars := e.ve_params;
+	        pars := vector_concat (pars, vector ('sid', sid, 'realm', 'virtuoso_admin'));
+	        e.ve_params := pars;
+	        params := pars;
+	      }
+	  }
       }
     ]]></v:before-data-bind>
   <v:template name="ifnl" type="if-no-login" redirect="main_tabs.vspx"/>
