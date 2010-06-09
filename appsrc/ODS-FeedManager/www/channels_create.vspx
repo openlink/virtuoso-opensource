@@ -115,6 +115,13 @@
       return retValue;
     ]]>
   </v:method>
+
+  <v:method name="pshCheck" arglist="">
+    <![CDATA[
+      return case when ENEWS.WA.pshCheck () and not isnull (self.v_psh) then 1 else 0 end;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Feed add</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
@@ -123,6 +130,8 @@
       <v:variable name="v_title" type="varchar" default="''"/>
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_folder_name" type="varchar" default="''"/>
+      <v:variable name="v_psh" type="varchar" default="null"/>
+      <v:variable name="v_psh_enabled" type="integer" default="1"/>
       <v:variable name="v_source" type="integer" default="-1" persist="0"/>
       <v:variable name="v_retrieve" type="integer" default="1" persist="0"/>
       <v:variable name="v_mfolder_id" type="varchar" default="null"/>
@@ -135,19 +144,28 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
+          declare params any;
+
+          params := self.vc_page.vc_event.ve_params;
           if ((self.v_source = -1) and (self.v_url <> ''))
             self.v_source := 0;
-          self.v_title := trim(get_keyword('f_title', self.vc_page.vc_event.ve_params));
           if (isnull(self.v_data))
             self.v_data := vector('');
+          self.v_title := trim(get_keyword ('f_title', params));
           if (isnull(self.v_title) and length(self.v_data) > 1)
             self.v_title := get_keyword('title', self.v_data[1], '');
-          self.v_folder_id := trim(get_keyword('f_folder_id', self.vc_page.vc_event.ve_params, '0'));
-          self.v_folder_name := trim(get_keyword('f_folder_name', self.vc_page.vc_event.ve_params, ''));
+          self.v_psh := null;
+          if (length(self.v_data) > 1)
+            self.v_psh := get_keyword ('psh', self.v_data[1]);
+          self.v_psh_enabled := atoi (get_keyword ('f_psh_enabled', params, '1'));
+          if (not self.pshCheck())
+            self.v_psh_enabled := 0;
+          self.v_folder_id := trim(get_keyword ('f_folder_id', params, '0'));
+          self.v_folder_name := trim(get_keyword ('f_folder_name', params, ''));
           if (self.v_source = 3)
           {
             declare N integer;
-            N := cast(get_keyword('directory', self.vc_page.vc_event.ve_params, '-1') as integer);
+            N := cast (get_keyword ('directory', params, '-1') as integer);
             if (N <> -1)
               self.v_directory_id := N;
           }
@@ -791,9 +809,12 @@
 
             l := length(self.v_data);
             for (i := 1; i < l; i := i + 1)
-              for (j := 0; j < length(self.v_data[i]); j := j + 2)
+            {
+              n := length(self.v_data[i]);
+              for (j := 0; j < n; j := j + 2)
                 if (isstring(self.v_data[i][j+1]))
                   http(sprintf('<input type="hidden" name="$_%s_%d" value="%s"/>', self.v_data[i][j], i, coalesce(self.v_data[i][j+1], '')));
+            }
           ?>
           <table cellspacing="0">
             <tr>
@@ -813,6 +834,31 @@
                 <v:data-list name="f_folder_id" value="--self.v_folder_id" sql="select 0 as EFO_ID, 'Select folder ...' as EFO_PATH2, '' as EFO_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select EFO_ID, ENEWS.WA.folder_path2(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH2, ENEWS.WA.folder_path(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = self.domain_id order by EFO_PATH" key-column="EFO_ID" value-column="EFO_PATH2" xhtml_class="select"/>
               </td>
             </tr>
+            <v:template type="simple" enabled="--self.pshCheck()">
+              <tr>
+                <th>
+                  PubSubHub Server
+                </th>
+                <td>
+                  <v:label value="--self.v_psh"/>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <v:label for="f_psh_enabled" value="PubSubHub Enable"/>
+                </th>
+                <td>
+                  <v:check-box name="f_psh_enabled" is-boolean="1" true-value="1" false-value="0" value="--self.v_psh_enabled">
+                 	  <v:after-data-bind>
+                 		  <![CDATA[
+                 		    if (not ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id))
+                          control.vc_add_attribute ('disabled', 'disabled');
+            			    ]]>
+            			  </v:after-data-bind>
+                  </v:check-box>
+                </td>
+              </tr>
+            </v:template>
           </table>
         </div>
         <div class="new-form-footer">
@@ -840,6 +886,8 @@
                     data := vector_concat(data, vector(S, params[i+1]));
                   }
 
+                self.v_psh_enabled := atoi (get_keyword ('f_psh_enabled', params, '0'));
+                data := vector_concat (data, vector ('psh_enabled', self.v_psh_enabled));
                 feed_id := ENEWS.WA.channel_create(data);
 
                 self.f_folder_name.ufl_value := trim(self.f_folder_name.ufl_value);

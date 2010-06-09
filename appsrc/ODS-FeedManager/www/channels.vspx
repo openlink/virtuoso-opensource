@@ -60,6 +60,13 @@
       self.c_order := columnName;
     ]]>
   </v:method>
+
+  <v:method name="pshCheck" arglist="">
+    <![CDATA[
+      return case when ENEWS.WA.pshCheck () and not isnull (self.v_psh) then 1 else 0 end;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Feeds</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -83,9 +90,11 @@
       <v:variable name="v_folder_id" type="varchar" default="'0'"/>
       <v:variable name="v_directory_name" type="varchar" default="''"/>
       <v:variable name="v_directory_id" type="varchar" default="'0'"/>
+      <v:variable name="v_psh" type="varchar" default="null"/>
+      <v:variable name="v_psh_enabled" type="integer" default="1"/>
     </vm:variables>
     <vm:pagebody>
-      <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
+      <v:template name="t1" type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
           <div style="padding: 0 0 0.5em 0;">
         <v:button action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
               <v:on-post>
@@ -208,7 +217,7 @@
 
           <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
             <table>
-              <v:template type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
+              <v:template name="t2" type="simple" enabled="--case when self.ds.ds_rows_fetched > 0 then 1 else 0 end;">
                 <tr class="td_border">
                   <td align="right" colspan="4" class="td_border">
                     <b>Selected&amp;nbsp;</b>
@@ -329,7 +338,7 @@
           ]]>
         </script>
       </v:template>
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'update'), 1, 0)">
+      <v:template name="t3" type="simple" enabled="--either(equ(self.v_mode, 'update'), 1, 0)">
         <v:before-data-bind>
           <![CDATA[
             declare exit handler for not found goto _end;
@@ -344,6 +353,8 @@
                       b.EF_UPDATE_PERIOD,
                       b.EF_UPDATE_FREQ,
                       b.EF_STORE_DAYS,
+                      b.EF_PSH_SERVER,
+                      b.EF_PSH_ENABLED,
                       a.EFD_TITLE,
                       a.EFD_TAGS,
                       a.EFD_FOLDER_ID,
@@ -354,6 +365,8 @@
                       self.v_update_period,
                       self.v_update_frequency,
                       self.v_store_days,
+                      self.v_psh,
+                      self.v_psh_enabled,
                       self.v_title,
                       self.v_tags,
                       self.v_folder_id,
@@ -372,6 +385,7 @@
             self.v_update_period := get_keyword('f_update_period', params, 'daily');
             self.v_update_frequency := get_keyword('f_update_frequency', params, '4');
             self.v_store_days := get_keyword('f_store_days', params, '');
+            self.v_psh_enabled := get_keyword('f_psh_enabled', params, '0');
             self.v_tags := get_keyword('f_tags', params, '');
             self.v_folder_id := get_keyword('f_folder_id', params, '');
             self.v_folder_name := get_keyword('f_folder_name', params, '');
@@ -408,7 +422,32 @@
                 <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
               </td>
             </tr>
-            <v:template type="simple" enabled="--case when (ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id) = 1) then 1 else 0 end">
+            <v:template name="t4" type="simple" enabled="--self.pshCheck()">
+              <tr>
+                <th>
+                  PubSubHub Server
+                </th>
+                <td>
+                  <v:label value="--self.v_psh"/>
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  <v:label for="f_psh_enabled" value="PubSubHub Enable"/>
+                </th>
+                <td>
+                  <v:check-box name="f_psh_enabled" is-boolean="1" true-value="1" false-value="0" value="--self.v_psh_enabled">
+                 	  <v:after-data-bind>
+                 		  <![CDATA[
+                 		    if (not ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id))
+                          control.vc_add_attribute ('disabled', 'disabled');
+            			    ]]>
+            			  </v:after-data-bind>
+                  </v:check-box>
+                </td>
+              </tr>
+            </v:template>
+            <v:template name="t5" type="simple" enabled="--case when (ENEWS.WA.check_feeds_grants (self.domain_id, self.account_id) = 1) then 1 else 0 end">
               <tr>
                 <th>
                   <v:label for="f_update_period" value="Update period"/>
@@ -466,7 +505,7 @@
                 <v:data-list name="f_folder_id" value="--self.v_folder_id" sql="select 0 as EFO_ID, 'Select folder ...' as EFO_PATH2, '' as EFO_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select EFO_ID, ENEWS.WA.folder_path2(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH2, ENEWS.WA.folder_path(EFO_DOMAIN_ID, EFO_ID) as EFO_PATH from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = self.domain_id order by EFO_PATH" key-column="EFO_ID" value-column="EFO_PATH2" xhtml_class="select"/>
               </td>
             </tr>
-            <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
+            <v:template name="t6" type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
               <tr>
                 <th>
                   <v:label for="f_directory_name" value="Feed directory"/>
@@ -553,6 +592,11 @@
                          EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value),
                          EF_STORE_DAYS = atoi(self.f_store_days.ufl_value)
                    where EF_ID = self.v_feed_id;
+
+                  -- PubSubHub
+                  self.v_psh_enabled := self.f_psh_enabled.ufl_selected;
+                  ENEWS.WA.channel_psh_unsubscribe (self.v_feed_id, self.v_psh, self.v_psh_enabled);
+                  ENEWS.WA.channel_psh_subscribe (self.v_feed_id, self.v_psh, self.v_psh_enabled);
                 }
 
                 -- domain

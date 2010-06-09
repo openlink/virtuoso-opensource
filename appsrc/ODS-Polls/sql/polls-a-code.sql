@@ -796,8 +796,10 @@ create procedure POLLS.WA.domain_is_public (
 create procedure POLLS.WA.domain_ping (
   in domain_id integer)
 {
-  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), POLLS.WA.sioc_url (domain_id));
+  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
+  {
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), POLLS.WA.forum_iri (domain_id), null, POLLS.WA.gems_url (domain_id) || 'Polls.rss');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), POLLS.WA.forum_iri (domain_id), null, POLLS.WA.gems_url (domain_id) || 'Polls.atom');
   }
 }
 ;

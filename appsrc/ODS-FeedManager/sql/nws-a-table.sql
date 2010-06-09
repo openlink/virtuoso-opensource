@@ -40,6 +40,9 @@ ENEWS.WA.exec_no_error('
     EF_UPDATE_PERIOD varchar default \'hourly\',
     EF_UPDATE_FREQ integer default 1,
     EF_STORE_DAYS integer default 30,
+    EF_PSH_SERVER varchar,
+    EF_PSH_ENABLED integer default 0,
+    EF_PSH_TOKEN varchar,
     EF_TAG varchar,
     EF_LAST_UPDATE datetime,
     EF_QUEUE_FLAG integer,
@@ -69,6 +72,19 @@ ENEWS.WA.exec_no_error (
 ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED add EF_IMAGE_URI varchar', 'C', 'ENEWS.WA.FEED', 'EF_IMAGE_URI'
 );
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_SERVER varchar', 'C', 'ENEWS.WA.FEED', 'EF_PSH_SERVER'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_ENABLED integer default 0', 'C', 'ENEWS.WA.FEED', 'EF_PSH_ENABLED'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_PSH_TOKEN varchar', 'C', 'ENEWS.WA.FEED', 'EF_PSH_TOKEN'
+);
+
 
 ENEWS.WA.exec_no_error('
   create trigger FEED_INSERT AFTER INSERT ON ENEWS.WA.FEED referencing new as N {

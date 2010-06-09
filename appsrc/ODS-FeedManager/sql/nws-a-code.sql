@@ -717,7 +717,8 @@ create procedure ENEWS.WA.domain_ping (
 {
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
   {
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), ENEWS.WA.sioc_url (domain_id));
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), ENEWS.WA.forum_iri (domain_id), null, ENEWS.WA.gems_url (domain_id) || 'OFM.rss');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), ENEWS.WA.forum_iri (domain_id), null, ENEWS.WA.gems_url (domain_id) || 'OFM.atom');
   }
 }
 ;
@@ -928,7 +929,8 @@ create procedure ENEWS.WA.feeds_agregator (
                                       EF_TAG
                                  from ENEWS.WA.FEED
                                 where (EF_LAST_UPDATE is null or dateadd('minute', u, EF_LAST_UPDATE) < dt)
-                                  and EF_ERROR_LOG is null;
+                                  and EF_ERROR_LOG is null
+                                  and EF_PSH_TOKEN is null;
 
   if (rs)
     result_names(uri, rc);
@@ -996,7 +998,8 @@ create procedure ENEWS.WA.feeds_domain_agregator (
          from ENEWS.WA.FEED,
               ENEWS.WA.FEED_DOMAIN
         where EFD_FEED_ID = EF_ID
-          and EFD_DOMAIN_ID = domain_id) do {
+          and EFD_DOMAIN_ID = domain_id
+          and EF_PSH_TOKEN is null) do {
     id := EF_ID;
     uri := EF_URI;
     days := EF_STORE_DAYS;
@@ -1026,7 +1029,8 @@ create procedure ENEWS.WA.feeds_queue_add (
         where EFD_FEED_ID = EF_ID
           and coalesce(EF_QUEUE_FLAG, 0) = 0
           and (EF_LAST_UPDATE is null or dateadd('minute', 1, EF_LAST_UPDATE) < now())
-          and EFD_DOMAIN_ID = domain_id)
+          and EFD_DOMAIN_ID = domain_id
+          and EF_PSH_TOKEN is null)
   do {
     update ENEWS.WA.FEED
        set EF_QUEUE_FLAG = 1
@@ -1252,9 +1256,8 @@ again:
     rows := ENEWS.WA.exec_sparql (sql, 1);
         L := length (rows);
         foreach (any row in rows) do
-    {
       ENEWS.WA.process_sioc_item (graph, row[1], id);
-    }
+
     ENEWS.WA.graph_clear (graph);
   }
   return L;
@@ -1263,7 +1266,9 @@ again:
 
 -------------------------------------------------------------------------------
 -- /* callback */
-create procedure ENEWS.WA.feed_callback (in url varchar, in content varchar) 
+create procedure ENEWS.WA.feed_callback (
+  in url varchar,
+  in content varchar)
 {
   declare xt any;
   declare items any;
@@ -1518,6 +1523,7 @@ create procedure ENEWS.WA.process_authorEMail(
 create procedure ENEWS.WA.channel_retrieve (
   inout uri varchar,
   inout content any,
+  inout resHdr varchar,
   in uriType integer := 0,
   in reqType varchar := '',
   in auth_uid varchar := null,
@@ -1535,7 +1541,7 @@ create procedure ENEWS.WA.channel_retrieve (
     content := DB.DBA.XML_URI_GET (uri, '');
   } else {
     declare N integer;
-    declare oldUri, newUri, reqHdr, resHdr varchar;
+    declare oldUri, newUri, reqHdr varchar;
 
     N := 0;
     newUri := uri;
@@ -1608,13 +1614,13 @@ create procedure ENEWS.WA.channels_uri (
   in auth_uid varchar := null,
   in auth_pwd varchar := null)
 {
-  declare xt, channel any;
+  declare xt, header, channel any;
 
   channel := ENEWS.WA.channel_select (uri);
   if (length(channel))
     return vector_concat (vector ('channel'), vector(channel));
-  if (ENEWS.WA.channel_retrieve (uri, xt, type, '', auth_uid, auth_pwd) = '')
-    return ENEWS.WA.channels_get(uri, xt);
+  if (ENEWS.WA.channel_retrieve (uri, xt, header, type, '', auth_uid, auth_pwd) = '')
+    return ENEWS.WA.channels_get (uri, xt, header);
   return vector ();
 }
 ;
@@ -1637,7 +1643,8 @@ create procedure ENEWS.WA.channels_content (
 --
 create procedure ENEWS.WA.channels_get (
   in uri varchar,
-  inout xt any) returns any
+  inout xt any,
+  in header any := null) returns any
 {
   declare N, L int;
   declare title, home, email, rss, format, lang any;
@@ -1688,7 +1695,7 @@ create procedure ENEWS.WA.channels_get (
     -- RSS or Atom feed
     declare channel any;
 
-    channel := ENEWS.WA.channel_get (uri, xt);
+    channel := ENEWS.WA.channel_get (uri, xt, header);
     if (length (channel))
     {
       vectorbld_acc (channels, 'channel');
@@ -1829,9 +1836,10 @@ create procedure ENEWS.WA.channels_opml (
 --
 create procedure ENEWS.WA.channel_get (
   inout uri varchar,
-  inout xt any) returns any
+  inout xt any,
+  in header varchar := null) returns any
 {
-  declare title, home, format, version, lang, css, data, tmp, channel any;
+  declare title, home, format, version, lang, css, psh, data, tmp, channel any;
 
   channel := vector ();
   data := null;
@@ -1841,12 +1849,13 @@ create procedure ENEWS.WA.channel_get (
   {
     -- RSS feed
     css := ENEWS.WA.channel_css(xt);
+    psh := ENEWS.WA.channel_psh(xt, header);
     xt := xml_cut (xpath_eval ('/rss/channel[1]|/RDF/channel[1]', xt, 1));
     title := serialize_to_UTF8_xml(xpath_eval ('string(/channel/title/text())', xt, 1));
     home := cast (xpath_eval ('/channel/link/text()', xt, 1) as varchar);
     format := 'http://my.netscape.com/rdf/simple/0.9/';
     lang := cast (xpath_eval ('/channel/language/text()', xt, 1) as varchar);
-    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'data', data);
+    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'psh', psh, 'data', data);
 
     tmp := cast (xpath_eval ('/channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
@@ -1856,12 +1865,13 @@ create procedure ENEWS.WA.channel_get (
   {
     -- RSS feed v1.1
     css := ENEWS.WA.channel_css(xt);
+    psh := ENEWS.WA.channel_psh(xt, header);
     xt := xml_cut (xpath_eval ('/Channel[1]', xt, 1));
     title := serialize_to_UTF8_xml(xpath_eval ('string(/Channel/title/text())', xt, 1));
     home := cast (xpath_eval ('/Channel/link/text()', xt, 1) as varchar);
     format := 'http://purl.org/net/rss1.1#';
     lang := cast (xpath_eval ('/Channel/language/text()', xt, 1) as varchar);
-    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'data', data);
+    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'psh', psh, 'data', data);
 
     tmp := cast (xpath_eval ('/Channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
@@ -1871,6 +1881,7 @@ create procedure ENEWS.WA.channel_get (
   {
     -- Atom feed
     css := ENEWS.WA.channel_css(xt);
+    psh := ENEWS.WA.channel_psh(xt, header);
     xt := xml_cut (xpath_eval ('/feed[1]', xt, 1));
     title := serialize_to_UTF8_xml(xpath_eval ('string(/feed/title/text()|/feed/author/name/text())', xt, 1));
     home := cast (xpath_eval ('/feed/link[@rel="service.post" and @type="application/atom+xml"]/@href', xt) as varchar);
@@ -1884,7 +1895,7 @@ create procedure ENEWS.WA.channel_get (
       format := 'http://purl.org/atom/ns#';
     }
     lang := cast (xpath_eval ('/feed/@lang', xt, 1) as varchar);
-    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'data', data);
+    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'psh', psh, 'data', data);
 
     tmp := cast (xpath_eval ('/Channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
@@ -1918,12 +1929,37 @@ create procedure ENEWS.WA.channel_css(
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.channel_psh (
+  inout xt any,
+  inout header varchar) returns any
+{
+  declare psh, link varchar;
+  declare parts any;
+
+  -- dbg_obj_print('', xt);
+  psh := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" ] /rss/channel/atom:link[@rel="hub" and @title="PubSubHub"]/@href|/atom:feed/atom:link[@rel="hub" and @title="PubSubHub"]/@href', xt, 1) as varchar);
+  if (isnull (psh))
+  {
+    link := http_request_header (header, 'Link');
+    if (isstring (link))
+    {
+      parts := split_and_decode (link, 0, '\0\0;=');
+      if ((trim (get_keyword ('rel', parts), '"') = 'hub') and (trim (get_keyword ('title', parts), '"') = 'PubSubHub'))
+        psh := rtrim (ltrim (parts[0], '<'), '>');
+    }
+  }
+  return psh;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.channel_create(
   inout channel any)
 {
   declare id, iconsId integer;
   declare uri, iconUri varchar;
-  declare iconContent, iconContent2 any;
+  declare tmp, iconContent, iconContent2 any;
 
   uri := get_keyword('rss', channel);
   id := (select EF_ID from ENEWS.WA.FEED where EF_URI = uri);
@@ -1947,15 +1983,15 @@ create procedure ENEWS.WA.channel_create(
       if (not isnull (tmp))
       {
       declare exit handler for sqlstate '*' { iconContent := null; goto _skip; };
-      declare content, retCode any;
+        declare header, content, retCode any;
 
       tmp := WS.WS.parse_uri (tmp);
       tmp := tmp[0] || '://' || tmp[1];
       iconUri := trim(tmp, '/') || '/favicon.ico';
-      retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, 0, 'image/%');
+        retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, header, 0, 'image/%');
         if (retCode <> '')
         {
-        retCode := ENEWS.WA.channel_retrieve (tmp, content);
+          retCode := ENEWS.WA.channel_retrieve (tmp, content, header);
           if (retCode = '')
           {
           if (not isnull (xpath_eval ('/html', content, 1)))
@@ -1964,7 +2000,7 @@ create procedure ENEWS.WA.channel_create(
             {
             if (iconUri not like 'http://%')
               iconUri := concat(trim(tmp, '/'), '/', ltrim(iconUri, '/'));
-            retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, 0, 'image/%');
+              retCode := ENEWS.WA.channel_retrieve (iconUri, iconContent, header, 0, 'image/%');
           }
         }
       }
@@ -1988,7 +2024,8 @@ create procedure ENEWS.WA.channel_create(
             EF_UPDATE_FREQ,
             EF_IMAGE_URI
            )
-    values (
+    values
+      (
             uri,
             get_keyword('title', channel, ''),
             get_keyword('home', channel, ''),
@@ -2005,7 +2042,15 @@ create procedure ENEWS.WA.channel_create(
   }
   if (isnull (id))
   {
+    declare psh, psh_enabled any;
+
     id := (select EF_ID from ENEWS.WA.FEED where EF_URI = uri);
+
+    psh := get_keyword ('psh', channel);
+    psh_enabled := cast (get_keyword ('psh_enabled', channel, '0') as integer);
+    ENEWS.WA.channel_psh_unsubscribe (id, psh, psh_enabled);
+    ENEWS.WA.channel_psh_subscribe (id, psh, psh_enabled);
+
     if (not isnull (iconContent))
     {
       declare exit handler for SQLSTATE '*'
@@ -2038,6 +2083,83 @@ _end:
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.channel_psh_unsubscribe (
+  in id integer,
+  in psh varchar := '',
+  in psh_enabled integer := 0)
+{
+  declare _uri, _psh, _psh_enabled, _psh_token any;
+  declare pshUri, pshReqHdr, pshResHdr any;
+
+  select EF_URI, EF_PSH_SERVER, EF_PSH_ENABLED, EF_PSH_TOKEN into _uri, _psh, _psh_enabled, _psh_token from ENEWS.WA.FEED where EF_ID = id;
+  if (not isnull (_psh_token) and (((psh <> _psh) and (_psh_enabled = 1)) or (psh_enabled = 0)))
+  {
+    -- unsubscribe
+    PSH..cli_subscribe ('dba', 'unsubscribe', _uri, 'feed', null, _psh_token);
+    pshUri := sprintf ('%s?hub.callback=%U&hub.mode=unsubscribe&hub.topic=%U&hub.verify=sync&hub.verify_token=%U',
+                       ODS..PSH_SUBSCRIBE_LINK (),
+                       ODS..PSH_CALLBACK_LINK (),
+                       _uri,
+                       _psh_token);
+    pshReqHdr := null;
+    commit work;
+    http_client_ext (url=>pshUri,
+                     http_method=>'GET',
+                     http_headers=>pshReqHdr,
+                     headers=>pshResHdr);
+    if (pshResHdr[0] not like 'HTTP/1._ 20%')
+      return null;
+
+    update ENEWS.WA.FEED
+       set EF_PSH_TOKEN = null,
+           EF_PSH_ENABLED = psh_enabled
+     where EF_ID = id;
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.channel_psh_subscribe (
+  in id integer,
+  in psh varchar,
+  in psh_enabled integer)
+{
+  declare _uri, _psh, _psh_enabled, _psh_token any;
+  declare pshUri, pshReqHdr, pshResHdr any;
+
+  select EF_URI, EF_PSH_SERVER, EF_PSH_ENABLED, EF_PSH_TOKEN into _uri, _psh, _psh_enabled, _psh_token from ENEWS.WA.FEED where EF_ID = id;
+  if (isnull (_psh_token) and (psh_enabled = 1))
+  {
+    -- subscribe
+    _psh_token := md5 (uuid ());
+    PSH..cli_subscribe ('dba', 'subscribe', _uri, 'feed', null, _psh_token);
+    pshUri := sprintf ('%s?hub.callback=%U&hub.mode=subscribe&hub.topic=%U&hub.verify=sync&hub.verify_token=%U',
+                       ODS..PSH_SUBSCRIBE_LINK (),
+                       ODS..PSH_CALLBACK_LINK (),
+                       _uri,
+                       _psh_token);
+    pshReqHdr := null;
+    commit work;
+    http_client_ext (url=>pshUri,
+                     http_method=>'GET',
+                     http_headers=>pshReqHdr,
+                     headers=>pshResHdr);
+    -- dbg_obj_print('', pshResHdr);
+    if (pshResHdr[0] not like 'HTTP/1._ 20%')
+      return null;
+
+    update ENEWS.WA.FEED
+       set EF_PSH_SERVER = psh,
+           EF_PSH_ENABLED = psh_enabled,
+           EF_PSH_TOKEN = _psh_token
+     where EF_ID = id;
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.channel_select(
   inout feed_uri varchar)
 {
@@ -2053,10 +2175,29 @@ create procedure ENEWS.WA.channel_select(
               EF_UPDATE_FREQ,
               EF_STORE_DAYS,
               EF_LANG,
-              EF_IMAGE_URI
+              EF_IMAGE_URI,
+              EF_PSH_ENABLED,
+              EF_PSH_SERVER
          from ENEWS.WA.FEED
         where EF_URI = feed_uri) do
-    return vector ('type', 'long', 'id', EF_ID, 'title', EF_TITLE, 'home', EF_HOME_URI, 'rss', feed_uri, 'source', EF_SOURCE_URI, 'description', EF_DESCRIPTION, 'copyright', EF_COPYRIGHT, 'css', EF_CSS, 'format', EF_FORMAT, 'lang', EF_LANG, 'updatePeriod', EF_UPDATE_PERIOD, 'updateFrequency', EF_UPDATE_FREQ, 'imageUrl', EF_IMAGE_URI);
+    return vector (
+                   'type', 'long',
+                   'id', EF_ID,
+                   'title', EF_TITLE,
+                   'home', EF_HOME_URI,
+                   'rss', feed_uri,
+                   'source', EF_SOURCE_URI,
+                   'description', EF_DESCRIPTION,
+                   'copyright', EF_COPYRIGHT,
+                   'css', EF_CSS,
+                   'format', EF_FORMAT,
+                   'lang', EF_LANG,
+                   'updatePeriod', EF_UPDATE_PERIOD,
+                   'updateFrequency', EF_UPDATE_FREQ,
+                   'imageUrl', EF_IMAGE_URI,
+                   'psh', EF_PSH_SERVER,
+                   'psh_enabled', EF_PSH_ENABLED
+                  );
   return vector();
 }
 ;
@@ -2079,9 +2220,12 @@ create procedure ENEWS.WA.channel_delete(
   if (exists (select 1 from ENEWS.WA.FEED_DIRECTORY where EFD_FEED_ID = feed_id))
     return;
 
-      declare exit handler for SQLSTATE '*' { return; };
+  if (not exists (select 1 from ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = feed_id))
+  {
+    ENEWS.WA.channel_psh_unsubscribe (feed_id);
       delete from ENEWS.WA.FEED where EF_ID = feed_id;
     }
+}
 ;
 
 -------------------------------------------------------------------------------
@@ -7262,5 +7406,13 @@ create procedure ENEWS.WA.json2obj (
   in o any)
 {
   return json_parse (o);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.pshCheck ()
+{
+  return case when isnull (DB.DBA.VAD_CHECK_VERSION ('pubsubhub')) or ((select top 1 coalesce (WS_FEEDS_HUB_CALLBACK, 1) from DB.DBA.WA_SETTINGS) = 0) then 0 else 1 end;
 }
 ;
