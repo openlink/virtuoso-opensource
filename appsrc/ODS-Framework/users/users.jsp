@@ -75,6 +75,8 @@
   <%!
     XPathFactory factory = XPathFactory.newInstance();
     XPath xpath = factory.newXPath();
+    Document $_acl = null;
+    String[] $_ACL = {"public", "1", "friends", "2", "private", "3"};
 
     Document createDocument (String S)
     {
@@ -194,6 +196,14 @@
       return xpath.evaluate(xpathString, doc);
     }
 
+    void outACLOptions (javax.servlet.jsp.JspWriter out, String xpathString)
+      throws IOException, XPathExpressionException
+    {
+      String S = xpathEvaluate($_acl, xpathString);
+      for (int N = 0; N < $_ACL.length; N += 2)
+        out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
+    }
+
     void outFormTitle (javax.servlet.jsp.JspWriter out, String formName)
       throws IOException
     {
@@ -243,9 +253,9 @@
     {
       if (ServletFileUpload.isMultipartContent(req)) {
         // Process the uploaded items
-        Iterator iter = items.iterator();
-        while (iter.hasNext()) {
-          FileItem item = (FileItem) iter.next();
+        Iterator iterator = items.iterator();
+        while (iterator.hasNext()) {
+          FileItem item = (FileItem) iterator.next();
 
           if (param.equals(item.getFieldName()))
             if (item.isFormField()) {
@@ -491,14 +501,14 @@
                     params += httpParam ("&", "homeLatitude", getParameter(items, request, "i_homelat"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_homelng")))
                     params += httpParam ("&", "homeLongitude", getParameter(items, request, "i_homelng"));
-                  if ("1".equals(getParameter(items, request, "cb_item_i_homelng")))
+                  if ("1".equals(getParameter(items, request, "cb_item_i_homePhone")))
                     params += httpParam ("&", "homePhone", getParameter(items, request, "i_homePhone"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_businessOrganization")))
                     params += httpParam ("&", "businessOrganization", getParameter(items, request, "i_businessOrganization"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_businessHomePage")))
                     params += httpParam ("&", "businessHomePage", getParameter(items, request, "i_businessHomePage"));
-                  if ("1".equals(getParameter(items, request, "cb_item_i_sumary")))
-                    params += httpParam ("&", "sumary", getParameter(items, request, "i_sumary"));
+                  if ("1".equals(getParameter(items, request, "cb_item_i_summary")))
+                    params += httpParam ("&", "summary", getParameter(items, request, "i_summary"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_tags")))
                     params += httpParam ("&", "tags", getParameter(items, request, "i_tags"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_sameAs")))
@@ -523,7 +533,7 @@
                        httpParam ("&", "birthday"              , getParameter(items, request, "pf_birthday")) +
                        httpParam ("&", "homepage"              , getParameter(items, request, "pf_homepage")) +
                        httpParam ("&", "mailSignature"         , getParameter(items, request, "pf_mailSignature")) +
-                       httpParam ("&", "sumary"                , getParameter(items, request, "pf_sumary")) +
+                       httpParam ("&", "summary"               , getParameter(items, request, "pf_summary")) +
                        httpParam ("&", "appSetting"            , getParameter(items, request, "pf_appSetting")) +
                        httpParam ("&", "photo"                 , getParameter(items, request, "pf_photo")) +
                        httpParam ("&", "photoContent"          , getParameter(items, request, "pf_photoContent")) +
@@ -531,6 +541,16 @@
                        httpParam ("&", "audioContent"          , getParameter(items, request, "pf_audioContent"));
 
                   tmp = "";
+                  if (ServletFileUpload.isMultipartContent(request)) {
+                    Iterator iterator = items.iterator();
+                    while (iterator.hasNext()) {
+                      FileItem item = (FileItem) iterator.next();
+                      if (item.isFormField()) {
+                        if (item.getFieldName().indexOf("x1_fld_1_") == 0)
+                          tmp += item.getString() + "\n";
+                      }
+                    }
+                  } else {
                   keys = request.getParameterNames();
           		    while (keys.hasMoreElements() )
           		    {
@@ -538,9 +558,22 @@
                     if (key.indexOf("x1_fld_1_") == 0)
                       tmp += getParameter(items, request, key) + "\n";
           		    }
+            		  }
                   params += httpParam ("&", "webIDs", tmp);
-                  keys = request.getParameterNames();
                   tmp = "";
+                  if (ServletFileUpload.isMultipartContent(request)) {
+                    Iterator iterator = items.iterator();
+                    while (iterator.hasNext()) {
+                      FileItem item = (FileItem) iterator.next();
+                      if (item.isFormField()) {
+                        if (item.getFieldName().indexOf("x2_fld_1_") == 0) {
+                          suffix = item.getFieldName().replace("x2_fld_1_", "");
+                          tmp += item.getString() + ";" + getParameter(items, request, "x2_fld_2_"+suffix) + "\n";
+                        }
+                      }
+                    }
+                  } else {
+                    keys = request.getParameterNames();
           		    while (keys.hasMoreElements() )
           		    {
           		      String key = (String)keys.nextElement();
@@ -550,9 +583,22 @@
                       tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "x2_fld_2_"+suffix) + "\n";
                     }
           		    }
+            		  }
                   params += httpParam ("&", "interests", tmp);
-                  keys = request.getParameterNames();
                   tmp = "";
+                  if (ServletFileUpload.isMultipartContent(request)) {
+                    Iterator iterator = items.iterator();
+                    while (iterator.hasNext()) {
+                      FileItem item = (FileItem) iterator.next();
+                      if (item.isFormField()) {
+                        if (item.getFieldName().indexOf("x3_fld_1_") == 0) {
+                          suffix = item.getFieldName().replace("x3_fld_1_", "");
+                          tmp += item.getString() + ";" + getParameter(items, request, "x3_fld_2_"+suffix) + "\n";
+                        }
+                      }
+                    }
+                  } else {
+                    keys = request.getParameterNames();
           		    while (keys.hasMoreElements() )
           		    {
           		      String key = (String)keys.nextElement();
@@ -562,6 +608,7 @@
                       tmp += getParameter(items, request, key) + ";" + getParameter(items, request, "x3_fld_2_"+suffix) + "\n";
                     }
           		    }
+            		  }
                   params += httpParam ("&", "topicInterests", tmp);
                 }
                 if ($_formSubtab == 2)
@@ -578,6 +625,7 @@
                        httpParam ("&", "homeLatitude"          , getParameter(items, request, "pf_homelat")) +
                        httpParam ("&", "homeLongitude"         , getParameter(items, request, "pf_homelng")) +
                        httpParam ("&", "homePhone"             , getParameter(items, request, "pf_homePhone")) +
+                       httpParam ("&", "homePhoneExt"          , getParameter(items, request, "pf_homePhoneExt")) +
                        httpParam ("&", "homeMobile"            , getParameter(items, request, "pf_homeMobile"));
                 }
                 if ($_formSubtab == 5)
@@ -633,6 +681,7 @@
                        httpParam ("&", "businessLatitude"      , getParameter(items, request, "pf_businesslat")) +
                        httpParam ("&", "businessLongitude"     , getParameter(items, request, "pf_businesslng")) +
                        httpParam ("&", "businessPhone"         , getParameter(items, request, "pf_businessPhone")) +
+                       httpParam ("&", "businessPhoneExt"      , getParameter(items, request, "pf_businessPhoneExt")) +
                        httpParam ("&", "businessMobile"        , getParameter(items, request, "pf_businessMobile"));
                 }
                 if ($_formSubtab == 3)
@@ -700,6 +749,36 @@
   		        $_document = createDocument($_retValue);
               throw new Exception(xpathEvaluate($_document, "/failed/message"));
           }
+
+              tmp = "";
+              if (ServletFileUpload.isMultipartContent(request)) {
+                Iterator iterator = items.iterator();
+                while (iterator.hasNext()) {
+                  FileItem item = (FileItem) iterator.next();
+                  if (item.isFormField()) {
+                    if (item.getFieldName().indexOf("pf_acl_") == 0)
+                      tmp += item.getFieldName().replace("pf_acl_", "") + "=" + item.getString() + "&";
+                  }
+                }
+              } else {
+                keys = request.getParameterNames();
+        		    while (keys.hasMoreElements() )
+        		    {
+        		      String key = (String)keys.nextElement();
+                  if (key.indexOf("pf_acl_") == 0) {
+                    tmp += key.replace("pf_acl_", "") + "=" + getParameter(items, request, key) + "&";
+                  }
+        		    }
+              }
+              params = httpParam ( "", "sid", $_sid) +
+                       httpParam ("&", "realm", $_realm) +
+                       httpParam ("&", "acls", tmp);
+              $_retValue = httpRequest ("POST", "user.acl.update", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
             }
             if (getParameter(items, request, "pf_next") != null)
             {
@@ -753,6 +832,23 @@
         {
           $_error = e.getMessage();
           $_form = "login";
+        }
+        if ($_form.equals("profile"))
+        {
+          try
+          {
+            params = httpParam ( "", "sid"   , $_sid) +
+                     httpParam ("&", "realm" , $_realm);
+            $_retValue = httpRequest ("POST", "user.acl.info", params);
+  		      $_acl = createDocument($_retValue);
+            if ("".compareTo(xpathEvaluate($_acl, "/failed/message")) != 0)
+              throw new Exception (xpathEvaluate($_acl, "/failed/message"));
+          }
+          catch (Exception e)
+          {
+            $_error = e.getMessage();
+            $_form = "login";
+          }
         }
       }
 
@@ -825,7 +921,7 @@
                     <th width="30%">
                       <label for="lf_uid">Member ID</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="text" name="lf_uid" value="" id="lf_uid" />
                     </td>
                   </tr>
@@ -833,7 +929,7 @@
                     <th>
                       <label for="lf_password">Password</label>
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                       <input type="password" name="lf_password" value="" id="lf_password" />
                     </td>
                   </tr>
@@ -845,7 +941,7 @@
                         <th width="30%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
                         </td>
                   </tr>
@@ -856,7 +952,7 @@
                   <tr>
                         <th width="30%">
                     </th>
-                    <td nowrap="nowrap">
+                        <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -898,7 +994,7 @@
                         <th width="30%">
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_uid" value="" id="rf_uid" />
                         </td>
                       </tr>
@@ -906,7 +1002,7 @@
                         <th>
                           <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
                         </td>
                       </tr>
@@ -914,7 +1010,7 @@
                         <th>
                           <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password" value="" id="rf_password" />
                         </td>
                       </tr>
@@ -922,7 +1018,7 @@
                         <th>
                           <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="rf_password2" value="" id="rf_password2" />
                         </td>
                       </tr>
@@ -934,7 +1030,7 @@
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
                         </td>
                       </tr>
@@ -945,7 +1041,7 @@
                       <tr>
                         <th width="30%">
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -964,7 +1060,7 @@
                     <tr>
                       <th width="30%">
                       </th>
-                      <td nowrap="nowrap">
+                      <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
                       </td>
                     </tr>
@@ -1192,7 +1288,7 @@
                             <th>
                           <label for="pf_title">Title</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <select name="pf_title" id="pf_title">
                             <option></option>
                             <%
@@ -1204,38 +1300,63 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_title" id="pf_acl_title">
+                                <%
+                                  outACLOptions (out, "/acl/title");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_firstName">First Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="text" name="pf_firstName" value="<% out.print(xpathEvaluate($_document, "/user/firstName")); %>" id="pf_firstName" style="width: 220px;" />
+                              <select name="pf_acl_firstName" id="pf_acl_firstName">
+                                <%
+                                  outACLOptions (out, "/acl/firstName");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_lastName">Last Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="text" name="pf_lastName" value="<% out.print(xpathEvaluate($_document, "/user/lastName")); %>" id="pf_lastName" style="width: 220px;" />
+                              <select name="pf_acl_lastName" id="pf_acl_lastName">
+                                <%
+                                  outACLOptions (out, "/acl/lastName");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_fullName">Full Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="text" name="pf_fullName" value="<% out.print(xpathEvaluate($_document, "/user/fullName")); %>" id="pf_fullName" size="60" />
+                              <select name="pf_acl_fullName" id="pf_acl_fullName">
+                                <%
+                                  outACLOptions (out, "/acl/fullName");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th width="30%">
                           <label for="pf_mail">E-mail</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <input type="text" name="pf_mail" value="<% out.print(xpathEvaluate($_document, "/user/mail")); %>" id="pf_mail" style="width: 220px;" />
+                              <select name="pf_acl_mail" id="pf_acl_mail">
+                                <%
+                                  outACLOptions (out, "/acl/mail");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1255,6 +1376,11 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_gender" id="pf_acl_gender">
+                                <%
+                                  outACLOptions (out, "/acl/gender");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1263,6 +1389,11 @@
                         </th>
                         <td>
                           <input name="pf_birthday" id="pf_birthday" value="<% out.print(xpathEvaluate($_document, "/user/birthday")); %>" onclick="datePopup('pf_birthday');"/>
+                              <select name="pf_acl_birthday" id="pf_acl_birthday">
+                                <%
+                                  outACLOptions (out, "/acl/birthday");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1271,13 +1402,18 @@
                         </th>
                         <td>
                           <input type="text" name="pf_homepage" value="<% out.print(xpathEvaluate($_document, "/user/homepage")); %>" id="pf_homepage" style="width: 220px;" />
+                              <select name="pf_acl_homepage" id="pf_acl_homepage">
+                                <%
+                                  outACLOptions (out, "/acl/homepage");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                             <th>
                               <label for="pf_foaf">Other Personal URIs (Web IDs)</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1300,6 +1436,15 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_webIDs" id="pf_acl_webIDs">
+                                      <%
+                                        {
+                                          String S = xpathEvaluate($_acl, "/acl/webIDs");
+                                          for (int N = 0; N < $_ACL.length; N += 2)
+                                            out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
+                                        }
+                                      %>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1319,13 +1464,18 @@
                         </th>
                             <td>
                               <textarea name="pf_summary" id="pf_summary" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/summary")); %></textarea>
+                              <select name="pf_acl_summary" id="pf_acl_summary">
+                                <%
+                                  outACLOptions (out, "/acl/summary");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                               <label for="pf_foaf">Web page URL indicating a topic of interest</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1351,6 +1501,15 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x2', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_interests" id="pf_acl_interests">
+                                      <%
+                                        {
+                                          String S = xpathEvaluate($_acl, "/acl/interests");
+                                          for (int N = 0; N < $_ACL.length; N += 2)
+                                            out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
+                                        }
+                                      %>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1360,7 +1519,7 @@
                         <th>
                               <label for="pf_foaf">Resource URI indicating thing of interest</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                               <table>
                                 <tr>
                                   <td width="600px" style="padding: 0px;">
@@ -1386,6 +1545,15 @@
                                   </td>
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <select name="pf_acl_topicInterests" id="pf_acl_topicInterests">
+                                      <%
+                                        {
+                                          String S = xpathEvaluate($_acl, "/acl/topicInterests");
+                                          for (int N = 0; N < $_ACL.length; N += 2)
+                                            out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
+                                        }
+                                      %>
+                                    </select>
                                   </td>
                                 </tr>
                               </table>
@@ -1405,6 +1573,11 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_photo" id="pf_photo" value="<% out.print(xpathEvaluate($_document, "/user/photo")); %>" style="width: 400px;" >
+                              <select name="pf_acl_photo" id="pf_acl_photo">
+                                <%
+                                  outACLOptions (out, "/acl/photo");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1421,6 +1594,11 @@
                             </th>
                             <td nowrap="1" class="listing_col">
                               <input type="text" name="pf_audio" id="pf_audio"value="<% out.print(xpathEvaluate($_document, "/user/audio")); %>" style="width: 400px;" >
+                              <select name="pf_acl_audio" id="pf_acl_audio">
+                                <%
+                                  outACLOptions (out, "/acl/audio");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -1440,6 +1618,19 @@
                               </select>
                             </td>
                           </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_1" id="pf_set_0_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                     </table>
                   </div>
 
@@ -1449,57 +1640,82 @@
                         <th width="30%">
                           <label for="pf_homecountry">Country</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <select name="pf_homecountry" id="pf_homecountry" onchange="javascript: return updateState('pf_homecountry', 'pf_homestate');" style="width: 220px;">
                             <option></option>
                             <%
                               outSelectOptions (out, xpathEvaluate($_document, "/user/homeCountry"), "Country");
                             %>
                           </select>
+                              <select name="pf_acl_homeCountry" id="pf_acl_homeCountry">
+                                <%
+                                  outACLOptions (out, "/acl/homeCountry");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homestate">State/Province</label>
                         </th>
-                        <td nowrap="nowrap">
+                            <td>
                           <span id="span_pf_homestate">
                             <script type="text/javascript">
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_homecountry", "pf_homestate", "<% out.print(xpathEvaluate($_document, "/user/homeState")); %>");});
                             </script>
                           </span>
+                              <select name="pf_acl_homeState" id="pf_acl_homeState">
+                                <%
+                                  outACLOptions (out, "/acl/homeState");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homecity">City/Town</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homecity" value="<% out.print(xpathEvaluate($_document, "/user/homeCity")); %>" id="pf_homecity" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homecity" value="<% out.print(xpathEvaluate($_document, "/user/homeCity")); %>" id="pf_homecity" style="width: 216px;" />
+                              <select name="pf_acl_homeCity" id="pf_acl_homeCity">
+                                <%
+                                  outACLOptions (out, "/acl/homeCity");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homecode" value="<% out.print(xpathEvaluate($_document, "/user/homeCode")); %>" id="pf_homecode" style="width: 220px;"/>
+                            <td>
+                              <input type="text" name="pf_homecode" value="<% out.print(xpathEvaluate($_document, "/user/homeCode")); %>" id="pf_homecode" style="width: 216px;"/>
+                              <select name="pf_acl_homeCode" id="pf_acl_homeCode">
+                                <%
+                                  outACLOptions (out, "/acl/homeCode");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeaddress1">Address1</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress1" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress1")); %>" id="pf_homeaddress1" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeaddress1" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress1")); %>" id="pf_homeaddress1" style="width: 216px;" />
+                              <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
+                                <%
+                                  outACLOptions (out, "/acl/homeAddress1");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homeaddress2">Address2</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homeaddress2" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress2")); %>" id="pf_homeaddress2" style="width: 220px;" />
+                            <td>
+                              <input type="text" name="pf_homeaddress2" value="<% out.print(xpathEvaluate($_document, "/user/homeAddress2")); %>" id="pf_homeaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1507,7 +1723,7 @@
                           <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
-                          <select name="pf_homeTimezone" id="pf_homeTimezone">
+                              <select name="pf_homeTimezone" id="pf_homeTimezone" style="width: 114px;" >
                             <%
                               {
                                 String S = xpathEvaluate($_document, "/user/homeTimezone");
@@ -1519,18 +1735,24 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_homeTimezone" id="pf_acl_homeTimezone">
+                                <%
+                                  outACLOptions (out, "/acl/homeTimezone");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_homelat">Latitude</label>
                         </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_homelat" value="<% out.print(xpathEvaluate($_document, "/user/homeLatitude")); %>" id="pf_homelat" />
-                          <label>
-                          <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
-                            Default Map Location
-                          </label>
+                            <td>
+                              <input type="text" name="pf_homelat" value="<% out.print(xpathEvaluate($_document, "/user/homeLatitude")); %>" id="pf_homelat" style="width: 110px;" />
+                              <select name="pf_acl_homeLatitude" id="pf_acl_homeLatitude">
+                                <%
+                                  outACLOptions (out, "/acl/homeLatitude");
+                                %>
+                              </select>
                         <td>
                       <tr>
                       <tr>
@@ -1538,7 +1760,11 @@
                           <label for="pf_homelng">Longitude</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homelng" value="<% out.print(xpathEvaluate($_document, "/user/homeLongitude")); %>" id="pf_homelng" />
+                              <input type="text" name="pf_homelng" value="<% out.print(xpathEvaluate($_document, "/user/homeLongitude")); %>" id="pf_homelng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                                Default Map Location
+                              </label>
                         </td>
                       </tr>
                       <tr>
@@ -1546,7 +1772,14 @@
                           <label for="pf_homePhone">Phone</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homePhone" value="<% out.print(xpathEvaluate($_document, "/user/homePhone")); %>" id="pf_homePhone" />
+                              <input type="text" name="pf_homePhone" value="<% out.print(xpathEvaluate($_document, "/user/homePhone")); %>" id="pf_homePhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_homePhoneExt" value="<% out.print(xpathEvaluate($_document, "/user/homePhoneExt")); %>" id="pf_homePhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_homePhone" id="pf_acl_homePhone">
+                                <%
+                                  outACLOptions (out, "/acl/homePhone");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1554,7 +1787,20 @@
                           <label for="pf_homeMobile">Mobile</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_homeMobile" value="<% out.print(xpathEvaluate($_document, "/user/homeMobile")); %>" id="pf_homeMobile" />
+                              <input type="text" name="pf_homeMobile" value="<% out.print(xpathEvaluate($_document, "/user/homeMobile")); %>" id="pf_homeMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_2">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                     </table>
@@ -1633,6 +1879,11 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/user/icq")); %>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_icq" id="pf_acl_icq">
+                                <%
+                                  outACLOptions (out, "/acl/icq");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1641,6 +1892,11 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/user/skype")); %>" id="pf_skype" style="width: 220px;" />
+                              <select name="pf_acl_skype" id="pf_acl_skype">
+                                <%
+                                  outACLOptions (out, "/acl/skype");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1649,6 +1905,11 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/user/yahoo")); %>" id="pf_yahoo" style="width: 220px;" />
+                              <select name="pf_acl_yahoo" id="pf_acl_yahoo">
+                                <%
+                                  outACLOptions (out, "/acl/yahoo");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1657,6 +1918,11 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/user/aim")); %>" id="pf_aim" style="width: 220px;" />
+                              <select name="pf_acl_aim" id="pf_acl_aim">
+                                <%
+                                  outACLOptions (out, "/acl/aim");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -1665,6 +1931,11 @@
                         </th>
                             <td colspan="2">
                               <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/user/msn")); %>" id="pf_msn" style="width: 220px;" />
+                              <select name="pf_acl_msn" id="pf_acl_msn">
+                                <%
+                                  outACLOptions (out, "/acl/msn");
+                                %>
+                              </select>
                         </td>
                           </tr>
                           <tr>
@@ -1675,6 +1946,19 @@
                             <td width="40%">
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_0_5">Set access for all fields as </label>
+                            </th>
+                            <td colspan="2">
+                              <select name="pf_set_0_5" id="pf_set_0_5" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                           <script type="text/javascript">
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", '<% out.print(xpathEvaluate($_document, "/user/messaging").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
@@ -2005,6 +2289,11 @@
                                   outSelectOptions (out, xpathEvaluate($_document, "/user/businessIndustry"), "Industry");
                             %>
                           </select>
+                              <select name="pf_acl_businessIndustry" id="pf_acl_businessIndustry">
+                                <%
+                                  outACLOptions (out, "/acl/businessIndustry");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2012,7 +2301,12 @@
                               <label for="pf_businessOrganization">Organization</label>
                         </th>
                         <td nowrap="nowrap">
-                              <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/user/businessOrganization")); %>" id="pf_businessOrganization" style="width: 220px;" />
+                              <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/user/businessOrganization")); %>" id="pf_businessOrganization" style="width: 216px;" />
+                              <select name="pf_acl_businessOrganization" id="pf_acl_businessOrganization">
+                                <%
+                                  outACLOptions (out, "/acl/businessOrganization");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2020,7 +2314,7 @@
                               <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/user/businessHomePage")); %>" id="pf_businessNetwork" style="width: 220px;" />
+                              <input type="text" name="pf_businessHomePage" value="<% out.print(xpathEvaluate($_document, "/user/businessHomePage")); %>" id="pf_businessNetwork" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -2028,7 +2322,12 @@
                               <label for="pf_businessJob">Job Title</label>
                         </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/user/businessJob")); %>" id="pf_businessJob" style="width: 220px;" />
+                              <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/user/businessJob")); %>" id="pf_businessJob" style="width: 216px;" />
+                              <select name="pf_acl_businessJob" id="pf_acl_businessJob">
+                                <%
+                                  outACLOptions (out, "/acl/businessJob");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2036,7 +2335,12 @@
                           <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessRegNo" value="<% out.print(xpathEvaluate($_document, "/user/businessRegNo")); %>" id="pf_businessRegNo" style="width: 220px;" />
+                              <input type="text" name="pf_businessRegNo" value="<% out.print(xpathEvaluate($_document, "/user/businessRegNo")); %>" id="pf_businessRegNo" style="width: 216px;" />
+                              <select name="pf_acl_businessRegNo" id="pf_acl_businessRegNo">
+                                <%
+                                  outACLOptions (out, "/acl/businessRegNo");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2045,7 +2349,7 @@
                         </th>
                         <td>
                           <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
-                            <option />
+                                <option></option>
                             <%
                               {
                                 String[] V = {"Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier"};
@@ -2055,6 +2359,11 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_businessCareer" id="pf_acl_businessCareer">
+                                <%
+                                  outACLOptions (out, "/acl/businessCareer");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2063,7 +2372,7 @@
                         </th>
                         <td>
                           <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
-                            <option />
+                                <option></option>
                             <%
                               {
                                 String[] V = {"1-100", "101-250", "251-500", "501-1000", ">1000"};
@@ -2073,6 +2382,11 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_businessEmployees" id="pf_acl_businessEmployees">
+                                <%
+                                  outACLOptions (out, "/acl/businessEmployees");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2081,7 +2395,7 @@
                         </th>
                         <td>
                           <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
-                            <option />
+                                <option></option>
                             <%
                               {
                                 String[] V = {"Not a Vendor", "Vendor", "VAR", "Consultancy"};
@@ -2091,6 +2405,11 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_businessVendor" id="pf_acl_businessVendor">
+                                <%
+                                  outACLOptions (out, "/acl/businessVendor");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2099,7 +2418,7 @@
                         </th>
                         <td>
                           <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
-                            <option />
+                                <option></option>
                             <%
                               {
                                 String[] V = {"Enterprise Data Integration", "Business Process Management", "Other"};
@@ -2109,6 +2428,11 @@
                               }
                             %>
                           </select>
+                              <select name="pf_acl_businessService" id="pf_acl_businessService">
+                                <%
+                                  outACLOptions (out, "/acl/businessService");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2116,7 +2440,12 @@
                           <label for="pf_businessOther">Other Technology service</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessOther" value="<% out.print(xpathEvaluate($_document, "/user/businessOther")); %>" id="pf_businessOther" style="width: 220px;" />
+                              <input type="text" name="pf_businessOther" value="<% out.print(xpathEvaluate($_document, "/user/businessOther")); %>" id="pf_businessOther" style="width: 216px;" />
+                              <select name="pf_acl_businessOther" id="pf_acl_businessOther">
+                                <%
+                                  outACLOptions (out, "/acl/businessOther");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2124,7 +2453,12 @@
                           <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_businessNetwork" value="<% out.print(xpathEvaluate($_document, "/user/businessNetwork")); %>" id="pf_businessNetwork" style="width: 220px;" />
+                              <input type="text" name="pf_businessNetwork" value="<% out.print(xpathEvaluate($_document, "/user/businessNetwork")); %>" id="pf_businessNetwork" style="width: 216px;" />
+                              <select name="pf_acl_businessNetwork" id="pf_acl_businessNetwork">
+                                <%
+                                  outACLOptions (out, "/acl/businessNetwork");
+                                %>
+                              </select>
                         </td>
                       </tr>
                       <tr>
@@ -2133,6 +2467,24 @@
                         </th>
                         <td>
                           <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/businessResume")); %></textarea>
+                              <select name="pf_acl_businessResume" id="pf_acl_businessResume">
+                                <%
+                                  outACLOptions (out, "/acl/businessResume");
+                                %>
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_0">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_0" id="pf_set_1_0" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                         </td>
                       </tr>
                         </table>
@@ -2151,6 +2503,11 @@
                                   outSelectOptions (out, xpathEvaluate($_document, "/user/businessCountry"), "Country");
                                 %>
                               </select>
+                              <select name="pf_acl_businessCountry" id="pf_acl_businessCountry">
+                                <%
+                                  outACLOptions (out, "/acl/businessCountry");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2163,6 +2520,11 @@
                                   OAT.MSG.attach(OAT, "PAGE_LOADED", function (){updateState("pf_businesscountry", "pf_businessstate", "<% out.print(xpathEvaluate($_document, "/user/businessState")); %>");});
                                 </script>
                               </span>
+                              <select name="pf_acl_businessState" id="pf_acl_businessState">
+                                <%
+                                  outACLOptions (out, "/acl/businessState");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2170,7 +2532,12 @@
                               <label for="pf_businesscity">City/Town</label>
                             </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businesscity" value="<% out.print(xpathEvaluate($_document, "/user/businessCity")); %>" id="pf_businesscity" style="width: 220px;" />
+                              <input type="text" name="pf_businesscity" value="<% out.print(xpathEvaluate($_document, "/user/businessCity")); %>" id="pf_businesscity" style="width: 216px;" />
+                              <select name="pf_acl_businessCity" id="pf_acl_businessCity">
+                                <%
+                                  outACLOptions (out, "/acl/businessCity");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2178,7 +2545,12 @@
                               <label for="pf_businesscode">Zip/Postal Code</label>
                             </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businesscode" value="<% out.print(xpathEvaluate($_document, "/user/businessCode")); %>" id="pf_businesscode" style="width: 220px;"/>
+                              <input type="text" name="pf_businesscode" value="<% out.print(xpathEvaluate($_document, "/user/businessCode")); %>" id="pf_businesscode" style="width: 216px;"/>
+                              <select name="pf_acl_businessCode" id="pf_acl_businessCode">
+                                <%
+                                  outACLOptions (out, "/acl/businessCode");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2186,7 +2558,12 @@
                               <label for="pf_businessaddress1">Address1</label>
                             </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businessaddress1" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress1")); %>" id="pf_businessaddress1" style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress1" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress1")); %>" id="pf_businessaddress1" style="width: 216px;" />
+                              <select name="pf_acl_businessAddress1" id="pf_acl_businessAddress1">
+                                <%
+                                  outACLOptions (out, "/acl/businessAddress1");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2194,7 +2571,7 @@
                               <label for="pf_businessaddress2">Address2</label>
                             </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businessaddress2" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress2")); %>" id="pf_businessaddress2" style="width: 220px;" />
+                              <input type="text" name="pf_businessaddress2" value="<% out.print(xpathEvaluate($_document, "/user/businessAddress2")); %>" id="pf_businessaddress2" style="width: 216px;" />
                             </td>
                           </tr>
                           <tr>
@@ -2202,7 +2579,7 @@
                               <label for="pf_businessTimezone">Time-Zone</label>
                             </th>
                             <td>
-                              <select name="pf_businessTimezone" id="pf_businessTimezone">
+                              <select name="pf_businessTimezone" id="pf_businessTimezone" style="width: 114px;">
                                 <%
                                   {
                                     String S = xpathEvaluate($_document, "/user/businessTimezone");
@@ -2214,6 +2591,11 @@
                                   }
                                 %>
                               </select>
+                              <select name="pf_acl_businessTimezone" id="pf_acl_businessTimezone">
+                                <%
+                                  outACLOptions (out, "/acl/businessTimezone");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2221,11 +2603,12 @@
                               <label for="pf_businesslat">Latitude</label>
                             </th>
                             <td nowrap="nowrap">
-                              <input type="text" name="pf_businesslat" value="<% out.print(xpathEvaluate($_document, "/user/businessLatitude")); %>" id="pf_businesslat" />
-                              <label>
-                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'business');" />
-                                Default Map Location
-                              </label>
+                              <input type="text" name="pf_businesslat" value="<% out.print(xpathEvaluate($_document, "/user/businessLatitude")); %>" id="pf_businesslat" style="width: 110px;" />
+                              <select name="pf_acl_businessLatitude" id="pf_acl_businessLatitude">
+                                <%
+                                  outACLOptions (out, "/acl/businessLatitude");
+                                %>
+                              </select>
                             <td>
                           <tr>
                           <tr>
@@ -2233,7 +2616,11 @@
                               <label for="pf_businesslng">Longitude</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businesslng" value="<% out.print(xpathEvaluate($_document, "/user/businessLongitude")); %>" id="pf_businesslng" />
+                              <input type="text" name="pf_businesslng" value="<% out.print(xpathEvaluate($_document, "/user/businessLongitude")); %>" id="pf_businesslng" style="width: 110px;" />
+                              <label>
+                                <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'business');" />
+                                Default Map Location
+                              </label>
                             </td>
                           </tr>
                           <tr>
@@ -2241,7 +2628,14 @@
                               <label for="pf_businessPhone">Phone</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/user/businessPhone")); %>" id="pf_businessPhone" />
+                              <input type="text" name="pf_businessPhone" value="<% out.print(xpathEvaluate($_document, "/user/businessPhone")); %>" id="pf_businessPhone" style="width: 110px;" />
+                              <b>Ext.</b>
+                              <input type="text" name="pf_businessPhoneExt" value="<% out.print(xpathEvaluate($_document, "/user/businessPhoneExt")); %>" id="pf_businessPhoneExt" style="width: 40px;" />
+                              <select name="pf_acl_businessPhone" id="pf_acl_businessPhone">
+                                <%
+                                  outACLOptions (out, "/acl/businessPhone");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2249,7 +2643,20 @@
                               <label for="pf_businessMobile">Mobile</label>
                             </th>
                             <td>
-                              <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/user/businessMobile")); %>" id="pf_businessMobile" />
+                              <input type="text" name="pf_businessMobile" value="<% out.print(xpathEvaluate($_document, "/user/businessMobile")); %>" id="pf_businessMobile" style="width: 110px;" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_1">Set access for all fields as </label>
+                            </th>
+                            <td>
+                              <select name="pf_set_1_1" id="pf_set_1_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
                             </td>
                           </tr>
                         </table>
@@ -2293,6 +2700,11 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessIcq" value="<% out.print(xpathEvaluate($_document, "/user/businessIcq")); %>" id="pf_icq" style="width: 220px;" />
+                              <select name="pf_acl_businessIcq" id="pf_acl_businessIcq">
+                                <%
+                                  outACLOptions (out, "/acl/businessIcq");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2301,6 +2713,11 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessSkype" value="<% out.print(xpathEvaluate($_document, "/user/businessSkype")); %>" id="pf_businessSkype" style="width: 220px;" />
+                              <select name="pf_acl_businessSkype" id="pf_acl_businessSkype">
+                                <%
+                                  outACLOptions (out, "/acl/businessSkype");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2309,6 +2726,11 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessYahoo" value="<% out.print(xpathEvaluate($_document, "/user/businessYahoo")); %>" id="pf_businessYahoo" style="width: 220px;" />
+                              <select name="pf_acl_businessYahoo" id="pf_acl_businessYahoo">
+                                <%
+                                  outACLOptions (out, "/acl/businessYahoo");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2317,6 +2739,11 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessAim" value="<% out.print(xpathEvaluate($_document, "/user/businessAim")); %>" id="pf_businessAim" style="width: 220px;" />
+                              <select name="pf_acl_businessAim" id="pf_acl_businessAim">
+                                <%
+                                  outACLOptions (out, "/acl/businessAim");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2325,6 +2752,11 @@
                             </th>
                             <td colspan="2">
                               <input type="text" name="pf_businessMsn" value="<% out.print(xpathEvaluate($_document, "/user/businessMsn")); %>" id="pf_businessMsn" style="width: 220px;" />
+                              <select name="pf_acl_businessMsn" id="pf_acl_businessMsn">
+                                <%
+                                  outACLOptions (out, "/acl/businessMsn");
+                                %>
+                              </select>
                             </td>
                           </tr>
                           <tr>
@@ -2335,6 +2767,19 @@
                             <td width="40%">
                         </td>
                       </tr>
+                          <tr>
+                            <th>
+                              <label for="pf_set_1_3">Set access for all fields as </label>
+                            </th>
+                            <td colspan="2">
+                              <select name="pf_set_1_3" id="pf_set_1_3" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                                <option value="0">*no change*</option>
+                                <option value="1">public</option>
+                                <option value="2">friends</option>
+                                <option value="3">private</option>
+                              </select>
+                            </td>
+                          </tr>
                           <script type="text/javascript">
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("y2", '<% out.print(xpathEvaluate($_document, "/user/businessMessaging").replace("\n", "\\n")); %>', ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
@@ -2362,10 +2807,10 @@
                         </th>
                       </tr>
                       <tr>
-                        <th width="30%" nowrap="nowrap">
+                        <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
@@ -2373,7 +2818,7 @@
                         <th>
                           <label for="pf_newPassword">New Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword" value="" id="pf_newPassword" />
                         </td>
                       </tr>
@@ -2381,14 +2826,14 @@
                         <th>
                           <label for="pf_password">Repeat Password</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
                         </td>
                       </tr>
@@ -2401,14 +2846,14 @@
                         <th>
                           <label for="pf_securityOpenID">OpenID URL</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securityOpenID" value="<% out.print(xpathEvaluate($_document, "/user/securityOpenID")); %>" id="pf_securityOpenID" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2421,13 +2866,13 @@
                         <th>
                           Saved Facebook ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                         </td>
                       </tr>
                       <tr id="pf_facebook2" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <span id="pf_facebookData" style="min-height: 20px;"></span>
                           <br />
                           <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
@@ -2437,7 +2882,7 @@
                       <tr id="pf_facebook3" style="display:none;">
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
                           <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
                         </td>
@@ -2451,7 +2896,7 @@
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
                         </th>
-                        <td id="td_securitySecretQuestion" nowrap="nowrap">
+                        <td id="td_securitySecretQuestion">
                           <script type="text/javascript">
                             function categoryCombo ()
                             {
@@ -2474,14 +2919,14 @@
                         <th>
                           <label for="pf_securitySecretAnswer">Secret Answer</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySecretAnswer" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretAnswer")); %>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2494,14 +2939,14 @@
                         <th>
                           <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
                         </td>
                       </tr>
@@ -2518,7 +2963,7 @@
                         <th>
                 	    	  Subject
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <% out.print(xpathEvaluate($_document, "/user/certificateSubject")); %>
                     		</td>
                       </tr>
@@ -2526,7 +2971,7 @@
                         <th>
                 	    	  Agent ID
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                     		  <% out.print(xpathEvaluate($_document, "/user/certificateAgentID")); %>
                     		</td>
                       </tr>
@@ -2537,7 +2982,7 @@
                         <th valign="top">
                           <label for="pf_certificate">Certificate</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><% out.print(xpathEvaluate($_document, "/user/certificate")); %></textarea>
               	          <%
               	            if (xpathEvaluate($_document, "/user/certificateSubject").length() == 0)
@@ -2552,8 +2997,8 @@
                         </td>
                       </tr>
                       <tr>
-                        <th />
-                        <td nowrap="nowrap">
+                        <th></th>
+                        <td>
                           <label>
                             <% out.print("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\"" + ((xpathEvaluate($_document, "/user/certificateLogin").equals("1"))? " checked=\"checked\"": "") + " />"); %>
                             Enable Automatic WebID Login
@@ -2563,7 +3008,7 @@
                       <tr>
                         <th>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
                           <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />

@@ -93,6 +93,7 @@ table.form th {
 table.form td {
   padding-left: 3px;
   margin-bottom: 5px;
+  white-space: nowrap;
 }
 
 .tabs {

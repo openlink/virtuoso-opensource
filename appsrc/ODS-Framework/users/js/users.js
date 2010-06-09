@@ -501,6 +501,7 @@ var cRDF;
 
 var regData;
 var sslData;
+var aclData;
 var facebookData;
 
 // init
@@ -663,10 +664,11 @@ function myInit() {
 		ufTab.add("uf_tab_3", "uf_page_3");
 		ufTab.add("uf_tab_4", "uf_page_4");
 		ufTab.go(0);
-		if ($("uf_rdf_content"))
-			cRDF = new OAT.RDFMini($("uf_rdf_content"), {
-				showSearch : false
-			});
+		if ($("uf_rdf_content")) {
+      try {
+  			cRDF = new OAT.RDFMini($("uf_rdf_content"), {showSearch : false});
+      } catch (e) {}
+    }
 	}
 	if ($('pf')) {
 	  var obj = $('formTab');
@@ -791,6 +793,12 @@ function myCheckLeave (form)
       if (ctrl.disabled)
         continue;
 
+      if (ctrl.disabled)
+        continue;
+
+			if (OAT.Dom.isClass(ctrl, 'dummy'))
+        continue;
+
       if (ctrl.type.indexOf ('select') != -1)
       {
         var selections = 0;
@@ -833,6 +841,37 @@ function myCheckLeave (form)
     }
   }
   return retValue;
+}
+
+function pfSetACLSelects (obj)
+{
+  var form = obj.form;
+  var formTab = parseInt($v('formTab'));
+  var formSubtab = parseInt($v('formSubtab'));
+  var div = $(pfPages[formTab][formSubtab]);
+
+  for (var i = 0; i < form.elements.length; i++)
+  {
+    var ctrl = form.elements[i];
+
+    if (!ctrl)
+      continue;
+
+    if (typeof(ctrl.type) == 'undefined')
+      continue;
+
+    if (ctrl.disabled)
+      continue;
+
+   	if (ctrl.name.indexOf('pf_acl_') != 0)
+      continue;
+
+   	if (!OAT.Dom.isChild(ctrl, div))
+      continue;
+
+    ctrl.value = obj.value;
+  }
+  obj.value = '0';
 }
 
 function pfParam(fldName)
@@ -888,7 +927,7 @@ function pfTabInit(tabPrefix, newIndex) {
   }
 }
 
-function pfShowRows(prefix, values, delimiters, showRow) {
+function pfShowRows(prefix, values, delimiters, showRow, acl, aclName) {
   var rowCount = 0;
   var tbl = prefix+'_tbl';
 	var tmpLines = values.split(delimiters[0]);
@@ -905,6 +944,9 @@ function pfShowRows(prefix, values, delimiters, showRow) {
 	}
 	if (rowCount == 0)
 	  OAT.Dom.show(prefix+'_tr_no');
+
+	// update acl
+  fieldACLUpdate(acl, aclName);
 }
 
 function pfShowBioEvents(prefix, showRow) {
@@ -1220,7 +1262,7 @@ function tagValue(xml, tName) {
   return str;
 }
 
-function fieldUpdate(xml, tName, fName) {
+function fieldUpdate(xml, tName, fName, acl, aclName) {
   var obj = $(fName);
   var str = tagValue(xml, tName);
 	if (obj.type == 'select-one') {
@@ -1241,6 +1283,33 @@ function fieldUpdate(xml, tName, fName) {
     obj.value = str;
 		obj.defaultValue = str;
   }
+	if (!aclName)
+	  aclName = 'pf_acl_' + tName;
+  fieldACLUpdate(acl, aclName, tName);
+}
+
+
+function fieldACLUpdate(acl, aclName, tName) {
+	if (acl) {
+	  var obj = $(aclName);
+	  if (!tName)
+	    tName = aclName.replace('pf_acl_', '');
+  	var str = tagValue(acl, tName);
+  	if (obj.type == 'select-one') {
+  		var o = obj.options;
+  		if (o.length == 0) {
+			 o[0] = new Option('public', '1');
+			 o[1] = new Option('friends', '2');
+			 o[2] = new Option('private', '3');
+  		}
+  		for ( var i = 0; i < o.length; i++) {
+  			if (o[i].value == str) {
+  				o[i].selected = true;
+  				o[i].defaultSelected = true;
+  			}
+  		}
+  	}
+	}
 }
 
 function hiddenUpdate(xml, tName, fName) {
@@ -1267,9 +1336,9 @@ function updateList(fName, listName) {
 }
 
 function clearSelect(obj) {
-	for ( var i = 0; i < obj.options.length; i++) {
+	for ( var i = 0; i < obj.options.length; i++)
 		obj.options[i] = null;
-	}
+
   obj.value = '';
 }
 
@@ -1686,41 +1755,54 @@ function ufProfileCallback(data) {
   	/* user data */
    	var user = xml.getElementsByTagName('user')[0];
 		if (user) {
+		  // acl data
+      var x = function (data) {
+        aclData = null;
+        try {
+        	var xml = OAT.Xml.createXmlDoc(data);
+        	if (!hasError(xml))
+        		aclData = xml.getElementsByTagName('acl')[0];
+        } catch (e) {}
+      }
+      OAT.AJAX.GET ('/ods/api/user.acl.info?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
+
       // personal
 			// main
 			fieldUpdate(user, 'name', 'pf_loginName');
 			fieldUpdate(user, 'nickName', 'pf_nickName');
-      fieldUpdate(user, 'mail',                   'pf_mail');
-      fieldUpdate(user, 'title',                  'pf_title');
-      fieldUpdate(user, 'firstName',              'pf_firstName');
-      fieldUpdate(user, 'lastName',               'pf_lastName');
-      fieldUpdate(user, 'fullName',               'pf_fullName');
-      fieldUpdate(user, 'gender',                 'pf_gender');
-      fieldUpdate(user, 'birthday',               'pf_birthday');
-      fieldUpdate(user, 'homepage',               'pf_homepage');
-      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});
+			fieldUpdate(user, 'mail', 'pf_mail', aclData);
+			fieldUpdate(user, 'title', 'pf_title', aclData);
+			fieldUpdate(user, 'firstName', 'pf_firstName', aclData);
+			fieldUpdate(user, 'lastName', 'pf_lastName', aclData);
+			fieldUpdate(user, 'fullName', 'pf_fullName', aclData);
+			fieldUpdate(user, 'gender', 'pf_gender', aclData);
+			fieldUpdate(user, 'birthday', 'pf_birthday', aclData);
+			fieldUpdate(user, 'homepage', 'pf_homepage', aclData);
+      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});}, aclData, 'pf_acl_webIDs');
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
-			fieldUpdate(user, 'sumary', 'pf_sumary');
-			fieldUpdate(user, 'photo', 'pf_photo');
+			fieldUpdate(user, 'summary', 'pf_summary', aclData);
+			fieldUpdate(user, 'photo', 'pf_photo', aclData);
 			fieldUpdate(user, 'photoContent', 'pf_photoContent');
-			fieldUpdate(user, 'audio', 'pf_audio');
+			fieldUpdate(user, 'audio', 'pf_audio', aclData);
 			fieldUpdate(user, 'audioContent', 'pf_audioContent');
 			fieldUpdate(user, 'appSetting', 'pf_appSetting');
-      pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
-      pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
+      pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_interests');
+      pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_topicInterests');
 
 			// address
-      fieldUpdate(user, 'homeCountry',            'pf_homecountry');
+			fieldUpdate(user, 'homeCountry', 'pf_homecountry', aclData);
 			updateState('pf_homecountry', 'pf_homestate', tagValue(user, 'homeState'));
-      fieldUpdate(user, 'homeCity',               'pf_homecity');
-      fieldUpdate(user, 'homeCode',               'pf_homecode');
-      fieldUpdate(user, 'homeAddress1',           'pf_homeaddress1');
+		  fieldACLUpdate(aclData, 'pf_acl_homeState');
+			fieldUpdate(user, 'homeCity', 'pf_homecity', aclData);
+			fieldUpdate(user, 'homeCode', 'pf_homecode', aclData);
+			fieldUpdate(user, 'homeAddress1', 'pf_homeaddress1', aclData);
       fieldUpdate(user, 'homeAddress2',           'pf_homeaddress2');
-      fieldUpdate(user, 'homeTimezone',           'pf_homeTimezone');
-      fieldUpdate(user, 'homeLatitude',           'pf_homelat');
+			fieldUpdate(user, 'homeTimezone', 'pf_homeTimezone', aclData);
+			fieldUpdate(user, 'homeLatitude', 'pf_homelat', aclData);
       fieldUpdate(user, 'homeLongitude',          'pf_homelng');
       fieldUpdate(user, 'defaultMapLocation',     'pf_homeDefaultMapLocation');
-      fieldUpdate(user, 'homePhone',              'pf_homePhone');
+			fieldUpdate(user, 'homePhone', 'pf_homePhone', aclData);
+			fieldUpdate(user, 'homePhoneExt', 'pf_homePhoneExt');
       fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
 
 			// online accounts
@@ -1742,11 +1824,11 @@ function ufProfileCallback(data) {
         pfShowSeeks();
 
 			// contact
-			fieldUpdate(user, 'icq', 'pf_icq');
-			fieldUpdate(user, 'skype', 'pf_skype');
-			fieldUpdate(user, 'yahoo', 'pf_yahoo');
-			fieldUpdate(user, 'aim', 'pf_aim');
-			fieldUpdate(user, 'msn', 'pf_msn');
+			fieldUpdate(user, 'icq', 'pf_icq', aclData);
+			fieldUpdate(user, 'skype', 'pf_skype', aclData);
+			fieldUpdate(user, 'yahoo', 'pf_yahoo', aclData);
+			fieldUpdate(user, 'aim', 'pf_aim', aclData);
+			fieldUpdate(user, 'msn', 'pf_msn', aclData);
       pfShowRows("x6", tagValue(user, "messaging"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});
 
       // favorites
@@ -1754,42 +1836,44 @@ function ufProfileCallback(data) {
 
       // business
 			// main
-      fieldUpdate(user, 'businessIndustry',       'pf_businessIndustry');
-      fieldUpdate(user, 'businessOrganization',   'pf_businessOrganization');
+			fieldUpdate(user, 'businessIndustry', 'pf_businessIndustry', aclData);
+			fieldUpdate(user, 'businessOrganization', 'pf_businessOrganization', aclData);
       fieldUpdate(user, 'businessHomePage',       'pf_businessHomePage');
-      fieldUpdate(user, 'businessJob',            'pf_businessJob');
-			fieldUpdate(user, 'businessRegNo', 'pf_businessRegNo');
-			fieldUpdate(user, 'businessCareer', 'pf_businessCareer');
-			fieldUpdate(user, 'businessEmployees', 'pf_businessEmployees');
-			fieldUpdate(user, 'businessVendor', 'pf_businessVendor');
-			fieldUpdate(user, 'businessService', 'pf_businessService');
-			fieldUpdate(user, 'businessOther', 'pf_businessOther');
-			fieldUpdate(user, 'businessNetwork', 'pf_businessNetwork');
-			fieldUpdate(user, 'businessResume', 'pf_businessResume');
+			fieldUpdate(user, 'businessJob', 'pf_businessJob', aclData);
+			fieldUpdate(user, 'businessRegNo', 'pf_businessRegNo', aclData);
+			fieldUpdate(user, 'businessCareer', 'pf_businessCareer', aclData);
+			fieldUpdate(user, 'businessEmployees', 'pf_businessEmployees', aclData);
+			fieldUpdate(user, 'businessVendor', 'pf_businessVendor', aclData);
+			fieldUpdate(user, 'businessService', 'pf_businessService', aclData);
+			fieldUpdate(user, 'businessOther', 'pf_businessOther', aclData);
+			fieldUpdate(user, 'businessNetwork', 'pf_businessNetwork', aclData);
+			fieldUpdate(user, 'businessResume', 'pf_businessResume', aclData);
 
       // address
-      fieldUpdate(user, 'businessCountry',        'pf_businesscountry');
+			fieldUpdate(user, 'businessCountry', 'pf_businesscountry', aclData);
 			updateState('pf_businesscountry', 'pf_businessstate', tagValue(user, 'businessState'));
-      fieldUpdate(user, 'businessCity',           'pf_businesscity');
-      fieldUpdate(user, 'businessCode',           'pf_businesscode');
-      fieldUpdate(user, 'businessAddress1',       'pf_businessaddress1');
-      fieldUpdate(user, 'businessAddress2',       'pf_businessaddress2');
-      fieldUpdate(user, 'businessTimezone',       'pf_businessTimezone');
-      fieldUpdate(user, 'businessLatitude',       'pf_businesslat');
+		  fieldACLUpdate(aclData, 'pf_acl_businessState');
+			fieldUpdate(user, 'businessCity', 'pf_businesscity', aclData);
+			fieldUpdate(user, 'businessCode', 'pf_businesscode', aclData);
+			fieldUpdate(user, 'businessAddress1', 'pf_businessaddress1', aclData);
+			fieldUpdate(user, 'businessAddress2', 'pf_businessaddress2', aclData);
+			fieldUpdate(user, 'businessTimezone', 'pf_businessTimezone', aclData);
+			fieldUpdate(user, 'businessLatitude', 'pf_businesslat', aclData);
       fieldUpdate(user, 'businessLongitude',      'pf_businesslng');
 			fieldUpdate(user, 'defaultMapLocation', 'pf_businessDefaultMapLocation');
-      fieldUpdate(user, 'businessPhone',          'pf_businessPhone');
+			fieldUpdate(user, 'businessPhone', 'pf_businessPhone', aclData);
+			fieldUpdate(user, 'businessPhoneExt', 'pf_businessPhoneExt');
       fieldUpdate(user, 'businessMobile',         'pf_businessMobile');
 
 			// online accounts
       pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
 
 			// contact
-			fieldUpdate(user, 'businessIcq', 'pf_businessIcq');
-			fieldUpdate(user, 'businessSkype', 'pf_businessSkype');
-			fieldUpdate(user, 'businessYahoo', 'pf_businessYahoo');
-			fieldUpdate(user, 'businessAim', 'pf_businessAim');
-			fieldUpdate(user, 'businessMsn', 'pf_businessMsn');
+			fieldUpdate(user, 'businessIcq', 'pf_businessIcq', aclData);
+			fieldUpdate(user, 'businessSkype', 'pf_businessSkype', aclData);
+			fieldUpdate(user, 'businessYahoo', 'pf_businessYahoo', aclData);
+			fieldUpdate(user, 'businessAim', 'pf_businessAim', aclData);
+			fieldUpdate(user, 'businessMsn', 'pf_businessMsn', aclData);
       pfShowRows("y2", tagValue(user, "businessMessaging"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});
 
       // security
@@ -2024,6 +2108,7 @@ function pfUpdateSubmit(No) {
   }
   else
   {
+    var A = '';
   	var S = '/ods/api/user.update.fields?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
     if (formTab == 0)
     {
@@ -2062,14 +2147,14 @@ function pfUpdateSubmit(No) {
           S += '&homeLatitude=' + encodeURIComponent($v('i_homelat'));
         if ($v('cb_item_i_homelng') == '1')
           S += '&homeLongitude=' + encodeURIComponent($v('i_homelng'));
-        if ($v('cb_item_i_homelng') == '1')
+        if ($v('cb_item_i_homePhone') == '1')
           S += '&homePhone=' + encodeURIComponent($v('i_homePhone'));
         if ($v('cb_item_i_businessOrganization') == '1')
           S += '&businessOrganization=' + encodeURIComponent($v('i_businessOrganization'));
         if ($v('cb_item_i_businessHomePage') == '1')
           S += '&businessHomePage=' + encodeURIComponent($v('i_businessHomePage'));
-        if ($v('cb_item_i_sumary') == '1')
-          S += '&sumary=' + encodeURIComponent($v('i_sumary'));
+        if ($v('cb_item_i_summary') == '1')
+          S += '&summary=' + encodeURIComponent($v('i_summary'));
         if ($v('cb_item_i_tags') == '1')
           S += '&tags=' + encodeURIComponent($v('i_tags'));
         if ($v('cb_item_i_sameAs') == '1')
@@ -2083,8 +2168,7 @@ function pfUpdateSubmit(No) {
       }
       if (formSubtab == 1)
       {
-        S = S
-        + '&nickName=' + encodeURIComponent($v('pf_nickName'))
+        S +='&nickName=' + encodeURIComponent($v('pf_nickName'))
         + '&mail=' + encodeURIComponent($v('pf_mail'))
         + '&title=' + encodeURIComponent($v('pf_title'))
         + '&firstName=' + encodeURIComponent($v('pf_firstName'))
@@ -2094,16 +2178,29 @@ function pfUpdateSubmit(No) {
         + '&birthday=' + encodeURIComponent($v('pf_birthday'))
         + '&homepage=' + encodeURIComponent($v('pf_homepage'))
         + '&mailSignature=' + encodeURIComponent($v('pf_mailSignature'))
-        + '&sumary=' + encodeURIComponent($v('pf_sumary'))
+          + '&summary=' + encodeURIComponent($v('pf_summary'))
         + '&appSetting=' + encodeURIComponent($v('pf_appSetting'))
         + '&webIDs=' + encodeTableData("x1", ["\n"])
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);
+        A +='title=' + $v('pf_acl_title')
+          + '&firstName=' + $v('pf_acl_firstName')
+          + '&lastName=' + $v('pf_acl_lastName')
+          + '&fullName=' + $v('pf_acl_fullName')
+          + '&gender=' + $v('pf_acl_gender')
+          + '&birthday=' + $v('pf_acl_birthday')
+          + '&mail=' + $v('pf_acl_mail')
+          + '&homepage=' + $v('pf_acl_homepage')
+          + '&summary=' + $v('pf_acl_summary')
+          + '&webIDs=' +  $v('pf_acl_webIDs')
+          + '&interests=' + $v('pf_acl_interests')
+          + '&topicInterests=' + $v('pf_acl_topicInterests')
+          + '&audio=' + $v('pf_acl_audio')
+          + '&photo=' + $v('pf_acl_photo');
       }
       if (formSubtab == 2)
       {
-        S = S
-        + '&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation'))
+        S +='&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation'))
 			+ '&homeCountry=' + encodeURIComponent($v('pf_homecountry'))
 			+ '&homeState=' + encodeURIComponent($v('pf_homestate'))
 			+ '&homeCity=' + encodeURIComponent($v('pf_homecity'))
@@ -2114,25 +2211,37 @@ function pfUpdateSubmit(No) {
 			+ '&homeLatitude=' + encodeURIComponent($v('pf_homelat'))
 			+ '&homeLongitude=' + encodeURIComponent($v('pf_homelng'))
 			+ '&homePhone=' + encodeURIComponent($v('pf_homePhone'))
+  			  + '&homePhoneExt=' + encodeURIComponent($v('pf_homePhoneExt'))
   			+ '&homeMobile=' + encodeURIComponent($v('pf_homeMobile'));
+        A +='&homeCountry=' + $v('pf_acl_homeCountry')
+  			  + '&homeState=' + $v('pf_acl_homeState')
+  			  + '&homeCity=' + $v('pf_acl_homeCity')
+  			  + '&homeCode=' + $v('pf_acl_homeCode')
+  			  + '&homeAddress1=' + $v('pf_acl_homeAddress1')
+  			  + '&homeTimezone=' + $v('pf_acl_homeTimezone')
+  			  + '&homeLatitude=' + $v('pf_acl_homeLatitude')
+  			  + '&homePhone=' + $v('pf_acl_homePhone');
   	  }
       if (formSubtab == 5)
       {
-        S = S
-        + '&icq=' + encodeURIComponent($v('pf_icq'))
+        S +='&icq=' + encodeURIComponent($v('pf_icq'))
         + '&skype=' + encodeURIComponent($v('pf_skype'))
         + '&yahoo=' + encodeURIComponent($v('pf_yahoo'))
         + '&aim=' + encodeURIComponent($v('pf_aim'))
         + '&msn=' + encodeURIComponent($v('pf_msn'))
-        + '&messaging=' + encodeTableData("x6", ["\n", ";"])
+          + '&messaging=' + encodeTableData("x6", ["\n", ";"]);
+        A +='&icq=' + $v('pf_acl_icq')
+          + '&skype=' + $v('pf_acl_skype')
+          + '&yahoo=' + $v('pf_acl_yahoo')
+          + '&aim=' + $v('pf_acl_aim')
+          + '&msn=' + $v('pf_acl_msn');
       }
     }
     else if (formTab == 1)
     {
       if (formSubtab == 0)
       {
-        S = S
-  			+ '&businessIndustry=' + encodeURIComponent($v('pf_businessIndustry'))
+        S +='&businessIndustry=' + encodeURIComponent($v('pf_businessIndustry'))
   			+ '&businessOrganization=' + encodeURIComponent($v('pf_businessOrganization'))
   			+ '&businessHomePage=' + encodeURIComponent($v('pf_businessHomePage'))
         + '&businessJob=' + encodeURIComponent($v('pf_businessJob'))
@@ -2144,11 +2253,21 @@ function pfUpdateSubmit(No) {
         + '&businessOther=' + encodeURIComponent($v('pf_businessOther'))
         + '&businessNetwork=' + encodeURIComponent($v('pf_businessNetwork'))
         + '&businessResume=' + encodeURIComponent($v('pf_businessResume'));
+        A +='&businessIndustry=' + $v('pf_acl_businessIndustry')
+  			  + '&businessOrganization=' + $v('pf_acl_businessOrganization')
+          + '&businessJob=' + $v('pf_acl_businessJob')
+  			  + '&businessRegNo=' + $v('pf_acl_businessRegNo')
+  			  + '&businessCareer=' + $v('pf_acl_businessCareer')
+  			  + '&businessEmployees=' + $v('pf_acl_businessEmployees')
+  			  + '&businessVendor=' + $v('pf_acl_businessVendor')
+  			  + '&businessService=' + $v('pf_acl_businessService')
+          + '&businessOther=' + $v('pf_acl_businessOther')
+          + '&businessNetwork=' + $v('pf_acl_businessNetwork')
+          + '&businessResume=' + $v('pf_acl_businessResume');
   	  }
       if (formSubtab == 1)
       {
-        S = S
-        + '&businessCountry=' + encodeURIComponent($v('pf_businesscountry'))
+        S +='&businessCountry=' + encodeURIComponent($v('pf_businesscountry'))
         + '&businessState=' + encodeURIComponent($v('pf_businessstate'))
         + '&businessCity=' + encodeURIComponent($v('pf_businesscity'))
         + '&businessCode=' + encodeURIComponent($v('pf_businesscode'))
@@ -2158,17 +2277,30 @@ function pfUpdateSubmit(No) {
   			+ '&businessLatitude=' + encodeURIComponent($v('pf_businesslat'))
   			+ '&businessLongitude=' + encodeURIComponent($v('pf_businesslng'))
   			+ '&businessPhone=' + encodeURIComponent($v('pf_businessPhone'))
+  			  + '&businessPhoneExt=' + encodeURIComponent($v('pf_businessPhoneExt'))
   			+ '&businessMobile=' + encodeURIComponent($v('pf_businessMobile'));
+        A +='&businessCountry=' + $v('pf_acl_businessCountry')
+          + '&businessState=' + $v('pf_acl_businessState')
+          + '&businessCity=' + $v('pf_acl_businessCity')
+          + '&businessCode=' + $v('pf_acl_businessCode')
+          + '&businessAddress1=' + $v('pf_acl_businessAddress1')
+  			  + '&businessTimezone=' + $v('pf_acl_businessTimezone')
+  			  + '&businessLatitude=' + $v('pf_acl_businesslat')
+  			  + '&businessPhone=' + $v('pf_acl_businessPhone')
   	  }
       if (formSubtab == 3)
       {
-        S = S
-        + '&businessIcq=' + encodeURIComponent($v('pf_businessIcq'))
+        S +='&businessIcq=' + encodeURIComponent($v('pf_businessIcq'))
         + '&businessSkype=' + encodeURIComponent($v('pf_businessSkype'))
         + '&businessYahoo=' + encodeURIComponent($v('pf_businessYahoo'))
         + '&businessAim=' + encodeURIComponent($v('pf_businessAim'))
-        + '&businessMsn=' + encodeURIComponent($v('pf_businessMsn'));
-        + '&businessMessaging=' + encodeTableData("y2", ["\n", ";"])
+          + '&businessMsn=' + encodeURIComponent($v('pf_businessMsn'))
+          + '&businessMessaging=' + encodeTableData("y2", ["\n", ";"]);
+        A +='&businessIcq=' + $v('pf_acl_businessIcq')
+          + '&businessSkype=' + $v('pf_acl_businessSkype')
+          + '&businessYahoo=' + $v('pf_acl_businessYahoo')
+          + '&businessAim=' + $v('pf_acl_businessAim')
+          + '&businessMsn=' + $v('pf_acl_businessMsn');
       }
   	}
     else if (formTab == 2)
@@ -2204,6 +2336,9 @@ function pfUpdateSubmit(No) {
         S += '&certificate=&certificateLogin=0';
     	}
   	}
+  	if (A != '')
+  	  OAT.AJAX.GET('/ods/api/user.acl.update?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&acls=' + encodeURIComponent(A), false, null, {async: false});
+
   	OAT.AJAX.GET(S, '', function(data){ if((formTab == 0) && (formSubtab == 1)) {$('page_form').submit();}; pfUpdateCallback(data, No);});
   }
   return false;
@@ -2211,10 +2346,9 @@ function pfUpdateSubmit(No) {
 
 function pfUpdateCallback(data, No) {
   var xml = OAT.Xml.createXmlDoc(data);
-	if (!hasError(xml)) {
+	if (!hasError(xml))
     ufProfileLoad(No);
   }
-}
 
 function pfChangeSubmit(event) {
 	if ($v('pf_newPassword') != $v('pf_newPassword2')) {
@@ -2293,7 +2427,7 @@ function pfGetFOAFData(iri) {
 			pfSetFOAFValue(tbody, o.lng,                  'Longitude',             'i_homelng');
 			pfSetFOAFValue(tbody, o.organizationTitle,    'Organization',          'i_businessOrganization');
 			pfSetFOAFValue(tbody, o.organizationHomepage, 'Organization Homepage', 'i_businessHomePage');
-			pfSetFOAFValue(tbody, o.resume,               'Resume',                'i_sumary');
+			pfSetFOAFValue(tbody, o.resume,               'Resume',                       'i_summary');
 			pfSetFOAFValue(tbody, o.tags,                 'Tags',                  'i_tags');
 			pfSetFOAFValue(tbody, o.sameAs,               'Other Personal URIs (WebIDs)', 'i_sameAs', ['URI'], ['\n']);
 			pfSetFOAFValue(tbody, o.interest,             'Topic of Interest',     'i_interests', ['URL', 'Label'], ['\n', ';']);

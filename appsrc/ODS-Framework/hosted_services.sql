@@ -563,7 +563,10 @@ wa_exec_no_error(
    WS_REGISTER_FACEBOOK integer default 1,
    WS_REGISTER_SSL integer default 1,
    WS_REGISTER_AUTOMATIC_SSL integer default 1,
-   WS_FEEDS_HUB varchar default null
+   WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
+   WS_FEEDS_UPDATE_FREQ integer default 1,
+   WS_FEEDS_HUB varchar default null,
+   WS_FEEDS_HUB_CALLBACK integer default 1
  )
 ')
 ;
@@ -623,6 +626,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB', 'varchar default null')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB_CALLBACK', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_STORE_DAYS', 'integer default 30')

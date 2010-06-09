@@ -1287,7 +1287,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   in homeLatitude varchar := null,
   in homeLongitude varchar := null,
   in homePhone varchar := null,
+  in homePhoneExt varchar := null,
   in homeMobile varchar := null,
+
   in businessIndustry varchar := null,
   in businessOrganization varchar := null,
   in businessHomePage varchar := null,
@@ -1311,6 +1313,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   in businessLatitude varchar := null,
   in businessLongitude varchar := null,
   in businessPhone varchar := null,
+  in businessPhoneExt varchar := null,
   in businessMobile varchar := null,
 
   in businessIcq varchar := null,
@@ -1384,6 +1387,8 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSN', msn);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MESSAGING', messaging);
 
+  if (defaultMapLocation = 'on');
+    defaultMapLocation := '1';
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LATLNG_HBDEF', defaultMapLocation);
   -- Home
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HCOUNTRY', homeCountry);
@@ -1396,6 +1401,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LAT', homeLatitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_LNG', homeLongitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HPHONE', homePhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_HPHONE_EXT', homePhoneExt);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_HMOBILE', homeMobile);
 
   -- Business
@@ -1413,6 +1419,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BLAT', businessLatitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BLNG', businessLongitude);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BPHONE', businessPhone);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_BPHONE_EXT', businessPhoneExt);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BMOBILE', businessMobile);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BREGNO', businessRegNo);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BCAREER', businessCareer);
@@ -1460,6 +1467,123 @@ create procedure ODS.ODS_API."user.update.fields" (
 	    }
 	  }
   }
+  return ods_serialize_int_res (1);
+}
+;
+
+create procedure ODS.ODS_API."user.acl.array" ()
+{
+  return vector (
+                  'title',                0,
+                  'firstName',            1,
+                  'lastName',             2,
+                  'fullName',             3,
+                  'mail',                 4,
+                  'gender',               5,
+                  'birthday',             6,
+                  'homepage',             7,
+                  'webIDs',               8,
+                  'mailSignature',        9,
+                  'icq',                  10,
+                  'skype',                11,
+                  'yahoo',                12,
+                  'aim',                  13,
+                  'msn',                  14,
+                  'homeAddress1',         15,
+                  'homeCountry',          16,
+                  'homeTimezone',         17,
+                  'homePhone',            18,
+                  'businessIndustry',     19,
+                  'businessOrganization', 20,
+                  'businessJob',          21,
+                  'businessAddress1',     22,
+                  'businessCountry',      23,
+                  'businessTimezone',     24,
+                  'businessPhone',        25,
+                  'businessRegNo',        26,
+                  'businessCareer',       27,
+                  'businessEmployees',    28,
+                  'businessVendor',       29,
+                  'businessService',      30,
+                  'businessOther',        31,
+                  'businessNetwork',      32,
+                  'summary',              33,
+                  'businessResume',       34,
+                  'photo',                37,
+                  'homeLatitude',         39,
+                  'audio',                43,
+                  'businessLatitude',     47,
+                  'interests',            48,
+                  'topicInterests',       49,
+                  'businessIcq',          50,
+                  'businessSkype',        51,
+                  'businessYahoo',        52,
+                  'businessAim',          53,
+                  'businessMsn',          54,
+                  'homeCode',             57,
+                  'homeCity',             58,
+                  'homeState',            59,
+                  'businessCode',         60,
+                  'businessCity',         61,
+                  'businessState',        62
+                );
+}
+;
+
+create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare N, M, tmp, acl, aclArray any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  http ('<acl>');
+  aclArray := ODS.ODS_API."user.acl.array" ();
+  acl := DB.DBA.WA_USER_VISIBILITY(uname);
+  for (N := 0; N < length (aclArray); N := N + 2)
+  {
+    M := aclArray[N+1];
+    if (M < length (acl))
+      ods_xml_item (aclArray[N], acl[M]);
+  }
+  http ('</acl>');
+
+  return '';
+}
+;
+
+create procedure ODS.ODS_API."user.acl.update" (
+  in acls varchar) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare N, tmp, acl, aclArray any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  tmp := vector ();
+  aclArray := ODS.ODS_API."user.acl.array" ();
+  acl := DB.DBA.WA_USER_VISIBILITY(uname);
+  acls := split_and_decode (acls);
+  if (length (acls))
+  {
+    for (N := 0; N < length (aclArray); N := N + 2)
+    {
+      if (not isnull (get_keyword (aclArray[N], acls)))
+        tmp := vector_concat (tmp, vector (cast (aclArray[N+1] as varchar), get_keyword (aclArray[N], acls)));
+    }
+    DB.DBA.WA_USER_VISIBILITY(uname, tmp, 2);
+  }
+
   return ods_serialize_int_res (1);
 }
 ;
@@ -1726,9 +1850,8 @@ create procedure ODS.ODS_API."user.info" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (not ods_check_auth (uname))
-  {
     return ods_auth_failed ();
-  }
+
   if (isnull (name))
     name := uname;
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
@@ -1780,6 +1903,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('homeLatitude',           case when isnull (WAUI_LAT) then '' else sprintf ('%.6f', coalesce (WAUI_LAT, 0.00)) end);
       ods_xml_item ('homeLongitude',          case when isnull (WAUI_LNG) then '' else sprintf ('%.6f', coalesce (WAUI_LNG, 0.00)) end);
       ods_xml_item ('homePhone',              WAUI_HPHONE);
+      ods_xml_item ('homePhoneExt',           WAUI_HPHONE_EXT);
       ods_xml_item ('homeMobile',             WAUI_HMOBILE);
 
       -- Business
@@ -1797,6 +1921,7 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('businessLatitude',       case when isnull (WAUI_BLAT) then '' else sprintf ('%.6f', coalesce (WAUI_BLAT, 0.00)) end);
       ods_xml_item ('businessLongitude',      case when isnull (WAUI_BLNG) then '' else sprintf ('%.6f', coalesce (WAUI_BLNG, 0.00)) end);
       ods_xml_item ('businessPhone',          WAUI_BPHONE);
+      ods_xml_item ('businessPhoneExt',       WAUI_BPHONE_EXT);
       ods_xml_item ('businessMobile',         WAUI_BMOBILE);
       ods_xml_item ('businessRegNo',          WAUI_BREGNO);
       ods_xml_item ('businessCareer',         WAUI_BCAREER);
@@ -4027,6 +4152,8 @@ grant execute on ODS.ODS_API."user.login" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
 grant execute on ODS.ODS_API."user.update" to ODS_API;
 grant execute on ODS.ODS_API."user.update.fields" to ODS_API;
+grant execute on ODS.ODS_API."user.acl.update" to ODS_API;
+grant execute on ODS.ODS_API."user.acl.info" to ODS_API;
 grant execute on ODS.ODS_API."user.upload" to ODS_API;
 grant execute on ODS.ODS_API."user.password_change" to ODS_API;
 grant execute on ODS.ODS_API."user.delete" to ODS_API;
