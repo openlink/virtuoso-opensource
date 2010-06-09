@@ -2513,6 +2513,47 @@ create procedure DB.DBA.__INFORMIX_SYS_COL_STAT (in DSN varchar, in RT_NAME varc
 }
 ;
 
+create procedure DB.DBA.__DB2_SYS_COL_STAT (in DSN varchar, in RT_NAME varchar, in RT_REMOTE_NAME varchar)
+returns ANY
+{
+--  dbg_obj_print ('DB.DBA.__ORACLE_SYS_COL_STAT', DSN, RT_NAME, RT_REMOTE_NAME);
+  declare _meta, _res any;
+
+  rexecute (DSN,
+    'select c.COLNAME, c.COLCARD, c.LOW2KEY, c.HIGH2KEY, c.AVGCOLLEN, t.CARD - c.NUMNULLS, t.CARD ' ||
+    'from SYSSTAT.COLUMNS c, SYSSTAT.TABLES t ' ||
+    'where t.TABNAME = c.TABNAME and t.TABSCHEMA = c.TABSCHEMA and c.TABSCHEMA = ? and c.TABNAME = ?',
+    NULL, NULL, vector (name_part (RT_REMOTE_NAME, 1, NULL), name_part (RT_REMOTE_NAME, 2, NULL)),
+    NULL, _meta, _res);
+
+  if (isarray (_res) and length (_res) > 0 and isarray (_res[0]) and isarray (_meta) and isarray (_meta[0]))
+    {
+      declare _inx, _len integer;
+      _inx := 0;
+      _len := length (_res);
+      exec_result_names (_meta[0]);
+      while (_inx < _len)
+	{
+	  exec_result (_res[_inx]);
+	  _inx := _inx + 1;
+	}
+    }
+  return NULL;
+}
+;
+
+--!AWK AFTER
+insert soft SYS_STAT_VDB_MAPPERS
+  (SVDM_TYPE,
+   SVDM_PROC,
+   SVDM_DBMS_NAME_MASK,
+   SVDM_DBMS_VER_MASK)
+ values
+  ('SYS_COL_STAT',
+   'DB.DBA.__DB2_SYS_COL_STAT',
+   '%DB2%',
+   '%')
+;
 
 create procedure SYS_STAT_VDB_SYNC ()
 {
