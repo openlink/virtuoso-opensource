@@ -984,5 +984,6 @@ extern unsigned blob_page_dir_threshold;
 extern int virtuoso_server_initialized;
 extern int dive_pa_mode;
 extern unsigned int bp_hit_ctr;
+extern int32 dbs_check_extent_free_pages;
 
 #endif /* _WIFN_H */

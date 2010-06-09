@@ -83,6 +83,7 @@ int t_main_sz = 0;
 int t_future_sz = 0;
 int n_oldest_flushable;
 int null_bad_dtp;
+int32 dbs_check_extent_free_pages = 0;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
 int default_txn_isolation = ISO_REPEATABLE;
@@ -123,6 +124,8 @@ int c_use_o_direct = 0;
 int c_use_aio = 0;
 
 extern int32 sqlo_compiler_exceeds_run_factor;
+
+int32 c_dense_page_allocation = 0;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);

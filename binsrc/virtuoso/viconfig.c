@@ -109,6 +109,7 @@ extern char *vdb_odbc_error_file; /* from sqlrrun.c */
 extern char *vdb_trim_trailing_spaces; /* from sqlrrun.c */
 extern long cfg_disable_vdb_stat_refresh;
 extern char *www_maintenance_page;
+extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
@@ -205,6 +206,7 @@ int32 c_null_unspecified_params;
 int32 c_prefix_resultnames;
 int32 c_disable_mt_write;
 int32 c_bad_parent_links;
+extern int32 dbs_check_extent_free_pages;
 #if 0/*obsoleted*/
 int32 c_bad_dtp;
 int32 c_atomic_dive;
@@ -339,6 +341,7 @@ int32 c_lite_mode = 0;
 int32 c_uriqa_dynamic_local = 0;
 int32 c_rdf_obj_ft_rules_size = 0;
 int32 c_it_n_maps = 0;
+extern int32 c_dense_page_allocation;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -854,7 +857,11 @@ cfg_setup (void)
     sqlo_compiler_exceeds_run_factor = 0;
 
   if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
-    sqlo_max_mp_size = 500000000;
+    sqlo_max_mp_size = 200000000;
+
+#ifdef POINTER_64
+  sqlo_max_mp_size *= 2;
+#endif
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
@@ -1039,6 +1046,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
 
+  if (cfg_getlong (pconfig, section, "DensePageAllocation", &c_dense_page_allocation) == -1)
+    c_dense_page_allocation = 0;
 
   section = "HTTPServer";
 
@@ -1198,6 +1207,9 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "MaintenancePage", &www_maintenance_page) == -1)
     www_maintenance_page = NULL;
 
+  if (cfg_getstring (pconfig, section, "GatewayIpAddress", &http_proxy_address) == -1)
+    http_proxy_address = NULL;
+
   if (cfg_getlong (pconfig, section, "RDFContentNegotiation", &c_http_check_rdf_accept) == -1)
     c_http_check_rdf_accept = 1;
 
@@ -1224,6 +1236,8 @@ cfg_setup (void)
     c_bad_parent_links = 0;
   if (cfg_getlong (pconfig, section, "DuplicateCheckpointRemaps", &cpt_remap_recovery) == -1)
     cpt_remap_recovery = 0;
+  if (cfg_getlong (pconfig, section, "CheckExtentFreePages", &dbs_check_extent_free_pages) == -1)
+    dbs_check_extent_free_pages = 0;
 
 
 #if 0/*obsoleted*/
