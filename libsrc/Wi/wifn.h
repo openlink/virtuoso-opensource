@@ -1196,6 +1196,7 @@ extern dk_mutex_t * extent_map_create_mtx;
 extern int32 sql_const_cond_opt;
 extern int aq_max_threads;
 extern int in_log_replay;
+extern int32 dbs_check_extent_free_pages;
 #ifndef NDEBUG
 void ws_lt_trace (lock_trx_t * lt);
 #endif

@@ -190,8 +190,29 @@ dbs_extent_allocated (dbe_storage_t * dbs, dp_addr_t n)
     }
 }
 
+int32
+em_free_count (extent_map_t * em, int type)
+{
+  int32 n = 0;
+  DO_EXT (ext, em)
+    {
+      if (type != EXT_TYPE (ext))
+	continue;
+      n += ext_free_count (ext);
+    }
+  END_DO_EXT;
+  return n;
+}
+
+#define EM_DEC_FREE(em, t) \
+{ \
+  if (EXT_INDEX == t) em->em_n_free_pages--; \
+  else if (EXT_BLOB == t) em->em_n_free_blob_pages--; \
+  else em->em_n_free_remap_pages--;		      \
+}
 
 extern long dbf_no_disk;
+int32 dbs_check_extent_free_pages = 0;
 
 int
 dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
@@ -199,6 +220,7 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
   extent_map_t * em;
   	  extent_t * new_ext = NULL;
   int n, n_allocated = 0;
+  int32 em_n_free;
   dp_addr_t ext_first = dbs->dbs_n_pages;
   ASSERT_IN_DBS (dbs);
   if (dbf_no_disk)
@@ -228,6 +250,16 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
     }
   if (!is_in_sys_em)
     mutex_enter (em->em_mtx);
+
+  if (dbs_check_extent_free_pages)
+    {
+      em_n_free = em_free_count (em, EXT_INDEX);
+      if (em->em_n_free_pages != em_n_free)
+	{
+	  log_error ("The %s free pages incorrect %d != %d actually free", em->em_name, em->em_n_free_pages, em_n_free);
+	  em->em_n_free_pages = em_n_free;
+	}
+    }
 
   if (em->em_n_free_pages < 16)
     {
@@ -273,16 +305,19 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       if (n_allocated)
 	dbs_page_allocated (dbs, ext_first);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
+      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
 
       last = page_set_extend (dbs, &dbs->dbs_incbackup_set, 0, DPF_INCBACKUP_SET);
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
+      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
       dbs->dbs_n_pages_in_sets += BITS_ON_PAGE;
     }
   if (dbs->dbs_n_pages > dbs->dbs_n_pages_in_extent_set)
     {
       buffer_desc_t * last = page_set_extend (dbs, &dbs->dbs_extent_set, 0, DPF_EXTENT_SET);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
+      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
       LONG_SET (last->bd_buffer + DP_DATA, 1); /* the newly made ext is the 1st of this page of the ext set, so set the bm 1st bit to 1 */
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       dbs->dbs_n_pages_in_extent_set += EXTENT_SZ * BITS_ON_PAGE;
@@ -795,13 +830,6 @@ em_new_extent (extent_map_t * em, int type, dp_addr_t extends)
   return new_ext;
 }
 
-
-#define EM_DEC_FREE(em, t) \
-{ \
-  if (EXT_INDEX == t) em->em_n_free_pages--; \
-  else if (EXT_BLOB == t) em->em_n_free_blob_pages--; \
-  else em->em_n_free_remap_pages--;		      \
-}
 
 
 dp_addr_t
