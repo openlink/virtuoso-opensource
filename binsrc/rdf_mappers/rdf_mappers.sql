@@ -4817,6 +4817,14 @@ create procedure DB.DBA.RDF_LOAD_WINE (in graph_iri varchar, in new_origin_uri v
 			return 0;
 		url := sprintf('http://services.wine.com/api/beta/service.svc/xml/catalog?filter=product(%s)&apikey=%s', wine_id, _key);
 	}
+    else if (new_origin_uri like 'http://www.wine.com/V6/%/gift/%/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.wine.com/V6/%s/gift/%s/%s', 0);
+		wine_id := tmp[1];
+		if (wine_id is null)
+			return 0;
+		url := sprintf('http://services.wine.com/api/beta/service.svc/xml/catalog?filter=product(%s)&apikey=%s', wine_id, _key);
+	}
 	else
 		return 0;
     tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
