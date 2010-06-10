@@ -71,7 +71,8 @@
                   <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td class="listing_col">
-                  <v:label format="%s" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+		    <v:label format="%s" name="data_set1_browse_label_2" 
+			value="--( case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__rdf_repl' then 'RDF Publication' else (control.vc_parent as vspx_row_template).te_rowset[1] end)" />
                 </td>
                 <td class="listing_col">
                   <v:label format="%s" name="data_set1_browse_label_3" value="--(coalesce((select DS_UID from SYS_DATA_SOURCE where DS_DSN = (select DB_ADDRESS from SYS_SERVERS as s where s.SERVER = cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))), ''))" />
@@ -193,6 +194,7 @@
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
 		      text="&#160;Edit"
+		      enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__repl_pub' then 0 else 1 end"
 		      url="--concat('db_repl_sub_edit.vspx?acct=', (control.vc_parent as vspx_row_template).te_rowset[1], '&srv=', (control.vc_parent as vspx_row_template).te_rowset[0], '&sid=', self.sid, '&realm=', self.realm)"/>
                 </td>
               <?vsp
