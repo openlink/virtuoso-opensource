@@ -466,6 +466,8 @@ next_response:
 	    prop1 := prop;
           found_cprop := 0;
           prop_raw_val := DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, st, prop1, 0), null);
+	  if (strchr (prop1, ':') is not null)
+	    goto skip1;  
           if (prop_raw_val is not null)
 	    {
               prop_val := deserialize (prop_raw_val);
@@ -481,12 +483,13 @@ next_response:
 	            }
 	        }
               else if (isstring (prop_raw_val))
-		http (concat ('<V:',prop1,'>', prop_raw_val,'</V:', prop1,'>\n'));
+		http (concat ('<V:',prop1,'><![CDATA[', prop_raw_val,']]></V:', prop1,'>\n'));
 	      else
 		http (concat ('<V:',prop1,'/>\n'));
 
               found_cprop := 1;
               found_sprop := 1;
+	      skip1:;
 	    }
 	  if (add_not_found and not found_cprop)
 	    {
@@ -519,6 +522,8 @@ next_response:
           prop1 := prp[0];
           prop_raw_val := prp[1];
           prop_val := deserialize (prop_raw_val);
+	  if (strchr (prop1, ':') is not null)
+	    goto skip2;  
             if (isarray (prop_val))
                 {
                   prop_val := xml_tree_doc (prop_val);
@@ -531,9 +536,10 @@ next_response:
 	            }
 	        }
 	    else if (isstring (prop_raw_val))
-	      http (concat ('<V:',prop1,'>', prop_raw_val ,'</V:', prop1,'>\n'));
+	      http (concat ('<V:',prop1,'><![CDATA[', prop_raw_val ,']]></V:', prop1,'>\n'));
 	    else
 	      http (concat ('<V:',prop1,'/>\n'));
+	  skip2:  
           prop_idx := prop_idx + 1;
         }
     }
