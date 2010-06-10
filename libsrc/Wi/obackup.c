@@ -842,7 +842,7 @@ backup_context_allocate(const char* fileprefix,
 
   fd = backup_context_increment (ctx,0);
 
-  if (fd > 0)
+  if (fd >= 0)
     {
       ctx->octx_dbs = wi_inst.wi_master;
       if (!restored)
