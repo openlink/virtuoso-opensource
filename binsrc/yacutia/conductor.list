@@ -83,6 +83,7 @@ conductor/db_repl_pub_cr_edit.vspx
 conductor/db_repl_pub_cr.vspx
 conductor/db_repl_pub_edit.vspx
 conductor/db_repl_pub.vspx
+conductor/db_repl_rdf_pub_edit.vspx
 conductor/db_repl_snap_create.vspx
 conductor/db_repl_snap_local_create.vspx
 conductor/db_repl_snap_local_start.vspx

@@ -359,6 +359,7 @@ create procedure adm_menu_tree ()
       <node name="Transactional (publish)" url="db_repl_pub.vspx"  id="96" place="1"/>
       <node name="Transactional (publish)" url="db_repl_pub_create.vspx" id="97" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_edit.vspx" id="98" place="1" />
+      <node name="Transactional (publish)" url="db_repl_rdf_pub_edit.vspx" id="98" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_cr.vspx" id="99" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_cr_edit.vspx" id="100" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_cr_edit2.vspx" id="101" place="1" />
