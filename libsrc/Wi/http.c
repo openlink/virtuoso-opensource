@@ -4835,7 +4835,7 @@ bif_http_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t deflt = ((BOX_ELEMENTS (args) > 0) ? bif_arg (qst, args, 0, "http_host") : NULL);
   caddr_t host = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
-  if (ws && ws->ws_lines && NULL != (host = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
+  if (ws && ws->ws_lines && NULL == (host = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
     host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
   if (!host)
     host = box_copy (deflt);
