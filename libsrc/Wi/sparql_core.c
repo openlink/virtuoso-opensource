@@ -4041,8 +4041,11 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       sparqre.sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
-      ssg_free_internals (&ssg);
-      MP_DONE ();
+      if (SQL_SUCCESS != sparqre.sparqre_catched_error) /* if err is SQL_SUCCESS will be done below as no jump will occur */
+	{
+          ssg_free_internals (&ssg);
+          MP_DONE ();
+	}
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
   END_QR_RESET
