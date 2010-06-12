@@ -11328,26 +11328,25 @@ ws_soap_http (ws_connection_t * ws)
   char *szMethod = BOX_ELEMENTS (path) > 2 ? path[2] : NULL;
   char szFullProcName[2048], *usr_qual, mime_type[1024];
   const char *usr_own;
-  client_connection_t * cli = ws->ws_cli;
+  client_connection_t *cli = ws->ws_cli;
   query_t *qr = NULL;
   caddr_t err = NULL, *pars, text;
-  dk_session_t * ses = ws->ws_strses;
-  wcharset_t * volatile charset = ws->ws_charset;
+  dk_session_t *ses = ws->ws_strses;
+  wcharset_t *volatile charset = ws->ws_charset;
   int is_http = 0;
 
   soap_ctx_t ctx;
   int http_resp_code = 200;
-  caddr_t * opts = SOAP_OPTIONS(ws);
-  char * soap_escapes = SOAP_USE_ESCAPES(opts);
-  char * schema_ns = SOAP_TYPES_SCH (opts);
+  caddr_t *opts = SOAP_OPTIONS (ws);
+  char *soap_escapes = SOAP_USE_ESCAPES (opts);
+  char *schema_ns = SOAP_TYPES_SCH (opts);
   dk_set_t qrs = NULL;
 
   /* Set context for SOAP serialization */
   memset (&ctx, 0, sizeof (soap_ctx_t));
   ctx.soap_version = atoi (ws_soap_get_opt (opts, "HttpSOAPVersion", "11"));
-  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ?
-      DKS_ESC_COMPAT_SOAP: 0);
-  ctx.def_enc = SOAP_DEF_ENC(opts);
+  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ? DKS_ESC_COMPAT_SOAP : 0);
+  ctx.def_enc = SOAP_DEF_ENC (opts);
   ctx.opts = opts;
   ctx.role_url = ws_soap_get_opt (opts, SOAP_ROLE, NULL);
   ctx.is_router = soap_get_opt_flag (opts, SOAP_ROUTER);
@@ -11388,20 +11387,29 @@ ws_soap_http (ws_connection_t * ws)
 
   is_http = (qr->qr_proc_place & SOAP_MSG_HTTP);
 
-  if (is_http) /* we should do this only when no error */
+#ifndef SOAP_HTTP
+  if (!is_http)
     {
-      snprintf (mime_type, sizeof (mime_type), "Content-Type: %s; charset=\"%s\"\r\n",
-	  qr->qr_proc_alt_ret_type, CHARSET_NAME (charset, "ISO-8859-1"));
-      ws->ws_header = box_dv_short_string (mime_type);
-    }
-  else
-    {
-#ifdef SOAP_HTTP
-      snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset, "ISO-8859-1"));
-      ws->ws_header = box_dv_short_string (mime_type);
-#else
       err = srv_make_new_error ("37000", "SOH04", "There is no such procedure");
       goto end;
+    }
+#endif
+
+  if (!ws->ws_header)
+    {
+      if (is_http)		/* we should do this only when no error */
+	{
+	  snprintf (mime_type, sizeof (mime_type), "Content-Type: %s; charset=\"%s\"\r\n",
+	      qr->qr_proc_alt_ret_type, CHARSET_NAME (charset, "ISO-8859-1"));
+	  ws->ws_header = box_dv_short_string (mime_type);
+	}
+#ifdef SOAP_HTTP
+      else
+	{
+	  snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset,
+		  "ISO-8859-1"));
+	  ws->ws_header = box_dv_short_string (mime_type);
+	}
 #endif
     }
   ctx.literal = (SOAP_MSG_LITERAL & qr->qr_proc_place);
@@ -11409,13 +11417,12 @@ ws_soap_http (ws_connection_t * ws)
   if (err)
     {
       dk_free_tree ((box_t) pars);
-      dk_free_box(text);
+      dk_free_box (text);
 #ifdef SOAP_HTTP
       if (!is_http)
 	{
 	  caddr_t err1;
-	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
-	      &http_resp_code, &ctx);
+	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
 	  dk_free_tree (err);
 	  err = err1;
 	}
@@ -11423,77 +11430,75 @@ ws_soap_http (ws_connection_t * ws)
       goto end;
     }
 
-    {
-      query_t * volatile call_qry = NULL;
-      local_cursor_t * lc = NULL;
+  {
+    query_t *volatile call_qry = NULL;
+    local_cursor_t *lc = NULL;
 
-      call_qry = sql_compile (text, cli, &err, SQLC_DEFAULT);
-      dk_free_box (text);
-      if (err)
-	{
-	  dk_free_tree ((box_t) pars);
-	  goto end;
-	}
-      err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL,
-	  &lc, pars, NULL, 1);
-      dk_free_box ((box_t) pars);
-      while (lc_next (lc));
-      if (err)
-	{
-	  if (lc)
-	    lc_free (lc);
-	  qr_free (call_qry);
+    call_qry = sql_compile (text, cli, &err, SQLC_DEFAULT);
+    dk_free_box (text);
+    if (err)
+      {
+	dk_free_tree ((box_t) pars);
+	goto end;
+      }
+    err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL, &lc, pars, NULL, 1);
+    dk_free_box ((box_t) pars);
+    while (lc_next (lc));
+    if (err)
+      {
+	if (lc)
+	  lc_free (lc);
+	qr_free (call_qry);
 #ifdef SOAP_HTTP
-	  if (!is_http)
-	    {
-	      caddr_t err1;
-	      err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
-		  &http_resp_code, &ctx);
-	      dk_free_tree (err);
-	      err = err1;
-	    }
+	if (!is_http)
+	  {
+	    caddr_t err1;
+	    err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
+	    dk_free_tree (err);
+	    err = err1;
+	  }
 #endif
-	  goto end;
-	}
-      if (lc)
-	{
-	  if (IS_BOX_POINTER (lc->lc_proc_ret))
-	    {
+	goto end;
+      }
+    if (lc)
+      {
+	if (IS_BOX_POINTER (lc->lc_proc_ret))
+	  {
 #ifdef SOAP_HTTP
-	      if (!is_http)
-		err = soap_serialize (ses, cli, qr, lc, &ctx,
-		    schema_ns, 0, &http_resp_code, szMethod, SOAP_OPT (RESP_NS, qr, -1, NULL));
-	      else
+	    if (!is_http)
+	      err = soap_serialize (ses, cli, qr, lc, &ctx,
+		  schema_ns, 0, &http_resp_code, szMethod, SOAP_OPT (RESP_NS, qr, -1, NULL));
+	    else
 #endif
-		{
-		  caddr_t *proc_ret = (caddr_t *)lc->lc_proc_ret;
-		  int nProcRet = BOX_ELEMENTS (lc->lc_proc_ret);
+	      {
+		caddr_t *proc_ret = (caddr_t *) lc->lc_proc_ret;
+		int nProcRet = BOX_ELEMENTS (lc->lc_proc_ret);
 
-		  if (nProcRet > 1)
-		    {
-		      caddr_t ret_val = proc_ret[1];
-		      dtp_t dtp = DV_TYPE_OF (ret_val);
-		      if (soap_print_xml_entity (ret_val, ses, cli))
-			;
-		      else
-			{
-			  caddr_t strval = box_cast_to (NULL, ret_val, dtp, DV_SHORT_STRING,
-			      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
-			  if (!err && strval)
-			    {
-			      if (DV_STRINGP (strval))
-				SES_PRINT (ses, strval);
-			      dk_free_box (strval);
-			    }
-			}
-		    }
-		}
-	    }
-	}
-      if (lc)
-	lc_free (lc);
-      qr_free (call_qry);
-    }
+		if (nProcRet > 1)
+		  {
+		    caddr_t ret_val = proc_ret[1];
+		    dtp_t dtp = DV_TYPE_OF (ret_val);
+		    if (soap_print_xml_entity (ret_val, ses, cli))
+		      ;
+		    else
+		      {
+			caddr_t strval = box_cast_to (NULL, ret_val, dtp, DV_SHORT_STRING,
+			    NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+			if (!err && strval)
+			  {
+			    if (DV_STRINGP (strval))
+			      SES_PRINT (ses, strval);
+			    dk_free_box (strval);
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+    if (lc)
+      lc_free (lc);
+    qr_free (call_qry);
+  }
 
 end:
   if (err && http_resp_code != 200)

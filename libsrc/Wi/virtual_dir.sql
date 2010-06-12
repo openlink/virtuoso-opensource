@@ -1000,13 +1000,20 @@ ext_http_proxy (in url varchar := null,
                 in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
-  declare ct any;
+  declare ct, in_hdr, new_hdr varchar;
   declare stat, msg, metas, accept, rset, triples, ses, arr any;
-  declare local_qry integer; local_qry := 0;
-
+  declare local_qry integer;
   declare params, ids any;
+
+  local_qry := 0;
   params := http_param ();
-  http_header ('');
+
+  -- removal of any existing content type as sparql will add it
+  in_hdr := http_header_get ();
+  new_hdr := '';
+  if (in_hdr is not null)
+    new_hdr := regexp_replace (in_hdr, 'Content-Type:[^\r\n]+\r\n', '');
+  http_header (new_hdr);
 
   if (exec is not null)
     {
