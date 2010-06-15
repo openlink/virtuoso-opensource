@@ -124,8 +124,8 @@
         <v:login name="admin_login_isql_browser"
                  realm="virtuoso_admin"
                  mode="url"
-                 user-password="sql_user_password"
-                 user-password-check="sql_user_password_check"
+                 user-password="y_sql_user_password"
+                 user-password-check="y_sql_user_password_check"
                  xmlns:v="http://www.openlinksw.com/vspx/"
                  xmlns:xhtml="http://www.w3.org/1999/xhtml">
           <v:template name='inl_browser' type="if-no-login">
