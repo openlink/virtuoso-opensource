@@ -345,6 +345,7 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
 <http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
 <http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
+<http://linkedopencommerce.com/schemas/icecat/v1/hasPresentationValue> rdfs:subPropertyOf virtrdf:label .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
