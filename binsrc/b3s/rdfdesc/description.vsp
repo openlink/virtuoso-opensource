@@ -172,7 +172,7 @@
     </div> <!-- #HD -->
     <div id="MD">
         <div class="page_resource_info">
-          <h2>About <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
+      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a>
@@ -180,6 +180,8 @@
         </div>
           <?vsp if (_subject <> '') { ?>
             <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
+  <?vsp } else { ?>
+  <p class="subj_delim"></p>
           <?vsp } ?>
 <!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>

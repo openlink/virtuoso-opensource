@@ -207,6 +207,13 @@ p.subj_desc {
   background-color: #fff;
   border: 1px solid black;}
 
+p.subj_delim {
+  float: left;
+  clear: left;
+  margin-left: 10px; 
+  width: 750px;
+  border-bottom: 1px solid black;}
+
 div.subj_nav div.nav { 
   float: right; 
   clear: right;
