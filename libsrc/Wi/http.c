@@ -1206,14 +1206,102 @@ ws_req_expect100 (ws_connection_t * ws)
   return;
 }
 
+/*##**********************************************************
+* This calls the URL rewrite PL/SQL function
+* TODO: txn state check possibly need to retry
+*************************************************************/
+static int
+ws_url_rewrite (ws_connection_t *ws)
+{
+#ifdef VIRTUAL_DIR
+  static query_t * url_rewrite_qr = NULL;
+  client_connection_t * cli = ws->ws_cli;
+  query_t * proc;
+  caddr_t err = NULL;
+  int rc = LTE_OK, retc = 0;
+  local_cursor_t * lc = NULL;
 
-void
+  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule || (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending))
+    return 0;
+
+  if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
+    {
+      err = srv_make_new_error ("42000", "HT058", "The stored procedure DB.DBA.HTTP_URLREWRITE does not exist");
+      goto error_end;
+    }
+  if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
+    {
+      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      goto error_end;
+    }
+  if (proc->qr_to_recompile)
+    {
+      proc = qr_recompile (proc, &err);
+      if (err)
+	goto error_end;
+    }
+  if (!url_rewrite_qr)
+    url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+
+  ws->ws_cli->cli_http_ses = ws->ws_strses;
+  ws->ws_cli->cli_ws = ws;
+
+  IN_TXN;
+  lt_threads_set_inner (cli->cli_trx, 1);
+  LEAVE_TXN;
+
+  err = qr_quick_exec (url_rewrite_qr, cli, NULL, &lc, 3,
+      ":0", ws->ws_path_string, QRP_STR,
+      ":1", ws->ws_map->hm_url_rewrite_rule, QRP_STR,
+      ":2", NULL == ws->ws_params ? list (0)  : box_copy_tree (ws->ws_params), QRP_RAW  /* compatibility with old execution sequence */
+      );
+
+  if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
+      && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
+    retc = (int) unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+
+  IN_TXN;
+  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+    lt_rollback (cli->cli_trx, TRX_CONT);
+  else
+    rc = lt_commit (cli->cli_trx, TRX_CONT);
+  CLI_NEXT_USER (cli);
+  lt_threads_set_inner (cli->cli_trx, 0);
+  LEAVE_TXN;
+
+error_end:
+  if (err)
+    dk_free_tree (err);
+  if (lc)
+    lc_free (lc);
+  if (retc)
+    {
+      ws->ws_try_pipeline = 0;
+      ws_strses_reply (ws, NULL);
+    }
+
+  /* an initial lookup in FS directory would set method in error if it's not a POST, GET or HEAD
+     thus after we re-map, we need to set to unknown so DAV can process it
+   */
+  if (WM_ERROR == ws->ws_method && IS_DAV_DOMAIN(ws, ""))
+    ws->ws_method = WM_UNKNOWN;
+  return retc;
+#endif
+}
+
+/* Request URL & parameters parsing
+   performs the url rewrite
+   the function returns :
+   0 if processing must continue
+   1 if a redirect done inside rewrite rules
+ */
+int
 ws_path_and_params (ws_connection_t * ws)
 {
   char ch, lc;
   dk_set_t paths = NULL;
   char name [PATH_ELT_MAX_CHARS];
-  int n_fill = 0, is_dir = 0;
+  int n_fill = 0, is_dir = 0, rc = 0;
   char * proto;
   int inx, method_name_len, is_proxy_request, body_like_post;
   char * pmethod;
@@ -1227,7 +1315,7 @@ ws_path_and_params (ws_connection_t * ws)
       ws->ws_method = WM_UNKNOWN;
 #endif
       ws->ws_method_name[0] = 0;
-      return;
+      return 0;
     }
   inx = (long) (pmethod - ws->ws_req_line + 1);
   method_name_len = MIN (sizeof (ws->ws_method_name) - 1, pmethod - ws->ws_req_line);
@@ -1351,21 +1439,6 @@ ws_path_and_params (ws_connection_t * ws)
     ws->ws_p_path_string = box_copy (ws->ws_path_string);
 #endif
 
-  ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
-  is_proxy_request = (ws->ws_p_path_string ?
-      ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
-      (1 == is_http_handler (ws->ws_p_path_string))) : 0);
-
-  ws->ws_req_len = atoi(ws_header_field(ws->ws_lines, "Content-Length:", "0"));
-  if (ws->ws_req_len < 0)
-    {
-      ws->ws_req_len = 0;
-      ws->ws_try_pipeline = 0;
-    }
-#ifdef VIRTUAL_DIR
-  if (ws->ws_req_len && (IS_DAV_DOMAIN(ws, "") || ws->ws_method == WM_POST))
-    ws_req_expect100 (ws);
-#endif
   if (ch == '?')
     {
       dk_session_t tmp;
@@ -1384,6 +1457,23 @@ ws_path_and_params (ws_connection_t * ws)
       END_READ_FAIL(&tmp);
       dk_free_box ((box_t) cont);
     }
+
+  rc = ws_url_rewrite (ws);
+  ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
+  is_proxy_request = (ws->ws_p_path_string ?
+      ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
+      (1 == is_http_handler (ws->ws_p_path_string))) : 0);
+
+  ws->ws_req_len = atoi(ws_header_field(ws->ws_lines, "Content-Length:", "0"));
+  if (ws->ws_req_len < 0)
+    {
+      ws->ws_req_len = 0;
+      ws->ws_try_pipeline = 0;
+    }
+#ifdef VIRTUAL_DIR
+  if (ws->ws_req_len && (IS_DAV_DOMAIN(ws, "") || ws->ws_method == WM_POST))
+    ws_req_expect100 (ws);
+#endif
   body_like_post = (ws->ws_method == WM_POST) /* || (ws->ws_method == WM_URIQA_MPUT) || (ws->ws_method == WM_URIQA_MDELETE) */ ;
   if (!is_proxy_request && body_like_post)
     {
@@ -1442,6 +1532,7 @@ ws_path_and_params (ws_connection_t * ws)
 #endif
   if (strcmp (ws->ws_method_name, "PUT"))
     ws_http_body_read (ws, &ws->ws_req_body);
+  return rc;
 }
 
 int
@@ -2833,89 +2924,6 @@ err_end:
 }
 
 /*##**********************************************************
-* This calls the URL rewrite PL/SQL function
-* TODO: txn state check possibly need to retry
-*************************************************************/
-static int
-ws_url_rewrite (ws_connection_t *ws)
-{
-#ifdef VIRTUAL_DIR
-  static query_t * url_rewrite_qr = NULL;
-  client_connection_t * cli = ws->ws_cli;
-  query_t * proc;
-  caddr_t err = NULL;
-  int rc = LTE_OK, retc = 0;
-  local_cursor_t * lc = NULL;
-
-  if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule || (NULL != www_maintenance_page && wi_inst.wi_is_checkpoint_pending))
-    return 0;
-
-  if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
-    {
-      err = srv_make_new_error ("42000", "HT058", "The stored procedure DB.DBA.HTTP_URLREWRITE does not exist");
-      goto error_end;
-    }
-  if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
-    {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
-      goto error_end;
-    }
-  if (proc->qr_to_recompile)
-    {
-      proc = qr_recompile (proc, &err);
-      if (err)
-	goto error_end;
-    }
-  if (!url_rewrite_qr)
-    url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
-
-  ws->ws_cli->cli_http_ses = ws->ws_strses;
-  ws->ws_cli->cli_ws = ws;
-
-  IN_TXN;
-  lt_threads_set_inner (cli->cli_trx, 1);
-  LEAVE_TXN;
-
-  err = qr_quick_exec (url_rewrite_qr, cli, NULL, &lc, 3,
-      ":0", ws->ws_path_string, QRP_STR,
-      ":1", ws->ws_map->hm_url_rewrite_rule, QRP_STR,
-      ":2", box_copy_tree (ws->ws_params), QRP_RAW
-      );
-
-  if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
-      && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
-    retc = (int) unbox (((caddr_t *)lc->lc_proc_ret)[1]);
-
-  IN_TXN;
-  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
-    lt_rollback (cli->cli_trx, TRX_CONT);
-  else
-    rc = lt_commit (cli->cli_trx, TRX_CONT);
-  CLI_NEXT_USER (cli);
-  lt_threads_set_inner (cli->cli_trx, 0);
-  LEAVE_TXN;
-
-error_end:
-  if (err)
-    dk_free_tree (err);
-  if (lc)
-    lc_free (lc);
-  if (retc)
-    {
-      ws->ws_try_pipeline = 0;
-      ws_strses_reply (ws, NULL);
-    }
-
-  /* an initial lookup in FS directory would set method in error if it's not a POST, GET or HEAD
-     thus after we re-map, we need to set to unknown so DAV can process it
-   */
-  if (WM_ERROR == ws->ws_method && IS_DAV_DOMAIN(ws, ""))
-    ws->ws_method = WM_UNKNOWN;
-  return retc;
-#endif
-}
-
-/*##**********************************************************
 * Check if PL/SQL authentication function supplied
 * then execute and expect non-zero return value
 * After non-zero ret value continue with request processing
@@ -3923,8 +3931,7 @@ ws_read_req (ws_connection_t * ws)
 	    }
 	  ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
 	  http_set_client_address (ws);
-	  ws_path_and_params (ws);
-	  if (ws_url_rewrite (ws))
+	  if (ws_path_and_params (ws))
 	    goto end_req;
 #ifdef _IMSG
 	}

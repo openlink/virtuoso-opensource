@@ -1276,9 +1276,6 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	{
 	  declare fn, tmp, repl any;
 
-	  http_headers := rtrim (http_headers, '\r\n');
-	  http_headers := http_headers || '\r\n';
-
 	  tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	  while (tmp is not null)
 	    {
@@ -1291,7 +1288,13 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
               http_headers := replace (http_headers, tmp, repl);
               tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	    }
+
+	  http_headers := rtrim (http_headers, '\r\n');
+	  if (length (http_headers))
+	    {
+	      http_headers := http_headers || '\r\n';
 	  http_header (http_headers);
+	}
 	}
 
       if (http_redir in (301, 302, 303, 307))
