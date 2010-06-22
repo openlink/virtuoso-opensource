@@ -1371,7 +1371,8 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
 	gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and data[0][1] = bin2hex (info[2]))
+  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and
+      lower (regexp_replace (data[0][1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
       declare uname varchar;
       uname := (select UW_U_NAME from SYS_USER_WEBID where UW_WEBID = agent);
