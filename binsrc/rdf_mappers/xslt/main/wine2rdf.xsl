@@ -163,6 +163,7 @@
     </xsl:template>
 
     <xsl:template match="Product/Appellation" mode="manufacturer">
+        <xsl:if test="string-length(Name) &gt; 0">
         <gr:hasManufacturer>
             <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
                 <gr:legalName><xsl:value-of select="Name"/></gr:legalName>
@@ -171,9 +172,11 @@
                 <rdfs:seeAlso rdf:resource="{Region/Url}"/>
             </gr:BusinessEntity>
         </gr:hasManufacturer>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="Product/Vineyard" mode="manufacturer">
+        <xsl:if test="string-length(Name) &gt; 0">
         <gr:hasManufacturer>
             <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Manufacturer')}">
                 <rdfs:label>Manufacturer</rdfs:label>
@@ -188,6 +191,7 @@
                 <rdfs:seeAlso rdf:resource="{GeoLocation/Url}"/>
             </gr:BusinessEntity>
         </gr:hasManufacturer>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="Product/ProductAttributes/ProductAttribute">
@@ -224,15 +228,21 @@
     </xsl:template>
 
     <xsl:template match="Product/Varietal">
+        <xsl:if test="string-length(Url) &gt; 0">
         <gr:isVariantOf>
             <oplbb:Product rdf:about="{vi:proxyIRI ($baseUri, '', 'Variant')}">
                 <rdfs:label>Varietal</rdfs:label>
+                    <xsl:if test="string-length(Name) &gt; 0">
                 <gr:legalName><xsl:value-of select="Name"/></gr:legalName>
+                    </xsl:if>
+                    <xsl:if test="string-length(WineType/Name) &gt; 0">
                 <gr:legalName><xsl:value-of select="WineType/Name"/></gr:legalName>
+                    </xsl:if>
                 <rdfs:seeAlso rdf:resource="{Url}"/>
                 <rdfs:seeAlso rdf:resource="{WineType/Url}"/>
             </oplbb:Product>
         </gr:isVariantOf>
+        </xsl:if>
     </xsl:template>
                 
     <xsl:template match="Product/Ratings">
