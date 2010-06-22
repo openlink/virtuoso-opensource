@@ -1130,6 +1130,8 @@ next_token:
     }
   else
     expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
+  if (NULL == expanded_token)
+    goto next_token; /* see above */
   expanded_token_not_saved = 1;
   if (NULL != values_ret)
     {
@@ -1969,7 +1971,7 @@ xp_rdfa_comment (void *userdata, const char *text)
 void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   int mode_bits, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
-  ccaddr_t *cbk_names, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t *app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ )
