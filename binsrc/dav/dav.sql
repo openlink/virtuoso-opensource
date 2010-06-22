@@ -1935,6 +1935,13 @@ again:
 	      hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
 	      if (strcasestr (hdr_str, 'Content-Type:') is null)
 		hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+              if (isinteger (_res_id) and 
+		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
+		{
+		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n', 
+			case when is_https_ctx () then 'https' else 'http' end,
+			http_request_header (lines, 'Host', NULL, NULL), http_path ());	
+		}
 	      http_header (hdr_str);
 	    }
 	  else
