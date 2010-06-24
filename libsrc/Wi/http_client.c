@@ -751,6 +751,8 @@ http_cli_set_target_host (http_cli_ctx * ctx, caddr_t target)
     {
       RELEASE (ctx->hcctx_host);
       ctx->hcctx_host = box_string (target);
+      if (http_cli_target_is_proxy_exception (ctx->hcctx_host))
+	RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   return (HC_RET_OK);
 }
