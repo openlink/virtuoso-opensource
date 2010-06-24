@@ -370,7 +370,13 @@
 	     }
 
 	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value)
+             {  
+               declare opts varchar;
+	       opts := vector ();
+	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+	       http_listen_host (lhost, 0, opts);
 	     goto same_host;
+	     }
            ssl_opts := null;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,

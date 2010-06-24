@@ -668,7 +668,7 @@ self.vc_data_bind (e);
                     }
             		  </script>
                   <v:template name="dav_template0021" type="simple" enabled="-- case when self.crfolder_mode = 2 then 1 else 0 end">
-            		  <tr>
+              		  <!--tr>
             		    <td>Destination</td>
             		    <td>
             		      <v:select-list name="dst_sel" value="" default_value="dav" auto-submit="1">
@@ -676,7 +676,8 @@ self.vc_data_bind (e);
                   			<v:item name="RDF Store" value="rdf"/>
             		      </v:select-list>
             		    </td>
-            		  </tr>
+              		  </tr-->
+			  <v:text type="hidden" name="dst_sel" value="--'dav'"/>
             		  <v:template type="simple" name="sw1" condition="self.dst_sel.ufl_value = 'rdf'">
                   <tr id="rd1">
             		    <td>
@@ -718,7 +719,7 @@ self.vc_data_bind (e);
                   <tr id="fi1">
                     <td>Path to File<span class="redstar">*</span></td>
                     <td>
-                      <input type="file" name="t_newfolder" onBlur="javascript:getFileName();"></input>
+                          <input type="file" name="t_newfolder" onblur="javascript:getFileName();" onchange="javascript:getFileName();"></input>
                     </td>
                   </tr>
                     </v:template>
