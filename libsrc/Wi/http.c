@@ -8105,6 +8105,7 @@ http_listen (char * host, caddr_t * https_opts)
   dk_session_t *listening = NULL;
   int rc = 0;
   listening = dk_session_allocate (SESCLASS_TCPIP);
+  ASSERT_IN_MTX (http_listeners_mutex);
 
   SESSION_SCH_DATA (listening)->sio_default_read_ready_action
       = (io_action_func) ws_ready;
@@ -8151,68 +8152,75 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t host = http_host_normalize (bif_string_arg (qst, args, 0, "http_listen_host"), 0);
   ptrlong stop = bif_long_arg (qst, args, 1, "http_listen_host");
-  caddr_t * https_opts = BOX_ELEMENTS (args) > 2 ?
-      (caddr_t *) bif_array_or_null_arg (qst, args, 2, "http_listen_host") : NULL;
+  caddr_t *https_opts = BOX_ELEMENTS (args) > 2 ? (caddr_t *) bif_array_or_null_arg (qst, args, 2, "http_listen_host") : NULL;
   dk_session_t *listening = NULL;
   int rc = 0;
-  sec_check_dba ((query_instance_t *) qst, "http_listen_host"); /* listen hosts MUST be manipulated only by DBA */
+  dk_session_t **place = NULL;
+  sec_check_dba ((query_instance_t *) qst, "http_listen_host");	/* listen hosts MUST be manipulated only by DBA */
 
   /* it's probably a vhost_define call during startup */
   if (!virtuoso_server_initialized)
     return box_num (-1);
 
 #if 0
-    {
-      id_hash_iterator_t it;
-      char **pk;
-      dk_session_t **ptp;
-      id_hash_iterator (&it, http_listeners);
+  {
+    id_hash_iterator_t it;
+    char **pk;
+    dk_session_t **ptp;
+    id_hash_iterator (&it, http_listeners);
 
-      while (hit_next (&it, (caddr_t *) & pk, (caddr_t *) & ptp))
-	{
-	  fprintf (stderr, "%s\n", *pk);
-	}
-    }
+    while (hit_next (&it, (caddr_t *) & pk, (caddr_t *) & ptp))
+      {
+	fprintf (stderr, "%s\n", *pk);
+      }
+  }
 #endif
   if (stop)
     {
-      dk_session_t ** place = NULL;
       mutex_enter (http_listeners_mutex);
-      place = (dk_session_t **) id_hash_get (http_listeners, (caddr_t) &host);
-      mutex_leave (http_listeners_mutex);
+      place = (dk_session_t **) id_hash_get (http_listeners, (caddr_t) & host);
       if (place && *place && stop & HS_STOP_LISTEN)
 	{
-	  caddr_t * key;
+	  caddr_t *key, old_key;
 	  listening = *place;
 	  http_trace (("stop listen on: %s %p\n", host, listening));
-	  mutex_enter (http_listeners_mutex);
-	  key = (caddr_t *) id_hash_get_key (http_listeners, (caddr_t) &host);
-	  id_hash_remove (http_listeners, (caddr_t) &host);
-	  mutex_leave (http_listeners_mutex);
-	  if (key && *key)
-	    dk_free_box (*key);
+	  key = (caddr_t *) id_hash_get_key (http_listeners, (caddr_t) & host);
+	  old_key = *key;
+	  id_hash_remove (http_listeners, (caddr_t) & host);
+	  if (old_key)
+	    dk_free_box (old_key);
 	  PrpcDisconnect (listening);
 #ifdef _SSL
 	  if (tcpses_get_sslctx (listening->dks_session))
-	    SSL_CTX_free ((SSL_CTX *)tcpses_get_sslctx (listening->dks_session));
+	    SSL_CTX_free ((SSL_CTX *) tcpses_get_sslctx (listening->dks_session));
 #endif
 	  PrpcSessionFree (listening);
 	}
+      mutex_leave (http_listeners_mutex);
       if (place && *place && stop & HS_SHOW_LISTEN)
 	rc = 1;
       dk_free_box (host);
     }
   else
     {
-      listening = http_listen (host, https_opts);
-      if (listening)
+      mutex_enter (http_listeners_mutex);
+      place = (dk_session_t **) id_hash_get (http_listeners, (caddr_t) & host);
+      if (!place)
 	{
-	  http_trace (("start listen on: %s %p\n", host, listening));
-	  mutex_enter (http_listeners_mutex);
-	  id_hash_set (http_listeners, (caddr_t) & host, (caddr_t) &listening);
-	  mutex_leave (http_listeners_mutex);
-	  rc = 1;
+	  listening = http_listen (host, https_opts);
+	  if (listening)
+	    {
+	      http_trace (("start listen on: %s %p\n", host, listening));
+	      id_hash_set (http_listeners, (caddr_t) & host, (caddr_t) & listening);
+	      rc = 1;
+	    }
 	}
+      else
+	{
+	  log_debug ("Trying to start already started listener on port %s", host);
+	  dk_free_box (host);
+	}
+      mutex_leave (http_listeners_mutex);
     }
   return (box_num (rc));
 }
@@ -8680,7 +8688,6 @@ http_vhosts_init (void)
       mutex_enter (http_listeners_mutex);
       has_it = id_hash_get (http_listeners, (caddr_t) & host);
       tried = id_hash_get (http_failed_listeners, (caddr_t) & host);
-      mutex_leave (http_listeners_mutex);
       if (!has_it && !tried)
 	{
 	  caddr_t * ssl_opts = NULL;
@@ -8689,18 +8696,15 @@ http_vhosts_init (void)
 	  listening = http_listen (host, ssl_opts);
 	  if (listening)
 	    {
-	      mutex_enter (http_listeners_mutex);
 	      id_hash_set (http_listeners, (caddr_t) & host, (caddr_t) &listening);
-	      mutex_leave (http_listeners_mutex);
 	      http_trace (("listen ses: %s %p\n", hp, listening));
 	    }
 	  else
 	    {
-	      mutex_enter (http_listeners_mutex);
 	      id_hash_set (http_failed_listeners, (caddr_t) & host, (caddr_t)&one);
-	      mutex_leave (http_listeners_mutex);
 	    }
 	}
+      mutex_leave (http_listeners_mutex);
     }
   lc_free (lc);
   qr_free (qr);
