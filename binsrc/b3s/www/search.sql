@@ -150,7 +150,7 @@ create procedure desc_get (in num varchar)
   	'Show triples containing a text pattern. The bif:search_excerpt is used to format a short excerpt of the matching literal in search-engine style',
 	'What sources talk the most about a given subject? Show the top N graphs containing triples with the given text pattern. Sort by descending triple count.',
 	'What types of objects contain a text pattern. Find matches, get the type. Group by type, order by count.',
-	'What else are people interested in X interested in? What else do Harry Potter fans like?',
+	'What are the interests of a given person based on their foaf:name?',
 	'Who writes the most about a topic. Show for each author the number of works mentioning the topic and total number of works.'
 ||'<br>For all documents and posts we have extracted named entities the entity could shows the entities which occur in the works of each author.'
 ||'There are statistics about named entities occurring together, these are used for display a list of related entities. '
