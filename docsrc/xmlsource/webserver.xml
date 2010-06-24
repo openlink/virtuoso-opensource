@@ -381,12 +381,169 @@ AddModule mod_proxy.c
 ...
 </screen>
 
-  <para>You will then need to add a configuration line to the httpd.conf file
+  <!--para>You will then need to add a configuration line to the httpd.conf file
   to let Apache know how to proxy requests Virtuoso:</para>
 
     <screen>
 ProxyPass /virtserver   http://MyVirtuosoServer:8890/
-</screen>
+</screen-->
+<sect5 id="apachedoingproxyconf"><title>Configuration steps</title>
+
+<para>Below we will use the &lt;Location&gt; directive to simplify the configuration:</para>
+
+<programlisting><![CDATA[
+<Location /virtuoso/>
+   ProxyPass               http://localhost:8890/
+   ProxyPassReverse        /
+</Location>
+]]></programlisting>
+
+<orderedlist>
+  <listitem>Set the ProxyPass directive:
+
+<para>The ProxyPass directive makes Apache to change all incoming URLs and map 
+it to the internal http endpoint.</para>
+<para>So when the browser makes a request for:</para>
+
+<programlisting><![CDATA[
+http://localhost/virtuoso/conductor/login.vsp
+]]></programlisting>
+
+<para>it is rewritten to use:</para>
+
+<programlisting><![CDATA[
+http://localhost:8890/conductor/login.vsp
+]]></programlisting>
+
+<para>before sending the request over to the Virtuoso server.</para>
+</listitem>  
+  <listitem>Set the ProxyPassReverse directive:
+  <para>The ProxyPassReverse directive rewrites the HTTP Headers that come back 
+from Virtuoso to map back to the external URL. This is needed for e.g. 303 Location 
+redirects where Virtuoso will use:</para>
+<programlisting><![CDATA[
+Location: http://localhost:8890/conductor/pageXXX.vsp
+]]></programlisting>
+<para>which Apache needs to rewrite to:</para>
+<programlisting><![CDATA[
+Location: http://localhost/virtuoso/conductor/pageXXX.vsp
+]]></programlisting>
+<para>before sending the reply back to the browser.</para>
+</listitem>
+  <listitem><para>If the mapping is / ---&gt; / instead of /virtuoso/ ---&gt; / then the settings should be done, 
+since ProxyPass and ProxyPassReverse only deal with rewriting urls and http headers.</para>
+<para>When however there is a path mapping, there is a third step to take:</para>
+<para>Pages can contain clickable links like:</para>
+<programlisting><![CDATA[
+<a href="/conductor/mypage.vsp">Click Here</a>
+]]></programlisting>
+<para>If you click on this link in your browser, it would use:</para>
+<programlisting><![CDATA[
+http://localhost/conductor/mypage.vsp
+]]></programlisting>
+<para>which does not map back to your /virtuoso/ vpath in apache.</para>
+<para>As phpBB3 has been written from outset to cater for this 
+situation, it will always need to recalculate fully qualified 
+host/path names everywhere in its pages, which is not always very practical.</para>
+<para>Thus Apache needs to be configured to do page rewriting as well as in:</para>
+<programlisting><![CDATA[
+     ProxyHTMLEnable         On
+     ProxyHTMLURLMap         / /virtuoso/
+     ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+]]></programlisting>
+<para>This will rewrite the content of every page to make sure that links 
+inside the page are rewritten to use the external mapping of this instance.</para>
+
+<para>If you have set Virtuoso to use <code>EnabledGzipContent=1</code>, then you need to 
+tell apache it may need to gunzip the content before doing this rewrite 
+with the following line:</para>
+<programlisting><![CDATA[
+     SetOutputFilter         INFLATE;DEFLATE
+]]></programlisting>
+
+<para>Although this takes a bit extra CPU power etc, it is still practical to 
+setup a virtual path on user's own system that points to some external system.</para>
+
+<para>For example, add this to your httpd.conf to get a mapping to dbpedia-live instance:</para>
+<programlisting><![CDATA[
+<Location /dbp/>
+     ProxyPass               http://dbpedia-live.openlinksw.com/
+     ProxyPassReverse        /
+     ProxyHTMLURLMap         / /dbp/
+     ProxyHTMLURLMap         http://dbpedia-live.openlinksw.com/ /dbp/
+     SetOutputFilter         INFLATE;DEFLATE
+</Location>
+]]></programlisting>
+
+
+<para>Now you should be able to use for ex.:</para>
+<programlisting><![CDATA[
+http://localhost/dbp/page/London
+]]></programlisting>
+</listitem>
+</orderedlist>
+</sect5>
+<sect5 id="apachedoingproxyconfexample"><title>Usage Example</title>
+<programlisting><![CDATA[
+NameVirtualHost 82.191.21.32
+
+<VirtualHost 82.191.21.32>
+ServerName www.mysite.net <http://www.mysite.net>
+...
+
+     #  Disable global proxy
+     ProxyRequests       Off
+
+     #  Pass original host to Virtuoso
+     ProxyPreserveHost   On
+
+     #  Timeout waiting for Virtuoso
+     ProxyTimeout        300
+
+     #  Set permission
+     <Proxy *>
+         Order deny,allow
+         Allow from all
+     </Proxy>
+
+     #
+     #  Map /virtuoso/ to a local Virtuoso instance.
+     #
+     #  Since ProxyPass and ProxyPassReverse only fix the Headers
+     #  of the request, we need to use ProxyHTMLURLMap to rewrite
+     #  content.
+     #
+     <Location /virtuoso/>
+         ProxyPass               http://localhost:8890/
+         ProxyPassReverse        /
+
+         #  Enable rewrite rules
+         ProxyHTMLEnable         On
+         ProxyHTMLURLMap         / /virtuoso/
+         ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+
+# Uncomment this when EnabledGzipContent=1 in virtuoso.ini
+         #SetOutputFilter         INFLATE;DEFLATE
+     </Location>
+</VirtualHost>
+]]></programlisting>
+
+<para>If we map the virtual host straight through to Virtuoso, we only need header rewriting and save the time/cpu power to rewrite the content: </para>
+
+<programlisting><![CDATA[
+     #
+     #  Map / to a local Virtuoso instance
+     #
+     #  Since paths are mapped straight through, we do not have to
+     #  rewrite the content.
+     #
+     <Location />
+         ProxyPass               http://localhost:8890/
+         ProxyPassReverse        /
+     </Location>
+]]></programlisting>
+</sect5>
+
 
 <tip><title>See Also:</title>
 <para><ulink url="http://www.apache.org/docs/">Apache Online Documentation</ulink></para>

@@ -2565,7 +2565,7 @@ etc ...
       <graphic fileref="ui/Excel2.png"/>
     </figure>
 </sect3>
-<sect3 id="sparqljson"><title>SPARQL Endpoint with RDF+JSON Output</title>
+<sect3 id="sparqljson"><title>SPARQL Endpoint with RDF+JSON Output: SPARQL UI Example</title>
 <para>The SPARQL endpoint also offers a RDF+JSON output option.</para>
 <para>From http://cname:host/sparql select "JSON" for "Display Results As:"  and click the "Run Query" button.</para>
 <figure id="sparqljson1" float="1">
@@ -2577,6 +2577,38 @@ etc ...
       <title>SPARQL Endpoint with JSON+RDF</title>
       <graphic fileref="ui/JSON2.png"/>
     </figure>
+</sect3>
+<sect3 id="sparqljsonp"><title>SPARQL Endpoint with JSON/P Output Option: Curl Example</title>
+<para>The SPARQL endpoint also offers a  JSON/P output option.</para> 
+<para>The SPARQL endpoint accepts a 'callback' URL parameter and in this case 
+when parameter 'format' is 'json', then it will produce JSON/P output.</para>
+<programlisting><![CDATA[
+$ curl "http://lod.openlinksw.com/sparql?query=select+*+where+\{+%3Fx+a+%3Fz+.+\}+limit+10&format=json&debug=on&callback=func"
+func(
+
+{ "head": { "link": [], "vars": ["x", "z"] },
+  "results": { "distinct": false, "ordered": true, "bindings": [
+    { "x": { "type": "bnode", "value": "nodeID://b196899188" }  , "z": { "type": "uri", "value": "http://www.w3.org/2000/10/swap
+
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2005/04/sparqlette/#profile" } , "z": { "type": "uri", "value":
+services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/#b-profile" }   , "z": { "type": "uri",
+aml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/#a-profile" }   , "z": { "type": "uri",
+aml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/index.rdf#a-profile" }  , "z": { "type":
+://www.daml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/index.rdf#b-profile" }  , "z": { "type":
+://www.daml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2006/06/blogmatrix/#profile" } , "z": { "type": "uri", "value":
+services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/#b-profile" }   , "z": { "type": "uri",
+aml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/#a-profile" }   , "z": { "type": "uri",
+aml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }},
+    { "x": { "type": "uri", "value": "http://www.wasab.dk/morten/2003/12/nearestAirport/#b-profile" }   , "z": { "type": "uri",
+aml.org/services/owl-s/1.1/Service.owl#ServiceProfile" }} ] } })
+]]></programlisting>
 </sect3>
 </sect2>
 <sect2 id="sparqldebug"><title>Troubleshooting SPARQL Queries</title>
@@ -4372,6 +4404,71 @@ http://s.zemanta.com/ns#targetType 	                http://s.zemanta.com/targets
   <tip><title>See Also:</title>
     <para><link linkend="rdfsparulexamples6">Example usage of IN operator.</link></para>
   </tip>
+</sect5>
+<sect5 id="rdfsparulexamples19"><title>Example for extending SPARQL via SQL for Full Text search: Variant I</title>
+<para>To find all albums looked up by album name, one might use the following syntax:</para>
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT ?s ?o ?an ( bif:search_excerpt ( bif:vector ( 'In', 'Your' ) , ?o ) ) 
+WHERE 
+  {
+    ?s rdf:type mo:Record .
+    ?s foaf:maker ?a .
+    ?a foaf:name ?an .
+    ?s dc:title ?o .
+    FILTER ( bif:contains ( ?o, '"in your"' ) ) 
+  }
+LIMIT 10;
+
+
+http://musicbrainz.org/music/record/30f13688-b9ca-4fa5-9430-f918e2df6fc4  China in Your Hand  	          Fusion  China             <b>in</b> <b>Your</b> Hand.
+http://musicbrainz.org/music/record/421ad738-2582-4512-b41e-0bc541433fbc 	China in Your Hand 	            T'Pau 	China             <b>in</b> <b>Your</b> Hand.
+http://musicbrainz.org/music/record/01acff2a-8316-4d4b-af93-97289e164379 	China in Your Hand 	            T'Pau 	China             <b>in</b> <b>Your</b> Hand.
+http://musicbrainz.org/music/record/4fe99b06-ac73-40dd-8be7-bdaefb014981 	China in Your Hand 	            T'Pau 	China             <b>in</b> <b>Your</b> Hand.
+http://musicbrainz.org/music/record/ac1cb011-6040-4515-baf2-59551a9884ac 	In Your Hands 	                Stella One Eleven 	      <b>In</b> <b>Your</b> Hands.
+http://dbtune.org/magnatune/album/mercy-inbedinst 	                      In Your Bed - instrumental mix 	Mercy Machine 	          <b>In</b> <b>Your</b> Bed mix.
+http://musicbrainz.org/music/record/a09ae12e-3694-4f68-bf25-f6ff4f790962 	A Word in Your Ear 	Alfie 	    A Word <b>in</b>          <b>Your</b> Ear.
+http://dbtune.org/magnatune/album/mercy-inbedremix 	                      In Your Bed - the remixes 	    Mercy Machine 	          <b>In</b> <b>Your</b> Bed the remixes.
+http://musicbrainz.org/music/record/176b6626-2a25-42a7-8f1d-df98bec092b4 	Smoke Gets in Your Eyes 	      The Platters 	Smoke Gets  <b>in</b> <b>Your</b> Eyes.
+http://musicbrainz.org/music/record/e617d90e-4f86-425c-ab97-efdf4a8a452b 	Smoke Gets in Your Eyes 	      The Platters 	Smoke Gets  <b>in</b> <b>Your</b> Eyes.
+	]]></programlisting>
+<para>Note that the query will not show anything when there are triples like:</para>
+<programlisting><![CDATA[
+<x> <y> "In" 
+<z> <q> "Your"		
+]]></programlisting>
+	
+</sect5>
+<sect5 id="rdfsparulexamples20"><title>Example for extending SPARQL via SQL for Full Text search: Variant II</title>
+<para>To get movies from DBpedia, where the query can contain terms from the title, 
+one might use the following syntax:</para>
+<programlisting><![CDATA[
+SQL>SPARQL
+ SELECT ?s ?an ?dn ?o( bif:search_excerpt ( bif:vector ( 'Broken', 'Flowers' ) , ?o ) ) 
+ WHERE
+  {
+    ?s rdf:type dbpedia-owl:Film .
+    ?s dbpprop:name ?o .
+    FILTER ( bif:contains ( ?o, '"broken flowers"' ) )
+    OPTIONAL { ?s dbpprop:starring ?starring .}
+    OPTIONAL { ?s dbpprop:director ?director . }
+    OPTIONAL { ?starring dbpprop:name ?an . }
+    OPTIONAL { ?director dbpprop:name ?dn . }
+  };
+
+
+http://dbpedia.org/resource/Broken_Flowers  Tilda Swinton  	Jim Jarmusch  	Broken Flowers  	          <b>Broken</b> <b>Flowers</b>.
+http://dbpedia.org/resource/Broken_Flowers 	Swinton, Tilda 	Jim Jarmusch 	  Broken Flowers 	            <b>Broken</b> <b>Flowers</b>.
+....
+http://dbpedia.org/resource/Broken_Flowers  Bill Murray  	  Jim Jarmusch  	Music from Broken Flowers  	Music from <b>Broken</b> <b>Flowers</b>.
+....
+		]]></programlisting>
+<para>Note that the query will not show anything when there are triples like:</para>
+<programlisting><![CDATA[
+<x> <y> "Broken" 
+<z> <q> "Flowers"		
+]]></programlisting>
+
 </sect5>
    </sect4>
    </sect3>
@@ -34008,6 +34105,69 @@ ORDER BY ASC ( ?date )
   </sect2>
 </sect1>
 
+<!--
+<sect1 id="rdfreplication"><title>RDF Replication</title>
+<para>
+Tables of RDF storage, such as DB.DBA.RDF_QUAD and DB.DBA.RDF_OBJ, can not be replicated in a usual way,
+because it's content is cached in memory in special ways and synchronized with values outside these tables,
+such as current values of special sequence objects.
+Moreover, same IRI may have different internal IRI_IDs on different boxes, because the assigned IDs vary if new IRIs appear in data in different order.
+Similarly, there will be different IDs of RDF literal, datatypes and languages, blocking any attempt of one-to-one replication between RDF storages.</para>
+<para>
+However, a special asynchronous RDF replication makes it possible to configure a "publisher" Virtuoso instance to keep the log of changes in some RDF graphs
+and subscribe some Virtuoso instances to replay all these changes.</para>
+<para>
+Configuration functions are quite straightforward.</para>
+<para>
+RDF graphs to replicate are all members of &lt;http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group&gt; graph group.
+That group can be filled in with graphs like any other graph group, but it is better to get the advantage of proper security check made by
+</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_INS">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_INS</function></funcdef>
+  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that inserts a graph to the group and</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_DEL">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_DEL</function></funcdef>
+  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that removes a graph from the group.
+Only publicly readable graphs can be replicated, an error is signalled otherwise, and it is better to know about a security issue as early as possible.</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_START">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_START</function></funcdef>
+  <paramdef>in <parameter>quiet</parameter> integer := 0</paramdef>
+</funcprototype>
+<para>
+starts the RDF replication at the publishing side.
+It creates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.
+If the replication has been started before then an error is signalled; passing value 1 for parameter "quiet" elimintaes the error so the incorrect call has no effect at all.
+If the replication is enabled then the value of registry variable 'DB.DBA.RDF_REPL' indicates the moment of replication start.</para>
+<para>
+<function>DB.DBA.RDF_REPL_START</function>() performs a security check before starting the replication to check.</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_STOP">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_STOP</function></funcdef>
+  <paramdef> in <parameter>quiet</parameter> integer := 0</paramdef>
+</funcprototype>
+<para>
+stops the RDF replication at the publishing side.
+It calls <function><link linkend="fn_repl_unpublish">repl_unpublish</link></function> but does not make empty reates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.</para>
+<para>
+Replication is asynchronous and the order of insertion and removal operations at the subscriber's side may not match the order at the publisher.
+As a result, it is not recommended to make few subscriptions that writes changes of few publishers into one common graph.
+A client-side application can force the synchronuzation by calling</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_SYNC">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_SYNC</function></funcdef>
+  <paramdef>in <parameter>publisher</parameter> varchar</paramdef>
+  <paramdef>in <parameter>user</parameter> varchar</paramdef>
+  <paramdef>in <parameter>pwd</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that acts like <function><link linkend="fn_repl_sync">repl_sync</link></function> but for an RDF subscription.
+<function>DB.DBA.RDF_REPL_SYNC</function> will not only initial synchronisation but also wait for the end of subscription to guarantee that the total effect of INSERT and DELETE operations is correct even if these operations were made in an order that differs from the original one.</para>
+</sect1>
+-->
 <sect1 id="rdfperformancetuning"><title>Performance Tuning</title>
 <para>For RDF query performance, we have the following possible questions:</para>
 <itemizedlist mark="bullet" spacing="compact">
@@ -34283,6 +34443,255 @@ create procedure load_graphs (in dir varchar := 'dumps/')
 ;
 ]]></programlisting>
 </sect2>
+<sect2 id="rdfperfdumpandreloadgraphsn3"><title>Dump RDF View Graph to n3</title>
+<para>The RDF_QM_TREE_DUMP procedure and its associated procedures below are used 
+for dumping one or more RDFView Graphs in a Virtuoso server to a set of 
+turtle ttl dataset files in the specified dump directory. The dump generation 
+is made as fast as possible by grouping mappings by underlying tables so many 
+properties from neighbor database columns can be extracted in one table scan. 
+The size of the generated files is limited to 5MB. The dump process creates 
+internal stored procedures; their texts are saved in file .dump_procedures.sql in 
+the directory of dump files for debugging purposes.
+</para>
+
+<para>Note that the dump directory must be included in the <code>DirsAllowed</code> 
+parameter of the Virtuoso configuration file (e.g., <code>virtuoso.ini</code>), or the 
+server will not be allowed to create nor access the dataset file(s).
+</para>
+
+<para>
+The <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtBulkRDFLoader">Virtuoso RDF bulk loader</ulink> 
+scripts can then be used to load the dumped datasets for the RDFView graphs directly into 
+a Virtuoso RDF QUAD store.
+</para>
+
+<sect3 id="rdfperfdumpandreloadgraphsn3params"><title>Parameters</title>
+<itemizedlist mark="bullet">
+  <listitem><code>in</code> <emphasis>dest_dir</emphasis> <code>VARCHAR</code> - dump directory </listitem>
+  <listitem><code>in</code> <emphasis>graph_iri</emphasis> <code>VARCHAR</code> - IRI of the graph to be dumped; triples from other graphs will be excluded. If NULL, then there's no restriction by graph.</listitem>
+  <listitem><code>in</code> <emphasis>storage</emphasis> <code>VARCHAR</code> - IRI of the quad map storage to use. NULL means use default storage.</listitem>
+  <listitem><code>in</code> <emphasis>root</emphasis> <code>VARCHAR</code> - IRI of the quad map to use, e.g., an IRI of an RDF View (or its part). NULL means use all RDF Views of the storage (and the default mapping as well).</listitem>    
+</itemizedlist>
+</sect3>
+<sect3 id="rdfperfdumpandreloadgraphsn3code"><title>Procedure Code</title>
+<programlisting><![CDATA[
+CREATE PROCEDURE DB.DBA.RDF_QM_TREE_DUMP 
+  ( in  dest_dir  VARCHAR, 
+    in  graph_iri VARCHAR := NULL, 
+    in  storage   VARCHAR := NULL, 
+    in  root      VARCHAR := NULL
+  )
+{
+ DECLARE all_qms, 
+         grouped_qmvs, 
+         launcher_text  ANY;
+ DECLARE grp_ctr, 
+         qm_ctr, 
+         qm_count       INTEGER;
+ DECLARE sql_file, 
+         launcher_name  VARCHAR;
+ IF (NOT (dest_dir LIKE '%/'))
+   dest_dir := dest_dir || '/';
+ sql_file := dest_dir || '.dump_procedures.sql';
+ IF (storage IS NULL)
+   storage := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
+ string_to_file (
+   sql_file, 
+   '-- This file contains procedure created by DB.DBA.RDF_QM_TREE_DUMP() for storage ' 
+      || COALESCE (storage, 'NULL') 
+      || ' and root quad map ' 
+      || COALESCE (root, 'NULL') 
+      || '\n\n', 
+   -2);
+ all_qms := dict_list_keys (DB.DBA.RDF_QM_CONTENT_OF_QM_TREE (graph_iri, storage, root), 2);
+ grouped_qmvs := DB.DBA.RDF_QM_GROUP_BY_SOURCE_TABLES (all_qms);
+ launcher_name := 'RDF_QM_TREE_DUMP_BATCH_' || md5 (serialize (graph_iri) || storage || serialize (root));
+ launcher_text := string_output ();
+ http ('CREATE PROCEDURE DB.DBA."' || launcher_name || '" (in dest_dir VARCHAR)\n{\n', launcher_text);
+ FOR (grp_ctr := length (grouped_qmvs); grp_ctr > 0; grp_ctr := grp_ctr-2)
+   {
+     DECLARE tables, qms, proc_text ANY;
+     DECLARE group_key, proc_name, dump_prefix, cmt VARCHAR;
+     tables := grouped_qmvs [grp_ctr-2];
+     qms := grouped_qmvs [grp_ctr-1];
+     qm_count := length (qms);
+     group_key := md5 (serialize (graph_iri) || storage || serialize (root) || serialize (tables));
+     proc_name := 'RDF_QM_TREE_DUMP_GRP_' || group_key;
+     proc_text := string_output ();
+     cmt := sprintf ('%d quad maps on join of', qm_count);
+     FOREACH (VARCHAR t IN tables) DO cmt := cmt || ' ' || t;
+     http ('  --  ' || cmt || '\n', launcher_text);
+     http ('  DB.DBA."' || proc_name || '" (dest_dir);\n', launcher_text);
+     http ('CREATE PROCEDURE DB.DBA."' || proc_name || '" (in dest_dir VARCHAR)\n', proc_text);
+     http ('{\n', proc_text);
+     http ('  -- ' || cmt || '\n', proc_text);
+     http ('  DECLARE ses, env ANY;\n', proc_text);
+     http ('  DECLARE file_ctr, cmt_len INTEGER;\n', proc_text);
+     http ('  file_ctr := 0;\n', proc_text);
+     http ('  dbg_obj_princ (' || WS.WS.STR_SQL_APOS (cmt) || ', '', file '', file_ctr);\n', proc_text);
+     http ('  ses := string_output ();\n', proc_text);
+     http ('  http (' || WS.WS.STR_SQL_APOS ('#' || cmt || '\n') || ', ses);\n', proc_text);
+     http ('  env := VECTOR (dict_new (16000), 0, '''', '''', '''', 0, 0, 0, 0);\n', proc_text);
+     http ('  cmt_len := LENGTH (ses);\n', proc_text);
+     http ('  FOR (SPARQL DEFINE input:storage <' || storage || '>\n', proc_text);
+     http ('    SELECT ?s1, ?p1, ?o1\n', proc_text);
+     IF (graph_iri IS NOT NULL)
+       {
+         http ('    WHERE { GRAPH <', proc_text); http_escape (graph_iri, 12, proc_text, 1, 1); http ('> {\n', proc_text);
+       }
+     ELSE
+       http ('    WHERE { GRAPH ?g1 {\n', proc_text);
+     FOR (qm_ctr := 0; qm_ctr < qm_count; qm_ctr := qm_ctr + 1)
+       {
+         IF (qm_ctr > 0) http ('            UNION\n', proc_text);
+         http ('            { quad map <' || qms[qm_ctr] || '> { ?s1 ?p1 ?o1 } }\n', proc_text);
+       }
+     http ('          } } ) DO {\n', proc_text);
+     http ('      http_ttl_triple (env, "s1", "p1", "o1", ses);\n', proc_text);
+     http ('      IF (LENGTH (ses) > 5000000)\n', proc_text);
+     http ('        {\n', proc_text);
+     http ('          http ('' .\\n'', ses);\n', proc_text);
+     http ('          string_to_file (sprintf (''%s' || group_key || '_%05d.ttl'', dest_dir, file_ctr), ses, -2);\n', proc_text);
+     http ('          file_ctr := file_ctr + 1;\n', proc_text);
+     http ('          dbg_obj_princ (' || WS.WS.STR_SQL_APOS (cmt) || ', '', file '', file_ctr);\n', proc_text);
+     http ('          ses := string_output ();\n', proc_text);
+     http ('          http (' || WS.WS.STR_SQL_APOS ('#' || cmt || '\n') || ', ses);\n', proc_text);
+     http ('          env := VECTOR (dict_new (16000), 0, '''', '''', '''', 0, 0, 0, 0);\n', proc_text);
+     http ('        }\n', proc_text);
+     http ('    }\n', proc_text);
+     http ('  IF (LENGTH (ses) > cmt_len)\n', proc_text);
+     http ('    {\n', proc_text);
+     http ('      http ('' .\\n'', ses);\n', proc_text);
+     http ('      string_to_file (sprintf (''%s' || group_key || '_%05d.ttl'', dest_dir, file_ctr), ses, -2);\n', proc_text);
+     http ('    }\n', proc_text);
+     http ('}\n', proc_text);
+     proc_text := string_output_string (proc_text);
+     string_to_file (sql_file, proc_text || ';\n\n' , -1);
+     EXEC (proc_text);
+   }
+ http ('}\n', launcher_text);
+ launcher_text := string_output_string (launcher_text);
+ string_to_file (sql_file, launcher_text || ';\n\n' , -1);
+ EXEC (launcher_text);
+ CALL ('DB.DBA.' || launcher_name)(dest_dir);
+}
+;
+
+CREATE FUNCTION DB.DBA.RDF_QM_CONTENT_OF_QM_TREE 
+  ( in  graph_iri  VARCHAR := NULL,
+    in  storage    VARCHAR := NULL, 
+    in  root       VARCHAR := NULL, 
+    in  dict       ANY := NULL
+  ) returns ANY
+{
+ DECLARE res, subqms any;
+ DECLARE graphiri varchar;
+ graphiri := DB.DBA.JSO_SYS_GRAPH();
+ IF (storage IS NULL)
+   storage := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
+ DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 0);
+ IF (dict IS NULL)
+   dict := dict_new ();
+ IF (root IS NULL)
+   {
+     subqms := ((SELECT DB.DBA.VECTOR_AGG (sub."qmiri")
+         FROM (
+           SPARQL DEFINE input:storage ""
+           SELECT DISTINCT (str(?qm)) AS ?qmiri
+           WHERE { GRAPH `iri(?:graphiri)` {
+                     { `iri(?:storage)` virtrdf:qsUserMaps ?lst .
+                       ?lst ?p ?qm .
+                       FILTER (0 = bif:strstr (str(?p), str(rdf:_)))
+                     } UNION {
+                       `iri(?:storage)` virtrdf:qsDefaultMap ?qm .
+                     } } } ) AS sub ) );
+     FOREACH (varchar qmid IN subqms) DO
+       DB.DBA.RDF_QM_CONTENT_OF_QM_TREE (graph_iri, storage, qmid, dict);
+     RETURN dict;
+   }
+ DB.DBA.RDF_QM_ASSERT_JSO_TYPE (root, 'http://www.openlinksw.com/schemas/virtrdf#QuadMap');
+ IF (graph_iri IS NOT NULL AND
+   EXISTS ((SPARQL DEFINE input:storage ""
+       SELECT (1) WHERE {
+           GRAPH `iri(?:graphiri)` {
+               `iri(?:root)` virtrdf:qmGraphRange-rvrFixedValue ?g .
+               FILTER (str (?g) != str(?:graph_iri))
+             } } ) ) )
+   RETURN dict;
+ IF (NOT EXISTS ((SPARQL DEFINE input:storage ""
+       SELECT (1) WHERE {
+           GRAPH `iri(?:graphiri)` {
+               `iri(?:root)` virtrdf:qmMatchingFlags virtrdf:SPART_QM_EMPTY .
+             } } ) ) )
+   dict_put (dict, root, 1);
+ subqms := ((SELECT DB.DBA.VECTOR_AGG (sub."qmiri")
+     FROM (
+       SPARQL DEFINE input:storage ""
+       SELECT DISTINCT (str(?qm)) as ?qmiri
+       WHERE { GRAPH `iri(?:graphiri)` {
+   		`iri(?:root)` virtrdf:qmUserSubMaps ?lst .
+               ?lst ?p ?qm .
+               FILTER (0 = bif:strstr (str(?p), str(rdf:_)))
+             } } ) AS sub ) );
+ FOREACH (VARCHAR qmid IN subqms) DO
+   DB.DBA.RDF_QM_CONTENT_OF_QM_TREE (graph_iri, storage, qmid, dict);
+ RETURN dict;
+}
+;
+
+CREATE FUNCTION DB.DBA.RDF_QM_GROUP_BY_SOURCE_TABLES (in qms ANY) returns ANY
+{
+ DECLARE res ANY;
+ DECLARE ctr INTEGER;
+ DECLARE graphiri VARCHAR;
+ graphiri := DB.DBA.JSO_SYS_GRAPH();
+ res := dict_new (LENGTH (qms) / 20);
+ FOREACH (VARCHAR qmiri IN qms) DO
+   {
+     DECLARE tbls, acc ANY;
+     tbls := ((SELECT DB.DBA.VECTOR_AGG (sub."tbl")
+         FROM (SELECT subsub."tbl"
+           FROM (
+             SPARQL DEFINE input:storage ""
+             SELECT DISTINCT ?tbl
+             WHERE { GRAPH `iri(?:graphiri)` {
+                       { `iri(?:qmiri)` virtrdf:qmTableName ?tbl .
+                       } UNION {
+                         `iri(?:qmiri)` virtrdf:qmATables ?atbls .
+                         ?atbls ?p ?atbl .
+                         ?atbl virtrdf:qmvaTableName ?tbl
+                       } UNION {
+                         `iri(?:qmiri)` ?fldmap ?qmv .
+                         ?qmv virtrdf:qmvATables ?atbls .
+                         ?atbls ?p ?atbl .
+                         ?atbl virtrdf:qmvaTableName ?tbl .
+                       } } } ) subsub
+           ORDER BY 1 ) AS sub ) );
+     acc := dict_get (res, tbls);
+     IF (acc IS NULL)
+       vectorbld_init (acc);
+     vectorbld_acc (acc, qmiri);
+     dict_put (res, tbls, acc);
+   }
+ res := dict_to_vector (res, 2);
+ FOR (ctr := LENGTH (res); ctr > 0; ctr := ctr-2)
+   {
+     DECLARE acc ANY;
+     acc := aref_set_0 (res, ctr-1);
+     vectorbld_final (acc);
+     aset_zap_arg (res, ctr-1, acc);
+   }
+ RETURN res;
+}
+;
+
+--test dbg_obj_princ (DB.DBA.RDF_QM_GROUP_BY_SOURCE_TABLES (dict_list_keys (DB.DBA.RDF_QM_CONTENT_OF_QM_TREE (null), 2)));
+--test dbg_obj_princ (dict_list_keys (DB.DBA.RDF_QM_CONTENT_OF_QM_TREE (null), 2));
+--test DB.DBA.RDF_QM_TREE_DUMP ('dump/demo', null, null, null);
+--test DB.DBA.RDF_QM_TREE_DUMP ('dump/tpch', 'http://localhost:8600/tpch', null, null);	
+]]></programlisting>
+</sect3>	
+</sect2>	
 <sect2 id="rdfperfcost"><title>Erroneous Cost Estimates and Explicit Join Order</title>
 
 	<para>The selectivity of triple patterns is determined at query compile time from sampling the data.
