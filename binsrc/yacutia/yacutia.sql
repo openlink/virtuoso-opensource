@@ -318,15 +318,6 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
    <node name="Import" url="import_csv_1.vspx"  id="271" allowed="cvs_import">
    <node name="Import" url="import_csv_2.vspx"  id="271" place="1" />
    <node name="Import" url="import_csv_3.vspx"  id="271" place="1" />
@@ -469,7 +460,22 @@ case when 0 and check_package('rdf_mappers') then
    </node>',
    '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
-   </node>',
+   </node>
+   <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
+   <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
+   <node name="RDF Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
+   '<node name="RDF Subscriptions" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
+       else
+       '' 
+       end,
 '</node>
  <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
    --<node name="Mail Configuration" url="msg_mail_conf.vspx"  id="158" yacutia_mail_config_page"">
@@ -5060,7 +5066,7 @@ create procedure www_listeners ()
   declare VHOST, PORT, INTF, HOST, LHOST varchar;
   declare NO_EDIT, NO_CTRL int;
   result_names (VHOST, PORT, INTF, NO_EDIT, HOST, LHOST, NO_CTRL);
-  xt := www_tree (null);
+  xt := www_tree ('*LISTENERS*');
   xp := xpath_eval ('/www/node', xt, 0);
   foreach (any xpp in xp) do
     {
@@ -5079,20 +5085,20 @@ create procedure www_listeners ()
 create procedure www_tree (in path any)
 {
   declare ss, i any;
+  set isolation='uncommitted';
+  if (path is null) 
+    path := '*LISTENERS*';
   ss := string_output ();
   http ('<www>', ss);
-  for select distinct HP_HOST as HOST, HP_LISTEN_HOST as LHOST,
-
-    (case HP_HOST when '*ini*' then 0 when '*sslini*' then 0
-    else 1 end) as HP_NO_EDIT,
-
-    (case HP_LISTEN_HOST when '*ini*' then 0 when '*sslini*' then 0
-    when (':' || cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'SSLPort')) then 0
-    else 1 end) as HP_NO_CTRL
-
-      from DB.DBA.HTTP_PATH order by HOST, LHOST do
+  for select distinct HP_HOST as HOST, HP_LISTEN_HOST as LHOST from DB.DBA.HTTP_PATH order by HOST, LHOST do
      {
        declare vhost, intf, port, tmp any;
+       declare HP_NO_EDIT, HP_NO_CTRL any;
+
+       HP_NO_EDIT := case HOST when '*ini*' then 0 when '*sslini*' then 0 else 1 end;
+       HP_NO_CTRL := case LHOST when '*ini*' then 0 when '*sslini*' then 0
+    when (':' || cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'SSLPort')) then 0
+    else 1 end;
 
        vhost := HOST;
        intf := LHOST;
@@ -5131,7 +5137,7 @@ create procedure www_tree (in path any)
        http (sprintf ('<node host="%s" port="%s" lhost="%s" edit="%d" chost="%s" clhost="%s" control="%d">\n', vhost, port, intf, HP_NO_EDIT, HOST, LHOST, HP_NO_CTRL), ss);
        i := 0;
        for select HP_LPATH, HP_PPATH, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SECURITY, HP_OPTIONS
-	 from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST do
+	 from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST and path <> '*LISTENERS*' do
    {
       declare tp, usr any;
       declare hp_opts, url_rew any;
@@ -5168,7 +5174,10 @@ create procedure www_tree (in path any)
 		HP_LPATH, tp, usr, coalesce (HP_SECURITY, ''), url_rew), ss);
 	  i := i + 1;
         }
+      if (i > 1000)
+	goto term;
    }
+       term:;
        if (not i)
 	 http (sprintf ('\t<node />\n'), ss);
        http ('</node>\n', ss);
@@ -6561,5 +6570,41 @@ create procedure WS.WS.VFS_INIT_QUEUE ()
       insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_TS, VQ_STAT, VQ_OTHER) values
 	  (VS_HOST, VS_ROOT, VS_URL, now (), 'waiting', case VS_OTHER when 'checked' then 'other' else null end);
     }
+}
+;
+
+create procedure y_parse_link_headers (in s varchar, in rel varchar, in val varchar)
+{
+  declare exps, res any;
+  declare st, en, cur int;
+  s := replace (s, '\r', '');
+  s := replace (s, '\n', '');
+  cur := 0;
+  res := null;
+  while (cur < length (s))
+    {
+      declare tmp, ll, cur_rel any;
+      exps := regexp_parse ('(<([^<>]+)>;([ ]*([a-zA-Z]+)="([^"]*)";?)+[,]*)', s, cur);
+      if (not isarray (exps))
+	goto done;
+      st := exps[0];
+      en := exps[1];
+      tmp := subseq (s, st, en);
+      ll := subseq (s, exps[4], exps[5]);
+      tmp := replace (tmp, '<' || ll || '>;', '');
+      tmp := trim (tmp, ' ,');
+      tmp := split_and_decode (tmp, 0, '\0\0;=');
+      for (declare i, l int, i := 0, l := length (tmp); i < l; i := i + 1)
+        tmp[i] := trim (tmp[i], '" '); 
+      cur := en; 
+      cur_rel := get_keyword (rel, tmp);
+      if (cur_rel = val)
+	{
+	  res := ll;
+	  goto done;
+	}
+    }
+  done:
+  return res;
 }
 ;
