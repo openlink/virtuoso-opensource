@@ -963,11 +963,11 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (DV_ARRAY_OF_POINTER == tree_dtp)
             str = tree->_.lit.val;
           else
-            str = tree;
+            str = (caddr_t) tree;
           str_dtp =  DV_TYPE_OF (str);
           if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{N-aref-of-spfinv}^: literal of wrong type", asname_printed);
-          res = (caddr_t *)sprintf_inverse_ex (ssg->ssg_sparp->sparp_sparqre->sparqre_qi, &err, str, qm_fmt->qmfCustomString1, 2, qm_fmt->qmfArgDtps);
+          res = (caddr_t *)sprintf_inverse_ex ((caddr_t *) ssg->ssg_sparp->sparp_sparqre->sparqre_qi, &err, str, qm_fmt->qmfCustomString1, 2, (unsigned char *) qm_fmt->qmfArgDtps);
           dk_free_tree (err);
           if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (res)) || (col_idx > BOX_ELEMENTS (res)))
             {
@@ -2705,7 +2705,7 @@ ssg_const_is_good_for_split_into_short (spar_sqlgen_t *ssg, SPART *tree, int tre
   if (NULL != strstr (sff, "%{")) /* Macro expansion may vary between compilation time and execution time(s), no ho magic can be made once. */
     return NULL;
   strg = SPAR_LIT_OR_QNAME_VAL (tree);
-  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (caddr_t) val_dtp_strg);
+  split = sprintf_inverse_ex (NULL, &err, strg, sff, 1, (unsigned char *) val_dtp_strg);
   if (NULL != err)
     {
       dk_free_tree (err);

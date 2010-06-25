@@ -71,7 +71,7 @@ extern ccaddr_t xsd_type_of_box (caddr_t arg);
 typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
-  caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
+  caddr_t *tf_app_env;		/*!< Environment for use by callbacks, owned by caller. It's "caddr_t *" instead of plain "caddr_t" because it's vector in most cases. */
   const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
   caddr_t tf_default_graph_uri;	/*!< Default graph uri, owned by caller */
   caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, owned by caller if equal to tf_default_graph_uri, local otherwise */
@@ -187,7 +187,7 @@ extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
   caddr_t text_or_filename, int arg1_is_filename, caddr_t base_uri, caddr_t graph_uri, long flags,
-  ccaddr_t *cbk_names, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t *app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -230,7 +230,7 @@ extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   int mode_bits, const char *source_name, caddr_t base_uri, caddr_t graph_uri,
-  ccaddr_t *stmt_texts, caddr_t app_env,
+  ccaddr_t *stmt_texts, caddr_t *app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ );

@@ -1096,7 +1096,7 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
           id_hash_set (ctx->ric_iid_to_rel_ifp, (caddr_t)(&member_boxed_iid), (caddr_t)(&val));
         }
     }
-  ctx->ric_ifp_rel_list = revlist_to_array (ifp_rel_acc);
+  ctx->ric_ifp_rel_list = (caddr_t *) revlist_to_array (ifp_rel_acc);
   return NULL;
 }
 

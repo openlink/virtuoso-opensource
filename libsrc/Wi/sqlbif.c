@@ -3618,7 +3618,7 @@ bif_sprintf_inverse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long hide_errors = bif_long_arg (qst, args, 2, "sprintf_inverse");
   caddr_t expected_dtp_strg = ((3 < BOX_ELEMENTS (args)) ? bif_string_or_null_arg (qst, args, 3, "sprintf_inverse") : NULL);
   caddr_t err = NULL;
-  caddr_t res = sprintf_inverse_ex (qst, &err, str, fmt, hide_errors, expected_dtp_strg);
+  caddr_t res = sprintf_inverse_ex (qst, &err, str, fmt, hide_errors, (unsigned char *) expected_dtp_strg);
   if (NULL != err)
     sqlr_resignal (err);
   return res;

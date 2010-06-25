@@ -577,7 +577,7 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
 caddr_t
 rdf_load_turtle (
   caddr_t text_or_filename, int arg1_is_filename, caddr_t base_uri, caddr_t graph_uri, long flags,
-  ccaddr_t *cbk_names, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t *app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret )
 {
   FILE *srcfile = NULL;

@@ -2938,7 +2938,6 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_free_box (dk_set_delete_nth (known_reasons_ptr, reason_pos));
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t boxed_p_id = bif_arg_nochecks (qst, args, 1);
       iri_hkey.hkey_g = g_id;
       iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
 				     : cl_id_to_iri ((query_instance_t *)qst, bif_arg_nochecks (qst, args, 1)));
