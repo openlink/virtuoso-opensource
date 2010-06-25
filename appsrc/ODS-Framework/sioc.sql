@@ -1859,6 +1859,8 @@ create procedure ods_sioc_post (
       if (content is not null and not do_exif)
 	{
 	  declare ses any;
+      content := subseq (content, 0, 10000000);
+      content := regexp_replace (content, '<[^>]+>', '', 1, null);
 	  ses := string_output ();
 	  http_value (content, null, ses);
 	  ses := string_output_string (ses);
@@ -4705,14 +4707,34 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
 	  ods_sioc_print_rset (iri, rset, ses, fmt, maybe_more);
 	}
     }
+  if (p > 0)
+    {
+      declare ss, sa_dict any;
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0)), ss);
+      http (sprintf ('<foaf:primaryTopic xmlns:foaf="http://xmlns.com/foaf/0.1/" rdf:resource="%s" />', iri), ss);
+      http ('</rdf:Description>', ss);
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      triples := dict_list_keys (sa_dict, 1);
+      if (fmt = 'rdf')
+	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+      else
+	{
+	  DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+	  http ('\n', ses);
+	}
+
+    }
   if (maybe_more)
     {
       declare ss, sa_dict any;
       ss := string_output ();
       rdf_head (ss);
       http (sprintf ('<rdf:Description rdf:about="%s">', iri), ss);
-      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />',
-       iri, coalesce (p, 0) + 1), ss);
+      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />', iri, coalesce (p, 0) + 1), ss);
       http ('</rdf:Description>', ss);
 
       http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0) + 1), ss);
@@ -4726,7 +4748,10 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
       if (fmt = 'rdf')
 	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
+	{
 	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+	  http ('\n', ses);
+	}
     }
   if (fmt = 'rdf')
     rdf_tail (ses);

@@ -294,7 +294,16 @@
       // Parse the request
       items = upload.parseRequest(request);
     }
-    String $_form = getParameter(items, request, "form");
+    String $_form = null;
+    String $_oidForm = getParameter(items, request, "oid-form");
+    if ($_oidForm == null) {
+      $_form = getParameter(items, request, "form");
+    } else {
+      if ($_oidForm.equals("lf"))
+        $_form = "login";
+      if ($_oidForm.equals("rf"))
+        $_form = "register";
+    }
     if ($_form == null)
       $_form = "login";
     int $_formTab = 0;
@@ -874,7 +883,16 @@
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
-        <div id="ob_left"><% outFormTitle (out, $_form); %></div>
+        <div id="ob_left">
+        <%
+          if ($_form.equals("profile") || $_form.equals("user"))
+          {
+        %>
+          <b>User: </b><% out.print(xpathEvaluate($_document, "/user/fullName")); %>, <b>Profile: </b><a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>
+        <%
+          }
+        %>
+        </div>
         <div id="ob_right">
         <%
           if (($_form != "login") && ($_form != "register"))
@@ -989,7 +1007,7 @@
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_0" class="form" cellspacing="5">
                       <tr id="rf_login_1">
                         <th width="30%">
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
@@ -1025,7 +1043,7 @@
                     </table>
                   </div>
                   <div id="rf_page_1" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
@@ -1037,7 +1055,7 @@
                     </table>
                   </div>
                   <div id="rf_page_2" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                         </th>
@@ -1067,7 +1085,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                  <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
               <%
@@ -1080,7 +1098,9 @@
                   User profile
                 </div>
 
-                <div id="uf_div" style="clear: both;">
+                <div id="uf_div_new" style="clear: both;">
+                </div>
+                <div id="uf_div" style="clear: both; display: none;">
               	  <div id="u_profile_l">
               	    <div id="user_info_w" class="widget user_info_w">
               	      <div class="w_title" id="userProfilePhotoName">
@@ -1200,10 +1220,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div class="footer" style="clear: both;">
-                  <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
               </div>
               <%
@@ -1807,6 +1823,7 @@
                   </div>
 
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                        <input type="hidden" name="c_nick" value="<% out.print(xpathEvaluate($_document, "/user/nickName")); %>" id="c_nick" />
                     <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">

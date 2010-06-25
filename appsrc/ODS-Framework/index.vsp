@@ -111,6 +111,10 @@
 
     http('  <link rel="meta" type="application/rdf+xml" title="SIOC" href="'||server_dataspace||uname||'/sioc.rdf" />\r\n',resMeta);
     http('  <link rel="meta" type="application/rdf+xml" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.rdf" />\r\n',resMeta);
+    http('  <link rel="meta" type="text/rdf+n3" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.n3" />\r\n',resMeta);
+    http('  <link rel="meta" type="application/json" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.json" />\r\n',resMeta);
+    http('  <link rel="http://xmlns.com/foaf/0.1/primaryTopic"  title="About" href="'||server_dataspace||utype||uname||'#this" />\r\n',resMeta);
+    http('  <link rev="describedby"  title="About" href="'||server_dataspace||utype||uname||'#this" />\r\n',resMeta);
 
     http('  <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />\r\n',resMeta);
     http('  <meta name="dc.language" content="en" scheme="rfc1766" />\r\n',resMeta);
@@ -145,7 +149,16 @@
 
 skip_meta:
 
-  declare html_content varchar;
+  declare html_content, links varchar;
+  declare exts any;
+
+  exts := 
+  vector (
+      	vector ('rdf',  'RDF/XML', 'application/rdf+xml'), 
+      	vector ('nt',   'N3/Turtle', 'text/n3'), 
+      	vector ('n3',   'N3/Turtle', 'text/rdf+n3'), 
+	vector ('json', 'RDF/JSON', 'application/json')
+	);
 
   html_content := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
                      from WS.WS.SYS_DAV_RES
@@ -159,8 +172,18 @@ skip_meta:
     html_content:=replace (html_content,'#THIS', '#this');
   html_content:=replace(html_content,'<!-- #META# -->',string_output_string (resMeta));
 
+  links := 'Link:';
+  links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",\r\n', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s%s%s#this>; rev="describedby",\r\n', server_dataspace, utype, uname);
+  foreach (any ss in exts) do
+    {
+       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate";\r\n type="%s"; title="Structured Descriptor Document (%s format)",\r\n', 
+       server_dataspace, utype, uname, ss[0], ss[2], ss[1]);
+    }
+  links := rtrim (links, ',\r\n');
+
   http_rewrite();
-  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  http_header (links || '\r\nContent-Type: text/html; charset=UTF-8\r\n');
   http (html_content);
 
 ?>

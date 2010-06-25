@@ -556,19 +556,11 @@ var setServiceUrl = function(fld)
     {
       if (fld.value == serviceList[N][2])
       {
-        var urlName = fld.input.name.replace(/fld_1_/, 'fld_2_');
-        $(urlName).value = serviceList[N][1]+$v('c_nick');
-      }
-    }
-	}
-
-var setServiceUrl2 = function(fld)
-  {
-    for (N = 0; N < serviceList.length; N = N + 1)
-    {
-      if (fld.value == serviceList[N][2])
-      {
-        var urlName = fld.name.replace(/fld_1_/, 'fld_2_');
+        var urlName;
+        if (fld.input)
+          urlName = fld.input.name.replace(/fld_1_/, 'fld_2_');
+        else
+          urlName = fld.name.replace(/fld_1_/, 'fld_2_');
         $(urlName).value = serviceList[N][1]+$v('c_nick');
       }
     }
@@ -673,6 +665,7 @@ RDF.ontologies['dataview'] = {"name": 'http://www.w3.org/2003/g/data-view#', "hi
 RDF.ontologies['dc'] = {"name": 'http://purl.org/dc/elements/1.1/', "hidden": 1};
 RDF.ontologies['dcterms'] = {"name": 'http://purl.org/dc/terms/', "hidden": 1};
 RDF.ontologies['foaf'] = {"name": 'http://xmlns.com/foaf/0.1/'};
+RDF.ontologies['frbr'] = {"name": 'http://vocab.org/frbr/core#'};
 RDF.ontologies['geo'] = {"name": 'http://www.w3.org/2003/01/geo/wgs84_pos#'};
 RDF.ontologies['gr'] = {"name": 'http://purl.org/goodrelations/v1#'};
 RDF.ontologies['ibis'] = {"name": 'http://purl.org/ibis#', "hidden": 1};

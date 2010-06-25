@@ -155,3 +155,29 @@ img.button {
 table.listing td, table.listing th {
   border-spacing: 0px;
 }
+
+div.PF_header {
+  width: 100%;
+  padding: 5px 0 5px 0px;
+  background-color: #F9F9F9;
+  font-size: 14px;
+  font-weight: bold;
+}
+table.PF_form {
+  width: 100%;
+}
+
+table.PF_form th {
+  vertical-align: top;
+  text-align: right;
+  width: 150px;
+  padding-right: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+table.PF_form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}

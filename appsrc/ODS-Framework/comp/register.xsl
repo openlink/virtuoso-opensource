@@ -778,8 +778,11 @@ no_date:
                       if (is_disabled && $('openid_url'))
                       {
                         $('openid_url').disabled = true;
+                        if ($('tabODS'))
                         $('tabODS').style.display = 'none';
+                        if ($('tabSSL'))
                         $('tabSSL').style.display = 'none';
+                        if ($('tabFB'))
                         $('tabFB').style.display = 'none';
            }
                     ]]>

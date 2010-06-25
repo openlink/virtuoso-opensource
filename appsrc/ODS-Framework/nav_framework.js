@@ -661,10 +661,9 @@ ODS.session = function(customEndpoint) {
 		    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 				if (!self.isErr(xmlDoc)) {
-					self.openId.server = OAT.Xml.textValue(OAT.Xml.xpath(
-							xmlDoc, '/openIdServer_response/server', {})[0]);
-					self.openId.delegate = OAT.Xml.textValue(OAT.Xml.xpath(
-							xmlDoc, '/openIdServer_response/delegate', {})[0]);
+					self.openId.version = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/version', {})[0]);
+					self.openId.server = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/server', {})[0]);
+					self.openId.delegate = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/delegate', {})[0]);
 
 			    if (!self.openId.server || self.openId.server.length == 0)
 				showLoginErr (' Cannot locate OpenID server');
@@ -674,30 +673,31 @@ ODS.session = function(customEndpoint) {
 			    if (self.openId.delegate || self.openId.delegate.length > 0)
 				oidIdent = self.openId.delegate;
 
-					var thisPage = document.location.protocol + '//'
-							+ document.location.host
-							+ document.location.pathname + '?oid-srv='
-							+ encodeURIComponent(self.openId.server);
+					var thisPage = document.location.protocol + '//' + document.location.host + document.location.pathname
+						+ '?oid-srv=' + encodeURIComponent(self.openId.server);
 
 					var trustRoot = document.location.protocol + '//'
 							+ document.location.host;
 
 					var checkImmediate = self.openId.server
 							+ '?openid.mode=checkid_setup'
-							+ '&openid.identity='
-							+ encodeURIComponent(oidIdent)
-							+ '&openid.return_to='
-							+ encodeURIComponent(thisPage)
-							+ '&openid.trust_root='
-							+ encodeURIComponent(trustRoot);
+						+ '&openid.return_to=' + encodeURIComponent(thisPage);
+
+          if (self.openId.version == '1.0')
+            checkImmediate +='&openid.identity=' + encodeURIComponent(oidIdent)
+                           + '&openid.trust_root=' + encodeURIComponent(trustRoot);
+
+          if (self.openId.version == '2.0')
+            checkImmediate += '&openid.ns=' + encodeURIComponent('http://specs.openid.net/auth/2.0')
+              + '&openid.claimed_id=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+              + '&openid.identity=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
 
 			    document.location = checkImmediate;
 				} else {
 					OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn: true});
 			}
 		};
-			OAT.AJAX.POST(self.endpoint + "openIdServer", data, callback,
-					options);
+			OAT.AJAX.POST(self.endpoint + "openIdServer", data, callback, options);
 		} else if (selectedTab.key.id == 'loginT3') {
 			if (!nav.facebookData || !nav.facebookData.uid) {
         showLoginErr ();
@@ -790,52 +790,52 @@ ODS.session = function(customEndpoint) {
 
 	this.openIdVerify = function() {
 	var uriParams = OAT.Dom.uriParams ();
-		var url = self.openId.server + '?openid.mode=check_authentication'
-				+ '&openid.assoc_handle='
-				+ encodeURIComponent(self.openId.assoc_handle) + '&openid.sig='
-				+ encodeURIComponent(self.openId.sig) + '&openid.signed='
-				+ encodeURIComponent(self.openId.signed);
+    var openIdServer       = uriParams['oid-srv'];
+    var openIdSig          = uriParams['openid.sig'];
+    var openIdIdentity     = uriParams['openid.identity'];
+    var openIdAssoc_handle = uriParams['openid.assoc_handle'];
+    var openIdSigned       = uriParams['openid.signed'];
 
-	var sig = self.openId.signed.split (',');
-		for ( var i = 0; i < sig.length; i++) {
+    var url = openIdServer +
+      '?openid.mode=check_authentication' +
+      '&openid.assoc_handle=' + encodeURIComponent (openIdAssoc_handle) +
+      '&openid.sig='          + encodeURIComponent (openIdSig) +
+      '&openid.signed='       + encodeURIComponent (openIdSigned);
+
+    var sig = openIdSigned.split(',');
+    for (var i = 0; i < sig.length; i++)
+    {
 		var _key = sig[i].trim ();
-
-			if (_key != 'mode' && _key != 'signed' && _key != 'assoc_handle') {
+      if (_key != 'mode' &&
+          _key != 'signed' &&
+          _key != 'assoc_handle')
+      {
 			var _val = uriParams['openid.' + _key];
 			if (_val != '')
-					url = url + '&openid.' + _key + '='
-							+ encodeURIComponent(_val);
+          url += '&openid.' + _key + '=' + encodeURIComponent (_val);
 		    }
 	    }
-
-		var data = 'realm=wa' + '&openIdUrl=' + encodeURIComponent(url)
-				+ '&openIdIdentity=' + encodeURIComponent(self.openId.identity);
+		var data = 'realm=wa'
+		    + '&openIdUrl=' + encodeURIComponent(url)
+				+ '&openIdIdentity=' + encodeURIComponent(openIdIdentity);
 
 		var callback = function(xmlString) {
 	    var xmlDoc = OAT.Xml.createXmlDoc (xmlString);
 
 			if (!self.isErr(xmlDoc)) {
-				self.sid = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-						'/openIdCheckAuthentication_response/session', {})[0]);
-				self.userName = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-						'/openIdCheckAuthentication_response/userName', {})[0]);
-				self.userId = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-						'/openIdCheckAuthentication_response/userId', {})[0]);
+				self.sid = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdCheckAuthentication_response/session', {})[0]);
+				self.userName = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdCheckAuthentication_response/userName', {})[0]);
+				self.userId = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdCheckAuthentication_response/userId', {})[0]);
 
         OAT.MSG.send (self, "WA_SES_VALIDBIND", {});
 			} else {
-				var errMsg = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-						'/error_response/error_msg', {})[0]);
+				var errMsg = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_msg', {})[0]);
 
-				OAT.MSG.send(self, "WA_SES_INVALID", {
-					retryLogIn : true,
-					msg : errMsg
-				});
+				OAT.MSG.send(self, "WA_SES_INVALID", {retryLogIn: true, msg: errMsg});
 		    return;
 		}
 	};
-		OAT.AJAX.POST(self.endpoint + "openIdCheckAuthentication", data,
-				callback, optionsSynch);
+		OAT.AJAX.POST(self.endpoint + "openIdCheckAuthentication", data, callback, optionsSynch);
     };
 
 	this.usersGetInfo = function(users, fields, callbackFunction) {
@@ -2258,7 +2258,7 @@ ODS.Nav = function(navOptions) {
 		});
 
 		OAT.Event.attach(aSignUp, "click", function() {
-			      self.loadVspx (self.ods + 'register.vspx?RETURL=index.html');
+			self.loadVspx(self.ods + 'register.vspx?');
 		});
 	aSignUp.innerHTML = 'Sign Up';
 
@@ -5177,8 +5177,7 @@ ODS.Nav = function(navOptions) {
 	},
 
 		attachPersonBox : function(elm, connObj) {
-			var connContent = OAT.Dom.create('div', {},
-					'a_bubble conn_info_bubble');
+			var connContent = OAT.Dom.create('div', {}, 'a_bubble conn_info_bubble');
 	    connContent.innerHTML = $('connection_info_bubble').innerHTML;
 
 	    var img = connContent.getElementsByTagName ('img')[0];
@@ -5240,8 +5239,7 @@ ODS.Nav = function(navOptions) {
 										    });
 							    });
 					}
-				} else if (!self.session.sid
-						&& self.session.userId != connObj.uid) {
+				} else if (!self.session.sid && self.session.userId != connObj.uid) {
 				links[1].innerHTML='Connect';
 					OAT.Event
 							.attach(
@@ -5251,8 +5249,7 @@ ODS.Nav = function(navOptions) {
 						    var t = eTarget (e);
 						    OAT.Anchor.close (t);
 										self.defaultAction = function() {
-											self
-													.connectionSet(
+											self.connectionSet(
 															t.uid,
 									       1,
 									       function (xmlDoc) {
@@ -5267,10 +5264,8 @@ ODS.Nav = function(navOptions) {
 							     // self.dimmerMsg (msg);
 							     ;
 																else {
-																	self.session
-																			.connectionAdd(t.uid);
-																	self.session
-																			.invitationAdd(t.uid);
+																	self.session.connectionAdd(t.uid);
+																	self.session.invitationAdd(t.uid);
 										       }
 
 										   self.connections.show = true;
@@ -5401,26 +5396,16 @@ ODS.Nav = function(navOptions) {
 		});
 		    }
 
-	OAT.Event.attach($('vspxApp'), "load", function() {
-		self.hide_app_throbber();
-	});
-
-	OAT.Event
-			.attach(
+	OAT.Event.attach($('vspxApp'), "load", function() {self.hide_app_throbber();});
+	OAT.Event.attach(
 					$('vspxApp'),
 					"load",
 		      function () {
 						if (!self.session.sid) {
-							var getParams = OAT.Browser.isIE ? $('vspxApp').contentWindow.location.href
-									: $('vspxApp').contentDocument.location.search;
-
+							var getParams = OAT.Browser.isIE ? $('vspxApp').contentWindow.location.href: $('vspxApp').contentDocument.location.search;
 							if (getParams.indexOf('sid=') > -1) {
-								var iframeSid = getParams.substring(getParams
-										.indexOf('sid=') + 4, getParams.length);
-
-								iframeSid = iframeSid.substring(0, iframeSid
-										.indexOf('&'));
-
+								var iframeSid = getParams.substring(getParams.indexOf('sid=') + 4, getParams.length);
+								iframeSid = iframeSid.substring(0, iframeSid.indexOf('&'));
 					  self.session.sid = iframeSid;
 					  self.session.validateSid ();
 				      }
