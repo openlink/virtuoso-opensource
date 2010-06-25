@@ -8006,27 +8006,14 @@ enf:
 ;
 
 
-create procedure
-IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, in bid varchar, in uid varchar, in pwd varchar)
-{
-  declare tmp, xt, cnt, hdr, rc any;
-  declare posts any;
-
-  url := cast (url as varchar);
-  api := cast (api as varchar);
-  bid := cast (bid as varchar);
-  uid := cast (uid as varchar);
-  pwd := cast (pwd as varchar);
-
-  rc := 0;
-  if (length (bid) = 0) -- import from a feed
+create procedure IMPORT_PARSE_FEED (inout xt any)
     {
-      declare title, content, published, postid any;
+  declare title, content, published, postid, tmp, posts any;
       declare res "MTWeblogPost";
       declare i int;
 
-      cnt := BLOG..GET_URL_AND_REDIRECTS (url, hdr);
-      xt := xtree_doc (cnt);
+  posts := null;
+
       if (xpath_eval ('/rss', xt) is not null)
         {
           tmp := xpath_eval ('/rss/channel/item', xt, 0);
@@ -8090,19 +8077,12 @@ IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, 
 	      i := i + 1;
 	    }
 	}
+  return posts;
     }
-  else -- import using an api
-    {
-      if (api = 'MetaWeblog' or api = 'MoveableType')
-	{
-	  posts := metaweblog.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
-	}
-      else -- use blogger
-	{
-	  posts := blogger.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
-	}
-    }
+;
 
+create procedure IMPORT_INSERT_POSTS (inout posts any, in blogid any, in user_id any)
+{
   foreach (any x in posts) do
     {
       declare title, content, pub, id any;
@@ -8130,10 +8110,67 @@ IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, 
 	}
 
       insert into BLOG.DBA.SYS_BLOGS (B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE, B_TITLE)
-	  values ('Import', id, blogid, pub, content, user_id, meta, 1, title);
+	  values ('Import', id, blogid, pub, content, user_id, meta, 2, title);
+    }
+}
+;
+
+create procedure
+IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, in bid varchar, in uid varchar, in pwd varchar, in hub varchar := null)
+{
+  declare tmp, xt, cnt, hdr, rc any;
+  declare posts any;
+
+  url := cast (url as varchar);
+  api := cast (api as varchar);
+  bid := cast (bid as varchar);
+  uid := cast (uid as varchar);
+  pwd := cast (pwd as varchar);
+
+  rc := 0;
+  if (length (bid) = 0) -- import from a feed
+    {
+      cnt := BLOG..GET_URL_AND_REDIRECTS (url, hdr);
+      xt := xtree_doc (cnt);
+      posts := IMPORT_PARSE_FEED (xt);
+    }
+  else -- import using an api
+    {
+      if (api = 'MetaWeblog' or api = 'MoveableType')
+	{
+	  posts := metaweblog.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+      else -- use blogger
+	{
+	  posts := blogger.get_Recent_Posts (url, BLOG.DBA."blogRequest" ('appKey', bid, '', uid, pwd), 100);
+	}
+    }
+  IMPORT_INSERT_POSTS (posts, blogid, user_id);
+  if (length (hub))
+    {
+      declare token, subsu, callback, head, ret varchar;
+      declare inst int;
+
+      inst := (select WAI_ID from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_WAI_NAME = WAI_NAME and BI_BLOG_ID = blogid);
+      PSH.DBA.ods_cli_subscribe (inst, hub, 'subscribe', url);
     }
   return length (posts);
 };
+
+create procedure PSH.DBA.ods_weblog_psh_cbk (in url varchar, in content any, in inst any)
+{
+  declare xt, posts, blogid, user_id any;
+
+  for select BI_BLOG_ID, BI_OWNER from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_WAI_NAME = WAI_NAME and WAI_ID = inst do
+    {
+      blogid := BI_BLOG_ID;
+      user_id := BI_OWNER; 
+    }
+  xt := xtree_doc (content);
+  posts := IMPORT_PARSE_FEED (xt);
+  IMPORT_INSERT_POSTS (posts, blogid, user_id);
+}
+;
 
 -- /* re-tagging */
 create procedure blog_tag2str (inout tags any)
