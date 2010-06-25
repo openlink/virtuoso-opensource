@@ -133,7 +133,7 @@
 
 <xsl:template match="a:entry" mode="li">
   <xsl:choose>
-        <xsl:when test="starts-with(a:id, 'http://')">
+        <xsl:when test="starts-with(a:id, 'http://') or starts-with(a:id, 'https://')">
 		  <xsl:variable name="id2" select="vi:replace1(a:id)" />
           <rdf:li rdf:resource="{$id2}" />
         </xsl:when>

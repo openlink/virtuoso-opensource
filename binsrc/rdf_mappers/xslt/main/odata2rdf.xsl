@@ -49,6 +49,7 @@
     xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:batch="http://schemas.google.com/gdata/batch"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"    
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
 	xmlns:m="&m;"

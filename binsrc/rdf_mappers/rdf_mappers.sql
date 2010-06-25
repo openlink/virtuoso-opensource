@@ -39,6 +39,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_OREILLY', null, 'Oreilly');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*etsy.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_ETSY', null, 'Etsy');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*download.com/.*)|'||
     '(http://download.cnet.com/.*)|'||
     '(http://shopper.cnet.com/.*)|'||
@@ -4800,6 +4804,65 @@ create procedure DB.DBA.RDF_LOAD_OREILLY (in graph_iri varchar, in new_origin_ur
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, hdr, tree any;
+  declare pos int;
+  declare item_id, action varchar;
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    if (new_origin_uri like 'http://www.etsy.com/people/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.etsy.com/people/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+	    url := sprintf('http://beta-api.etsy.com/v1/users/%s?api_key=%s&detail_level=high', item_id, _key);
+	    action := 'user';
+	}
+    else if (new_origin_uri like 'http://www.etsy.com/view_listing.php?listing_id=%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.etsy.com/view_listing.php?listing_id=%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+		action := 'prod';
+	}
+    else if (new_origin_uri like 'http://www.etsy.com/listing/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://www.etsy.com/listing/%s', 0);
+		item_id := trim(tmp[0], '/');
+		if (item_id is null)
+			return 0;
+		pos := strchr(item_id, '/');
+		if (pos is not null and pos <> 0)
+			item_id := left(item_id, pos);
+	    url := sprintf('http://beta-api.etsy.com/v1/listings/%s?api_key=%s&detail_level=high', item_id, _key);
+		action := 'prod';
+	}
+	else
+		return 0;
+	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
+	tree := json_parse (tmp);
+	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
+	xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/etsy2rdf.xsl', xt, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'action', action));
+	xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_WINE (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, host_part, xt, url, tmp, hdr, exif any;
@@ -6747,6 +6810,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
   xt := xtree_doc (content);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/feed2sioc.xsl', xt, vector ('baseUri', graph_iri, 'isDiscussion', is_disc));
   xd := serialize_to_UTF8_xml (xd);
+  string_to_file('feed_to_s.xml', xd, 0);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, iri, graph_iri, 0);
   return 1;
   no_sioc:
