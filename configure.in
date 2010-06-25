@@ -71,14 +71,14 @@ AC_SUBST(host_os)
 echo creating config.nice
 rm -f config.nice
 cat >config.nice<<CONFIG_NICE_EOF
-#! /bin/sh
+#!${SHELL-/bin/sh}
 #
 # Created by configure for $PACKAGE_STRING
 #
 
 # Environment
 CONFIG_NICE_EOF
-for var in CFLAGS CXXFLAGS CPPFLAGS LDFLAGS INCLUDES LIBS CC CXX
+for var in SHELL CFLAGS CXXFLAGS CPPFLAGS LDFLAGS INCLUDES LIBS CC CXX
 do
     eval val=\$$var
     if test -n "$val"
