@@ -258,6 +258,57 @@ DBG_HASHEXT_NAME (id_hash_remove) (DBG_PARAMS id_hash_t * ht, caddr_t key)
   return 0;
 }
 
+int
+DBG_HASHEXT_NAME (id_hash_get_and_remove) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data)
+{
+  id_hashed_key_t inx = ht->ht_hash_func (key);
+  ID_HASHED_KEY_CHECK (inx);
+  inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
+
+  if (BUCKET_IS_EMPTY (BUCKET (ht, inx), ht))
+    return 0;
+  if (ht->ht_cmp (BUCKET (ht, inx), key))
+    {
+      /* The thing is in the bucket. Pop first on overflow list
+         in. Mark bucket empty if no overflow list. */
+      char *overflow = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      memcpy (found_key, BUCKET (ht, inx), ht->ht_key_length);
+      memcpy (found_data, BUCKET (ht, inx) + ht->ht_data_inx, ht->ht_data_length);
+      if (overflow)
+	{
+	  memcpy (BUCKET (ht, inx), overflow, ht->ht_data_length + ht->ht_key_length + sizeof (caddr_t));
+	  DBG_HASHEXT_FREE (overflow, ht->ht_bucket_length);
+	}
+      else
+	{
+	  BUCKET_OVERFLOW (BUCKET (ht, inx), ht) = (char *) -1L;
+	}
+      ht->ht_deletes++;
+      ht->ht_count--;
+      return 1;
+    }
+  else
+    {
+      char **prev = &BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      char *ext = BUCKET_OVERFLOW (BUCKET (ht, inx), ht);
+      while (ext)
+	{
+	  if (ht->ht_cmp (ext, key))
+	    {
+              memcpy (found_key, ext, ht->ht_key_length);
+              memcpy (found_data, ext + ht->ht_data_inx, ht->ht_data_length);
+	      *prev = BUCKET_OVERFLOW (ext, ht);
+	      DBG_HASHEXT_FREE (ext, ht->ht_bucket_length);
+	      ht->ht_deletes++;
+	      ht->ht_count--;
+	      return 1;
+	    }
+	  prev = &BUCKET_OVERFLOW (ext, ht);
+	  ext = *prev;
+	}
+    }
+  return 0;
+}
 
 int
 DBG_HASHEXT_NAME (id_hash_remove_rnd) (DBG_PARAMS id_hash_t * ht, int inx, caddr_t key, caddr_t data)
