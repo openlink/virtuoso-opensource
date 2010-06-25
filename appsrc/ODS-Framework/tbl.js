@@ -238,7 +238,7 @@ TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
     fld.addOption('<img src="/ods/images/services/'+serviceList[N][0]+'"/> '+serviceList[N][2], serviceList[N][2]);
 
 	var ta = new TypeAhead(fld.input.id, 'onlineAccounts', '');
-	fld.input.onchange = setServiceUrl2;
+	fld.input.onchange = setServiceUrl;
 	fld.input.form.onsubmit = CheckSubmit;
 	taVars[taVars.length] = ta;
 

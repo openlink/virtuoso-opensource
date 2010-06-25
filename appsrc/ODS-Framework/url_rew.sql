@@ -527,6 +527,54 @@ DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%2
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%28\x241%29.json', 'application/json', 0.80,
     location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
 
+create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
+{
+  declare host, lines, exts any;
+  declare links, tmp, path varchar;
+
+  lines := http_request_header ();
+  host := http_request_header (lines, 'Host', null, '');
+  links := '';
+--  dbg_obj_print_vars (in_path);
+  exts := 
+  vector (
+      	vector ('rdf',  'RDF/XML', 'application/rdf+xml'), 
+      	vector ('nt',   'N3/Turtle', 'text/n3'), 
+      	vector ('n3',   'N3/Turtle', 'text/rdf+n3'), 
+	vector ('json', 'RDF/JSON', 'application/json')
+	);
+  path := regexp_replace (in_path, '/(about|foaf|sioc)\\.([a-z0-9]+)\x24', '', 1, null);	
+  if (regexp_match ('/dataspace/(person|organization)/([^/]+)\x24', path) is not null)
+    {
+      tmp := path || '#this';
+    }
+  else
+    {
+      tmp := path;
+    }
+  links := 'Link: ';
+  links := links || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', host, tmp);
+  links := links || sprintf ('\r\n <http://%s%s>; rev="describedby",', host, tmp);
+  tmp := regexp_replace (in_path, '\\.([a-z0-9]+)\x24', '', 1, null);	
+  if (tmp = in_path)
+    {
+      if (regexp_match ('/dataspace/(person|organization)/([^/]+)', path) is not null)
+	tmp := tmp || '/about';
+      else
+        tmp := tmp || '/sioc';	
+    }
+  foreach (any ss in exts) do
+    {
+      if (in_path not like '%.'||ss[0])
+	{
+	  links := links || sprintf ('\r\n <http://%s%s.%s>; rel="alternate";\r\n type="%s"; title="Structured Descriptor Document (%s format)",', 
+	  host, tmp, ss[0], ss[2], ss[1]);
+	}
+    }
+  links := rtrim (links, ',');
+  return links;
+}
+;
 
 -- RDF data rules - these was returning 303
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
@@ -535,7 +583,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
     2,
-    null);
+    null,
+    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
 
 -- RDF data rule
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
@@ -544,7 +593,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
     2,
-    null);
+    null,
+    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
 
 -- Rule for about, sioc, foaf etc. RDF resources
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
@@ -553,7 +603,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
     'DB.DBA.ODS_DET_REF',
     NULL,
     2,
-    null);
+    null,
+    '^{sql:DB.DBA.ODS_URLREW_HDR}^');
 
 -- Rule for moat
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_moat_res', 1,

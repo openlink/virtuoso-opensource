@@ -1643,7 +1643,9 @@ _err:
 ;
 grant execute on userMessageStatusSet to GDATA_ODS;
 
-create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
+create procedure openIdServer (
+  in openIdUrl varchar,
+  in mode varchar := null) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1653,10 +1655,8 @@ create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
   errCode := 0;
   errMsg  := '';
 
-  declare hdr,xt  any;
-  declare url, cnt, oi_ident, oi_srv, oi_delegate varchar;
-
-
+  declare hdr, xt, loc any;
+  declare url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate varchar;
   declare exit handler for sqlstate '*'
   {
     errCode:=501;
@@ -1664,26 +1664,47 @@ create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
     goto _end;
   };
 
-  url := openIdUrl;
-  oi_ident := url;
+  oi_version := '1.0';
+  oi_srv := null;
+  oi2_srv := null;
+  oi_delegate := null;
 
+  if (DB.DBA.is_empty_or_null (mode))
+  {
+    url := openIdUrl;
 again:
-
   hdr := null;
   cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
   if (hdr [0] like 'HTTP/1._ 30_ %')
   {
-      declare loc any;
       loc := http_request_header (hdr, 'Location', null, null);
       url := WS.WS.EXPAND_URL (url, loc);
-      oi_ident := url;
       goto again;
   }
-
+    if (http_request_header (hdr, 'Content-Type') <> 'application/xrds+xml')
+    {
   xt := xtree_doc (cnt, 2);
   oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
+      oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
   oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+      if (oi2_srv is not null)
+      {
+        oi_version := '2.0';
+        oi_srv := oi2_srv;
+      }
+    } else {
+      xt := xtree_doc (cnt);
+      oi_version := '2.0';
+      oi_srv := cast (xpath_eval ('//XRD/Service/URI', xt) as varchar);
+    }
+  }
+  else if (mode = 'google')
+  {
+    oi_version := '2.0';
+    oi_srv := 'https://www.google.com/accounts/o8/ud';
+  }
 
+  http('<version>'||oi_version||'</version>',resXml);
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);
 
@@ -1699,7 +1720,10 @@ _end:
 ;
 grant execute on openIdServer to GDATA_ODS;
 
-create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUrl varchar,in openIdIdentity varchar) __SOAP_HTTP 'text/xml'
+create procedure openIdCheckAuthentication (
+  in realm varchar :='wa',
+  in openIdUrl varchar,
+  in openIdIdentity varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1735,7 +1759,7 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
     goto _auth_failed;
   };
 
-  select U_NAME into user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity;
+  select U_NAME into user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/');
 
   declare sid varchar;
   sid := DB.DBA.vspx_sid_generate ();

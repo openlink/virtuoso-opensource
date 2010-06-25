@@ -811,7 +811,7 @@ report_err:;
 ;
 
 create procedure ODS..openid_url_set (
-  in uid int,
+  in uid integer,
   in url varchar)
 {
   declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate any;
@@ -856,9 +856,13 @@ again:
 
   if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID <> uid))
     return 'This OpenID identity is already registered.';
+
 clear_auth:
-  update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL = oi_ident, WAUI_OPENID_SERVER = oi_srv
+  update DB.DBA.WA_USER_INFO
+     set WAUI_OPENID_URL = oi_ident,
+         WAUI_OPENID_SERVER = oi_srv
    where WAUI_U_ID = uid;
+
   -- success
   return null;
 }

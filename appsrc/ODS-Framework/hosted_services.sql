@@ -768,6 +768,16 @@ db.dba.wa_exec_ddl ('create table WA_RELATED_APPS (
       )'
 );
 
+db.dba.wa_exec_ddl ('create table WA_PSH_SUBSCRIPTIONS (
+      PS_INST_ID int,
+      PS_URL varchar,
+      PS_HUB varchar,
+      PS_TS timestamp,
+      PS_STATE int default 0,
+      primary key (PS_INST_ID, PS_URL)
+      )'
+);
+
 create method wa_id_string () for web_app
 {
   return '';
@@ -7430,4 +7440,47 @@ create procedure virt_proxy_init_about_1 ()
 ;
 
 virt_proxy_init_about_1 ()
+;
+
+create procedure PSH.DBA.odscb (
+    in mode varchar,
+    in topic varchar, 		-- feed URI
+    in challenge varchar,
+    in lease_seconds int, 	--
+    in verify_token varchar := null,
+    in inst varchar := null
+    )
+{
+  declare cbk, tp varchar;
+  tp := (select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE where WAI_ID = inst); 
+  cbk := sprintf ('PSH.DBA.ods_%s_psh_cbk', DB.DBA.wa_type_to_app (tp));
+  return PSH..callback (mode, topic, challenge, lease_seconds, verify_token, cbk, inst);
+}
+;
+
+create procedure PSH.DBA.ods_cli_subscribe (in inst_id int, in hub varchar, in mode varchar, in topic varchar)
+{
+  declare token, subsu, callback, head, ret varchar;
+  if (__proc_exists ('PSH.DBA.cli_subscribe') is null)
+    signal ('42000', 'The PubSubHub package is not installed');
+
+  if (hub is not null)
+    {
+      token := md5 (uuid ());
+      callback := sprintf ('http://%s/psh/odscb.vsp?inst=%d', WA_GET_HOST (), inst_id);
+      PSH..cli_subscribe ('dba', mode, topic, 'feed', null, token);
+      subsu := sprintf ('%s?hub.callback=%U&hub.mode=%U&hub.topic=%U&hub.verify=sync&hub.verify_token=%U', hub, callback, mode, topic, token);
+      commit work;	     
+      ret := http_get (subsu, head);
+      if (head[0] not like 'HTTP/1._ 20_ %')
+	{
+	  signal ('39000', 'The Hub rejects subscription request, please verify you are allowed to use it.');
+	}
+    }
+  if (mode = 'subscribe')
+    insert replacing DB.DBA.WA_PSH_SUBSCRIPTIONS (PS_INST_ID, PS_HUB, PS_URL) values (inst_id, hub, topic);
+  else
+    delete from DB.DBA.WA_PSH_SUBSCRIPTIONS where PS_INST_ID = inst_id and PS_URL = topic;
+  commit work;	     
+}
 ;

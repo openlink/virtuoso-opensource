@@ -154,8 +154,16 @@
       return $pageURL.'/ods/api';
     }
 
+    $_REQUEST = array_merge($_GET, $_POST);
     $_error = "";
+    if (isset ($_REQUEST['oid-form'])) {
+      if ($_REQUEST['oid-form'] == 'lf')
+        $_form = "login";
+      if ($_REQUEST['oid-form'] == 'rf')
+        $_form = "register";
+    } else {
     $_form = (isset ($_REQUEST['form'])) ? $_REQUEST['form'] : "login";
+    }
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formSubtab = intval((isset ($_REQUEST['formSubtab'])) ? $_REQUEST['formSubtab'] : "0");
     $_formMode = (isset ($_REQUEST['formMode'])) ? $_REQUEST['formMode'] : "";
@@ -668,7 +676,12 @@
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
-        <div id="ob_left"><?php outFormTitle($_form); ?></div>
+        <div id="ob_left">
+          <?php
+            if (($_form == "profile") || ($_form == "user"))
+              print sprintf ('<b>User</b>: %s, <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>', $_xml->fullName);
+          ?>
+        </div>
         <div id="ob_right">
         <?php
           if (($_form <> 'login') && ($_form <> 'register'))
@@ -783,7 +796,7 @@
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_0" class="form" cellspacing="5">
                       <tr id="rf_login_1">
                         <th width="30%">
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
@@ -819,7 +832,7 @@
                     </table>
                   </div>
                   <div id="rf_page_1" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
@@ -831,7 +844,7 @@
                     </table>
                   </div>
                   <div id="rf_page_2" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                         </th>
@@ -861,7 +874,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                  <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
               <?php
@@ -874,7 +887,9 @@
                   User profile
                 </div>
 
-                <div id="uf_div" style="clear: both;">
+                <div id="uf_div_new" style="clear: both;">
+                </div>
+                <div id="uf_div" style="clear: both; display: none;">
               	  <div id="u_profile_l">
               	    <div id="user_info_w" class="widget user_info_w">
               	      <div class="w_title" id="userProfilePhotoName">
@@ -994,10 +1009,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div class="footer" style="clear: both;">
-                  <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
               </div>
 
@@ -1598,6 +1609,7 @@
                   </div>
 
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
+                        <input type="hidden" name="c_nick" value="<?php print($_xml->nickName); ?>" id="c_nick" />
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">

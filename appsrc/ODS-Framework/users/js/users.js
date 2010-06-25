@@ -500,6 +500,7 @@ var setupWin;
 var cRDF;
 
 var regData;
+var userData;
 var sslData;
 var aclData;
 var facebookData;
@@ -519,7 +520,7 @@ function myInit() {
   OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
 	if ($("lf")) {
-		lfTab = new OAT.Tab("lf_content");
+    lfTab = new OAT.Tab("lf_content", {goCallback: lfCallback});
 		lfTab.add("lf_tab_0", "lf_page_0");
 		if (regData.openidEnable)
       OAT.Dom.show('lf_tab_1');
@@ -528,7 +529,8 @@ function myInit() {
 		lfTab.add("lf_tab_3", "lf_page_3");
 		lfTab.go(0);
     var uriParams = OAT.Dom.uriParams();
-    if (uriParams['oid-type'] == 'lf') {
+    if (uriParams['oid-form'] == 'lf') {
+      $('lf_openId').value = uriParams['openid.identity'];
       OAT.Dom.show('lf');
       OAT.Dom.hide('rf');
       lfTab.go(1);
@@ -540,7 +542,7 @@ function myInit() {
 				}
 	}
 	if ($("rf")) {
-		rfTab = new OAT.Tab("rf_content");
+    rfTab = new OAT.Tab("rf_content", {goCallback: rfCallback});
 		rfTab.add("rf_tab_0", "rf_page_0");
 		if (regData.openidEnable)
       OAT.Dom.show('rf_tab_1');
@@ -550,16 +552,26 @@ function myInit() {
 		rfTab.go(0);
 
     var uriParams = OAT.Dom.uriParams();
-    if (uriParams['oid-type'] == 'rf') {
+    if (uriParams['oid-form'] == 'rf') {
       OAT.Dom.hide('lf');
       OAT.Dom.show('rf');
 	    rfTab.go(1);
       if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
         var x = function (params, param, data, property) {
-          if (params[param])
+          if (params[param] && params[param].length != 0)
             data[property] = params[param];
         }
         var data = {};
+        if (typeof (uriParams['openid.ns.ax']) != 'undefined' && uriParams['openid.ns.ax'] == 'http://openid.net/srv/ax/1.0') {
+          x(uriParams, 'openid.ax.value.country', data, 'homeCountry');
+          x(uriParams, 'openid.ax.value.email', data, 'mbox');
+          x(uriParams, 'openid.ax.value.firstname', data, 'firstName');
+          x(uriParams, 'openid.ax.value.fname', data, 'name');
+          x(uriParams, 'openid.ax.value.language', data, 'language');
+          x(uriParams, 'openid.ax.value.lastname', data, 'family_name');
+          x(uriParams, 'openid.ax.value.fname', data, 'nick');
+          x(uriParams, 'openid.ax.value.timezone', data, 'timezone');
+        } else {
         x(uriParams, 'openid.sreg.nickname', data, 'nick');
         x(uriParams, 'openid.sreg.email', data, 'mbox');
         x(uriParams, 'openid.sreg.fullname', data, 'name');
@@ -569,14 +581,23 @@ function myInit() {
         x(uriParams, 'openid.sreg.country', data, 'homeCountry');
         x(uriParams, 'openid.sreg.timezone', data, 'homeTimezone');
         x(uriParams, 'openid.sreg.language', data, 'language');
+        }
         x(uriParams, 'openid.identity', data, 'openid_url');
         x(uriParams, 'oid-srv', data, 'openid_server');
 
-        $('lf_openId').value = uriParams['openid.identity'];
         $('rf_openId').value = uriParams['openid.identity'];
         $('rf_is_agreed').checked = true;
+        if (!data['nick'] || !data['mbox']) {
+          hiddenCreate('oid-data', null, OAT.JSON.stringify(data));
+          var tbl = $('rf_table_1');
+          if (!data['nick'])
+            addProfileRowInput(tbl, 'Login Name', 'rf_openid_uid');
+          if (!data['mbox'])
+            addProfileRowInput(tbl, 'E-Mail', 'rf_openid_email');
+        } else {
         var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
         OAT.AJAX.POST ("/ods/api/user.register", q, afterSignup);
+      }
       }
       else if (typeof (uriParams['openid.mode']) != 'undefined' && uriParams['openid.mode'] == 'cancel')
       {
@@ -610,11 +631,14 @@ function myInit() {
 						addProfileRowValue(tbl, 'Family Name', sslData.family_name);
 					if (sslData.mbox)
 						addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
-				  if (prefix == "rf") {
+          if (prefix == "lf") {
+            lfTab.go(3);
+          } else if (prefix == "rf") {
 					  if (!sslData.nick && !sslData.name)
               addProfileRowInput(tbl, 'Login Name', 'rf_webid_uid');
 					  if (!sslData.mbox)
               addProfileRowInput(tbl, 'E-Mail', 'rf_webid_email');
+            rfTab.go(3);
             if (!$("lf"))
               rfSSLAutomaticLogin();
           }
@@ -699,6 +723,28 @@ function myInit() {
     OAT.Event.attach("pf_tab_1_3", 'click', function(){pfTabSelect('pf_tab_1_', 3);});
     pfTabInit('pf_tab_1_', $v('formSubtab'));
 	}
+}
+
+function lfCallback(oldIndex, newIndex) {
+  if (newIndex == 0)
+    $('lf_login').value = 'Login';
+  if (newIndex == 1)
+    $('lf_login').value = 'OpenID Login';
+  if (newIndex == 2)
+    $('lf_login').value = 'Facebook Login';
+  if (newIndex == 3)
+    $('lf_login').value = 'WebID Login';
+}
+
+function rfCallback(oldIndex, newIndex) {
+  if (newIndex == 0)
+    $('rf_signup').value = 'Sign Up';
+  if (newIndex == 1)
+    $('rf_signup').value = 'OpenID Sign Up';
+  if (newIndex == 2)
+    $('rf_signup').value = 'Facebook Sign Up';
+  if (newIndex == 3)
+    $('rf_signup').value = 'WebID Sign Up';
 }
 
 function myCancel(prefix)
@@ -1392,16 +1438,58 @@ function afterAuthenticate(xml) {
 }
 
 function selectProfile() {
-	var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&short=0';
-  OAT.AJAX.GET(S, '', selectProfileCallback);
+  // UI Profile
+  var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
+  OAT.AJAX.GET(S, '', selectProfileCallbackNew);
+
+  // Old UI Profile
+  // var S = '/ods/api/user.info?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&short=1';
+  // OAT.AJAX.GET(S, '', selectProfileCallback);
 }
 
-function selectProfileCallback(data) {
+function selectProfileCallbackNew(data) {
   var xml = OAT.Xml.createXmlDoc(data);
 	if (!hasError(xml)) {
   	/* user data */
    	var user = xml.getElementsByTagName('user')[0];
 		if (user) {
+      $('ob_left_name').innerHTML = tagValue(user, 'fullName');
+      x = function (data) {
+        var xml = OAT.Xml.createXmlDoc(data);
+        if (!hasError(xml)) {
+          /* user data */
+          showProfileNew(xml);
+        }
+      }
+      var S = '/ods/api/user.info.webID?webID=' + encodeURIComponent(tagValue(user, 'iri'));
+      OAT.AJAX.GET(S, '', x);
+    }
+  }
+}
+
+function showProfileNew(xmlDoc) {
+  var div = $('uf_div_new');
+  if (div) {
+    var x = function(data) {
+      var xslDoc = OAT.Xml.createXmlDoc(data);
+      var result = OAT.Xml.transformXSLT(xmlDoc, xslDoc);
+      div.innerHTML = result.documentElement.innerHTML;
+    }
+    OAT.AJAX.GET('users.xsl', false, x);
+  }
+}
+
+function selectProfileCallback(data) {
+  var xml = OAT.Xml.createXmlDoc(data);
+  if (!hasError(xml)) {
+    /* user data */
+    var user = xml.getElementsByTagName('user')[0];
+    if (user)
+      showProfile(user)
+  }
+}
+
+function showProfile(user) {
 		  // width
 			var L = $('u_profile_l');
   		var R = $('u_profile_r');
@@ -1417,6 +1505,8 @@ function selectProfileCallback(data) {
   			if (OAT.Dom.isClass(widgets[i], 'tab_deck'))
   				widgets[i].style.width = RWidth - 8 + 'px';
   		}
+
+  $('ob_left_name').innerHTML = tagValue(user, 'fullName');
 
 		  // photo
   		$('userProfilePhotoName').innerHTML = '<h3>' + tagValue(user, 'fullName') + '</h3>';
@@ -1439,7 +1529,7 @@ function selectProfileCallback(data) {
 				} catch (e) {}
         addProfileRow(tbl, user, 'name',      'Login Name');
 				addProfileRow(tbl, user, 'nickName', 'Nick Name');
-				addProfileRow(tbl, user, 'iri', 'IRI');
+    addProfileRow(tbl, user, 'iri', 'WebID');
 				addProfileRow(tbl, user, 'title', 'Title');
 				addProfileRow(tbl, user, 'firstName', 'First Name');
 				addProfileRow(tbl, user, 'lastName', 'Lsst Name');
@@ -1513,8 +1603,6 @@ function selectProfileCallback(data) {
 		  // data spaces
   		OAT.AJAX.POST('/ods_services/Http/connectionsGet?scope=own&sid='+$v('sid'), false, renderConnectionsWidget);
     }
-  }
-}
 
 function addProfileRow(tbl, xml, tagLabel, label) {
   var value = tagValue(xml, tagLabel);
@@ -1541,6 +1629,8 @@ function addProfileRowValue(tbl, label, value, leftTag) {
 
 function addProfileRowInput(tbl, label, fName) {
 	var tr = OAT.Dom.create('tr');
+  tr.id = 'tr+'+fName;
+
 	var th = OAT.Dom.create('th');
 	th.width = '30%';
 	th.innerHTML = label + '<div style="font-weight: normal; display: inline; color: red;"> *</div>';
@@ -1659,8 +1749,6 @@ function afterLogin(data, prefix) {
 			T.value = ((prefix == 'rf')? 'profile': 'user');
 			T.form.submit();
 		} else {
-			showTitle('View Profile');
-
 			OAT.Dom.show("ob_right_logout");
 			OAT.Dom.hide("ob_links");
 			OAT.Dom.hide("lf");
@@ -1679,6 +1767,22 @@ function afterLogin(data, prefix) {
 		$('realm').value = '';
 	}
 	return false;
+}
+
+function userSubmit() {
+  $('form').value='user';
+  $('page_form').submit();
+
+  return false;
+}
+
+function profileSubmit() {
+  $('form').value='profile';
+  $('formTab').value=0;
+  $('formSubtab').value=0;
+  $('page_form').submit();
+
+  return false;
 }
 
 function inputParameter(inputField) {
@@ -1704,6 +1808,8 @@ function ufCleanTablesData(prefix) {
 }
 
 function ufProfileSubmit() {
+  showTitle('user');
+
 	$('formTab').value = '0';
 	$('formSubtab').value = '0';
   updateList('pf_homecountry', 'Country');
@@ -1768,6 +1874,9 @@ function ufProfileCallback(data) {
 
       // personal
 			// main
+      hiddenCreate('c_nick', null, tagValue(user, 'nickName'));
+      $('ob_left_name').innerHTML = tagValue(user, 'fullName');
+      fieldUpdate(user, 'nickName', 'pf_nickName');
 			fieldUpdate(user, 'name', 'pf_loginName');
 			fieldUpdate(user, 'nickName', 'pf_nickName');
 			fieldUpdate(user, 'mail', 'pf_mail', aclData);
@@ -1914,7 +2023,7 @@ function ufProfileCallback(data) {
 	      OAT.Dom.show('iframe_certificate');
 	      $('iframe_certificate').src = '/ods/cert.vsp?sid=' + encodeURIComponent($v('sid'));
 	    }
-			showTitle('Edit Profile');
+      showTitle('profile');
 
       OAT.Dom.hide("lf");
       OAT.Dom.hide("uf");
@@ -2375,7 +2484,7 @@ function pfChangeCallback(data) {
 }
 
 function pfCancelSubmit() {
-  showTitle('View Profile');
+  showTitle('profile');
 
   OAT.Dom.hide("lf");
 	OAT.Dom.hide("rf");
@@ -2534,7 +2643,7 @@ function lfRegisterSubmit(event) {
   $('sid').value = '';
   $('realm').value = '';
 
- 	showTitle('User Register');
+  showTitle('register');
 
   OAT.Dom.hide("ob_right_logout");
   OAT.Dom.hide("ob_links");
@@ -2543,6 +2652,7 @@ function lfRegisterSubmit(event) {
   OAT.Dom.show("rf");
 
   rfResetData();
+  if (document.location.protocol == 'https:')
   rfSSLAutomaticLogin();
 
   return false;
@@ -2555,10 +2665,14 @@ function rfResetData() {
   $('rf_password2').value = '';
   $('rf_openId').value = '';
   $('rf_is_agreed').checked = false;
-  if ($("rf_webid_uid"))
-    $('rf_webid_uid').value = '';
-  if ($("rf_webid_email"))
-    $('rf_webid_email').value = '';
+  if ($('tr_rf_openid_uid'))
+    $('tr_rf_openid_uid').value = '';
+  if ($('rf_openid_email'))
+    $('tr_rf_openid_email').value = '';
+  if ($('tr_rf_webid_uid'))
+    $('tr_rf_webid_uid').value = '';
+  if ($('rf_webid_email'))
+    $('tr_rf_webid_email').value = '';
 }
 
 function rfSSLAutomaticLogin() {
@@ -2599,9 +2713,16 @@ function rfSignupSubmit(event) {
 			+ '&email=' + encodeURIComponent($v('rf_email'));
 	}
 	else if (rfTab.selectedIndex == 1) {
+    if (!$('oid-data')) {
 	  openIdAuthenticate('rf');
 		return false;
 	}
+    q += '&data=' + encodeURIComponent($v('oid-data'));
+    if ($('rf_openid_uid'))
+      q +='&name=' + encodeURIComponent($v('rf_openid_uid'));
+    if ($('rf_openid_email'))
+      q +='&email=' + encodeURIComponent($v('rf_openid_email'));
+  }
 	else if (rfTab.selectedIndex == 2) {
 		q += '&data=' + encodeURIComponent(OAT.JSON.stringify(facebookData))
 	}
@@ -2631,17 +2752,6 @@ function openIdLoginURL(uriParams) {
   var openIdAssoc_handle = uriParams['openid.assoc_handle'];
   var openIdSigned       = uriParams['openid.signed'];
 
-  var sig = openIdSigned.split(',');
-  openIdSigned = '';
-  for (var i = 0; i < sig.length; i++)
-  {
-    var _key = sig[i].trim();
-    if (_key.indexOf('sreg.') != 0) {
-      if (openIdSigned)
-        openIdSigned += ',';
-      openIdSigned += _key;
-    }
-  }
   var url = openIdServer +
     '?openid.mode=check_authentication' +
     '&openid.assoc_handle=' + encodeURIComponent (openIdAssoc_handle) +
@@ -2652,11 +2762,9 @@ function openIdLoginURL(uriParams) {
   for (var i = 0; i < sig.length; i++)
   {
     var _key = sig[i].trim ();
-
     if (_key != 'mode' &&
         _key != 'signed' &&
-        _key != 'assoc_handle' &&
-        _key.indexOf('sreg.') != 0)
+        _key != 'assoc_handle')
     {
       var _val = uriParams['openid.' + _key];
       if (_val != '')
@@ -2674,39 +2782,54 @@ function openIdAuthenticate(prefix) {
     if (error.length)
       showError('Invalied OpenID Server');
 
-    var openIdServer = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/server', {})[0]);
-    var openIdDelegate = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/delegate', {})[0]);
+    var oidVersion = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/version', {})[0]);
+    var oidServer = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/server', {})[0]);
+    var oidDelegate = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/delegate', {})[0]);
 
-    if (!openIdServer || openIdServer.length == 0)
+    if (!(oidServer && oidServer.length > 0))
       showError(' Cannot locate OpenID server');
 
     var oidIdent = $v(prefix+'_openId');
-    if (openIdDelegate || openIdDelegate.length > 0)
-      oidIdent = openIdDelegate;
+    if (oidDelegate && oidDelegate.length > 0)
+      oidIdent = oidDelegate;
 
     var thisPage  = document.location.protocol +
       '//' +
       document.location.host +
       document.location.pathname +
-      '?oid-type=' +
-      prefix +
-      '&oid-srv=' +
-      prefix +
-      '&form=register' +
-      '&oid-srv=' +
-      encodeURIComponent (openIdServer);
+      '?oid-form=' + prefix +
+      '&oid-srv=' + encodeURIComponent (oidServer);
 
-    var trustRoot = document.location.protocol +
-      '//' +
-      document.location.host;
+    var trustRoot = document.location.protocol + '//' + document.location.host;
 
-    var S = openIdServer +
+    var S = oidServer +
       '?openid.mode=checkid_setup' +
-      '&openid.identity=' + encodeURIComponent(oidIdent) +
-      '&openid.return_to=' + encodeURIComponent(thisPage) +
-      '&openid.trust_root=' + encodeURIComponent(trustRoot);
-    if (prefix == 'rf')
+      '&openid.return_to=' + encodeURIComponent(thisPage);
+
+    if (oidVersion == '1.0')
+      S +='&openid.identity=' + encodeURIComponent(oidIdent)
+        + '&openid.trust_root=' + encodeURIComponent(trustRoot);
+
+    if (oidVersion == '2.0')
+      S +='&openid.ns=' + encodeURIComponent('http://specs.openid.net/auth/2.0')
+        + '&openid.claimed_id=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+        + '&openid.identity=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+
+    if (prefix == 'rf') {
+      if (oidVersion == '1.0')
       S += '&openid.sreg.optional='+encodeURIComponent('fullname,nickname,dob,gender,postcode,country,timezone') + '&openid.sreg.required=' + encodeURIComponent('email,nickname');
+      if (oidVersion == '2.0')
+        S +='&openid.ns.ax=http://openid.net/srv/ax/1.0'
+          + '&openid.ax.mode=fetch_request'
+          + '&openid.ax.required=country,email,firstname,fname,language,lastname,timezone'
+          + '&openid.ax.type.country=http://axschema.org/contact/country/home'
+          + '&openid.ax.type.email=http://axschema.org/contact/email'
+          + '&openid.ax.type.firstname=http://axschema.org/namePerson/first'
+          + '&openid.ax.type.fname=http://axschema.org/namePerson'
+          + '&openid.ax.type.language=http://axschema.org/pref/language'
+          + '&openid.ax.type.lastname=http://axschema.org/namePerson/last'
+          + '&openid.ax.type.timezone=http://axschema.org/pref/timezone';
+    }
     document.location = S;
   };
   OAT.AJAX.POST ("/ods_services/Http/openIdServer", q, x);
@@ -2720,5 +2843,11 @@ function showError(msg) {
 function showTitle(txt) {
 	var T = $('ob_left');
 	if (T)
-		T.innerHTML = txt;
+  {
+    if ((txt == 'user') || (txt == 'profile')) {
+      OAT.Dom.show(T);
+    } else {
+      OAT.Dom.hide(T);
+    }
+  }
 }

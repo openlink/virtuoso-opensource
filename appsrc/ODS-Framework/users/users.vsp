@@ -83,6 +83,11 @@
     };
 
     vError := '';
+    if (get_keyword ('oid-form', params) = 'lf')
+      vForm := 'login';
+    else if (get_keyword ('oid-form', params) = 'rf')
+      vForm := 'register';
+    else
     vForm := get_keyword ('form', params, 'login');
     vFormTab := atoi(get_keyword ('formTab', params, '0'));
     vFormSubtab := atoi(get_keyword ('formSubtab', params, '0'));
@@ -742,7 +747,10 @@
       <input type="hidden" name="securityNo" id="securityNo" value="" />
       <div id="ob">
         <div id="ob_left">
-          <?V case vForm when 'register' then 'Register' when 'user' then 'View Profile' when 'profile' then 'User Profile' else 'Login' end ?>
+          <?vsp
+            if (vForm in ('user', 'profile'))
+              http (sprintf ('<b>User</b>: %s, <b>Profile</b>: <a href="#" onclick="javascript: return profileSubmit();">Edit</a> / <a href="#" onclick="javascript: return userSubmit();">View</a>', xpath_eval ('string (/user/fullName)', vXml)));
+          ?>
         </div>
         <div id="ob_right">
         <?vsp
@@ -809,7 +817,7 @@
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td>
-                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
+                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId"  style="width: 220px;" />
                         </td>
                   </tr>
                     </table>
@@ -856,7 +864,7 @@
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_0" class="form" cellspacing="5">
                       <tr id="rf_login_1">
                         <th>
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
@@ -892,7 +900,7 @@
                     </table>
                   </div>
                   <div id="rf_page_1" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
@@ -904,7 +912,7 @@
                     </table>
                   </div>
                   <div id="rf_page_2" class="tabContent" style="display: none">
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                         </th>
@@ -934,7 +942,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                  <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
               <?vsp
@@ -942,12 +950,14 @@
               if (vForm = 'user')
               {
               ?>
-              <div id="uf" class="form" style="width: 100%;">
+              <div id="uf" class="form" style="width: 800px;">
                 <div class="header">
                   User profile
                 </div>
 
-                <div id="uf_div" style="clear: both;">
+                <div id="uf_div_new" style="clear: both;">
+                </div>
+                <div id="uf_div" style="clear: both; display: none;">
               	  <div id="u_profile_l">
               	    <div id="user_info_w" class="widget user_info_w">
               	      <div class="w_title" id="userProfilePhotoName">
@@ -1049,8 +1059,7 @@
                     </div>
                   </div>
                   <script type="text/javascript">
-                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
-                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<?V xpath_eval ('string (/user/iri)', vXml) ?>");});
+                            // OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<?V xpath_eval ('string (/user/iri)', vXml) ?>");});
                   </script>
                 </div>
                       </div>
@@ -1064,15 +1073,14 @@
                       	</div> <!-- w_title_bar_btns -->
                       </div>
                       <div class="w_content" id="notify_content">
-                        ddddddddd
+                        .
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div class="footer" style="clear: both;">
-                  <input type="submit" name="uf_profile" value="Edit Profile" />
-                </div>
+                <script type="text/javascript">
+                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
+                </script>
               </div>
               <?vsp
               }
@@ -1697,6 +1705,7 @@
                         if ((vFormTab = 0) and (vFormSubtab = 3))
                         {
                         ?>
+                        <input type="hidden" name="c_nick" value="<?V xpath_eval ('string (/user/nickName)', vXml) ?>" id="c_nick" />
                     <table class="form" cellspacing="5">
                       <tr>
                             <td width="600px">
@@ -2778,7 +2787,7 @@
                           <label for="pf_openID">OpenID URL</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_openID" value="<?V xpath_eval ('string (/user/securityOpenID)', vXml) ?>" id="pf_openID" />
+                          <input type="text" name="pf_openID" value="<?V xpath_eval ('string (/user/securityOpenID)', vXml) ?>" id="pf_openID" style="width: 220px;" />
                         </td>
                       </tr>
                       <tr>

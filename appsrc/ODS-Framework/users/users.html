@@ -51,7 +51,9 @@
       <input type="hidden" name="formSubtab" id="formSubtab" value="" />
       <input type="hidden" name="formMode" id="formMode" value="" />
       <div id="ob">
-        <div id="ob_left">Login</div>
+        <div id="ob_left" style="display: none;">
+          <b>User</b>: <span id="ob_left_name"></span>, <b>Profile</b>: <a href="#" onclick="javascript: return ufProfileSubmit();">Edit</a> / <a href="#" onclick="javascript: return pfCancelSubmit();">View</a>
+        </div>
         <div id="ob_right"><a href="#" id="ob_right_logout" onclick="javascript: return logoutSubmit();" style="display: none;">Logout</a></div>
       </div>
       <div id="MD">
@@ -143,7 +145,7 @@
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_0" class="form" cellspacing="5">
                       <tr id="rf_login_1">
                         <th>
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
@@ -179,7 +181,7 @@
                     </table>
                   </div>
                   <div id="rf_page_1" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                           <label for="rf_openId">OpenID</label>
@@ -191,7 +193,7 @@
                     </table>
                   </div>
                   <div id="rf_page_2" class="tabContent" >
-                    <table class="form" cellspacing="5">
+                    <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="30%">
                         </th>
@@ -221,7 +223,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
-                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                  <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
 
@@ -230,7 +232,9 @@
                   User profile
                 </div>
 
-                <div id="uf_div" style="clear: both;">
+                <div id="uf_div_new" style="clear: both;">
+                </div>
+                <div id="uf_div" style="clear: both; display: none;">
               	  <div id="u_profile_l">
               	    <div id="user_info_w" class="widget user_info_w">
               	      <div class="w_title" id="userProfilePhotoName">
@@ -346,10 +350,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div class="footer" style="clear: both;">
-                  <input type="button" name="uf_profile" value="Edit Profile" onclick="javascript: return ufProfileSubmit();" />
                 </div>
               </div>
 

@@ -153,7 +153,7 @@ nf:
 create procedure check_authentication_ssl (
   out uname varchar := null)
 {
-  if (isnull (server_https_port ()) or not is_https_ctx ())
+  if (not is_https_ctx ())
     return 0;
 
   uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and WAUI_CERT_FINGERPRINT = get_certificate_info (6));
@@ -270,6 +270,14 @@ create procedure jsonObject ()
 }
 ;
 
+create procedure isJsonObject (inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
 create procedure obj2json (
   in o any,
   in d integer := 10,
@@ -341,6 +349,88 @@ create procedure obj2json (
 		retValue := retValue || ']';
 	}
 	return retValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure obj2xml (
+  in o any,
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := '')
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, nsValue, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (isJsonObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+      } else {
+    	  if (chr (o[N][0]) <> attributePrefix)
+    	  {
+          nsArray := null;
+          S := '';
+          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+          	  if (chr (o[N+1][M][0]) = attributePrefix)
+          	    S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
+      } else {
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+        	  if (chr (o[N][M][0]) = attributePrefix)
+        	    S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -651,6 +741,7 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'book', 'http://purl.org/NET/book/vocab#',
                  'dc',   'http://purl.org/dc/elements/1.1/',
                  'foaf', 'http://xmlns.com/foaf/0.1/',
+                 'frbr', 'http://vocab.org/frbr/core#',
                  'gr',   'http://purl.org/goodrelations/v1#',
                  'ibis', 'http://purl.org/ibis#',
                  'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
@@ -1028,7 +1119,9 @@ create procedure ODS.ODS_API."user.register" (
 	{
 	  -- OpenID
 	  data := json_parse (data);
+	  if (isnull (name))
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
+	  if (isnull ("email"))
     "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
@@ -1084,6 +1177,8 @@ create procedure ODS.ODS_API."user.register" (
   if (mode = 1)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME', get_keyword ('name', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER', case get_keyword ('gender', data) when 'M' then 'male' when 'F' then 'female' else NULL end);
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HCODE', get_keyword ('homeCode', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HCOUNTRY', (select WC_NAME from DB.DBA.WA_COUNTRY where WC_ISO_CODE = upper (get_keyword ('homeCode', data))));
@@ -1158,9 +1253,11 @@ create procedure ODS.ODS_API."user.authenticate" (
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
+    {
         signal ('22023', 'OpenID Authentication Failed');
+    }
 
-      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity);
+    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     }
   else
   {
@@ -1964,6 +2061,177 @@ create procedure ODS.ODS_API."user.info" (
 }
 ;
 
+create procedure ODS.ODS_API."user.info.webID" (
+  in webID varchar,
+  in output varchar := 'xml') __soap_http 'text/xml'
+{
+  declare N, M, L integer;
+  declare foafGraph varchar;
+  declare S, st, msg, data, meta, cleanMeta any;
+  declare V, metaName, metaValue, _names, _values, _newValue any;
+
+  V := jsonObject ();
+  set_user_id ('dba');
+  foafGraph := SIOC..get_graph();
+  S := sprintf ('sparql
+                 define input:storage ""
+                 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                 prefix dc: <http://purl.org/dc/elements/1.1/>
+                 prefix foaf: <http://xmlns.com/foaf/0.1/>
+                 prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+                 prefix bio: <http://vocab.org/bio/0.1/>
+                 select *
+         		       from <%s>
+                  where {
+                          {?iri a foaf:Person } UNION {?iri a foaf:Organization } .
+                          ?iri rdf:type ?kind .
+                          optional { ?iri foaf:name ?name } .
+                          optional { ?iri foaf:title ?title } .
+                          optional { ?iri foaf:nick ?nick } .
+                          optional { ?iri foaf:firstName ?firstName } .
+                          optional { ?iri foaf:givenname ?givenname } .
+                          optional { ?iri foaf:family_name ?family_name } .
+                          optional { ?iri foaf:mbox ?mbox } .
+                          optional { ?iri foaf:mbox_sha1sum ?mbox_sha1sum } .
+                          optional { ?iri foaf:gender ?gender } .
+                          optional { ?iri foaf:birthday ?birthday } .
+                          optional { ?iri foaf:based_near ?t_b1 .
+                                     ?t_b1 geo:lat ?lat;
+                                           geo:long ?lng .
+                                   } .
+                          optional { ?iri foaf:icqChatID ?icqChatID } .
+                          optional { ?iri foaf:msnChatID ?msnChatID } .
+                          optional { ?iri foaf:aimChatID ?aimChatID } .
+                          optional { ?iri foaf:yahooChatID ?yahooChatID } .
+         	                optional { ?iri foaf:holdsAccount ?t_holdsAccount .
+         	                           ?t_holdsAccount foaf:accountServiceHomepage ?t_accountServiceHomepage ;
+         	                                           foaf:accountName ?skypeChatID.
+                                     filter (str(?t_accountServiceHomepage) like ''skype%%'').
+                                   } .
+                          optional { ?iri foaf:workplaceHomepage ?workplaceHomepage } .
+                          optional { ?iri foaf:homepage ?homepage } .
+                          optional { ?iri foaf:phone ?phone } .
+                          optional { ?iri foaf:depiction ?depiction } .
+                          optional { ?iri bio:keywords ?keywords } .
+                          optional { ?organization a foaf:Organization }.
+                          optional { ?organization foaf:homepage ?workplaceHomepage }.
+                          optional { ?organization dc:title ?organizationTitle }.
+                          optional { ?iri vcard:ADR ?t_address .
+                                     optional { ?t_address vcard:Country ?country } .
+                             	       optional { ?t_address vcard:Locality ?locality } .
+                              			 optional { ?t_address vcard:Region ?region } .
+                              			 optional { ?t_address vcard:Pobox ?pobox } .
+                              			 optional { ?t_address vcard:Street ?street } .
+                              			 optional { ?t_address vcard:Extadd ?extadd } .
+                          	       } .
+                          optional { ?iri foaf:interest ?x_interest_url .
+                                     ?x_interest_url rdfs:label ?xa_interest_label. } .
+                          optional { ?iri foaf:topic_interest ?x_topicInterest_url .
+                                     ?x_topicInterest_url rdfs:label ?xa_topicInterest_label. } .
+                          optional { ?iri foaf:holdsAccount ?t_oa .
+                                     ?t_oa a foaf:OnlineAccount.
+                                     ?t_oa foaf:accountServiceHomepage ?x_onlineAccount_url.
+                                     ?t_oa foaf:accountName ?xa_onlineAccount_label.
+                                     filter (!(str(?x_onlineAccount_url) like ''skype%%'')).
+                                   } .
+                          optional { ?iri owl:sameAs ?x_sameAs } .
+             	            optional { ?iri foaf:knows ?x_knows_iri .
+             	                      ?x_knows_iri rdfs:seeAlso ?xa_knows_seeAlso .
+             	                      ?x_knows_iri foaf:nick ?xa_knows_nick .
+             	                    } .
+                          optional { ?iri bio:olb ?resume } .
+                          optional { ?iri foaf:made ?x_made } .
+                          filter (?iri = iri(?::0)).
+                        }', foafGraph);
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (webID), vector ('use_cache', 1), meta, data);
+  if (st <> '00000')
+    goto _exit;
+
+  -- clean meta
+  cleanMeta := vector ();
+  for (N := 0; N < length (meta[0]); N := N + 1)
+    cleanMeta := vector_concat (cleanMeta, vector (meta[0][N][0]));
+
+  for (N := 0; N < length (data); N := N + 1)
+  {
+    for (M := 0; M < length (cleanMeta); M := M + 1)
+    {
+      metaName := cleanMeta[M];
+      if (metaName like 't_%')
+        goto _skip;
+      if (metaName like 'xa_%')
+        goto _skip;
+      if ((N > 0) and (metaName not like 'x_%'))
+        goto _skip;
+
+      -- dbg_obj_print('', metaName, metaValue);
+      metaValue := data[N][M];
+      if (metaName like 'x_%')
+      {
+        _names := split_and_decode (metaName, 0, '\0\0_');
+        if (length (_names) = 2)
+        {
+          if (not isnull (metaValue))
+          {
+            _values := get_keyword (_names[1], V, vector ());
+            if (not ODS.ODS_API.vector_contains(_values, metaValue))
+            {
+              _values := vector_concat (_values, vector (metaValue));
+              ODS.ODS_API.set_keyword (_names[1], V, _values);
+            }
+          }
+        } else {
+          _values := get_keyword (_names[1], V, vector ());
+          _newValue := jsonObject ();
+          if (not isnull (metaValue))
+            _newValue := vector_concat (_newValue, vector (_names[2], metaValue));
+          for (L := 0; L < length (cleanMeta); L := L + 1)
+          {
+            if (cleanMeta[L] like 'xa_'||_names[1]||'_%')
+            {
+              metaName := subseq (cleanMeta[L], length ('xa_'||_names[1]||'_'));
+              metaValue := data[N][L];
+              if (not isnull (metaValue))
+                _newValue := vector_concat (_newValue, vector (metaName, metaValue));
+            }
+          }
+          if ((length (_newValue) > 2) and not ODS.ODS_API.vector_contains(_values, _newValue))
+          {
+            _values := vector_concat (_values, vector (_newValue));
+            ODS.ODS_API.set_keyword (_names[1], V, _values);
+          }
+        }
+      }
+      else if ((N = 0) and not isnull (metaValue))
+      {
+        ODS.ODS_API.set_keyword (metaName, V, metaValue);
+      }
+
+    _skip:;
+    }
+  }
+
+  if (length (V) > 2)
+  {
+    commit work;
+    S := DB.DBA.FOAF_SSL_QR (SIOC..get_graph(), webID);
+    exec (S, st, msg, vector (), 0, meta, data);
+    if (st = '00000' and length (data))
+    {
+      ODS.ODS_API.set_keyword ('rsaPublicExponent', V, data[0][0]);
+      ODS.ODS_API.set_keyword ('rsaModulus', V, data[0][1]);
+    }
+  }
+
+_exit:;
+  if (output = 'xml')
+    return obj2xml(vector (V), 10, 'user');
+  return obj2json(V, 10);
+}
+;
 
 create procedure ODS.ODS_API."user.search" (
   in pattern varchar) __soap_http 'text/xml'
@@ -3353,15 +3621,56 @@ grant execute on DB.DBA.RDF_GRAB to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAB_SINGLE_ASYNC to SPARQL_SELECT;
 
 create procedure ODS.ODS_API.vector_contains(
-  in aVector any,
+  inout aVector any,
   in aValue any)
+{
+  declare N, M, L integer;
+
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
+    if (isarray (aValue) and not isstring (aValue))
+    {
+      if (isarray (aVector[N]) and not isstring (aVector[N]))
+      {
+        if (length (aValue) = length (aVector[N]))
+        {
+          L := case when (isJsonObject (aValue) and isJsonObject (aVector[N])) then 2 else 0 end;
+          for (M := L; M < length(aValue); M := M + 1)
+          {
+            if (aValue[M] <> aVector[N][M])
+              goto _skip;
+          }
+          return 1;
+        }
+      }
+    _skip:;
+    } else {
+    if (aValue = aVector[N])
+      return 1;
+    }
+  }
+  return 0;
+}
+;
+
+create procedure ODS.ODS_API.set_keyword (
+  in    name   varchar,
+  inout params any,
+  in    value  any)
 {
   declare N integer;
 
-  for (N := 0; N < length(aVector); N := N + 1)
-    if (aValue = aVector[N])
-      return 1;
-  return 0;
+  for (N := 0; N < length(params); N := N + 2)
+  {
+    if (params[N] = name)
+    {
+      params[N+1] := value;
+      goto _end;
+    }
+  }
+  params := vector_concat (params, vector(name, value));
+_end:
+  return params;
 }
 ;
 
@@ -4161,6 +4470,7 @@ grant execute on ODS.ODS_API."user.enable" to ODS_API;
 grant execute on ODS.ODS_API."user.disable" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
 grant execute on ODS.ODS_API."user.info" to ODS_API;
+grant execute on ODS.ODS_API."user.info.webID" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;
