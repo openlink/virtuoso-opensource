@@ -398,7 +398,7 @@ ign_deserialize (dk_session_t * ses)
 void
 ign_serialize (caddr_t ign, dk_session_t * ses)
 {
-  session_buffered_write_char (DV_IGNORE, ses), ses;
+  session_buffered_write_char (DV_IGNORE, ses);
 }
 
 

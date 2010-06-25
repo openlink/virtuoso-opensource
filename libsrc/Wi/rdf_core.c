@@ -466,7 +466,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /*xml_ns_2dict_t ns_2dict;*/
   caddr_t graph_uri;
   ccaddr_t *cbk_names;
-  caddr_t app_env;
+  caddr_t *app_env;
   int mode_bits = 0;
   int n_args = BOX_ELEMENTS (args);
   /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
@@ -474,7 +474,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   mode_bits = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
   graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
   cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
-  app_env = bif_arg (qst, args, 4, "rdf_load_rdfxml");
+  app_env = (caddr_t *) bif_arg (qst, args, 4, "rdf_load_rdfxml");
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_rdfxml() should be a vector of %d names of stored procedures",
@@ -1010,7 +1010,7 @@ bif_rdf_load_turtle (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t graph_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "rdf_load_turtle");
   long flags = bif_long_arg (qst, args, 3, "rdf_load_turtle");
   caddr_t *cbk_names = bif_strict_type_array_arg (DV_STRING, qst, args, 4, "rdf_load_turtle");
-  caddr_t app_env = bif_arg (qst, args, 5, "rdf_load_turtle");
+  caddr_t *app_env = (caddr_t *) bif_arg (qst, args, 5, "rdf_load_turtle");
   caddr_t err = NULL;
   caddr_t res;
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
@@ -1036,7 +1036,7 @@ bif_rdf_load_turtle_local_file (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   caddr_t graph_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "rdf_load_turtle_local_file");
   long flags = bif_long_arg (qst, args, 3, "rdf_load_turtle_local_file");
   caddr_t *cbk_names = bif_strict_type_array_arg (DV_STRING, qst, args, 4, "rdf_load_turtle_local_file");
-  caddr_t app_env = bif_arg (qst, args, 5, "rdf_load_turtle_local_file");
+  caddr_t *app_env = (caddr_t *) bif_arg (qst, args, 5, "rdf_load_turtle_local_file");
   caddr_t err = NULL;
   caddr_t res;
   if (COUNTOF__TRIPLE_FEED != BOX_ELEMENTS (cbk_names))
@@ -2013,7 +2013,6 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
 rdf_box_t *
 key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
 {
-  caddr_t r, trid;
   int len;
   caddr_t allocd_content = NULL;
   int entered = 0;
