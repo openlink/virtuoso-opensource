@@ -1789,7 +1789,48 @@
       <v:variable name="imp_pwd" type="any" default="null" />
       <v:variable name="imp_api" type="any" default="null" />
       <v:variable name="imp_n" type="int" default="0" />
+      <v:variable name="imp_hub" type="varchar" default="null" />
       <v:template name="tmpl1" type="simple" condition="self.step = 1">
+	  <div>
+	      <h3>Active PubSubHub subscriptions</h3>
+	      <table class="listing">
+		  <tr class="listing_header_row">
+		      <th>URL</th>
+		      <th>Action</th>
+		  </tr>
+		  <v:data-set name="psh_list" sql="select PS_URL, PS_HUB from WA_PSH_SUBSCRIPTIONS where PS_INST_ID = :inst" 
+		      scrollable="0" edit="0" nrows="1000">
+		      <v:param name="inst" value="-- self.inst_id"/>
+		      <v:template name="t_rep" type="repeat">
+			  <v:template name="t_brws" type="browse">
+			      <tr>
+				  <td><v:label render-only="1" name="psh_l1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/></td>
+				  <td>
+				      <v:button name="subdrop" value="Unsubscribe" action="simple">
+					  <v:on-post>
+					      PSH.DBA.ods_cli_subscribe (self.inst_id, 
+					        (control.vc_parent as vspx_row_template).te_rowset[1], 
+                                                'unsubscribe',
+					      	(control.vc_parent as vspx_row_template).te_rowset[0] 
+						);
+				              self.psh_list.vc_data_bind (e);		
+					  </v:on-post>
+				      </v:button>
+				  </td>
+			      </tr>
+			  </v:template>
+			  <v:template type="if-not-exists" name="t_nf">
+			      <tr>
+				  <td colspan="2">
+				      No subscriptions
+				  </td>
+			      </tr>
+			  </v:template>
+		      </v:template>
+		  </v:data-set>
+	      </table>
+	  </div>
+	  <hr/>
 	  <h3>To import posts from another blog system enter:</h3>
 	  <div>
 	      <fieldset>
@@ -1813,6 +1854,7 @@
 			    {
                               self.imp_url := url;
 			      self.step := 4;
+			      self.imp_hub := xpath_eval ('/rss/link[@rel="hub"]/@href|/feed/link[@rel="hub"]/@href', xt);
 			      return;
 			    }
 
@@ -1925,6 +1967,9 @@
       </v:template>
       <v:template name="tmpl4" type="simple" condition="self.step = 4">
 	  <h3>Do you want to import posts from <?V self.imp_url ?> ?</h3>
+	  <?vsp if (length (self.imp_hub)) { ?>
+	  <v:check-box name="use_psh" value="1" initial-checked="1"/> Use PubSubHub <v:label name="pshep" value="--self.imp_hub"/><br/>
+	  <?vsp } ?>
 	      <v:button xhtml_class="real_button" action="simple" name="bt_discov4" value="Yes">
 		  <v:on-post>
 		      declare exit handler for sqlstate '*'
@@ -1933,7 +1978,8 @@
 		        self.vc_error_message := __SQL_MESSAGE;
 		      };
 		      self.imp_n :=
-		      BLOG..IMPORT_BLOG (self.blogid, self.user_id, self.imp_url, self.imp_api, self.imp_bid, self.imp_uid, self.imp_pwd);
+		      BLOG..IMPORT_BLOG (self.blogid, self.user_id, self.imp_url, self.imp_api, 
+		      		self.imp_bid, self.imp_uid, self.imp_pwd, case when self.use_psh.ufl_selected then self.imp_hub else null end);
 		      self.step := 5;
 		  </v:on-post>
 	      </v:button>
@@ -1947,6 +1993,8 @@
 	  <h3>Imported: <?V self.imp_n ?> post(s)</h3>
 	  <v:button xhtml_class="real_button" action="simple" name="bt_discov6" value="Ok">
 	      <v:on-post>
+		  self.imp_url := '';
+		  self.imp_blog.ufl_value := '';
 		  self.step := 1;
 	      </v:on-post>
 	  </v:button>
