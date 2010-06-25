@@ -206,6 +206,7 @@ typedef struct http_cli_ctx_s
   dk_set_t          hcctx_hooks [HTTP_CLI_NO_HOOKS]; /* hook dispatch queues */
   int               hcctx_hook_ret;
   caddr_t *	    hcctx_qst;
+  int 		    hcctx_redirects;
 } http_cli_ctx;
 
 

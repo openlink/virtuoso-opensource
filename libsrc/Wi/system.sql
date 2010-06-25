@@ -3166,7 +3166,8 @@ create procedure DB.DBA.HTTP_CLIENT (
     in timeout int := null,
     in proxy varchar := null,
     in ca_certs varchar := null,
-    in insecure int := 0
+    in insecure int := 0,
+    in n_redirects int := 0
   )
 {
 
@@ -3178,7 +3179,7 @@ create procedure DB.DBA.HTTP_CLIENT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout, proxy, ca_certs, insecure);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout, proxy, ca_certs, insecure, n_redirects);
 }
 ;
 
@@ -3196,7 +3197,8 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
     in timeout int := null,
     in proxy varchar := null,
     in ca_certs varchar := null,
-    in insecure int := 0
+    in insecure int := 0,
+    in n_redirects int := 0
   )
 {
 
@@ -3208,7 +3210,7 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout, proxy, ca_certs, insecure);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout, proxy, ca_certs, insecure, n_redirects);
 }
 ;
 
