@@ -372,4 +372,18 @@ public class VirtuosoRepository implements Repository {
 		this.resultsHandlerType = handlerType;
 	}
 
+        public void createRuleSet(String ruleSetName, String uriGraphRuleSet) throws RepositoryException
+        {
+          java.sql.Connection con = ((VirtuosoRepositoryConnection)getConnection()).getQuadStoreConnection();
+
+          try {
+	    java.sql.Statement st = con.createStatement();
+	    st.execute("rdfs_rule_set('"+ruleSetName+"', '"+uriGraphRuleSet+"')");
+	    st.close();
+          } catch (Exception e) {
+            throw new RepositoryException(e);
+          }
+        }
+
+
 }

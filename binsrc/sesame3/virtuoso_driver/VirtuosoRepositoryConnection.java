@@ -178,7 +178,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
-	private String ruleSet;
 
 
 
@@ -191,7 +190,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		LiteralFactory lf = repository.getLiteralFactory();
 		this.vf = new ValueFactoryImpl(uf, lf);
 		this.nilContext = getValueFactory().createURI(repository.defGraph);
-		this.ruleSet = repository.ruleSet;
 		this.repository.initialize();
 
 	}
@@ -2352,12 +2350,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		String delim = " ,)(;.";
 	  	int i = 0;
 	  	char ch;
-	  	while( i < query.length()) {
+	  	int qlen = query.length();
+	  	while( i < qlen) {
 	    		ch = query.charAt(i++);
-	    		if (ch == '"' || ch == '\'') {
+	    		if (ch == '\\') {
+	    			buf.append(ch);
+	    			if (i < qlen)
+	    				buf.append(query.charAt(i++)); 
+
+	    		} else if (ch == '"' || ch == '\'') {
 	      			char end = ch;
 	      			buf.append(ch);
-	      			while (i < query.length()) {
+	      			while (i < qlen) {
 	        			ch = query.charAt(i++);
 	        			buf.append(ch);
 	        			if (ch == end)
@@ -2366,7 +2370,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	    		} else  if ( ch == '?' ) {  //Parameter
 	      			String varData = null;
 	      			int j = i;
-	      			while(j < query.length() && delim.indexOf(query.charAt(j)) < 0) j++;
+	      			while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
 	      			if (j != i) {
 	        			String varName = query.substring(i, j);
 	        			Value val = bindings.getValue(varName);
@@ -2406,8 +2410,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 *******/
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
-		if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
-		  ret.append("define input:inference '"+ruleSet+"'\n ");
+		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
+		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
 
 		ret.append("define output:format '_JAVA_'\n ");
 
@@ -2760,6 +2764,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
+	private String escapeString(String s) {
+		StringBuffer buf = new StringBuffer(s.length());
+	  	int i = 0;
+	  	char ch;
+	  	while( i < s.length()) {
+	    		ch = s.charAt(i++);
+	    		if (ch == '\'') 
+				buf.append('\\');
+			buf.append(ch);
+	  	}
+		return buf.toString();
+	}
+
 	private String stringForResource(Resource n) 
 	{
 		if (n instanceof URI) 
@@ -2789,14 +2806,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			return stringForResource((Resource) n);
 		else if (n instanceof Literal) {
 			Literal lit = (Literal) n;
-			String o = "\"" + lit.stringValue() + "\"";
+			String o = "'" + escapeString(lit.stringValue()) + "'";
 			if (lit.getLanguage() != null) 
 				return o + "@" + lit.getLanguage();
 			else if (lit.getDatatype() != null) 
 				return o + "^^<" + lit.getDatatype() + ">";
 			return o;
 		}
-		else return "\"" + n.stringValue() + "\"";
+		else return "'" + escapeString(n.stringValue()) + "'";
 	}
 
 	
