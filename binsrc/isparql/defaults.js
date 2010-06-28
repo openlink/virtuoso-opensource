@@ -84,6 +84,7 @@ iSPARQL.Defaults = {
 	var o = { 
 	    async: false,
 	    onerror: function() { iSPARQL.StatusUI.statMsg("Warning: Could not get server defaults.") },
+	    onstart: function () { return; }
 	};
 
 	OAT.AJAX.GET ('/isparql/defaults/',

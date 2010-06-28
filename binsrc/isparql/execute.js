@@ -30,6 +30,7 @@ window.defaultPrefixes = [
 						 {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
 						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
 						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
+    {"label":'georss',     "uri":'http://www.georss.org/georss/'},
 						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
 						 {"label":'skos', "uri":'http://www.w3.org/2008/05/skos#'},
 						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
@@ -42,13 +43,16 @@ window.defaultPrefixes = [
 						 {"label":'nmo',"uri":'http://www.semanticdesktop.org/ontologies/nmo/'},
 						 {"label":'nie',"uri":'http://www.semanticdesktop.org/ontologies/nie/'},
 						 {"label":'nid3',"uri":'http://www.semanticdesktop.org/ontologies/nid3/'},
-						 {"label":'kuaba',"uri":'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba'},
+    {"label":'kuaba',      "uri":'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba/'},
 						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
 						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
 						 {"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
 						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
     {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1},
-    {"label":'gr', "uri":'http://purl.org/goodrelations/v1#'}
+    {"label":'gr',         "uri":'http://purl.org/goodrelations/v1#'},
+    {"label":'dbo',        "uri":'http://dbpedia.org/ontology/'},
+    {"label":'dbpprop',    "uri":'http://dbpedia.org/property/'},
+    {"label":'dbpedia',    "uri":'http://dbpedia.org/resource/'}
 ];
 
 iSPARQL.CircularBuffer = function (len, initList) {
@@ -202,9 +206,16 @@ var QueryExec = function(optObj) {
 			if (self.cacheIndex > -1) { self.draw(); }
 		});
 
+	// Add well-known prefixes in global IRIDB
+
+	iSPARQL.StatusUI.statMsg ("Seeding IRIDB &#8230;");
+
+	if (!!OAT.IRIDB) {
+	    for (var i=0;i<window.defaultPrefixes.length;i++)
+		OAT.IRIDB.insertIRI (window.defaultPrefixes[i].uri, window.defaultPrefixes[i].label);
+	}
+
 	iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
-
-
     };
 
 	this.initNav = function() {
@@ -295,6 +306,7 @@ var QueryExec = function(optObj) {
 		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var pragmas = [];
+	
 		if (opts.pragmas) {
 			for (var i=0;i<opts.pragmas.length;i++) {
 				var pragma = opts.pragmas[i];
@@ -372,7 +384,7 @@ var QueryExec = function(optObj) {
 
     this.RESULT_TYPE = {
 	URI:0,
-	LITERAL:1,
+	LITERAL:1
     }
 
     this.renderResultValue = function (val, opts) {
@@ -386,6 +398,7 @@ var QueryExec = function(optObj) {
 	return val.value;
     };
 
+    //
     // return value, datatype
     // 
 
@@ -408,28 +421,23 @@ var QueryExec = function(optObj) {
 	return resVal;
     };
 
-    // return sparqlResultSet object
+    this.getSparqlRsVars = function (xmlDoc) {
+	var varArr = [];
 
-    this.parseSparqlResultSet = function (xmlTxt) {
-	// Blah. Cannot XPATH on documents with default namespace so have to recreate the DOM.
+	var nodeList = 
+	    xmlDoc.getElementsByTagName('variable');
 
-	var resSet = {
-	    variables:[],
-	    results:[]
-	};
-
-	xmlTxt = OAT.Xml.removeDefaultNamespace(xmlTxt);
-	var xmlDoc = OAT.Xml.createXmlDoc (xmlTxt);
-
-	var gHdrArr = [];
-
-	var vArr = OAT.Xml.xpath (xmlDoc,'/sparql/head/variable/@name',{});
-
-	for (i=0;i<vArr.length;i++) {
-	    resSet.variables.push (vArr[i].value);
+	for (var i=0;i<nodeList.length;i++) {
+	    var varName = nodeList[i].getAttribute ('name');
+	    varArr.push (varName)
 	}
 	
-	var resRows = OAT.Xml.xpath (xmlDoc, '/sparql/results/result', {});
+	return varArr;
+    };
+
+    this.getSparqlResRows = function (xmlDoc) {
+	var resArr = [];
+	var resRows = xmlDoc.getElementsByTagName ('result');
 	
 	for (i=0;i<resRows.length;i++) {
 	    var bindings = OAT.Xml.getElementsByLocalName (resRows[i], 'binding');
@@ -442,8 +450,22 @@ var QueryExec = function(optObj) {
 		var bVar = self.parseSparqlResDt (bElms[0]);
 		procRow[bVarName] = bVar;
 	    }
-	    resSet.results.push (procRow);
+	    resArr.push (procRow);
 	}
+
+	return resArr;
+    };
+
+    // return sparqlResultSet object
+    //
+    
+    this.parseSparqlResultSet = function (xmlDoc) {
+	
+	var resSet = {};
+
+	resSet.variables = self.getSparqlRsVars(xmlDoc);
+	resSet.results = self.getSparqlResRows (xmlDoc);
+	
 	return resSet;
     };
 
@@ -602,6 +624,7 @@ var QueryExec = function(optObj) {
 			}
 
 			grid.createRow(simplified_row);
+	    
 			for (var j=0;j<row.length;j++) {
 				var val = row[j];
 				if (val.match(/^(http|urn|doi)/i)) { /* a++ */
@@ -728,13 +751,13 @@ var QueryExec = function(optObj) {
 				self.mini.processLink = self.processLink;
 				self.mini.store.addXmlDoc(data);
 				self.mini.select.selectedIndex = lastIndex;
-				self.mini.redraw();
+//		self.mini.redraw();
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 		 OAT.MSG.attach (self.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
-		    var rs = self.parseSparqlResultSet (xmlTxt);
+		    var rs = self.parseSparqlResultSet (data);
 		    self.drawSparqlResultSet (rs);
 		} else {
 				/* own table */

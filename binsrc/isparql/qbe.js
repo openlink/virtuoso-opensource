@@ -333,7 +333,7 @@ iSPARQL.QBE = function (def_obj) {
 	    self.removeOrderBy(group);
 	}
     };
-    if (!OAT.Browser.isIE) {
+    if (!OAT.Browser.isIE && !OAT.Browser.hasNoSVG) { 
 	this.svgsparql = new OAT.SVGSparql("qbe_parent",options);
 	this.svgsparql.qbe = this;
     }
