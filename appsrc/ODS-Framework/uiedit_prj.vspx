@@ -149,10 +149,12 @@
 
     <vm:if test="self.m_mode <> 'M/browse'">
 	  <div class="fm">
-	      <fieldset>
-  		    <label for="m_name">Property (*)</label>
-		  <br />
-          <div id="if_opt">
+				<table>
+				  <tr>
+				    <th width="120px">
+		          Property (*)
+		        </th>
+		        <td id="if_opt">
             <script type="text/javascript">
               <![CDATA[
                 function p_init ()
@@ -169,18 +171,29 @@
                 ODSInitArray.push ( function () { OAT.Loader.load(["combolist"], p_init); } );
               ]]>
             </script>
-          </div>
-  		    <label for="m_url">URI</label>
-		    <br />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          URI
+		        </th>
+		        <td>
           <v:text name="m_url" value="" xhtml_id="m_url" xhtml_style="width:316px" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
-		  <br/>
-  		    <label for="m_desc">Description (*)</label>
-		    <br />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Description (*)
+		        </th>
+		        <td>
   		    <v:textarea name="m_desc" value="" xhtml_id="m_desc" xhtml_rows="4" xhtml_cols="80"/>
 		  <br />
 		  <label>Note: The fields designated with '*' will be fetched from the source document if empty</label>
-		    <br />
-	      <span class="fm_ctl_btn">
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
   		      <v:button name="user_c_personal_7" value="Cancel" action="simple">
 		      <v:on-post>
                 self.m_mode := 'M/browse';
@@ -289,8 +302,9 @@ if (not length (name))
                 ]]>
               </v:on-post>
 		  </v:button>
-	      </span>
-	  </fieldset>
+            </td>
+          </tr>
+        </table>
       </div>
     </vm:if>
 	</v:form>

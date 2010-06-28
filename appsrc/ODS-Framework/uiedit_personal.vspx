@@ -33,11 +33,10 @@
   <v:method name="getItems" arglist="in prefix varchar, in mode varchar, inout ontologies any, inout IDs any">
     <![CDATA[
       declare params any;
-      declare N, M, L integer;
+      declare N, M integer;
       declare re, reParts any;
       declare ontology, ontologyNo, ontologyName, ontologyItems any;
       declare item, itemID, itemNo, itemClass, itemProperties any;
-      declare property, propNo, propName, propValue, propType any;
 
       params := self.vc_page.vc_event.ve_params;
       IDs := vector ();
@@ -68,11 +67,33 @@
                 IDs := vector_concat (IDs, vector (itemID));
               if ((mode = 'gr') and (itemID = -1))
                 itemID := itemNo;
+              itemProperties := self.getProperties(prefix, params, ontologyNo, itemNo);
+              item := vector_concat (ODS..jsonObject (), vector ('id', itemID, 'className', itemClass, 'properties', itemProperties));
+              ontologyItems := vector_concat (ontologyItems, vector (item));
+            }
+          _skip2:;
+          }
+          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
+          ontologies := vector_concat (ontologies, vector (ontology));
+        }
+      _skip:;
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="getProperties" arglist="in prefix any, in params any, in ontologyNo varchar, in itemNo varchar">
+    <![CDATA[
+      declare L integer;
+      declare re, reParts any;
+      declare itemProperties any;
+      declare property, propNo, propName, propValue, propType any;
+
+
               itemProperties := vector ();
               for (L := 0; L < length (params); L := L + 4)
               {
                 if (not isstring(params[L+1]) or trim (params[L+1]) = '')
-                  goto _skip3;
+          goto _skip;
                 re := prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_1_([0-9]+)';
                 if (regexp_like(params[L], re))
                 {
@@ -84,18 +105,9 @@
                   property := vector_concat (ODS..jsonObject (), vector ('name', propName, 'value', propValue, 'type', propType));
                   itemProperties := vector_concat (itemProperties, vector (property));
                 }
-              _skip3:;
-              }
-              item := vector_concat (ODS..jsonObject (), vector ('id', itemID, 'className', itemClass, 'properties', itemProperties));
-              ontologyItems := vector_concat (ontologyItems, vector (item));
-            }
-          _skip2:;
-          }
-          ontology := vector ('ontology', ontologyName, 'items', ontologyItems);
-          ontologies := vector_concat (ontologies, vector (ontology));
-        }
       _skip:;
       }
+      return itemProperties;
     ]]>
   </v:method>
 

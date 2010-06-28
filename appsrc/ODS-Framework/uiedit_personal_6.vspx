@@ -22,148 +22,255 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="user_edit_buss"
-        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-        style="index.xsl"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+<v:page name="foaf-import-page"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
-        xmlns:v="http://www.openlinksw.com/vspx/">
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="favorites2json" arglist="">
-    <![CDATA[
-      declare id, ontology, ontologyItems any;
-      declare itemTypes vector;
+  <v:variable name="r_mode" type="varchar" default="'R/browse'"/>
 
-      id := 0;
-      ontology := '';
-      itemTypes := vector ();
-      ontologyItems := vector ();
-      for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id order by WUF_TYPE) do
-      {
-        if (ontology <> WUF_TYPE)
+	<v:variable name="r_id" type="integer" default="null" />
+	<v:variable name="r_properties" type="any" default="null" />
+	<v:variable name="r_ontology" type="any" default="null" />
+	<v:form name="usr_personal_6" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Favorites</h3>
+    <vm:if test="self.r_mode = 'R/browse'">
+      <?vsp
+        if (0)
         {
-          if (ontology <> '')
-            itemTypes := vector_concat (itemTypes, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (id as varchar), 'ontology', ontology, 'ontologyItems', ontologyItems))));
-          id := id + 1;
-          ontology := WUF_TYPE;
-          ontologyItems := vector ();
-        }
-        ontologyItems := vector_concat (ontologyItems, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+      ?>
+        <v:button name="r_dButton" action="simple" value="Delete">
+          <v:on-post>
+            <![CDATA[
+              delete from DB.DBA.WA_USER_FAVORITES where WUF_ID = get_keyword ('r_id', self.vc_page.vc_event.ve_params) and WUF_U_ID = self.u_id;
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      <?vsp
       }
-      if (length (ontologyItems))
-        itemTypes := vector_concat (itemTypes, vector (vector_concat (ODS..jsonObject (), vector ('id', cast (id as varchar), 'ontology', ontology, 'items', ontologyItems))));
-      return ODS..obj2json (itemTypes, 10);
+      ?>
+      <input type="hidden" name="r_id" id="r_id" value="" />
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="r_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+              self.r_mode := 'R/add';
+              self.r_label.ufl_value := null;
+              self.r_uri.ufl_value := null;
+              self.r_properties := vector ();
+
+              self.vc_data_bind (e);
 	  ]]>
-	</v:method>
+          </v:on-post>
+        </v:button>
+      </div>
 
-  <v:method name="savePersonal_6" arglist="">
+	    <v:data-set name="r_ds"
+	                sql="select WUF_ID, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = :self.u_id"
+		              scrollable="1"
+		              editable="1"
+		              nrows="10">
+
+        <v:template name="r_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+      	  <table class="listing" rules="groups">
+      	    <tr class="listing_header_row">
+      		    <th>Label</th>
+      		    <th>URI</th>
+      		    <th width="1%" nowrap="nowrap">Action</th>
+      	    </tr>
+          </table>
+        </v:template>
+
+        <v:template name="r_ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="r_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr>
+                <td colspan="3">No 'Favorites' Items</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="r_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+  			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUF_LABEL')" format="%s"/>
+                </td>
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUF_URI')" format="%s"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button name="r_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
     <![CDATA[
-      if (self.vc_is_valid = 0)
-        return;
+                        control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Offer" title="Edit Offer"/> Edit';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.r_mode := 'R/edit';
+                        self.r_id := (control.vc_parent as vspx_row_template).te_column_value('WUF_ID');
+                        select WUF_LABEL,
+                               WUF_URI,
+                               deserialize (WUF_PROPERTIES)
+                          into self.r_label.ufl_value,
+                               self.r_uri.ufl_value,
+                               self.r_properties
+                          from DB.DBA.WA_USER_FAVORITES
+                         where WUF_ID = self.r_id;
 
-      declare N, M integer;
-      declare ontologies, IDs any;
-      declare ontology, ontologyItems any;
-      declare item, itemID any;
-
-      IDs := vector ();
-      ontologies := vector ();
-      self.getItems ('r', '', ontologies, IDs);
-      delete from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = self.u_id and not ODS.ODS_API.vector_contains(IDs, WUF_ID);
-      for (N := 0; N < length (ontologies); N := N + 1)
-      {
-        ontology := ontologies[N];
-        ontologyItems := get_keyword ('items', ontology);
-        for (M := 0; M < length (ontologyItems); M := M + 1)
-        {
-          item := ontologyItems[M];
-          itemID := get_keyword ('id', item);
-          if (itemID = -1)
-          {
-            insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
-              values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize (get_keyword ('properties', item)), self.u_id);
-          } else {
-            update DB.DBA.WA_USER_FAVORITES
-               set WUF_TYPE = get_keyword ('ontology', ontology),
-                   WUF_CLASS = get_keyword ('className', item),
-                   WUF_PROPERTIES = serialize (get_keyword ('properties', item))
-             where WUF_ID = itemID;
-          }
-        }
-      }
+                        self.vc_data_bind (e);
     ]]>
-  </v:method>
+                    </v:on-post>
+                  </v:button>
+                  <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('r_id').value = <?V (control as vspx_row_template).te_column_value('WUF_ID') ?>; doPost('page_form', 'r_dButton');}">
+                    <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                  </span>
+  			        </td>
+  			      </tr>
+            </table>
+		      </v:template>
+		    </v:template>
 
-  <v:form name="usr_personal_6" type="simple" method="POST" action="uiedit.vspx?page=2">
-    <div>
-      <table class="ctl_grp">
+		    <v:template name="r_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+          </table>
+		    </v:template>
+	    </v:data-set>
+    </vm:if>
+
+    <vm:if test="self.r_mode <> 'R/browse'">
+      <v:before-data-bind>
+        <![CDATA[
+          self.r_ontology := vector (
+                                     vector_concat (
+                                                    ODS..jsonObject (),
+                                                    vector (
+                                                            'id', '0',
+                                                            'ontology', 'http://rdfs.org/sioc/ns#',
+                                                            'items', vector (
+                                                                             vector_concat (
+                                                                                            ODS..jsonObject (),
+                                                                                            vector (
+                                                                                                    'id', '0',
+                                                                                                    'className', 'sioc:Item',
+                                                                                                    'properties', self.r_properties
+                                                                                                   )
+                                                                                           )
+                                                                             )
+                                                           )
+                                                   )
+                                    );
+        ]]>
+      </v:before-data-bind>
+  	  <div class="fm">
+				<table>
         <tr>
-          <td width="800px">
-            <table id="r_tbl" class="listing">
-              <thead>
-                <tr class="listing_header_row">
-                  <th width="16px">
-                    <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+				    <th width="120px">
+		          Label (dc:title)
                   </th>
-                  <th>
-                    Favorite Type
+		        <td>
+              <v:text name="r_label" value="" xhtml_id="r_label" xhtml_size="50" xhtml_class="_validate_" />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          URI (rdfs:seeAlso)
                   </th>
-                  <th width="65px">
-                    Action
-                  </th>
+		        <td>
+              <v:text name="r_uri" value="" xhtml_id="r_uri" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_size="50" />
+            </td>
                 </tr>
-              </thead>
+				  <tr>
+				    <th valign="top">
+		          Properties
+		        </th>
+		        <td width="800px">
+              <table id="r_tbl" class="listing">
               <tbody id="r_tbody">
-                <tr id="r_tr_no">
+                  <tr id="r_item_0_tr_0_properties">
                   <td></td>
-                  <td colspan="2">
-                    <b><i>No Favorite Types</i></b>
-          </td>
+                    <td></td>
+                    <td valign="top"></td>
         </tr>
               </tbody>
-      </table>
-            <input type="hidden" id="r_no" name="r_no" value="1" />
-          </td>
-          <td valign="top" nowrap="nowrap">
-            <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-          </td>
-        </tr>
       </table>
       <script type="text/javascript">
         <![CDATA[
           ODSInitArray.push ( function () {
             OAT.Loader.load(["ajax", "json", "combolist"], function(){
-              RDF.itemTypes = <?vsp http (self.favorites2json ()); ?>;
-              RDF.showItemTypes();
+                      RDF.tablePrefix = 'r';
+                      RDF.itemTypes = <?vsp http (ODS..obj2json (self.r_ontology)); ?>;
+                      RDF.loadOntology(
+                        'http://rdfs.org/sioc/ns#',
+                        function(){
+                          RDF.loadClassProperties(
+                            RDF.getOntologyClass('sioc:Item'),
+                            function(){
+                              RDF.showPropertiesTable(RDF.itemTypes[0].items[0]);
+                            }
+                          );
+                        }
+                      )
             });
           });
         ]]>
       </script>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
       <br />
-      <div>
-        <v:button name="user_c_personal_6" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
+    		      <v:button name="user_c_personal_6" value="Cancel" action="simple">
           <v:on-post>
-            self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
+                  self.r_mode := 'R/browse';
+                  self.vc_data_bind (e);
           </v:on-post>
         </v:button>
-        <v:button name="user_s_personal_6" value="Save" action="simple" xhtml_onclick="return validateInputs(this);">
+    		      <v:button name="user_s_personal_6" value="--case when self.r_mode = 'R/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
           <v:on-post>
             <![CDATA[
-              self.savePersonal_6();
+                    declare params, properties any;
+
+                    params := e.ve_params;
+                    if (not length (self.r_label.ufl_value))
+                    {
+                      self.vc_error_message := 'The title can''t be empty.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    properties := self.getProperties('r', params, '0', '0');
+                    if (self.r_mode = 'R/add')
+                    {
+                      insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
+                        values (self.u_id, 'http://rdfs.org/sioc/ns#', 'sioc:Item', self.r_label.ufl_value, self.r_uri.ufl_value, serialize (properties));
+                    } else {
+                      update DB.DBA.WA_USER_FAVORITES
+                         set WUF_LABEL = self.r_label.ufl_value,
+                             WUF_URI = self.r_uri.ufl_value,
+                             WUF_PROPERTIES = serialize (properties)
+                       where WUF_ID = self.r_id;
+                    }
+
+                    self.r_mode := 'R/browse';
+                    self.vc_data_bind (e);
             ]]>
           </v:on-post>
         </v:button>
-        <v:button name="user_sn_personal_6" value="Save and Next" action="simple" xhtml_onclick="return validateInputs(this);">
-          <v:on-post>
-            <![CDATA[
-              self.savePersonal_6();
-              if (self.vc_is_valid)
-   		          self.vc_redirect ('uiedit.vspx?page=1&tabNo=7');
-            ]]>
-          </v:on-post>
-        </v:button>
+            </td>
+          </tr>
+        </table>
       </div>
-    </div>
+    </vm:if>
   </v:form>
 </v:page>

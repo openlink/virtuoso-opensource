@@ -3785,6 +3785,20 @@ create procedure wa_favorites_upgrade2()
 ;
 wa_favorites_upgrade2();
 
+create procedure wa_favorites_upgrade3()
+{
+  if (registry_get ('__wa_favorites_upgrade3') = 'done')
+    return;
+  registry_set ('__wa_favorites_upgrade3', 'done');
+
+  delete
+    from DB.DBA.WA_USER_FAVORITES
+   where WUF_TYPE <> 'http://rdfs.org/sioc/ns#'
+     and WUF_CLASS <> 'sioc:Item';
+}
+;
+wa_favorites_upgrade3();
+
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {
   for select WAUTG_U_ID, WAUTG_TAG_ID, WAUTG_TAGS from WA_USER_TAG where WAUTG_FT_ID = d_id do

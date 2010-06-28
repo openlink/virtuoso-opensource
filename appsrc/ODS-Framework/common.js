@@ -857,8 +857,8 @@ RDF.loadClassProperties = function(ontologyClass, cbFunction)
     cbFunction();
     return;
   }
-  var ontologyName = this.getOntologyByClass(ontologyClass.name).name;
-  var prefix = this.ontologyPrefix(ontologyName);
+  var ontologyName = RDF.getOntologyByClass(ontologyClass.name).name;
+  var prefix = RDF.ontologyPrefix(ontologyName);
   var S = '/ods/api/ontology.classProperties?ontologyClass='+encodeURIComponent(ontologyClass.name)+'&ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
   var x = function(data) {
     var o = null;

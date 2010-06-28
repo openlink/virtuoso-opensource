@@ -3030,8 +3030,7 @@ create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/j
 {
   declare uname varchar;
   declare _u_id integer;
-  declare fID, fOntology, fItems any;
-  declare fItemTypes any;
+  declare retValue any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -3040,35 +3039,22 @@ create procedure ODS.ODS_API."user.favorites.list" () __soap_http 'application/j
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  fID := 0;
-  fOntology := '';
-  fItemTypes := vector ();
-  fItems := vector ();
-  for (select WUF_ID, WUF_TYPE, WUF_CLASS, deserialize (WUF_PROPERTIES) WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id order by WUF_TYPE) do
+  retValue := vector();
+  for (select WUF_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = _u_id) do
   {
-    if (fOntology <> WUF_TYPE)
-    {
-      if (fOntology <> '')
-        fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-      fID := fID + 1;
-      fOntology := WUF_TYPE;
-      fItems := vector ();
-    }
-    fItems := vector_concat (fItems, vector (vector_concat (jsonObject(), vector ('id', cast (WUF_ID as varchar), 'className', WUF_CLASS, 'properties', WUF_PROPERTIES))));
+    retValue := vector_concat (retValue, vector (vector (WUF_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI)));
   }
-  if (length (fItems))
-    fItemTypes := vector_concat (fItemTypes, vector (vector_concat (jsonObject(), vector ('id', cast (fID as varchar), 'ontology', fOntology, 'items', fItems))));
-  return obj2json (fItemTypes, 10);
+  return obj2json (retValue);
 }
 ;
 
-create procedure ODS.ODS_API."user.favorites.new" (
-  in favorites any) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.favorites.get" (
+  in id integer) __soap_http 'application/json'
 {
   declare uname varchar;
-  declare rc, N, M integer;
+  declare retValue any;
   declare _u_id integer;
-  declare ontologies, ontology, ontologyItems, item any;
+  declare label, uri, properties any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -3077,28 +3063,44 @@ create procedure ODS.ODS_API."user.favorites.new" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-
-  ontologies := json_parse (favorites);
-  for (N := 0; N < length (ontologies); N := N + 1)
+  label := '';
+  uri := '';
+  properties := vector();
+  for (select WUF_ID, WUF_LABEL, WUF_URI, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_ID = id and WUF_U_ID = _u_id) do
   {
-    ontology := ontologies[N];
-    ontologyItems := get_keyword ('items', ontology);
-    for (M := 0; M < length (ontologyItems); M := M + 1)
-    {
-      item := ontologyItems[M];
-      insert into DB.DBA.WA_USER_FAVORITES (WUF_TYPE, WUF_CLASS, WUF_PROPERTIES, WUF_U_ID)
-        values (get_keyword ('ontology', ontology), get_keyword ('className', item), serialize ( get_keyword ('properties', item)), _u_id);
-    }
+    label := WUF_LABEL;
+    uri := WUF_URI;
+    properties := deserialize (WUF_PROPERTIES);
   }
-  rc := row_count ();
-  return ods_serialize_int_res (rc);
-}
+  properties := vector (
+                        vector_concat (
+                                       ODS..jsonObject (),
+                                       vector (
+                                               'id', '0',
+                                               'ontology', 'http://rdfs.org/sioc/ns#',
+                                               'items', vector (
+                                                                vector_concat (
+                                                                               ODS..jsonObject (),
+                                                                               vector (
+                                                                                       'id', '0',
+                                                                                       'className', 'sioc:Item',
+                                                                                       'properties', properties
+                                                                                      )
+                                                                              )
+                                                                )
+                                              )
+                                      )
+                       );
+  retValue := vector_concat (jsonObject (), vector ('id', id, 'label', label, 'uri', uri, 'properties', properties));
+  return obj2json (retValue);
+    }
 ;
 
-create procedure ODS.ODS_API."user.favorites.delete" (
-  in id integer := null,
-  in "type" varchar := null,
-  in "class" varchar := null) __soap_http 'text/xml'
+create procedure ODS.ODS_API."user.favorites.update" (
+  in id integer,
+  in label varchar,
+  in uri varchar,
+  in properties varchar)
 {
   declare uname varchar;
   declare rc integer;
@@ -3111,19 +3113,62 @@ create procedure ODS.ODS_API."user.favorites.delete" (
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  properties := json_parse (properties);
   if (isnull (id))
   {
-    delete
-      from DB.DBA.WA_USER_FAVORITES
-     where WUF_U_ID = _u_id
-       and ("type"  is null or WUF_TYPE  = "type")
-       and ("class" is null or WUF_CLASS = "class");
+    insert into DB.DBA.WA_USER_FAVORITES (WUF_U_ID, WUF_TYPE, WUF_CLASS, WUF_LABEL, WUF_URI, WUF_PROPERTIES)
+      values (_u_id, 'http://rdfs.org/sioc/ns#', 'sioc:Item', label, uri, serialize (properties));
+    rc := (select max (WUF_ID) from DB.DBA.WA_USER_FAVORITES);
   } else {
+    update DB.DBA.WA_USER_FAVORITES
+       set WUF_LABEL = label,
+           WUF_URI = uri,
+           WUF_PROPERTIES = serialize (properties)
+     where WUF_ID = id;
+    rc := id;
+  }
+  return ods_serialize_int_res (rc);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.new" (
+  in label varchar,
+  in uri varchar,
+  in properties varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.favorites.update" (null, label, uri, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.edit" (
+  in id integer,
+  in label varchar,
+  in uri varchar,
+  in properties varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.favorites.update" (id, label, uri, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.favorites.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
     delete
       from DB.DBA.WA_USER_FAVORITES
      where WUF_U_ID = _u_id
        and WUF_ID   = id;
-  }
+
   rc := row_count ();
   return ods_serialize_int_res (rc);
 }
@@ -4496,7 +4541,9 @@ grant execute on ODS.ODS_API."user.bioEvents.list" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.new" to ODS_API;
 grant execute on ODS.ODS_API."user.bioEvents.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.list" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.get" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.new" to ODS_API;
+grant execute on ODS.ODS_API."user.favorites.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.favorites.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.mades.list" to ODS_API;
 grant execute on ODS.ODS_API."user.mades.get" to ODS_API;
