@@ -6225,7 +6225,7 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, cc
 }
 
 void
-ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_len, int flags, SPART *auto_valmode_gp, ssg_valmode_t needed)
+ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_len, int flags, ptrlong *retlist_restr_bits, SPART *auto_valmode_gp, ssg_valmode_t needed)
 {
   int res_ctr;
   if (0 == res_len)
@@ -6241,8 +6241,13 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
           else
             ssg_puts (" AS __dummy_retval");
         }
+      return;
     }
   ssg->ssg_indent++;
+#ifndef NDEBUG
+  if ((NULL != retlist_restr_bits) && !(flags & SSG_RETVAL_USES_ALIAS))
+    spar_internal_error (ssg->ssg_sparp, "Inconsistent retval list: bits without aliases");
+#endif
   for (res_ctr = 0; res_ctr < res_len; res_ctr++)
     {
       SPART *ret_column = retlist[res_ctr];
@@ -6252,6 +6257,8 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
           ssg_newline (1);
         }
       ssg_print_retval_expn (ssg, gp, ret_column, res_ctr, flags, auto_valmode_gp, needed);
+      if ((NULL != retlist_restr_bits) && (!(retlist_restr_bits[res_ctr] & SPART_VARR_IS_REF)))
+        ssg_puts (" ANY");
     }
   ssg->ssg_indent--;
 }
@@ -7123,7 +7130,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
 }
 
 void
-ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ssg_valmode_t needed, int first_mcase_idx, int breakup_shift)
+ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ptrlong *retlist_restr_bits, ssg_valmode_t needed, int first_mcase_idx, int breakup_shift)
 {
   SPART *first_mcase = gp->_.gp.members [first_mcase_idx];
   SPART **first_mcase_triples = first_mcase->_.gp.members;
@@ -7234,7 +7241,8 @@ fld_restrictions_may_vary:
           SPART *mcase_triple = mcase->_.gp.members [tc];
           all_triples_of_mcases[tc][breakup_ctr] = mcase_triple;
         }
-      ssg_print_retval_list (ssg, mcase, retlist, BOX_ELEMENTS_INT (retlist), rflags, gp, needed);
+      ssg_print_retval_list (ssg, mcase, retlist, BOX_ELEMENTS_INT (retlist), rflags,
+        ((0 < breakup_ctr) ? NULL : retlist_restr_bits), gp, needed);
       save_where_l_printed = ssg->ssg_where_l_printed;
       save_where_l_text = ssg->ssg_where_l_text;
       ssg->ssg_where_l_printed = 0;
@@ -7448,6 +7456,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
   int breakup_shift;
   int save_where_l_printed = 0;
   const char *save_where_l_text = NULL;
+  ptrlong *retlist_restr_bits = NULL;
   if (UNION_L == gp->_.gp.subtype)
     {
       members = gp->_.gp.members;
@@ -7458,6 +7467,14 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
     {
       members = &gp;
       memb_count = 1;
+    }
+  if (1 < memb_count)
+    {
+      int col_count = BOX_ELEMENTS (retlist);
+      int col_ctr;
+      retlist_restr_bits = t_alloc_box (col_count * sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      for (col_ctr = col_count; col_ctr--; /* no step */)
+        retlist_restr_bits [col_ctr] = sparp_restr_bits_of_expn (ssg->ssg_sparp, retlist[col_ctr]);
     }
   for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr += (1 + breakup_shift))
     {
@@ -7516,10 +7533,12 @@ breakup_group_complete:
       ssg_puts ("SELECT");
       if (0 != breakup_shift)
         {
-          ssg_print_breakup_in_union (ssg, gp, retlist, head_flags, curr_retval_flags, needed, memb_ctr, breakup_shift);
+          ssg_print_breakup_in_union (ssg, gp, retlist, head_flags, curr_retval_flags,
+            ((0 < memb_ctr) ? NULL : retlist_restr_bits), needed, memb_ctr, breakup_shift );
           continue;
         }
-      ssg_print_retval_list (ssg, members[memb_ctr], retlist, BOX_ELEMENTS_INT (retlist), curr_retval_flags, gp, needed);
+      ssg_print_retval_list (ssg, members[memb_ctr], retlist, BOX_ELEMENTS_INT (retlist), curr_retval_flags,
+        ((0 < memb_ctr) ? NULL : retlist_restr_bits), gp, needed );
 
 retval_list_complete:
       ssg_newline (0);
@@ -7940,7 +7959,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         ssg_print_t_options_of_select (ssg);
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
         retvals, BOX_ELEMENTS_INT (retvals),
-        top_retval_flags, tree->_.req_top.pattern, retvalmode );
+        top_retval_flags, NULL, tree->_.req_top.pattern, retvalmode );
       if ((NULL != ssg->ssg_wrapping_gp) && (NULL != ssg->ssg_wrapping_gp->_.gp.options))
         ssg_print_t_steps_of_select (ssg);
       break;
@@ -7994,7 +8013,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         }
       ssg_print_retval_list (ssg, tree->_.req_top.pattern,
         retvals, 1,
-        top_retval_flags, tree->_.req_top.pattern, retvalmode );
+        top_retval_flags, NULL, tree->_.req_top.pattern, retvalmode );
       if (NULL != formatter)
         {
           const char *fmname = tree->_.req_top.formatmode_name;
@@ -8012,7 +8031,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_print_limofs_expn (ssg);
           ssg_print_retval_list (ssg, tree->_.req_top.pattern,
             retvals + 1, BOX_ELEMENTS (retvals) - 1,
-            top_retval_flags | SSG_RETVAL_USES_ALIAS, NULL, retvalmode );
+            top_retval_flags | SSG_RETVAL_USES_ALIAS, NULL, NULL, retvalmode );
           ssg->ssg_indent += 1;
         }
       break;
