@@ -27,6 +27,7 @@ import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.impl.ModelCom;
 
+import virtuoso.jdbc3.VirtuosoDataSource;
 
 public class VirtModel extends ModelCom {
 
@@ -39,12 +40,23 @@ public class VirtModel extends ModelCom {
     }
 	
 	
+    public static VirtModel openDefaultModel(VirtuosoDataSource ds) 
+    {
+    	return new VirtModel(new VirtGraph(ds));
+    }
+
+    public static VirtModel openDatabaseModel(String graphName, 
+	VirtuosoDataSource ds)
+    {
+	return new VirtModel(new VirtGraph(graphName, ds));
+    }
+
+
     public static VirtModel openDefaultModel(String url, String user, 
 	String password) 
     {
     	return new VirtModel(new VirtGraph(url, user, password));
     }
-
 
     public static VirtModel openDatabaseModel(String graphName, String url, 
     	String user, String password) 
@@ -63,7 +75,7 @@ public class VirtModel extends ModelCom {
 	}
 	return this;
     }
-	
+
 
     public void createRuleSet(String ruleSetName, String uriGraphRuleSet) 
     {

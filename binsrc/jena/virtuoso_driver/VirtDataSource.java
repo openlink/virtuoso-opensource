@@ -41,6 +41,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.shared.Lock;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 
+import virtuoso.jdbc3.VirtuosoDataSource;
+
 public class VirtDataSource extends VirtGraph implements DataSource {
 
     /**
@@ -52,6 +54,11 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public VirtDataSource()
     {
       super();
+    }
+
+    public VirtDataSource(String _graphName, VirtuosoDataSource _ds)
+    {
+      super(_graphName, _ds);
     }
 
     protected VirtDataSource(VirtGraph g)
@@ -178,7 +185,11 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public Model getNamedModel(String name) 
     {
       try {
-	return new VirtModel(new VirtGraph(name, this.getGraphUrl(), 
+        VirtuosoDataSource _ds = getDataSource();
+        if (_ds != null) 
+	    return new VirtModel(new VirtGraph(name, _ds));
+        else
+	    return new VirtModel(new VirtGraph(name, this.getGraphUrl(), 
 			this.getGraphUser(), this.getGraphPassword()));
       } catch (Exception e) {
 	throw new JenaException(e);
