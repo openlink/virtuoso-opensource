@@ -26,14 +26,22 @@
 */
 
 OAT.Xml = {
+    _getImplementation: function () {
+	if (!!document.implementation) return document.implementation;
+	if (!!document.getImplementation) return document.getImplementation();
+	else 
+	    return false;
+    },
+
 	textValue:function(elem) {
 		/*
 			gecko: textContent
 			ie: text
 			safari: .nodeValue of first child
 		*/
+
 		if (!elem) { return; }
-		if (document.implementation && document.implementation.createDocument) {
+	if (OAT.Xml._getImplementation()) {
 			var result = elem.textContent;
 			/* safari hack */
 			if (typeof(result) == "undefined") {
@@ -59,8 +67,9 @@ OAT.Xml = {
 	},
 
 	createXmlDoc:function(string) {
-		if (document.implementation && document.implementation.createDocument) {
-			if (!string) { return document.implementation.createDocument("","",null); }
+	var impl = OAT.Xml._getImplementation();
+	if (impl && !OAT.Browser.isIE) {
+	    if (!string) { return impl.createDocument("","",null); }
 			var parser = new DOMParser();
 			try {
 				var xml = parser.parseFromString(string, "text/xml");
@@ -73,7 +82,10 @@ OAT.Xml = {
 			if (!string) { return xml; }
 			xml.loadXML(string);
 			if (xml.parseError.errorCode) {
-			    alert('OAT.Xml.createXmlDoc:\nIE XML ERROR: '+xml.parseError.reason+' ('+xml.parseError.errorCode+')');
+		alert('OAT.Xml.createXmlDoc:\nIE XML ERROR: ' + 
+		      xml.parseError.reason + 
+		      ' (' + 
+		      xml.parseError.errorCode + ')');
 			    return false;
 			}
 			return xml;
@@ -175,7 +187,9 @@ OAT.Xml = {
 	getLocalAttribute:function(elm,localName) {
 		var all = elm.attributes;
 		for (var i=0;i<elm.attributes.length;i++) {
-			if (elm.attributes[i].localName == localName || elm.attributes[i].baseName == localName) { return elm.attributes[i].nodeValue; }
+	    if (elm.attributes[i].localName == localName || elm.attributes[i].baseName == localName) { 
+		return elm.attributes[i].nodeValue; 
+	    }
 		}
 		return false;
 	},
@@ -191,6 +205,26 @@ OAT.Xml = {
 		}
 		return obj;
 	},
+
+    getLocalAttributeNodes:function (elm) {
+	var obj = {};
+	if (!elm) { return obj; }
+	for (var i=0;i<elm.attributes.length;i++) {
+	    var att = elm.attributes[i];
+	    var ln = att.localName;
+	    var key = ln ? ln : att.baseName;
+	    obj[key] = att;
+	}
+	return obj;
+    },
+
+    getNsURI:function (elm) {
+	return elm.namespaceURI;
+    },
+
+    getNsPrefix:function (elm) {
+	return elm.prefix;
+    },
 
 	xpath:function(xmlDoc,xpath,nsObject) {
 		var result = [];
@@ -210,7 +244,7 @@ OAT.Xml = {
 			for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
 			return result;
 		} else {
-		        alert("OAT.Xml.textValue:\nNo XML parser available");
+	    alert("OAT.Xml.xpath:\nNo Xml Parser available");
 			return false;
 		}
 	},
