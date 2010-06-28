@@ -1294,13 +1294,13 @@ create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  na
 
   rel_iri := url;
   pers_iri := person_iri (iri);
-  delete_quad_s_or_o (graph_iri, rel_iri, rel_iri);
+  --delete_quad_s_or_o (graph_iri, rel_iri, rel_iri);
 
   if (0 = length (pred))
     pred := rdfs_iri ('seeAlso');
 
   DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, pred, rel_iri);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
+  --DB.DBA.ODS_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
 };
 
 create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in pred varchar := null)
@@ -3228,7 +3228,8 @@ create trigger WA_USER_RELATED_RES_SIOC_U after update on DB.DBA.WA_USER_RELATED
   graph_iri := get_graph ();
   iri := user_iri (N.WUR_U_ID);
   opiri := O.WUR_SEEALSO_IRI;
-  delete_quad_s_or_o (graph_iri, opiri, opiri);
+  delete_quad_s_p_o (graph_iri, person_iri (iri), O.WUR_P_IRI, O.WUR_SEEALSO_IRI);
+  --delete_quad_s_or_o (graph_iri, opiri, opiri);
   sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI, N.WUR_P_IRI);
 };
 
@@ -3243,7 +3244,8 @@ create trigger WA_USER_RELATED_RES_SIOC_D after delete on DB.DBA.WA_USER_RELATED
   graph_iri := get_graph ();
   iri := user_iri (O.WUR_U_ID);
   opiri := O.WUR_SEEALSO_IRI;
-  delete_quad_s_or_o (graph_iri, opiri, opiri);
+  delete_quad_s_p_o (graph_iri, person_iri (iri), O.WUR_P_IRI, O.WUR_SEEALSO_IRI);
+  --delete_quad_s_or_o (graph_iri, opiri, opiri);
 };
 
 -- Related Apps
@@ -3957,6 +3959,7 @@ create procedure std_pref_declare ()
          ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
          ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
          ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+   ' prefix pingback: <http://purl.org/net/pingback/> \n' ||
    	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
    	 ' prefix sioct: <http://rdfs.org/sioc/types#> \n' ||
          ' prefix dc: <http://purl.org/dc/elements/1.1/> \n'||
@@ -4313,6 +4316,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
+	    ?person pingback:to ?pb .
 	  }
 	  WHERE
 	  {
@@ -4327,6 +4331,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
 	        optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
+		optional { ?person pingback:to ?pb } .
 	      }
 	    }
 	  }', graph, iri_pref, u_name);
