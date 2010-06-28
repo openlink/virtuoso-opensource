@@ -760,6 +760,14 @@ function mySubmit(prefix)
 {
   needToConfirm = false;
   if (validateInputs($(prefix+'_id'), prefix)) {
+    if (prefix == 'pf06') {
+      var S = '/ods/api/user.favorites.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf06_id'))
+              + '&label=' + encodeURIComponent($v('pf06_label'))
+              + '&uri=' + encodeURIComponent($v('pf06_uri'))
+              + '&properties=' + encodeURIComponent(prepareProperties('r'));
+      OAT.AJAX.GET(S, '', function(data){pfShowFavorites();});
+    }
     if (prefix == 'pf07') {
     	var S = '/ods/api/user.mades.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
               + '&id=' + encodeURIComponent($v('pf07_id'))
@@ -791,17 +799,22 @@ function mySubmit(prefix)
   return false;
 }
 
-function myBeforeSubmit ()
+function submitItems()
 {
-  needToConfirm = false;
   if ($('items')) {
-    if ($v('formTab') == '0' && $v('formSubtab') == '6')
-      $('items').value = prepareItems('r');
+    if ($v('formTab') == '0' && $v('formSubtab') == '6' && $v('formMode') != '')
+      $('items').value = prepareProperties('r');
     if ($v('formTab') == '0' && $v('formSubtab') == '8' && $v('formMode') != '')
       $('items').value = prepareItems('ol');
     if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
       $('items').value = prepareItems('wl');
   }
+}
+
+function myBeforeSubmit()
+{
+  needToConfirm = false;
+  submitItems()
 }
 
 var needToConfirm = true;
@@ -813,15 +826,7 @@ function myCheckLeave (form)
   var dirty = false;
   var retValue = true;
 
-  if ($('items')) {
-    if ($v('formTab') == '0' && $v('formSubtab') == '6')
-      $('items').value = prepareItems('r');
-    if ($v('formTab') == '0' && $v('formSubtab') == '8' && $v('formMode') != '')
-      $('items').value = prepareItems('ol');
-    if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
-      $('items').value = prepareItems('wl');
-  }
-
+  submitItems()
   if (needToConfirm && (formTab < 2))
   {
     for (var i = 0; i < form.elements.length; i++)
@@ -1041,23 +1046,6 @@ function pfShowOnlineAccounts(prefix, accountType, showRow) {
 	OAT.AJAX.GET('/ods/api/user.onlineAccounts.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm'))+'&type='+accountType, '', x);
 }
 
-function pfShowFavorites() {
-  var x = function (data)
-  {
-		var o = null;
-		try {
-			o = OAT.JSON.parse(data);
-		} catch (e) {
-			o = null;
-		}
-		if (o) {
-      RDF.itemTypes = o;
-      RDF.showItemTypes();
-    }
-  }
-	OAT.AJAX.GET('/ods/api/user.favorites.list?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), '', x);
-}
-
 function pfShowItem(api, prefix, names, cb) {
   var x = function (data)
   {
@@ -1149,6 +1137,8 @@ function pfEditListObject(prefix, id) {
   hiddenCreate(prefix+'_id', $('page_form'), id);
   $('formMode').value = 'edit';
   if ($v('mode') == 'html') {
+    if (prefix == 'pf06')
+      pfShowFavorite('edit', id);
     if (prefix == 'pf07')
       pfShowMade('edit', id);
     if (prefix == 'pf08')
@@ -1160,23 +1150,43 @@ function pfEditListObject(prefix, id) {
   $('page_form').submit();
 }
 
-function pfShowMade(mode, id) {
+function pfShowMode(prefix, mode, id) {
   if (mode) {
-    OAT.Dom.hide('pf07_list');
-    OAT.Dom.show('pf07_form');
-    hiddenCreate('pf07_id', $('page_form'), id);
+    OAT.Dom.hide(prefix+'_list');
+    OAT.Dom.show(prefix+'_form');
+    hiddenCreate(prefix+'_id', $('page_form'), id);
     $('formMode').value = mode;
   }
+}
+
+function pfShowFavorite(mode, id) {
+  pfShowMode('pf06', mode, id)
+  var x = function (obj) {
+    $('r_tbody').innerHTML = '<tr id="r_item_0_tr_0_properties"><td></td><td></td><td valign="top"></td></tr>';
+    RDF.tablePrefix = 'r';
+    RDF.itemTypes = obj.properties;
+    RDF.loadOntology(
+      'http://rdfs.org/sioc/ns#',
+      function(){
+        RDF.loadClassProperties(
+          RDF.getOntologyClass('sioc:Item'),
+          function(){
+            RDF.showPropertiesTable(RDF.itemTypes[0].items[0]);
+          }
+        );
+      }
+    )
+  }
+  pfShowItem('user.favorites.get', 'pf06', ['label', 'uri'], x);
+}
+
+function pfShowMade(mode, id) {
+  pfShowMode('pf07', mode, id)
   pfShowItem('user.mades.get', 'pf07', ['property', 'uri', 'description']);
 }
 
 function pfShowOffer(mode, id) {
-  if (mode) {
-    OAT.Dom.hide('pf08_list');
-    OAT.Dom.show('pf08_form');
-    hiddenCreate('pf08_id', $('page_form'), id);
-    $('formMode').value = mode;
-  }
+  pfShowMode('pf08', mode, id)
   var x = function (obj) {
     $('ol_tbody').innerHTML = '';
     RDF.tablePrefix = 'ol';
@@ -1188,12 +1198,7 @@ function pfShowOffer(mode, id) {
 }
 
 function pfShowSeek(mode, id) {
-  if (mode) {
-    OAT.Dom.hide('pf09_list');
-    OAT.Dom.show('pf09_form');
-    hiddenCreate('pf09_id', $('page_form'), id);
-    $('formMode').value = mode;
-  }
+  pfShowMode('pf09', mode, id)
   var x = function(obj) {
     $('wl_tbody').innerHTML = '';
     RDF.tablePrefix = 'wl';
@@ -1202,6 +1207,10 @@ function pfShowSeek(mode, id) {
     RDF.showItemTypes();
   }
   pfShowItem('user.seeks.get', 'pf09', ['name', 'comment'], x);
+}
+
+function pfShowFavorites() {
+  pfShowList('user.favorites.list', 'pf06', 'No Items', [3, 4], 0, function (data){pfShowFavorites();});
 }
 
 function pfShowMades() {
@@ -1835,7 +1844,7 @@ function ufProfileLoad(No) {
     $('formTab').value = "" + formTab;
     $('formSubtab').value = "" + formSubtab;
   }
-  if ((formTab == 0) && (formSubtab > 6)) {
+  if ((formTab == 0) && (formSubtab > 5)) {
     OAT.Dom.hide('pf_footer_0');
   } else {
     OAT.Dom.show('pf_footer_0');
@@ -1921,6 +1930,10 @@ function ufProfileCallback(data) {
       pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});
 
       // made
+      if (($v('formTab') == "0") && ($v('formSubtab') == "6"))
+        pfShowFavorites();
+
+      // made
       if (($v('formTab') == "0") && ($v('formSubtab') == "7"))
         pfShowMades();
 
@@ -1939,9 +1952,6 @@ function ufProfileCallback(data) {
 			fieldUpdate(user, 'aim', 'pf_aim', aclData);
 			fieldUpdate(user, 'msn', 'pf_msn', aclData);
       pfShowRows("x6", tagValue(user, "messaging"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});
-
-      // favorites
-      pfShowFavorites();
 
       // business
 			// main
@@ -2148,6 +2158,20 @@ function prepareItems(prefix) {
 
       var itemNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_fld_2_", "");
       var itemName = ctrl.value;
+      var itemProperties = preparePropertiesWork(prefix, ontologyNo, itemNo);
+      ontologyItems.push({"id": itemNo, "className": itemName, "properties": itemProperties});
+    }
+    ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
+  }
+  return OAT.JSON.stringify(ontologies);
+}
+
+function prepareProperties(prefix) {
+  return OAT.JSON.stringify(preparePropertiesWork(prefix, '0', '0'));
+}
+
+function preparePropertiesWork(prefix, ontologyNo, itemNo) {
+  var form = $('page_form');
       var itemProperties = [];
       for (var L = 0; L < form.elements.length; L++)
       {
@@ -2172,20 +2196,7 @@ function prepareItems(prefix) {
         }
         itemProperties.push({"name": propertyName, "value": propertyValue, "type": propertyType});
       }
-      ontologyItems.push({"id": itemNo, "className": itemName, "properties": itemProperties});
-    }
-    ontologies.push(["ontology", ontologyName, "items", ontologyItems]);
-  }
-  return OAT.JSON.stringify(ontologies);
-}
-
-function updateFavorites(prefix)
-{
-	// var S = '/ods/api/user.favorites.delete?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'));
-	// OAT.AJAX.GET(S,null,null,{async:false});
-
-  S = '/ods/api/user.favorites.new?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm')) + '&favorites=' + encodeURIComponent(prepareItems('r'));
-  OAT.AJAX.GET(S,null,null,{async:false});
+  return itemProperties;
 }
 
 function pfUpdateSubmit(No) {
@@ -2203,11 +2214,6 @@ function pfUpdateSubmit(No) {
   else if ((formTab == 0) && (formSubtab == 4))
   {
     updateBioEvents('x5');
-    ufProfileLoad(No);
-  }
-  else if ((formTab == 0) && (formSubtab == 6))
-  {
-    updateFavorites('x6');
     ufProfileLoad(No);
   }
   else if ((formTab == 1) && (formSubtab == 2))

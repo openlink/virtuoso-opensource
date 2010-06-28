@@ -106,6 +106,38 @@
 
     if (vForm = 'profile')
     {
+      if (get_keyword ('pf_update06', params, '') <> '')
+      {
+        vUrl := sprintf (
+                         '%s/user.favorites.%s?sid=%U&realm=%U&id=%U&label=%U&uri=%U&properties=%U',
+                         vHostUrl,
+                         vFormMode,
+                         vSid,
+                         vRealm,
+                         get_keyword ('pf06_id', params, ''),
+                         get_keyword ('pf06_label', params, ''),
+                         get_keyword ('pf06_uri', params, ''),
+                         get_keyword ('items', params, '[]')
+                        );
+        commit work;
+        vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
+        if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
+        {
+          vError := vRespond[0];
+          vForm := 'login';
+        }
+        else
+        {
+          vXml := xml_tree_doc (vResult);
+          if (xpath_eval ('/failed/message', vXml))
+          {
+            vError := xpath_eval ('string (/failed/message)', vXml);
+            if (xpath_eval ('string (/failed/code)', vXml) <> '23023')
+              vForm := 'login';
+          }
+        }
+        vFormMode := '';
+      }
       if (get_keyword ('pf_update07', params, '') <> '')
       {
         vUrl := sprintf (
@@ -314,26 +346,6 @@
             }
           }
         }
-        else if ((vFormTab = 0) and (vFormSubtab = 6))
-        {
-            vUrl := vHostUrl || '/user.favorites.new?sid=' || vSid || '&realm=' || vRealm || '&favorites=' || sprintf ('%U', get_keyword ('items', params, ''));
-            commit work;
-            vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
-            if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
-            {
-              vError := vRespond[0];
-              vForm := 'login';
-            }
-            else
-            {
-              vXml := xml_tree_doc (vResult);
-              if (xpath_eval ('/failed/message', vXml))
-              {
-                vError := xpath_eval ('string (/failed/message)', vXml);
-                vForm := 'login';
-              }
-            }
-          }
         else
         {
           vUrl := vHostUrl  || '/user.update.fields';
@@ -1886,49 +1898,88 @@
                         ?>
                       </div>
 
+                      <?vsp
+                      if (vFormTab = 0)
+                      {
+                        if (vFormSubtab = 6)
+                        {
+                      ?>
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
+                        <h3>Favorites</h3>
                         <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 6))
+                          if (vFormMode = '')
                         {
                         ?>
-                        <table class="form" cellspacing="5">
-                          <tr>
-                            <td width="600px">
-                              <table id="r_tbl" class="listing">
+                        <div id="pf06_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf06_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                                    <th>
-                                      <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
-                                    </th>
-                                    <th width="100%">
-                                      Favorite Type
-                                    </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
+                        		    <th>Label</th>
+                        		    <th>URI</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
                                   </tr>
                                 </thead>
-                                <tbody id="r_tbody">
-                                  <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
+                      	    <tbody id="pf06_tbody">
                                   <script type="text/javascript">
                                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
                                 </tbody>
                               </table>
+                        </div>
+                        <?vsp
+                          }
+                          else
+                          {
+                            http (sprintf ('<input type="hidden" id="pf06_id" name="pf06_id" value="%s" />', get_keyword ('pf06_id', params, '0')));
+                        ?>
+                        <div id="pf06_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Label (*)
+                              </th>
+                              <td>
+                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
                             </td>
-                            <td valign="top">
-                              <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
+                              </th>
+                              <td>
+                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                             </td>
                           </tr>
+                            <tr>
+                              <th valign="top">
+                                Properties
+                              </th>
+                  		        <td width="800px">
+                                <table id="r_tbl" class="listing">
+                                  <tbody id="r_tbody">
+                                  </tbody>
                         </table>
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorite();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
+                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
+                        </div>
                         <?vsp
                         }
                         ?>
                       </div>
                       <?vsp
-                      if (vFormTab = 0)
-                      {
-                        if (vFormSubtab = 7)
+                        }
+                        else if (vFormSubtab = 7)
                         {
                       ?>
                       <div id="pf_page_0_7" class="tabContent" style="display:none;">
@@ -1960,8 +2011,7 @@
                           }
                           else
                           {
-                            if (vFormMode = 'edit')
-                              http (sprintf ('<input type="hidden" id="pf07_id" name="pf07_id" value="%s" />', get_keyword ('pf07_id', params, '')));
+                            http (sprintf ('<input type="hidden" id="pf07_id" name="pf07_id" value="%s" />', get_keyword ('pf07_id', params, '0')));
                         ?>
                         <div id="pf07_form">
                           <table class="form" cellspacing="5">

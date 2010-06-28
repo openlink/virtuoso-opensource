@@ -332,7 +332,23 @@
 
       if ($_form.equals("profile"))
       {
-        if (getParameter(items, request, "pf_update07") != null)
+        if (getParameter(items, request, "pf_update06") != null)
+        {
+          params = httpParam( "", "sid", $_sid) +
+                   httpParam("&", "realm", $_realm) +
+                   httpParam("&", "id", getParameter(items, request, "pf06_id")) +
+                   httpParam("&", "label", getParameter(items, request, "pf06_label")) +
+                   httpParam("&", "uri", getParameter(items, request, "pf06_uri")) +
+                   httpParam("&", "properties", getParameter(items, request, "items"));
+          $_retValue = httpRequest ("POST", "user.favorites."+$_formMode, params);
+          if ($_retValue.indexOf("<failed>") == 0)
+          {
+		        $_document = createDocument($_retValue);
+            throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
+          $_formMode = "";
+        }
+        else if (getParameter(items, request, "pf_update07") != null)
         {
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
@@ -459,16 +475,6 @@
                   }
                 }
       		    }
-            }
-            else if (($_formTab == 0) && ($_formSubtab == 6))
-            {
-              params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam("&", "favorites", getParameter(items, request, "favorites"));
-              $_retValue = httpRequest ("POST", "user.favorites.new", params);
-              if ($_retValue.indexOf("<failed>") == 0)
-              {
-    		        $_document = createDocument($_retValue);
-                throw new Exception(xpathEvaluate($_document, "/failed/message"));
-              }
             }
             else
             {
@@ -1981,43 +1987,88 @@
                           </script>
                         </table>
                       </div>
-
+                      <%
+                      if ($_formTab == 0)
+                      {
+                        if ($_formSubtab == 6)
+                        {
+                      %>
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
-                            <td width="600px">
-                              <table id="r_tbl" class="listing">
+                        <h3>Favorites</h3>
+                        <%
+                          if ($_formMode == "")
+                          {
+                        %>
+                        <div id="pf06_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf06_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                        <th>
-                                      <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
-                        </th>
-                                    <th width="100%">
-                                      Favorite Type
-                        </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
+                        		    <th>Label</th>
+                        		    <th>URI</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
                                   </tr>
                                 </thead>
-                                <tbody id="r_tbody">
-                                  <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
+                      	    <tbody id="pf06_tbody">
                                   <script type="text/javascript">
                                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorites();});
                                   </script>
                                 </tbody>
                               </table>
+                        </div>
+                        <%
+                          }
+                          else
+                          {
+                            out.print("<input type=\"hidden\" id=\"pf06_id\" name=\"pf06_id\" value=\"" + ((getParameter(items, request, "pf06_id") != null) ? getParameter(items, request, "pf06_id"): "0") + "\" />");
+                        %>
+                        <div id="pf06_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Label (*)
+                              </th>
+                              <td>
+                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
                             </td>
-                            <td valign="top" nowrap="nowrap">
-                              <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
+                              </th>
+                              <td>
+                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th valign="top">
+                                Properties
+                              </th>
+                  		        <td width="800px">
+                                <table id="r_tbl" class="listing">
+                                  <tbody id="r_tbody">
+                                  </tbody>
+                                </table>
                         </td>
                       </tr>
                         </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowFavorite();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
+                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                          </div>
                       </div>
                       <%
-                      if ($_formTab == 0)
-                      {
-                        if ($_formSubtab == 7)
+                          }
+                        %>
+                      </div>
+                      <%
+                        }
+                        else if ($_formSubtab == 7)
                         {
                       %>
                       <div id="pf_page_0_7" class="tabContent" style="display:none;">
@@ -2049,7 +2100,6 @@
                           }
                           else
                           {
-                            if ($_formMode.equals("edit"))
                               out.print("<input type=\"hidden\" id=\"pf07_id\" name=\"pf07_id\" value=\"" + ((getParameter(items, request, "pf07_id") != null) ? getParameter(items, request, "pf07_id"): "0") + "\" />");
                         %>
                         <div id="pf07_form">

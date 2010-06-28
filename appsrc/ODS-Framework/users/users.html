@@ -981,35 +981,59 @@
                           </tr>
                         </table>
                       </div>
-
                       <div id="pf_page_0_6" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                          <tr>
-                            <td width="600px">
-                              <table id="r_tbl" class="listing">
+                        <h3>My Offers</h3>
+                        <div id="pf06_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: pfShowFavorite('new', '0');" class="button pointer"><img class="button" border="0" title="Add Favorite" alt="Add Favorite" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf06_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                                    <th>
-                                      <div style="width: 16px;"><![CDATA[&nbsp;]]></div>
+                        		    <th>Label</th>
+                        		    <th>URI</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf06_tbody">
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <div id="pf06_form" style="display: none;">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Label (*)
                                     </th>
-                                    <th width="100%">
-                                      Favorite Type
+                              <td>
+                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
                                     </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
+                              <td>
+                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                              </td>
                                   </tr>
-                                </thead>
+                            <tr>
+                              <th valign="top">
+                                Properties
+                              </th>
+                  		        <td width="800px">
+                                <table id="r_tbl" class="listing">
                                 <tbody id="r_tbody">
-                                  <tr id="r_tr_no"><td></td><td colspan="2"><b><i>No Favorite Types</i></b></td></tr>
                                 </tbody>
                               </table>
                             </td>
-                            <td valign="top" nowrap="nowrap">
-                              <span class="button pointer" onclick="TBL.createRow('r', null, {fld_1: {mode: 40, cssText: 'display: none;'}, fld_2: {mode: 41, labelValue: 'New Type: ', cssText: 'width: 95%;'}, btn_1: {mode: 40}, btn_2: {mode: 41}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                            </td>
                           </tr>
                         </table>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf06');"/>
+                            <input type="submit" name="pf_update06" value="Save" onclick="return mySubmit('pf06');"/>
+                          </div>
+                        </div>
                       </div>
                       <div id="pf_page_0_7" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
