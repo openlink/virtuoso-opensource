@@ -245,12 +245,18 @@ public class VirtuosoQueryExecution  implements QueryExecution
       String delim = " ,)(;.";
       int i = 0;
       char ch;
-      while( i < query.length()) {
+      int qlen = query.length();
+      while( i < qlen) {
         ch = query.charAt(i++);
-    	if (ch == '"' || ch == '\'') {
+        if (ch == '\\') {
+	  buf.append(ch);
+          if (i < qlen)
+            buf.append(query.charAt(i++)); 
+
+        } else if (ch == '"' || ch == '\'') {
           char end = ch;
       	  buf.append(ch);
-      	  while (i < query.length()) {
+      	  while (i < qlen) {
             ch = query.charAt(i++);
             buf.append(ch);
             if (ch == end)
@@ -259,7 +265,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         } else  if ( ch == '?' ) {  //Parameter
       	  String varData = null;
       	  int j = i;
-      	  while(j < query.length() && delim.indexOf(query.charAt(j)) < 0) j++;
+      	  while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
       	  if (j != i) {
             String varName = query.substring(i, j);
             RDFNode val = m_arg.get(varName);

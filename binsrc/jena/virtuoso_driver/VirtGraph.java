@@ -36,6 +36,7 @@ import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
+import virtuoso.jdbc3.VirtuosoDataSource;
 
 
 public class VirtGraph extends GraphBase
@@ -59,6 +60,9 @@ public class VirtGraph extends GraphBase
     static final String charset = "UTF-8";
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
+    private VirtuosoDataSource ds;
+
+    private boolean isDSconnection = false;
 
 
     public VirtGraph()
@@ -71,16 +75,44 @@ public class VirtGraph extends GraphBase
 	this(graphName, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null, false);
     }
 
-    public VirtGraph(String url_hostlist, String user, String password)
-    {
-	this(null, url_hostlist, user, password, false);
-    }
-
     public VirtGraph(String graphName, String _url_hostlist, String user, 
     		String password)
     {
 	this(graphName, _url_hostlist, user, password, false);
     }
+
+    public VirtGraph(String url_hostlist, String user, String password)
+    {
+	this(null, url_hostlist, user, password, false);
+    }
+
+
+    public VirtGraph(String _graphName, VirtuosoDataSource _ds) 
+    {
+	super();
+
+	this.url_hostlist = _ds.getServerName();
+	this.graphName = _graphName;
+	this.user = _ds.getUser();
+	this.password = _ds.getPassword();
+
+	if (this.graphName == null)
+	    this.graphName = DEFAULT;
+
+	try {
+	    connection = _ds.getConnection();
+            isDSconnection = true;
+	    ds = _ds;
+	} catch(Exception e) {
+	    throw new JenaException(e);
+	}
+    }
+
+    public VirtGraph(VirtuosoDataSource _ds) 
+    {		
+	this(null, _ds);
+    }
+
 
     public VirtGraph(String graphName, String _url_hostlist, String user, 
     		String password, boolean _roundrobin)
@@ -97,33 +129,32 @@ public class VirtGraph extends GraphBase
 	    this.graphName = DEFAULT;
 
 	try {
-	    if (connection == null) {
-	        if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+	    if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 
-	            String url = url_hostlist;
-                    if (url.toLowerCase().indexOf(utf8) == -1) {
-	  	        if (url.charAt(url.length()-1) != '/') 
-	                    url = url + "/charset=UTF-8";
-	                else
-	                    url = url + "charset=UTF-8";
-	            }
-                    if (roundrobin && url.toLowerCase().indexOf("roundrobin=") == -1) {
-	  	        if (url.charAt(url.length()-1) != '/') 
-	                    url = url + "/roundrobin=1";
-	                else
-	                    url = url + "roundrobin=1";
-	            }
-		    Class.forName("virtuoso.jdbc3.Driver");
-		    connection = DriverManager.getConnection(url, user, password);
-	        } else {
-		    pds.setServerName(url_hostlist);
-		    pds.setUser(user);
-		    pds.setPassword(password);
-		    pds.setCharset(charset);
-		    pds.setRoundrobin(roundrobin);
-		    javax.sql.PooledConnection pconn = pds.getPooledConnection();
-		    connection = pconn.getConnection();
+	        String url = url_hostlist;
+                if (url.toLowerCase().indexOf(utf8) == -1) {
+	            if (url.charAt(url.length()-1) != '/') 
+	                url = url + "/charset=UTF-8";
+	            else
+	                url = url + "charset=UTF-8";
 	        }
+                if (roundrobin && url.toLowerCase().indexOf("roundrobin=") == -1) {
+	  	    if (url.charAt(url.length()-1) != '/') 
+	                url = url + "/roundrobin=1";
+	            else
+	                url = url + "roundrobin=1";
+	        }
+		Class.forName("virtuoso.jdbc3.Driver");
+		connection = DriverManager.getConnection(url, user, password);
+	    } else {
+		pds.setServerName(url_hostlist);
+		pds.setUser(user);
+		pds.setPassword(password);
+		pds.setCharset(charset);
+		pds.setRoundrobin(roundrobin);
+		javax.sql.PooledConnection pconn = pds.getPooledConnection();
+		connection = pconn.getConnection();
+                isDSconnection = true;
 	    }
 	} catch(Exception e) {
 	    throw new JenaException(e);
@@ -132,6 +163,13 @@ public class VirtGraph extends GraphBase
     }
 
 // getters
+    public VirtuosoDataSource getDataSource() {
+        if (isDSconnection)
+	  return (ds!=null? ds: (VirtuosoDataSource)pds);
+        else
+          return null;
+    }
+
     public String getGraphName()
     {
 	return this.graphName;
@@ -249,6 +287,20 @@ public class VirtGraph extends GraphBase
 
 
 
+    private static String escapeString(String s) 
+    {
+      StringBuffer buf = new StringBuffer(s.length());
+      int i = 0;
+      char ch;
+      while( i < s.length()) {
+        ch = s.charAt(i++);
+        if (ch == '\'') 
+          buf.append('\\');
+        buf.append(ch);
+      }
+      return buf.toString();
+    }
+
 // GraphBase overrides
     public static String Node2Str(Node n)
     {
@@ -259,9 +311,9 @@ public class VirtGraph extends GraphBase
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
-        sb.append("\"");
-        sb.append(n.getLiteralValue());
-        sb.append("\"");
+        sb.append("'");
+        sb.append(escapeString(n.getLiteralValue().toString()));
+        sb.append("'");
 
         s = n.getLiteralLanguage();
         if (s != null && s.length() > 0) {
