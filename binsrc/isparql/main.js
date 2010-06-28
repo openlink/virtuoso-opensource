@@ -20,6 +20,7 @@ var page_w = 800;
 var page_h = 800;
 
 if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "/isparql/toolkit/images/";
+OAT.Preferences.imagePath = toolkitImagesPath;
 
 /*
     OAT.Keyboard.add ('esc',   function() { dialogs.goptions.cancel(); },null, 'goptions');
@@ -29,6 +30,9 @@ if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "/isparql/
 
 function init() {
     try {
+	OAT.Preferences.imagePath = '/isparql/toolkit/images/';
+	OAT.Preferences.stylePath = '/isparql/toolkit/styles/';
+
 	iSPARQL.Defaults.init();
 
 	iSPARQL.Common.initData();
@@ -36,7 +40,9 @@ function init() {
 	// XXX cannot go without these global vars for now - too much refactoring involved
 
 	iSPARQL.Common.initAdv(); // XXX warning defines global adv
-	if (!OAT.Browser.isIE || !OAT.Browser.isScreenOnly)
+	
+
+	if (!OAT.Browser.isIE && !OAT.Browser.isScreenOnly)
 	    iSPARQL.Common.initQBE(); // XXX warning defines global qbe
 
     	iSPARQL.Common.initQE();  // XXX warning defines global qe, uses global qbe
@@ -418,6 +424,7 @@ iSPARQL.RecentQueriesUI = function () {
 	    } else {
 		self.qry_ctl.value = val;
 		self.sel_ctl.selectedIndex = 0;
+		iSPARQL.Common.setQuery($v("query"));
 	    }
 	}
     }
@@ -921,7 +928,7 @@ iSPARQL.EndpointOpts = function (optsObj) {
     this.detectEndpointType = function () {
 	self.setEndpointTO = false;
 	var o = {
-	    type:OAT.AJAX.TYPE_XML,
+	    type:OAT.AJAX.TYPE_XML
 	};
 
 //	OAT.AJAX.POST (self.endpointPath, "select * where {?s ?p ?o} limit 1", self.endPointDetectCB, o);
@@ -1447,6 +1454,17 @@ iSPARQL.Common = {
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
+
+	OAT.MSG.attach ("*", 
+			"OAT_RDF_STORE_LOADED", 
+			function (m,s,l) {	
+			    var iridbstats = OAT.IRIDB.getStats();
+			    $('iridb_stats').innerHTML = iridbstats.iriCount;
+			    $('triple_count').innerHTML = m.getTripleCount();
+			    $('item_count').innerHTML = m.getItemCount();
+			    $('label_count').innerHTML = m.getLabelCount();
+			    $('label_proc_count').innerHTML = m.getLabelProcCount();
+			});
 
 	OAT.Anchor.zIndex = 1001;
 

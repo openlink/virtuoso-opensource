@@ -473,6 +473,7 @@ ASK WHERE
         </div> <!-- #foot_l -->
         <div class="foot_r" id="foot_r">Copyright &copy; 2010 OpenLink Software, Inc.<br/><span id="ft_loc"></span><br/>
         </div>
+	<div id="stats"></div> <!-- stats -->
       </div> <!-- #foot -->
       </div> <!-- #content -->
     </div><!-- #page_content -->
@@ -593,6 +594,11 @@ ASK WHERE
       Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a>
       OAT version: <span id="about_oat_version">N/A</span>
       OAT build: <span id="about_oat_build">N/A</span>
+      IRI DB count: <span id="iridb_stats">N/A</span>
+      STORE:        <span id="triple_count">N/A</span> triples
+                    <span id="item_count">N/A</span> items
+                    <span id="label_count">N/A</span> labels chosen
+                    <span id="label_proc_count">N/A</span> labels processed
       </pre>
       <div class="btn_row"><button id="about_dlg_b_ok">OK</button></div>
     </div> <!-- #about_dlg -->
@@ -601,10 +607,14 @@ ASK WHERE
       iSPARQL's Query By Example feature relies upon features and open standards not supported by
       Microsoft Internet Explorer.<br/>
       Please try one of the following:<br/>
-      <a target="_blank" href="http://www.firefox.com/" title="Get Firefox"><img class="logo" src="images/firefox-logo.png" alt="Get Firefox"/></a> 
-      <a target="_blank" href="http://www.apple.com/safari/" title="Get Safari"><img class="logo" src="images/safari-logo.png" alt="Get Safari"/></a>
-      <a target="_blank" href="http://www.opera.com/browser" title="Get Opera"><img class="logo" src="images/opera-logo.png" alt="Get Opera"/></a>
-      <a target="_blank" href="http://google.com/chrome" title="Get Google Chrome"><img class="logo" src="images/chrome-logo.png" alt="Get Google Chrome"/></a>
+      <a target="_blank" href="http://www.firefox.com/"
+         title="Get Firefox"><img class="logo" src="images/firefox-logo.png" alt="Get Firefox"/></a> 
+      <a target="_blank" href="http://www.apple.com/safari/"
+         title="Get Safari"><img class="logo" src="images/safari-logo.png" alt="Get Safari"/></a> 
+      <a target="_blank" href="http://www.opera.com/browser"
+         title="Get Opera"><img class="logo" src="images/opera-logo.png" alt="Get Opera"/></a>
+      <a target="_blank" href="http://google.com/chrome"
+         title="Get Google Chrome"><img class="logo" src="images/chrome-logo.png" alt="Get Google Chrome"/></a>
     </div> <!-- #qbe_unsupported_div -->
 
     <div id="qbe_dataset_div">
@@ -639,9 +649,21 @@ ASK WHERE
       </table>
     </div> <!-- #qbe_dataset_div -->
   </div> <!-- #windows -->
-  <div id="map_popup_templates">
-    <div class="map_popup_tpl" id="map_popup_tpl_foaf_person">
+  <div id="map_popup_templates" style="display:none">
+    <div class="map_popup_tpl" id="tpl_person">
       <div class="map_popup_inner">
+	<div class="top">
+	  <div class="tpl_left">
+	    <div class="pic">foaf:depiction</div>
+	    <div class="name">foaf:name</div>
+	  </div>
+	  <div class="tpl_right">
+	    <ul>
+	      <li><span class="title">foaf:title</span></li>
+	      <li><span class="address">foaf:address</span></li>
+	    </ul>
+	  </div>
+	<div rdf_prop="foaf:name"></div>
       </div>
     </div>
   </div>

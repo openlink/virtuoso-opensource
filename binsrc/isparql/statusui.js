@@ -33,5 +33,5 @@ iSPARQL.ErrorUI = {
     hide: function () {},
     clear: function () {},
     fromGenericXhr: function () {},
-    fromSparqlQuery: function () {},
+    fromSparqlQuery: function () {}
 };

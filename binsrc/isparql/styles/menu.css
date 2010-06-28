@@ -12,6 +12,8 @@
 #menu {
   font: menu;
   background-color: #fff;
+  background:-moz-linear-gradient(top , #666666, #DDDDDD);
+  background:-webkit-gradient(linear,left top,left bottom,from(#666666), to(#DDDDDD));
   list-style-type: none;
   height: 20px;
   border-bottom: 1px solid #aaa;
