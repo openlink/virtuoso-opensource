@@ -121,6 +121,11 @@
 	float: left;
 }
 
+h3.rdf_nav_title {clear: both; font-weight: bold;}
+
+#rdf_nav_breadcrumbs a { font-size: bigger; text-decoration: none }
+#rdf_nav_breadcrumbs a:hover { text-decoration: underline; }
+
 /* navigation - spotlight table */
 
 .rdf_nav_spotlight {
@@ -136,7 +141,10 @@
 .rdf_nav_header {
 	color: #fff;
 	font-weight: bold;
-	background-color: #59e;
+	background: #677;
+	height: 25px;
+	-moz-border-radius: 9px 9px 0px 0px;
+	-webkit-border-radius: 9px 9px 0px 0px; 
 	border-bottom: 1px solid #fff;
 	cursor: pointer;
 }
@@ -149,6 +157,9 @@
 	color: #59e;
 }
 
+.rdf_nav_toggle .toggler {
+    cursor: pointer;
+}
 /* navigation - links */
 
 .rdf_link {
@@ -187,4 +198,19 @@
 
 .fresnel_property .fresnel_container {
 	display: inline;
+}
+
+.marker_ctr .abstract { 
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.marker_ctr .pred_title {
+    font-weight: bold;
+    width: 100px;
+    margin-right: 1.5em;
+}
+
+.marker_ctr .pred_value img {
+    max-width: 100%
 }
