@@ -8246,9 +8246,17 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (
   ...
 ]]></programlisting>
          <para><emphasis>API Keys</emphasis></para>
-         <para>Certain web services require applications to provide an API
-key to use the service. Flickr is one such service. Developers must register
-to obtain a key. See for instance http://developer.yahoo.com/flickr/. In order
+         <para>Some Cartridges require and API account and/or API Key to be 
+provided for accessing the required service. This can be done from the RDF -> Sponger tab of the 
+Conductor by selecting the cartridge from the list provided, entering the API Account and API Key 
+in the dialog at the bottom of the page and click update to save, as indicated in the screenshot 
+below:</para>
+     <figure id="catr1" float="1">
+       <title>Registering API Key</title>
+       <graphic fileref="ui/cartrapikey.png"/>
+     </figure>
+     <para>For example, for the service Flickr developers must register
+to obtain a key. See http://developer.yahoo.com/flickr/. In order
 to cater for services which require an application key, the Cartridge Registry
 SYS_RDF_MAPPERS table includes an RM_KEY column to store any key required for a
 particular service. This value is passed to the service's cartridge through the

@@ -45,6 +45,8 @@
         <paramdef>inout <parameter>headers</parameter> any</paramdef>
         <paramdef><optional>in <parameter>timeout</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>proxy</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>ca_certs</parameter> varchar</optional></paramdef>        
+        <paramdef><optional>in <parameter>insecure </parameter> integer</optional></paramdef>                
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -69,7 +71,10 @@ It also supports HTTP authentication based on username/password credentials.</pa
       <para>content to be sent</para></refsect2>
     <refsect2><title>cert_file</title>
       <para>cpath to the certificate file where is stored
-       x509 certificate, private key and CA certificates </para></refsect2>
+       x509 certificate, private key and CA certificates</para>
+      <para>Can accept 'db:' notation, i.e. can use also keys stored in Virtuoso PKI repository.
+      </para>        
+       </refsect2>
     <refsect2><title>cert_pwd</title>
       <para>password for opening the certificate file.</para></refsect2>
     <refsect2><title>headers</title>
@@ -97,6 +102,12 @@ HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
 ]]></programlisting>
       <para>Exception could be also 127.0.0.* i.e. there could have also wildcard.</para>
     </refsect2>
+    <refsect2><title>ca_certs</title>
+      <para>Certificate CA. Default is null.</para>
+    </refsect2> 
+    <refsect2><title>insecure</title>
+      <para>Sets secure or not. Default is 0.</para>
+    </refsect2>     
   </refsect1>
 </refentry>
 
