@@ -93,6 +93,29 @@ OAT.Preferences = {
     allowDefaultDrag: 1
 }
 
+OAT.Debug = {
+    levels: {
+	WARNING: 1,
+	ERROR: 2,
+	CRITICAL: 3 },
+
+    level_msg: ["OAT Warning",
+		"OAT Error",
+		"OAT Critical"],
+
+    log: function (lvl,msg) {
+	if (!!window.console && OAT.Preferences.debug) {
+	    window.console.log (OAT.Debug.level_msg[lvl] + ': ' + msg);
+	}
+    },
+
+    reportObsolete: function (where) {
+	OAT.Debug.log (OAT.Debug.levels.WARNING,'Obsolete call: ' + where)
+	OAT.MSG.send (OAT,'OBSOLETE_CALL',where);
+    }
+};
+
+
 OAT.ApiKeys = {
     services: {
         gmapapi: {
@@ -1197,10 +1220,11 @@ OAT.Browser = {
     isKHTML:!!navigator.userAgent.match(/khtml/i),
 
     isIE:(document.attachEvent && !document.addEventListener),
+    isIE6:( (document.attachEvent && !document.addEventListener) && !!navigator.userAgent.match(/msie 6/i) ),
     isIE7:!!navigator.userAgent.match(/msie 7/i),
+    isIE8:!!navigator.userAgent.match(/msie 8/i),
 
     /* !isIE && !isIE7 */
-    isIE6:( (document.attachEvent && !document.addEventListener) && !navigator.userAgent.match(/msie 7/i) ),
 
     isGecko:(!navigator.userAgent.match(/khtml/i) && !!navigator.userAgent.match(/Gecko/i)),
 
@@ -1210,7 +1234,7 @@ OAT.Browser = {
     /* OS detection */
     isMac:!!navigator.platform.toString().match(/mac/i),
     isLinux:!!navigator.platform.toString().match(/linux/i),
-    isWindows:!!navigator.userAgent.toString().match(/windows/i),
+    isWindows:!!navigator.userAgent.match(/windows/i),
 
     /* mozilla chrome */
     isChrome:function() {
@@ -1228,12 +1252,23 @@ OAT.Browser = {
     isIpod:!!navigator.platform.toString().match(/ipod/i),
     isSymbian:!!navigator.platform.toString().match(/symbian/i),
     isS60:!!navigator.platform.toString().match(/series60/i),
-    isAndroid:!!navigator.platform.toString().match(/android/i),
+    isAndroid:!!navigator.userAgent.match(/android/i),
 
     isScreenOnly:(!!navigator.platform.toString().match(/iphone/i) ||
 		  !!navigator.platform.toString().match(/symbian/i) ||
 		  !!navigator.platform.toString().match(/ipod/i) ||
-		  !!navigator.platform.toString().match(/android/i))
+		  !!navigator.userAgent.match(/android/i)),
+
+    hasNoSVG: (!!navigator.platform.toString().match(/iphone/i) ||
+	       !!navigator.platform.toString().match(/symbian/i) ||
+	       !!navigator.platform.toString().match(/ipod/i) ||
+	       !!navigator.userAgent.match(/android/i) ||
+	       !!navigator.userAgent.match(/msie/i)),
+
+    hasXmlParser: ((!!document.implementation && 
+		    !!document.implementation.createDocument) ||
+		   (!!document.getImplementation &&
+		    !!document.getImplementation().createDocument))
 }
 
 /**
@@ -1430,8 +1465,8 @@ OAT.Loader = {
     _finished: function(name) {
 	this._loaded.push(name);
 	var arr = this._callbacks[name];
-	delete this._callbacks[name];
 	for (var i=0;i<arr.length;i++) { arr[i](); }
+        delete this._callbacks[name];
     },
 
     /**
@@ -1620,6 +1655,7 @@ OAT.Loader = {
 	webclip:"webclipbinding",
 	win:["drag","layers"],
 	ws:["xml","soap","ajax","schema","connection"],
+	xml:["xpath"],
 	xmla:["soap","xml","connection"]
     },
 
