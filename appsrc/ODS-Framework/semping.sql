@@ -31,6 +31,46 @@ DB.DBA.EXEC_STMT (
     			)
 create index PINGBACKS_STAT on PINGBACKS (P_STATE, P_TS, P_SOURCE, P_TARGET, P_PROP, P_MAIL)', 0);
 
+DB.DBA.EXEC_STMT (
+'create table PING_RULES (
+    			PR_IRI 		varchar,
+  			PR_U_ID		int not null,
+			PR_GRAPH 	varchar,
+			PR_EMAIL	varchar,
+			PR_FLAG		int default 0,
+			primary key (PR_IRI)
+    			)', 0);
+
+create trigger PING_RULES_I after insert on PING_RULES referencing new as N
+{
+  declare ep varchar;
+  if (0 = length (N.PR_GRAPH))
+    return;
+  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  sparql insert into graph iri(?:N.PR_GRAPH) { `iri(?:N.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+}
+;
+
+create trigger PING_RULES_U after update on PING_RULES referencing old as O, new as N
+{
+  declare ep varchar;
+  if (0 = length (N.PR_GRAPH))
+    return;
+  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  sparql delete from graph iri(?:O.PR_GRAPH) { `iri(?:O.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+  sparql insert into graph iri(?:N.PR_GRAPH) { `iri(?:N.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+}
+;
+
+create trigger PING_RULES_D after delete on PING_RULES referencing old as O
+{
+  declare ep varchar;
+  if (0 = length (O.PR_GRAPH))
+    return;
+  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  sparql delete from graph iri(?:O.PR_GRAPH) { `iri(?:O.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+}
+;
 
 -- /* must be called when adding external links */
 create procedure CLI_PING (in src varchar, in tgt varchar)
@@ -116,14 +156,25 @@ DB.DBA.VHOST_DEFINE ( lhost=>'*ini*', vhost=>'*ini*', lpath=>'/semping', ppath=>
     soap_opts=>vector ('XML-RPC', 'yes')
     );
 
+DB.DBA.VHOST_REMOVE ( lhost=>'*ini*', vhost=>'*ini*', lpath=>'/semping/rest');
 
+DB.DBA.VHOST_DEFINE ( lhost=>'*ini*', vhost=>'*ini*', lpath=>'/semping/rest', ppath=>'/SOAP/Http/semping-rest', is_dav=>0, soap_user=>'SEMPING'
+    );
     
+
+create procedure "semping-rest" (in source varchar, in target varchar) returns varchar __SOAP_HTTP 'text/plain'
+{
+  return "pingback.ping" (source, target);
+}
+;
 
 -- pingback server
 create procedure "pingback.ping" (in source varchar, in target varchar) 
 {
   declare aq, hf any;
   declare qr, src, tgt, srcgr, tgtgr, pred, mail varchar;
+
+  -- dbg_obj_print_vars (source, target);
 
   if (http_acl_get ('SemanticPingback', source, target) = 1)
     {
@@ -147,19 +198,18 @@ create procedure "pingback.ping" (in source varchar, in target varchar)
 
 --  dbg_obj_print_vars (pred, mail);
 
-  sparql clear ?:srcgr;
-  sparql clear ?:tgtgr;
+  sparql clear iri (?:srcgr);
+  sparql clear iri (?:tgtgr);
 
   if (mail like 'mailto:%')
     mail := subseq (mail, 7);
 
   if (pred is null)
     signal ('22023', 'Source does not contains any rellation to target');
-  if (mail is null)
-    signal ('22023', 'Cannot determine the notification e-mail from traget');
 
-  insert soft PINGBACKS (P_SOURCE, P_TARGET, P_PROP, P_MAIL, P_IP) 
-      values (source, target, pred, mail, http_client_ip ());
+  insert soft PINGBACKS (P_SOURCE, P_TARGET, P_PROP, P_MAIL, P_IP, P_STATE) 
+      values (source, target, pred, mail, http_client_ip (), 0);
+
   if (0 = row_count ())
     signal ('22023', 'Pingback already done');
 
@@ -172,6 +222,7 @@ create procedure "pingback.ping" (in source varchar, in target varchar)
 ;
 
 grant execute on "pingback.ping" to SEMPING;
+grant execute on "semping-rest" to SEMPING;
 
 create procedure GET_TEMPLATE ()
 {
@@ -203,6 +254,18 @@ again:
   update PINGBACKS set P_STATE = 1 where P_SOURCE = src and P_TARGET = tgt;
   commit work;
 
+  for select PR_U_ID, PR_EMAIL, PR_GRAPH, PR_FLAG from PING_RULES where PR_IRI = tgt do
+    {
+      if (length (PR_EMAIL))
+        mail := PR_EMAIL;
+      if (PR_FLAG = 1)
+	{
+          sparql insert into graph iri(?:PR_GRAPH) { `iri(?:tgt)` `iri(?:prop)` `iri(?:src)` };	
+	  insert into DB.DBA.WA_USER_RELATED_RES (WUR_U_ID, WUR_P_IRI, WUR_SEEALSO_IRI) values (PR_U_ID, prop, src);
+	  commit work;
+	}
+    }
+
   body := GET_TEMPLATE ();
   body := replace (body, '<s>', src);
   body := replace (body, '<t>', tgt);
@@ -213,6 +276,7 @@ again:
 	rollback work;
 	update PINGBACKS set P_STATE = 3, P_ERR = __SQL_MESSAGE where P_SOURCE = src and P_TARGET = tgt;
       };
+    if (length (mail))
     smtp_send (null, adm_mail, mail, body);
     update PINGBACKS set P_STATE = 2, P_ERR = null where P_SOURCE = src and P_TARGET = tgt;
   }
