@@ -2328,6 +2328,13 @@ create procedure fill_ods_sioc (in doall int := 0)
     commit work;
   }
 
+  declare ep varchar;
+  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  for select * from SEMPING.DBA.PING_RULES where PR_GRAPH = graph_iri do
+    {
+      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+    }
+
   {
     declare _gi_super, _gi_sub any;
 
