@@ -1,3 +1,304 @@
+2010-06-29 11:53  source
+
+	* Updated version to 6.1.2-rc2
+
+2010-06-28 11:14  source
+
+	* Fixed ontology label
+
+2010-06-28 10:34  source
+
+	* Fixed sparql union selections, added ANY decl on relevant section
+	  list bits
+
+2010-06-28 10:30  source
+
+	* Rebuild driver
+
+2010-06-28 10:19  source
+
+	* Added support for creating ruleset
+	* Fixed handling of quotes in literals
+
+2010-06-28 10:14  source
+
+	* Added support for using VirtuosoDataSource
+	* Fixed handling of quote chars in literals
+
+2010-06-28 09:49  source
+
+	* Updated documentation
+
+2010-06-28 09:48  source
+
+	* Added new images
+
+2010-06-28 09:35  source
+
+	* Added new RDF framework
+	* Added JS XPATH library
+	* Added browser checks
+	* Added logging/debugging helper functions
+	* FIxed rdftabs navigation and maps cosmetics
+	* Fixed DOM parser initialization issue with IE
+
+2010-06-28 09:23  source
+
+	* Added support for new RDF framework
+	* Fixed cosmetics
+	* Fixed extraneous comma in object def for IE7 compatibility
+	* Fixed small bugs
+
+2010-06-28 09:19  source
+
+	file xpath.js was added on branch V6_0_0-DEVEL on 2010-06-28 09:35:57 +0000
+
+2010-06-28 09:08  source
+
+	* Updated Favorites
+
+2010-06-28 09:07  source
+
+	* Added Semantic Pingback client/server
+
+2010-06-28 09:07  source
+
+	file semping.sql was added on branch V6_0_0-DEVEL on 2010-06-28 09:46:12 +0000
+
+2010-06-28 09:06  source
+
+	* Updated to CKEditor v3.3.1
+
+2010-06-25 16:41  source
+
+	* Added support for following http redirects automatically
+
+2010-06-25 16:39  source
+
+	* Fixed compiler warnings
+
+2010-06-25 11:22  source
+
+	* Added extra functions for graph diff, iteration over dictionary and
+	  obtaining biggest possible IRI_ID on given 32/64bit platform
+
+2010-06-25 11:19  source
+
+	* Added etsy cartridge
+	* Fixed minor issues
+
+2010-06-25 11:18  source
+
+	* Added new Link headers
+
+2010-06-25 11:16  source
+
+	* Fixed ACL file to have some permissions using foaf+ssl
+	* Fixed check it is not det
+
+2010-06-25 11:11  source
+
+	file users.xsl was added on branch V6_0_0-DEVEL on 2010-06-25 11:13:27 +0000
+
+2010-06-25 11:11  source
+
+	* Added OpenID 2.0 login and registration
+
+2010-06-25 11:10  source
+
+	* Added downstream using PSH subscription
+
+2010-06-25 10:46  source
+
+	* Fixed text
+
+2010-06-25 10:45  source
+
+	* Fixed problem with latest versions of libtool
+
+2010-06-24 23:08  source
+
+	* Updated documentation
+
+2010-06-24 15:34  source
+
+	* Fixed text labels
+
+2010-06-24 15:34  source
+
+	* Added more properties for inference
+
+2010-06-24 15:13  source
+
+	* Fixed check proxy and remove if host is an exception
+
+2010-06-24 08:20  source
+
+	* Fixed listener serialization
+	* Fixed hash
+
+2010-06-24 08:14  source
+
+	* Fixed reorganized rdf tab
+
+2010-06-24 08:14  source
+
+	file rdf_import.vspx was added on branch V6_0_0-DEVEL on 2010-06-24 15:32:12 +0000
+
+2010-06-24 08:14  source
+
+	file rdf_psh_subs.vspx was added on branch V6_0_0-DEVEL on 2010-06-24 15:32:12 +0000
+
+2010-06-22 23:07  source
+
+	file etsy2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-06-25 11:19:15 +0000
+
+2010-06-22 15:50  source
+
+	* Fixed rdfa failing to parse both rel/rev
+
+2010-06-22 15:50  source
+
+	* Fixed normalize_modulus
+
+2010-06-18 11:08  source
+
+	* Fixed url rewrite should happen before parsing parameters in order
+	  to check if we are dealing with php or proxy page when we use raw
+	  request body
+
+2010-06-16 10:50  source
+
+	* Added more properties for inferencing
+
+2010-06-16 10:50  source
+
+	* Fixed minor UI issue
+
+2010-06-15 20:06  source
+
+	* Fixed merged missing file
+
+2010-06-15 20:00  source
+
+	* Fixed calling wrong pl
+
+2010-06-15 19:59  source
+
+	file db_repl_rdf_pub_edit.vspx was added on branch V6_0_0-DEVEL on 2010-06-15 20:06:10 +0000
+
+2010-06-12 12:59  source
+
+	* Fixed do not free on SQL_SUCCESS, as this will be done at end of loop
+
+2010-06-12 12:57  source
+
+	* Fixed do not explicitly set header if it is already set; in proxy
+	  remove content-type as it will be set from sparql
+
+2010-06-11 12:48  source
+
+	* Fixed bad condition check
+
+2010-06-10 18:48  source
+
+	* FIxed ignore special properties such as virt:xx when printing
+
+2010-06-10 18:46  source
+
+	* Fixed fd can be 0 in background mode
+
+2010-06-10 12:41  source
+
+	* Fixed RDF trx replication UI
+
+2010-06-09 13:42  source
+
+	* Added ACL rules
+	* Added FOAF+SSL based authentication using ACL
+	* Added PubSubHub Feeds support
+
+2010-06-09 13:40  source
+
+	* Added PubSubHub Feeds support
+
+2010-06-09 13:29  source
+
+	* Added FOAF+SSL based authentication
+
+2010-06-09 13:28  source
+
+	* Fixed minor issues
+
+2010-06-09 12:31  source
+
+	* Added check for automatic repair
+
+2010-06-09 12:30  source
+
+	* Added check for automatic repair
+	* Fixed when taking a dp from extent map, must decrease the free
+	  pages accordingly
+
+2010-06-09 10:15  source
+
+	* Fixed VDB/DB2 stats procedure
+
+2010-06-08 21:58  source
+
+	* Added EAV and SPO labeling modes
+
+2010-06-07 13:29  source
+
+	* Fixed missing label
+	* Fixed label consistency
+	* Fixed check for iri type
+	* Fixed limit the result set
+
+2010-06-07 13:27  source
+
+	* Fixed use explicit format if supplied
+
+2010-06-07 13:26  source
+
+	* Fixed ODATA feed title locality
+
+2010-06-07 10:59  source
+
+	* Added wine cartridge
+	* Added youtube cartridge
+	* Fixed minor issues
+
+2010-06-07 10:59  source
+
+	file wine2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-06-07 13:25:38 +0000
+
+2010-06-07 10:59  source
+
+	file youtube2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-06-07 13:25:38 +0000
+
+2010-06-07 10:58  source
+
+	* Added support for ODATA formats
+	* Fixed webcal/feed in rewrite rules
+
+2010-06-01 15:26  source
+
+	* Added support for odata/json in describe and construct
+
+2010-06-01 14:06  source
+
+	* Fixed issues with variable binding
+	* Fixed examples
+
+2010-05-31 23:20  source
+
+	* Commented out old tutorial pages
+
+2010-05-31 23:18  source
+
+	* Added extra tutorials
+
 2010-05-31 22:04  source
 
 	* Updated version to 6.1.2-rc1
