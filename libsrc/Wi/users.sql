@@ -1327,7 +1327,7 @@ create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster
 create procedure
 DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, gr any;
+  declare stat, msg, meta, data, info, qr, hf, graph, gr, alts any;
   declare agent varchar;
   declare rc int;
   rc := 0;
@@ -1346,10 +1346,16 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   info := get_certificate_info (9);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
 
-  if (not isarray (info) or agent is null or agent not like 'URI:%')
+  if (not isarray (info) or agent is null)
+    return 0;
+  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+  alts := split_and_decode (alts, 0, '\0\0,:');
+  if (alts is null)
+    return 0;
+  agent := get_keyword ('URI', alts);
+  if (agent is null)
     return 0;
 
-  agent := subseq (agent, 4);
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   gr := uuid ();
