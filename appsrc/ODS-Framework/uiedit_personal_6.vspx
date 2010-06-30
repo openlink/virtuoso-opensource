@@ -176,7 +176,7 @@
 				<table>
         <tr>
 				    <th width="120px">
-		          Label (dc:title)
+		          Label (*)
                   </th>
 		        <td>
               <v:text name="r_label" value="" xhtml_id="r_label" xhtml_size="50" xhtml_class="_validate_" />
@@ -184,7 +184,7 @@
           </tr>
 				  <tr>
 				    <th valign="top">
-		          URI (rdfs:seeAlso)
+		          External URI
                   </th>
 		        <td>
               <v:text name="r_uri" value="" xhtml_id="r_uri" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_size="50" />
@@ -192,7 +192,7 @@
                 </tr>
 				  <tr>
 				    <th valign="top">
-		          Properties
+		          Item Properties
 		        </th>
 		        <td width="800px">
               <table id="r_tbl" class="listing">

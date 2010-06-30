@@ -38,26 +38,52 @@
       if (self.vc_is_valid = 0)
         return;
 
-      WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.u_icq.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.u_skype.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.u_aim.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.u_yahoo.ufl_value);
-      WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.u_msn.ufl_value);
+      declare N, id integer;
+      declare suffix varchar;
+      declare IDd any;
 
-      declare N integer;
-      declare suffix, tmp varchar;
-
-      tmp := '';
+      IDd := vector ();
       for (N := 0; N < length (params); N := N + 4)
       {
-        if ((params [N] like 'x6_fld_1_%') and (trim (params [N+1]) <> ''))
+        if ((params [N] like 'x5_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          suffix := replace (params [N], 'x6_fld_1_', '');
-          tmp := tmp || trim (params [N+1]) || ';' || trim (get_keyword ('x6_fld_2_'||suffix, params, '')) || '\n';
+          suffix := replace (params [N], 'x5_fld_1_', '');
+          id := cast (get_keyword ('x5_fld_0_'||suffix, params, '-1') as integer);
+          if (id <> -1)
+          {
+            update WA_USER_BIOEVENTS
+               set WUB_EVENT = trim (params [N+1]),
+                   WUB_DATE = trim (get_keyword ('x5_fld_2_'||suffix, params, '')),
+                   WUB_PLACE = trim (get_keyword ('x5_fld_3_'||suffix, params, ''))
+             where WUB_ID = id;
+            IDd := vector_concat (IDd, vector (id));
+          }
         }
       }
-      self.messaging := tmp;
-      WA_USER_EDIT (self.u_name, 'WAUI_MESSAGING', tmp);
+
+      for (select WUB_ID as _id from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
+      {
+        for (N := 0; N < length (IDd); N := N + 1)
+        {
+          if (IDd[N] = _id)
+            goto _exit2;
+        }
+        delete from WA_USER_BIOEVENTS where WUB_ID = _id;
+      _exit2:;
+      }
+      for (N := 0; N < length (params); N := N + 4)
+      {
+        if ((params [N] like 'x5_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          suffix := replace (params [N], 'x5_fld_1_', '');
+          id := cast (get_keyword ('x5_fld_0_'||suffix, params, '-1') as integer);
+          if (id = -1)
+        {
+            insert into WA_USER_BIOEVENTS ( WUB_EVENT, WUB_DATE, WUB_PLACE, WUB_U_ID)
+              values (trim (params [N+1]), trim (get_keyword ('x5_fld_2_'||suffix, params, '')), trim (get_keyword ('x5_fld_3_'||suffix, params, '')), self.u_id);
+          }
+        }
+      }
 
       WA_USER_VISIBILITY (self.u_name, WA_STR_PARAM (params, 'sel_'), 2);
 
@@ -66,49 +92,10 @@
     ]]>
   </v:method>
 
-  <v:variable persist="0" name="uicq" type="varchar" default="''"/>
-  <v:variable persist="0" name="uskype" type="varchar" default="''"/>
-  <v:variable persist="0" name="uaim" type="varchar" default="''"/>
-  <v:variable persist="0" name="uyahoo" type="varchar" default="''"/>
-  <v:variable persist="0" name="umsn" type="varchar" default="''"/>
-  <v:variable persist="0" name="messaging" type="any" default="null"/>
-
-  <v:variable name="sav10" type="varchar" default="'1'" />
-  <v:variable name="sav11" type="varchar" default="'1'" />
-  <v:variable name="sav12" type="varchar" default="'1'" />
-  <v:variable name="sav13" type="varchar" default="'1'" />
-  <v:variable name="sav14" type="varchar" default="'1'" />
-
   <v:before-data-bind>
     <![CDATA[
       declare tmp any;
 
-      select WAUI_ICQ,
-             WAUI_SKYPE,
-             WAUI_AIM,
-             WAUI_YAHOO,
-             WAUI_MSN,
-             WAUI_MESSAGING
-        INTO self.uicq,
-             self.uskype,
-             self.uaim,
-             self.uyahoo,
-             self.umsn,
-             self.messaging
-        FROM WA_USER_INFO,
-             DB.DBA.SYS_USERS
-       where WAUI_U_ID = U_ID
-         and U_NAME = self.u_name;
-
-      tmp := WA_USER_VISIBILITY(self.u_name);
-      if (tmp is not null and length (tmp) >= 14 )
-      {
-        self.sav10 := tmp[10];
-        self.sav11 := tmp[11];
-        self.sav12 := tmp[12];
-        self.sav13 := tmp[13];
-        self.sav14 := tmp[14];
-      }
       if (e.ve_is_post and e.ve_button = self.page_form)
       {
         self.usr_personal_5.vc_focus := 1;
@@ -119,89 +106,39 @@
 
   <v:form name="usr_personal_5" type="simple" method="POST" action="uiedit.vspx?page=2">
     <div>
-      <table id="x6_tbl" class="ctl_grp">
+      <table class="ctl_grp">
         <tr>
-          <th width="180px"><label for="u_icq">ICQ Number</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_icq"
-                    value="--self.uicq"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_10" value="self.sav10" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_skype">Skype ID</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_skype"
-                    value="--self.uskype"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_11" value="self.sav11" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_aim">AIM Name</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_aim"
-                    value="--self.uaim"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_12" value="self.sav12" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_yahoo">Yahoo! ID</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_yahoo"
-                    value="--self.uyahoo"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_13" value="self.sav13" />
-          </td>
-        </tr>
-        <tr>
-          <th><label for="u_msn">MSN Messenger</label></th>
-          <td class="listing_col" nowrap="1">
-            <v:text name="u_msn"
-                    value="--self.umsn"
-                    xhtml_style="width:216px"/>
-          </td>
-          <td>
-            <vm:u-prop-select name="sel_14" value="self.sav14" />
-          </td>
-              </tr>
-        <tr>
-          <th>Add other services</th>
-          <td colspan="2">
-            <span class="button pointer" onclick="TBL.createRow('x6', null, {fld_1: {}, fld_2: {cssText: 'width: 216px;'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-          </td>
+          <td width="800px">
+            <table id="x5_tbl" class="listing">
+              <tr class="listing_header_row">
+                <th width="15%">
+                  Event
+                </th>
+                <th width="15%">
+                  Date
+                </th>
+                <th>
+                  Place
+                </th>
+                <th width="65px">
+                  Action
+                </th>
         </tr>
   		  <![CDATA[
    		    <script type="text/javascript">
               <?vsp
-          for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.messaging) do
+                  for (select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
                 {
-              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x6", null, {fld_1: {value: "%s"}, fld_2: {value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
+                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
                 }
               ?>
    		    </script>
      	  ]]>
+             <tr id="x5_tr_no"><td colspan="4"><b>No Biographical Events</b></td></tr>
             </table>
-      <table class="ctl_grp">
-        <tr>
-          <th width="180px"><label for="set_personal_5">Set access for all fields as </label></th>
-          <td class="ctrl">
-            <v:select-list name="set_personal_5" xhtml_id="set_personal_5" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
-              <v:item name="*no change*"  value="0" />
-              <v:item name="public"  value="1" />
-              <v:item name="friends" value="2" />
-              <v:item name="private" value="3" />
-            </v:select-list>
+          </td>
+          <td valign="top" nowrap="1">
+            <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
       </table>

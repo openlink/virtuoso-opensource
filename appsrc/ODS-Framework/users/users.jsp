@@ -445,7 +445,7 @@
                 }
       		    }
             }
-            else if (($_formTab == 0) && ($_formSubtab == 4))
+            else if (($_formTab == 0) && ($_formSubtab == 5))
             {
               prefix = "x5";
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
@@ -643,7 +643,7 @@
                        httpParam ("&", "homePhoneExt"          , getParameter(items, request, "pf_homePhoneExt")) +
                        httpParam ("&", "homeMobile"            , getParameter(items, request, "pf_homeMobile"));
                 }
-                if ($_formSubtab == 5)
+                if ($_formSubtab == 4)
                 {
                   params +=
                        httpParam ("&", "icq"                   , getParameter(items, request, "pf_icq")) +
@@ -1255,8 +1255,8 @@
                       <li id="pf_tab_0_1" title="Main">Main</li>
                       <li id="pf_tab_0_2" title="Address">Address</li>
                       <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_5" title="Biographical Events">Biographical Events</li>
                       <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
                       <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
                       <li id="pf_tab_0_8" title="My Offers">My Offers</li>
@@ -1861,40 +1861,6 @@
                       </div>
 
                       <div id="pf_page_0_4" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
-                            <td width="600px">
-                              <table id="x5_tbl" class="listing">
-                                <thead>
-                                  <tr class="listing_header_row">
-                                    <th width="15%">
-                                      Event
-                                    </th>
-                                    <th width="15%">
-                                      Date
-                                    </th>
-                        <th>
-                                      Place
-                        </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
-                                <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
-                                </script>
-                              </table>
-                            </td>
-                            <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                        </td>
-                      </tr>
-                        </table>
-                      </div>
-
-                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
                         <table id="x6_tbl" class="form" cellspacing="5">
                       <tr>
                             <th width="30%">
@@ -1971,10 +1937,10 @@
                       </tr>
                           <tr>
                             <th>
-                              <label for="pf_set_0_5">Set access for all fields as </label>
+                              <label for="pf_set_0_4">Set access for all fields as </label>
                             </th>
                             <td colspan="2">
-                              <select name="pf_set_0_5" id="pf_set_0_5" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                              <select name="pf_set_0_4" id="pf_set_0_4" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
                                 <option value="2">friends</option>
@@ -1987,6 +1953,41 @@
                           </script>
                         </table>
                       </div>
+
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                          <tr>
+                            <td width="600px">
+                              <table id="x5_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th width="15%">
+                                      Event
+                                    </th>
+                                    <th width="15%">
+                                      Date
+                                    </th>
+                                    <th>
+                                      Place
+                                    </th>
+                                    <th width="65px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
+                                </script>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="1">
+                              <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+
                       <%
                       if ($_formTab == 0)
                       {
@@ -2036,7 +2037,7 @@
                             </tr>
                             <tr>
                               <th>
-                                URI
+                                External URI
                               </th>
                               <td>
                                 <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
@@ -2044,7 +2045,7 @@
                             </tr>
                             <tr>
                               <th valign="top">
-                                Properties
+                                Item Properties
                               </th>
                   		        <td width="800px">
                                 <table id="r_tbl" class="listing">
