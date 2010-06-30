@@ -87,6 +87,7 @@
 				</foaf:nick>
 				<xsl:for-each select="Slideshow">
 					<foaf:made rdf:resource="{vi:proxyIRI(Permalink)}" />
+					<sioc:creator_of rdf:resource="{vi:proxyIRI(Permalink)}" />
 				</xsl:for-each>
 			</foaf:Person>
 		</xsl:for-each>
