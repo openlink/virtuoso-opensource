@@ -78,11 +78,8 @@ create procedure CLI_PING (in src varchar, in tgt varchar)
   declare aq any;
   insert soft CLI_QUEUE (CQ_SOURCE, CQ_TARGET) values (src, tgt);
   commit work;
-  if (row_count () > 0)
-    {
       aq := async_queue (1);
       aq_request (aq, 'SEMPING.DBA.CLI_PING_SRV', vector (src, tgt));
-    }
   return;
 }
 ;

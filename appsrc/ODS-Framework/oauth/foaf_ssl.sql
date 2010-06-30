@@ -51,7 +51,7 @@ create procedure FOAF_SSL_AUTH (in realm varchar)
 
 create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus any;
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
   declare acc int;
   acc := 0;
@@ -67,10 +67,16 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
   fing := get_certificate_info (6);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
 
-  if (not isarray (info) or agent is null or agent not like 'URI:%')
+  if (not isarray (info) or agent is null)
     return 0;
 
-  agent := subseq (agent, 4);
+  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+  alts := split_and_decode (alts, 0, '\0\0,:');
+  if (alts is null)
+    return 0;
+  agent := get_keyword ('URI', alts);
+  if (agent is null)
+    return 0;
 
   for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
     {
@@ -177,7 +183,7 @@ DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-ssl',
 
 create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
 {
-  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus any;
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
   declare acc, rc int;
   acc := 0;
@@ -193,10 +199,16 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
   fing := get_certificate_info (6);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
 
-  if (not isarray (info) or agent is null or agent not like 'URI:%')
+  if (not isarray (info) or agent is null)
     return 0;
 
-  agent := subseq (agent, 4);
+  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+  alts := split_and_decode (alts, 0, '\0\0,:');
+  if (alts is null)
+    return 0;
+  agent := get_keyword ('URI', alts);
+  if (agent is null)
+    return 0;
 
   if (http_acl_get (acl, agent, '*') <> 0)
     {
