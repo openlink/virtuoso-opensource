@@ -4305,10 +4305,8 @@ create procedure DB.DBA.RDF_LOAD_PICASA (in graph_iri varchar, in new_origin_uri
 		tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 		transform:
 		xd := xtree_doc (tmp);
-		--string_to_file ('pi.xml', tmp, -2);
 		xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/picasa2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
 		xd := serialize_to_UTF8_xml (xt);
-		--string_to_file ('pi.rdf', xd, -2);
 		delete from DB.DBA.RDF_QUAD where g =  iri_to_id (coalesce (dest, graph_iri));
 		DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 		return 1;
@@ -6810,7 +6808,6 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
   xt := xtree_doc (content);
   xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/feed2sioc.xsl', xt, vector ('baseUri', graph_iri, 'isDiscussion', is_disc));
   xd := serialize_to_UTF8_xml (xd);
-  string_to_file('feed_to_s.xml', xd, 0);
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, iri, graph_iri, 0);
   return 1;
   no_sioc:
