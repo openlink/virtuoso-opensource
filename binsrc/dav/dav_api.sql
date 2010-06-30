@@ -1684,12 +1684,16 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
 		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _res_id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
                 {
                   declare graph, waGraph, foafIRI, foafGraph, loadIRI, localIRI any;
-                  declare S, V, info, st, msg, data, meta any;
+                  declare S, V, info, st, msg, data, meta, alts any;
 
                   foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-                  if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+		  alts := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
+		  alts := split_and_decode (alts, 0, '\0\0,:');
+		  if (alts is null)
+		    alts := vector ();
+		  foafIRI := get_keyword ('URI', alts);
+                  if (not isnull (foafIRI))
                     {
-                      foafIRI := subseq (foafIRI, 4);
                       set_user_id ('dba');
 
                       localIRI := foafIRI;
