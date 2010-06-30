@@ -1442,7 +1442,7 @@ sqlg_distinct_same_as_1 (sqlo_t * so, data_source_t ** q_head,
 	  tn->tn_sas_g = gs;
 	}
       else
-	tn->tn_sas_g = (state_slot_t **) list (1, g_dfe->_.bin.right->dfe_ssl);
+	tn->tn_sas_g = (state_slot_t **) list (1, g_dfe->_.bin.right->dfe_ssl ? g_dfe->_.bin.right->dfe_ssl : g_dfe->_.bin.left->dfe_ssl);
       tn->tn_lowest_sas = 1;
       tn->tn_distinct = 1;
       tn->tn_commutative = 1;
