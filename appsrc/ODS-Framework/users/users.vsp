@@ -298,7 +298,7 @@
             }
           }
         }
-        else if ((vFormTab = 0) and (vFormSubtab = 4))
+        else if ((vFormTab = 0) and (vFormSubtab = 5))
         {
           vUrl := vHostUrl || '/user.bioEvents.delete?sid=' || vSid || '&realm=' || vRealm || '&type=P';
           commit work;
@@ -475,7 +475,7 @@
                   '&homePhoneExt=' ||           sprintf ('%U', get_keyword ('pf_homePhoneExt', params, '')) ||
                   '&homeMobile=' ||             sprintf ('%U', get_keyword ('pf_homeMobile', params, ''));
             }
-            if (vFormSubtab = 5)
+            if (vFormSubtab = 4)
             {
               vParams := vParams ||
                   '&icq=' ||                    sprintf ('%U', get_keyword ('pf_icq', params, '')) ||
@@ -1119,8 +1119,8 @@
                       <li id="pf_tab_0_1" title="Main">Main</li>
                       <li id="pf_tab_0_2" title="Address">Address</li>
                       <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_4" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_5" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
+                      <li id="pf_tab_0_5" title="Biographical Events">Biographical Events</li>
                       <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
                       <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
                       <li id="pf_tab_0_8" title="My Offers">My Offers</li>
@@ -1573,10 +1573,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCity">City/Town</label>
+                              <label for="pf_homecity">City/Town</label>
                         </th>
                             <td>
-                              <input type="text" name="pf_homeCity" value="<?V xpath_eval ('string (/user/homeCity)', vXml) ?>" id="pf_homeCity" style="width: 216px;" />
+                              <input type="text" name="pf_homecity" value="<?V xpath_eval ('string (/user/homeCity)', vXml) ?>" id="pf_homecity" style="width: 216px;" />
                               <select name="pf_acl_homeCity" id="pf_acl_homeCity">
                                 <?vsp
                                   for (N := 0; N < length (xAcl); N := N + 2)
@@ -1587,10 +1587,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeCode">Zip/Postal Code</label>
+                              <label for="pf_homecode">Zip/Postal Code</label>
                         </th>
                         <td>
-                              <input type="text" name="pf_homeCode" value="<?V xpath_eval ('string (/user/homeCode)', vXml) ?>" id="pf_homeCode" style="width: 216px;" />
+                              <input type="text" name="pf_homecode" value="<?V xpath_eval ('string (/user/homeCode)', vXml) ?>" id="pf_homecode" style="width: 216px;" />
                               <select name="pf_acl_homeCode" id="pf_acl_homeCode">
                                 <?vsp
                                   for (N := 0; N < length (xAcl); N := N + 2)
@@ -1601,10 +1601,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress1">Address1</label>
+                              <label for="pf_homeaddress1">Address1</label>
                         </th>
                             <td>
-                              <input type="text" name="pf_homeAddress1" value="<?V xpath_eval ('string (/user/homeAddress1)', vXml) ?>" id="pf_homeAddress1" style="width: 216px;" />
+                              <input type="text" name="pf_homeaddress1" value="<?V xpath_eval ('string (/user/homeAddress1)', vXml) ?>" id="pf_homeaddress1" style="width: 216px;" />
                               <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
                                 <?vsp
                                   for (N := 0; N < length (xAcl); N := N + 2)
@@ -1615,10 +1615,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_homeAddress2">Address2</label>
+                              <label for="pf_homeaddress2">Address2</label>
                         </th>
                             <td>
-                              <input type="text" name="pf_homeAddress2" value="<?V xpath_eval ('string (/user/homeAddress2)', vXml) ?>" id="pf_homeAddress2" style="width: 216px;" />
+                              <input type="text" name="pf_homeaddress2" value="<?V xpath_eval ('string (/user/homeAddress2)', vXml) ?>" id="pf_homeAddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1756,47 +1756,6 @@
                         if ((vFormTab = 0) and (vFormSubtab = 4))
                         {
                         ?>
-                        <table class="form" cellspacing="5">
-                          <tr>
-                            <td width="600px">
-                              <table id="x5_tbl" class="listing">
-                                <thead>
-                                  <tr class="listing_header_row">
-                                    <th width="15%">
-                                      Event
-                                    </th>
-                                    <th width="15%">
-                                      Date
-                                    </th>
-                                    <th>
-                                      Place
-                                    </th>
-                                    <th width="65px">
-                                      Action
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
-                                <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
-                                </script>
-                              </table>
-                            </td>
-                            <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
-                            </td>
-                          </tr>
-                        </table>
-                        <?vsp
-                        }
-                        ?>
-                      </div>
-
-                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
-                        <?vsp
-                        if ((vFormTab = 0) and (vFormSubtab = 5))
-                        {
-                        ?>
                         <table id="x6_tbl" class="form" cellspacing="5">
                           <tr>
                             <th width="30%">
@@ -1878,10 +1837,10 @@
                           </tr>
                           <tr>
                             <th>
-                              <label for="pf_set_0_5">Set access for all fields as </label>
+                              <label for="pf_set_0_4">Set access for all fields as </label>
                             </th>
                             <td colspan="2">
-                              <select name="pf_set_0_5" id="pf_set_0_5" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
+                              <select name="pf_set_0_4" id="pf_set_0_4" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
                                 <option value="2">friends</option>
@@ -1892,6 +1851,47 @@
                           <script type="text/javascript">
                             OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x6", "<?V replace(cast (xpath_eval ('string (/user/messaging)', vXml) as varchar), '\n', '\\n') ?>", ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});});
                           </script>
+                        </table>
+                        <?vsp
+                        }
+                        ?>
+                      </div>
+
+                      <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <?vsp
+                        if ((vFormTab = 0) and (vFormSubtab = 5))
+                        {
+                        ?>
+                        <table class="form" cellspacing="5">
+                          <tr>
+                            <td width="600px">
+                              <table id="x5_tbl" class="listing">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th width="15%">
+                                      Event
+                                    </th>
+                                    <th width="15%">
+                                      Date
+                                    </th>
+                                    <th>
+                                      Place
+                                    </th>
+                                    <th width="65px">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tr id="x5_tr_no" style="display: none;"><td colspan="4"><b>No Biographical Events</b></td></tr>
+                                <script type="text/javascript">
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});});
+                                </script>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="1">
+                              <span class="button pointer" onclick="TBL.createRow('x5', null, {fld_1: {mode: 11}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                            </td>
+                          </tr>
                         </table>
                         <?vsp
                         }
@@ -1947,7 +1947,7 @@
                             </tr>
                             <tr>
                               <th>
-                                URI
+                                External URI
                               </th>
                               <td>
                                 <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
@@ -1955,7 +1955,7 @@
                           </tr>
                             <tr>
                               <th valign="top">
-                                Properties
+                                Item Properties
                               </th>
                   		        <td width="800px">
                                 <table id="r_tbl" class="listing">
@@ -2526,10 +2526,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessCode">Zip/Postal Code</label>
+                              <label for="pf_businesscode">Zip/Postal Code</label>
                         </th>
                         <td>
-                              <input type="text" name="pf_businessCode" value="<?V xpath_eval ('string (/user/businessCode)', vXml) ?>" id="pf_businessCode"  style="width: 216px;" />
+                              <input type="text" name="pf_businesscode" value="<?V xpath_eval ('string (/user/businessCode)', vXml) ?>" id="pf_businesscode"  style="width: 216px;" />
                               <select name="pf_acl_businessCode" id="pf_acl_businessCode">
                                 <?vsp
                                   for (N := 0; N < length (xAcl); N := N + 2)
@@ -2540,10 +2540,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessAddress1">Address1</label>
+                              <label for="pf_businessaddress1">Address1</label>
                         </th>
                         <td>
-                              <input type="text" name="pf_businessAddress1" value="<?V xpath_eval ('string (/user/businessAddress1)', vXml) ?>" id="pf_businessAddress1" style="width: 216px;" />
+                              <input type="text" name="pf_businessaddress1" value="<?V xpath_eval ('string (/user/businessAddress1)', vXml) ?>" id="pf_businessaddress1" style="width: 216px;" />
                               <select name="pf_acl_businessAddress1" id="pf_acl_businessAddress1">
                                 <?vsp
                                   for (N := 0; N < length (xAcl); N := N + 2)
@@ -2554,10 +2554,10 @@
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessAddress2">Address2</label>
+                              <label for="pf_businessaddress2">Address2</label>
                         </th>
                         <td>
-                              <input type="text" name="pf_businessAddress2" value="<?V xpath_eval ('string (/user/businessAddress2)', vXml) ?>" id="pf_businessAddress2" style="width: 216px;" />
+                              <input type="text" name="pf_businessaddress2" value="<?V xpath_eval ('string (/user/businessAddress2)', vXml) ?>" id="pf_businessaddress2" style="width: 216px;" />
                         </td>
                       </tr>
                       <tr>

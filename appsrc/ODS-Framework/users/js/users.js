@@ -2211,7 +2211,7 @@ function pfUpdateSubmit(No) {
     updateOnlineAccounts('x4', 'P');
     ufProfileLoad(No);
   }
-  else if ((formTab == 0) && (formSubtab == 4))
+  else if ((formTab == 0) && (formSubtab == 5))
   {
     updateBioEvents('x5');
     ufProfileLoad(No);
@@ -2337,7 +2337,7 @@ function pfUpdateSubmit(No) {
   			  + '&homeLatitude=' + $v('pf_acl_homeLatitude')
   			  + '&homePhone=' + $v('pf_acl_homePhone');
   	  }
-      if (formSubtab == 5)
+      if (formSubtab == 4)
       {
         S +='&icq=' + encodeURIComponent($v('pf_icq'))
         + '&skype=' + encodeURIComponent($v('pf_skype'))
