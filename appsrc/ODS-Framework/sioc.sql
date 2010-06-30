@@ -1859,6 +1859,8 @@ create procedure ods_sioc_post (
       if (content is not null and not do_exif)
 	{
 	  declare ses any;
+      if (__tag (content) = __tag of XML)
+	content := serialize_to_UTF8_xml (content);
       content := subseq (content, 0, 10000000);
       content := regexp_replace (content, '<[^>]+>', '', 1, null);
 	  ses := string_output ();
