@@ -351,6 +351,12 @@ bnode_found_or_added_for_big_ssl:
           switch (fld_type)
             {
             case SPAR_VARIABLE:
+              if (SPART_VARNAME_IS_GLOB (fld->_.var.vname))
+                {
+                  tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+                  tvector_args [(fld_ctr-1)*2 + 1] = fld;
+                  break;
+                }
               var_ctr = spar_cve_find_or_add_variable (sparp, cve, fld);
               tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
               tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
@@ -756,7 +762,12 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *call = retvals [retvals_count-1];
+      if (SPAR_ALIAS == SPART_TYPE (call))
+        call = call->_.alias.arg;
+      known_vars = call->_.funcall.argtrees;
+    }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
   all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);
