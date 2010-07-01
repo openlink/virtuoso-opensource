@@ -636,7 +636,7 @@ iSPARQL.QBE = function (def_obj) {
 	    self.Schemas.InsertNode(self.Schemas.Bound,treeNode.uri,treeNode.uritype,treeNode.label,treeNode.comment);
 
 	    var val = self.putPrefix('<' + treeNode.uri + '>');
-	    if (target == iSPARQL.qbe.svgsparql) {
+	    if (target == self.svgsparql) {
 		if (treeNode.uritype == 'class') {
 		    var pos = OAT.Dom.position(target.parent);
 		    var x = x_ - pos[0];
@@ -799,21 +799,21 @@ iSPARQL.QBE = function (def_obj) {
 			    break;
 			}
 		    } /* for all elements */
-		    var lmax = min (classes.length, 200);
+		    var lmax = Math.min (classes.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var c = classes[i];
 			var type = 'class';
 			insert(c,type,schemaParts);
 		    }
 
-		    var lmax = min (attrs.length, 200);
+		    var lmax = Math.min (attrs.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var a = attrs[i];
 			var type = 'property_attr';
 			insert(a,type,schemaParts);
 		    }
 
-		    var lmax = min (rels.length, 200);
+		    var lmax = Math.min (rels.length, 200);
 		    for (var i=0;i<lmax;i++) {
 			var r = rels[i];
 			var type = 'property_rel';
