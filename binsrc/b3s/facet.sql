@@ -326,6 +326,10 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix skos: <http://www.w3.org/2008/05/skos#> .
 @prefix bibo: <http://purl.org/ontology/bibo/> .
 @prefix gr: <http://purl.org/goodrelations/v1#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix og: <http://opengraphprotocol.org/schema/> .
+
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -346,6 +350,14 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
 <http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasModelName> rdfs:subPropertyOf virtrdf:label .
+<http://aims.fao.org/aos/geopolitical.owl#nameListEN> rdfs:subPropertyOf rdfs:label .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLatitude> rdfs:subPropertyOf geo:lat .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> rdfs:subPropertyOf geo:long .
+og:latitude rdfs:subPropertyOf geo:lat .
+og:longitude rdfs:subPropertyOf geo:long .
+<http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
+<http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
+<http://linkedopencommerce.com/schemas/icecat/v1/hasCategory> rdfs:subPropertyOf rdf:type .
 ', 'xx', 'facets');
 
 rdfs_rule_set ('facets', 'facets');
