@@ -33,6 +33,7 @@ endif
 
 
 SESAME_SRC= \
+	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
 	virtuoso_driver/VirtuosoQuery.java \
@@ -61,7 +62,7 @@ lib:
 	@echo "Please refer to ~/README.sesame3 file for missing .jar files"
 
 
-virt_sesame3.jar: $(SESAME_SRC)
+virt_sesame3.jar: $(SESAME_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
 	-mkdir out.driver/META-INF
@@ -76,7 +77,7 @@ virt_sesame3.jar: $(SESAME_SRC)
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
-	$(JAR) cvf virt_sesame3.jar -C out.driver virtuoso
+	$(JAR) cvfm virt_sesame3.jar manifest.main -C out.driver .
 
 
 doc:
@@ -113,4 +114,5 @@ clean-local:
 EXTRA_DIST = \
 	virtuoso_driver/*.java \
 	virtuoso_driver/data.nt \
+	manifest.main \
 	virt_sesame3.jar
