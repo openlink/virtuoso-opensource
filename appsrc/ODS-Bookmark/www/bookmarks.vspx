@@ -105,7 +105,7 @@
                             {
                     for (select top 1 BD_ID, BD_FOLDER_ID
                            from BMK.WA.BOOKMARK_DOMAIN
-                          where BD_DOMAIN_ID = self.domain_id and BD_BOOKMARK_ID = cast (get_keyword ('id', params) as integer)
+                          where BD_DOMAIN_ID = self.domain_id and BD_ID = cast (get_keyword ('id', params) as integer)
                           order by BD_NAME) do
                               {
                       self.bNodeAction := 'Bookmark/View';
@@ -133,7 +133,7 @@
                 http (sprintf ('<input type="hidden" id="id" name="id" value="%d" />', BMK.WA.node_id (self.bNode)));
                 http (sprintf ('<input type="hidden" id="node" name="node" value="%s" />', self.bNode));
                 http (sprintf ('<input type="hidden" id="nodePath" name="nodePath" value="%V" />', self.bNodePath));
-                http (sprintf ('<input type="hidden" id="nodeAction" name="nodeAction" value="%V" />', self.bNodeAction));
+                http (sprintf ('<input type="hidden" id="nodeAction" name="nodeAction" value="%s" />', self.bNodeAction));
                 http (sprintf ('<input type="hidden" id="nodeParams" name="nodeParams" value="%V" />', self.bNodeParams));
         ?>
               <!-- Toolbar -->
