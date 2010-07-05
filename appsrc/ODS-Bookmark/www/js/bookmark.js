@@ -985,10 +985,8 @@ BMK.readField = function (field, doc)
   {
     v = doc.forms[0].elements[field];
     if (v)
-    {
       v = v.value;
     }
-  }
   return v;
 }
 
@@ -1011,8 +1009,12 @@ BMK.initState = function (state)
   if (!state)
     var state = new Object();
 
-  state.sid = BMK.readField('sid');
-  state.realm = BMK.readField('realm');
+  var v = BMK.readField('sid');
+  if (v)
+    state.sid = v;
+  var v = BMK.readField('realm');
+  if (v)
+    state.sid = v;
   if (!state.tab)
     state.tab = 'tree';
 
@@ -1250,7 +1252,7 @@ BMK.loadPath = function (w, wIndex)
     node.toggleSelect({ctrlKey:false});
   }
   BMK.selectedPath();
-  BMK.nodeAction();
+  BMK.execNodeAction();
 }
 
 BMK.findPath = function (path)
@@ -1308,7 +1310,7 @@ BMK.loadTreeData = function(nodePath, node, nodeFunction)
   OAT.AJAX.GET(S, '', x);
 }
 
-BMK.nodeAction = function()
+BMK.execNodeAction = function()
 {
   var a = $('nodeAction');
   if (a && (a.value != ''))

@@ -620,6 +620,7 @@ input.nolink4 {
 
 .form-body th
 {
+  white-space: nowrap;
   text-align: right;
   padding: 4px;
 }

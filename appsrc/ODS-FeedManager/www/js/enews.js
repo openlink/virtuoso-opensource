@@ -106,8 +106,12 @@ Feeds.initState = function (state)
   if (!state)
     var state = new Object();
 
-  state.sid = Feeds.readField('sid');
-  state.realm = Feeds.readField('realm');
+  var v = Feeds.readField('sid');
+  if (v)
+    state.sid = v;
+  var v = Feeds.readField('realm');
+  if (v)
+    state.sid = v;
   if (!state.tab)
     state.tab = 'feeds';
 
