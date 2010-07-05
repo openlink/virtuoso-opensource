@@ -97,7 +97,7 @@
 				<!-- Xalan
 			    <gr:includes rdf:resource="{$resourceURL}"/>
 				-->
-			    <gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
+			    <gr:includes rdf:resource="{$resourceURL}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="ebay:Item/ebay:EndTime"/></gr:validThrough>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
@@ -145,7 +145,7 @@
 			<!-- Xalan
 			<rdf:Description rdf:about="{$resourceURL}">
 			-->
-			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+			<rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
