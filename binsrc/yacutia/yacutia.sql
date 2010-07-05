@@ -193,7 +193,7 @@ yacutia_http_log_ui_labels ()
 create procedure adm_menu_tree ()
 {
   declare wa_available integer;
-  wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('wa'), '1.02.13');
+  wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('Framework'), '1.02.13');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -214,8 +214,11 @@ create procedure adm_menu_tree ()
      </node>
      <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
       <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
-      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
-     </node>
+      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
+      case when wa_available then 
+      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
+      else '' end,
+     '</node>
    </node>
    <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
