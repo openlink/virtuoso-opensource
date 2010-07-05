@@ -6033,15 +6033,17 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
 
 create procedure yac_list_keys (in username varchar)
 {
-  declare xenc_name varchar;
+  declare xenc_name, xenc_type varchar;
   declare arr any;
-  result_names (xenc_name);
+  result_names (xenc_name, xenc_type);
   if (not exists (select 1 from SYS_USERS where U_NAME = username))
     return;
   arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
+    {
     if (length (arr[i]))
-      result (arr[i]);
+        result (arr[i], arr[i+1][0]);
+    }
 }
 ;
 
@@ -6609,5 +6611,48 @@ create procedure y_parse_link_headers (in s varchar, in rel varchar, in val varc
     }
   done:
   return res;
+}
+;
+
+create procedure y_list_webids (in uname varchar)
+{
+  declare keys, webids any;
+
+  webids := vector ();
+  if (not exists (select 1 from SYS_USERS where U_NAME = uname))
+    goto finish;
+  keys := coalesce (USER_GET_OPTION (uname, 'KEYS'), vector ());
+  for (declare i, l int, i := 0, l := length (keys); i < l; i := i + 2)
+    {
+      declare tp, fmt, cert, pass, id, alts, x any;
+      x := keys[i + 1];
+      if (x is null)
+	goto next;
+      tp := x[0];
+      if (tp = 'X.509')
+	{
+	  fmt := x[1];
+	  cert := x[2];
+	  pass := x[3];
+	  if (fmt = 3)
+	    fmt := 1;
+	  else if (fmt = 1) 
+	    fmt := 0;  
+	  id := get_certificate_info (7, cert, fmt, pass, '2.5.29.17'); 
+	  if (id is null) 
+	    goto next;
+	  alts := regexp_replace (id, ',[ ]*', ',', 1, null);
+	  alts := split_and_decode (alts, 0, '\0\0,:');
+	  if (alts is null)
+	    goto next;
+	  id := get_keyword ('URI', alts);
+	  if (id is null)
+	    goto next;
+          webids := vector_concat (webids, vector (id));
+	  next:;
+	}
+    }
+  finish:
+  return webids;
 }
 ;
