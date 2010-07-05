@@ -325,6 +325,7 @@ conductor/soap_options_edit.vspx
 conductor/soap_services_edit.vspx
 conductor/soap_services_list.vspx
 conductor/soap_services.vspx
+conductor/sparql_acl.vspx
 conductor/sparql_filters.vspx
 conductor/sparql_graph.vspx
 conductor/sparql_input.vspx
