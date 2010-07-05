@@ -397,7 +397,7 @@ DAV_DIR_LIST (in path varchar := '/DAV/', in recursive integer, in auth_uname va
   auth_uid := DAV_CHECK_AUTH (auth_uname, auth_pwd, 0);
   if (auth_uid < 0)
     return -12;
-  -- dbg_obj_princ ('DAV_DIR_LIST (', path, recursive, auth_uname, auth_pwd, ')');
+  -- dbg_obj_princ ('DAV_DIR_LIST (', path, recursive, auth_uname, auth_pwd, auth_uid, ')');
   return DAV_DIR_LIST_INT (path, recursive, '%', auth_uname, auth_pwd, auth_uid);
 }
 ;
@@ -1532,73 +1532,103 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   -- dbg_obj_princ ('DAV_AUTHENTICATE (', id, what, req, a_uname, a_pwd, a_uid, ')');
   if (length (req) <> 3)
     return -15;
+
   if (a_uid is null)
-    {
-      a_uid := DAV_CHECK_AUTH (a_uname, a_pwd, 0);
-      -- dbg_obj_princ ('DAV_CHECK_AUTH (', a_uname, a_pwd, 0, ') returns ', a_uid);
-    }
+    a_uid := DAV_CHECK_AUTH (a_uname, a_pwd, 0);
+
   if (a_uid < 0)
+  {
+    if (DAV_AUTHENTICATE_SSL_CONDITION (id, what))
+      goto _check_ssl;
+
     return a_uid;
+  }
+
   if (a_uid = 1) -- Anonymous FTP
+  {
+    oid := http_nobody_uid ();
+    ogid := http_nogroup_gid ();
+  }
+  else
+  {
+    if (a_uid = http_dav_uid())
+      return a_uid;
+
+    oid := a_uid;
+    if (a_uid = http_nobody_uid ())
     {
-      oid := http_nobody_uid ();
       ogid := http_nogroup_gid ();
     }
-  else
+    else
     {
-      if (a_uid = http_dav_uid())
-        return a_uid;
-      oid := a_uid;
-      if (a_uid = http_nobody_uid ())
-	{
-	  ogid := http_nogroup_gid ();
-	}
-      else
-	select U_GROUP into ogid from WS.WS.SYS_DAV_USER where U_ID = a_uid;
+      select U_GROUP into ogid from WS.WS.SYS_DAV_USER where U_ID = a_uid;
     }
+  }
   if (isarray (id))
+  {
+    declare detcol_id integer;
+
+    detcol_id := id[1];
+    select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
+    if (not DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
     {
-      declare detcol_id integer;
-      detcol_id := id[1];
-      select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
-      if (not DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
-        {
-          -- dbg_obj_princ ('DAV_CHECK_PERM (', pperms, req, oid, ogid, pgid, puid, ') returns zero');
-          if (not WS.WS.ACL_IS_GRANTED (pacl, oid, 4))
-            {
-              -- dbg_obj_princ ('DAV_AUTHENTICATE (,', id, what, req, a_uname, a_pwd, ') returns -13 due to missing read perm on ', detcol_id);
-              return -13;
-            }
-        }
-      return call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+      if (not WS.WS.ACL_IS_GRANTED (pacl, oid, 4))
+      {
+        return -13;
+      }
     }
+    return call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+  }
   whenever not found goto nf_col_or_res;
   if (what = 'R')
+  {
+    select RES_OWNER, RES_GROUP, RES_PERMS, RES_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_RES where RES_ID = id;
+    set isolation='committed';
+    if (puid <> http_nobody_uid() and
+        exists (select top 1 1 from SYS_USERS where U_ID = puid and U_ACCOUNT_DISABLED = 1))
     {
-      select RES_OWNER, RES_GROUP, RES_PERMS, RES_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_RES where RES_ID = id;
-      set isolation='committed';
-      if (puid <> http_nobody_uid() and
-        exists (select top 1 1 from SYS_USERS
-          where U_ID = puid and U_ACCOUNT_DISABLED = 1 ) )
-        return -42;
-      set isolation='serializable';
+      return -42;
     }
+    set isolation='serializable';
+  }
   else if (what = 'C')
+  {
     select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = id;
+  }
   else
+  {
     return -14;
+  }
   if (DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
-    {
-      -- dbg_obj_princ ('DAV_CHECK_PERM (', pperms, req, oid, ogid, pgid, puid, ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
-      return a_uid;
-    }
+  {
+    -- dbg_obj_princ ('DAV_CHECK_PERM (', pperms, req, oid, ogid, pgid, puid, ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
+    return a_uid;
+  }
   if (WS.WS.ACL_IS_GRANTED (pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req)))
+  {
+    -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
+    return a_uid;
+  }
+  if (DAV_AUTHENTICATE_SSL_CONDITION (id, what))
+  {
+  _check_ssl:
+    declare _perms, _res_full_path varchar;
+    declare a_gid, _res_id int;
+
+    _res_id := id;
+    _res_full_path := DAV_SEARCH_PATH (_res_id, what);
+    if (isstring (_res_full_path) and _res_full_path like '%,acl')
     {
-      -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
-      return a_uid;
+      _res_full_path := regexp_replace (_res_full_path, ',acl\x24', '');
+      _res_id := DAV_SEARCH_ID (_res_full_path, what);
     }
+    if (DAV_AUTHENTICATE_SSL (_res_id, what, _res_full_path, req, a_uid, a_gid, _perms))
+      return a_uid;
+  }
+
   -- dbg_obj_princ ('DAV_AUTHENTICATE (,', id, what, req, a_uname, a_pwd, ') returns -13');
   return -13;
+
 nf_col_or_res:
   -- dbg_obj_princ ('DAV_AUTHENTICATE (,', id, what, req, a_uname, a_pwd, ') returns -1 due to bad id');
   return -1;
@@ -1617,254 +1647,267 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP (', id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
 
   if (length (req) <> 3)
-    {
-      -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -15');
-      return -15;
-    }
+    return -15;
+
   if (isarray (id))
-    {
-      declare d__perms varchar;
-      rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE_HTTP') (id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
-      if (rc >= 0)
-        {
-          rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', '1__', can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, d__perms);
-          if (rc < 0)
-            {
-              -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after detcol check)');
-              return rc;
-            }
-        }
-      -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after det_DAV_AUTHENTICATE_HTTP)');
-      return rc;
-    }
+  {
+    declare d__perms varchar;
+
+    rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE_HTTP') (id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
+    if (rc >= 0)
+      rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', '1__', can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, d__perms);
+
+    return rc;
+  }
   if (id is null)
-    {
-      pperms := '000000000?';
-      allow_anon := 0;
-    }
+  {
+    pperms := '000000000?';
+    allow_anon := 0;
+  }
   else
+  {
+    declare anon_flags varchar;
+    whenever not found goto nf_col_or_res;
+    if (what = 'R')
     {
-      declare anon_flags varchar;
-      whenever not found goto nf_col_or_res;
-      if (what = 'R')
-        select RES_NAME, RES_FULL_PATH, RES_OWNER, RES_GROUP, RES_PERMS, RES_ACL into resName, resPath, puid, pgid, pperms, pacl from WS.WS.SYS_DAV_RES where RES_ID = id;
-      else if (what = 'C')
-        select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = id;
-      else
-        {
-          -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -14');
-          return -14;
-        }
-      anon_flags := substring (cast (pperms as varchar), 7, 3);
-      -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP has pperms=', pperms, ' anon_flags=', anon_flags, 'req=', req);
-      allow_anon := WS.WS.PERM_COMP (anon_flags, req);
+      select RES_NAME, RES_FULL_PATH, RES_OWNER, RES_GROUP, RES_PERMS, RES_ACL into resName, resPath, puid, pgid, pperms, pacl from WS.WS.SYS_DAV_RES where RES_ID = id;
     }
+    else if (what = 'C')
+    {
+      select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = id;
+    }
+    else
+    {
+      return -14;
+    }
+    anon_flags := substring (cast (pperms as varchar), 7, 3);
+    allow_anon := WS.WS.PERM_COMP (anon_flags, req);
+  }
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP has a_uid=', a_uid, ' allow_anon=', allow_anon);
   if (a_uid is null)
+  {
+    if ((not allow_anon) or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:')))
     {
-      if ((not allow_anon) or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:')))
+      rc := WS.WS.GET_DAV_AUTH (a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms);
+      if (rc < 0)
+      {
+        declare _res_full_path varchar;
+        declare _res_id int;
+        -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after WS.WS.GET_DAV_AUTH (', a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms, ')');
+        if (isstring (resPath) and resPath like '%,acl')
         {
-          rc := WS.WS.GET_DAV_AUTH (a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms);
-          if (rc < 0)
-            {
-	      declare _res_full_path varchar;
-	      declare _res_id int;
-              -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after WS.WS.GET_DAV_AUTH (', a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms, ')');
-	      if (isstring (resPath) and resPath like '%,acl')
-	        {
-		  _res_full_path := regexp_replace (resPath, ',acl\x24', '');
-		  _res_id := DAV_SEARCH_ID (_res_full_path, what);
-		}
-	      else
-                {
-		  _res_full_path := resPath;
-		  _res_id := id;
-		}		
-              if (is_https_ctx () and what = 'R' and 
-		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _res_id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
-                {
-                  declare graph, waGraph, foafIRI, foafGraph, loadIRI, localIRI any;
-                  declare S, V, info, st, msg, data, meta, alts any;
-
-                  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-		  alts := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
-		  alts := split_and_decode (alts, 0, '\0\0,:');
-		  if (alts is null)
-		    alts := vector ();
-		  foafIRI := get_keyword ('URI', alts);
-                  if (not isnull (foafIRI))
-                    {
-                      set_user_id ('dba');
-
-                      localIRI := foafIRI;
-                      V := rfc1808_parse_uri (localIRI);
-                      if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' 
-			and V[1] = registry_get ('URIQADefaultHost'))
-                        {
-                          V [0] := 'local';
-                          V [1] := '';
-                          localIRI := db.dba.vspx_uri_compose (V);
-                        }
-                      V := rfc1808_parse_uri (foafIRI);
-                      V[5] := '';
-                      loadIRI := DB.DBA.vspx_uri_compose (V);
-                      foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-                      S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-                      st := '00000';
-                      exec (S, st, msg, vector (), 0);
-                      -- dbg_obj_princ ('0: ', st, msg);
-                      if (st = '00000')
-                        {
-                          info := get_certificate_info (9);
-                          S := sprintf (' sparql define input:storage "" ' ||
-                                        ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
-                                        ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                                        ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
-                                        '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
-                                        '   from <%s> ' ||
-                                        '  where { ' ||
-                                        '          ?id cert:identity <%s> ; ' ||
-                                        '              rsa:public_exponent ?exp ; ' ||
-                                        '              rsa:modulus ?mod . ' ||
-                                        '          optional { ?exp cert:decimal ?exp_val . ' ||
-                                        '          ?mod cert:hex ?mod_val . } ' ||
-                                        '        }',
-                                        foafGraph,
-                                        localIRI);
-                          exec (S, st, msg, vector (), 0, meta, data);
-                          -- dbg_obj_princ ('1: ', st, msg);
-                          if (__proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is not null and
-                              __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
-			      st = '00000' and length (data))
-                            {
-			      foreach (any _row in data) do
-				{
-				  if (_row[0] = cast (info[1] as varchar) and
-				      lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
-                            {
-                              declare resMode varchar;
-
-                              graph := SIOC.DBA.dav_res_iri (_res_full_path);
-                              waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
-                              --dbg_obj_print ('graph', graph);
-                              resMode := '';
-                              if (req[2] = ascii ('1'))
-                                resMode := 'Control';
-                              else if (req[1] = ascii ('1'))
-                                resMode := 'Write';
-                              else if (req[0] = ascii ('1'))
-                                resMode := 'Read';
-
-                              S := sprintf (' sparql \n' ||
-                                            ' define input:storage "" \n' ||
-                                            ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                                            ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-                                            ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                                            ' select * \n' ||
-                                            '   from <%s> \n' ||
-                                            '   from <%s> \n' ||
-                                            '  where { \n' ||
-                                            '          { \n' ||
-                                            '            ?rule rdf:type acl:Authorization ; \n' ||
-                                            '            acl:accessTo <%s> ; \n' ||
-                                            '            acl:mode acl:%s ; \n' ||
-                                            '            acl:agent <%s>. \n' ||
-                                            '          } \n' ||
-                                            '          union \n' ||
-                                            '          { \n' ||
-                                            '            ?rule rdf:type acl:Authorization ; \n' ||
-                                            '            acl:accessTo <%s> ; \n' ||
-                                            '            acl:mode acl:%s ; \n' ||
-                                            '            acl:agentClass foaf:Agent. \n' ||
-                                            '          } \n' ||
-                                            '          union \n' ||
-                                            '          { \n' ||
-                                            '            ?rule rdf:type acl:Authorization ; \n' ||
-                                            '              acl:accessTo <%s> ; \n' ||
-                                            '              acl:mode acl:%s ; \n' ||
-                                            '              acl:agentClass ?group. \n' ||
-                                            '            ?group rdf:type foaf:Group ; \n' ||
-                                            '              foaf:member <%s>. \n' ||
-                                            '          } \n' ||
-                                            '        }\n',
-                                            graph,
-                                            waGraph,
-                                            graph,
-                                            resMode,
-                                            foafIRI,
-                                            graph,
-                                            resMode,
-                                            graph,
-                                            resMode,
-                                            foafIRI);
-                              commit work;
-                              exec (S, st, msg, vector (), 0, meta, data);
-                              -- dbg_obj_princ ('2: ', S);
-                              if (st = '00000' and length (data))
-                              {
-                                a_uid := http_nobody_uid ();
-                                a_gid := http_nogroup_gid ();
-                                _perms := req || req || '--';
-					exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-                                return a_uid;
-                              }
-                            }
-                        }
-			    }
-			}
-                      exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-                    }
-                }
-              if (rc < 0)
-                return rc;
-            }
-          -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP has a_uid=', a_uid, ' after WS.WS.GET_DAV_AUTH');
+          _res_full_path := regexp_replace (resPath, ',acl\x24', '');
+          _res_id := DAV_SEARCH_ID (_res_full_path, what);
         }
-    }
-  if (isinteger (a_uid))
-    {
-      if (a_uid < 0)
+        else
         {
-          -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is a negtive a_uid)');
+          _res_full_path := resPath;
+          _res_id := id;
+        }
+        if (DAV_AUTHENTICATE_SSL (_res_id, what, _res_full_path, req, a_uid, a_gid, _perms))
           return a_uid;
-        }
-     if (a_uid = 1) -- Anonymous FTP
-        {
-          a_uid := http_nobody_uid ();
-          a_gid := http_nogroup_gid ();
-        }
-     else if (a_uid = http_dav_uid())
-       return a_uid;
+      }
     }
-  else
+  }
+  if (isinteger (a_uid))
+  {
+    if (a_uid < 0)
+      return a_uid;
+
+    if (a_uid = 1) -- Anonymous FTP
     {
       a_uid := http_nobody_uid ();
       a_gid := http_nogroup_gid ();
-      _perms := '110110110--';
     }
+    else if (a_uid = http_dav_uid())
+    {
+      return a_uid;
+    }
+  }
+  else
+  {
+    a_uid := http_nobody_uid ();
+    a_gid := http_nogroup_gid ();
+    _perms := '110110110--';
+  }
   set isolation='committed';
   if ('R' = what and
-    puid <> http_nobody_uid() and
-    exists (select top 1 1 from SYS_USERS
-      where U_ID = puid and U_ACCOUNT_DISABLED = 1 ) )
+      puid <> http_nobody_uid() and
+      exists (select top 1 1 from SYS_USERS where U_ID = puid and U_ACCOUNT_DISABLED = 1 ))
+  {
     return -42;
+  }
   set isolation='serializable';
   if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
-    {
-      -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is made by DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
-      return a_uid;
-    }
+  {
+    -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is made by DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
+    return a_uid;
+  }
   if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-    {
-      -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE_HTTP returns', a_uid);
-      return a_uid;
-    }
+  {
+    -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE_HTTP returns', a_uid);
+    return a_uid;
+  }
+
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -13 due to failed DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
   return -13;
 
 nf_col_or_res:
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -1');
   return -1;
+}
+;
+
+create function
+DAV_AUTHENTICATE_SSL_CONDITION (in id any, in what char(1)) returns integer
+{
+  if (is_https_ctx () and what = 'R' and
+      __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
+      exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
+  {
+    return 1;
+  }
+  return 0;
+}
+;
+
+create function
+DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
+{
+  declare rc integer;
+
+  rc := 0;
+  if (not DAV_AUTHENTICATE_SSL_CONDITION (id, what))
+    goto _exit;
+
+  declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
+  declare S, V, info, st, msg, data, meta any;
+
+  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
+  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
+  V := split_and_decode (V, 0, '\0\0,:');
+  if (V is null)
+    V := vector ();
+  foafIRI := get_keyword ('URI', V);
+  if (isnull (foafIRI))
+    goto _exit;
+
+  set_user_id ('dba');
+
+  localIRI := foafIRI;
+  V := rfc1808_parse_uri (localIRI);
+  if (is_https_ctx () and
+      cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and
+      V[1] = registry_get ('URIQADefaultHost'))
+  {
+    V [0] := 'local';
+    V [1] := '';
+    localIRI := db.dba.vspx_uri_compose (V);
+  }
+  V := rfc1808_parse_uri (foafIRI);
+  V[5] := '';
+  loadIRI := DB.DBA.vspx_uri_compose (V);
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
+  st := '00000';
+  exec (S, st, msg, vector (), 0);
+  if (st <> '00000')
+    goto _exit;
+
+  info := get_certificate_info (9);
+  S := sprintf (' sparql define input:storage "" ' ||
+                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
+                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
+                '   from <%s> ' ||
+                '  where { ' ||
+                '          ?id cert:identity <%s> ; ' ||
+                '              rsa:public_exponent ?exp ; ' ||
+                '              rsa:modulus ?mod . ' ||
+                '          optional { ?exp cert:decimal ?exp_val . ' ||
+                '          ?mod cert:hex ?mod_val . } ' ||
+                '        }',
+                foafGraph,
+                localIRI);
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st <> '00000' or length (data) = 0)
+    goto _exit;
+
+  foreach (any _row in data) do
+  {
+    if (_row[0] = cast (info[1] as varchar) and
+        lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
+    {
+      declare resMode varchar;
+
+      graph := SIOC.DBA.dav_res_iri (path);
+      --dbg_obj_print ('graph', graph);
+      resMode := '';
+      if (req[2] = ascii ('1'))
+        resMode := 'Control';
+      else if (req[1] = ascii ('1'))
+        resMode := 'Write';
+      else if (req[0] = ascii ('1'))
+        resMode := 'Read';
+
+      S := sprintf (' sparql \n' ||
+        ' define input:storage "" \n' ||
+        ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+        ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+        ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+        ' select * \n' ||
+        '   from <%s> \n' ||
+        '  where { \n' ||
+        '          { \n' ||
+        '            ?rule rdf:type acl:Authorization ; \n' ||
+        '                  acl:accessTo <%s> ; \n' ||
+        '                  acl:mode acl:%s ; \n' ||
+        '                  acl:agent <%s>. \n' ||
+        '          } \n' ||
+        '          union \n' ||
+        '          { \n' ||
+        '            ?rule rdf:type acl:Authorization ; \n' ||
+        '                  acl:accessTo <%s> ; \n' ||
+        '                  acl:mode acl:%s ; \n' ||
+        '                  acl:agentClass foaf:Agent. \n' ||
+        '          } \n' ||
+        '          union \n' ||
+        '          { \n' ||
+        '            ?rule rdf:type acl:Authorization ; \n' ||
+        '                  acl:accessTo <%s> ; \n' ||
+        '                  acl:mode acl:%s ; \n' ||
+        '                  acl:agentClass ?group. \n' ||
+        '                  ?group rdf:type foaf:Group ; \n' ||
+        '                  foaf:member <%s>. \n' ||
+        '          } \n' ||
+        '        }\n',
+        graph,
+        graph,
+        resMode,
+        foafIRI,
+        graph,
+        resMode,
+        graph,
+        resMode,
+        foafIRI);
+      commit work;
+      exec (S, st, msg, vector (), 0, meta, data);
+      if (st = '00000' and length (data))
+      {
+        a_uid := http_nobody_uid ();
+        a_gid := http_nogroup_gid ();
+        _perms := req || req || '--';
+        rc := 1;
+        goto _break;
+      }
+    }
+  }
+_break:;
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+
+_exit:;
+  return rc;
 }
 ;
 
@@ -2270,7 +2313,7 @@ DAV_RES_UPLOAD_STRSES_INT (
              return -38;
         }
        -- dbg_obj_princ ('UPDATE ', name);
-      if (sys_stat ('cl_run_local_only') = 1) 
+      if (sys_stat ('cl_run_local_only') = 1)
 	{
 	  update WS.WS.SYS_DAV_RES
 	     set RES_OWNER = ouid,
@@ -4189,8 +4232,8 @@ create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 ref
   if (N.RES_NAME like '%,acl')
     {
       declare rid int;
-  oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
-  newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
+      oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
+      newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
       oldPath := regexp_replace (oldPath, ',acl\x24', '');
       newPath := regexp_replace (newPath, ',acl\x24', '');
       aciContent := N.RES_CONTENT;
@@ -4204,7 +4247,7 @@ create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 ref
     {
       if ((O.RES_NAME = N.RES_NAME) and (O.RES_COL = N.RES_COL))
 	return;
-  aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.RES_ID and PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3');
+      aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.RES_ID and PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3');
       if (aciContent is null)
 	return;
       oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
@@ -4253,7 +4296,7 @@ create trigger SYS_DAV_PROP_WAC_U after update on WS.WS.SYS_DAV_PROP order 100 r
     return;
 
   declare resPath any;
-  for select RES_FULL_PATH, RES_OWNER, RES_GROUP from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID do 
+  for select RES_FULL_PATH, RES_OWNER, RES_GROUP from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID do
     {
       WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
       WS.WS.WAC_INSERT (RES_FULL_PATH, N.PROP_VALUE, RES_OWNER, RES_GROUP, 1);
@@ -4274,48 +4317,56 @@ create trigger SYS_DAV_PROP_WAC_D after delete on WS.WS.SYS_DAV_PROP order 100 r
 
 create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any, in uid int, in gid int, in update_acl int)
 {
-  declare graph varchar;
+  declare graph, waGraph varchar;
 
-  if (length (aciContent) = 0 or __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null)
+  if (
+      length (aciContent) = 0 or
+      __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null or
+      __proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is null
+     )
     return;
 
   graph := SIOC.DBA.dav_res_iri (resPath);
+  waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
   {
     declare continue handler for SQLSTATE '*'
     {
-      -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+      dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
       return;
     };
     aciContent := cast (blob_to_string (aciContent) as varchar);
     if (update_acl)
-      {
-	connection_set ('dav_acl_sync', 1);
-        DAV_RES_UPLOAD_STRSES_INT (resPath || ',acl', aciContent, 'text/n3', '110100000RR', uid, gid, null, null, 0);
-	connection_set ('dav_acl_sync', null);
-      }
-    -- dbg_obj_princ ('tag: ', __tag (resContent));
+    {
+      connection_set ('dav_acl_sync', 1);
+      DAV_RES_UPLOAD_STRSES_INT (resPath || ',acl', aciContent, 'text/n3', '110100000RR', uid, gid, null, null, 0);
+      connection_set ('dav_acl_sync', null);
+    }
     DB.DBA.TTLP (aciContent, graph, graph);
-    -- dbg_obj_princ ('WS.WS.WAC_INSERT', now(), graph);
+    DB.DBA.RDF_GRAPH_GROUP_CREATE (waGraph, 1);
+    DB.DBA.RDF_GRAPH_GROUP_INS (waGraph, graph);
   }
 }
 ;
 
 create procedure WS.WS.WAC_DELETE (in resPath varchar, in update_acl int)
 {
-  declare graph, st, msg varchar;
+  declare graph, waGraph, st, msg varchar;
 
-  if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null)
+  if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null or
+      __proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is null
+     )
     return;
 
   if (update_acl)
-    {
-      connection_set ('dav_acl_sync', 1);
-      DAV_DELETE_INT (resPath || ',acl', 1, null, null, 0, 0);
-      connection_set ('dav_acl_sync', null);
-    }
+  {
+    connection_set ('dav_acl_sync', 1);
+    DAV_DELETE_INT (resPath || ',acl', 1, null, null, 0, 0);
+    connection_set ('dav_acl_sync', null);
+  }
   graph := SIOC.DBA.dav_res_iri (resPath);
+  waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
   exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
-  -- dbg_obj_princ ('WS.WS.WAC_DELETE', now(), graph, st);
+  DB.DBA.RDF_GRAPH_GROUP_DEL (waGraph, graph);
 }
 ;
 
