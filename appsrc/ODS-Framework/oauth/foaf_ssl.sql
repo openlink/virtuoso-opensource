@@ -97,7 +97,11 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
   again_check:;
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
+  if (stat = '00000' and length (data))
+    {
+      foreach (any _row in data) do
+	{
+	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
     {
       declare arr, uid any;
       uid := coalesce ((select FS_UID from FOAF_SSL_ACL where FS_URI = agent), 'nobody');
@@ -108,6 +112,8 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
       commit work;
       return 1;
+    }
+	}
     }
   else if (acc = 0)
     {
@@ -232,11 +238,17 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
   again_check:; 
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
+  if (stat = '00000' and length (data)) 
+    {
+      foreach (any _row in data) do
+        {
+	  if (_row [0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row [1]) = bin2hex (info[2]))
     {
       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, realm, 'nobody', now ());
       rc := 1;
       goto err_ret;
+    }
+	}
     }
   else if (acc = 0)
     {

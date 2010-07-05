@@ -26,8 +26,10 @@
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
+	fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <v:method name="addProperty" arglist="in obj any, in objProperty varchar, in paramsProperty varchar, in params any">
     <![CDATA[
       declare tmp ay;

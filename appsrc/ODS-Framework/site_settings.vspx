@@ -138,6 +138,17 @@
 	    </div>
 	  </td>
 	</tr>
+	<tr>
+	  <td>
+	    <img src="images/icons/go_16.png" border="0" alt="" />
+	    <v:url name="appl11" value="Semantic Pingback Log" url="semping_log.vspx" render-only="1" />
+	    <div>
+	      Semantic Pingback
+	    </div>
+	  </td>
+	  <td>
+	  </td>
+	</tr>
       </table>
     </vm:body>
   </vm:pagewrapper>

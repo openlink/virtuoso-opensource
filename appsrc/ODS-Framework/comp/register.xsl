@@ -276,8 +276,14 @@ no_date:
                   WA_USER_EDIT (u_name1, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
                   WA_USER_EDIT (u_name1, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
               WA_USER_EDIT (u_name1, 'WAUI_FOAF'         , get_keyword ('iri', data));
-                  WA_USER_EDIT (u_name1, 'WAUI_CERT'         , client_attr ('client_certificate'));
-                  WA_USER_EDIT (u_name1, 'WAUI_CERT_LOGIN'   , 1);
+
+	      --see below
+              --WA_USER_EDIT (u_name1, 'WAUI_CERT'         , client_attr ('client_certificate'));
+	      --WA_USER_EDIT (u_name1, 'WAUI_CERT_LOGIN'   , 1);
+              declare cert any;
+	      cert := client_attr ('client_certificate');
+	      insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+	      	values (uid, cert, get_certificate_info (6, cert, 0, ''), 1);
 
                   lat := get_keyword ('lat', data);
                   lng := get_keyword ('lng', data);

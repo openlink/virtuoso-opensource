@@ -104,7 +104,7 @@
             <table>
   			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                 <td nowrap="nowrap" width="100%">
-                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUWL_BARTER')" format="%s"/>
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUWL_BARTER')" format="%s" name="wl_ds_browse_l1"/>
                 </td>
                 <td nowrap="nowrap">
                   <v:button name="wl_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
