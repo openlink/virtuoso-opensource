@@ -3324,11 +3324,24 @@ create procedure WA_CERTS_UPGRADE ()
 {
   if (registry_get ('WA_CERTS_UPGRADE') = '1')
     return;
+  
+  for select WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN 
+    from WA_USER_INFO where WAUI_CERT is not null do
+      {
+	if (WAUI_CERT_FINGERPRINT is null)
+	  WAUI_CERT_FINGERPRINT := get_certificate_info (2, cast (WAUI_CERT as varchar), 0, '');
+	if (WAUI_CERT_FINGERPRINT is not null and not exists (select 1 from WA_USER_CERTS where UC_FINGERPRINT = WAUI_CERT_FINGERPRINT))
+	  {  
    insert soft WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
-   select WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN 
-   from WA_USER_INFO where WAUI_CERT is not null;
-   update WA_USER_INFO set WAUI_CERT = null, WAUI_CERT_FINGERPRINT = null, WAUI_CERT_LOGIN = 0 
-       where WAUI_CERT is not null;
+		values (WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN);
+	  }
+	else
+	  {
+	    log_message (sprintf ('Cannot upgrade certificate for user %d', WAUI_U_ID));
+	  }
+      }
+   --update WA_USER_INFO set WAUI_CERT = null, WAUI_CERT_FINGERPRINT = null, WAUI_CERT_LOGIN = 0 
+   --    where WAUI_CERT is not null;
   registry_set ('WA_CERTS_UPGRADE', '1');  
 }
 ;
