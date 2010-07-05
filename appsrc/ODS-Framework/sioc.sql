@@ -754,6 +754,26 @@ create procedure wa_priv_info (in txt varchar, in flags varchar, in fld int)
   return 0;
 };
 
+create procedure sioc_user_cert (in graph_iri varchar, in person_iri varchar, in cert_id int, in cert any)
+{
+  declare info, modulus, exponent, crt_iri any;
+
+  info := get_certificate_info (9, cast (cert as varchar), 0);
+  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
+    {
+      modulus := info[2];
+      exponent := info[1];
+      crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', cert_id));
+      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), person_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+    }
+  return;
+}
+;
+
 create procedure sioc_user_info (
     in graph_iri varchar,
     in in_iri varchar,
@@ -1024,7 +1044,8 @@ create procedure sioc_user_info (
     {
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), protected);
     }
-      if (length (cert))
+  -- disabled, see above function
+  if (0 and length (cert))
 	{
 	  declare info, modulus, exponent any;
 
@@ -1342,11 +1363,9 @@ create procedure sioc_goodRelation_details (in graph_iri varchar, in forum_iri v
   foreach (any product in products) do
   {
     iri := offerlist_item_iri (forum_iri, get_keyword ('id', product));
-	  --dbg_obj_princ (iri, sioc_iri ('has_container'), forum_iri);
 	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
 	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
-    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
-    --dbg_obj_princ (iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('class', product)));
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('className', product)));
 
     properties := get_keyword ('properties', product);
     foreach (any property in properties) do
@@ -2276,6 +2295,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
+		  for select UC_ID, UC_CERT from DB.DBA.WA_USER_CERTS where UC_U_ID = U_ID do
+		    {
+		      sioc_user_cert (graph_iri, person_iri, UC_ID, UC_CERT);
+		    }
 		}
 
 	  for select WAI_ID,
@@ -2681,6 +2704,19 @@ create procedure delete_quad_s_or_o (in _g any, in _s any, in _o any)
   --      delete from DB.DBA.RDF_QUAD where P = pred and G = _g and O = _o;
   --  }
 };
+
+create procedure delete_quad_s (in _g any, in _s any)
+{
+  declare preds any;
+  _g := fix_graph (_g);
+  _s := fix_graph (_s);
+  _g := DB.DBA.RDF_IID_OF_QNAME (_g);
+  _s := DB.DBA.RDF_IID_OF_QNAME (_s);
+  if (_g is null or _s is null)
+    return;
+  delete from DB.DBA.RDF_QUAD where G = _g and S = _s;
+}
+;
 
 create procedure update_quad_s_o (in _g any, in _o any, in _n any)
 {
@@ -3665,6 +3701,61 @@ create trigger WA_USER_SVC_D after delete on DB.DBA.WA_USER_SVC referencing old 
 }
 ;
 
+create trigger WA_USER_CERTS_I after insert on DB.DBA.WA_USER_CERTS referencing new as N
+{
+  declare crt_iri, graph_iri, person_iri, iri, uname any;
+
+  if (not length (N.UC_CERT))
+    return;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (N.UC_U_ID);
+  person_iri := person_iri (iri);
+  sioc_user_cert (graph_iri, person_iri, N.UC_ID, N.UC_CERT);
+  return;
+}
+;
+
+create trigger WA_USER_CERTS_U after update on DB.DBA.WA_USER_CERTS referencing old as O, new as N
+{
+  declare crt_iri, graph_iri, person_iri, iri, uname any;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (O.UC_U_ID);
+  person_iri := person_iri (iri);
+  crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', O.UC_ID));
+  delete_quad_s (graph_iri, crt_iri);
+  sioc_user_cert (graph_iri, person_iri, N.UC_ID, N.UC_CERT);
+}
+;
+
+create trigger WA_USER_CERTS_D after delete on DB.DBA.WA_USER_CERTS referencing old as O
+{
+  declare crt_iri, graph_iri, person_iri, iri, uname any;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (O.UC_U_ID);
+  person_iri := person_iri (iri);
+  crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', O.UC_ID));
+  delete_quad_s (graph_iri, crt_iri);
+  return;
+}
+;
+
 create function std_pref (in iri varchar, in rev int := 0)
 {
   declare v any;
@@ -4056,8 +4147,14 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
 --  dbg_obj_print (data);
-  if (stat = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2]))
+  if (stat = '00000' and length (data))
+    {
+      foreach (any _row in data) do
+	{
+	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
     rc := 1;
+	}
+    }
 --  dbg_obj_print (stat, data);
   --dbg_obj_print (rc);
   return rc;
