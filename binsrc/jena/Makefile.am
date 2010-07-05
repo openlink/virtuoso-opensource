@@ -34,6 +34,7 @@ endif
 
 
 JENA_SRC= \
+	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtBulkUpdateHandler.java \
 	virtuoso_driver/VirtDataSource.java \
 	virtuoso_driver/VirtGraph.java \
@@ -65,13 +66,13 @@ lib:
 	-mkdir lib
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
-virt_jena.jar: $(JENA_SRC)
+virt_jena.jar: $(JENA_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	$(JAR) cvf virt_jena.jar -C out.driver virtuoso
+	$(JAR) cvfm virt_jena.jar manifest.main -C out.driver virtuoso
 
 .PHONY: doc
 doc:
@@ -104,6 +105,7 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	virtuoso_driver/*.java \
+	manifest.main \
 	virt_jena.jar \
 	testsuite/*.java \
 	testsuite/*.class \

@@ -34,6 +34,7 @@ import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.rdf.model.impl.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc3.VirtuosoDataSource;
@@ -103,6 +104,8 @@ public class VirtGraph extends GraphBase
 	    connection = _ds.getConnection();
             isDSconnection = true;
 	    ds = _ds;
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -156,6 +159,9 @@ public class VirtGraph extends GraphBase
 		connection = pconn.getConnection();
                 isDSconnection = true;
 	    }
+
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}

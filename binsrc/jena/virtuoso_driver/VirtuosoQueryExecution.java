@@ -418,9 +418,11 @@ public class VirtuosoQueryExecution  implements QueryExecution
           row_id++;
 
           try {
-	    for(int i = 1; i <= rsmd.getColumnCount(); i++)
-	      v_row.add(Var.alloc(rsmd.getColumnLabel(i)), 
-	        VirtGraph.Object2Node(rs.getObject(i)));
+	    for(int i = 1; i <= rsmd.getColumnCount(); i++) {
+	      Node n = VirtGraph.Object2Node(rs.getObject(i));
+	      if (n != null)
+	        v_row.add(Var.alloc(rsmd.getColumnLabel(i)), n);
+	    }
 
 	    if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
 	      v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
