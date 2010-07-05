@@ -1735,8 +1735,12 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                           -- dbg_obj_princ ('1: ', st, msg);
                           if (__proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is not null and
                               __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
-			      st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and 
-			      lower (regexp_replace (data[0][1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
+			      st = '00000' and length (data))
+                            {
+			      foreach (any _row in data) do
+				{
+				  if (_row[0] = cast (info[1] as varchar) and
+				      lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
                             {
                               declare resMode varchar;
 
@@ -1801,10 +1805,13 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
                                 a_uid := http_nobody_uid ();
                                 a_gid := http_nogroup_gid ();
                                 _perms := req || req || '--';
+					exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
                                 return a_uid;
                               }
                             }
                         }
+			    }
+			}
                       exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
                     }
                 }
