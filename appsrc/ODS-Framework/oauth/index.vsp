@@ -11,9 +11,9 @@
 				<li>
 				   <a href="oauth_apps.vspx">OAuth keys</a>
 				</li>
-				<li>
+				<!--li>
 				   <a href="sparql_acl.vspx">FOAF+SSL ACLs</a>
-				</li>
+				</li-->
 				<li>
 				   <a href="sparql.vsp">Protected SPARQL endpoint</a>
 				</li>
