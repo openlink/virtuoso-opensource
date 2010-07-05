@@ -189,13 +189,13 @@ create procedure sessionValidateX509 (
 
   set_user_id ('dba');
   fingerPrint := get_certificate_info (6);
-  for (select cast (WAUI_CERT as varchar) cert,
+  for (select cast (UC_CERT as varchar) cert,
               U_NAME uname
-         from DB.DBA.WA_USER_INFO,
+         from DB.DBA.WA_USER_CERTS,
               DB.DBA.SYS_USERS
-        where WAUI_U_ID = U_ID
-          and WAUI_CERT_FINGERPRINT = fingerPrint
-          and (((WAUI_CERT_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
+        where UC_U_ID = U_ID
+          and UC_FINGERPRINT = fingerPrint
+          and (((UC_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
   {
     info := get_certificate_info (9, cert);
     if (not isarray (info))

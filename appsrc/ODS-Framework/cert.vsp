@@ -28,9 +28,10 @@
      {
        declare kname, cvalue varchar;
        declare cn, c, o, ou, mail, webid, pk, uname varchar;
+       declare uid int;
        whenever not found goto nf;
-       select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY
-	into uname, cn, mail, o, c from
+       select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY, U_ID 
+	into uname, cn, mail, o, c, uid from
 	SYS_USERS, WA_USER_INFO, VSPX_SESSION where
 	VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
        webid := sioc..person_iri (sioc..user_obj_iri (uname));
@@ -48,7 +49,8 @@
 			),
 		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate'));
        cvalue := xenc_pem_export (kname);
-       WA_USER_EDIT (uname, 'WAUI_CERT', cvalue);
+       insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+		         values (uid, cvalue, get_certificate_info (6, cvalue, 0, ''), 0);
        http_header ('Content-Type: application/x-x509-user-cert\r\n');
        http (decode_base64 (xenc_X509_certificate_serialize (kname)));
        xenc_key_remove (kname);

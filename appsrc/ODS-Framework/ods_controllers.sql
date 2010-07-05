@@ -156,7 +156,7 @@ create procedure check_authentication_ssl (
   if (not is_https_ctx ())
     return 0;
 
-  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where U_ID = WAUI_U_ID and WAUI_CERT_FINGERPRINT = get_certificate_info (6));
+  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where U_ID = UC_U_ID and UC_FINGERPRINT = get_certificate_info (6));
   if (isnull (uname))
     return 0;
 
@@ -492,7 +492,7 @@ create procedure ODS.ODS_API."ontology.classes" (
 
   set_user_id ('dba');
   -- load ontology
-  ODS.ODS_API."ontology.load" (ontology);
+  ODS.ODS_API."ontology.load" (ontology, 0);
 
   -- select classes ontology
   classes := vector ();
@@ -558,13 +558,12 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' ||
          '\n PREFIX owl: <http://www.w3.org/2002/07/owl#>' ||
          '\n PREFIX %s: <%s>' ||
-         '\n SELECT ?p ?r1 ?r2' ||
+         '\n SELECT ?p ?t ?r1' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
-         '\n          {' ||
-         '\n            {' ||
-         '\n              ?p rdf:type owl:ObjectProperty .' ||
-         '\n            ?p rdfs:range ?r1 .' ||
+         '\n          {?p a owl:ObjectProperty} UNION {?p a owl:DatatypeProperty} .' ||
+         '\n          ?p rdf:type ?t .' ||
+         '\n          optional {?p rdfs:range ?r1} .' ||
          '\n            {' ||
          '\n              ?p rdfs:domain %s .' ||
          '\n            }' ||
@@ -581,29 +580,16 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n              ?_b1 rdf:rest ?_b2 . '   ||
          '\n              ?_b2 rdf:first %s . '    ||
          '\n            }' ||
-         '\n          }' ||
          '\n            union' ||
          '\n            {' ||
-         '\n              ?p rdf:type owl:DatatypeProperty .' ||
-         '\n              ?p rdfs:domain %s .' ||
-         '\n              ?p rdfs:range ?r2 .' ||
-         '\n            }' ||
-         '\n          }' ||
-         '\n          union' ||
-         '\n          {' ||
-         '\n            {' ||
-         '\n              ?p rdf:type rdf:Property .' ||
-         '\n              ?p rdfs:range ?r1 .' ||
-         '\n            }' ||
-         '\n            union' ||
-         '\n            {' ||
-         '\n              ?p rdf:type rdf:Property .' ||
-         '\n              OPTIONAL {?p rdfs:range ?r2 }.' ||
-         '\n              FILTER (!bound(?r2))' ||
-         '\n            }' ||
+         '\n            ?p rdfs:domain ?_b0 .'   ||
+         '\n            ?_b0 owl:unionOf ?_b1 .' ||
+         '\n            ?_b1 rdf:rest ?_b2 . '   ||
+         '\n            ?_b2 rdf:rest ?_b3 . '   ||
+         '\n            ?_b3 rdf:first %s . '    ||
          '\n          }' ||
          '\n        }' ||
-         '\n  ORDER BY ?p ?r1 ?r2',
+         '\n  ORDER BY ?p ?r1',
          prefix,
          ontology,
          ontology,
@@ -622,9 +608,9 @@ create procedure ODS.ODS_API."ontology.classProperties" (
           properties := vector_concat (properties, vector (ODS.ODS_API."ontology.objectProperty" (property)));
       property := vector (item[0], vector (), vector ());
     }
-    if (not isnull (item[1]))
+    if (ODS.ODS_API."ontology.normalize"(item[1]) = 'owl:ObjectProperty')
     {
-      tmp := ODS.ODS_API."ontology.normalize"(item[1]);
+      tmp := ODS.ODS_API."ontology.normalize"(item[2]);
       if (tmp not like 'nodeID:%')
       {
         property[1] := vector_concat (property[1], vector (tmp));
@@ -632,9 +618,9 @@ create procedure ODS.ODS_API."ontology.classProperties" (
         property[1] := vector_concat (property[1], ODS.ODS_API."ontology.collection" (ontology, tmp));
       }
     }
-    else
+    if (ODS.ODS_API."ontology.normalize"(item[1]) = 'owl:DatatypeProperty')
     {
-      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'rdf:String'))));
+      property[2] := vector_concat (property[2], vector (ODS.ODS_API."ontology.normalize" (coalesce (item[2], 'xsd:string'))));
     }
   }
   if (property[0] <> '')
@@ -676,14 +662,18 @@ create procedure ODS.ODS_API."ontology.objects" (
 
 create procedure ODS.ODS_API."ontology.sparql" (
   in S varchar,
+  in V any := null,
   in debug integer := 0)
 {
   declare st, msg, data, meta any;
 
   set_user_id ('dba');
+  if (isnull (V))
+    V := vector ();
   commit work;
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, data);
+  exec (S, st, msg, V, vector ('use_cache', 1), meta, data);
+  --exec (S, st, msg, V, 0, meta, data);
   if (debug)
     dbg_obj_princ (S, st, msg);
   if (st = '00000')
@@ -1214,8 +1204,12 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+    --DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT'         , client_attr ('client_certificate'));
+    --DB.DBA.WA_USER_EDIT (name, 'WAUI_CERT_LOGIN'   , 1);
+    declare cert any;
+    cert := client_attr ('client_certificate');
+    insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+	values (rc, cert, get_certificate_info (6, cert, 0, ''), 1);
   }
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
@@ -1544,6 +1538,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   if (not isnull (securitySiocLimit))
     DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
 
+  --XXX: obsolete
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
 
@@ -2043,6 +2038,8 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
 
+      if (0) -- certificate is not longer part of user_info table
+	{
       ods_xml_item ('certificate',            WAUI_CERT);
       if (length(WAUI_CERT))
       {
@@ -2050,6 +2047,7 @@ create procedure ODS.ODS_API."user.info" (
         ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
       }
       ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
+	}
       ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
 
       ods_xml_item ('photo',                  WAUI_PHOTO_URL);
@@ -3776,17 +3774,25 @@ create procedure ODS.ODS_API.get_foaf_data_array (
     S := DB.DBA.FOAF_SSL_QR (foafGraph, _loc_idn);       
     commit work;
     exec (S, st, msg, vector (), 0, meta, data);
-    if (not (st = '00000' and length (data) and data[0][0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (data[0][1]) = bin2hex (info[2])))
+    if (st = '00000' and length (data)) 
+      {
+	foreach (any _row in data) do 
+	  {
+	    if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
+	      goto loginin;
+	  }
+      }
       goto _exit;
   }
+loginin:
   certLogin := 0;
   certLoginEnable := 0;
   if (is_https_ctx ())
   {
-    for (select WAUI_CERT_LOGIN from DB.DBA.WA_USER_INFO where WAUI_CERT_FINGERPRINT = get_certificate_info (6)) do
+    for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
     {
       certLogin := 1;
-      certLoginEnable := coalesce (WAUI_CERT_LOGIN, 0);
+      certLoginEnable := coalesce (UC_LOGIN, 0);
   }
   }
   S := sprintf ('sparql

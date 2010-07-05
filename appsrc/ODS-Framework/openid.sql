@@ -63,7 +63,7 @@ create procedure yadis (in uname varchar, in tp varchar := null)
     tp := '';
   url := db.dba.wa_link (1, '/dataspace/'||tp||uname);
   srv := db.dba.wa_link (1, '/openid');
-  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK, WAUI_CERT
+  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK
     from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
     do
       {
@@ -768,7 +768,7 @@ create procedure get_login_url (in _identity any)
   declare enabled int;
   uname := oid_get_user_id (_identity);
   whenever not found goto nf;
-  select WAUI_CERT, WAUI_CERT_LOGIN into cert, enabled from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname;
+  select UC_CERT, UC_LOGIN into cert, enabled from DB.DBA.WA_USER_CERTS, DB.DBA.SYS_USERS where UC_U_ID = U_ID and U_NAME = uname;
   if (length (cert) and enabled)
     {
       return wa_ssl_link (1, 'openid_login.vspx');

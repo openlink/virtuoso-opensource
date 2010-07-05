@@ -39,6 +39,9 @@
     <v:variable persist="0" name="no_pwd" type="int" default="0"/>
   <v:variable persist="0" name="fb" type="DB.DBA.Facebook" default="null" />
   <v:variable persist="0" name="fbLoginID" type="varchar" default="''"/>
+  <v:variable persist="0" name="tab_no" type="int" default="0" param-name="tabNo"/>
+  <v:variable persist="temp" name="cert_del"  type="int" default="0" param-name="cert_del"/>
+  <v:variable persist="0" name="cert_edit" type="int" default="null" param-name="cert_edit"/>
     <v:before-data-bind>
       <![CDATA[
       declare pwd, node_id, tmp varchar;
@@ -47,21 +50,26 @@
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
 	     WAUI_OPENID_URL,
-	           WAUI_FACEBOOK_LOGIN_ID,
-	           WAUI_CERT_LOGIN,
-	     WAUI_CERT
+		   WAUI_FACEBOOK_LOGIN_ID
         INTO self.secretq,
              self.secreta,
              pwd,
 	     self.oid_urlv,
-	           self.fbLoginID,
-	           self.certificate_login,
-	     self.certificate_content
+		   self.fbLoginID
         FROM WA_USER_INFO,
              DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID
          and U_NAME = self.u_name;
 	self.sioc_limit := coalesce (USER_GET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
+
+      if (self.cert_edit is not null and not e.ve_is_post)
+        {
+          for select * from WA_USER_CERTS where UC_ID = self.cert_edit do
+	    {
+	      self.certificate_login := UC_LOGIN;
+	      self.certificate_content := UC_CERT;
+	    }
+	}
 
 	tmp := uuid ();
 	node_id := subseq (tmp, strrchr (tmp, '-'));
@@ -74,8 +82,22 @@
         self.fb := new Facebook(fb_options[0], fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
       ]]>
     </v:before-data-bind>
-
+ <br/>
+  <div id="b" class="c1">
+    <div class="tabs">
+      <v:url name="sec_url_0" value="Password Settings" url="--sprintf('uiedit.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_3" value="Password recovery" url="--sprintf('uiedit.vspx?page=3&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_1" value="OpenID" url="--sprintf('uiedit.vspx?page=3&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
+    <vm:if test="not isnull (self.fb)">
+	<v:url name="sec_url_2" value="Facebook" url="--sprintf('uiedit.vspx?page=3&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
+    </vm:if>
+      <v:url name="sec_url_4" value="Limits" url="--sprintf('uiedit.vspx?page=3&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_5" value="X.509 Certificates" url="--sprintf('uiedit.vspx?page=3&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
+    </div>
+    <div class="contents">
   <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=3">
+      <v:template name="sec_tmpl_0" type="simple" enabled="-- equ (self.tab_no, 0)">
+	  <input type="hidden" value="0" name="tabNo" /> 
     <fieldset>
 			<legend><b>Password Settings</b></legend>
 			<table>
@@ -147,7 +169,7 @@
 			  USER_CHANGE_PASSWORD (self.u_name, self.opwd1.ufl_value, self.npwd1.ufl_value);
 			    self.opwd1.ufl_value := '';
 			  self.msg_msg := 'The password was changed successfully';
-			  self.pwd_msg.vc_data_bind (e);
+                      --self.pwd_msg.vc_data_bind (e);
                         }
                         else
                         {
@@ -168,6 +190,9 @@
               </tr>
       </table>
     </fieldset>
+      </v:template>
+      <v:template name="sec_tmpl_1" type="simple" enabled="-- equ (self.tab_no, 1)">
+	  <input type="hidden" value="1" name="tabNo" /> 
     <fieldset>
 			<legend><b>OpenID</b></legend>
 			<table>
@@ -196,7 +221,7 @@
 			    self.vc_error_message := err;
 			    return;
 			  }
-                  self.vc_redirect ('uiedit.vspx?page=3');
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=1');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -205,7 +230,10 @@
               </tr>
       </table>
     </fieldset>
+      </v:template>
     <vm:if test="not isnull (self.fb)">
+      <v:template name="sec_tmpl_2" type="simple" enabled="-- equ (self.tab_no, 2)">
+	  <input type="hidden" value="2" name="tabNo" /> 
       <fieldset>
   			<legend><b>Facebook</b></legend>
   			<table>
@@ -254,7 +282,7 @@
                       return;
                     }
                     WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', self.fb._user);
-                    self.vc_redirect ('uiedit.vspx?page=3');
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>
               </v:button>
@@ -265,7 +293,7 @@
                       return;
 
                     WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', null);
-                    self.vc_redirect ('uiedit.vspx?page=3');
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>
               </v:button>
@@ -274,7 +302,10 @@
               </tr>
         </table>
       </fieldset>
+</v:template>
     </vm:if>
+      <v:template name="sec_tmpl_3" type="simple" enabled="-- equ (self.tab_no, 3)">
+	  <input type="hidden" value="3" name="tabNo" /> 
     <fieldset>
 			<legend><b>Password Recovery</b></legend>
 			<table>
@@ -324,7 +355,7 @@
 
                         WA_USER_EDIT (self.u_name, 'SEC_QUESTION', self.sec_question.ufl_value);
                         WA_USER_EDIT (self.u_name, 'SEC_ANSWER', self.sec_answer.ufl_value);
-                  self.vc_redirect ('uiedit.vspx?page=3');
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=3');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -333,6 +364,9 @@
               </tr>
       </table>
     </fieldset>
+  </v:template>
+      <v:template name="sec_tmpl_4" type="simple" enabled="-- equ (self.tab_no, 4)">
+	  <input type="hidden" value="4" name="tabNo" /> 
     <fieldset>
 			<legend><b>Applications restrictions</b></legend>
 			<table>
@@ -362,8 +396,8 @@
                     return;
                     }
 
-                        USER_SET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT', atoi (self.sioc_limit1.ufl_value));
-                  self.vc_redirect ('uiedit.vspx?page=3');
+                    USER_SET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT', self.sioc_limit1.ufl_value);
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=4');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -372,6 +406,33 @@
               </tr>
       </table>
     </fieldset>
+  </v:template>
+      <v:template name="sec_tmpl_5" type="simple" enabled="-- equ (self.tab_no, 5)">
+	  <input type="hidden" value="5" name="tabNo" /> 
+	  <table class="listing">
+	      <tr class="listing_header_row">
+		  <th>Subject</th>
+		  <th>Login enabled</th>
+		  <th>Action</th>
+	      </tr>
+		  <?vsp 
+		  if (self.cert_del is not null)
+		    delete from WA_USER_CERTS where UC_ID = self.cert_del and UC_U_ID = self.u_id;
+		  for select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from WA_USER_CERTS where UC_U_ID = self.u_id do {
+		  ?>
+		  <tr>
+		      <td><?vsp http_value (get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), 'b'); ?></td>
+		      <td><?V case when UC_LOGIN = 1 then 'Yes' else 'No' end ?></td>
+		      <td>
+			  <v:url name="ce1" value="Edit" url="--sprintf ('uiedit.vspx?page=3&tabNo=5&cert_edit=%d', UC_ID)" render-only="1"/>
+			  <v:url name="ce2" value="Delete" url="--sprintf ('uiedit.vspx?page=3&tabNo=5&cert_del=%d', UC_ID)" render-only="1"/>
+		      </td>
+		  </tr>	    
+		  <?vsp 
+		    }
+		  ?>
+	  </table>
+	  <br/>
     <fieldset>
 			<legend><b>X.509 Certificate</b></legend>
 			<table>
@@ -390,13 +451,19 @@
 		          http_value (replace (get_certificate_info (7, cast(self.certificate_content as varchar), 0, '', '2.5.29.17'), 'URI:', ''),'b');
 		  ?>
 	      </div>
+  	        <div>
+    	    	  <label>Fingerprint:</label>
+        		  <?vsp
+  		          http_value (get_certificate_info (6, cast(self.certificate_content as varchar), 0, ''),'b');
+  		        ?>
+  	        </div>
 	      <?vsp } ?>
 	    <v:textarea name="cert1" value="--self.certificate_content" xhtml_cols="70" xhtml_rows="20" />
-	    <?vsp if (not length (self.certificate_content) and xenc_key_exists ('id_rsa')) { ?>
+  	          <!--?vsp if (not length (self.certificate_content) and xenc_key_exists ('id_rsa')) { ?-->
 	    <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="200" height="200" frameborder="0" scrolling="no">
 	       <p>Your browser does not support iframes.</p>
 	   </iframe>
-	   <?vsp } ?>
+  	        <!--?vsp } ?-->
 	</td>
       </tr>
       <tr>
@@ -415,10 +482,10 @@
       <tr>
         <td colspan="2" class="ctrl">
           <span class="fm_ctl_btn">
-            <v:button name="bt_cncl_6" value="Cancel" action="simple" xhtml_onclick="javascript: return initLoadProfile();">
-              <v:on-post>
-                self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
-              </v:on-post>
+              <v:button name="bt_cncl_6" value="Cancel" action="simple" >
+		  <v:on-post><![CDATA[
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=5');
+		    ]]></v:on-post>
             </v:button>
             <v:button name="bt_set2" value="Save Certificate" action="simple">
               <v:on-post>
@@ -427,28 +494,27 @@
                   if(self.vc_is_valid = 0)
                     return;
                   agent := get_certificate_info (7, self.cert1.ufl_value, 0, '', '2.5.29.17');
-                  if (agent is null and length (self.cert1.ufl_value))
+                    if ((agent is null and length (self.cert1.ufl_value)) or (0 = length (self.cert1.ufl_value)))
 		    {
                       self.vc_is_valid := 0;
 		      self.vc_error_message := 'The certificate must be in PEM format and must have Alternate Name attribute.';
 		      return;
 		    }
-                  WA_USER_EDIT (self.u_name, 'WAUI_CERT_LOGIN', self.cert_login.ufl_selected);
-                  WA_USER_EDIT (self.u_name, 'WAUI_CERT', self.cert1.ufl_value);
-
-                  self.vc_redirect ('uiedit.vspx?page=3');
-                ]]>
-              </v:on-post>
-            </v:button>
-            <v:button name="bt_set3" value="Remove Certificate" action="simple">
-              <v:on-post>
-                <![CDATA[
-                  if (self.vc_is_valid = 0)
-                    return;
-                  WA_USER_EDIT (self.u_name, 'WAUI_CERT_LOGIN', 0);
-                  WA_USER_EDIT (self.u_name, 'WAUI_CERT', NULL);
-
-                  self.vc_redirect ('uiedit.vspx?page=3');
+		    if (self.cert_edit is null)
+                      {
+		        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+		         values (self.u_id, self.cert1.ufl_value, get_certificate_info (6, self.cert1.ufl_value, 0, ''), self.cert_login.ufl_selected);
+		      }
+		    else
+		      {
+		        update WA_USER_CERTS set UC_CERT = self.cert1.ufl_value, 
+			 	UC_FINGERPRINT = get_certificate_info (6, self.cert1.ufl_value, 0, ''),
+				UC_LOGIN = self.cert_login.ufl_selected
+				where UC_U_ID = self.u_id and UC_ID = self.cert_edit ;
+			self.cert_edit := null;	
+		      }   
+		    commit work;  
+                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=5');
                 ]]>
               </v:on-post>
             </v:button>
@@ -457,5 +523,8 @@
       </tr>
     </table>
     </fieldset>
+  </v:template>
     </v:form>
+</div>
+</div>
 </v:page>

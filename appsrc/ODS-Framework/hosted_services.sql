@@ -3226,9 +3226,9 @@ wa_exec_no_error_log(
     WAUI_BMSN VARCHAR,                  -- 54
     WAUI_MESSAGING LONG VARCHAR,        -- 55
     WAUI_BMESSAGING LONG VARCHAR,       -- 56
-    WAUI_CERT_LOGIN integer default 0,
-    WAUI_CERT_FINGERPRINT varchar,
-    WAUI_CERT long varbinary,
+    WAUI_CERT_LOGIN integer default 0,  -- XXX: obsolete, see WA_USER_CERTS
+    WAUI_CERT_FINGERPRINT varchar,	-- same as above
+    WAUI_CERT long varbinary,		-- same as above
 
     primary key (WAUI_U_ID)
   )'
@@ -3281,26 +3281,6 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
-create procedure WA_USER_INFO_WAUI_CERT_UPGRADE ()
-{
-  if (registry_get ('__WA_USER_INFO_CERT_UPGRADE') = 'done-2')
-    return;
-  registry_set ('__WA_USER_INFO_CERT_UPGRADE', 'done-2');
-
-  for select U_ID,
-             WAUI_CERT
-        from SYS_USERS,
-             WA_USER_INFO
-      where WAUI_U_ID = U_ID and WAUI_CERT is not null do
-  {
-    update WA_USER_INFO
-       set WAUI_CERT_LOGIN = 0,
-           WAUI_CERT_FINGERPRINT = get_certificate_info (6, cast (WAUI_CERT as varchar))
-     where WAUI_U_ID = U_ID;
-  }
-};
-WA_USER_INFO_WAUI_CERT_UPGRADE ();
-
 create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
 {
   if (exists (select 1 from SYS_COLS where \COLUMN = 'WAUI_FOAF' and \TABLE = 'DB.DBA.WA_USER_INFO' and COL_DTP = 125))
@@ -3327,6 +3307,33 @@ update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 wa_exec_no_error('create index WA_USER_INFO_NICK on DB.DBA.WA_USER_INFO (WAUI_NICK)');
 
+DB.DBA.EXEC_STMT (
+'create table WA_USER_CERTS (
+  UC_ID   	int identity,
+  UC_U_ID 	int,
+  UC_CERT 	long varchar,
+  UC_FINGERPRINT varchar,
+  UC_LOGIN	int default 0,
+  primary key (UC_U_ID, UC_FINGERPRINT)
+  )
+create unique index WA_USER_CERTS_FINGERPRINT on WA_USER_CERTS (UC_FINGERPRINT)
+', 
+0);
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE') = '1')
+    return;
+   insert soft WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
+   select WAUI_U_ID, WAUI_CERT, WAUI_CERT_FINGERPRINT, WAUI_CERT_LOGIN 
+   from WA_USER_INFO where WAUI_CERT is not null;
+   update WA_USER_INFO set WAUI_CERT = null, WAUI_CERT_FINGERPRINT = null, WAUI_CERT_LOGIN = 0 
+       where WAUI_CERT is not null;
+  registry_set ('WA_CERTS_UPGRADE', '1');  
+}
+;
+
+WA_CERTS_UPGRADE ();
 
 create procedure WA_MAKE_NICK (in nick varchar)
 {
@@ -7498,3 +7505,44 @@ create procedure PSH.DBA.ods_cli_subscribe (in inst_id int, in hub varchar, in m
   commit work;	     
 }
 ;
+
+create procedure ods_uri_curie (in uri varchar)
+{
+  declare delim integer;
+  declare uriSearch, nsPrefix, ret varchar;
+
+  delim := -1;
+  uriSearch := uri;
+  nsPrefix := null;
+  ret := uri;  
+  while (nsPrefix is null and delim <> 0)
+    {
+      delim := coalesce (strrchr (uriSearch, '/'), 0);
+      delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
+      delim := __max (delim, coalesce (strrchr (uriSearch, ':'), 0));
+      nsPrefix := coalesce (__xml_get_ns_prefix (subseq (uriSearch, 0, delim + 1), 2),
+      			    __xml_get_ns_prefix (subseq (uriSearch, 0, delim),     2));
+      uriSearch := subseq (uriSearch, 0, delim);
+    }
+  if (nsPrefix is not null)
+    {
+      declare rhs varchar;
+      rhs := subseq(uri, length (uriSearch) + 1, null);
+      if (not length (rhs))
+	ret := uri;
+      else
+	ret := nsPrefix || ':' || rhs;
+    }
+  declare _s varchar;
+  declare _h int; 
+
+  _s := trim(ret);
+
+  if (length(_s) <= 80) return _s;
+  _h := floor ((80-3) / 2);
+  _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+
+  return _s;
+}
+;
+
