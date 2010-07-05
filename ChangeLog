@@ -1,3 +1,170 @@
+2010-07-05 13:24  source
+
+	* Fixed handling multiple certs
+
+2010-07-05 13:23  source
+
+	* FIxed can have many certs in FOAF
+
+2010-07-05 13:17  source
+
+	* Mover ACL UI into conductor
+	* Fixed dependency on ODS Framework
+
+2010-07-05 13:11  source
+
+	file sparql_acl.vspx was added on branch V6_0_0-DEVEL on 2010-07-05 13:17:25 +0000
+
+2010-07-05 13:04  source
+
+	* Fixed use label ontology to extract geo coordinates
+
+2010-07-05 12:47  source
+
+	file manifest2.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:56:21 +0000
+
+2010-07-05 12:47  source
+
+	file manifest3.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:56:21 +0000
+
+2010-07-05 12:47  source
+
+	file manifest4.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:56:21 +0000
+
+2010-07-05 12:42  source
+
+	* Added driver versioning
+	* Fixed issue with batch commit
+
+2010-07-05 12:41  source
+
+	* Added driver versioning
+	* FIxed issue with batch commit
+
+2010-07-05 12:40  source
+
+	* Rebuild driver
+
+2010-07-05 12:40  source
+
+	* Added driver versioning
+	* Fixed force jena's lazy initialization when Graph is created
+	* Fixed ignore warning on Binding.add NULL value
+
+2010-07-05 12:21  source
+
+	* Rebuild drivers
+
+2010-07-05 12:16  source
+
+	* Added driver versioning
+
+2010-07-05 12:16  source
+
+	file Version.java was added on branch V6_0_0-DEVEL on 2010-07-05 12:40:15 +0000
+
+2010-07-05 12:16  source
+
+	file Version.java was added on branch V6_0_0-DEVEL on 2010-07-05 12:41:21 +0000
+
+2010-07-05 12:16  source
+
+	file Version.java was added on branch V6_0_0-DEVEL on 2010-07-05 12:42:23 +0000
+
+2010-07-05 12:16  source
+
+	file manifest.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:40:15 +0000
+
+2010-07-05 12:16  source
+
+	file manifest.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:41:21 +0000
+
+2010-07-05 12:16  source
+
+	file manifest.main was added on branch V6_0_0-DEVEL on 2010-07-05 12:42:23 +0000
+
+2010-07-05 08:30  source
+
+	* Added more assertations to facets ontology
+
+2010-07-05 08:29  source
+
+	* Added label as IPF
+
+2010-07-05 08:29  source
+
+	* Remove tags from comment, label etc
+
+2010-07-05 08:26  source
+
+	* Added support for multiple certificates in user profile
+	* Added semantic pingback log
+	* Fixed GoodsRelation SIOC data
+	* Fixed Offers
+
+2010-07-05 08:25  source
+
+	* FIxed JS error showing unlogged users
+
+2010-07-05 08:22  source
+
+	file semping_log.vspx was added on branch V6_0_0-DEVEL on 2010-07-05 08:26:09 +0000
+
+2010-07-05 08:20  source
+
+	* Fixed RSS data
+
+2010-07-05 08:13  source
+
+	* Fixed minor issue
+
+2010-07-01 11:52  source
+
+	* Fixed namespace issues
+
+2010-07-01 11:49  source
+
+	* Fixed IE problem with negative size on box
+	* Fixed do not rewrite existing href on a++ links
+
+2010-06-30 14:32  source
+
+	* Fixed handing of items in alt name
+
+2010-06-30 14:31  source
+
+	* Fixed UI profile edit
+	* Fixed Favorites
+
+2010-06-30 14:29  source
+
+	* Fixed when distinct, should use one or the other ssl depending on which
+	  is non null
+
+2010-06-30 09:58  source
+
+	* Fixed minor issues
+
+2010-06-30 09:47  source
+
+	* Added UI semantic ping
+
+2010-06-30 09:47  source
+
+	file semping_app.vspx was added on branch V6_0_0-DEVEL on 2010-06-30 14:31:42 +0000
+
+2010-06-30 09:47  source
+
+	* Fixed handling of items in alt name
+
+2010-06-29 22:55  source
+
+	* Fixed handling of alt name
+
+2010-06-29 12:50  source
+
+	* Fixed semantic pingback
+
 2010-06-29 11:53  source
 
 	* Updated version to 6.1.2-rc2
@@ -9481,7 +9648,3 @@
 2009-10-18 22:11  source
 
 	* Fixed syntax of IRI parts to match SPARQL1.0 W3C recommendation
-
-2009-10-16 17:45  source
-
-	* Updated version to 6.0.0 for final release
