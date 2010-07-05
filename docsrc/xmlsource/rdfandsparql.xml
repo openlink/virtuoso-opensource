@@ -4468,7 +4468,55 @@ http://dbpedia.org/resource/Broken_Flowers  Bill Murray  	  Jim Jarmusch  	Music
 <x> <y> "Broken" 
 <z> <q> "Flowers"		
 ]]></programlisting>
+</sect5>
+<sect5 id="rdfsparulexamples21"><title>Example for date manipulation of xsd types within SPARQL</title>
+<para>This example shows usage of dateTime column truncation to date only
+and performs a group by on this column:
+</para>
+<programlisting><![CDATA[
+-- prepare the date by inserting triples in a graph:
+SQL>SPARQL 
+INSERT INTO GRAPH <http://BookStore.com>
+  { 
+    <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/title>  "SPARQL and RDF" .
+    <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-01-01T00:00:00>.
+    <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/title> "Design notes" .
+    <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <2001-01-01T00:00:00>.
+    <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/title> "Fundamentals of Compiler Design" .
+    <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>.
+    <http://www.ivan-herman.net/foaf.rdf#me> <http://purl.org/dc/elements/1.1/title>  "RDF Store" .
+    <http://www.ivan-herman.net/foaf.rdf#me> <http://purl.org/dc/elements/1.1/date> <2001-03-05T00:00:00>.
+    <http://bblfish.net/people/henry/card#me> <http://purl.org/dc/elements/1.1/title> "Design RDF notes" .
+    <http://bblfish.net/people/henry/card#me> <http://purl.org/dc/elements/1.1/date> <2001-01-01T00:00:00>.
+    <http://hometown.aol.com/chbussler/foaf/chbussler.foaf#me> <http://purl.org/dc/elements/1.1/title> "RDF Fundamentals" .
+    <http://hometown.aol.com/chbussler/foaf/chbussler.foaf#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>. 
+  };
 
+_______________________________________________________
+
+Insert into <http://BookStore.com>, 12 triples -- done
+
+-- Find Count of Group by Dates
+SQL>SPARQL 
+SELECT (xsd:date(bif:subseq(str(?a_dt), 0, 10))), count(*)
+FROM <http://BookStore.com> 
+WHERE 
+  { 
+    ?s <http://purl.org/dc/elements/1.1/date> ?a_dt 
+  }
+GROUP BY (xsd:date(bif:subseq(str(?a_dt), 0, 10)));
+
+callret-0                                         callret-1
+VARCHAR                                           VARCHAR
+__________________________________________________
+1999-01-01                                        1
+2001-01-01                                        2
+2002-01-01                                        2
+2001-03-05                                        1
+
+4 Rows. -- 15 msec.
+SQL>	
+]]></programlisting>
 </sect5>
    </sect4>
    </sect3>
