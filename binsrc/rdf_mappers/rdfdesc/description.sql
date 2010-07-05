@@ -36,6 +36,8 @@ TTLP (
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix og: <http://opengraphprotocol.org/schema/> .
+
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
 fbase:name rdfs:subPropertyOf virtrdf:label .
@@ -62,8 +64,12 @@ foaf:topic rdfs:subPropertyOf dcterms:references .
 <http://opengraphprotocol.org/schema/title> owl:equivalentProperty <http://opengraphprotocol.org/schema/title#this> .
 <http://rdfs.org/ns/void#vocabulary> owl:equivalentProperty <http://www.openlinksw.com/schema/attribution/isDescribedUsing> .
 <http://aims.fao.org/aos/geopolitical.owl#nameListEN> rdfs:subPropertyOf rdfs:label .
-<http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> owl:equivalentProperty geo:long .
-<http://aims.fao.org/aos/geopolitical.owl#hasMinLatitude> owl:equivalentProperty geo:lat .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLatitude> rdfs:subPropertyOf geo:lat .
+<http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> rdfs:subPropertyOf geo:long .
+og:latitude rdfs:subPropertyOf geo:lat .
+og:longitude rdfs:subPropertyOf geo:long .
+<http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
+<http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
