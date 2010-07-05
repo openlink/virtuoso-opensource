@@ -71,7 +71,7 @@ create procedure PHOTO.WA.rss_output(in current_instance photo_instance,inout pa
                               XMLELEMENT('guid',sprintf('http://%s%s%s/%s',_host,_home_path,C.COL_NAME,RES_NAME)),
                               XMLELEMENT('title',RES_NAME),
                               XMLELEMENT('enclosure',
-                                XMLATTRIBUTES(length(RES_CONTENT) 'length',RES_TYPE 'type',sprintf('%s%s/%s',_home_path,C.COL_NAME,RES_NAME) 'url')
+                                XMLATTRIBUTES(length(RES_CONTENT) 'length',RES_TYPE 'type',sprintf('http://%s%s%s/%s',_host,_home_path,C.COL_NAME,RES_NAME) 'url')
                               ),
                               XMLELEMENT('category',C.COL_NAME)
                           )
