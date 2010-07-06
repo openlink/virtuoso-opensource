@@ -2187,8 +2187,8 @@ function preparePropertiesWork(prefix, ontologyNo, itemNo) {
 
         var propertyNo = ctrl.name.replace(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_1_", "");
         var propertyName = ctrl.value;
-        var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
-        var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
+    var propertyType = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_2_"+propertyNo);
+    var propertyValue = $v(prefix+"_item_"+ontologyNo+"_prop_"+itemNo+"_fld_3_"+propertyNo);
         if (propertyType == 'object') {
           var item = RDF.getItemByName(propertyValue);
           if (item)

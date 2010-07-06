@@ -100,8 +100,8 @@
                   reParts := regexp_parse(re, params[L], 0);
                   propNo := subseq (params[L], reParts[2], reParts[3]);
                   propName := trim (params[L+1]);
-                  propValue := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params);
-                  propType := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params, 'data');
+          propType := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_2_'||propNo, params, 'data');
+          propValue := get_keyword (prefix || '_item_'||ontologyNo||'_prop_'||itemNo||'_fld_3_'||propNo, params);
                   property := vector_concat (ODS..jsonObject (), vector ('name', propName, 'value', propValue, 'type', propType));
                   itemProperties := vector_concat (itemProperties, vector (property));
                 }
