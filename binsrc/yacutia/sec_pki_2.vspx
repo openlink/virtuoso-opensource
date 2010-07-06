@@ -219,7 +219,7 @@
 	      <td>
 		  <v:data-list name="key_list" value="--self.key1"
 		      sql="select top 1 'none' as xenc_key from sys_keys union all
-		      select xenc_key from yac_list_keys (username) (xenc_key varchar) x where username = 'dba'"
+		      select xenc_key from yac_list_keys (username) (xenc_key varchar, xenc_type varchar) x where username = 'dba'"
 		      key-column="xenc_key"
 		      value-column="xenc_key"
 		      />
