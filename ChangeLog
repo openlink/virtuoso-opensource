@@ -1,3 +1,67 @@
+2010-07-06 14:30  source
+
+	* Updated version to 6.1.2-rc3
+
+2010-07-06 14:24  source
+
+	* Added new setting WideAsUTF16 to ODBC driver to return UTF-16LE
+	  when using SQLWCHAR
+	* Fixed setting for UTF-8 when db keeps UTF-8 in varchars
+
+2010-07-06 14:06  source
+
+	* Fixed declaration after statement
+
+2010-07-06 10:40  source
+
+	* Fixed yac_list_keys output is changed
+
+2010-07-06 10:39  source
+
+	* Fixed examine lastmod ts before updating
+
+2010-07-06 10:34  source
+
+	* Fixed as col_default is always a serialized value, zero can appear
+	  as default integer zero
+
+2010-07-06 09:56  source
+
+	* Fixed move alloc/free of descriptor handles into SQLAllocStmt
+
+2010-07-05 19:30  source
+
+	* Added information for building on Mac OS X 10.6
+
+2010-07-05 19:25  source
+
+	* Added missing test for memcpy
+
+2010-07-05 15:01  source
+
+	* Fixed wikiWord ("." is not yet part of the name)
+
+2010-07-05 14:59  source
+
+	* Fixed when importing keys, let user decide which on to use as his
+	  webid for ODBC/SQL login
+
+2010-07-05 14:48  source
+
+	* Added support for FOAF+SSL authentication
+
+2010-07-05 14:11  source
+
+	* Updated documentation
+
+2010-07-05 14:05  source
+
+	* Fixed upgrade procedure, more checks
+
+2010-07-05 14:04  source
+
+	* Moved to conductor
+
 2010-07-05 13:24  source
 
 	* Fixed handling multiple certs
@@ -9648,3 +9712,8 @@
 2009-10-18 22:11  source
 
 	* Fixed syntax of IRI parts to match SPARQL1.0 W3C recommendation
+
+2009-10-16 17:45  source
+
+	* Updated version to 6.0.0 for final release
+
