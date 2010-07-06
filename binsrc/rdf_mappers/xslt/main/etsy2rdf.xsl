@@ -80,8 +80,9 @@
 					<rdf:type rdf:resource="&bibo;Document"/>
 					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					<foaf:primaryTopic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-					<dcterms:subject rdf:resource="{$resourceURL}"/>
+					<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 					<foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
+					<!--foaf:topic rdf:resource="{$resourceURL}"/-->
 					<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 					<owl:sameAs rdf:resource="{$docIRI}"/>
 				</rdf:Description>
@@ -161,7 +162,7 @@
 
     <xsl:template match="user_name">
 		<xsl:if test="$action = 'prod'">
-			<foaf:maker rdf:resource="{concat('http://www.etsy.com/people/', .)}"/>
+			<foaf:maker rdf:resource="{vi:proxyIRI (concat('http://www.etsy.com/people/', .))}"/>
 		</xsl:if>
 		<xsl:if test="$action = 'user'">
 			<rdfs:label>
