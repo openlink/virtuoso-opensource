@@ -525,10 +525,36 @@ TBL.createCell47 = function (td, prefix, fldName, No, fldOptions) {
   }
   var fld = OAT.Dom.create('input');
   fld.type = 'hidden';
-  fld.id = fldName.replace(/fld_2/, 'fld_3');
+  fld.id = fldName.replace('fld_3', 'fld_2');
   fld.name = fld.id;
   fld.value = propertyType;
   td.appendChild(fld);
+}
+
+TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
+  if (!td) {return;}
+
+  td.style.width = '1%';
+  // clear
+  td.innerHTML = '';
+
+  // get product
+  var item = fldOptions.item;
+  if (!item) {return;}
+
+  // get property
+  var property = fldOptions.value;
+  if (!property) {return;}
+
+  // get property data
+  var propertyType;
+  var ontologyClassProperty = RDF.getOntologyClassProperty(item.className, property.name);
+  if (ontologyClassProperty && ontologyClassProperty.objectProperties) {
+    td.innerHTML = 'URI';
+  }
+  else if (ontologyClassProperty && ontologyClassProperty.datatypeProperties) {
+    td.innerHTML = 'Literal';
+  }
 }
 
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)

@@ -1394,7 +1394,7 @@ RDF.showPropertiesTable = function(item)
       var prefixProp = prefix + '_prop_' + No;
 
       var fld = OAT.Dom.create('span');
-      fld.onclick = function(){TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item}, fld_2: {mode: 47, item: item}});};
+      fld.onclick = function(){TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item}, fld_2: {mode: 48, item: item}, fld_3: {mode: 47, item: item}});};
       OAT.Dom.addClass(fld, 'button pointer');
 
       var img = OAT.Dom.create('img');
@@ -1408,14 +1408,14 @@ RDF.showPropertiesTable = function(item)
       TDs[2].style.whiteSpace = 'nowrap';
       TDs[2].appendChild(fld);
 
-      var S = '<table id="prop_tbl" class="listing" style="background-color: #FFF;"><thead><tr class="listing_header_row"><th width="50%">Property IRI</th><th width="50%">Value</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="3">No Properties</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
+      var S = '<table id="prop_tbl" class="listing" style="background-color: #FFF;"><thead><tr class="listing_header_row"><th width="50%">Property IRI</th><th width="50%" colspan="2">Value</th><th width="80px">Action</th></tr></thead><tbody id="prop_tbody"><tr id="prop_tr_no"><td colspan="3">No Properties</td></tr></tbody></table><input type="hidden" id="prop_no" name="prop_no" value="0" />';
       TDs[1].innerHTML = S.replace(/prop_/g, prefixProp+'_');
 
       var properties = item.properties;
       if (properties)
       {
         for (var i = 0; i < properties.length; i++)
-          TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item, value: properties[i]}, fld_2: {mode: 47, item: item, value: properties[i]}});
+          TBL.createRow(prefixProp, null, {fld_1: {mode: 46, item: item, value: properties[i]}, fld_2: {mode: 48, item: item, value: properties[i]}, fld_3: {mode: 47, item: item, value: properties[i]}});
       } else {
         fld.onclick();
       }
@@ -1431,5 +1431,7 @@ RDF.changePropertyValue = function(obj)
   var fldName = S.replace(/fld_1/, 'fld_2');
   var S = obj.parentNode.id;
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'2');
+  TBL.createCell48(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
+  var td = $(S.substr(0,S.lastIndexOf('_')+1)+'3');
   TBL.createCell47(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
 }
