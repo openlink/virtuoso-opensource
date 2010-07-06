@@ -54,6 +54,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     'URL', 'DB.DBA.RDF_LOAD_WINE', null, 'Wine');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*tumblr.com/.*',
+    'URL', 'DB.DBA.RDF_LOAD_TUMBLR', null, 'Tumblr');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://.*yelp.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_YELP', null, 'Yelp');
 
@@ -4857,6 +4861,54 @@ create procedure DB.DBA.RDF_LOAD_ETSY (in graph_iri varchar, in new_origin_uri v
 	xd := serialize_to_UTF8_xml (xt);
     delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
 	DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_TUMBLR (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, host_part, xt, url, tmp, hdr, exif any;
+  declare _id, _id2 varchar;
+  declare pos int;
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    if (new_origin_uri like 'http://%.tumblr.com' or new_origin_uri like 'http://%.tumblr.com/')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.tumblr.com%s', 0);
+		_id := tmp[0];
+		if (_id is null)
+			return 0;
+		url := sprintf('http://%s.tumblr.com/api/read', _id);
+	}
+    else if (new_origin_uri like 'http://%.tumblr.com/post/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.tumblr.com/post/%s', 0);
+		_id := tmp[0];
+		_id2 := tmp[1];
+		if (_id is null)
+			return 0;
+		url := sprintf('http://%s.tumblr.com/api/read', _id);
+		if (_id2 is not null)
+		{
+			pos := strchr(_id2, '/');
+			if (pos is not null)
+				_id2 := left(_id2, pos);
+			url := sprintf('%s?id=%s', url, _id2);
+		}			
+	}
+	else
+		return 0;
+    tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
+    if (hdr[0] not like 'HTTP/1._ 200 %')
+        signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+    xd := xtree_doc (tmp);
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/tumblr2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri);
+    DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	return 1;
 }
 ;
