@@ -134,6 +134,12 @@ virtodbc__SQLAllocStmt (
 {
   CON (con, hdbc);
   stmt_options_t *opts = (stmt_options_t *) dk_alloc_box (sizeof (stmt_options_t), DV_ARRAY_OF_LONG_PACKED);
+#if (ODBCVER >= 0x0300)
+  NEW_VAR (stmt_descriptor_t, desc1);
+  NEW_VAR (stmt_descriptor_t, desc2);
+  NEW_VAR (stmt_descriptor_t, desc3);
+  NEW_VAR (stmt_descriptor_t, desc4);
+#endif
   NEW_VARZ (cli_stmt_t, stmt);
 
   memset (opts, 0, sizeof (stmt_options_t));
@@ -159,11 +165,6 @@ virtodbc__SQLAllocStmt (
   stmt->stmt_retrieve_data = SQL_RD_ON;
 
 #if (ODBCVER >= 0x0300)
-  NEW_VAR (stmt_descriptor_t, desc1);
-  NEW_VAR (stmt_descriptor_t, desc2);
-  NEW_VAR (stmt_descriptor_t, desc3);
-  NEW_VAR (stmt_descriptor_t, desc4);
-
   stmt->stmt_app_row_descriptor = desc1;
   stmt->stmt_app_row_descriptor->d_type = ROW_APP_DESCRIPTOR;
   stmt->stmt_app_row_descriptor->d_stmt = stmt;
