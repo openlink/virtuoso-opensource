@@ -1258,7 +1258,7 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	      else
 		{
 		  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, sp->sp_cl.cl_col_id);
-		  if (col && col->col_default)
+		  if (col)
 		    {
 		      if (DVC_CMP_MASK & op)
 			{
@@ -1336,7 +1336,7 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		      if (!cl)
 			{
 			  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, om[inx].om_cl.cl_col_id);
-			  if (col && col->col_default)
+			  if (col)
 			    qst_set (itc->itc_out_state, ssl, box_copy_tree (col->col_default));
 			  else
 			    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
