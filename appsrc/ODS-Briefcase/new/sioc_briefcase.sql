@@ -71,7 +71,7 @@ create procedure briefcase_sparql (
   declare st, msg, meta, rows any;
 
   st := '00000';
-  exec (sql, st, msg, vector (), 0, meta, rows);
+  exec (sql, st, msg, vector (), vector ('use_cache', 1), meta, rows);
   if ('00000' = st)
     return rows;
   return vector ();
