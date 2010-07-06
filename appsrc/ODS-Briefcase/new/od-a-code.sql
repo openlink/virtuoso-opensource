@@ -1263,7 +1263,6 @@ create procedure ODRIVE.WA.odrive_proc(
   }
   if (isarray(dirList))
   {
-    -- dbg_obj_print ('dirList', dirList);
     dirHiddens := ODRIVE.WA.hiddens_prepare (dir_hiddens);
     user_id := -1;
     group_id := -1;
@@ -1300,7 +1299,22 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   inout path varchar,
   in permission varchar := '1__')
 {
-  declare item any;
+  declare N, I, nPermission integer;
+  declare rc, id, type, item any;
+  declare lines, name, pwd, uid, gid, permissions any;
+
+  if (isstring(permission))
+    permission := vector(permission);
+
+  name := null;
+  uid := null;
+  gid := null;
+  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  for (N := 0; N < length (permission); N := N + 1)
+  {
+    if (DB.DBA.DAV_AUTHENTICATE (id, type, permission[N], name, uid, gid))
+      return 1;
+  }
   
   item := ODRIVE.WA.DAV_INIT(path);
   if (isinteger(item))
@@ -1328,10 +1342,6 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
     if (auth_name = 'dba')
       return 1;
   }
-
-  declare N, I, nPermission integer;
-  if (isstring(permission))
-    permission := vector(permission);
 
   for (N := 0; N < length (permission); N := N + 1)
   {
@@ -2333,6 +2343,87 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
     name := RES_NAME;
   }
 
+  if (is_https_ctx () and SIOC..foaf_check_ssl (null))
+  {
+    declare N integer;
+    declare graph, waGraph, foafIRI any;
+    declare S, V, st, msg, data, meta any;
+
+    foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
+	  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
+	  V := split_and_decode (V, 0, '\0\0,:');
+	  if (V is null)
+	    V := vector ();
+	  foafIRI := get_keyword ('URI', V);
+    if (not isnull (foafIRI))
+    {
+      if (SIOC..foaf_check_ssl (null))
+      {
+        waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
+        S := sprintf (' sparql \n' ||
+                      ' define input:storage "" \n' ||
+                      ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                      ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+                      ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+                      ' select ?r \n' ||
+                      '   from <%s> \n' ||
+                      '  where { \n' ||
+                      '          { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agent <%s>. \n' ||
+                      '          } \n' ||
+                      '          union \n' ||
+                      '          { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agentClass foaf:Agent. \n' ||
+                      '          } \n' ||
+                      '          union \n' ||
+                      '          { \n' ||
+                      '              ?rule a acl:Authorization ; \n' ||
+                      '                    acl:accessTo ?r ; \n' ||
+                      '                    acl:agentClass ?group. \n' ||
+                      '                    ?group rdf:type foaf:Group ; \n' ||
+                      '                    foaf:member <%s>. \n' ||
+                      '          } \n' ||
+                      '        }\n',
+                      waGraph,
+                      foafIRI,
+                      foafIRI);
+        commit work;
+        st := '00000';
+        exec (S, st, msg, vector (), vector ('use_cache', 1), meta, data);
+        if (st = '00000' and length (data))
+        {
+          declare V any;
+
+          for (N := 0; N < length (data); N := N + 1)
+          {
+            name := '';
+            V := rfc1808_parse_uri (data[N][0]);
+            for (select RES_ID,
+                        RES_FULL_PATH,
+                        length (RES_CONTENT) as len,
+                        RES_MOD_TIME,
+                        RES_PERMS,
+                        RES_GROUP,
+                        RES_OWNER,
+                        RES_CR_TIME,
+                        RES_TYPE,
+                        RES_NAME
+                   from WS.WS.SYS_DAV_RES
+                  where RES_FULL_PATH = V[2]
+                ) do
+            {
+              aResult := vector_concat(aResult, vector(vector (RES_FULL_PATH, 'R', len, RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, ODRIVE.WA.odrive_name_compose(RES_NAME, RES_ID, either (equ (RES_NAME, name),1,0)))));
+            }
+          }
+        }
+      }
+    }
+  }
+
   name := '';
   for (select distinct COL_ID,
               WS.WS.COL_PATH (COL_ID) as COL_FULL_PATH,
@@ -3033,13 +3124,18 @@ create procedure ODRIVE.WA.DAV_INIT_COLLECTION (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.DAV_SEARCH_ID(
-  in path varchar)
+  in path varchar,
+  out type varchar)
 {
   declare id any;
 
-  id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  type := 'C';
+  id := DB.DBA.DAV_SEARCH_ID (path, type);
   if (ODRIVE.WA.DAV_ERROR(id))
-    return DB.DBA.DAV_SEARCH_ID (path, 'R');
+  {
+    type := 'R';
+    return DB.DBA.DAV_SEARCH_ID (path, type);
+  }
   return id;
 }
 ;
