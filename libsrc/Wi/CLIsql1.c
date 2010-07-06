@@ -158,6 +158,40 @@ virtodbc__SQLAllocStmt (
   stmt->stmt_connection = con;
   stmt->stmt_retrieve_data = SQL_RD_ON;
 
+#if (ODBCVER >= 0x0300)
+  NEW_VAR (stmt_descriptor_t, desc1);
+  NEW_VAR (stmt_descriptor_t, desc2);
+  NEW_VAR (stmt_descriptor_t, desc3);
+  NEW_VAR (stmt_descriptor_t, desc4);
+
+  stmt->stmt_app_row_descriptor = desc1;
+  stmt->stmt_app_row_descriptor->d_type = ROW_APP_DESCRIPTOR;
+  stmt->stmt_app_row_descriptor->d_stmt = stmt;
+  stmt->stmt_app_row_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_app_row_descriptor->d_max_recs = 0;
+
+  stmt->stmt_imp_row_descriptor = desc2;
+  stmt->stmt_imp_row_descriptor->d_type = ROW_IMP_DESCRIPTOR;
+  stmt->stmt_imp_row_descriptor->d_stmt = stmt;
+  stmt->stmt_imp_row_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_imp_row_descriptor->d_max_recs = 0;
+
+  stmt->stmt_app_param_descriptor = desc3;
+  stmt->stmt_app_param_descriptor->d_type = PARAM_APP_DESCRIPTOR;
+  stmt->stmt_app_param_descriptor->d_stmt = stmt;
+  stmt->stmt_app_param_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_app_param_descriptor->d_max_recs = 0;
+
+  stmt->stmt_imp_param_descriptor = desc4;
+  stmt->stmt_imp_param_descriptor->d_type = PARAM_IMP_DESCRIPTOR;
+  stmt->stmt_imp_param_descriptor->d_stmt = stmt;
+  stmt->stmt_imp_param_descriptor->d_bind_offset_ptr = NULL;
+  stmt->stmt_imp_param_descriptor->d_max_recs = 0;
+
+  stmt->stmt_opts->so_is_async = con->con_async_mode;
+  stmt->stmt_opts->so_timeout = STMT_MSEC_OPTION (con->con_defs.cdef_txn_timeout);
+#endif
+
   return SQL_SUCCESS;
 }
 
@@ -1838,6 +1872,16 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
       stmt->stmt_param_array = NULL;
       dk_free_box (stmt->stmt_identity_value);
       dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
+
+#if (ODBCVER >= 0x0300)
+      if (stmt->stmt_app_row_descriptor)
+	{
+	  dk_free ((caddr_t) stmt->stmt_app_row_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_imp_row_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_app_param_descriptor, sizeof (stmt_descriptor_t));
+	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
+	}
+#endif
     }
 
   cli_dbg_printf (("virtodbc__SQLFreeStmt (hstmt=%p, fOption=%u) : done\n", (void *) hstmt, (unsigned) fOption));
