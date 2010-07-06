@@ -641,7 +641,7 @@ stmt_set_proc_return (cli_stmt_t * stmt, caddr_t * res)
       pb = stmt->stmt_return;
       dv_to_place (res[1], pb->pb_c_type, pb->pb_sql_type, pb->pb_max,
 	  /* changed for ODBC 3 parameter offset. Original Line : pb->pb_place + nth * pb->pb_max_length, */
-	  stmt_param_place_ptr (pb, nth, stmt, pb->pb_max_length), stmt_param_length_ptr (pb, nth, stmt), 0, stmt, -1);	/* Was: NULL */
+	  stmt_param_place_ptr (pb, nth, stmt, pb->pb_max_length), stmt_param_length_ptr (pb, nth, stmt), 0, stmt, -1, NULL);	/* Was: NULL */
 
     }
 
@@ -656,7 +656,7 @@ stmt_set_proc_return (cli_stmt_t * stmt, caddr_t * res)
 	  dv_to_place (res[inx], pb->pb_c_type, pb->pb_sql_type,
 	      /* changed for ODBC 3 parameter offset. Original Line : pb->pb_max, pb->pb_place + nth * pb->pb_max_length, */
 	      pb->pb_max, stmt_param_place_ptr (pb, nth, stmt, pb->pb_max_length),
-	      stmt_param_length_ptr (pb, nth, stmt), 0, stmt, -1);
+	      stmt_param_length_ptr (pb, nth, stmt), 0, stmt, -1, NULL);
 	}
 
       pb = pb->pb_next;
@@ -2115,11 +2115,12 @@ dv_strses_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     }
 }
 
+#include "../langfunc/encoding_basic.c"
 
 SQLLEN
 dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     SQLLEN *len_ret, SQLLEN str_from_pos, cli_stmt_t * stmt, int nth_col,
-    SQLLEN box_len, int c_type, SQLSMALLINT sql_type)
+    SQLLEN box_len, int c_type, SQLSMALLINT sql_type, SQLLEN * out_chars)
 {
   SQLLEN len = 0, piece_len = 0;
   char temp[500];		/* Enough? - greater than max length of numeric output by sprintf */
@@ -2364,6 +2365,17 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 		      }
 		    else
 		      {
+			if (stmt->stmt_connection->con_wide_as_utf16)
+			  {
+			    eh_encode_wchar_buffer__UTF16LE (
+				(wchar_t *) (it + str_from_pos),
+				(wchar_t *) (it + str_from_pos) + (len + 1),
+				place,
+				place + max);
+			    if (out_chars)
+			      *out_chars = len * sizeof (short);
+			  }
+			else
 			memcpy (place, (wchar_t *) (it + str_from_pos), (len + 1) * sizeof (wchar_t));
 			piece_len = len * sizeof (wchar_t);
 		      }
@@ -2392,7 +2404,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
             }
           else
             return dv_to_str_place (rb->rb_box, DV_TYPE_OF (rb->rb_box), max, place,
-              len_ret, str_from_pos, stmt, nth_col, box_length (rb->rb_box), c_type, sql_type);
+              len_ret, str_from_pos, stmt, nth_col, box_length (rb->rb_box), c_type, sql_type, out_chars);
 	  break;
 	}
 
@@ -2495,12 +2507,37 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	    }
 	  else
 	    {
-	      size_t wides = cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
+	      size_t wides;
+
+	      if (stmt->stmt_connection->con_string_is_utf8)
+		{
+		  caddr_t wide;
+		  long wlen;
+		  wide = box_utf8_as_wide_char (str, NULL, len, 0, DV_WIDE);
+		  wlen = box_length (wide) / sizeof (wchar_t) - 1;
+		  if (stmt->stmt_connection->con_wide_as_utf16)
+		    {
+		      eh_encode_wchar_buffer__UTF16LE (
+			  (wchar_t *) wide,
+			  (wchar_t *) wide + wlen + 1,
+			  place,
+			  place + max);
+		      if (out_chars)
+			*out_chars = wlen * sizeof (short);
+		    }
+		  else
+		    memcpy (place, wide, wlen + 1);
+		  dk_free_box (wide);
+		}
+	      else
+		{
+		  wides = cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
 		  (unsigned char *) str, len, (wchar_t *) place,
 		  max / sizeof (wchar_t));
 
 	      if (wides >= 0 && wides < max / sizeof (wchar_t))
 		((wchar_t *) place)[wides] = 0;
+		}
 
 	      piece_len = len;
 	    }
@@ -2617,7 +2654,8 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 				   stmt_set_proc_return
 				   but as cb -> cb_read_up_to from SQLGetData */
     cli_stmt_t * stmt,		/* place error here if overflow */
-    int nth_col)		/* use in possible SQLGetData of blob */
+    int nth_col,		/* use in possible SQLGetData of blob */
+    SQLLEN *out_chars)
 {
   SQLLEN len = 0, ret_len = 0;
   dtp_t its_type;
@@ -2675,7 +2713,7 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	case SQL_C_CHAR:
 	case SQL_C_BINARY:
 	case SQL_C_WCHAR:
-	  return dv_to_str_place (it, its_type, max, place, len_ret, str_from_pos, stmt, nth_col, len, c_type, sql_type);
+	  return dv_to_str_place (it, its_type, max, place, len_ret, str_from_pos, stmt, nth_col, len, c_type, sql_type, out_chars);
 
 	case SQL_C_BOX:
 	    {
@@ -3108,7 +3146,7 @@ stmt_set_columns (cli_stmt_t * stmt, caddr_t * row, int nth_in_set)
 	  stmt->stmt_current_row = row;
 	  dv_to_place (it, cb->cb_c_type, 0,
 	      /* changed for ODBC 3 bind offsets - original line : cb->cb_max_length, cb->cb_place , cb->cb_length, */
-	      cb->cb_max_length, cb->cb_place + pl_offset + rebind_offset, len, 0, stmt, inx);
+	      cb->cb_max_length, cb->cb_place + pl_offset + rebind_offset, len, 0, stmt, inx, NULL);
 	  stmt->stmt_current_row = old_curr_row;
 
 	  /* clean up after dv_to_place to let later SQLGetData calls succeed (if for

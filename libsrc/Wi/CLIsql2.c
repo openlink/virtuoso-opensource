@@ -5158,7 +5158,7 @@ sql_get_bookmark (cli_stmt_t * stmt, caddr_t * row,
     }
 
   box = box_num (stmt_row_bookmark (stmt, row));
-  dv_to_place (box, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, 0, stmt, 0);
+  dv_to_place (box, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, 0, stmt, 0, NULL);
   dk_free_box (box);
 
   return SQL_SUCCESS;
@@ -5543,17 +5543,18 @@ virtodbc__SQLGetData (
     {
       /* How to make sure that cb->cb_read_up_to is initially zero ? It is! */
       SQLLEN piece_len;
-      SQLLEN len_read = 0;
+      SQLLEN len_read = 0, out_chars = 0;
 
       col_binding_t *cb = stmt_nth_col (stmt, icol);
       /* Give sql_type always as zero as we do not know it. */
       int was_first = !cb->cb_not_first_getdata;
       cb->cb_not_first_getdata = 1;
-      piece_len = dv_to_place (col, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, cb->cb_read_up_to, stmt, icol);
+      piece_len = dv_to_place (col, fCType, 0, cbValueMax, (caddr_t) rgbValue, &len_read, cb->cb_read_up_to, stmt, icol, &out_chars);
 
       if (pcbValue)
 	{
 	  *pcbValue = ((SQL_NULL_DATA == len_read) ? SQL_NULL_DATA : ((0 == len_read) ? len_read : (len_read - cb->cb_read_up_to)));
+	  if (out_chars) *pcbValue = out_chars; /* case when writing utf16 */
 	}
 
       switch (piece_len)
