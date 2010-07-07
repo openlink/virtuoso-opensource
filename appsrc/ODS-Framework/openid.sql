@@ -333,7 +333,7 @@ create procedure associate
 create procedure get_user_details (in gr varchar, in _identity varchar)
 {
   declare svec any;
-  declare ha, host, port, arr any;
+  declare ha, host, port, arr, _idn any;
   ha := WS.WS.PARSE_URI (_identity);
   if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and ha[1] = registry_get ('URIQADefaultHost'))
     {
@@ -387,14 +387,26 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
       if ("openid" is not null)
 	{
 	  declare arr1, arr2 varchar;
-	  arr1 := sprintf_inverse (_identity, '%s://%s/dataspace/%s', 1);
 	  arr2 := sprintf_inverse ("openid", '%s://%s/dataspace/%s', 1);
+	  if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null)
+	    {
+	      arr1 := sprintf_inverse (_identity, '%s://%s/dataspace/%s/%s', 1);
+	      if (length (arr1) = 4 and length (arr2) = 3 and arr1[0] = arr2[0] and arr1[1] = arr2[1] and 
+		  exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = arr1[3]))
+		goto verified;
+	    }
+	  else
+	    {
+	      arr1 := sprintf_inverse (_identity, '%s://%s/dataspace/%s', 1);
 	  if (length (arr1) = length (arr2) and length (arr1) = 3 and arr1[0] = arr2[0] and arr1[1] = arr2[1]
 	      and arr1[2] <> arr2[2] and
 	      exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = "nickname" and WAUI_NICK = arr1[2]))
 	    goto verified;
 	}
-      if (not position (_identity, vector ("openid", "page", "homepage")))
+	}
+      if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null and _identity not like '%#this')
+	_identity := _identity || '#this';
+      if (not position (_identity, vector ("openid", "page", "homepage", "person")))
         return null;
       verified:;
       if ("email" like 'mailto:%')
@@ -720,14 +732,29 @@ create procedure oid_set_sid (in sid varchar, in pars any)
 create procedure oid_get_user_id (in _identity any)
 {
   declare iarr, uname any;
-  iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s', 1);
-
   uname := null;
-  if (length (iarr) = 2)
+  if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null)
     {
-      declare real_uid varchar;
+      iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s/%s', 1);
+    }
+  else
+    {
+  iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s', 1);
+    }
+
+  if (length (iarr) = 3)
+    {
+      uname := iarr[2];
+      uname := rtrim(uname, '/');
+    }
+  else if (length (iarr) = 2)
+    {
       uname := iarr[1];
       uname := rtrim(uname, '/');
+    }
+  if (uname is not null)
+    {
+      declare real_uid varchar;
       real_uid := (select U_NAME from DB.DBA.SYS_USERS join DB.DBA.WA_USER_INFO on (WAUI_U_ID = U_ID) where WAUI_NICK = uname);
       if (length (real_uid))
 	uname := real_uid;
