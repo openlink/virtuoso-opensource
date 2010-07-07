@@ -1471,6 +1471,231 @@ A Web ID will be generated automatically for the selected user.</para></listitem
     <para><link linkend="secureodbcx509foafsll">FOAF+SSL ODBC Login</link></para>
   </tip>
 </sect4>
+<sect4 id="sparqloauthendpointfoafsslsparql"><title>Creating and Using a SPARQL-SSL based Endpoint</title>
+<para>The following section describes the basic steps for setting up an SSL protected and WebID 
+based SPARQL Endpoint (SPARQL-SSL). The guide also covers the use of Virtuoso PL functions and 
+the Virtuoso Conductor for SPARQL endpoint creation and configuration. It also covers the use 
+of cURL for exercising the newly generated SPARQL-SSL endpoint.
+</para>
+<orderedlist>
+  <listitem><link linkend="vfoafsslst509issuer">Setup the CA issuer and https listener</link></listitem>
+  <listitem>Define the /sparql-ssl endpoint on an HTTPS based listener (HTTPS service endpoint), for example using Virtuoso PL:
+<programlisting><![CDATA[
+DB.DBA.VHOST_DEFINE (
+	 lhost=>'127.0.0.1:443',
+	 vhost=>'localhost',
+	 lpath=>'/sparql-ssl',
+	 ppath=>'/!sparql/',
+	 is_dav=>1,
+	 auth_fn=>'DB.DBA.FOAF_SSL_AUTH',
+	 vsp_user=>'dba',
+	 ses_vars=>0,
+	 auth_opts=>vector ( 'https_cert', 
+	                     'db:https_key_localhost', 
+	                     'https_key', 
+	                     'db:https_key_localhost', 
+	                     'https_verify', 
+	                     3, 
+	                     'https_cv_depth', 
+	                     10 ),
+	 opts=>vector ('noinherit', 1),
+	 is_default_host=>0
+);
+]]></programlisting>  	
+</listitem>
+  <listitem><link linkend="sparqloauthendpointfoafssl">Setup the SPARQL-SSL endpoint and define 
+ACLs</link> using the Virtuoso Conductor</listitem>
+  <listitem>Export your private key and its associated WebID based X.509 certificate from your 
+Firefox browser or System's Key Manager into PEM (PKCS12) file
+    <orderedlist>
+      <listitem>If using Firefox use the menu path: Advanced -&gt; View Certificates, then click 
+Backup for your certificate with name "mykey". </listitem>
+      <listitem>The file "mykey.p12" will be created. To disable password protection so that you 
+can use this file in non-interactive mode (e.g. with cURL and other HTTP clients) execute:
+<programlisting><![CDATA[
+openssl pkcs12 -in mykey.p12 -out mykey.pem -nodes 	
+]]></programlisting>
+</listitem>
+    </orderedlist>
+  </listitem>
+  <listitem>Test the SPARQL-SSL endpoint with cURL: (listening on default HTTPS 443 port): 
+    <itemizedlist mark="bullet">
+      <listitem>Note: In this example we use the "-k / --insecure" option with cURL since we are going 
+to be using self-signed X.509 certificates signed by self-signed root CA.</listitem>
+    </itemizedlist>  	
+<programlisting><![CDATA[
+	curl -k -E mykey.pem "https://localhost/sparql-ssl?query=select+*+where+\{+%3Fx+%3Fy+%3Fz+.+\}+limit+10&format=text%2Fn3"
+
+@prefix res: <http://www.w3.org/2005/sparql-results#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+_:_ a res:ResultSet .
+_:_ res:resultVariable "x" , "y" , "z" .
+@prefix ns0:    <https://localhost/tutorial/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:hosting ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:xml ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:repl ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:rdfview ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:services ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:wap ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:bpeldemo ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:web ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:web2 ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:xmlxslt ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+]]></programlisting>    
+</listitem>
+  <listitem>Import your key it via Conductor UI:
+  	<orderedlist>
+     <listitem>Go to Conductor -> System Admin->User Accounts
+     <figure id="foafsslsparql1" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp1.png"/>
+     </figure>
+     </listitem>
+     <listitem>Click "Edit" for your user
+     <figure id="foafsslsparql2" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp2.png"/>
+     </figure>
+     </listitem>
+     <listitem>Change "User type" to: SQL/ODBC and WebDAV
+     <figure id="foafsslsparql3" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp3.png"/>
+     </figure>
+     </listitem>
+     <listitem>Enter your ODS user WebID:
+<programlisting><![CDATA[
+http://cname:port/dataspace/person/username#this
+]]></programlisting>    	
+     <figure id="foafsslsparql4" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp4.png"/>
+     </figure>
+     </listitem>
+     <listitem>Click "Save"</listitem>
+     <listitem>Click again "Edit" for your user</listitem>
+     <listitem>In "PKCS12 file:" click the Browse" button and select your key.</listitem>
+     <listitem>Enter a local Key Name, for e.g., "cli_key"</listitem>
+     <listitem>Enter key password
+     <figure id="foafsslsparql5" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp5.png"/>
+     </figure>
+     </listitem>                
+     <listitem>Click "Import Key"</listitem> 
+     <listitem>As result the key will be stored with name for ex. cli_key 
+     <figure id="foafsslsparql6" float="1">
+       <title>Import key it via Conductor UI</title>
+       <graphic fileref="ui/fsp6.png"/>
+     </figure>
+    </listitem> 
+    <listitem>Click "Save"</listitem>    
+  </orderedlist>
+</listitem>
+  <listitem>Test the SPARQL-SSL endpoint with http_client (listening on default HTTPS 443 port):
+  	<orderedlist>
+      <listitem>Log in at Virtuos ISQL with your user credentials: 
+<programlisting><![CDATA[
+C:\>isql localhost:1111 johndoe****
+Connected to OpenLink Virtuoso
+Driver: 06.01.3127 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL>	
+]]></programlisting>      	
+</listitem>
+      <listitem>Execute:
+<programlisting><![CDATA[
+SQL>select http_client ('https://localhost/sparql-ssl?query=select+*+where+{+%3Fx+%3Fy+%3Fz+.+}+limit+10&format=text%2Fn3', cert_file=>'d
+b:cli_key', insecure=>1);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+
+@prefix res: <http://www.w3.org/2005/sparql-results#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+_:_ a res:ResultSet .
+_:_ res:resultVariable "x" , "y" , "z" .
+@prefix ns0:    <https://localhost/tutorial/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:hosting ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:xml ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:repl ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:rdfview ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:services ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:wap ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:bpeldemo ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+      res:binding [ res:variable "x" ; res:value ns0:web ] ;
+      res:binding [ res:variable "y" ; res:value rdf:type ] ;
+      res:binding [ res:variable "z" ; res:value "Tutorial" ] ] .
+_:_ res:solution [
+
+
+1 Rows. -- 281 msec.
+]]></programlisting>      	
+</listitem>
+    </orderedlist>
+</listitem>
+</orderedlist>
+
+<tip><title>See Also:</title>
+<para><ulink url="http://demo.openlinksw.com/tutorial/rdf/fs_s_1/fs_s_1.vsp">Demo Example</ulink> Using HTTP client to perform FOAF+SSL connection.</para>
+</tip>
+</sect4>
 </sect3>
 
 <sect3 id="rdfsupportedrequestmethodsofprotocol"><title>Request Methods</title>
@@ -4474,7 +4699,7 @@ http://dbpedia.org/resource/Broken_Flowers  Bill Murray  	  Jim Jarmusch  	Music
 and performs a group by on this column:
 </para>
 <programlisting><![CDATA[
--- prepare the date by inserting triples in a graph:
+-- prepare the data by inserting triples in a graph:
 SQL>SPARQL 
 INSERT INTO GRAPH <http://BookStore.com>
   { 

@@ -47,6 +47,7 @@
         <paramdef><optional>in <parameter>proxy</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>ca_certs</parameter> varchar</optional></paramdef>        
         <paramdef><optional>in <parameter>insecure </parameter> integer</optional></paramdef>                
+        <paramdef><optional>in <parameter>n_redirects</parameter> integer</optional></paramdef>                       
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -108,6 +109,11 @@ HTTPProxyExceptions   = localhost:8890, 127.0.0.1:8890
     <refsect2><title>insecure</title>
       <para>Sets secure or not. Default is 0.</para>
     </refsect2>     
+    <refsect2><title>n_redirects</title>
+      <para>By default int zero. If is given value greater than zero, so many redirects will be 
+followed by client. Thus in pl no need to look at 30x response, just can add this number to 
+follow the redirects.</para>
+    </refsect2>    
   </refsect1>
 </refentry>
 
