@@ -1,3 +1,31 @@
+2010-07-07 18:53  source
+
+	* Fixed openid to work with personal iri
+
+2010-07-07 18:42  source
+
+	* Updated documentation
+
+2010-07-07 12:43  source
+
+	* Fixed create list of unique graphs
+
+2010-07-06 23:07  source
+
+	* Added Tumblr cartridge
+
+2010-07-06 23:06  source
+
+	* Added description for property value in offers
+
+2010-07-06 23:04  source
+
+	* Added shared files using FOAF+SSL
+
+2010-07-06 22:58  source
+
+	* Fixed minor issue
+
 2010-07-06 14:30  source
 
 	* Updated version to 6.1.2-rc3
@@ -28,6 +56,10 @@
 2010-07-06 09:56  source
 
 	* Fixed move alloc/free of descriptor handles into SQLAllocStmt
+
+2010-07-05 22:21  source
+
+	file tumblr2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-07-06 23:07:47 +0000
 
 2010-07-05 19:30  source
 
@@ -9716,4 +9748,3 @@
 2009-10-16 17:45  source
 
 	* Updated version to 6.0.0 for final release
-
