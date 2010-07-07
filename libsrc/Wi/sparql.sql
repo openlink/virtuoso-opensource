@@ -5028,12 +5028,12 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
 }
 ;
 
-create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris varchar := 1, in lim integer := 2000000000)
+create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1, in lim integer := 2000000000)
 {
   declare specials, specials_vec any;
   declare last_iri_id, cur_iri_id IRI_ID;
-  declare cr cursor for select G from DB.DBA.RDF_QUAD where G > last_iri_id and not (dict_get (specials, G, 0));
-  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD where G > last_iri_id and 0 >= position (G, specials_vec);
+  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where G > last_iri_id and not (dict_get (specials, G, 0));
+  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)  where G > last_iri_id and 0 >= position (G, specials_vec);
   declare GRAPH_IRI varchar;
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
