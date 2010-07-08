@@ -126,6 +126,7 @@
 
   if (not length (label))
     label := page_resource_uri;
+  --http_flush (1);
 ?>
 
 <!-- header -->
@@ -192,6 +193,7 @@
 <?vsp
       declare vis, printed int;
       declare all_lang any;
+      declare curr_pred any;
 
       if (connection_get ('s_term') = 's')
         http ('<tr><th class="property">Properties</th><th class="value">Objects</th></tr>');
@@ -199,98 +201,52 @@
         http ('<tr><th class="property">Attributes</th><th class="value">Values</th></tr>');
 
       all_lang := vector ('*', 1.0);
-      qry_str := sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { <%S> ?p ?o }) sp order by 1', inf, _S);
-      b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
---    dbg_obj_print (qry_str);
-
+      qry_str := sprintf ('select "p" as PRED, "o" as OBJECT from (sparql %s select distinct ?p ?o where { <%S> ?p ?o }) sp order by 1', inf, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
-
+      curr_pred := '';
       while (0 = exec_next (h1, null, null, data))	
 	{
-           declare PRED any;
+           declare PRED, OBJECT any;
 	   pred := data[0];  
+           object := data[1];
 	   if (not length (PRED))
 	     goto nxt1;
-	   b3s_http_print_l (PRED, odd_position, 0, sid);
 
-           qry_str := sprintf ('sparql %s select distinct ?o where { <%S> <%S> ?o } limit 300', inf, _S, PRED);
-           b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
-
---    dbg_obj_print (qry_str);
-
-           printed := 0;
-	   exec (qry_str, null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))	
-	      {	
-                declare OBJECT any;
-		OBJECT := data [0];
-		vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs);
-                printed := printed + vis;
-	      }
-	   exec_close (h2);
-	   if (not printed)
+	   if (curr_pred <> pred)
 	     {
-	   exec (qry_str, null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))	
-	      {	
-                declare OBJECT any;
-		OBJECT := data [0];
-		    b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_lang);
-	      }
-	   exec_close (h2);
+               if (curr_pred <> '') http ('</ul></td></tr>');
+	       b3s_http_print_l (PRED, odd_position, 0, sid);
+	       curr_pred := pred;
 	     }
-
-	   http ('</ul></td></tr>');
+           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs);
 	   nxt1:;
 	}
       exec_close (h1);
+      if (curr_pred <> '') http ('</ul></td></tr>');
 
-      qry_str := sprintf ('select "p" as PRED from (sparql %s select distinct ?p where { ?o ?p <%S> }) sp order by 1', inf, _S);
-      b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
-
+      qry_str := sprintf ('select "p" as PRED, "o" as OBJECT from (sparql %s select distinct ?p ?o where { ?o ?p <%S> }) sp order by 1', inf, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
-
       inx := 0;	
+      curr_pred := '';
       while (0 = exec_next (h1, null, null, data))	
 	{
-           declare PRED any;
+           declare PRED, OBJECT any;
 	   PRED := data[0];  
-	   --if (inx = 0)
-	   --  {
-	   --    http ('<tr><th width="25%">Reverse links</th><th>&nbsp;</th></tr>');
-	   --  }
+	   OBJECT := data[1];
 	   inx := inx + 1;
-	   b3s_http_print_l (PRED, odd_position, 1, sid);
-
-           qry_str := sprintf ('sparql %s select distinct ?s where { ?s <%S> <%S> } limit 300', inf, PRED, _S);
-           b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
---    dbg_obj_print (qry_str);
-	   printed := 0;
-	   exec (qry_str, null, null, vector (), 0, null, null, h2);
-	   while (0 = exec_next (h2, null, null, data))	
-	      {	
-                declare OBJECT any;
-		OBJECT := data [0];
-		vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs);
-                printed := printed + vis;
-	      }
-	   exec_close (h2);
-	   if (not printed)
-             {
-	       exec (qry_str, null, null, vector (), 0, null, null, h2);
-	       while (0 = exec_next (h2, null, null, data))	
+	   if (not length (PRED))
+	     goto nxt2;
+	   if (curr_pred <> pred)
 		  {	
-		    declare OBJECT any;
-		    OBJECT := data [0];
-		    b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs);
-		  }
-	       exec_close (h2);
+               if (curr_pred <> '') http ('</ul></td></tr>');
+	       b3s_http_print_l (PRED, odd_position, 1, sid);
+	       curr_pred := pred;
 	     }
-
-	   http ('</ul></td></tr>');
+           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs);
+	   nxt2:;
 	}
       exec_close (h1);
-skip_rev:
+      if (curr_pred <> '') http ('</ul></td></tr>');
        if  (odd_position = 0)
 	 {
 	    http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');

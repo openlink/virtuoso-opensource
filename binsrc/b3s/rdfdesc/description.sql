@@ -589,9 +589,9 @@ again:
 
        rdfa := b3s_rel_print (prop, rel, 0);
        http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid), b3s_uri_curie(_url)));
-       if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
-	       b3s_http_url (_url, sid)));
+       --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
+       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
+       --	       b3s_http_url (_url, sid)));
 
      }
    else if (__tag (_object) = 189)
