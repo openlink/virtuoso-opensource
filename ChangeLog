@@ -1,3 +1,23 @@
+2010-07-08 13:40  source
+
+	* FIxed OpenID and SSL login
+
+2010-07-08 13:37  source
+
+	* Fixed VTIMEZONE component in export
+
+2010-07-08 13:27  source
+
+	* Fixed minor issue
+
+2010-07-08 13:23  source
+
+	* Added optimization for large descriptions
+
+2010-07-08 13:21  source
+
+	* Fixed add escape to CR/LF in JSON format
+
 2010-07-07 18:53  source
 
 	* Fixed openid to work with personal iri
