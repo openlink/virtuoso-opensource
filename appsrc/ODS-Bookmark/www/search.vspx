@@ -307,7 +307,7 @@
                 action := get_keyword ('action', params, '');
                 if (action = 'search')
                 {
-                  self.vc_redirect (sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')));
+                  self.vc_redirect (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple'))));
                   return;
                 }
 
@@ -717,14 +717,14 @@
             <v:on-post>
               <![CDATA[
                 self.update_params();
-                self.vc_redirect (sprintf ('bookmarks.vspx?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_')));
+                self.vc_redirect (BMK.WA.page_url (self.domain_id, sprintf ('?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_'))));
               ]]>
             </v:on-post>
           </v:button>
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('bookmarks.vspx');
+                self.vc_redirect (BMK.WA.page_url (self.domain_id));
               ]]>
             </v:on-post>
           </v:button>
@@ -744,9 +744,9 @@
                 <b><v:label for="" value="Search" /></b>
                 <v:text name="s_keywords" value="--self.v_keywords" fmt-function="BMK.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60" />
                 |
-                <v:url url="search.vspx?mode=advanced" value="Advanced" xhtml_title="Advanced Search"/>
+                <v:url url="--BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" value="Advanced" xhtml_title="Advanced Search" />
                 |
-                <v:url url="bookmarks.vspx" value="Cancel" xhtml_title="Cancel"/>
+                <v:url url="--BMK.WA.page_url (self.domain_id, null, self.sid, self.realm)" value="Cancel" xhtml_title="Cancel" />
               </td>
             </tr>
           </table>

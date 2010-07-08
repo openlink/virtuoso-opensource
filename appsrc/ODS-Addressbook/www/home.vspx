@@ -33,7 +33,7 @@
       self.abContact := get_keyword ('id', params, '');
       if (self.abContact <> '')
       {
-        self.v_id := cast (self.abContact as integer);
+        self.v_id := atoi(self.abContact);
         if (self.v_id = -1)
         {
           if (self.account_role not in ('public', 'guest'))
@@ -55,6 +55,7 @@
               self.v_lName := names [length (names) - 1];
           }
         } else {
+          if (exists (select 1 from AB.WA.PERSONS where P_ID = self.v_id and P_DOMAIN_ID = self.domain_id))
           self.abAction := 'view';
       }
       }

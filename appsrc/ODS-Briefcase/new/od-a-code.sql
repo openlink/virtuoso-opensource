@@ -348,16 +348,10 @@ create procedure ODRIVE.WA.menu_tree ()
   <node     name="Browse"         url="home.vspx"          id="1"   tip="DAV Browser"               allowed="public guest reader author owner admin">
     <node   name="Settings"       url="settings.vspx"      id="11"  place="link"                    allowed="admin owner"/>
   </node>
-  <node     name="Groups"         url="groups.vspx"        id="2"   tip="Groups"                    allowed="admin owner">
-    <node   name="21"             url="groups_update.vspx" id="21"  place="link"                    allowed="admin owner"/>
-  </node>
+  <node     name="Groups"         url="groups.vspx"        id="2"   tip="Groups"                   allowed="admin owner"/>
   <node     name="Metadata"       url="vmds.vspx"          id="3"   tip="Metadata Administration"  allowed="admin owner">
-    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner">
-      <node name="Schemas Update" url="vmds_update.vspx"   id="311" place="link"                    allowed="admin owner"/>
-    </node>
-    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner">
-      <node name="Mimes Update"   url="mimes_update.vspx"  id="321" place="link"                    allowed="admin owner"/>
-    </node>
+    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner"/>
+    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner"/>
   </node>
   <node     name="Subscriptions"  url="subscriptions.vspx" id="4"   tip="Subscriptions"            allowed="admin owner"/>
 </menu_tree>';
@@ -497,16 +491,18 @@ create procedure ODRIVE.WA.url_fix (
 {
   declare T varchar;
 
+  T := '&';
+  if (isnull (strchr (S, '?')))
   T := '?';
+
   if (not is_empty_or_null (sid))
   {
     S := S || T || 'sid=' || sid;
     T := '&';
   }
   if (not is_empty_or_null (realm))
-  {
     S := S || T || 'realm=' || realm;
-  }
+
   return S;
 }
 ;
@@ -1474,6 +1470,15 @@ create procedure ODRIVE.WA.domain_ping (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.forum_iri (
+  in domain_id integer)
+{
+  return SIOC..briefcase_iri (ODRIVE.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.domain_sioc_url (
   in domain_id integer,
   in sid varchar := null,
@@ -1481,7 +1486,24 @@ create procedure ODRIVE.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := ODRIVE.WA.iri_fix (SIOC..briefcase_iri (ODRIVE.WA.domain_name (domain_id)));
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id));
+  return ODRIVE.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
   return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1759,11 +1781,11 @@ create procedure ODRIVE.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Briefcase';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  ODRIVE.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  ODRIVE.WA.domain_sioc_url (domain_id),
                   ODRIVE.WA.domain_name (domain_id),
                   ODRIVE.WA.domain_name (domain_id),
-                  ODRIVE.WA.account_sioc_url (domain_id, sid, realm),
+                  ODRIVE.WA.account_sioc_url (domain_id),
                   ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id)),
                   ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id))
                  );

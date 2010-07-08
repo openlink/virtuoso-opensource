@@ -3443,11 +3443,11 @@ create procedure OMAIL.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Mails';
 
-  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
-                  OMAIL.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%s</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%s</a>)',
+                  OMAIL.WA.domain_sioc_url (domain_id),
                   OMAIL.WA.domain_name (domain_id),
                   OMAIL.WA.domain_name (domain_id),
-                  OMAIL.WA.account_sioc_url (domain_id, sid, realm),
+                  OMAIL.WA.account_sioc_url (domain_id),
                   OMAIL.WA.account_fullName (OMAIL.WA.domain_owner_id (domain_id)),
                   OMAIL.WA.account_fullName (OMAIL.WA.domain_owner_id (domain_id))
                  );

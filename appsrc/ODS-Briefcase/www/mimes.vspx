@@ -37,11 +37,10 @@
       self.mimes_order := columnName;
     ]]>
   </v:method>
+
   <vm:pagetitle>Mime Types</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:header>
-      Mime Types
-    </vm:header>
+    <vm:header>Mime Types</vm:header>
     <vm:variables>
       <v:variable name="v_mode" type="varchar" default="'browse'"/>
       <v:variable name="v_right" type="varchar" default="'W'"/>
@@ -55,6 +54,11 @@
       <v:variable name="v_description" type="varchar" default="''"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'mimes.vspx');
+        ]]>
+      </v:before-render>
         <v:before-data-bind>
           <![CDATA[
             self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');

@@ -780,6 +780,23 @@ create procedure ENEWS.WA.sparql_url ()
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := ENEWS.WA.iri_fix (ENEWS.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
+  return ENEWS.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -4592,11 +4609,11 @@ create procedure ENEWS.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Feeds';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  ENEWS.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  ENEWS.WA.domain_sioc_url (domain_id),
                   ENEWS.WA.domain_name (domain_id),
                   ENEWS.WA.domain_name (domain_id),
-                  ENEWS.WA.account_sioc_url (domain_id, sid, realm),
+                  ENEWS.WA.account_sioc_url (domain_id),
                   ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (domain_id)),
                   ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (domain_id))
                  );
@@ -4645,6 +4662,24 @@ create procedure ENEWS.WA.url_fix (
   if (not is_empty_or_null (realm))
   {
     S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.iri_fix (
+  in S varchar)
+{
+  if (is_https_ctx ())
+  {
+    declare V any;
+
+    V := rfc1808_parse_uri (S);
+    V [0] := 'https';
+    V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
+    S := DB.DBA.vspx_uri_compose (V);
   }
   return S;
 }

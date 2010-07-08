@@ -273,7 +273,6 @@
     <vm:header>
       Search results
     </vm:header>
-    <vm:menu/>
     <vm:variables>
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
       <v:variable name="v_mode" type="varchar" default="'simple'"/>

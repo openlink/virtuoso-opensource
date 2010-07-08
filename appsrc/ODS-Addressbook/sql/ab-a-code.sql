@@ -862,6 +862,23 @@ create procedure AB.WA.domain_sioc_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := AB.WA.iri_fix (AB.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
+  return AB.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -1387,11 +1404,11 @@ create procedure AB.WA.banner_links (
   if (domain_id <= 0)
     return 'Public AddressBook';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  AB.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  AB.WA.domain_sioc_url (domain_id),
                   AB.WA.domain_name (domain_id),
                   AB.WA.domain_name (domain_id),
-                  AB.WA.utf2wide (AB.WA.account_sioc_url (domain_id, sid, realm)),
+                  AB.WA.utf2wide (AB.WA.account_sioc_url (domain_id)),
                   AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id)),
                   AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id))
                  );

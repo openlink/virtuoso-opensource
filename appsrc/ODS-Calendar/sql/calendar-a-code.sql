@@ -812,15 +812,15 @@ create procedure CAL.WA.domain_ping (
 {
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
   {
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), CAL.WA.domain_iri (domain_id), null, CAL.WA.gems_url (domain_id) || 'Calendar.rss');
-    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), CAL.WA.domain_iri (domain_id), null, CAL.WA.gems_url (domain_id) || 'Calendar.atom');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), CAL.WA.forum_iri (domain_id), null, CAL.WA.gems_url (domain_id) || 'Calendar.rss');
+    ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), CAL.WA.forum_iri (domain_id), null, CAL.WA.gems_url (domain_id) || 'Calendar.atom');
   }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.domain_iri (
+create procedure CAL.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..calendar_iri (CAL.WA.domain_name (domain_id));
@@ -836,7 +836,24 @@ create procedure CAL.WA.domain_sioc_url (
 {
   declare S varchar;
 
-  S := CAL.WA.iri_fix (CAL.WA.domain_iri (domain_id));
+  S := CAL.WA.iri_fix (CAL.WA.forum_iri (domain_id));
+  return CAL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := CAL.WA.iri_fix (CAL.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
   return CAL.WA.url_fix (S, sid, realm);
 }
 ;

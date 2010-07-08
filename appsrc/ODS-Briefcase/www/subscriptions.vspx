@@ -63,6 +63,11 @@
       <v:variable name="v_mode" type="varchar" param-name="mode" default="'targetBrowse'" persist="0"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'subscriptions.vspx');
+        ]]>
+      </v:before-render>
       <vm:if test="self.v_mode in ('targetBrowse', 'queueBrowse', 'retrievedBrowse', 'retrievedEdit')">
         <div style="padding: 0 0 0.5em 0;">
           <vm:if test="self.v_mode in ('targetBrowse')">

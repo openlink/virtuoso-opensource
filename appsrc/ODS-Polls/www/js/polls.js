@@ -19,6 +19,21 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
@@ -730,17 +745,9 @@ POLLS.aboutDialog = function() {
 	if (aboutDiv) {
 		OAT.Dom.unlink(aboutDiv);
 	}
-	aboutDiv = OAT.Dom.create('div', {
-		width : '430px',
-		height : '150px'
-	});
+	aboutDiv = OAT.Dom.create('div', {width : '430px', height : '150px'});
   aboutDiv.id = 'aboutDiv';
-	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {
-		width : 430,
-		buttons : 0,
-		resize : 0,
-		modal : 1
-	});
+	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {
@@ -752,11 +759,5 @@ POLLS.aboutDialog = function() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
-		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
+	OAT.AJAX.POST("ajax.vsp", "a=about", x, {type : OAT.AJAX.TYPE_TEXT, onstart : function() {}, onerror : function() {}});
 }
