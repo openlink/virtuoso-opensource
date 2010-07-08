@@ -67,7 +67,7 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
       </rdf:Description>
       <rdf:Description rdf:about="{$resourceURL}">
-		<rdf:type rdf:resource="&bibo;Document"/>
+		<!--rdf:type rdf:resource="&bibo;Document"/-->
 		<xsl:apply-templates select="title|meta"/>
 		<xsl:apply-templates select="//img[@src]"/>
 		<xsl:apply-templates select="//a[@href]"/>
