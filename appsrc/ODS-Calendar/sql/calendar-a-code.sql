@@ -1349,11 +1349,11 @@ create procedure CAL.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Calendar';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  CAL.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  CAL.WA.domain_sioc_url (domain_id),
                   CAL.WA.domain_name (domain_id),
                   CAL.WA.domain_name (domain_id),
-                  CAL.WA.account_sioc_url (domain_id, sid, realm),
+                  CAL.WA.account_sioc_url (domain_id),
                   CAL.WA.account_fullName (CAL.WA.domain_owner_id (domain_id)),
                   CAL.WA.account_fullName (CAL.WA.domain_owner_id (domain_id))
                  );
@@ -5634,8 +5634,10 @@ create procedure CAL.WA.export_vcal (
   http ('BEGIN:VTIMEZONE\r\n', sStream);
   http (sprintf ('TZID:%s\r\n', tzID), sStream);
   http ('BEGIN:STANDARD\r\n', sStream);
+  http (sprintf ('TZOFFSETFROM:%s\r\n', CAL.WA.tz_string (tz)), sStream);
   http (sprintf ('TZOFFSETTO:%s\r\n', CAL.WA.tz_string (tz)), sStream);
   http (sprintf ('TZNAME:%s\r\n', tzName), sStream);
+  http ('DTSTART:19700101T000000\r\n', sStream);
   http ('END:STANDARD\r\n', sStream);
   http ('END:VTIMEZONE\r\n', sStream);
 
