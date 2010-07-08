@@ -49,7 +49,7 @@
   declare resMeta any;
   resMeta:= string_output ();
 
-  server_root:=sprintf('%s%s',http_s (),DB.DBA.WA_CNAME());
+  server_root := sprintf('%s%s', http_s (), DB.DBA.WA_GET_HOST ());
   server_dataspace:=server_root||'/dataspace/';
 
   if (length (uname))

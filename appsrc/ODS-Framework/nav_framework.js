@@ -689,8 +689,8 @@ ODS.session = function(customEndpoint) {
 
           if (self.openId.version == '2.0')
             checkImmediate += '&openid.ns=' + encodeURIComponent('http://specs.openid.net/auth/2.0')
-              + '&openid.claimed_id=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
-              + '&openid.identity=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+              + '&openid.claimed_id=' + encodeURIComponent(oidIdent) //encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+              + '&openid.identity=' + encodeURIComponent(oidIdent) //encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
 
 			    document.location = checkImmediate;
 				} else {
@@ -2333,6 +2333,7 @@ ODS.Nav = function(navOptions) {
             self.logIn();
 						if (self.alog && get_param('alog') == '1') {
 		  self.alog = false;
+							$('loginDiv').loginTab.selectedIndex = 3;
 		  OAT.Dom.hide ($('login_page'));
 		  self.showLoginThrobber ();
   							OAT.MSG.attach(self.session, "WA_SES_TOKEN_RECEIVED", function() {self.session.validate();});
@@ -2979,9 +2980,11 @@ ODS.Nav = function(navOptions) {
         $('loginBtn').value = 'Facebook Login';
       }
         loginTab.add('loginT4', 'loginP4');
+			var toGo = 0;
 			if ((document.location.protocol == 'https:') && self.sslData && self.sslData.certLogin && self.regData.sslEnable) {
 				OAT.Dom.show('loginT4');
 				$('loginBtn').value = 'WebID Login';
+				toGo = 3;
 
 				if (self.sslData.iri) {
           var label = OAT.Dom.create('label');
@@ -3012,7 +3015,7 @@ ODS.Nav = function(navOptions) {
           OAT.Dom.append ([$('loginP4'), label, span, OAT.Dom.create('br')]);
         }
       }
-			loginTab.go(0);
+			loginTab.go(toGo);
 
 			OAT.Event.attach('loginT1', 'click', function() {
                         $('loginBtn').value = 'Login';
