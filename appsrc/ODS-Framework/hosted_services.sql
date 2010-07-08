@@ -1795,15 +1795,6 @@ create procedure WA_GET_HOST()
   if (is_http_ctx ())
     {
       ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
-      if (isstring (ret) and strchr (ret, ':') is null)
-        {
-          declare hp varchar;
-          declare hpa any;
-          hp := sys_connected_server_address ();
-          hpa := split_and_decode (hp, 0, '\0\0:');
-	  if (hpa[1] <> '80')
-            ret := ret || ':' || hpa[1];
-        }
     }
   else
    {
