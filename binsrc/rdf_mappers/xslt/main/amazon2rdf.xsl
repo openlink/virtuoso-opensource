@@ -306,6 +306,7 @@
     <xsl:template match="amz:ItemAttributes/amz:Title">
 		<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
 		<dc:title><xsl:value-of select="."/></dc:title>
+        <rdfs:label><xsl:value-of select="."/></rdfs:label>
     </xsl:template>
     <xsl:template match="amz:ItemAttributes/amz:ProductGroup">
 		<oplamz:productGroup><xsl:value-of select="."/></oplamz:productGroup>

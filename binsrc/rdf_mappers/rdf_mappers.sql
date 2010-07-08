@@ -5688,9 +5688,6 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
 
      xdMerchants := xtree_doc (tmp);
 
-     -- strTmp := cast (tmp as varchar);
-     -- string_to_file('/tmp/amazon_response.xml', strTmp, 0);
-
      foreach (any mid in merchantIds) do
      {
        declare id, sellerName varchar;
