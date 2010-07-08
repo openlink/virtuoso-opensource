@@ -1,3 +1,93 @@
+July 08, 2010, V6.1.2:
+  * Database engine
+    - Added FOAF+SSL based authentication for client connection
+    - Added support for following http redirects automatically
+    - Added extra functions for graph diff, iteration over dictionary
+      and obtaining biggest possible iri_id on given 32/64bit platform
+    - Added initial support for bif_python_exec
+    - Added semantic pingback client/server
+    - Added ODBC setting WideasUTF16 to return UTF-16LE for SQLWCHAR
+    - Fixed ODBC setting for UTF-8 when db keeps UTF-8 in varchars
+    - Fixed ODBC SQLAllocStmt when using QtSql layer
+    - Fixed handling http, soap, xml-rpc using proxies and reverse-proxies
+    - Fixed when importing keys, let user decide which on to use as his
+      WebID for odbc/sql login
+    - Fixed handling of column default value of 0
+    - Fixed handling multiple certs
+    - Fixed support for bigint in parameter marshalling
+    - Fixed issue with default maxmempoolsize
+    - Fixed issue with extent map and free pages map
+    - Fixed memory leaks
+    - Fixed issue with freelist chain 
+    - Fixed issue with partitioned top order by
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added cartridges for CSV, Etsy, FaceBook OpenGraph, Html5, Idiomag,
+      Tumbler, Vimeo, Wine and YouTube
+    - Added more assertions to facets ontology
+    - Added label as ipf
+    - Added more properties for inferencing
+    - Added support for extra encodings
+    - Added initial support for ODATA atom serialization
+    - Added EAV and SPO labeling modes
+    - Added support for gz and zip compressed CSV
+    - Added CSV parser mode option
+    - Added CSV parser lax mode
+    - Added optimization for large descriptions on about page 
+    - Fixed add escape to CR/LF in JSON format
+    - Fixed Odata, Tesco, html2 cartridges
+    - Fixed create list of unique graphs
+    - Fixed use label ontology to extract geo coordinates
+    - Fixed SPARQL handling of distinct
+    - Fixed SPARQL union selections
+    - Fixed SPARQL statement with implicit group by; do not remove
+      order by
+    - Fixed RDFa failing to parse both rel/rev
+    - Fixed abnormal long RDFa parsing of document with i18n uris
+    - Fixed issue with ?? with sparql compiler inside sql query
+    - Fixed support for subproperties of inverse functional properties
+    - Fixed support for loading aaa ruleset from multiple contology graphs
+    - Fixed gpf in sparul insert optimization
+    - Fixed issue with extra nulls in hash join or group by
+    - Enhanced iSPARQL using new internal RDF store for speed, browser
+      fixes and cosmetic changes
+
+  * Jena, Sesame 2 and Sesame 3
+    - Added support for creating ruleset
+    - Added support for inference graph
+    - Added support for inference and query execution
+    - Added support for queryengine interface, so now Jena provider support
+      next query execution mode:
+       a) parse and execute query via ARQ
+       b) parse query via ARQ and execute query directly via Virtuoso
+          (new mode)
+       c) parse and execute query directly via Virtuoso
+    - Added support for using Virtuosodatasource
+    - Fixed issue with batch commit
+    - Fixed Jena's lazy initialization when graph is created
+    - Fixed handling of quote chars in literals
+    - Fixed issues with variable binding
+    - Fixed small bugs
+
+  * ODS Applications
+    - Added OpenID 2.0 login and registration
+    - Added FOAF+SSL registration for users pages (jsp, php, vsp etc)
+    - Added FOAF+SSL based authentication using acl
+    - Added shared files using FOAF+SSL
+    - Added description for property value in offers
+    - Added support for multiple certificates in user profile
+    - Added photo and audio upload for jtml, vsp, php and jsp pages
+    - Added relation ontology
+    - Added support for PubSubHub
+    - Fixed OpenID to work with personal iri
+    - Fixed can have many certs in foaf
+    - Fixed handing of multiple items in alt name
+    - Fixed goodsrelation sioc data
+    - Fixed VTIMEZONE component in Calendar export
+    - Fixed offers, favorites
+
+
 March 30, 2010, V6.1.1:
   * Database engine
     - Added support for CSV import
