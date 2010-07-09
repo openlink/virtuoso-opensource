@@ -147,7 +147,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--POLLS.WA.page_url (self.domain_id)" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Polls'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -169,7 +169,7 @@
                       params := e.ve_params;
                       q := trim (get_keyword ('q', params, ''));
                       S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
-                      self.vc_redirect (sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S));
+                      self.vc_redirect (POLLS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S)));
                       self.vc_data_bind(e);
                      ]]>
               </v:on-post>
@@ -180,9 +180,9 @@
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="q" value="" fmt-function="POLLS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
               <xsl:call-template name="nbsp"/>
-              <v:url url="search.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+              <v:url url="--POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
             |
-              <v:url url="search.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+              <v:url url="--POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
           </div>
         </v:template>
       </div>
@@ -192,10 +192,10 @@
           </div>
           <div style="float: right; padding-right: 0.5em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-          <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              <v:url url="--POLLS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
               |
         </v:template>
-            <a href="about" onclick="javascript: POLLS.aboutDialog(); return false;" title="About">About</a>
+            <a href="--POLLS.WA.page_url (self.domain_id, 'about.vsp')" onclick="javascript: POLLS.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>  

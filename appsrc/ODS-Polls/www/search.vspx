@@ -188,6 +188,11 @@
         self.do_search (e);
     ]]>
   </v:after-data-bind>
+  <v:before-render>
+    <![CDATA[
+      self.F1.uf_action := POLLS.WA.page_url (self.domain_id, 'search.vspx');
+    ]]>
+  </v:before-render>
   <vm:pagetitle>Search results</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -518,7 +523,7 @@
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('polls.vspx');
+                self.vc_redirect (POLLS.WA.page_url (self.domain_id));
               ]]>
             </v:on-post>
           </v:button>
@@ -550,7 +555,7 @@
                 <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect('polls.vspx');
+                      self.vc_redirect (POLLS.WA.page_url (self.domain_id));
                     ]]>
                   </v:on-post>
                 </v:button>

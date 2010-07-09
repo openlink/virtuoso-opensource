@@ -32,6 +32,11 @@
       <v:variable name="s_url" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'settings.vspx');
+        ]]>
+      </v:before-render>
       <?vsp
         if (0)
         {

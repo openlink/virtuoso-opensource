@@ -543,9 +543,9 @@ Feeds.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
   if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {width:'450px', height:'150px'});
+  aboutDiv = OAT.Dom.create('div', {width:'430px', height:'150px'});
   aboutDiv.id = 'aboutDiv';
-  aboutDialog = new OAT.Dialog('About ODS FeedsManager', aboutDiv, {width:450, buttons: 0, resize:0, modal:1});
+  aboutDialog = new OAT.Dialog('About ODS FeedsManager', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {
@@ -560,6 +560,13 @@ Feeds.aboutDialog = function ()
     }
   }
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
 }
 
 function myPost(frm_name, fld_name, fld_value)
@@ -1120,6 +1127,14 @@ function menuPopup(button, menuID)
     div.style.visibility = 'visible';
   }
   return false;
+}
+
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
 }
 
 function urlParams(mask)

@@ -154,7 +154,7 @@
                       params := e.ve_params;
                       q := trim (get_keyword ('q', params, ''));
                       S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
-                      self.vc_redirect (sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S));
+                      self.vc_redirect (ENEWS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S)));
                       self.vc_data_bind(e);
                      ]]>
             	</v:on-post>
@@ -165,9 +165,9 @@
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="q" value="" fmt-function="ENEWS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
               <xsl:call-template name="nbsp"/>
-              <v:url url="search.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
             |
-              <v:url url="search.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
           </div>
         </v:template>
       </div>
@@ -177,10 +177,10 @@
           </div>
           <div style="float: right; padding-right: 0.5em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-            <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
               |
       	  </v:template>
-            <a href="about" onclick="javascript: Feeds.aboutDialog(); return false;" title="About">About</a>
+            <a href="<?V ENEWS.WA.page_url (self.domain_id, 'about.vsp') ?>" onclick="javascript: Feeds.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>  
@@ -231,7 +231,7 @@
   <!--=========================================================================-->
   <xsl:template name="vm:others">
     <div class="left_container">
-      <v:url value='<img src="image/bmklet_32.png" height="16" width="16" border="0" /> Bookmarklet ' format="%s" url="--'bookmark.vspx'"/>
+      <v:url value='<img src="image/bmklet_32.png" height="16" width="16" border="0" /> Bookmarklet ' format="%s" url="--ENEWS.WA.page_url (self.domain_id, 'bookmark.vspx', self.sid, self.realm)"/>
     </div>
   </xsl:template>
 
@@ -267,43 +267,6 @@
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:menu">
-    <div class="left_container">
-      <ul class="left_navigation">
-      &lt;?vsp if (self.nav_pos_fixed) { ?&gt;
-        <xsl:for-each select="vm:menuitem">
-          <li>
-            <xsl:choose>
-              <xsl:when test="@type='hot' or @url">
-                <v:url format="%s">
-                  <xsl:copy-of select="@name" />
-                  <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-                  <xsl:attribute name="url">--'<xsl:value-of select="@url"/>'</xsl:attribute>
-                </v:url>
-              </xsl:when>
-              <xsl:when test="@ref">
-                <v:url format="%s">
-                  <xsl:copy-of select="@name" />
-                  <xsl:attribute name="value">--'<xsl:value-of select="@value"/>'</xsl:attribute>
-                  <xsl:attribute name="url">--<xsl:value-of select="@ref"/></xsl:attribute>
-                </v:url>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="@value"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </li>
-        </xsl:for-each>
-      &lt;?vsp } else { ?&gt;
-        <li>
-        &lt;?vsp http (coalesce (self.nav_tip, '')); ?&gt;
-        </li>
-      &lt;?vsp } ?&gt;
-      </ul>
     </div>
   </xsl:template>
 

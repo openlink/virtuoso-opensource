@@ -829,6 +829,23 @@ create procedure POLLS.WA.forum_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := POLLS.WA.iri_fix (POLLS.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
+  return POLLS.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -1326,11 +1343,11 @@ create procedure POLLS.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Polls';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  POLLS.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  POLLS.WA.domain_sioc_url (domain_id),
                   POLLS.WA.domain_name (domain_id),
                   POLLS.WA.domain_name (domain_id),
-                  POLLS.WA.account_sioc_url (domain_id, sid, realm),
+                  POLLS.WA.account_sioc_url (domain_id),
                   POLLS.WA.account_fullName (POLLS.WA.domain_owner_id (domain_id)),
                   POLLS.WA.account_fullName (POLLS.WA.domain_owner_id (domain_id))
                  );

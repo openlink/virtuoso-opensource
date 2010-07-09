@@ -36,6 +36,11 @@
       <v:variable name="v_members" type="any" default="null"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'groups.vspx');
+        ]]>
+      </v:before-render>
       <v:template type="simple" enabled="-- case when self.v_mode = 'browse' then 1 else 0 end">
         <fieldset>
           <legend><b>Regular groups</b></legend>

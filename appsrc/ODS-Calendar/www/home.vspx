@@ -546,7 +546,7 @@
           for (N := 0; N < L; N := N + 1)
           {
             http (delimiter);
-            http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (CAL.WA.domain_iri (self.domain_id), tags[N]), tags[N]));
+          http (sprintf ('<a href="%s">%s</a>', SIOC..tag_iri (CAL.WA.forum_iri (self.domain_id), tags[N]), tags[N]));
             delimiter := ', ';
           }
         }
@@ -1148,7 +1148,7 @@
             </vm:if>
           </td>
           <!-- Navigation right column -->
-          <td id="RC" typeof="sioct:Calendar" about="<?V CAL.WA.domain_iri (self.domain_id) ?>">
+          <td id="RC" typeof="sioct:Calendar" about="<?V CAL.WA.forum_iri (self.domain_id) ?>">
             <v:template type="simple" name="template_error" condition="not self.vc_is_valid">
               <div class="error">
                 <p><v:error-summary/></p>

@@ -19,6 +19,21 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function myPost(frm_name, fld_name, fld_value) {
   createHidden(frm_name, fld_name, fld_value);
   document.forms[frm_name].submit();
@@ -873,7 +888,7 @@ AB.aboutDialog = function() {
 	});
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS AddressBook', aboutDiv, {
-		width : 430,
+		width : 445,
 		buttons : 0,
 		resize : 0,
 		modal : 1

@@ -80,6 +80,11 @@
       <v:variable name="v_resource" type="varchar" default="''" persist="0" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'vmds.vspx');
+        ]]>
+      </v:before-render>
         <v:before-data-bind>
           <![CDATA[
             self.v_right := either(equ(ODRIVE.WA.check_admin(ODRIVE.WA.account()), 1), 'W', 'R');

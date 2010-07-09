@@ -77,7 +77,7 @@
                 }
                 else if (action = 'back')
                 {
-                  self.vc_redirect('bookmarks.vspx');
+                  self.vc_redirect (BMK.WA.page_url (self.domain_id));
                 }
                 self.vc_data_bind(e);
                ]]>

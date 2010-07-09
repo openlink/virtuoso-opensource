@@ -31,6 +31,11 @@
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := AB.WA.page_url (self.domain_id, 'settings.vspx');
+        ]]>
+      </v:before-render>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <div class="new-form-header">
         Preferences
@@ -206,7 +211,7 @@
     					    POLLS.WA.nntp_fill (self.domain_id);
     					}
 
-              self.vc_redirect('polls.vspx');
+              self.vc_redirect (POLLS.WA.page_url (self.domain_id));
             ]]>
           </v:on-post>
         </v:button>
@@ -215,14 +220,14 @@
             <![CDATA[
               delete from POLLS.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
 
-              self.vc_redirect('settings.vspx');
+              self.vc_redirect (POLLS.WA.page_url (self.domain_id, 'settings.vspx'));
             ]]>
           </v:on-post>
         </v:button>
         <v:button action="simple" value="Cancel" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
-              self.vc_redirect('polls.vspx');
+              self.vc_redirect (POLLS.WA.page_url (self.domain_id));
             ]]>
           </v:on-post>
         </v:button>

@@ -129,7 +129,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--ODRIVE.WA.page_url (self.domain_id)" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='oDrive'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -138,12 +138,32 @@
               http (sprintf ('<a alt="Briefcase Home" title="Briefcase Home" href="%s"><img src="image/drivebanner_sml.jpg" border="0" alt="Briefcase Home" /></a>', ODRIVE.WA.utf2wide (ODRIVE.WA.domain_sioc_url (self.domain_id, self.sid, self.realm))));
             ?>
         </div>
+          <?vsp
+            if (0)
+            {
+          ?>
+              <v:button name="searchHead" action="simple" style="url" value="Submit">
+                <v:on-post>
+                  <![CDATA[
+                    declare S, q, params any;
+
+                    params := e.ve_params;
+                    q := trim (get_keyword ('keywords', params, ''));
+                    S := case when q <> ''then sprintf ('&keywords=%s&step=1', q) else '' end;
+                    self.vc_redirect (ODRIVE.WA.page_url (self.domain_id, sprintf ('home.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S)));
+                    self.vc_data_bind(e);
+                   ]]>
+                 </v:on-post>
+              </v:button>
+          <?vsp
+            }
+          ?>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('action', '_cmd', 'search', 'mode', 'simple'); return false;" />
+            <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('searchHead', 'select', 'simple'); return false;" />
           <xsl:call-template name="nbsp"/>
-            <v:url url="home.vspx?mode=simple" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+            <v:url url="--ODRIVE.WA.page_url (self.domain_id, 'home.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
           |
-            <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+            <v:url url="--ODRIVE.WA.page_url (self.domain_id, 'home.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
         </div>
       </div>
         <div style="clear: both; border: solid #935000; border-width: 0px 0px 1px 0px;">
@@ -152,10 +172,10 @@
           </div>
           <div style="float: right; padding-right: 0.5em;">
             <v:template name="t1" type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-          <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              <v:url url="--ODRIVE.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
               |
         </v:template>
-            <a href="about" onclick="javascript: ODRIVE.aboutDialog(); return false;" title="About">About</a>
+            <a href="<?V ODRIVE.WA.page_url (self.domain_id, 'about.vsp') ?>" onclick="javascript: ODRIVE.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>

@@ -672,6 +672,23 @@ create procedure BMK.WA.sparql_url ()
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.page_url (
+  in domain_id integer,
+  in page varchar := null,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := BMK.WA.iri_fix (BMK.WA.forum_iri (domain_id));
+  if (not isnull (page))
+    S := S || '/' || page;
+  return BMK.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Account Functions
 --
 -------------------------------------------------------------------------------
@@ -2234,11 +2251,11 @@ create procedure BMK.WA.banner_links (
   if (domain_id <= 0)
     return 'Public Bookmarks';
 
-  return sprintf ('<a href="%s" title="%s">%V</a> (<a href="%s" title="%s">%V</a>)',
-                  BMK.WA.domain_sioc_url (domain_id, sid, realm),
+  return sprintf ('<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a> (<a href="%s" title="%s" onclick="javascript: return myA(this);">%V</a>)',
+                  BMK.WA.domain_sioc_url (domain_id),
                   BMK.WA.domain_name (domain_id),
                   BMK.WA.domain_name (domain_id),
-                  BMK.WA.account_sioc_url (domain_id, sid, realm),
+                  BMK.WA.account_sioc_url (domain_id),
                   BMK.WA.account_fullName (BMK.WA.domain_owner_id (domain_id)),
                   BMK.WA.account_fullName (BMK.WA.domain_owner_id (domain_id))
                  );

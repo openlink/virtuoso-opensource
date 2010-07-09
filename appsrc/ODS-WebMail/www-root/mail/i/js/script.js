@@ -20,10 +20,25 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+function urlParam(fldName)
+{
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
+}
+
+function myA(obj) {
+  if (obj.href) {
+    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
+    return false;
+  }
+}
+
 function AddAdr(obj,addr)
 {
 	fld = eval('document.f1.'+ obj.name);
-	if (obj.checked == true) {
+  if (obj.checked) {
 		if (fld.value.indexOf('~no name~') != -1)
 			fld.value = '';
   	if (fld.value.length != 0)
@@ -446,17 +461,14 @@ OMAIL.trim = function (sString, sChar)
   if (sString)
 {
   if (sChar == null)
-    {
     sChar = ' ';
-    }
+
   while (sString.substring(0,1) == sChar)
-    {
     sString = sString.substring(1, sString.length);
-    }
+
   while (sString.substring(sString.length-1, sString.length) == sChar)
-    {
     sString = sString.substring(0,sString.length-1);
-    }
+
   }
   return sString;
 }
@@ -466,10 +478,8 @@ OMAIL.enableRadioGroup = function (cell)
   var c = $(cell);
   var r = document.forms['f1'].elements[cell+'_radio'];
   for (var i = 0; i < r.length; i = i + 1)
-  {
     r[i].disabled = !c.checked;
   }
-}
 
 OMAIL.toggleCell = function (cell)
 {
