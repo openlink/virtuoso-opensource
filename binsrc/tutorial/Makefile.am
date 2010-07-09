@@ -77,6 +77,8 @@ EXTRA_DIST= \
 	intprot/sm_s_6/*.xml \
 	intprot/sm_s_7/*.vsp \
 	intprot/sm_s_7/*.xml \
+	linkeddata/*.xml \
+	linkeddata/sem_s_1/*.xml \
 	make_vad.sh \
 	linkeddata/*.xml \
 	linkeddata/*.xml \
