@@ -66,11 +66,17 @@ create procedure DB.DBA.ODS_DISC_ITEM_ID (in par varchar, in fmt varchar, in val
 create procedure DB.DBA.ODS_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
   declare ret any;
-  if (par = 'inst')
+  if ((par = 'inst') or (par = 'inst2'))
     {
-      if (length (val))
-        val := split_and_decode (val)[0];
-      ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
+      ret := DB.DBA.ODS_INST_HOME_PAGE (par, fmt, val);
+      if (length (ret) and (par = 'inst2'))
+        {
+          declare pos integer;
+
+          pos := strrchr (ret, '/');
+          if (not isnull (pos))
+            ret := subseq (ret, 0, pos);
+        }
     }
   else -- item
     {
@@ -347,6 +353,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_html', 1,
     '/dataspace/discussion/([^/\\?]*)', vector('grp'), 1,
     '/nntpf/nntpf_nthread_view.vspx?group=%d', vector('grp'),
     'DB.DBA.ODS_DISC_GRP_ID',
+    NULL,
+    2);
+
+-- A rule returning home page for a given item within instance all of these having a form of <home>?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_page', 1,
+    '/dataspace/([^/]*)/(addressbook|bookmark|briefcase|calendar|subscriptions|polls|mail)/([^/]*)/([^/\\.\?]*)(.vspx|.vsp)',
+    vector('uname', 'app', 'inst2', 'page', 'ext'), 4,
+    '%s/%s%s', vector('inst2', 'page', 'ext'),
+    'DB.DBA.ODS_ITEM_PAGE',
     NULL,
     2);
 
@@ -650,6 +665,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_cal_atom_html',
 	  'ods_apps_gems_html',
 	  'ods_apps_tags_html',
+	  'ods_apps_page',
 	  'ods_discussion_item_html',
 	  'ods_blog_tag',
 	  'ods_main',
