@@ -164,6 +164,8 @@ public class VirtuosoConnection implements Connection
 
   private Vector hostList = new Vector();
 #endif
+   protected boolean rdf_type_loaded = false;
+   protected boolean rdf_lang_loaded = false;
 
   private boolean useRoundRobin;
   // The pingStatement to know if the connection is still available
