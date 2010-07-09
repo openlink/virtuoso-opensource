@@ -1,3 +1,15 @@
+2010-07-09 13:32  source
+
+	* Fixed do not run tpc-h create on vad install
+
+2010-07-09 13:01  source
+
+	* Added UI support for SSL/TLS connection to LDAP server
+
+2010-07-09 12:59  source
+
+	* Added new tutorials
+
 2010-07-08 13:40  source
 
 	* FIxed OpenID and SSL login
