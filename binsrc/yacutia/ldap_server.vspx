@@ -94,8 +94,8 @@
 	  <tr>
 	    <td CLASS="genlisthead">Host name</td>
 	    <td CLASS="geninput">
-	      <v:text html_size="55" name="host" value="" >
-		<v:validator test="regexp" regexp="^[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
+	      <v:text xhtml_size="55" name="host" value="" >
+		  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
 		  runat="client"/>
 		<v:before-render>
 		  if (self.mode = 'edit')
@@ -115,6 +115,12 @@
 	      </v:text>
 	    </td>
 	  </tr>
+	  <tr>
+	      <td CLASS="geninput">
+		<v:check-box name="ssl" value="1" xhtml_id="ssl"/>
+	      </td>
+	      <td CLASS="genlisthead"><label for="ssl">Try TLS</label></td>
+	    </tr>
 	  <tr>
 	    <td CLASS="genlisthead">Base</td>
 	    <td CLASS="geninput">
@@ -169,8 +175,12 @@
 		    ;
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
+		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    ldap_search (addr, 0, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+		    else  
+		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+		    dbg_obj_print (addr);
+		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
 		    self.pwd.ufl_value);
 
@@ -179,7 +189,7 @@
 		</v:button>
 		<v:button action="simple" name="get" value="-- case when self.mode = 'edit' then 'Save' else 'Add' end">
 		  <v:on-post>
-		    declare addr any;
+		    declare addr, ssl any;
 		    declare exit handler for sqlstate '*'
 		    {
 		      rollback work;
@@ -190,26 +200,30 @@
 		    ;
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
+		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    ldap_search (addr, 0, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+		    else 
+		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
 		    self.pwd.ufl_value);
+		    ssl := self.ssl.ufl_selected;
 
 		    if (self.mode = 'edit')
 		    {
 		      insert replacing SYS_LDAP_SERVERS
-			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD)
+			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
 			  values
 			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, self.pwd.ufl_value);
+			  self.uid.ufl_value, self.pwd.ufl_value, ssl);
 		    }
 		    else
 		    {
 		      insert soft SYS_LDAP_SERVERS
-			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD)
+			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
 			  values
 			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, self.pwd.ufl_value);
+			  self.uid.ufl_value, self.pwd.ufl_value, ssl);
 		      if (not row_count())
 			{
 			  self.vc_is_valid := 0;
@@ -255,7 +269,7 @@
 	  </tr>
 	<v:data-set name="lds" scrollable="1" nrows="1000" cursor="keyset" edit="0">
 	  <v:sql>
-	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD from SYS_LDAP_SERVERS
+	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
 	  </v:sql>
 	  <v:template type="repeat" name="ldst1">
 	    <v:template type="browse" name="ldst2">
