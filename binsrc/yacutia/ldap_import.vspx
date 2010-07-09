@@ -111,8 +111,8 @@
 		      self.port.ufl_value := arr[1];
 		    else
 		      self.port.ufl_value := '389';
-		    select LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD
-		    into self.base.ufl_value, lver, bind, ufld, uid, self.pwd.ufl_value
+		    select LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL
+		    into self.base.ufl_value, lver, bind, ufld, uid, self.pwd.ufl_value, self.ssl.ufl_selected
 		      from SYS_LDAP_SERVERS where LS_ADDRESS = self.ldap_s.ufl_value;
 		    self.bind.ufl_value := sprintf ('%s=%s, %s', ufld, uid, bind);
 		  }
@@ -127,7 +127,7 @@
 	    <td CLASS="genlisthead">Host name</td>
 	    <td CLASS="geninput">
 	      <v:text html_size="35" name="host" value="" >
-		<v:validator test="regexp" regexp="^[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
+		  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
 		  runat="client"/>
 	      </v:text>
 	    </td>
@@ -138,6 +138,12 @@
 	      <v:text xhtml_size="5" name="port" value="389"/>
 	    </td>
 	  </tr>
+	  <tr>
+	      <td CLASS="geninput">
+		<v:check-box name="ssl" value="1" xhtml_id="ssl"/>
+	      </td>
+	      <td CLASS="genlisthead"><label for="ssl">Try TLS</label></td>
+	    </tr>
 	  <tr>
 	    <td CLASS="genlisthead">Base</td>
 	    <td CLASS="geninput">
