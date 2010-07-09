@@ -1,6 +1,6 @@
-virtuoso-opensource (6.1.0) unstable; urgency=low
+virtuoso-opensource (6.1.2) unstable; urgency=low
 
-  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+  * New release
 
- -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Wed Feb  3 16:27:02 CET 2010
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Fri Jul  9 17:37:40 CEST 2010
 
