@@ -1,3 +1,27 @@
+2010-07-09 15:57  source
+
+	* Updated version to 6.1.2 for final release
+
+2010-07-09 15:57  source
+
+	* Fixed version string ODBC driver
+
+2010-07-09 15:36  source
+
+	* Updated debian packaging files
+
+2010-07-09 15:29  source
+
+	* Fixed free data in wrong order
+
+2010-07-09 14:17  source
+
+	* Rebuild drivers
+
+2010-07-09 14:16  source
+
+	* Fixed performance issue loading LANG/TYPE info from empty db
+
 2010-07-09 13:32  source
 
 	* Fixed do not run tpc-h create on vad install
@@ -9,6 +33,14 @@
 2010-07-09 12:59  source
 
 	* Added new tutorials
+
+2010-07-08 20:41  source
+
+	* Fixed application URLs
+
+2010-07-08 20:40  source
+
+	* Fixed application URL rewrite rules
 
 2010-07-08 13:40  source
 

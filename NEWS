@@ -1,4 +1,4 @@
-July 08, 2010, V6.1.2:
+July 09, 2010, V6.1.2:
   * Database engine
     - Added FOAF+SSL based authentication for client connection
     - Added support for following http redirects automatically
@@ -24,7 +24,7 @@ July 08, 2010, V6.1.2:
 
   * SPARQL and RDF
     - Added cartridges for CSV, Etsy, FaceBook OpenGraph, Html5, Idiomag,
-      Tumbler, Vimeo, Wine and YouTube
+      Tumblr, Vimeo, Wine and YouTube
     - Added more assertions to facets ontology
     - Added label as ipf
     - Added more properties for inferencing
@@ -68,6 +68,7 @@ July 08, 2010, V6.1.2:
     - Fixed Jena's lazy initialization when graph is created
     - Fixed handling of quote chars in literals
     - Fixed issues with variable binding
+    - Fixed performance loading lang/type cache on empty db
     - Fixed small bugs
 
   * ODS Applications
