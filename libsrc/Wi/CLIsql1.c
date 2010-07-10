@@ -1872,7 +1872,6 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
       dk_free_tree ((box_t) stmt->stmt_param_array);
       stmt->stmt_param_array = NULL;
       dk_free_box (stmt->stmt_identity_value);
-      dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
 
 #if (ODBCVER >= 0x0300)
       if (stmt->stmt_app_row_descriptor)
@@ -1883,6 +1882,7 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
 	}
 #endif
+      dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
     }
 
   cli_dbg_printf (("virtodbc__SQLFreeStmt (hstmt=%p, fOption=%u) : done\n", (void *) hstmt, (unsigned) fOption));
