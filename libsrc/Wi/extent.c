@@ -1627,9 +1627,29 @@ ext_read (index_tree_t * it, extent_t * ext, int keep_ts, dk_hash_t * phys_to_lo
       EXT_BIT (ext, ext->ext_dp + inx, word, bit);
       if (ext->ext_pages[word] & 1 << bit)
 	{
-	  buffer_desc_t * buf = bp_get_buffer (NULL, BP_BUF_IF_AVAIL);
+	  buffer_desc_t *buf;
 	  it_map_t * itm;
 	  dp_addr_t log;
+	  extern dbe_storage_t *cpt_dbs;
+
+	  if (dbs_is_free_page (cpt_dbs, ext->ext_dp + inx))
+	    {
+	      dp_addr_t log;
+
+	      if ((log = (ptrlong) gethash (DP_ADDR2VOID (ext->ext_dp + inx), phys_to_log)))
+		{
+		  log_error ("Remap %d corresponding to logical %d was marked free. marking allocated.", ext->ext_dp + inx, log);
+		  dbs_page_allocated (cpt_dbs, ext->ext_dp + inx);
+		}
+	      else
+		{
+		  log_error ("Correcting bad remap allocation %d", ext->ext_dp + inx);
+		  ext->ext_pages[word] &= ~(1 << bit);
+		}
+	      continue;
+	    }
+
+	  buf = bp_get_buffer (NULL, BP_BUF_IF_AVAIL);
 	  if (!buf)
 	    break;
 	  dk_set_push (&buf_list, (void*)buf);
