@@ -247,7 +247,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 	values ('.+\\.csv\x24', 'URL', 'DB.DBA.RDF_LOAD_CSV', null, 'CSV');
         
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-	values ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)',
+	values ('(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)',
 	'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -315,6 +315,9 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
     '(http://shopper.cnet.com/.*)|'||
     '(http://reviews.cnet.com/.*)'
     where RM_HOOK = 'DB.DBA.RDF_LOAD_CNET';
+
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://cgi.sandbox.ebay.com/.*)|(http://cgi.ebay.com/.*)'
+    where RM_HOOK = 'DB.DBA.RDF_LOAD_EBAY_ARTICLE';
 
 update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	'(http://.*amazon.[^/]+/gp/product/.*)|'||
@@ -5905,6 +5908,8 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
     }
   else if (new_origin_uri like 'http://cgi.ebay.com/%QQitemZ%QQ%')
     tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%sQQitemZ%sQQ%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.com/%/%?%')
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%s/%s?%s', 0);
   else
     return 0;
 
