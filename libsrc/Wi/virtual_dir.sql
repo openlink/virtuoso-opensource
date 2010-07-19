@@ -1517,6 +1517,7 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
     xslt_sheet (ssheet_name, xtree_doc (ssheet_text));
   else
     ssheet_name := 'http://local.virt/dir_output';
+  set http_charset='UTF-8';
   return http_value (xslt (ssheet_name, _xml));
 }
 ;
