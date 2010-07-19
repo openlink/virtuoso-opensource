@@ -1932,7 +1932,7 @@ create procedure INIT_SERVER_SETTINGS ()
 	     0,
 	     'default',
 	     '',
-	     'Enter your Member ID and Password',
+	     'Enter your User ID and Password',
 	     '',
 	     '',
 	     'Copyright &copy; 1998-2010 OpenLink Software',

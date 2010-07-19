@@ -1735,7 +1735,7 @@ function loginSubmit(mode, prefix) {
 	} else if (mode == 3) {
   } else {
 		if (($(prefix+'_uid').value.length == 0) || ($(prefix+'_password').value.length == 0))
-			return showError('Invalid Member ID or Password');
+      return showError('Invalid User ID or Password');
 
 		q += 'user_name='
 				+ encodeURIComponent($v(prefix+'_uid'))

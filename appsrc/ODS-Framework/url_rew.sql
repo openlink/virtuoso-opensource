@@ -348,6 +348,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_home_html', 1,
     NULL,
     2);
 
+-- Discussion apps pages
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_page', 1,
+    '/dataspace/discussion/([^/\\.\?]*)(.vspx|.vsp|.css|.js)',
+    vector('page', 'ext'), 2,
+    '/nntpf/%s%s', vector('page', 'ext'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    1);
+
 -- Discussion group page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_html', 1,
     '/dataspace/discussion/([^/\\?]*)', vector('grp'), 1,
@@ -649,6 +658,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_apml',
 	  'ods_feed_html',
 	  'ods_inst_html',
+	  'ods_discussion_page',
 	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',

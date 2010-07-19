@@ -703,7 +703,7 @@ no_date:
       </v:template>
       <v:template name="registration" type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
         <div>
-          <div class="<?V case when self.uoid = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
+          <div class="<?V case when self.uoid = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">Digest</div>
           <?vsp
             if ((select top 1 WS_REGISTER_OPENID from WA_SETTINGS) = 1)
               http (sprintf ('<div class="%s" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>', case when self.uoid = 1 then 'login_tabactive' else 'login_tab' end));

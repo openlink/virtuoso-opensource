@@ -3145,7 +3145,7 @@ ODS.Nav = function(navOptions) {
 		var rowA = OAT.Dom.create ('div');
 		var unameLabel = OAT.Dom.create ('label');
 		unameLabel.htmlFor   = 'userName';
-		unameLabel.innerHTML = 'Member ID';
+			unameLabel.innerHTML = 'User ID';
 
 		var unameInput = OAT.Dom.create ('input');
 		unameInput.id = "userName";
@@ -3222,7 +3222,7 @@ ODS.Nav = function(navOptions) {
 		if ($('loginDiv').loginTab.selectedIndex == 1)
 		    errMsg = 'Invalid OpenID URL';
 		else
-		    errMsg = 'Invalid Member ID or Password';
+				errMsg = 'Invalid User ID or Password';
 	    }
 		if ($('loginDiv').loginTab.selectedIndex == 0
 				&& $('loginUserName').value.length > 0) {

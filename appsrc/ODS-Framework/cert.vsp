@@ -21,8 +21,10 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-   declare sid varchar;
+   declare sid, ua varchar;
    --dbg_obj_print (params);
+
+   ua := http_request_header (http_request_header (), 'User-Agent');
    sid := {?'sid'};
    if (get_keyword ('pubkey', params) is not null)
      {
@@ -31,9 +33,9 @@
        declare uid int;
        whenever not found goto nf;
        select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY, U_ID 
-	into uname, cn, mail, o, c, uid from
-	SYS_USERS, WA_USER_INFO, VSPX_SESSION where
-	VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
+         into uname, cn, mail, o, c, uid
+       	 from SYS_USERS, WA_USER_INFO, VSPX_SESSION
+      	where VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
        webid := sioc..person_iri (sioc..user_obj_iri (uname));
        pk := replace (get_keyword ('pubkey', params), '\r\n', '');
        pk := replace (pk, '\n', '');
@@ -60,10 +62,23 @@
 ?>
 <html>
   <body>
+     <?vsp
+       if (coalesce (strstr (ua, 'MSIE'), -1) > 0)
+       {
+     ?>
+     Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead
+     <?vsp
+       }
+       else
+       {
+     ?>
      <form>
 	<input type="hidden" name="sid" value="<?V {?'sid'} ?>"/>
-	Key strength: <keygen name="pubkey"/><br>
+	     Key strength: <br /><keygen name="pubkey"/><br />
 	<input type="submit" name="gen" value="Generate"/>
      </form>
+     <?vsp
+       }
+     ?>
   </body>
 </html>
