@@ -543,7 +543,7 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
         {
           caddr_t lex_value = NULL;
           int lexem;
-          lexem = ttlyylex (&lex_value, ttlp, scanner);
+          lexem = ttlyylex ((YYSTYPE *)(&lex_value), ttlp, scanner);
           if (0 == lexem)
             break;
           dk_set_push (&lexems, list (5,

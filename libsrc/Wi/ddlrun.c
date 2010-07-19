@@ -4900,7 +4900,7 @@ du_thread_t * recomp_thread;
 void
 qr_recompile_enter (int * is_entered)
 {
-  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  /* client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL; */
   if (THREAD_CURRENT_THREAD == recomp_thread)
     return;
   mutex_enter (recomp_mtx);
@@ -4919,7 +4919,7 @@ qr_recompile_enter (int * is_entered)
 void
 qr_recompile_leave (int * is_entered)
 {
-  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  /* client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL; */
   if (*is_entered)
     {
       recomp_thread = NULL;

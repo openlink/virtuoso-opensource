@@ -1101,7 +1101,6 @@ get_q_of_lang_in_http_accept_language (const char *lang, const char *line)
         }
 garbage_after_q:
       while ((' ' <= tail[0]) && (',' != tail[0])) tail++;
-q_done:
       match_weight = lang_match_to_accept_language_range (lang, key, key_end);
       if (match_weight > best_match_weight)
         {

@@ -57,6 +57,12 @@
 #define WSS_WSU_URI 	"http://schemas.xmlsoap.org/ws/2002/07/utility"
 #endif
 
+#ifdef SOAP_USES_TYPES
+#error "soaptypes build option is no longer needed in $HOME/Makeconfig"
+#endif
+
+#define SOAP_USES_TYPES ((soap_version) >= 11 && (!ctx || !ctx->def_enc))
+
 #define WSP_URI		"http://schemas.xmlsoap.org/ws/2002/12/policy"
 #define WSRM_URI 	"http://schemas.xmlsoap.org/ws/2003/03/rm"
 #define WSA_URI 	"http://schemas.xmlsoap.org/ws/2003/03/addressing"
@@ -1304,7 +1310,6 @@ soap_box_xml_entity (caddr_t *entity, caddr_t *err_ret, dtp_t proposed_type, int
     }
 }
 
-#define SOAP_USES_TYPES ((soap_version) >= 11 && (!ctx || !ctx->def_enc))
 static caddr_t
 soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_version,
     		const char * h_namespace, dtp_t obj_type, soap_ctx_t * ctx)
@@ -11406,8 +11411,7 @@ ws_soap_http (ws_connection_t * ws)
 #ifdef SOAP_HTTP
       else
 	{
-	  snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset,
-		  "ISO-8859-1"));
+	  snprintf (mime_type, sizeof (mime_type), "Content-Type: text/xml; charset=\"%s\"\r\n", CHARSET_NAME (charset, "ISO-8859-1"));
 	  ws->ws_header = box_dv_short_string (mime_type);
 	}
 #endif

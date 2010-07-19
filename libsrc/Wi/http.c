@@ -1825,7 +1825,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
       code = "HTTP/1.1 406 Unacceptable";
       dk_free_tree (ws->ws_header);
       snprintf (buf, sizeof (buf), "Alternates: {\"%s\" 1 {type %s} {charset %s} {length " OFF_T_PRINTF_FMT "}}\r\n",
-	  cname, mime, charset, clen);
+	  cname, mime, charset, (OFF_T_PRINTF_DTP)clen);
       ws->ws_header = box_dv_short_string (buf);
       strses_flush (ws->ws_strses);
       tmpbuf = box_sprintf (1000, fmt, cname, cname, cname, mime, charset);

@@ -1748,9 +1748,9 @@ sch_full_proc_name_1 (dbe_schema_t * sc, const char *ref_name, char *q_def, char
     m[0] = 0;
 
   if (m[0] == 0)
-    snprintf (qn, sizeof (qn), "%s.%s", q ? q : q_def, n);
+    snprintf (qn, sizeof (qn), "%s.%s", q, n);
   else
-    snprintf (qn, sizeof (qn), "%s.%s.%s", q ? q : q_def, m, n);
+    snprintf (qn, sizeof (qn), "%s.%s.%s", q, m, n);
 
   proc = (query_t *) sch_name_to_object_sc (sc, sc_to_proc, o_def, o, qn, 1);
   if (proc && proc != (query_t *) -1)

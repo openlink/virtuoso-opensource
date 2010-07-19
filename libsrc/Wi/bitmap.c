@@ -426,7 +426,7 @@ itc_bm_insert_single (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, 
     ITC_OWNS_PARAM (itc, box);
     upd_rd.rd_values[key->key_bit_cl->cl_nth] = box_iri_int64 (bm_start, key->key_bit_cl->cl_sqt.sqt_dtp);
     ITC_OWNS_PARAM (itc, upd_rd.rd_values[key->key_bit_cl->cl_nth]);
-    upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars (bmstr, 4);
+    upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars ((char *)bmstr, 4);
     ITC_OWNS_PARAM (itc, upd_rd.rd_values[key->key_bm_cl->cl_nth]);
 #endif
       itc_page_leave  (itc, buf);
@@ -739,7 +739,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
       upd_rd.rd_values = upd_values;
       if (key->key_bm_cl->cl_nth >= sizeof (cl_array) / sizeof (caddr_t)) GPF_T1 ("too many leading parts in bm inx");
       page_row (buf, itc->itc_map_pos, &upd_rd, RO_LEAF);
-      upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars (ext, ext_len);
+      upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars ((char *)ext, ext_len);
       upd_rd.rd_n_values++;
       memset (&cl_array, 0, sizeof (caddr_t) * key->key_bm_cl->cl_nth);
       cl_array[key->key_bm_cl->cl_nth] = key->key_bm_cl;
@@ -783,7 +783,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
       else
 	upd_rd.rd_values[inx] = box_copy_tree (rd->rd_values[inx]);
     }
-  upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars (ext, ext_len);
+  upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars ((char *)ext, ext_len);
   upd_rd.rd_n_values = key->key_bm_cl->cl_nth + 1;
   memcpy (&left_pl, itc, sizeof (placeholder_t));
   left_pl.itc_type = ITC_PLACEHOLDER;
