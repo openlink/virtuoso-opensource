@@ -423,7 +423,7 @@ ks_print (key_source_t * ks)
   stmt_printf (("\n%s", ks->ks_spec.ksp_key_cmp ? " inlined " : ""));
 
   sp_list_print (ks->ks_spec.ksp_spec_array);
-  stmt_printf (("\n"));
+  stmt_printf (("%s\n", ks->ks_copy_search_pars ? " [copies params]" : ""));
 
   if (ks->ks_row_spec)
     {
