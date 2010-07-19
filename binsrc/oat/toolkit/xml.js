@@ -234,14 +234,14 @@ OAT.Xml = {
 			if (b in nsObject) { return nsObject[" "]; } /* default ns */
 			return ""; /* fallback; should not happen */
 		}
-		if (document.evaluate) {
+		if (window.ActiveXObject) {
+		    var tmp = xmlDoc.selectNodes(xpath);
+		    for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
+		    return result;
+		} else if (document.evaluate) {
 			var it = xmlDoc.evaluate(xpath,xmlDoc,resolver,XPathResult.ANY_TYPE,null);
 			var node;
 			while ((node = it.iterateNext())) {	result.push(node); }
-			return result;
-		} else if (window.ActiveXObject) {
-			var tmp = xmlDoc.selectNodes(xpath);
-			for (var i=0;i<tmp.length;i++) { result.push(tmp[i]); }
 			return result;
 		} else {
 	    alert("OAT.Xml.xpath:\nNo Xml Parser available");
