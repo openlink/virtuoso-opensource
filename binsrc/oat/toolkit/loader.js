@@ -1612,7 +1612,7 @@ OAT.Loader = {
     },
 
     _depends: {
-	ajax:"xml",
+	ajax:["crypto","xml"],
 	anchor:"win",
 	calendar:["drag","notify"],
 	color:"drag",
