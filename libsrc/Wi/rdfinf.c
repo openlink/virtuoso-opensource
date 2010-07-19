@@ -1870,6 +1870,40 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
   return NULL;
 }
 
+static void
+sqlg_ts_copies_search_pars (table_source_t * ts)
+{
+  if (ts->ts_inx_op)
+    {
+      inx_op_t *iop = ts->ts_inx_op;
+      int inx;
+      DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
+        {
+          term->iop_ks->ks_copy_search_pars = 1;
+        }
+      END_DO_BOX
+    }
+  if (ts->ts_order_ks)
+    ts->ts_order_ks->ks_copy_search_pars = 1;
+  if (ts->ts_main_ks)
+    ts->ts_main_ks->ks_copy_search_pars = 1;
+}
+
+#define TS_COPIES_SEARCH_PARS do { \
+    sqlg_ts_copies_search_pars ((table_source_t *)(ts)); \
+    if (NULL != q_head[0]) \
+      { \
+        data_source_t *h = q_head[0]; \
+        if (IS_TS (h)) \
+          sqlg_ts_copies_search_pars ((table_source_t *)h); \
+        while (h->src_continuations) \
+          { \
+            h = (data_source_t *) h->src_continuations->data; \
+            if (h && IS_TS (h)) \
+              sqlg_ts_copies_search_pars ((table_source_t *)h); \
+          } \
+      } \
+  } while (0);
 
 #define LEADING_SUBCLASS \
   sqlg_leading_subclass_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx, sas_o)
@@ -2032,6 +2066,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   sc->sc_rdf_inf_slots = &ris;
   if (!s_dfe && !p_dfe && !o_dfe)
     {
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBCLASS;
       TRAILING_SUBP;
     }
@@ -2040,12 +2075,14 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
       LEADING_IFP_O;
       LEADING_SAME_AS_O;
       LEADING_SUBCLASS;
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBP;
     }
   else if (!s_dfe && p_dfe && !o_dfe)
     {
       LEADING_SAME_AS_P;
       LEADING_SUBP;
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBCLASS;
     }
   else if (!s_dfe && p_dfe && o_dfe)
@@ -2060,6 +2097,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     {
       LEADING_IFP_S;
       LEADING_SAME_AS_S;
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBCLASS;
       TRAILING_SUBP;
     }
@@ -2070,6 +2108,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
       LEADING_SAME_AS_O;
       LEADING_SAME_AS_S;
       LEADING_SUBCLASS;
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBP;
     }
   else if (s_dfe && p_dfe && !o_dfe)
@@ -2078,6 +2117,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
       LEADING_SAME_AS_S;
       LEADING_SAME_AS_P;
       LEADING_SUBP;
+      TS_COPIES_SEARCH_PARS;
       TRAILING_SUBCLASS;
     }
   else if (s_dfe && p_dfe && o_dfe)
