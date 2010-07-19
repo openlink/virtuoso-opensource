@@ -28,7 +28,8 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="ch_pop3.vsp" method="post" name="dacc">
+    <form method="post" name="dacc">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/ch_pop3.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:apply-templates select="accounts"/>
       <xsl:apply-templates select="account"/>

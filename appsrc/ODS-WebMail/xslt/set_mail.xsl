@@ -26,7 +26,8 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="set_mail.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/set_mail.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <table width="100%" cellpadding="0" cellspacing="0" align="center" class="content">
         <colgroup>

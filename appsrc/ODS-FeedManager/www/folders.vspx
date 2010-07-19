@@ -25,7 +25,6 @@
 <v:page name="folders" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <vm:pagetitle>Folders</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:header/>
     <vm:variables>
       <v:variable name="v_id" param-name="id" type="integer" default="0"/>
       <v:variable name="v_parent_id" type="varchar" default="'0'"/>
@@ -35,6 +34,11 @@
       <v:variable persist="session" name="ft_bookmark" type="varchar" default="null" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'folders.vspx');
+        ]]>
+      </v:before-render>
       <v:on-post>
         <![CDATA[
           if (e.ve_button is not null) {

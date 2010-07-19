@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="channels" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="channels" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
@@ -69,9 +69,7 @@
 
   <vm:pagetitle>Feeds</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:header>
-      Feeds
-    </vm:header>
+    <vm:header>Feeds</vm:header>
     <vm:variables>
       <v:variable name="c_order" persist="1" type="varchar" default="'EF_TITLE'" />
       <v:variable name="c_direction" persist="1" type="varchar" default="'asc'" />
@@ -94,12 +92,17 @@
       <v:variable name="v_psh_enabled" type="integer" default="1"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'channels.vspx');
+        ]]>
+      </v:before-render>
       <v:template name="t1" type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
           <div style="padding: 0 0 0.5em 0;">
-        <v:button action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
+          <v:button name="btn_subscribe" action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
               <v:on-post>
                 <![CDATA[
-                  self.vc_redirect('channels_create.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx'));
                 ]]>
               </v:on-post>
             </v:button>
@@ -142,7 +145,7 @@
                     <?vsp self.sortColumn('Retrieved', 'EF_COUNT'); ?>
                   </th>
                   <th width="5%" colspan="2">
-                    <v:label value="Action" format="%s"/>
+                    Action
                   </th>
                 </tr>
               </thead>
@@ -177,7 +180,7 @@
                     <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EF_COUNT')" format="%d"/>
                   </td>
                   <td nowrap="nowrap">
-                    <v:button value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
+                    <v:button name="btn_edit" value="edit" action="simple" xhtml_class="button" xhtml_alt="edit feed">
                       <v:on-post>
                         <![CDATA[
                           self.v_id := (control.vc_parent as vspx_row_template).te_column_value('EFD_ID');
@@ -188,7 +191,7 @@
                     </v:button>
                   </td>
                   <td nowrap="nowrap">
-                    <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
+                    <v:button name="btn_delete" value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this feed?\');" xhtml_class="button" xhtml_alt="Delete feed">
                       <v:on-post>
                         <![CDATA[
                         ENEWS.WA.channel_delete ((control.vc_parent as vspx_row_template).te_column_value('EFD_ID'));
@@ -197,7 +200,7 @@
                         ]]>
                       </v:on-post>
                     </v:button>
-                    <v:button value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh feed">
+                    <v:button name="btn_refresh" value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh feed">
                       <v:on-post>
                         <![CDATA[
                           declare exit handler for sqlstate '*' { goto _next; };
@@ -226,7 +229,7 @@
                     &amp;nbsp;
                   </td>
                   <td nowrap="nowrap" class="td_border">
-                    <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
+                    <v:button name="btn_delete2" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete selected feed(s)?\', this.form, \'cb_item\', \'No feeds were selected to be deleted.\');" xhtml_class="button" xhtml_alt="Delete selected feed(s)">
                       <v:on-post>
                         <![CDATA[
                           declare i integer;
@@ -248,7 +251,7 @@
                         ]]>
                       </v:on-post>
                     </v:button>
-                    <v:button value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
+                    <v:button name="btn_refresh2" value="refresh" action="simple" xhtml_onclick="javascript: return anySelected(this.form, \'cb_item\', \'No feeds were selected to be refreshed.\');" xhtml_class="button" xhtml_alt="Refresh selected feed(s)">
                       <v:on-post>
                         <![CDATA[
                           declare i integer;
@@ -279,7 +282,7 @@
                     &amp;nbsp;
                   </td>
                   <td nowrap="nowrap" class="td_border">
-                    <v:button value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete all feeds?\');" xhtml_class="button" xhtml_alt="Delete all feeds">
+                    <v:button name="btn_delete3" value="delete" action="simple" xhtml_onclick="javascript: return confirmAction(\'Are you sure that you want to delete all feeds?\');" xhtml_class="button" xhtml_alt="Delete all feeds">
                       <v:on-post>
                         <![CDATA[
                         for (select EFD_ID
@@ -300,7 +303,7 @@
                         ]]>
                       </v:on-post>
                     </v:button>
-                    <v:button value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh all feeds">
+                    <v:button name="btn_refresh3" value="refresh" action="simple" xhtml_class="button" xhtml_alt="Refresh all feeds">
                       <v:on-post>
                         <![CDATA[
                           for (select EF_ID
@@ -519,7 +522,7 @@
           </table>
         </div>
         <div class="form-footer">
-          <v:button action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
+          <v:button name="btn_save" action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare N, isAdmin integer;
@@ -623,7 +626,7 @@
               ]]>
            </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button name="btn_cancel" action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.v_mode := '';

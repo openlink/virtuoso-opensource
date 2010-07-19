@@ -26,6 +26,7 @@
   <xsl:output method="xhtml" indent="yes" omit-xml-declaration="no" encoding="utf-8" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
   <xsl:include href="base.xsl"/>
 
+  <xsl:variable name="iri" select="//user_info/domain_path"/>
   <xsl:variable name="sid" select="/page/sid"/>
   <xsl:variable name="realm" select="/page/realm"/>
   <xsl:variable name="fid" select="/page/folder_id"/>
@@ -313,14 +314,14 @@
       <div style="background-color: #fff;">
         <div style="float: left;">
           <xsl:call-template name="make_href">
-          <xsl:with-param name="params" />
-            <xsl:with-param name="url"><xsl:value-of select="//user_info/domain_path" /></xsl:with-param>
+          <xsl:with-param name="url"></xsl:with-param>
             <xsl:with-param name="title">Mail Home</xsl:with-param>
             <xsl:with-param name="img">/oMail/i/omailbanner_sml.jpg</xsl:with-param>
           </xsl:call-template>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-        <form name="FS" action="search.vsp" method="get">
+        <form name="FS" method="get">
+          <xsl:attribute name="action"><xsl:value-of select="$iri" />/search.vsp</xsl:attribute>
           <xsl:call-template name="hid_sid"/>
           <input type="text" name="q" value=""/>
           <input type="hidden" name="search.x" value="x"/>

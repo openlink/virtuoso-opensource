@@ -36,7 +36,8 @@
         <xsl:variable name="next_ord" select="1"/>
       </xsl:otherwise>
     </xsl:choose>
-    <form name="f1" action="folders.vsp" method="post">
+    <form name="f1" method="post">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/folders.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:choose>
         <xsl:when test="object/@id">

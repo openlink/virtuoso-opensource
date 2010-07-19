@@ -103,7 +103,6 @@
   <xsl:template match="vm:popup_pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="1"/>
     <v:variable name="nav_top" type="integer" default="0"/>
-    <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
@@ -127,7 +126,6 @@
   <xsl:template match="vm:pagewrapper">
     <v:variable name="nav_pos_fixed" type="integer" default="0"/>
     <v:variable name="nav_top" type="integer" default="0"/>
-    <v:variable name="nav_tip" type="varchar" default="''"/>
     <xsl:for-each select="//v:variable">
       <xsl:copy-of select="."/>
     </xsl:for-each>
@@ -196,9 +194,88 @@
               <xsl:call-template name="vm:formats"/>
             </td>
       	  </v:template>
-          <!-- Navigation right column -->
           <td id="RC">
-            	    <v:vscx name="navbar" url="enews_navigation.vspx" />
+              <v:tree show-root="0" multi-branch="0" orientation="horizontal" start-path="--self.account_role" root="ENEWS.WA.navigation_root" child-function="ENEWS.WA.navigation_child">
+                <v:before-data-bind>
+                  <![CDATA[
+                    declare page_name any;
+
+                    page_name := ENEWS.WA.page_name ();
+                    if (page_name = 'error.vspx')
+                    {
+                      self.nav_pos_fixed := 1;
+                    }
+                    else if (not self.nav_top and page_name <> '')
+                    {
+                      self.nav_pos_fixed := 0;
+                      self.nav_pos_fixed := ENEWS.WA.check_grants2 (self.account_role, page_name);
+                      control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
+                    }
+                  ]]>
+                </v:before-data-bind>
+
+                <v:node-template>
+                  <td nowrap="nowrap" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+                    <v:button action="simple" style="url" xhtml_class="--(case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' else '' end)" value="--(control.vc_parent as vspx_tree_node).tn_value">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if ((control.vc_parent as vspx_tree_node).tn_open = 1)
+                            control.ufl_active := 0;
+                          else
+                            control.ufl_active := ENEWS.WA.check_grants2(self.account_role, ENEWS.WA.page_name ());
+                        ]]>
+                      </v:after-data-bind>
+                      <v:before-render>
+                        <![CDATA[
+                          control.bt_anchor := 0;
+                          control.bt_url := replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id));
+                        ]]>
+                      </v:before-render>
+                      <v:on-post>
+                        <![CDATA[
+                          declare node vspx_tree_node;
+                          declare tree vspx_control;
+                          self.nav_pos_fixed := 0;
+                          node := control.vc_parent;
+                          tree := node.tn_tree;
+                          node.tn_tree.vt_open_at := NULL;
+                          self.nav_top := 1;
+                          tree.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </v:node-template>
+                <v:leaf-template>
+                  <td nowrap="nowrap" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+                    <v:button action="simple" style="url" xhtml_class="--case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' else '' end" value="--(control.vc_parent as vspx_tree_node).tn_value">
+                      <v:before-render>
+                        <![CDATA[
+                          control.bt_anchor := 0;
+                          control.bt_url := replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id));
+                        ]]>
+                      </v:before-render>
+                    </v:button>
+                  </td>
+                </v:leaf-template>
+                <v:horizontal-template>
+                  <table class="nav_bar" cellspacing="0">
+                    <tr>
+                      <v:node-set />
+                      <?vsp
+                        if ((control as vspx_tree).vt_node <> control) {
+                      ?>
+                      <td class="filler"> </td>
+                      <?vsp } ?>
+                    </tr>
+                  </table>
+                  <?vsp
+                    if ((control as vspx_tree).vt_node = control and not length (childs)) {
+                  ?>
+                  <div class="nav_bar nav_seperator" >x</div>
+                  <?vsp } ?>
+                </v:horizontal-template>
+              </v:tree>
               	  <v:template type="simple" condition="not self.vc_is_valid">
               	    <div class="error">
               		    <p><v:error-summary/></p>

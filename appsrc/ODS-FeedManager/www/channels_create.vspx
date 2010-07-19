@@ -23,7 +23,8 @@
  -
 -->
 
-<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <v:method name="check_url" arglist="in url varchar, in url2 varchar, in type integer, in msg any">
     <![CDATA[
       declare exit handler for sqlstate '*' { goto _error; };
@@ -142,6 +143,11 @@
       <v:variable name="v_directory_id" type="integer" default="0" persist="0"/>
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx');
+        ]]>
+      </v:before-render>
       <v:before-data-bind>
         <![CDATA[
           declare params any;
@@ -224,7 +230,7 @@
           <v:button action="simple" name="Cancel0" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
               ]]>
             </v:on-post>
           </v:button>
@@ -431,7 +437,7 @@
           <v:button action="simple" name="Back1" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect(sprintf('channels_create.vspx?rb=%d',self.v_source));
+                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, sprintf ('channels_create.vspx?rb=%d', self.v_source)));
               ]]>
             </v:on-post>
           </v:button>
@@ -512,7 +518,7 @@
           </v:button>
           <v:button action="simple" name="Cancel1" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
-              self.vc_redirect('channels.vspx');
+              self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
              ]]></v:on-post>
           </v:button>
         </div>
@@ -629,7 +635,7 @@
           <v:button action="simple" name="Back2" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels_create.vspx?rb=4');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx?rb=4'));
               ]]>
             </v:on-post>
           </v:button>
@@ -680,14 +686,14 @@
                   _next:;
                   }
                 }
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
               ]]>
             </v:on-post>
           </v:button>
           <v:button action="simple" name="Cancel2" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
               ]]>
             </v:on-post>
           </v:button>
@@ -792,7 +798,7 @@
           <v:button action="simple" name="Cancel3" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
               ]]>
             </v:on-post>
           </v:button>
@@ -908,13 +914,13 @@
                   ENEWS.WA.tags_refresh(self.domain_id, self.account_id, 0);
                 }
               _next:
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
                ]]>
              </v:on-post>
           </v:button>
           <v:button action="simple" name="Cancel4" value="Cancel" xhtml_class="form-button">
             <v:on-post><![CDATA[
-              self.vc_redirect('channels.vspx');
+              self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
              ]]></v:on-post>
           </v:button>
         </div>
@@ -1012,14 +1018,14 @@
           <v:button action="simple" name="btn_Background" xhtml_id="btn_Background" value="Background" xhtml_class="form-button" xhtml_style="display: none;">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
                ]]>
              </v:on-post>
           </v:button>
           <v:button action="simple" xhtml_id="btn_Stop" name="Cancel5" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
                ]]>
              </v:on-post>
           </v:button>
@@ -1071,7 +1077,7 @@
           <v:button action="simple" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('channels.vspx');
+                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
                ]]>
              </v:on-post>
           </v:button>

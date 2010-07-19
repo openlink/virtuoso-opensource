@@ -45,7 +45,8 @@
   			}
   		}
   	</script>
-    <form action="write.vsp" method="post" enctype="multipart/form-data" name="f1">
+    <form method="post" enctype="multipart/form-data" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/write.vsp</xsl:attribute>
       <xsl:call-template name="addr"/>
     </form>
   </xsl:template>

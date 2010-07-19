@@ -80,6 +80,11 @@
       <v:variable persist="session" name="wt_bookmark" type="varchar" default="null" />
     </vm:variables>
     <vm:pagebody>
+      <v:before-render>
+        <![CDATA[
+          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'weblog.vspx');
+        ]]>
+      </v:before-render>
     	<v:on-post>
         <![CDATA[
           if (e.ve_button is not null)

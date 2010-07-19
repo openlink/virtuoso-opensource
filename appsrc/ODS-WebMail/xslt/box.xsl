@@ -28,7 +28,8 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="box.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/box.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="bp">
         <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>
@@ -227,11 +228,11 @@
           <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id" />,'<xsl:value-of select="subject" />')</xsl:variable>
         </xsl:when>
         <xsl:when test="/page/folder_id = 130">
-          <xsl:variable name="open_url">write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
+          <xsl:variable name="open_url"><xsl:value-of select="$iri" />/write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
           </xsl:variable>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:variable name="open_url">open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
+          <xsl:variable name="open_url"><xsl:value-of select="$iri" />/open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
           </xsl:variable>
         </xsl:otherwise>
       </xsl:choose>
@@ -313,11 +314,11 @@
         <xsl:variable name="open_url">javascript:Go(<xsl:value-of select="msg_id"/>,'<xsl:value-of select="subject"/>')</xsl:variable>
       </xsl:when>
       <xsl:when test="/page/folder_id = 130">
-        <xsl:variable name="open_url">write.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;wp=<xsl:value-of select="msg_id"/>
+        <xsl:variable name="open_url"><xsl:value-of select="$iri" />/write.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;wp=<xsl:value-of select="msg_id" />
         </xsl:variable>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:variable name="open_url">open.vsp?sid=<xsl:value-of select="$sid"/>&amp;realm=<xsl:value-of select="$realm"/>&amp;op=<xsl:value-of select="msg_id"/>,<xsl:value-of select="position"/>
+        <xsl:variable name="open_url"><xsl:value-of select="$iri" />/open.vsp?sid=<xsl:value-of select="$sid" />&amp;realm=<xsl:value-of select="$realm" />&amp;op=<xsl:value-of select="msg_id" />,<xsl:value-of select="position" />
         </xsl:variable>
       </xsl:otherwise>
     </xsl:choose>

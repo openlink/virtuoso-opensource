@@ -60,6 +60,8 @@
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;
         return;
       }
+      -- dbg_obj_print('', page_name);
+      if (page_name <> 'news.vspx')
       self.vc_redirect('news.vspx');
     ]]>
   </v:after-data-bind>

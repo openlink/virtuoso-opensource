@@ -28,7 +28,8 @@
 
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="filters.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/filters.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:apply-templates select="filters"/>
       <xsl:apply-templates select="filter[@type='edit']"/>

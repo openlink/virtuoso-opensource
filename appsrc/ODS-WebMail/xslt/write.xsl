@@ -93,7 +93,8 @@
 
       ]]>
     </script>
-    <form name="f1" action="write.vsp" method="post" enctype="multipart/form-data" onSubmit="javascript: returnValue(document.forms['f1'].elements['mt']); return true;">
+    <form name="f1" method="post" enctype="multipart/form-data" onSubmit="javascript: returnValue(document.forms['f1'].elements['mt']); return true;">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/write.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="wp">
         <xsl:attribute name="value"><xsl:value-of select="wp"/></xsl:attribute>

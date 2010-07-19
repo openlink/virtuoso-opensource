@@ -226,8 +226,8 @@
           | enable
           <v:url value="--'Thread view'"
                  format="%s"
-		 url="--'nntpf_thread_view.vspx?group='||self.grp_sel_no_thr || '&amp;thr=1'" /> |
-	  <v:url value="Subscribe" format="%s" url="--sprintf ('nntpf_subs_group.vspx?group=%s', self.grp_sel_no_thr)" />
+		             url="--'/dataspace/discussion/nntpf_thread_view.vspx?group='||self.grp_sel_no_thr || '&amp;thr=1'" /> |
+	        <v:url value="Subscribe" format="%s" url="--sprintf ('/dataspace/discussion/nntpf_subs_group.vspx?group=%s', self.grp_sel_no_thr)" />
           <br/>
         </p>
         <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
@@ -388,7 +388,7 @@ if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds
       <table>
 	  <tr>
 	      <td>
-		  <v:url value="Subscribe to the thread" format="%s" url="--sprintf ('nntpf_subs_group.vspx?group=%s&amp;id=%U', self.grp_sel_thr, self.cur_art)" />
+       		   <v:url value="Subscribe to the thread" format="%s" url="--sprintf ('/dataspace/discussion/nntpf_subs_group.vspx?group=%s&amp;id=%U', self.grp_sel_thr, self.cur_art)" />
 		  <br />
       <?vsp
       nntpf_display_article ((id), NULL, self.sid);

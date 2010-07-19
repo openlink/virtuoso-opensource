@@ -341,12 +341,9 @@ create procedure ENEWS.WA.menu_tree (
   S :=
 '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="Read" url="news.vspx?tab=feeds" id="1" allowed="public guest reader author owner admin">
+  <node name="Read"            url="news.vspx"            id="1"                allowed="public guest reader author owner admin">
     <node name="11" url="news.vspx" id="11" place="link" allowed="public guest reader author owner admin"/>
     <node name="12" url="search.vspx" id="12" place="link" allowed="public guest reader author owner admin"/>
-    <node name="13" url="error.vspx" id="13" place="link" allowed="public guest reader author owner admin"/>
-    <node name="14" url="blog.vspx" id="14" place="link" allowed="reader author owner admin"/>
-    <node name="14" url="tags.vspx" id="14"  place="link" allowed="reader author owner admin"/>
     <node name="15" url="bookmark.vspx" id="15" place="link" allowed="reader author owner admin"/>
     <node name="16" url="settings.vspx" id="16" place="link" allowed="reader author owner admin"/>
   </node>
@@ -378,16 +375,13 @@ create procedure ENEWS.WA.menu_tree (
 create procedure ENEWS.WA.navigation_root (
   in path varchar)
 {
-  declare domain_id, user_id integer;
   declare access_role varchar;
-  declare aPath any;
+  declare V any;
 
-  aPath := split_and_decode(path,0,'\0\0/');
-  if (length(aPath) < 2)
+  V := split_and_decode(path,0,'\0\0/');
+  if (length (V) = 0)
     return vector();
-  domain_id := cast(aPath[0] as integer);
-  user_id := cast(aPath[1] as integer);
-  access_role := ENEWS.WA.access_role(domain_id, user_id);
+  access_role := V[0];
   return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', access_role), xml_tree_doc (ENEWS.WA.menu_tree (access_role)), 0);
 
 }

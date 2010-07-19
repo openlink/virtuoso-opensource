@@ -5729,12 +5729,12 @@ create procedure OMAIL.WA.omail_search(
   -- Form Action---------------------------------------------------------------------
   if (get_keyword ('fa_cancel.x',params,'') <> '')
   {
-    OMAIL.WA.utl_doredirect(sprintf ('box.vsp?sid=%s&realm=%s&bp=100', _sid, _realm));
+    OMAIL.WA.utl_doredirect(sprintf ('box.vsp?sid=%s&realm=%s&bp=100', _sid, _realm), get_keyword ('domain_id', _user_info));
     return;
   }
   else if (get_keyword ('fa_save.x', params, '') <> '')
   {
-    OMAIL.WA.utl_doredirect(sprintf ('folders.vsp?sid=%s&realm=%s&folder_id=0&smartFlag=S&parent_id=115&%s', _sid, _realm, replace (tmp, '&amp;', '&q_')));
+    OMAIL.WA.utl_doredirect(sprintf ('folders.vsp?sid=%s&realm=%s&folder_id=0&smartFlag=S&parent_id=115&%s', _sid, _realm, replace (tmp, '&amp;', '&q_')), get_keyword ('domain_id', _user_info));
     return;
   }
   else if (get_keyword ('fa_move.x', params,'') <> '')
@@ -6228,7 +6228,7 @@ create procedure OMAIL.WA.omail_set_mail(
   }
   if ((get_keyword ('fa_cancel.x',params,'') <> '') or (get_keyword ('fa_save.x',params,'') <> ''))
   {
-    OMAIL.WA.utl_doredirect(sprintf('box.vsp?sid=%s&realm=%s&bp=100',_sid,_realm));
+    OMAIL.WA.utl_doredirect(sprintf ('box.vsp?sid=%s&realm=%s&bp=100', _sid, _realm), get_keyword ('domain_id', _user_info));
     return;
   }
 
