@@ -41,7 +41,7 @@ bif:spatial_contains virtrdf:isSpecialPredicate bif:spatial_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2010-03-22 0003v6g' ;
+  virtrdf:version '2010-06-17 0001v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -1544,7 +1544,7 @@ rdfdf:multipart-uri-fn-nullable
   virtrdf:qmfName "multipart-uri-fn-nullable";
   virtrdf:qmfShortTmpl "^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{as-name-N}^^{end}^";	# STRING REQUIRED "short" value template, can be NULL
   virtrdf:qmfLongTmpl " __i2id (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^))";	# STRING REQUIRED "long" value template, can be NULL
-  virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " __bft (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^), 1)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
@@ -1553,12 +1553,12 @@ rdfdf:multipart-uri-fn-nullable
   virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __i2id (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^))";	# STRING REQUIRED ... long from short
-  virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfSqlvalOfShortTmpl " __bft (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^), 1)";		# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^))";
-  virtrdf:qmfUriOfShortTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfUriOfShortTmpl " __bft (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^), 1)";		# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
   virtrdf:qmfShortOfTypedsqlvalTmpl "^{comma-list-begin}^ ^{custom-verbatim-1}^_INV_^{N1}^ (^{tree}^)^{as-name-N}^^{end}^";					# STRING REQUIRED ... makes short by SQL value with specified type and/or language
@@ -1710,7 +1710,7 @@ rdfdf:zeropart-uri-fn-nullable
   virtrdf:qmfName "zeropart-uri-fn-nullable";
   virtrdf:qmfShortTmpl "1 /*zeropart*/";	# STRING REQUIRED "short" value template, can be NULL
   virtrdf:qmfLongTmpl " __i2id (^{custom-verbatim-1}^ ())";			# STRING REQUIRED "long" value template, can be NULL
-  virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ ()";				# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " __bft (^{custom-verbatim-1}^ (), 1)";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
@@ -1719,12 +1719,12 @@ rdfdf:zeropart-uri-fn-nullable
   virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __i2id (^{custom-verbatim-1}^ ())";		# STRING REQUIRED ... long from short
-  virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfSqlvalOfShortTmpl " __bft (^{custom-verbatim-1}^ (), 1)";		# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (^{custom-verbatim-1}^ ())";
-  virtrdf:qmfUriOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfUriOfShortTmpl " __bft (^{custom-verbatim-1}^ (), 1)";		# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{custom-verbatim-1}^ ()";			# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
   virtrdf:qmfShortOfTypedsqlvalTmpl "1 /*zeropart*/";				# STRING REQUIRED ... makes short by SQL value with specified type and/or language
@@ -1806,7 +1806,7 @@ rdfdf:sql-varchar-uri-fn
   virtrdf:qmfName "sql-varchar-uri-fn";
   virtrdf:qmfShortTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "short" value template, can be NULL
   virtrdf:qmfLongTmpl " __i2id (^{custom-verbatim-1}^ (^{alias-dot}^^{column}^))";	# STRING REQUIRED "long" value template, can be NULL
-  virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " __bft (^{custom-verbatim-1}^ (^{alias-dot}^^{column}^), 1)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
@@ -1815,12 +1815,12 @@ rdfdf:sql-varchar-uri-fn
   virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __i2id (^{custom-verbatim-1}^ (^{tree}^))";	# STRING REQUIRED ... long from short
-  virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";	# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfSqlvalOfShortTmpl " __bft (^{custom-verbatim-1}^ (^{tree}^), 1)";		# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#anyURI'";# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (^{custom-verbatim-1}^ (^{tree}^))";
-  virtrdf:qmfUriOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfUriOfShortTmpl " __bft (^{custom-verbatim-1}^ (^{tree}^), 1)";		# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
   virtrdf:qmfShortOfTypedsqlvalTmpl " NULL";					# STRING REQUIRED ... makes short by SQL value with specified type and/or language
