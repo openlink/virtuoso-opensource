@@ -86,8 +86,11 @@
 
     <xsl:choose>
       <xsl:when test="$url = ''">
-       <xsl:variable name="url">/</xsl:variable>
+        <xsl:variable name="url"><xsl:value-of select="$iri" /></xsl:variable>
        <xsl:variable name="label">Home</xsl:variable>
+      </xsl:when>
+      <xsl:when test="not(starts-with($url,'javascript'))">
+        <xsl:variable name="url"><xsl:value-of select="$iri" />/<xsl:value-of select="$url" /></xsl:variable>
       </xsl:when>
     </xsl:choose>
 

@@ -31,6 +31,7 @@
   <!-- ====================================================================================== -->
   <xsl:template match="page">
     <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/open.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <xsl:call-template name="msg_tools"/>
       <xsl:apply-templates select="message"/>

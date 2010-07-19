@@ -27,7 +27,7 @@
   declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
   declare hParams, hLines, vOptions, geoParams, settings, app any;
 
-  declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
+  declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message, waID); return;};
   declare exit handler for sqlstate '90005' { return; }; --download
   declare exit handler for sqlstate '42001' { http('404'); return;}; --not found
   declare exit handler for sqlstate 'TEST'

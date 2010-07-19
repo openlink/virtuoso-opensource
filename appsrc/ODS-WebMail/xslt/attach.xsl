@@ -26,7 +26,8 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="attach.vsp" method="post" enctype="multipart/form-data" name="f1">
+    <form method="post" enctype="multipart/form-data" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/attach.vsp</xsl:attribute>
       <script>
         function windowShow(sPage)
         {

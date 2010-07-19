@@ -50,7 +50,8 @@
     <caption>
       <span>Edit folder</span>
     </caption>
-    <form action="tools.vsp" method="post">
+    <form method="post">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/tools.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="tp">
         <xsl:attribute name="value"><xsl:value-of select="/page/tp"/>,1</xsl:attribute>

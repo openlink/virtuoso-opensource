@@ -24,11 +24,14 @@
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:include href="box.xsl"/>
+
   <!-- ====================================================================================== -->
   <xsl:variable name="fid" select="/page/fid"/>
+
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <form action="search.vsp" method="post" name="f1">
+    <form method="post" name="f1">
+      <xsl:attribute name="action"><xsl:value-of select="$iri" />/search.vsp</xsl:attribute>
       <xsl:call-template name="hid_sid"/>
       <input type="hidden" name="bp">
         <xsl:attribute name="value"><xsl:value-of select="bp"/></xsl:attribute>

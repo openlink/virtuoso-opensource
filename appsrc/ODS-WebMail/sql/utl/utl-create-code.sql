@@ -128,20 +128,23 @@ create procedure OMAIL.WA.utl_myhttp(
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.utl_redirect(in afull_location varchar)
+create procedure OMAIL.WA.utl_redirect(in full_location varchar)
 {
-  signal('90001',afull_location);
+  signal('90001', full_location);
   return;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure OMAIL.WA.utl_doredirect(in afull_location varchar)
+create procedure OMAIL.WA.utl_doredirect(in full_location varchar, in domain_id integer := null)
 {
+  if (not isnull (domain_id) and (coalesce (strstr (full_location, 'http'), -1) <> 0))
+    full_location := OMAIL.WA.domain_sioc_url (domain_id) || '/' || full_location;
+
   http_rewrite();
   http_request_status('HTTP/1.1 302');
-  http_header(sprintf('Location: %s \r\n',afull_location));
+  http_header(sprintf('Location: %s \r\n', full_location));
 
   return;
 }

@@ -32,6 +32,7 @@
 	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <html>
     <head>
+      <base href="<?V WA_GET_PROTOCOL() || WA_GET_HOST () || http_path () ?>" />
       <link rel="alternate" 
             type="application/rss+xml" 
             title="Virtuoso Screencast Demos" 
