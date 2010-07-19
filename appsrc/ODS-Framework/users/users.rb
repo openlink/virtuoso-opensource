@@ -34,7 +34,7 @@ def login_form()
         User login
       </div>
       <ul id="lf_tabs" class="tabs">
-        <li id="lf_tab_0" title="ODS">ODS</li>
+        <li id="lf_tab_0" title="ODS">Digest</li>
         <li id="lf_tab_1" title="OpenID">OpenID</li>
         <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
         <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -45,7 +45,7 @@ def login_form()
       <table class="form" cellspacing="5">
         <tr>
           <th width="30%">
-            <label for="lf_uid">Member ID</label>
+                <label for="lf_uid">User ID</label>
           </th>
           <td nowrap="nowrap">
             <input type="text" name="lf_uid" value="" id="lf_uid" />

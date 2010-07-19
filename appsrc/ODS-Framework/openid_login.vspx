@@ -133,7 +133,7 @@
 		  </h2>
               <div id="login_form">
                 <form> <!-- just to keep validator happy on this mockup -->
-		  <label for="login_frm_username">Member ID</label>
+		  <label for="login_frm_username">User ID</label>
 		  <v:text name="username" type="hidden" value="--self._uname" xhtml_id="login_frm_username" /><?V self._uname ?><br />
 		  <label for="password">Password</label>
 		  <v:text name="password" value="" xhtml_id="login_frm_password" type="password" />

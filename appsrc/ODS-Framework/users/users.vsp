@@ -795,7 +795,7 @@
                   User login
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="ODS">ODS</li>
+                  <li id="lf_tab_0" title="ODS">Digest</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -806,7 +806,7 @@
                 <table class="form" cellspacing="5">
                   <tr>
                     <th width="30%">
-                      <label for="lf_uid">Member ID</label>
+                          <label for="lf_uid">User ID</label>
                     </th>
                         <td>
                       <input type="text" name="lf_uid" value="" id="lf_uid" />
@@ -868,7 +868,7 @@
                   User register
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="ODS">ODS</li>
+                  <li id="rf_tab_0" title="ODS">Digest</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>

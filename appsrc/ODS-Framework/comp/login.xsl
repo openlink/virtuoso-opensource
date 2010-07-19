@@ -71,7 +71,7 @@
               </xsl:otherwise>
             </xsl:choose>
             <div id="login_form">
-              <label for="login_frm_username">Member ID</label>
+              <label for="login_frm_username">User ID</label>
               <v:text xhtml_id="login_frm_username" name="username" value="" xhtml_style="width: 200px" /><br/>
               <label for="password">Password</label>
               <v:text xhtml_id="login_frm_password" name="password" value="" type="password" xhtml_style="width: 200px" /><br/>
