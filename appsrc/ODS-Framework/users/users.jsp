@@ -396,6 +396,21 @@
           }
           $_formMode = "";
         }
+        else if (getParameter(items, request, "pf_update25") != null)
+        {
+          params = httpParam( "", "sid", $_sid) +
+                   httpParam("&", "realm", $_realm) +
+                   httpParam("&", "id", getParameter(items, request, "pf25_id")) +
+                   httpParam("&", "certificate", getParameter(items, request, "pf25_certificate")) +
+                   httpParam("&", "enableLogin", getParameter(items, request, "pf25_enableLogin"));
+          $_retValue = httpRequest ("POST", "user.certificates."+$_formMode, params);
+          if ($_retValue.indexOf("<failed>") == 0)
+          {
+		        $_document = createDocument($_retValue);
+            throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
+          $_formMode = "";
+        }
         else if (getParameter(items, request, "pf_cancel2") != null)
         {
           $_formMode = "";
@@ -475,6 +490,19 @@
                   }
                 }
       		    }
+            }
+            else if (($_formTab == 2) && ($_formSubtab == 0))
+            {
+              params = httpParam( "", "sid", $_sid) +
+                       httpParam("&", "realm", $_realm) +
+                       httpParam("&", "newPassword", getParameter(items, request, "pf_newPassword")) +
+                       httpParam("&", "oldPassword", getParameter(items, request, "pf_oldPassword"));
+              $_retValue = httpRequest ("POST", "user.password_change", params);
+              if ($_retValue.indexOf("<failed>") == 0)
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
             }
             else
             {
@@ -723,40 +751,22 @@
               }
               if ($_formTab == 2)
               {
-                String securityNo = getParameter(items, request, "securityNo");
-                if (securityNo == null)
-                  securityNo = "";
-
-                if (securityNo.equals("1"))
-                  params +=
-                       httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
-
-                if (securityNo.equals("2"))
-                  params +=
-                       httpParam ("&", "securityFacebookID", getParameter(items, request, "pf_securityFacebookID"));
-
-                if (securityNo.equals("3"))
-                  params +=
-                       "&securityFacebookID=";
-
-                if (securityNo.equals("4"))
+                if ($_formSubtab == 1)
                   params +=
                        httpParam ("&", "securitySecretQuestion", getParameter(items, request, "pf_securitySecretQuestion")) +
                        httpParam ("&", "securitySecretAnswer", getParameter(items, request, "pf_securitySecretAnswer"));
 
-                if (securityNo.equals("5"))
+                if ($_formSubtab == 2)
+                  params +=
+                       httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
+
+                if ($_formSubtab == 3)
+                  params +=
+                       httpParam ("&", "securityFacebookID", getParameter(items, request, "pf_securityFacebookID"));
+
+                if ($_formSubtab == 4)
                   params +=
                        httpParam ("&", "securitySiocLimit", getParameter(items, request, "pf_securitySiocLimit"));
-
-                if (securityNo.equals("6"))
-                  params +=
-                       httpParam ("&", "certificate", getParameter(items, request, "pf_certificate")) +
-                       httpParam ("&", "certificateLogin", (getParameter(items, request, "pf_certificateLogin") != null)? getParameter(items, request, "pf_certificateLogin"): "0");
-
-                if (securityNo.equals("7"))
-                  params +=
-                       "&certificate=&certificateLogin=0";
-
               }
             $_retValue = httpRequest ("POST", "user.update.fields", params);
             if ($_retValue.indexOf("<failed>") == 0)
@@ -800,12 +810,14 @@
               $_formSubtab += 1;
               if (
                   (($_formTab == 1) && ($_formSubtab > 3)) ||
-                  ($_formTab > 1)
+                  (($_formTab == 2) && ($_formSubtab > 5))
                  )
               {
                 $_formTab += 1;
                 $_formSubtab = 0;
               }
+              if ($_formTab == 3)
+                $_formTab = 0;
             }
           }
           catch (Exception e)
@@ -932,7 +944,7 @@
                   User login
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="ODS">Digest</li>
+                  <li id="lf_tab_0" title="Digest">Digest</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -1005,7 +1017,7 @@
                   User register
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="ODS">Digest</li>
+                  <li id="rf_tab_0" title="Digest">Digest</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -1262,7 +1274,7 @@
                       <li id="pf_tab_0_8" title="My Offers">My Offers</li>
                       <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -2002,7 +2014,7 @@
                         %>
                         <div id="pf06_list">
                           <div style="padding: 0 0 0.5em 0;">
-                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Favorite'" alt="Add 'Favorite'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
                       	  <table id="pf06_tbl" class="listing">
                                 <thead>
@@ -2343,7 +2355,7 @@
                       <li id="pf_tab_1_2" title="Online Accounts">Online Accounts</li>
                       <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_1_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
@@ -2863,16 +2875,21 @@
                   </div>
 
                   <div id="pf_page_2" class="tabContent" style="display:none;">
+                    <ul id="pf_tabs_2" class="tabs">
+                      <li id="pf_tab_2_0" title="Password Settings">Password Settings</li>
+                      <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
+                      <li id="pf_tab_2_2" title="OpenID">OpenID</li>
+                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
+                      <li id="pf_tab_2_4" title="Limits">Limits</li>
+                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
+                    </ul>
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <div id="pf_page_2_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <td align="center" colspan="2">
                           <span id="pf_change_txt"></span>
                         </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Settings
-                        </th>
                       </tr>
                       <tr>
                         <th width="30%">
@@ -2901,65 +2918,11 @@
                       <tr>
                         <th>
                         </th>
-                        <td>
-                          <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
-                        </td>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          OpenID
-                        </th>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_securityOpenID">OpenID URL</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_securityOpenID" value="<% out.print(xpathEvaluate($_document, "/user/securityOpenID")); %>" id="pf_securityOpenID" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook" style="display:none;">
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Facebook
-                        </th>
-                      </tr>
-                      <tr id="pf_facebook1" style="display:none;">
-                        <th>
-                          Saved Facebook ID
-                        </th>
-                        <td>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook2" style="display:none;">
-                        <th>
-                        </th>
-                        <td>
-                          <span id="pf_facebookData" style="min-height: 20px;"></span>
-                          <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook3" style="display:none;">
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
-                          <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Recovery
-                        </th>
-                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_1" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
                       <tr>
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
@@ -2991,40 +2954,100 @@
                           <input type="text" name="pf_securitySecretAnswer" value="<% out.print(xpathEvaluate($_document, "/user/securitySecretAnswer")); %>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_2" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                        <th>
+                              <label for="pf_openID">OpenID URL</label>
+                        </th>
+                        <td>
+                              <input type="text" name="pf_openID" value="<% out.print(xpathEvaluate($_document, "/user/securityOpenID")); %>" id="pf_openID" style="width: 220px;" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_3" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <th>
+                              Saved Facebook ID
+                        </th>
+                            <td>
+                            </td>
+                      </tr>
                       <tr>
                         <th>
                         </th>
                         <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Applications restrictions
-                        </th>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
+                              <span id="pf_facebookData" style="min-height: 20px;"></span>
+                              <br />
+                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                              <fb:login-button autologoutlink="true"></fb:login-button>
                         </td>
                       </tr>
                       <tr>
                         <th>
                         </th>
                         <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
+                              <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
+                              <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(33);" />
                         </td>
                       </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
                       <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          X.509 Certificate
+                            <th>
+                              <label for="pf_securitySiocLimit">SIOC Query Result Limit</label>
                         </th>
+                            <td>
+                              <input type="text" name="pf_securitySiocLimit" value="<% out.print(xpathEvaluate($_document, "/user/securitySiocLimit")); %>" id="pf_securitySiocLimit" />
+                            </td>
                       </tr>
+                        </table>
+                      </div>
+                      <%
+                      if (($_formTab == 2) && ($_formSubtab == 5))
+                      {
+                      %>
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+                        <h3>X.509 Certificates</h3>
               	      <%
-              	        if (xpathEvaluate($_document, "/user/certificateSubject").length() != 0)
+                          if ($_formMode == "")
+                          {
+                        %>
+                        <div id="pf25_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf25_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Subject</th>
+                        		    <th>Login Enabled</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf25_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificates();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <%
+                          }
+                          else
+                          {
+                            out.print("<input type=\"hidden\" id=\"pf25_id\" name=\"pf25_id\" value=\"" + ((getParameter(items, request, "pf25_id") != null) ? getParameter(items, request, "pf25_id"): "0") + "\" />");
+                        %>
+                        <div id="pf25_form">
+                          <table class="form" cellspacing="5">
+                            <%
+                            if ($_formMode.equals("edit"))
               	        {
               	      %>
                       <tr>
@@ -3032,7 +3055,7 @@
                 	    	  Subject
                         </th>
                         <td>
-                    		  <% out.print(xpathEvaluate($_document, "/user/certificateSubject")); %>
+                          		  <span id="pf25_subject"></span>
                     		</td>
                       </tr>
                       <tr>
@@ -3040,7 +3063,15 @@
                 	    	  Agent ID
                         </th>
                         <td>
-                    		  <% out.print(xpathEvaluate($_document, "/user/certificateAgentID")); %>
+                          		  <span id="pf25_agentID"></span>
+                          		</td>
+                            </tr>
+                            <tr>
+                              <th>
+                      	    	  Fingerprint
+                              </th>
+                              <td>
+                          		  <span id="pf25_fingerPrint"></span>
                     		</td>
                       </tr>
             	        <%
@@ -3048,43 +3079,50 @@
             	        %>
                       <tr>
                         <th valign="top">
-                          <label for="pf_certificate">Certificate</label>
+                                <label for="pf25_certificate">Certificate</label>
                         </th>
                         <td>
-                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><% out.print(xpathEvaluate($_document, "/user/certificate")); %></textarea>
-              	          <%
-              	            if (xpathEvaluate($_document, "/user/certificateSubject").length() == 0)
-              	            {
-              	          %>
-                	          <iframe id="cert" src="/ods/cert.vsp?sid=<% out.print($_sid); %>" width="200" height="200" frameborder="0" scrolling="no">
+                                <textarea name="pf25_certificate" id="pf25_certificate" rows="20" style="width: 560px;"></textarea>
+                    	          <iframe id="cert" src="/ods/cert.vsp?sid=<?V vSid %>" width="200" height="200" frameborder="0" scrolling="no">
                 	            <p>Your browser does not support iframes.</p>
                 	          </iframe>
-              	          <%
-              	            }
-              	          %>
                         </td>
                       </tr>
                       <tr>
                         <th></th>
                         <td>
                           <label>
-                            <% out.print("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\"" + ((xpathEvaluate($_document, "/user/certificateLogin").equals("1"))? " checked=\"checked\"": "") + " />"); %>
+                                  <input type="checkbox" name="pf25_enableLogin" id="pf25_enableLogin" value="1"/>
                             Enable Automatic WebID Login
                           </label>
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
-                          <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
-                          <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />
-                        </td>
-                      </tr>
                     </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificate();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update25" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <%
+                          }
+                        %>
+                      </div>
+                      <%
+                        }
+                        else
+                        {
+                      %>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
+                      </div>
+                      <%
+                        }
+                      %>
                   </div>
                 </div>
                 </div>

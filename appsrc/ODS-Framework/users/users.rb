@@ -34,7 +34,7 @@ def login_form()
         User login
       </div>
       <ul id="lf_tabs" class="tabs">
-        <li id="lf_tab_0" title="ODS">Digest</li>
+        <li id="lf_tab_0" title="Digest">Digest</li>
         <li id="lf_tab_1" title="OpenID">OpenID</li>
         <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
         <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
