@@ -129,9 +129,8 @@ function checkRest (form, sel)
     }
 }
             ODSInitArray.push ( function () {
-              OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.send(OAT, 'PAGE_LOADED');});
+              OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();}); OAT.MSG.send(OAT, 'PAGE_LOADED');});
             });
-            OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();});
           ]]>
         </script>
         <vm:login redirect="index.vspx"/>

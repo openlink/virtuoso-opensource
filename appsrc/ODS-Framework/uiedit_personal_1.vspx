@@ -548,7 +548,7 @@
                      <?vsp
                        for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', interest));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});});', interest));
                        }
                      ?>
                 		   </script>
@@ -618,7 +618,7 @@
                      <?vsp
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interests) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x2", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>
@@ -661,7 +661,7 @@
                      <?vsp
                        for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = self.interestTopics) do
                        {
-                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});', interest, label));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x3", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}, fld_2: {value: "%s"}});});});', interest, label));
                        }
                      ?>
                 		   </script>

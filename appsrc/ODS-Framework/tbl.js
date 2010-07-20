@@ -59,15 +59,6 @@ TBL.createRow = function (prefix, No, optionObject)
       tr.id = prefix+'_tr_' + No;
       tbl.appendChild(tr);
 
-      if (options.id) {
-      	var fld = OAT.Dom.create("input");
-        fld.type = 'hidden';
-        fld.name = prefix + '_fld_0_' + No;
-        fld.id = fld.name;
-        fld.value = options.id;
-        tr.appendChild(fld);
-      }
-
       // fields
       for (var fld in options)
       {
@@ -91,6 +82,14 @@ TBL.createRow = function (prefix, No, optionObject)
       td.id = prefix+'_td_'+ No+'_btn';
       td.style.whiteSpace = 'nowrap';
       tr.appendChild(td);
+      if (options.id) {
+      	var fld = OAT.Dom.create("input");
+        fld.type = 'hidden';
+        fld.name = prefix + '_fld_0_' + No;
+        fld.id = fld.name;
+        fld.value = options.id;
+        td.appendChild(fld);
+      }
       for (var btn in options)
       {
         if (btn.indexOf('btn') == 0)

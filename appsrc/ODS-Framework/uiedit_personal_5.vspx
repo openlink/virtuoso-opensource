@@ -129,7 +129,7 @@
               <?vsp
                   for (select WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE from WA_USER_BIOEVENTS where WUB_U_ID = self.u_id) do
                 {
-                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
+                    http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x5", null, {id: "%d", fld_1: {mode: 11, value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}});});});', WUB_ID, WUB_EVENT, WUB_DATE, WUB_PLACE));
                 }
               ?>
    		    </script>

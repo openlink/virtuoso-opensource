@@ -3641,6 +3641,147 @@ create procedure ODS.ODS_API."user.seeks.delete" (
 }
 ;
 
+create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (UC_ID, get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), case when UC_LOGIN = 1 then 'Yes' else 'No' end)));
+  }
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare subject, agentID, fingerPrint, certificate, enableLogin, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  subject := '';
+  agentID := '';
+  fingerPrint := '';
+  certificate := '';
+  enableLogin := 0;
+  for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
+  {
+    subject := get_certificate_info (2, UC_CERT, 0, '');
+    agentID := replace (get_certificate_info (7, UC_CERT, 0, '', '2.5.29.17'), 'URI:', '');
+    fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
+    certificate := UC_CERT;
+    enableLogin := UC_LOGIN;
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'subject', subject,
+                                     'agentID', agentID,
+                                     'fingerPrint', fingerPrint,
+                                     'certificate', certificate,
+                                     'enableLogin', enableLogin
+                                    )
+                            );
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.update" (
+  in id integer,
+  in certificate varchar,
+  in enableLogin integer)
+{
+  declare uname, agent varchar;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  agent := get_certificate_info (7, certificate, 0, '', '2.5.29.17');
+  if ((agent is null and length (certificate)) or (0 = length (certificate)))
+	  signal ('', 'The certificate must be in PEM format and must have Alternate Name attribute.');
+
+	if (id is null)
+  {
+    insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN)
+      values (_u_id, certificate, get_certificate_info (6, certificate, 0, ''), enableLogin);
+    id := (select max (UC_ID) from DB.DBA.WA_USER_CERTS);
+	}
+	else
+	{
+	  update DB.DBA.WA_USER_CERTS
+	     set UC_CERT = certificate,
+			     UC_FINGERPRINT = get_certificate_info (6, certificate, 0, ''),
+				   UC_LOGIN = enableLogin
+		 where UC_U_ID = _u_id
+		   and UC_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.new" (
+  in certificate varchar,
+  in enableLogin integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.certificates.update" (null, certificate, enableLogin);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.edit" (
+  in id integer,
+  in certificate varchar,
+  in enableLogin integer) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.certificates.update" (id, certificate, enableLogin);
+}
+;
+
+create procedure ODS.ODS_API."user.certificates.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
 create procedure ODS.ODS_API.appendProperty (
   inout V any,
   in propertyName varchar,
@@ -4566,6 +4707,11 @@ grant execute on ODS.ODS_API."user.seeks.get" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.new" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFacebookData" to ODS_API;
