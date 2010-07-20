@@ -494,7 +494,7 @@ function buildObjByChildNodes(elm) {
 var lfTab;
 var rfTab;
 var ufTab;
-var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2']];
+var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5']];
 
 var setupWin;
 var cRDF;
@@ -702,7 +702,7 @@ function myInit() {
 
     OAT.Event.attach("pf_tab_0", 'click', function(){pfTabSelect('pf_tab_', 0, 'pf_tab_0_');});
     OAT.Event.attach("pf_tab_1", 'click', function(){pfTabSelect('pf_tab_', 1, 'pf_tab_1_');});
-    OAT.Event.attach("pf_tab_2", 'click', function(){pfTabSelect('pf_tab_', 2, 'pf_tab_0_');});
+    OAT.Event.attach("pf_tab_2", 'click', function(){pfTabSelect('pf_tab_', 2, 'pf_tab_2_');});
     pfTabInit('pf_tab_', $v('formTab'));
 
     OAT.Event.attach("pf_tab_0_0", 'click', function(){pfTabSelect('pf_tab_0_', 0);});
@@ -722,6 +722,14 @@ function myInit() {
     OAT.Event.attach("pf_tab_1_2", 'click', function(){pfTabSelect('pf_tab_1_', 2);});
     OAT.Event.attach("pf_tab_1_3", 'click', function(){pfTabSelect('pf_tab_1_', 3);});
     pfTabInit('pf_tab_1_', $v('formSubtab'));
+
+    OAT.Event.attach("pf_tab_2_0", 'click', function(){pfTabSelect('pf_tab_2_', 0);});
+    OAT.Event.attach("pf_tab_2_1", 'click', function(){pfTabSelect('pf_tab_2_', 1);});
+    OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2);});
+    OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 3);});
+    OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 4);});
+    OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 5);});
+    pfTabInit('pf_tab_2_', $v('formSubtab'));
 	}
 }
 
@@ -792,6 +800,13 @@ function mySubmit(prefix)
               + '&properties=' + encodeURIComponent(prepareItems('wl'));
     	OAT.AJAX.GET(S, '', function(data){pfShowSeeks();});
     }
+    if (prefix == 'pf25') {
+      var S = '/ods/api/user.certificates.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf25_id'))
+              + '&certificate=' + encodeURIComponent($v('pf25_certificate'))
+              + '&enableLogin=' + encodeURIComponent($v('pf25_enableLogin'));
+      OAT.AJAX.GET(S, '', function(data){pfShowCertificates();});
+    }
     OAT.Dom.show(prefix+'_list');
     OAT.Dom.hide(prefix+'_form');
     $('formMode').value = '';
@@ -827,7 +842,7 @@ function myCheckLeave (form)
   var retValue = true;
 
   submitItems()
-  if (needToConfirm && (formTab < 2))
+  if (needToConfirm && (formTab < 3))
   {
     for (var i = 0; i < form.elements.length; i++)
     {
@@ -1060,7 +1075,12 @@ function pfShowItem(api, prefix, names, cb) {
     	  var name = names[N];
     	  var fld = $(prefix+'_'+name);
     	  if (fld && (o[name] != null))
-    	    fld.value = o[name];
+          if (fld.tagName == 'SPAN')
+          {
+            fld.innerHTML = o[name];
+          } else {
+            fieldValue(fld, o[name]);
+          }
     	}
     	if (cb) {cb(o);}
     }
@@ -1145,6 +1165,8 @@ function pfEditListObject(prefix, id) {
       pfShowOffer('edit', id);
     if (prefix == 'pf09')
       pfShowSeek('edit', id);
+    if (prefix == 'pf25')
+      pfShowCertificate('edit', id);
     return false;
   }
   $('page_form').submit();
@@ -1160,7 +1182,7 @@ function pfShowMode(prefix, mode, id) {
 }
 
 function pfShowFavorite(mode, id) {
-  pfShowMode('pf06', mode, id)
+  pfShowMode('pf06', mode, id);
   var x = function (obj) {
     $('r_tbody').innerHTML = '<tr id="r_item_0_tr_0_properties"><td></td><td></td><td valign="top"></td></tr>';
     RDF.tablePrefix = 'r';
@@ -1170,9 +1192,7 @@ function pfShowFavorite(mode, id) {
       function(){
         RDF.loadClassProperties(
           RDF.getOntologyClass('sioc:Item'),
-          function(){
-            RDF.showPropertiesTable(RDF.itemTypes[0].items[0]);
-          }
+          function(){RDF.showPropertiesTable(RDF.itemTypes[0].items[0]);}
         );
       }
     )
@@ -1181,12 +1201,12 @@ function pfShowFavorite(mode, id) {
 }
 
 function pfShowMade(mode, id) {
-  pfShowMode('pf07', mode, id)
+  pfShowMode('pf07', mode, id);
   pfShowItem('user.mades.get', 'pf07', ['property', 'uri', 'description']);
 }
 
 function pfShowOffer(mode, id) {
-  pfShowMode('pf08', mode, id)
+  pfShowMode('pf08', mode, id);
   var x = function (obj) {
     $('ol_tbody').innerHTML = '';
     RDF.tablePrefix = 'ol';
@@ -1198,7 +1218,7 @@ function pfShowOffer(mode, id) {
 }
 
 function pfShowSeek(mode, id) {
-  pfShowMode('pf09', mode, id)
+  pfShowMode('pf09', mode, id);
   var x = function(obj) {
     $('wl_tbody').innerHTML = '';
     RDF.tablePrefix = 'wl';
@@ -1207,6 +1227,22 @@ function pfShowSeek(mode, id) {
     RDF.showItemTypes();
   }
   pfShowItem('user.seeks.get', 'pf09', ['name', 'comment'], x);
+}
+
+function pfShowCertificate(mode, id) {
+  pfShowMode('pf25', mode, id);
+  if (mode == 'new') {
+    OAT.Dom.hide("pf25_form_0");
+    OAT.Dom.hide("pf25_form_1");
+    OAT.Dom.hide("pf25_form_2");
+  } else {
+    OAT.Dom.show("pf25_form_0");
+    OAT.Dom.show("pf25_form_1");
+    OAT.Dom.show("pf25_form_2");
+  }
+  if ($('cert'))
+    $('cert').src = '/ods/cert.vsp?sid='+$v('sid');
+  pfShowItem('user.certificates.get', 'pf25', ['subject', 'agentID', 'fingerPrint', 'certificate', 'enableLogin']);
 }
 
 function pfShowFavorites() {
@@ -1223,6 +1259,10 @@ function pfShowOffers() {
 
 function pfShowSeeks() {
   pfShowList('user.seeks.list', 'pf09', 'No Items', [1, 2], 0, function (data){pfShowSeeks();});
+}
+
+function pfShowCertificates() {
+  pfShowList('user.certificates.list', 'pf25', 'No Items', [1, 2], 0, function (data){pfShowCertificates();});
 }
 
 function isShow(element) {
@@ -1317,9 +1357,7 @@ function tagValue(xml, tName) {
   return str;
 }
 
-function fieldUpdate(xml, tName, fName, acl, aclName) {
-  var obj = $(fName);
-  var str = tagValue(xml, tName);
+function fieldValue(obj, str) {
 	if (obj.type == 'select-one') {
     var o = obj.options;
 		for ( var i = 0; i < o.length; i++) {
@@ -1338,6 +1376,12 @@ function fieldUpdate(xml, tName, fName, acl, aclName) {
     obj.value = str;
 		obj.defaultValue = str;
   }
+}
+
+function fieldUpdate(xml, tName, fName, acl, aclName) {
+  var obj = $(fName);
+  var str = tagValue(xml, tName);
+  fieldValue(obj, str);
 	if (!aclName)
 	  aclName = 'pf_acl_' + tName;
   fieldACLUpdate(acl, aclName, tName);
@@ -1737,11 +1781,8 @@ function loginSubmit(mode, prefix) {
 		if (($(prefix+'_uid').value.length == 0) || ($(prefix+'_password').value.length == 0))
       return showError('Invalid User ID or Password');
 
-		q += 'user_name='
-				+ encodeURIComponent($v(prefix+'_uid'))
-				+ '&password_hash='
-				+ encodeURIComponent(OAT.Crypto.sha($v(prefix+'_uid')
-						+ $v(prefix+'_password')));
+    q +='user_name=' + encodeURIComponent($v(prefix+'_uid'))
+      + '&password_hash=' + encodeURIComponent(OAT.Crypto.sha($v(prefix+'_uid') + $v(prefix+'_password')));
     }
 	OAT.AJAX.POST("/ods/api/user.authenticate", q, afterLogin);
 	return false;
@@ -1834,13 +1875,15 @@ function ufProfileLoad(No) {
     formSubtab++;
     if (
         ((formTab == 1) && (formSubtab > 3)) ||
-        (formTab > 1)
+        ((formTab == 2) && (formSubtab > 5))
        )
     {
       formTab++;
       formSubtab = 0;
       pfTabInit('pf_tab_', formTab);
     }
+    if ($('pf_tab_'+formTab+'_'+formSubtab).style.display == 'none')
+      formSubtab++;
     $('formTab').value = "" + formTab;
     $('formSubtab').value = "" + formSubtab;
   }
@@ -1848,6 +1891,11 @@ function ufProfileLoad(No) {
     OAT.Dom.hide('pf_footer_0');
   } else {
     OAT.Dom.show('pf_footer_0');
+  }
+  if ((formTab == 2) && (formSubtab > 4)) {
+    OAT.Dom.hide('pf_footer_2');
+  } else {
+    OAT.Dom.show('pf_footer_2');
   }
   pfCleanFOAFData();
   ufCleanTablesData("x1");
@@ -1945,6 +1993,10 @@ function ufProfileCallback(data) {
       if (($v('formTab') == "0") && ($v('formSubtab') == "9"))
         pfShowSeeks();
 
+      // seek
+      if (($v('formTab') == "2") && ($v('formSubtab') == "5"))
+        pfShowCertificates();
+
 			// contact
 			fieldUpdate(user, 'icq', 'pf_icq', aclData);
 			fieldUpdate(user, 'skype', 'pf_skype', aclData);
@@ -2041,6 +2093,7 @@ function ufProfileCallback(data) {
 			pfTabInit('pf_tab_', $v('formTab'));
       pfTabInit('pf_tab_0_', $v('formSubtab'));
       pfTabInit('pf_tab_1_', $v('formSubtab'));
+      pfTabInit('pf_tab_2_', $v('formSubtab'));
     }
   }
 }
@@ -2200,10 +2253,6 @@ function preparePropertiesWork(prefix, ontologyNo, itemNo) {
 }
 
 function pfUpdateSubmit(No) {
-	$('pf_oldPassword').value = '';
-	$('pf_newPassword').value = '';
-	$('pf_newPassword2').value = '';
-
   var formTab = parseInt($v('formTab'));
   var formSubtab = parseInt($v('formSubtab'));
   if ((formTab == 0) && (formSubtab == 3))
@@ -2220,6 +2269,10 @@ function pfUpdateSubmit(No) {
   {
     updateOnlineAccounts('y1', 'B');
     ufProfileLoad(No);
+  }
+  else if ((formTab == 2) && (formSubtab == 0))
+  {
+    pfChangeSubmit();
   }
   else
   {
@@ -2420,35 +2473,22 @@ function pfUpdateSubmit(No) {
   	}
     else if (formTab == 2)
     {
-      if (No == 31)
-      {
-        S += '&securityOpenID=' + encodeURIComponent($v('pf_securityOpenID'));
-    	}
-      else if (No == 32)
-      {
-        S += '&securityFacebookID=' + encodeURIComponent(facebookData.uid);
-    	}
-      else if (No == 33)
-      {
-        S += '&securityFacebookID=';
-    	}
-      else if (No == 34)
-      {
-        S += '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));
-    	}
-      else if (No == 35)
+      if (formSubtab == 1)
       {
         S += '&securitySecretQuestion=' + encodeURIComponent($v('pf_securitySecretQuestion')) +
              '&securitySecretAnswer=' + encodeURIComponent($v('pf_securitySecretAnswer'));
     	}
-      else if (No == 36)
+      else if (formSubtab == 2)
       {
-        S += '&certificate=' + encodeURIComponent($v('pf_certificate')) +
-    		     '&certificateLogin=' + encodeURIComponent($v('pf_certificateLogin'));
+        S += '&securityOpenID=' + encodeURIComponent($v('pf_securityOpenID'));
     	}
-      else if (No == 37)
+      else if (formSubtab == 3)
       {
-        S += '&certificate=&certificateLogin=0';
+        S += '&securityFacebookID=' + encodeURIComponent(facebookData.uid);
+    	}
+      else if (formSubtab == 4)
+      {
+        S += '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));
     	}
   	}
   	if (A != '')
@@ -2456,6 +2496,10 @@ function pfUpdateSubmit(No) {
 
   	OAT.AJAX.GET(S, '', function(data){ if((formTab == 0) && (formSubtab == 1)) {$('page_form').submit();}; pfUpdateCallback(data, No);});
   }
+  $('pf_oldPassword').value = '';
+  $('pf_newPassword').value = '';
+  $('pf_newPassword2').value = '';
+
   return false;
 }
 

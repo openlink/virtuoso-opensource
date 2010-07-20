@@ -211,7 +211,7 @@
         if (substr_count($_result, "<failed>") <> 0)
         {
           $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
+          $_error = $_xml->failed->message;
           $_form = "login";
         }
         $_formMode = "";
@@ -233,7 +233,7 @@
         if (substr_count($_result, "<failed>") <> 0)
         {
           $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
+          $_error = $_xml->failed->message;
           $_form = "login";
         }
         $_formMode = "";
@@ -255,7 +255,7 @@
         if (substr_count($_result, "<failed>") <> 0)
         {
           $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
+          $_error = $_xml->failed->message;
           $_form = "login";
         }
         $_formMode = "";
@@ -277,7 +277,28 @@
         if (substr_count($_result, "<failed>") <> 0)
         {
           $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
+          $_error = $_xml->failed->message;
+          $_form = "login";
+        }
+        $_formMode = "";
+      }
+      else if (isset ($_REQUEST['pf_update25']) && ($_REQUEST['pf_update25'] <> ""))
+      {
+        $_url = sprintf (
+                          "%s/user.certificates.%s?sid=%s&realm=%s&id=%s&certificate=%s&enableLogin=%s",
+                          apiURL(),
+                          $_formMode,
+                          $_sid,
+                          $_realm,
+                          myUrlencode ($_REQUEST ["pf25_id"]),
+                          myUrlencode ($_REQUEST ["pf25_certificate"]),
+                          myUrlencode ($_REQUEST ["pf25_enableLogin"])
+                        );
+        $_result = file_get_contents($_url);
+        if (substr_count($_result, "<failed>") <> 0)
+        {
+          $_xml = simplexml_load_string($_result);
+          $_error = $_xml->failed->message;
           $_form = "login";
         }
         $_formMode = "";
@@ -306,7 +327,7 @@
         if (substr_count($_result, "<failed>") <> 0)
           {
           $_xml = simplexml_load_string($_result);
-          $_error = $_xml->failed->message;;
+            $_error = $_xml->failed->message;
             $_form = "login";
           }
           foreach($_REQUEST as $name => $value)
@@ -323,7 +344,7 @@
               if (substr_count($_result, "<failed>") <> 0)
               {
                 $_xml = simplexml_load_string($_result);
-                $_error = $_xml->failed->message;;
+                $_error = $_xml->failed->message;
                 $_form = "login";
               }
             }
@@ -337,7 +358,7 @@
           if (substr_count($_result, "<failed>") <> 0)
           {
             $_xml = simplexml_load_string($_result);
-            $_error = $_xml->failed->message;;
+            $_error = $_xml->failed->message;
             $_form = "login";
           }
           foreach($_REQUEST as $name => $value)
@@ -354,9 +375,32 @@
               if (substr_count($_result, "<failed>") <> 0)
               {
                 $_xml = simplexml_load_string($_result);
-                $_error = $_xml->failed->message;;
+                $_error = $_xml->failed->message;
                 $_form = "login";
               }
+            }
+          }
+        }
+        else if (($_formTab == 2) && ($_formSubtab == 0))
+        {
+          if ($_REQUEST ["pf_newPassword"] != $_REQUEST ["pf_newPassword2"])
+          {
+            $_error = 'Bad new password. Please retype!';
+          } else {
+            $_url = sprintf (
+                              "%s/user.password_change?sid=%s&realm=%s&old_password=%s&new_password=%s",
+                              apiURL(),
+                              $_sid,
+                              $_realm,
+                              myUrlencode ($_REQUEST ["pf_oldPassword"]),
+                              myUrlencode ($_REQUEST ["pf_newPassword"])
+                            );
+            $_result = file_get_contents($_url);
+            if (substr_count($_result, "<failed>") <> 0)
+            {
+              $_xml = simplexml_load_string($_result);
+              $_error = $_xml->failed->message;
+              $_form = "login";
             }
           }
         }
@@ -575,38 +619,28 @@
           }
           if ($_formTab == 2)
           {
-            if ($_REQUEST['securityNo'] == "1")
-              $_params .=
-                  "&securityOpenID=" . myUrlencode ($_REQUEST['pf_securityOpenID']);
-
-            if ($_REQUEST['securityNo'] == "2")
-              $_params .=
-                  "&securityFacebookID=" . myUrlencode ($_REQUEST['pf_securityFacebookID']);
-
-            if ($_REQUEST['securityNo'] == "3")
-              $_params .=
-                  "&securityFacebookID=";
-
-            if ($_REQUEST['securityNo'] == "4")
+            if ($_formSubtab == 1)
               $_params .=
                   "&securitySecretQuestion=" . myUrlencode ($_REQUEST['pf_securitySecretQuestion']).
                   "&securitySecretAnswer=" . myUrlencode ($_REQUEST['pf_securitySecretAnswer']);
 
-            if ($_REQUEST['securityNo'] == "5")
+            if ($_formSubtab == 2)
+              $_params .=
+                  "&securityOpenID=" . myUrlencode ($_REQUEST['pf_securityOpenID']);
+
+            if ($_formSubtab == 3)
+              $_params .=
+                  "&securityFacebookID=" . myUrlencode ($_REQUEST['pf_securityFacebookID']);
+
+            if ($_formSubtab == 4)
               $_params .=
                   "&securitySiocLimit=" . myUrlencode ($_REQUEST['pf_securitySiocLimit']);
-            if ($_REQUEST['securityNo'] == "6")
-              $_params .=
-                  "&certificate=" . myUrlencode ($_REQUEST['pf_certificate']) .
-                  "&certificateLogin=" . myUrlencode ((isset($_REQUEST['pf_certificateLogin']))? $_REQUEST['pf_certificateLogin']: "0");
-            if ($_REQUEST['securityNo'] == "7")
-              $_params .= "&certificate=&certificateLogin=";
           }
           $_result = postRequest($_url, $_params);
           if (substr_count($_result, "<failed>") <> 0)
           {
             $_xml = simplexml_load_string($_result);
-            $_error = $_xml->failed->message;;
+            $_error = $_xml->failed->message;
             $_form = "login";
           }
           $_url = apiURL()."/user.acl.update";
@@ -616,12 +650,12 @@
             if (substr_count($name, 'pf_acl_') <> 0)
               $_tmp = $_tmp . str_replace("pf_acl_", "", $name) . "=" . $value . '&';
           }
-          $_params = "sid=".$_sid."&realm=".$_realm."&acls=" . myUrlencode ($_tmp);;
+          $_params = "sid=".$_sid."&realm=".$_realm."&acls=" . myUrlencode ($_tmp);
           $_result = postRequest($_url, $_params);
           if (substr_count($_result, "<failed>") <> 0)
           {
             $_xml = simplexml_load_string($_result);
-            $_error = $_xml->failed->message;;
+            $_error = $_xml->failed->message;
             $_form = "login";
           }
         }
@@ -630,12 +664,14 @@
           $_formSubtab = $_formSubtab + 1;
           if (
               (($_formTab == 1) && ($_formSubtab > 3)) ||
-              ($_formTab > 1)
+              (($_formTab == 2) && ($_formSubtab > 5))
              )
           {
             $_formTab = $_formTab + 1;
             $_formSubtab = 0;
           }
+          if ($_formTab == 3)
+            $_formTab = 0;
           }
       }
       else if (isset ($_REQUEST['pf_cancel']) && ($_REQUEST['pf_cancel'] <> ""))
@@ -732,7 +768,7 @@
                   User login
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="ODS">Digest</li>
+                  <li id="lf_tab_0" title="Digest">Digest</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -805,7 +841,7 @@
                   User register
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="ODS">Digest</li>
+                  <li id="rf_tab_0" title="Digest">Digest</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
@@ -1064,7 +1100,7 @@
                       <li id="pf_tab_0_8" title="My Offers">My Offers</li>
                       <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -1804,7 +1840,7 @@
                         ?>
                         <div id="pf06_list">
                           <div style="padding: 0 0 0.5em 0;">
-                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Favorite'" alt="Add 'Favorite'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
                       	  <table id="pf06_tbl" class="listing">
                                 <thead>
@@ -2145,7 +2181,7 @@
                       <li id="pf_tab_1_2" title="Online Accounts">Online Accounts</li>
                       <li id="pf_tab_1_3" title="Messaging Services">Messaging Services</li>
                     </ul>
-                    <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_1_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
@@ -2674,16 +2710,21 @@
                   </div>
 
                   <div id="pf_page_2" class="tabContent" style="display:none;">
+                    <ul id="pf_tabs_2" class="tabs">
+                      <li id="pf_tab_2_0" title="Password Settings">Password Settings</li>
+                      <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
+                      <li id="pf_tab_2_2" title="OpenID">OpenID</li>
+                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
+                      <li id="pf_tab_2_4" title="Limits">Limits</li>
+                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
+                    </ul>
+                    <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                      <div id="pf_page_2_0" class="tabContent" style="display:none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <td align="center" colspan="2">
                           <span id="pf_change_txt"></span>
                         </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Settings
-                        </th>
                       </tr>
                       <tr>
                         <th width="30%">
@@ -2712,65 +2753,11 @@
                       <tr>
                         <th>
                         </th>
-                        <td>
-                          <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
-                        </td>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          OpenID
-                        </th>
-                      </tr>
-                      <tr>
-                        <th>
-                          <label for="pf_openID">OpenID URL</label>
-                        </th>
-                        <td>
-                          <input type="text" name="pf_securityOpenID" value="<?php print($_xml->securityOpenID); ?>" id="pf_securityOpenID" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '1'; needToConfirm = false;" />
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook" style="display:none;">
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Facebook
-                        </th>
-                      </tr>
-                      <tr id="pf_facebook1" style="display:none;">
-                        <th>
-                          Saved Facebook ID
-                        </th>
-                        <td>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook2" style="display:none;">
-                        <th>
-                        </th>
-                        <td>
-                          <span id="pf_facebookData" style="min-height: 20px;"></span>
-                          <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                      <tr id="pf_facebook3" style="display:none;">
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '2'; needToConfirm = false;"/>
-                          <input type="submit" name="pf_update" value="Clear" onclick="$('securityNo').value = '3'; needToConfirm = false;" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Password Recovery
-                        </th>
-                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_1" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
                       <tr>
                         <th>
                           <label for="pf_securitySecretQuestion">Secret Question</label>
@@ -2802,40 +2789,92 @@
                           <input type="text" name="pf_securitySecretAnswer" value="<?php print($_xml->securitySecretAnswer); ?>" id="pf_securitySecretAnswer" style="width: 220px;" />
                         </td>
                       </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_2" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                        <th>
+                              <label for="pf_openID">OpenID URL</label>
+                        </th>
+                        <td>
+                              <input type="text" name="pf_openID" value="<?php print($_xml->securityOpenID); ?>" id="pf_openID" style="width: 220px;" />
+                        </td>
+                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_3" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
+                      <tr>
+                            <th>
+                              Saved Facebook ID
+                        </th>
+                            <td>
+                            </td>
+                      </tr>
                       <tr>
                         <th>
                         </th>
                         <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '4'; needToConfirm = false;" />
+                              <span id="pf_facebookData" style="min-height: 20px;"></span>
+                              <br />
+                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
+                              <fb:login-button autologoutlink="true"></fb:login-button>
                         </td>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          Applications restrictions
-                        </th>
-                      </tr>
+                        </table>
+                      </div>
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
+                        <table class="form" cellspacing="5">
                       <tr>
                         <th>
-                          <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
+                              <label for="pf_securitySiocLimit">SIOC Query Result Limit</label>
                         </th>
                         <td>
-                          <input type="text" name="pf_securitySiocLimit" value="<?php print($_xml->securitySiocLimit); ?>" id="pf_securitySiocLimit" />
+                              <input type="text" name="pf_securitySiocLimit" value="<?php print($_xml->securitySiocLimit); ?>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '5'; needToConfirm = false;" />
-                        </td>
+                        </table>
+                      </div>
+                      <?php
+                      if (($_formTab == 2) and ($_formSubtab == 5))
+                      {
+                      ?>
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+                        <h3>X.509 Certificates</h3>
+                        <?php
+                          if ($_formMode == '')
+                          {
+                        ?>
+                        <div id="pf25_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf25_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th>Subject</th>
+                        		    <th>Login Enabled</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
                       </tr>
-                      <tr>
-                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
-                          X.509 Certificate
-                        </th>
-                      </tr>
+                            </thead>
+                      	    <tbody id="pf25_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificates();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
               	      <?php
-              	        if (strlen ($_xml->certificate) <> 0)
+                          }
+                          else
+                          {
+                            print sprintf("<input type=\"hidden\" id=\"pf25_id\" name=\"pf25_id\" value=\"%s\" />", (isset ($_REQUEST['pf25_id'])) ? $_REQUEST['pf25_id'] : "0");
+                        ?>
+                        <div id="pf25_form">
+                          <table class="form" cellspacing="5">
+                            <?php
+                            if ($_formMode == 'edit')
               	        {
               	      ?>
                       <tr>
@@ -2843,7 +2882,7 @@
                 	    	  Subject
                         </th>
                         <td>
-                    		  <?php print($_xml->certificateSubject); ?>
+                          		  <span id="pf25_subject"></span>
                     		</td>
                       </tr>
                       <tr>
@@ -2851,7 +2890,15 @@
                 	    	  Agent ID
                         </th>
                         <td>
-                    		  <?php print($_xml->certificateAgentID); ?>
+                          		  <span id="pf25_agentID"></span>
+                          		</td>
+                            </tr>
+                            <tr>
+                              <th>
+                      	    	  Fingerprint
+                              </th>
+                              <td>
+                          		  <span id="pf25_fingerPrint"></span>
                     		</td>
                       </tr>
             	        <?php
@@ -2859,43 +2906,50 @@
             	        ?>
                       <tr>
                         <th valign="top">
-                          <label for="pf_certificate">Certificate</label>
+                                <label for="pf25_certificate">Certificate</label>
                         </th>
                         <td>
-                          <textarea name="pf_certificate" id="pf_certificate" rows="20" style="width: 540px;"><?php print($_xml->certificate); ?></textarea>
-              	          <?php
-              	            if (strlen($_xml->certificate) == 0)
-              	            {
-              	          ?>
+                                <textarea name="pf25_certificate" id="pf25_certificate" rows="20" style="width: 560px;"></textarea>
                 	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="200" height="200" frameborder="0" scrolling="no">
                 	            <p>Your browser does not support iframes.</p>
                 	          </iframe>
-              	          <?php
-              	            }
-              	          ?>
                         </td>
                       </tr>
                       <tr>
                         <th></th>
                         <td>
                           <label>
-                            <?php print (sprintf ("<input type=\"checkbox\" name=\"pf_certificateLogin\" id=\"pf_certificateLogin\" value=\"1\" %s/>", ($_xml->certificateLogin == '1')? "checked=\"checked\"": "")); ?>
+                                  <input type="checkbox" name="pf25_enableLogin" id="pf25_enableLogin" value="1"/>
                             Enable Automatic WebID Login
                           </label>
                         </td>
                       </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                          <input type="submit" name="pf_update" value="Change" onclick="$('securityNo').value = '6'; needToConfirm = false;" />
-                          <input type="submit" name="pf_update" value="Remove" onclick="$('securityNo').value = '7'; needToConfirm = false;" />
-                          <input type="submit" name="pf_update" value="Refresh" onclick="$('securityNo').value = '99'; needToConfirm = false;" />
-                        </td>
-                      </tr>
                     </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificate();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update25" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                          </div>
+                        </div>
+                        <?php
+                          }
+                        ?>
+                      </div>
+                      <?php
+                        }
+                        else
+                        {
+                      ?>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
+                      </div>
+                      <?php
+                        }
+                      ?>
                   </div>
                 </div>
                 </div>
