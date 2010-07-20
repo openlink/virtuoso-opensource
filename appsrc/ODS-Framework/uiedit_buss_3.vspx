@@ -188,7 +188,7 @@
         <?vsp
           for (select m_label, m_id from DB.DBA.WA_USER_INTERESTS (txt) (m_label varchar, m_id varchar) P where txt = self.bmessaging) do
           {
-              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("y2", null, {fld_1: {value: "%s"}, fld_2: {value: "%s", cssText: "width: 216px;"}});});', m_label, m_id));
+              http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("y2", null, {fld_1: {value: "%s"}, fld_2: {value: "%s", cssText: "width: 216px;"}});});});', m_label, m_id));
           }
         ?>
    		    </script>

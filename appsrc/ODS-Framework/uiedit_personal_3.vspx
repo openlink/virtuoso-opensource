@@ -125,7 +125,7 @@
             		    <?vsp
                   for (select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id) do
                   {
-                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x4", null, {id: "%d", fld_1: {mode: 10, value: "%s"}, fld_2: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});', WUO_ID, WUO_NAME, WUO_URL));
+                    http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x4", null, {id: "%d", fld_1: {mode: 10, value: "%s"}, fld_2: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});});', WUO_ID, WUO_NAME, WUO_URL));
                   }
             		    ?>
             		    </script>
