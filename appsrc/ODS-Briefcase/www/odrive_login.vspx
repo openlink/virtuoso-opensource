@@ -26,50 +26,39 @@
   <v:template name='inl' type='if-no-login'/>
   <v:after-data-bind>
     <![CDATA[
-      declare page_name varchar;
+      declare domain_id integer;
+      declare page_name, path, ods_path varchar;
       declare params any;
-      declare vh, lh, hf, ods_path any;
 
         set_qualifier ('DB');
-      params := self.vc_page.vc_event.ve_params;
       page_name := ODRIVE.WA.page_name ();
       if (page_name = 'error.vspx')
         return;
 
-      if ((page_name = 'home.vspx') and (get_keyword('id', params, '') <> ''))
-      {
-        declare domain_id integer;
-
+      params := self.vc_page.vc_event.ve_params;
         domain_id := ODRIVE.WA.session_domain (params);
         if (domain_id <> -1)
         {
-          self.vc_redirect (sprintf ('%sview.vsp?file=%U&mode=download', ODRIVE.WA.odrive_url (self.domain_id), DB.DBA.DAV_SEARCH_PATH (atoi(get_keyword ('id', params)), 'R')));
-          return;
-        }
-      }
-
-        vh := http_map_get ('vhost');
-        lh := http_map_get ('lhost');
-        hf := http_request_header (lines, 'Host');
-        if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
-      {
-          ods_path := 'http://' || hf || '/ods/';
+        path := ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id));
       } else {
-          ods_path := DB.DBA.WA_LINK (1, '/ods/');
+        path := HTTP_REQUESTED_URL();
       }
+      if ((page_name = 'home.vspx') and (get_keyword ('id', params, '') <> '') and (domain_id <> -1))
+      {
+        self.vc_redirect (sprintf ('%sview.vsp?file=%U&mode=download', path, DB.DBA.DAV_SEARCH_PATH (atoi(get_keyword ('id', params)), 'R')));
+        return;
+      }
+      ods_path := ODRIVE.WA.host_url () || '/ods/';
       if ((page_name = 'home.vspx') and (get_keyword('URL', params, '') <> ''))
       {
-        self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', params, ''), get_keyword('TITLE', params, ''))));
+        self.vc_redirect (sprintf ('%slogin.vspx?URL=%U', ods_path, sprintf ('%s?URI=%s&TITLE=%V', path, get_keyword ('URL', params, ''), get_keyword ('TITLE', params, ''))));
         return;
       }
-
       if (self.account_role = 'expire')
       {
-        http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));
+        self.vc_redirect (sprintf ('%slogin.vspx?URL=%U', ods_path, path));
         return;
       }
-
       if (ODRIVE.WA.check_grants2 (self.account_role, page_name))
         return;
 
