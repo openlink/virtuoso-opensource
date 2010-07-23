@@ -9,6 +9,7 @@ iSPARQL.Defaults = {
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
 		 "http://myopenlink.net:8890/sparql/",
+		 "http://linkedgeodata.org/sparql",
 //		 "http://www.govtrack.us/sparql",
 		 "http://services.data.gov.uk/education/sparql",
 		 "http://services.data.gov.uk/crime/sparql",
