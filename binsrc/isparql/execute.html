@@ -26,25 +26,19 @@
 <head>
 
   <script type="text/javascript">
-window.YMAPPID = 'yahoo-id';
 var featureList=["ajax","json","dimmer","grid","anchor","resize","xml","tab","sparql","rdfstore","rdfmini","map","ghostdrag"];
+
 function init() {
-  var startRef = function() {
-    OAT.Dom.show("throbber");
-    OAT.Dom.hide("result");
-  }
 
-  var endRef = function() {
-    OAT.Dom.hide("throbber");
-    OAT.Dom.show("result");
-  }
-
+  OAT.Dom.hide("result");
   OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
   OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 
   var qe = new QueryExec({div:"result"});
+  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result") });
 
   iSPARQL.Defaults.init();
+  iSPARQL.StatusUI.init();
 
   var opts = OAT.Dom.uriParams();
 
@@ -58,15 +52,23 @@ function init() {
     f.appendChild(a);
   }
 
-  OAT.Dom.hide("throbber");
 
-  iSPARQL.locationCache = new iSPARQL.LocationCache (10, [], true);
+
+  var lc = [];
 
   if (qe.detectLocationMacros(iSPARQL.Defaults.query)) {
-    var loc = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
+    iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
+
+    if (!iSPARQL.locationCache) {
+      if (!!localStorage && !!localStorage.iSPARQL_locationCache)
+	lc = localStorage.iSPARQL_locationCache;
+	iSPARQL.locationCache = new iSPARQL.LocationCache (10, lc, true);
+      }
+      var locUI = new iSPARQL.locationAcquireUI ({useCB: qe.executeWithLocation, 
                                               cancelCB: false,
 					      cbParm: iSPARQL.Defaults,
 					      cache: iSPARQL.locationCache});
+      locUI.refresh();
   } else {
     qe.execute(iSPARQL.Defaults);
   }   
@@ -95,12 +97,32 @@ function init() {
 </head>
 
 <body>
-  <div id="file"></div><p></p>
-  <div id="throbber" style="text-align: center;">
-    <div id="expln">
-      <img style="margin: auto; cursor:pointer;" src="/isparql/toolkit/images/throbber.gif" />
+  <div id="file"></div>
+  <div id="splash">
+    <div id="splash_inner">
+      <div id="splash_hd">
+        <img src="images/openlinklogo_wstrap_2008_no_motto.png" alt="OpenLink Software"/>
+      </div>
+      <div class="msg" id="statMsgMain">iSPARQL Initialization</div>
+      <div class="msg" id="statMsgElem">Loading</div>
+	
+      <img src="/isparql/toolkit/images/throbber.gif" id="splashThrobber" style="display:none"/>
+
+      <noscript>
+        <img src="/isparql/images/stop_32.png" alt="error"/>
+        <div class="error statMsgError">
+          iSPARQL cannot work without JavaScript<br/>
+	  Either your browser has no JavaScript, or it is currently disabled.
     </div>
-  </div> <!-- throbber -->
+      </noscript>
+
+      <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display:none"/>
+      <div class="error" id="statMsgErr"></div>
+      <div id="splash_ver"></div>
+      <div id="splash_copyr">Copyright &copy; 2010 OpenLink Software</div>
+      <div id="splash_foot" class="opl_motto">Making Technology Work For You &trade;</div>
+    </div> <!-- #splash_inner -->
+  </div> <!-- #splash -->
 
   <div id="locAcquireUI" style="display:none">
     <div id="locAcquireUI_inner">

@@ -84,8 +84,18 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           <img src="images/openlinklogo_wstrap_2008_no_motto.png" alt="OpenLink Software"/>
 	</div>
         <div class="msg" id="statMsgMain">iSPARQL Initialization</div>
-        <div class="msg" id="statMsgElem">Loading&#8230;</div>
-        <img src="/isparql/toolkit/images/throbber.gif" id="splashThrobber"/>
+        <div class="msg" id="statMsgElem">Loading</div>
+	
+        <img src="/isparql/toolkit/images/throbber.gif" id="splashThrobber" style="display:none"/>
+
+        <noscript>
+          <img src="/isparql/images/stop_32.png" alt="error"/>
+          <div class="error statMsgError">
+            iSPARQL cannot work without JavaScript<br/>
+	    Either your browser has no JavaScript, or it is currently disabled.
+	  </div>
+        </noscript>
+
         <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display: none"/>
         <div class="error" id="statMsgErr"></div>
 	<div id="splash_ver"></div>
@@ -471,7 +481,7 @@ ASK WHERE
             </div>
             &nbsp;Bookmarklet - drag this link to your browser's bookmark bar: <a id="isparql_bookmarklet_a" href="javascript:(function(){location='http://www.openlinksw.com/';})();">iSPARQL</a> <a id="sparql_bookmarklet_a" href="" style="display:none">SPARQL</a>
         </div> <!-- #foot_l -->
-        <div class="foot_r" id="foot_r">Copyright &copy; 2010 OpenLink Software, Inc.<br/><span id="ft_loc"></span><br/>
+        <div class="foot_r" id="foot_r">Copyright &copy; 2010 OpenLink Software<br/><span id="ft_loc"></span><br/>
         </div>
 	<div id="stats"></div> <!-- stats -->
       </div> <!-- #foot -->
