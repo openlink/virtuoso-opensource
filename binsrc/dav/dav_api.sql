@@ -4331,7 +4331,7 @@ create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any, in uid
   {
     declare continue handler for SQLSTATE '*'
     {
-      dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
+      -- dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
       return;
     };
     aciContent := cast (blob_to_string (aciContent) as varchar);
@@ -4357,16 +4357,23 @@ create procedure WS.WS.WAC_DELETE (in resPath varchar, in update_acl int)
      )
     return;
 
-  if (update_acl)
-  {
-    connection_set ('dav_acl_sync', 1);
-    DAV_DELETE_INT (resPath || ',acl', 1, null, null, 0, 0);
-    connection_set ('dav_acl_sync', null);
-  }
   graph := SIOC.DBA.dav_res_iri (resPath);
   waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
-  exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
-  DB.DBA.RDF_GRAPH_GROUP_DEL (waGraph, graph);
+  {
+    declare continue handler for SQLSTATE '*'
+    {
+      -- dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
+      return;
+    };
+    if (update_acl)
+    {
+      connection_set ('dav_acl_sync', 1);
+      DAV_DELETE_INT (resPath || ',acl', 1, null, null, 0, 0);
+      connection_set ('dav_acl_sync', null);
+    }
+    exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
+    DB.DBA.RDF_GRAPH_GROUP_DEL (waGraph, graph);
+  }
 }
 ;
 
