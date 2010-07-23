@@ -1077,7 +1077,7 @@
                     if (ODRIVE.WA.dav_get (_item, 'type') = 'R')
                     {
                       http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf ('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, _path));
+                      http_header (sprintf ('Location: %s&mode=download&file=%U\r\n', ODRIVE.WA.page_url (self.domain_id, 'view.vsp', self.sid , self.realm), _path));
                     }
                     else
                     {
