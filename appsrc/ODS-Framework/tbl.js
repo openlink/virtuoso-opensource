@@ -213,7 +213,7 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.create('img');
-  img.src = 'image/select.gif';
+  img.src = '/ods/image/select.gif';
   img.className = "pointer";
   img.onclick = function (){windowShow('users_select.vspx?dst=m&params='+fldName+':s1;',520)};
 

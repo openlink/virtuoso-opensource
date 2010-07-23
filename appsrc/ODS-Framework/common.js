@@ -609,9 +609,18 @@ function validateMail(fld)
 
 function validateURL(fld)
 {
-  var regex = /(ftp|http|https|skype):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  var regex = /^(ftp|http|https):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
   if (!regex.test(fld.value))
     return validateError(fld, 'Invalid URL address : ' + fld.value);
+
+  return true;
+}
+
+function validateURI(fld)
+{
+  var regex = /^([a-z0-9+.-]+):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  if (!regex.test(fld.value))
+    return validateError(fld, 'Invalid URI address : ' + fld.value);
 
   return true;
 }
@@ -624,6 +633,8 @@ function validateField(fld)
     return validateMail(fld);
   if (OAT.Dom.isClass(fld, '_url_'))
     return validateURL(fld);
+  if (OAT.Dom.isClass(fld, '_uri_'))
+    return validateURI(fld);
   if (fld.value.length == 0)
     return validateError(fld, 'Field cannot be empty');
   return true;
