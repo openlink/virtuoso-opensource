@@ -24,6 +24,9 @@ iSPARQL.StatusUI = {
 	else
 	    $("statMsgElem").innerHTML = msg;
     },
+    init: function () {
+	OAT.Dom.show ("splashThrobber");
+    },
     errMsg: function (msg) {
 	$("statMsgErr").innerHTML = msg;
     }

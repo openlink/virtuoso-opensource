@@ -33,6 +33,8 @@ function init() {
 	OAT.Preferences.imagePath = '/isparql/toolkit/images/';
 	OAT.Preferences.stylePath = '/isparql/toolkit/styles/';
 
+
+	iSPARQL.StatusUI.init();
 	iSPARQL.Defaults.init();
 
 	iSPARQL.Common.initData();
@@ -293,6 +295,7 @@ iSPARQL.Advanced = function () {
 	var lc = [];
 
 	if (qe.detectLocationMacros(o.query)) {
+	    iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
 	    if (!iSPARQL.locationCache) {
 		if (!!localStorage && !!localStorage.iSPARQL_locationCache)
 		    lc = localStorage.iSPARQL_locationCache;

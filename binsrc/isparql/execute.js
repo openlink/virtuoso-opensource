@@ -215,7 +215,6 @@ var QueryExec = function(optObj) {
 		OAT.IRIDB.insertIRI (window.defaultPrefixes[i].uri, window.defaultPrefixes[i].label);
 	}
 
-	iSPARQL.StatusUI.statMsg ("Initializing geolocation service &#8230;");
     };
 
 	this.initNav = function() {
@@ -751,7 +750,7 @@ var QueryExec = function(optObj) {
 				self.mini.processLink = self.processLink;
 				self.mini.store.addXmlDoc(data);
 				self.mini.select.selectedIndex = lastIndex;
-//		self.mini.redraw();
+		self.mini.redraw();
 		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
 		 OAT.MSG.attach (self.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
 			} else {
@@ -924,6 +923,7 @@ var QueryExec = function(optObj) {
 		var callback = function(data) {
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }
+	    OAT.MSG.send (self,"iSPARQL_QE_DONE",self);
 	};
 
 		var onerror = function(xhr) {
