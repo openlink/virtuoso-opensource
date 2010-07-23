@@ -472,7 +472,7 @@ if (typeof (OAT) == 'undefined')
             <vm:if test=" length (self.sid) > 0 ">
               <img class="ods_bar_inline_icon"
                    style="float:none"
-                   src="<?V self.odsbar_ods_gpath ?>images/lock.png"
+                   src="<?V self.odsbar_ods_gpath ?>images/icons/lock_16.png"
                    alt="lock icon"/>
 
               <v:url name="odsbar_userinfo_button"

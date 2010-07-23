@@ -15,7 +15,7 @@
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "crypto", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
     <script type="text/javascript">
@@ -34,8 +34,6 @@
         }
         return true;
       }
-      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
       document.onkeypress=navigate;
     </script>
   </head>
@@ -858,7 +856,7 @@
                                       Select from Service List ot Type New One
                                     </th>
                                     <th>
-                                      Member Home Page URL
+                                      Member Home Page URI
                                     </th>
                                     <th width="65px">
                                       Action
@@ -869,7 +867,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1575,7 +1573,7 @@
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                         </td>
                       </tr>
                         </table>

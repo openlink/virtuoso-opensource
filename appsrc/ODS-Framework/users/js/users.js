@@ -506,7 +506,7 @@ var aclData;
 var facebookData;
 
 // init
-function myInit() {
+function init() {
 	// CalendarPopup
 	OAT.Preferences.imagePath = "/ods/images/oat/";
 	OAT.Preferences.stylePath = "/ods/oat/styles/";
@@ -731,6 +731,7 @@ function myInit() {
     OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 5);});
     pfTabInit('pf_tab_2_', $v('formSubtab'));
 	}
+  OAT.MSG.send(OAT, 'PAGE_LOADED');
 }
 
 function lfCallback(oldIndex, newIndex) {
@@ -832,6 +833,41 @@ function myBeforeSubmit()
   submitItems()
 }
 
+function myValidateInputs(fld)
+{
+  var form = fld.form;
+  var formTab = parseInt($v('formTab'));
+  var formSubtab = parseInt($v('formSubtab'));
+  var div = $(pfPages[formTab][formSubtab]);
+
+  for (var i = 0; i < form.elements.length; i++)
+  {
+    if (!form.elements[i])
+      continue;
+
+    var ctrl = form.elements[i];
+    if (typeof(ctrl.type) == 'undefined')
+      continue;
+
+    if (ctrl.disabled)
+      continue;
+
+     if (!OAT.Dom.isChild(ctrl, div))
+      continue;
+
+    if (OAT.Dom.isClass(ctrl, 'dummy'))
+      continue;
+
+    if (OAT.Dom.isClass(ctrl, '_validate_'))
+    {
+      retValue = validateField(ctrl);
+      if (!retValue)
+        return retValue;
+    }
+  }
+  return true;
+}
+
 var needToConfirm = true;
 function myCheckLeave (form)
 {
@@ -854,9 +890,6 @@ function myCheckLeave (form)
         continue;
 
      	if (!OAT.Dom.isChild(ctrl, div))
-        continue;
-
-      if (ctrl.disabled)
         continue;
 
       if (ctrl.disabled)
@@ -898,9 +931,13 @@ function myCheckLeave (form)
       if ($('form'))
       {
         if (retValue) {
+          retValue = myValidateInputs($('formTab'));
+          if (retValue) {
           hiddenCreate('pf_update', null, 'x');
           form.submit();
         }
+        }
+        retValue = false;
       } else {
         retValue = !retValue;
       }
@@ -1282,10 +1319,7 @@ function loadFacebookData(cb) {
 		if (facebookData && regData.facebookEnable) {
 			OAT.Dom.show("lf_tab_2");
 			OAT.Dom.show("rf_tab_2");
-			OAT.Dom.show("pf_facebook");
-			OAT.Dom.show("pf_facebook1");
-			OAT.Dom.show("pf_facebook2");
-			OAT.Dom.show("pf_facebook3");
+      OAT.Dom.show("pf_tab_2_3");
 		}
 		if (cb) {cb()};
 	}
@@ -1526,7 +1560,8 @@ function showProfileNew(xmlDoc) {
     var x = function(data) {
       var xslDoc = OAT.Xml.createXmlDoc(data);
       var result = OAT.Xml.transformXSLT(xmlDoc, xslDoc);
-      div.innerHTML = result.documentElement.innerHTML;
+      if (result)
+        div.innerHTML = OAT.Xml.serializeXmlDoc(result);
     }
     OAT.AJAX.GET('users.xsl', false, x);
   }
@@ -1972,7 +2007,7 @@ function ufProfileCallback(data) {
       fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
 
 			// online accounts
-      pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
+      pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});
 
       // bio events
       pfShowBioEvents("x5", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 11, value: val1}, fld_2: {value: val2}, fld_3: {value: val3}});});
@@ -2037,7 +2072,7 @@ function ufProfileCallback(data) {
       fieldUpdate(user, 'businessMobile',         'pf_businessMobile');
 
 			// online accounts
-      pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});
+      pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});
 
 			// contact
 			fieldUpdate(user, 'businessIcq', 'pf_businessIcq', aclData);
@@ -2253,6 +2288,9 @@ function preparePropertiesWork(prefix, ontologyNo, itemNo) {
 }
 
 function pfUpdateSubmit(No) {
+  if (!myValidateInputs($('formTab')))
+    return false;
+
   var formTab = parseInt($v('formTab'));
   var formSubtab = parseInt($v('formSubtab'));
   if ((formTab == 0) && (formSubtab == 3))
@@ -2334,7 +2372,7 @@ function pfUpdateSubmit(No) {
         if ($v('cb_item_i_onlineAccounts') == '1')
           S += '&onlineAccounts=' + encodeURIComponent($v('i_onlineAccounts'));
       }
-      if (formSubtab == 1)
+      else if (formSubtab == 1)
       {
         S +='&nickName=' + encodeURIComponent($v('pf_nickName'))
         + '&mail=' + encodeURIComponent($v('pf_mail'))
@@ -2366,7 +2404,7 @@ function pfUpdateSubmit(No) {
           + '&audio=' + $v('pf_acl_audio')
           + '&photo=' + $v('pf_acl_photo');
       }
-      if (formSubtab == 2)
+      else if (formSubtab == 2)
       {
         S +='&defaultMapLocation=' + encodeURIComponent($v('pf_homeDefaultMapLocation'))
 			+ '&homeCountry=' + encodeURIComponent($v('pf_homecountry'))
@@ -2390,7 +2428,7 @@ function pfUpdateSubmit(No) {
   			  + '&homeLatitude=' + $v('pf_acl_homeLatitude')
   			  + '&homePhone=' + $v('pf_acl_homePhone');
   	  }
-      if (formSubtab == 4)
+      else if (formSubtab == 4)
       {
         S +='&icq=' + encodeURIComponent($v('pf_icq'))
         + '&skype=' + encodeURIComponent($v('pf_skype'))
@@ -2433,7 +2471,7 @@ function pfUpdateSubmit(No) {
           + '&businessNetwork=' + $v('pf_acl_businessNetwork')
           + '&businessResume=' + $v('pf_acl_businessResume');
   	  }
-      if (formSubtab == 1)
+      else if (formSubtab == 1)
       {
         S +='&businessCountry=' + encodeURIComponent($v('pf_businesscountry'))
         + '&businessState=' + encodeURIComponent($v('pf_businessstate'))
@@ -2456,7 +2494,7 @@ function pfUpdateSubmit(No) {
   			  + '&businessLatitude=' + $v('pf_acl_businesslat')
   			  + '&businessPhone=' + $v('pf_acl_businessPhone')
   	  }
-      if (formSubtab == 3)
+      else if (formSubtab == 3)
       {
         S +='&businessIcq=' + encodeURIComponent($v('pf_businessIcq'))
         + '&businessSkype=' + encodeURIComponent($v('pf_businessSkype'))

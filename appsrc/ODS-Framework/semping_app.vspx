@@ -120,7 +120,7 @@
                   		      name="a_name"
 				      sql="select WAM_INST, IRI from (select WAM_INST, sioc..forum_iri (WAM_APP_TYPE, WAM_INST, null) as IRI 
 				      		from DB..WA_MEMBER where WAM_USER = self.u_id and WAM_MEMBER_TYPE = 1 
-						union all select 'Personal Profile' as inst, sioc..person_iri (sioc..user_iri (U_ID)) 
+						union all select 'Personal Profile Manager' as inst, sioc..person_iri (sioc..user_iri (U_ID)) 
 						from DB..SYS_USERS where U_ID = self.u_id) x 
 						where not exists (select 1 from SEMPING..PING_RULES where x.IRI = PR_IRI and PR_U_ID = self.u_id)"
                   		      key-column="iri"

@@ -23,7 +23,7 @@
  -
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:mail="http://www.openlinksw.com/mail/">
-  <xsl:output method="html" indent="yes" omit-xml-declaration="no" encoding="utf-8" doctype-public="-//W3C//DTD XHTML 1.0 Strict //EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"/>
+  <xsl:output method="html" indent="yes" omit-xml-declaration="no" encoding="utf-8"/>
 
   <!-- ========================================================================== -->
   <xsl:template match="/">
@@ -56,14 +56,15 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="rsa">
+    <xsl:if test="user/rsaPublicKey">
     <div>
       <div class="PF_header">RSA Public Key</div>
       <table class="PF_form">
         <xsl:apply-templates select="user/iri"/>
-        <xsl:apply-templates select="user/rsaPublicExponent"/>
-        <xsl:apply-templates select="user/rsaModulus"/>
+          <xsl:apply-templates select="user/rsaPublicKey"/>
       </table>
     </div>
+    </xsl:if>
   </xsl:template>
 
   <!-- ========================================================================== -->
@@ -382,6 +383,16 @@
   </xsl:template>
 
   <!-- ========================================================================== -->
+  <xsl:template match="rsaPublicKey">
+    <xsl:call-template name="profileLine">
+      <xsl:with-param name="label">Key No</xsl:with-param>
+      <xsl:with-param name="value"><xsl:value-of select="rsaNo+1"/></xsl:with-param>
+    </xsl:call-template>
+    <xsl:apply-templates select="rsaPublicExponent"/>
+    <xsl:apply-templates select="rsaModulus"/>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
   <xsl:template match="interest|topicInterest">
     <tr>
       <th></th>
@@ -410,12 +421,13 @@
     </tr>
   </xsl:template>
 
+  <!-- ========================================================================== -->
   <xsl:template match="knows">
     <tr>
       <th>Person</th>
       <td>
         <xsl:if test="nick">
-          <xsl:value-of select="nick"/><br />
+          <b>Name</b>: <xsl:value-of select="nick"/><div></div>
         </xsl:if>
         <xsl:if test="iri">
           <b>WebID</b>: <a>
@@ -423,7 +435,7 @@
               <xsl:value-of select="iri"/>
             </xsl:attribute>
             <xsl:value-of select="iri"/>
-          </a><br />
+          </a><div></div>
         </xsl:if>
         <xsl:if test="seeAlso">
           <b>SeeAlso</b>:  <a>
@@ -466,7 +478,7 @@
     <xsl:param name="value" />
     <xsl:if test="$offset &lt; string-length($value)">
       <xsl:if test="(($offset mod 32) = 1) and ($offset &gt; 1)">
-        <br />
+        <div></div>
       </xsl:if>
       <xsl:value-of select="substring($value, $offset, 2)"/><xsl:text> </xsl:text>
       <xsl:call-template name="showHex">

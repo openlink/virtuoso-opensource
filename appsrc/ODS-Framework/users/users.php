@@ -39,13 +39,9 @@
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "crypto", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
-    <script type="text/javascript">
-      OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
-    </script>
   </head>
   <?php
     function parseUrl($url) {
@@ -1673,7 +1669,7 @@
                                       Select from Service List ot Type New One
                                     </th>
                                     <th>
-                                      Member Home Page URL
+                                      Member Home Page URI
                                     </th>
                                     <th width="65px">
                                       Action
@@ -1682,12 +1678,12 @@
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1898,7 +1894,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                            <input type="submit" name="pf_update06" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf06');"/>
                           </div>
                       </div>
                       <?php
@@ -1992,7 +1988,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false; "/>
-                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                            <input type="submit" name="pf_update07" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf07');"/>
                           </div>
                         </div>
                         <?php
@@ -2071,7 +2067,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                            <input type="submit" name="pf_update08" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf08');"/>
                           </div>
                         </div>
                         <?php
@@ -2150,7 +2146,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this);"/>
+                            <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf09');"/>
                           </div>
                         </div>
                         <?php
@@ -2164,8 +2160,8 @@
                       ?>
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>
                       <?php
                         }
@@ -2582,7 +2578,7 @@
                                       Select from Service List ot Type New One
                         </th>
                         <th>
-                                      Member Home Page URL
+                                      Member Home Page URI
                         </th>
                                     <th width="65px">
                                       Action
@@ -2591,12 +2587,12 @@
                                 </thead>
                                 <tr id="y1_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("y1", "B", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('y1', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                         </td>
                       </tr>
                         </table>
@@ -2703,8 +2699,8 @@
 
                       <div class="footer">
                         <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>
                     </div>
                   </div>
@@ -2930,7 +2926,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update25" value="Save" onclick="needToConfirm = false; return validateInputs(this);"/>
+                            <input type="submit" name="pf_update25" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf25');"/>
                           </div>
                         </div>
                         <?php
@@ -2944,8 +2940,8 @@
                       ?>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit ();"/>
-                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit ();"/>
+                        <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
+                        <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>
                       <?php
                         }

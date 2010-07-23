@@ -1080,7 +1080,7 @@ create procedure ODS.ODS_API."address.geoData" (
         lng
     ))
   {
-    retValue := vector ('lat', lat, 'lng', lng);
+    retValue := vector ('lat', sprintf ('%.6f', coalesce (lat, 0.00)), 'lng', sprintf ('%.6f', coalesce (lng, 0.00)));
   }
   return params2json (retValue);
 }
@@ -2219,8 +2219,13 @@ create procedure ODS.ODS_API."user.info.webID" (
     exec (S, st, msg, vector (), 0, meta, data);
     if (st = '00000' and length (data))
     {
-      ODS.ODS_API.set_keyword ('rsaPublicExponent', V, data[0][0]);
-      ODS.ODS_API.set_keyword ('rsaModulus', V, data[0][1]);
+      declare C any;
+
+      C := vector ();
+      for (N := 0; N < length (data); N := N + 1)
+        C := vector_concat (C, vector (vector_concat (jsonObject (), vector ('rsaNo', N, 'rsaPublicExponent', data[N][0], 'rsaModulus', data[N][1]))));
+
+      ODS.ODS_API.set_keyword ('rsaPublicKey', V, C);
     }
   }
 

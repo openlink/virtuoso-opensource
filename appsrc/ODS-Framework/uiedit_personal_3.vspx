@@ -114,7 +114,7 @@
                   Select from Service List ot Type New One
                   </th>
                 <th>
-                  Member Home Page URL
+                  Member Home Page URI
                   </th>
                 <th width="65px">
                     Action
@@ -125,7 +125,7 @@
             		    <?vsp
                   for (select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id) do
                   {
-                    http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x4", null, {id: "%d", fld_1: {mode: 10, value: "%s"}, fld_2: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});});', WUO_ID, WUO_NAME, WUO_URL));
+                    http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x4", null, {id: "%d", fld_1: {mode: 10, value: "%s"}, fld_2: {value: "%s", className: "_validate_ _uri_ _canEmpty_"}});});});', WUO_ID, WUO_NAME, WUO_URL));
                   }
             		    ?>
             		    </script>
@@ -134,7 +134,7 @@
             </table>
           </td>
           <td valign="top" nowrap="1">
-            <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+            <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
       </table>
