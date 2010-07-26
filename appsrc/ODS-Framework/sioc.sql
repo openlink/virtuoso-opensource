@@ -4123,13 +4123,12 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
 
   set_user_id ('dba');
   info := get_certificate_info (9);
-  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+  agent := ODS.ODS_API.SSL_WEBID_GET (); 
 
 --  dbg_obj_print (info, agent);
-  if (not isarray (info) or agent is null or agent not like 'URI:%')
+  if (not isarray (info) or agent is null)
     return 0;
 
-  agent := subseq (agent, 4);
   if (iri is not null and not foaf_check_friend (iri, agent))
     return 0;
 

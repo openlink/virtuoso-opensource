@@ -2044,7 +2044,8 @@ create procedure ODS.ODS_API."user.info" (
       if (length(WAUI_CERT))
       {
         ods_xml_item ('certificateSubject',   get_certificate_info (2, cast (WAUI_CERT as varchar), 0, ''));
-        ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
+	    -- XXX: 
+	    -- ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
       }
       ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
 	}
@@ -3690,7 +3691,8 @@ create procedure ODS.ODS_API."user.certificates.get" (
   for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
   {
     subject := get_certificate_info (2, UC_CERT, 0, '');
-    agentID := replace (get_certificate_info (7, UC_CERT, 0, '', '2.5.29.17'), 'URI:', '');
+    -- XXX:
+    -- agentID := replace (get_certificate_info (7, UC_CERT, 0, '', '2.5.29.17'), 'URI:', '');
     fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
     certificate := UC_CERT;
     enableLogin := UC_LOGIN;
@@ -4161,18 +4163,33 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 }
 ;
 
+create procedure ODS.ODS_API.SSL_WEBID_GET ()
+{
+  declare agent, alts any;
+  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+  if (agent is not null)
+    {
+      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+      alts := split_and_decode (alts, 0, '\0\0,:');
+      if (alts is null)
+	return null;
+      agent := get_keyword ('URI', alts);
+    }
+  return agent;
+}
+;
+
 create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in sslFOAFCheck integer := 0,
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
-  declare foafIRI any;
+  declare foafIRI, alts any;
   declare V any;
 
-  foafIRI := get_certificate_info (7, null, null, null, '2.5.29.17');
-  if (not isnull (foafIRI) and (foafIRI like 'URI:%'))
+  foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
+  if (not isnull (foafIRI))
   {
-    foafIRI := subseq (foafIRI, 4);
     V := ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
     return V;
   }
