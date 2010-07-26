@@ -200,11 +200,9 @@ create procedure sessionValidateX509 (
     info := get_certificate_info (9, cert);
     if (not isarray (info))
       return 0;
-    agent := get_certificate_info (7, null, null, null, '2.5.29.17');
-    if (agent is null or agent not like 'URI:%')
+    agent := ODS.ODS_API.SSL_WEBID_GET ();
+    if (agent is null)
       return 0;
-    agent := subseq (agent, 4);
-
     declare exit handler for sqlstate '*'
     {
       rollback work;

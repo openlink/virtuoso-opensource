@@ -937,7 +937,7 @@
                   }
                 %>
                 <div class="header">
-                  User login
+                  Identify Yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
                   <li id="lf_tab_0" title="Digest">Digest</li>
