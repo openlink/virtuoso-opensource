@@ -552,10 +552,23 @@ create procedure ODS_CREATE_NEW_APP_INST (
        goto relaxing;
      };
     if (app_type <> 'oWiki')
+    {
    lpath := DB.DBA.wa_set_url_t (inst);
-    if (app_type = 'oWiki')
+      if ((lpath like '%.vspx') or (lpath like '%.vsp'))
+      {
+        declare pos integer;
+
+        pos := strrchr (lpath, '/');
+        if (not isnull (pos))
+          lpath := subseq (lpath, 0, pos);
+      }
+    }
+    else if (app_type = 'oWiki')
+    {
       DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default Domain}', null, null, null, 1);
+    }
    DB.DBA.WA_SET_APP_URL (id, lpath, null, DB.DBA.wa_default_domain (), null, null, null, 1);
+    if (app_type <> 'oMail')
    DB.DBA.WA_SET_APP_URL (id, lpath, null, '{Default HTTPS}', null, null, null, 1);
  }
 relaxing:
