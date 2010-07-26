@@ -96,6 +96,7 @@ registry_remove ('__ods_bookmark_sioc_init');
 registry_remove ('bmk_table_update');
 registry_remove ('bmk_index_version');
 registry_remove ('bmk_path_update');
+registry_remove ('bmk_path_upgrade2');
 
 -- Procedures
 create procedure BMK.WA.drop_procedures()

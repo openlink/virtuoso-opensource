@@ -74,6 +74,16 @@ vhost_remove (lpath=>'/oMail/res');
 OMAIL.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'oMail\'');
 OMAIL.WA.exec_no_error('drop type wa_mail');
 
+-- Registry
+registry_remove ('_oMail_path_');
+registry_remove ('_oMail_version_');
+registry_remove ('_oMail_build_');
+registry_remove ('_oMail_spam_');
+registry_remove ('omail_version_upgrade');
+registry_remove ('omail_path_upgrade2');
+registry_remove ('mail_index_version');
+registry_remove ('__ods_mail_sioc_init');
+
 -- Procedures
 create procedure OMAIL.WA.omail_drop_procedures()
 {

@@ -417,3 +417,26 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_mail
   return sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/export.vsp?output=about&did=%d&uid=%d', domainID, userID);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.path_upgrade ()
+{
+  if (registry_get ('omail_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oMail') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/oMail/' || cast (WAI_ID as varchar) || '/box.vsp') do
+    {
+      VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+    }
+  }
+  registry_set ('omail_path_upgrade2', '1');
+}
+;
+OMAIL.WA.path_upgrade ();
