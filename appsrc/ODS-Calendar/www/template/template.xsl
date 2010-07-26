@@ -152,7 +152,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" action="--CAL.WA.forum_iri(self.domain_id)" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--CAL.WA.iri_fix(CAL.WA.forum_iri(self.domain_id))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Calendar'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">

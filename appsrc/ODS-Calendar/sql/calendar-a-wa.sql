@@ -211,7 +211,18 @@ create method wa_id () for wa_Calendar
 --
 create method wa_drop_instance () for wa_Calendar
 {
-  CAL.WA.domain_delete (self.wa_id ());
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/calendar/' || cast (iWaiID as varchar)) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
+  CAL.WA.domain_delete (iWaiID);
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -442,3 +453,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_Cal
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('cal_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Calendar') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/calendar/' || cast (WAI_ID as varchar) || '/home.vspx') do
+    {
+      _new_lpath := '/calendar/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('cal_path_upgrade2', '1');
+}
+;
+CAL.WA.path_upgrade ();
