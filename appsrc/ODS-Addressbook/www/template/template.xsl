@@ -147,7 +147,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" action="--AB.WA.forum_iri(self.domain_id)" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--AB.WA.iri_fix(AB.WA.forum_iri(self.domain_id))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='AddressBook'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">

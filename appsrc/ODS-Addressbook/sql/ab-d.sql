@@ -42,6 +42,11 @@ AB.WA.exec_no_error ('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'A
 
 VHOST_REMOVE (lpath => '/addressbook');
 VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+VHOST_REMOVE (lpath => '/ods/portablecontacts');
+VHOST_REMOVE (lpath => '/ods/livecontacts');
+VHOST_REMOVE (lpath => '/ods/yahoocontacts');
+VHOST_REMOVE (lpath => '/ods/google');
+
 
 -- NNTP
 AB.WA.exec_no_error ('DROP procedure DB.DBA.ADDRESSBOOK_NEWS_MSG_I');
@@ -71,6 +76,7 @@ registry_remove ('ab_path');
 registry_remove ('ab_version');
 registry_remove ('ab_build');
 registry_remove ('ab_index_version');
+registry_remove ('ab_path_upgrade2');
 registry_remove ('__ods_addressbook_sioc_init');
 
 -- Procedures

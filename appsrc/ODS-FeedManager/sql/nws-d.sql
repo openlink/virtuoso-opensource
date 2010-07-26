@@ -54,8 +54,8 @@ create procedure ENEWS.WA.uninstall ()
 ;
 ENEWS.WA.uninstall ()
 ;
-                                                                                            -- Scheduler
-VHOST_REMOVE (lpath => '/enews2');
+
+VHOST_REMOVE (lpath => '/subscriptions');
 
 -- Scheduler
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews feed aggregator\'');
@@ -102,6 +102,7 @@ registry_remove ('news_table_version');
 registry_remove ('news_index_version');
 registry_remove ('news_links_upgrade');
 registry_remove ('news_comment_upgrade');
+registry_remove ('news_path_upgrade2');
 registry_remove ('__ods_feeds_sioc_init');
 
 -- Procedures

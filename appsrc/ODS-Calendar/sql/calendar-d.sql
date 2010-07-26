@@ -98,6 +98,7 @@ registry_remove ('cal_description_update');
 registry_remove ('cal_index_version');
 registry_remove ('cal_uid_version');
 registry_remove ('cal_attendee_update');
+registry_remove ('cal_path_upgrade2');
 registry_remove ('cal_atom_update');
 
 -- Procedures

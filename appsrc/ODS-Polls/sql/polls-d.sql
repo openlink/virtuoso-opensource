@@ -57,6 +57,15 @@ POLLS.WA.exec_no_error ('DROP type wa_polls');
 -- Views
 POLLS.WA.exec_no_error ('DROP view POLLS..TAGS_VIEW');
 
+-- Registry
+registry_remove ('_polls_path_');
+registry_remove ('_polls_version_');
+registry_remove ('_polls_build_');
+registry_remove ('polls_settings_update');
+registry_remove ('polls_index_version');
+registry_remove ('polls_path_upgrade2');
+registry_remove ('__ods_polls_sioc_init');
+
 -- Procedures
 create procedure POLLS.WA.drop_procedures()
 {

@@ -199,6 +199,14 @@ create method wa_id_string() for wa_bookmark
 --
 create method wa_drop_instance () for wa_bookmark
 {
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/bookmark/' || self.BookmarkID) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
   BMK.WA.domain_delete(self.BookmarkID);
   (self as web_app).wa_drop_instance();
 }
@@ -423,3 +431,40 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_boo
   return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('bmk_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Bookmark') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/bookmark/' || cast (WAI_ID as varchar) || '/bookmarks.vspx') do
+    {
+      _new_lpath := '/bookmark/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('bmk_path_upgrade2', '1');
+}
+;
+BMK.WA.path_upgrade ();
