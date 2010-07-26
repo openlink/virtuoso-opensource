@@ -69,7 +69,7 @@ TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
   td.appendChild(OAT.Dom.text(' '));
-  var img = OAT.Dom.image('image/select.gif');
+  var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
   img.onclick = function (){webidShow(fld)};

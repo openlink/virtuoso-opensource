@@ -279,7 +279,14 @@ create method wa_drop_instance () for wa_oDrive
   declare iWaiID integer;
 
   iWaiID := self.wa_id ();
-  VHOST_REMOVE(lpath => concat('/odrive/', cast (iWaiID as varchar)));
+  for (select HP_LPATH as _lpath,
+              HP_HOST as _vhost,
+              HP_LISTEN_HOST as _lhost
+         from DB.DBA.HTTP_PATH
+        where HP_LPATH = '/odrive/' || cast (iWaiID as varchar)) do
+  {
+    VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+  }
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -514,7 +521,8 @@ create procedure ODRIVE.WA.path_upgrade ()
   if (registry_get ('odrive_path_upgrade') = '1')
     return;
 
-  for (select WAI_ID, WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive') do {
+  for (select WAI_ID, WAI_NAME, WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive') do
+  {
     VHOST_REMOVE(lpath    => '/odrive/' || cast (WAI_ID as varchar));
     VHOST_DEFINE(lpath    => '/odrive/' || cast (WAI_ID as varchar),
                  ppath    => (WAI_INST as wa_oDrive).get_param ('host') || 'www/',
@@ -531,9 +539,45 @@ create procedure ODRIVE.WA.path_upgrade ()
      where WAM_INST = WAI_NAME;
   }
   VHOST_REMOVE (lpath    => '/odrive/');
+
+  registry_set ('odrive_path_upgrade', '1');
 }
 ;
-
 ODRIVE.WA.path_upgrade ();
 
-registry_set ('odrive_path_upgrade', '1');
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.path_upgrade ()
+{
+  declare _new_lpath varchar;
+
+  if (registry_get ('odrive_path_upgrade2') = '1')
+    return;
+
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oDrive') do
+  {
+    for (select HP_LPATH as _lpath,
+                HP_HOST as _vhost,
+                HP_LISTEN_HOST as _lhost
+           from DB.DBA.HTTP_PATH
+          where HP_LPATH = '/odrive/' || cast (WAI_ID as varchar) || '/home.vspx') do
+    {
+      _new_lpath := '/odrive/' || cast (WAI_ID as varchar);
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = _new_lpath and HP_HOST  = _vhost and HP_LISTEN_HOST = _lhost))
+      {
+        VHOST_REMOVE (vhost=>_vhost, lhost=>_lhost, lpath=>_lpath);
+      } else {
+        update DB.DBA.HTTP_PATH
+           set HP_LPATH = _new_lpath
+         where HP_LPATH = _lpath
+           and HP_HOST  = _vhost
+           and HP_LISTEN_HOST = _lhost;
+        http_map_del (_lpath, _vhost, _lhost);
+        VHOST_MAP_RELOAD (vhost=>_vhost, lhost=>_lhost, lpath=>_new_lpath);
+      }
+    }
+  }
+  registry_set ('odrive_path_upgrade2', '1');
+}
+;
+ODRIVE.WA.path_upgrade ();

@@ -62,6 +62,7 @@
       if (ODRIVE.WA.check_grants2 (self.account_role, page_name))
         return;
 
+      if (page_name <> 'home.vspx')
           self.vc_redirect('home.vspx');
     ]]>
   </v:after-data-bind>

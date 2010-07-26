@@ -213,6 +213,7 @@
                       </v:after-data-bind>
                       <v:before-render>
                         <![CDATA[
+                          control.bt_anchor := 0;
                           control.bt_url := replace (control.bt_url, sprintf ('/odrive/%d', self.domain_id), ODRIVE.WA.page_url (self.domain_id));
                         ]]>
                       </v:before-render>
@@ -236,6 +237,7 @@
                     <v:button action="simple" style="url" xhtml_class="--case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' else '' end" value="--(control.vc_parent as vspx_tree_node).tn_value">
                       <v:before-render>
                         <![CDATA[
+                          control.bt_anchor := 0;
                           control.bt_url := replace (control.bt_url, sprintf ('/odrive/%d', self.domain_id), ODRIVE.WA.page_url (self.domain_id));
                         ]]>
                       </v:before-render>
