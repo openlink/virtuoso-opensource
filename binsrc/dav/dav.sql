@@ -87,7 +87,7 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
   -- dbg_obj_princ ('Authentication in PROPFIND gives ', rc, uname, upwd, _u_id, _g_id, _perms);
   if (rc < 0)
     {
-      if (rc = -12)
+      if ((rc = -12) or (rc = -13))
         {
 	  http_request_status ('HTTP/1.1 403 Forbidden');
 	}
@@ -1212,7 +1212,7 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (in rc integer)
   if (rc = -2)	{ http_request_status ('HTTP/1.1 409 Conflict: the destination (path) is not valid');		return; }
   if (rc = -3)	{ http_request_status ('HTTP/1.1 412 Precondition Failed: overwrite flag is not set and destination exists');	return; }
   if (rc = -8)	{ http_request_status ('HTTP/1.1 423 Locked');		return; }
-  if (rc = -12)	{ http_request_status ('HTTP/1.1 403 Forbidden: authentication has failed');	return; }
+  if (rc = -12)	{ http_request_status ('HTTP/1.1 401 Unauthorized: authentication has failed');	return; }
   if (rc = -13) { http_request_status ('HTTP/1.1 403 Forbidden: insufficient user permissions');	return; }
   if (rc = -25)	{ http_request_status ('HTTP/1.1 409 Conflict: can not create collection if a resource with same name exists');	return; }
   if (rc = -26)	{ http_request_status ('HTTP/1.1 409 Conflict: can not create resource if a collection with same name exists');	return; }
