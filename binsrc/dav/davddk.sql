@@ -1550,6 +1550,25 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+n3','n3')
 select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)
 ;
 
+create trigger SYS_DAV_RES_TYPES_I after insert on WS.WS.SYS_DAV_RES_TYPES referencing new as N
+{
+  http_mime_type_add (N.T_EXT, N.T_TYPE);
+}
+;
+
+create trigger SYS_DAV_RES_TYPES_U after update on WS.WS.SYS_DAV_RES_TYPES referencing old as O, new as N
+{
+  http_mime_type_add (N.T_EXT, N.T_TYPE);
+  http_mime_type_add (O.T_EXT, null);
+}
+;
+
+create trigger SYS_DAV_RES_TYPES_D after delete on WS.WS.SYS_DAV_RES_TYPES referencing old as O
+{
+  http_mime_type_add (O.T_EXT, null);
+}
+;
+
 create procedure
 DB.DBA.DAV_PLAIN_SUBCOLS_P (in root_id integer, in root_path varchar := null, in recursive integer := 1, in subcol_auth_uid varchar, in subcol_auth_pwd varchar)
 {
