@@ -76,6 +76,7 @@
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+                <rdfs:label><xsl:value-of select="$baseUri"/></rdfs:label>
 				<sioc:container_of rdf:resource="{$resourceURL}"/>
 				<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			    <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}"/>
@@ -100,9 +101,10 @@
 			    <gr:includes rdf:resource="{$resourceURL}"/>
 			    <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
 			    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="ebay:Item/ebay:EndTime"/></gr:validThrough>
+                <gr:acceptedPaymentMethods rdf:resource="{concat('&gr;', ebay:Item/ebay:PaymentMethods)}"/>
 			    <gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 			    <xsl:if test="count(//ebay:ShipToLocations) = 1">
-			    	<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
+			    	<!--gr:availableDeliveryMethods rdf:resource="&gr;UPS"/-->
 			    	<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
 			    </xsl:if>
 			    <xsl:apply-templates mode="offering" />
@@ -123,10 +125,12 @@
 					<xsl:when test="$seller != ''">
 		        		<rdfs:label><xsl:value-of select="$seller"/></rdfs:label>
 		        		<gr:legalName><xsl:value-of select="$seller"/></gr:legalName>
+                        <foaf:page rdf:resource="{concat('http://myworld.ebay.com/', $seller)}" />
 					</xsl:when>
 					<xsl:when test="$store != ''">
 		        		<rdfs:label><xsl:value-of select="$store"/></rdfs:label>
 		        		<gr:legalName><xsl:value-of select="$store"/></gr:legalName>
+						<foaf:page rdf:resource="{concat('http://myworld.ebay.com/', $store)}" />
 						<oplebay:eBayStoreURL><xsl:value-of select="//ebay:Storefront/ebay:StoreURL"/></oplebay:eBayStoreURL>
 					</xsl:when>
 					<xsl:otherwise>
@@ -148,6 +152,7 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplebay;Product" />
+                <foaf:page rdf:resource="{$baseUri}"/>
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                 <xsl:variable name="brand" 
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value"/>
@@ -243,6 +248,7 @@
     <xsl:template match="ebay:Item/ebay:Title">
 	<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
 	<dc:title><xsl:value-of select="."/></dc:title>
+    <rdfs:label><xsl:value-of select="."/></rdfs:label>
     </xsl:template>
     <xsl:template match="ebay:Item/ebay:Description">
 	<!--oplebay:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplebay:description-->
@@ -262,7 +268,7 @@
     </xsl:template>
     <xsl:template match="ebay:Item/ebay:GalleryURL">
 	<xsl:if test="string-length(.) &gt; 0">
-	    <xsl:element namespace="&oplebay;" name="image">
+	    <xsl:element namespace="&foaf;" name="depiction">
 		<xsl:attribute name="rdf:resource">
 		    <xsl:value-of select="."/>
 		</xsl:attribute>
@@ -271,7 +277,7 @@
     </xsl:template>
     <xsl:template match="ebay:Item/ebay:PictureURL">
 	<xsl:if test="string-length(.) &gt; 0">
-	    <xsl:element namespace="&oplebay;" name="image">
+	    <xsl:element namespace="&foaf;" name="depiction">
 		<xsl:attribute name="rdf:resource">
 		    <xsl:value-of select="."/>
 		</xsl:attribute>
@@ -304,8 +310,8 @@
 	            <xsl:value-of select="concat($baseUri, '#', 'Detail_', position())"/>
 				-->
 		</xsl:attribute>
-		<oplebay:detail_name rdf:datatype="&xsd;string"><xsl:value-of select="ebay:Name"/></oplebay:detail_name>
-		<oplebay:detail_value rdf:datatype="&xsd;string">
+		<oplebay:detail_name><xsl:value-of select="ebay:Name"/></oplebay:detail_name>
+		<oplebay:detail_value>
 			<xsl:variable name="val"/>
 			<xsl:for-each select="ebay:Value">
 				<xsl:choose>
@@ -328,9 +334,9 @@
     </xsl:template>
 
     <xsl:template match="ebay:Item/ebay:Location">
-		<gr:availableAtOrFrom>
+		<oplebay:location_info>
 			<xsl:value-of select="."/>
-		</gr:availableAtOrFrom>
+		</oplebay:location_info>
     </xsl:template>
 
 	<!-- Reviews -->
