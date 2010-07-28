@@ -91,7 +91,7 @@
 			</xsl:for-each>
 		</geo:Feature>
 
-		<xsl:for-each select="node">
+		<!--xsl:for-each select="node">
 			<geo:Feature rdf:about="{vi:proxyIRI (concat('http://openstreetmap.org/?lat=', @lat, '&amp;lon=', @lon))}">
 				<wgs84_pos:lat>
 					<xsl:value-of select="@lat"/>
@@ -139,7 +139,7 @@
 				</foaf:Person>
 			</xsl:if>
 
-		</xsl:for-each>
+		</xsl:for-each-->
     </xsl:template>
 
     <xsl:template match="text()" />

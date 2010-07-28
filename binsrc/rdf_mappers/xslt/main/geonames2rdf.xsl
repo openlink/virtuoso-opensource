@@ -33,6 +33,7 @@
 <!ENTITY inktomi "http://www.inktomi.com/">
 <!ENTITY aapi "http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#">
 <!ENTITY geonames "http://www.geonames.org/ontology#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -44,6 +45,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:dc="&dc;"
+    xmlns:gr="&gr;"
     xmlns:nyt="&nyt;"
     xmlns:geonames="&geonames;"
     xmlns:sioc="&sioc;"
@@ -76,6 +78,7 @@
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 	    <rdf:type rdf:resource="&geonames;Feature"/>
+        <rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
 	    <xsl:copy-of select="*"/>
 	</rdf:Description>
     </xsl:template>

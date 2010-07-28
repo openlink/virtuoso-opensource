@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#"> 
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,6 +44,7 @@
   xmlns:foaf="&foaf;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
+  xmlns:gr="&gr;"
   xmlns:book="&book;"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   version="1.0">
@@ -76,6 +78,7 @@
     <xsl:template match="ISBNdb/BookList/BookData">
 	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
 		<rdf:type rdf:resource="&book;Book"/>
+        <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	</rdf:Description>
 
 	<bibo:Book rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
@@ -86,6 +89,11 @@
             <book:isbn>
                 <xsl:value-of select="@isbn"/>
             </book:isbn>
+              <xsl:if test="string-length(@isbn) = 13">
+                <gr:hasEAN_UCC-13>
+                    <xsl:value-of select="@isbn"/>
+                </gr:hasEAN_UCC-13>  
+              </xsl:if>
             </xsl:if>
             <bibo:uri>
                 <xsl:value-of select="concat('http://isbndb.com/d/book/', @book_id, '.html')"/>

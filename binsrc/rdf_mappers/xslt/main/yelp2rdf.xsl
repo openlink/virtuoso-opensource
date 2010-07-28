@@ -64,7 +64,7 @@
 				<owl:sameAs rdf:resource="{$docIRI}" />
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
-				<rdf:type rdf:resource="&gr;BusinessEntity"/>
+				<rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
 				<dc:title>
 					<xsl:value-of select="title" />
 				</dc:title>
@@ -75,6 +75,7 @@
 				<xsl:for-each select="item">
 				    <review:hasReview rdf:resource="{vi:proxyIRI (link)}" />
 				</xsl:for-each>
+                <foaf:page rdf:resource="{$baseUri}" />
 			</rdf:Description>
 			<xsl:for-each select="item">
 				<rdf:Description rdf:about="{vi:proxyIRI (link)}">
