@@ -171,7 +171,7 @@ div.doc_ctr { margin: 10px; }
 div.main_actions { float: left; clear: left; width: 100%; text-align: left;}
 div.main_expln { float: left; clear: left; text-align: center; width: 100%;}
 
-#res { float: left; clear: left; margin: 5px 0px 0px 0px; width: 80%}
+#res { float: left; clear: left; margin: 5px 0px 0px 0px; width: 78%}
 #res h3 { margin-top: 0; margin-left: 5px;}
 
 #new_search_txt {}
@@ -491,7 +491,7 @@ div.featured .expln { text-align: left;}
 #featured_list { font-size: 9pt;}
 #featured_list td { font-size: 9pt;}
 
-table.sparql_qry_list { width: 80%; margin-left: auto; margin-right: auto}
+table.sparql_qry_list { width: 78%; margin-left: auto; margin-right: auto}
 table.sparql_qry_list td.title { font-weight: bold; }  
 table.sparql_qry_list td.expln { width: 50%; }  
 
