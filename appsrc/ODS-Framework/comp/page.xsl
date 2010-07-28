@@ -2138,6 +2138,38 @@ if (i > 0)
           </v:button>
     </fieldset>
   </v:form>
+  <v:form type="simple" name="fkg" method="POST">
+    <fieldset>
+			<legend><b>X.509 Certificate Service</b></legend>
+      <label>
+        Service URL
+      </label>
+      <br />
+              <v:text name="s_kg" xhtml_class="textbox" xhtml_size="100" value="">
+                <v:before-data-bind>
+                  control.ufl_value := cast (coalesce ((select top 1 WS_CERT_GEN_URL from WA_SETTINGS), '') as varchar);
+                </v:before-data-bind>
+              </v:text>
+      <br />
+      <v:button name="bt_kg" action="simple" value="Set">
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+              if (not wa_user_is_dba (self.u_name, self.u_group))
+              {
+                self.vc_is_valid := 0;
+                control.vc_parent.vc_error_message := 'Only admin user can change global settings';
+                return;
+              }
+              update WA_SETTINGS set WS_CERT_GEN_URL = self.s_kg.ufl_value;
+              if (row_count() = 0)
+                insert into WA_SETTINGS (WS_CERT_GEN_URL) values (self.s_kg.ufl_value);
+            ]]>
+          </v:script>
+        </v:on-post>
+      </v:button>
+    </fieldset>
+  </v:form>
   <v:template type="simple" enabled="--case when isnull (VAD_CHECK_VERSION ('Feed Manager')) then 0 else 1 end">
   <v:form type="simple" name="form2" method="POST">
       <fieldset>

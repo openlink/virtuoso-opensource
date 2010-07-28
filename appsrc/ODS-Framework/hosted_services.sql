@@ -566,7 +566,8 @@ wa_exec_no_error(
    WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
    WS_FEEDS_UPDATE_FREQ integer default 1,
    WS_FEEDS_HUB varchar default null,
-   WS_FEEDS_HUB_CALLBACK integer default 1
+   WS_FEEDS_HUB_CALLBACK integer default 1,
+   WS_CERT_GEN_URL varchar default null
  )
 ')
 ;
@@ -626,6 +627,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB', 'varchar default null')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_CERT_GEN_URL', 'varchar default null')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB_CALLBACK', 'integer default 1')
@@ -3516,6 +3520,7 @@ wa_exec_no_error_log(
       WUO_TYPE varchar,
       WUO_NAME varchar,
       WUO_URL varchar,
+      WUO_URI varchar,
       WUO_PUBLIC integer default 0,
       primary key (WUO_U_ID, WUO_ID)
       )'
@@ -3523,16 +3528,26 @@ wa_exec_no_error_log(
 ;
 
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_TYPE', 'varchar');
+wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_URI', 'varchar');
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {
   if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP') = 'done')
     return;
-  update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
   registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP', 'done');
-};
 
+  update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
+};
 WA_USER_OL_ACCOUNTS_SET_UP ();
+
+create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
+{
+  if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP2') = 'done')
+    return;
+  registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP2', 'done');
+
+  update WA_USER_OL_ACCOUNTS set WUO_URI = ODS.ODS_API."user.onlineAccounts.uri"(WUO_URL) where WUO_URI is null;
+};
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_RELATED_RES (

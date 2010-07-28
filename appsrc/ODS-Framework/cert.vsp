@@ -1,36 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+  </head>
 <?vsp
---
---  $Id$
---
---  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
---  project.
---
---  Copyright (C) 1998-2009 OpenLink Software
---
---  This project is free software; you can redistribute it and/or modify it
---  under the terms of the GNU General Public License as published by the
---  Free Software Foundation; only version 2 of the License, dated June 1991.
---
---  This program is distributed in the hope that it will be useful, but
---  WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
---  General Public License for more details.
---
---  You should have received a copy of the GNU General Public License along
---  with this program; if not, write to the Free Software Foundation, Inc.,
---  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
-
    declare sid, ua varchar;
+   declare kname, cvalue varchar;
+   declare cn, c, o, ou, mail, webid, pk, uname varchar;
+   declare uid int;
    --dbg_obj_print (params);
 
    ua := http_request_header (http_request_header (), 'User-Agent');
    sid := {?'sid'};
    if (get_keyword ('pubkey', params) is not null)
      {
-       declare kname, cvalue varchar;
-       declare cn, c, o, ou, mail, webid, pk, uname varchar;
-       declare uid int;
        whenever not found goto nf;
        select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY, U_ID 
          into uname, cn, mail, o, c, uid
@@ -60,14 +45,31 @@
        nf:;
     }
 ?>
-<html>
-  <body>
+  <body style="background-color: #EFEFEF;">
      <?vsp
        if (coalesce (strstr (ua, 'MSIE'), -1) > 0)
        {
+	 declare svc_url varchar;
+	 svc_url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
+         if (length (svc_url)) {
+         for select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY from SYS_USERS, VSPX_SESSION, WA_USER_INFO
+      	where VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID do 
+          {
+            declare url varchar;
+            webid := sioc..person_iri (sioc..user_obj_iri (U_NAME));
+            url := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U',
+		svc_url, webid, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, '')); 
+	
      ?>
-     Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead
+     <form>
+	<div>
+ 	  <a class="button" href='<?vsp http (url); ?>'>Generate</a>	
+        </div>
+     </form>
+     	     
      <?vsp
+       }
+         } else {  ?>Certificate & Key Generation Not Supported. You can export a PKCS12 file produced by other browsers instead <?vsp } 
        }
        else
        {

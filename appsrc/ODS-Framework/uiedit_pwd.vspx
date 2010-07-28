@@ -448,7 +448,7 @@
 	      <div>
 		  <label>Agent ID:</label>
 		  <?vsp
-		          http_value (replace (get_certificate_info (7, cast(self.certificate_content as varchar), 0, '', '2.5.29.17'), 'URI:', ''),'b');
+  		          http_value (ODS.ODS_API.SSL_WEBID_GET (cast(self.certificate_content as varchar)),'b');
 		  ?>
 	      </div>
   	        <div>
@@ -491,9 +491,10 @@
               <v:on-post>
                 <![CDATA[
 		  declare agent varchar;
+
                   if(self.vc_is_valid = 0)
                     return;
-                  agent := get_certificate_info (7, self.cert1.ufl_value, 0, '', '2.5.29.17');
+                    agent := ODS.ODS_API.SSL_WEBID_GET (self.cert1.ufl_value);
                     if ((agent is null and length (self.cert1.ufl_value)) or (0 = length (self.cert1.ufl_value)))
 		    {
                       self.vc_is_valid := 0;

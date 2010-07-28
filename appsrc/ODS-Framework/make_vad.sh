@@ -444,6 +444,7 @@ sticker_init() {
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
   echo "      if (server_https_port () is not null) " >> $STICKER
   echo "	DB.DBA.wa_redefine_vhosts (); " >> $STICKER
+  echo "	    DB.DBA.WA_USER_OL_ACCOUNTS_SET_UP (); " >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
