@@ -87,7 +87,7 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
   -- dbg_obj_princ ('Authentication in PROPFIND gives ', rc, uname, upwd, _u_id, _g_id, _perms);
   if (rc < 0)
     {
-      if ((rc = -12) or (rc = -13))
+      if ((rc = -13))
         {
 	  http_request_status ('HTTP/1.1 403 Forbidden');
 	}
