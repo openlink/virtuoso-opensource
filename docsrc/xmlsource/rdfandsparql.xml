@@ -1245,7 +1245,7 @@ Virtuoso 5.0.11 onwards added three new methods for securing SPARQL endpoints th
 <itemizedlist mark="bullet">
   <listitem>SQL authentication</listitem>
   <listitem>OAuth</listitem>
-  <listitem>FOAF+SSL protocol based authentication</listitem>
+  <listitem>WebID Protocol based authentication</listitem>
 </itemizedlist>
 <para> 
 Each of these authentication methods is associated with a purpose specific default SPARQL endpoint along the following lines:
@@ -1253,7 +1253,7 @@ Each of these authentication methods is associated with a purpose specific defau
 <itemizedlist mark="bullet">
   <listitem>http://&lt;cname&gt;/sparql-auth (SQL authentication)</listitem>
   <listitem>http://&lt;cname&gt;/sparql-oauth (OAuth)</listitem>
-  <listitem>https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (FOAF+SSL)</listitem>
+  <listitem>https://&lt;cname&gt;/sparql and https://&lt;cname&gt;/sparql-ssl (WebID Protocol)</listitem>
 </itemizedlist>
 <para>The Virtuoso Authentication Server offers a UI with options for managing:</para>
 <itemizedlist mark="bullet">
@@ -1263,7 +1263,7 @@ level mechanism for your SPARQL endpoint. It enables you to interact securely wi
 from a variety of locations. It also allows you to provide controlled access to private data to selected
 user profiles.
   </listitem>
-  <listitem>FOAF+SSL ACLs: FOAF+SSL is an implementation of a conceptual authentication and authorization
+  <listitem>WebID Protocol ACLs: WebID Protocol is an implementation of a conceptual authentication and authorization
 protocol that links a Web ID to a public key to create a global, decentralized/distributed, and open
 yet secure authentication system that functions with existing browsers.</listitem>
 </itemizedlist>
@@ -1273,7 +1273,7 @@ policy_manager_dav.vad package.</para>
 <para>The menu options are:</para>
 <itemizedlist mark="bullet">
   <listitem><emphasis>Go to Application Keys</emphasis> - in order to create Consumer Key and Secret for the relevant ODS applications.</listitem>
-  <listitem><emphasis>Go to FOAF+SSL ACLs</emphasis> - in order to use URIs for setup DB level controls for SELECT, UPDATE and DELETE.
+  <listitem><emphasis>Go to WebID Protocol ACLs</emphasis> - in order to use URIs for setup DB level controls for SELECT, UPDATE and DELETE.
 (This option requires you be logged in as user dba.)
 </listitem>
   <listitem><emphasis>Go to Protected SPARQL Endpoint</emphasis> - in order to enter your Application Consumer Key and perform secure SPARQL queries.</listitem>
@@ -1398,21 +1398,21 @@ cf92411e17f59960a4189451bfb5bf6b92c856e3
 </listitem>
 </orderedlist>
 </sect4>
-<sect4 id="sparqloauthendpointfoafssl"><title>FOAF+SSL ACLs</title>
-<para>FOAF+SSL is an implementation of a conceptual authentication and authorization protocol that
+<sect4 id="sparqloauthendpointfoafssl"><title>WebID Protocol ACLs</title>
+<para>WebID Protocol is an implementation of a conceptual authentication and authorization protocol that
 links a Web ID to a public key, to create a global decentralized/distributed, and open yet secure
 authentication system that functions with existing browsers.</para>
-<para>To use FOAF+SSL, download and install the policy_manager_dav.vad VAD package. Once installed, to access the FOAF+SSL ACLs UI, use the URL http://cname:port/policy_manager,
-then click the link FOAF+SSL ACLs.</para>
+<para>To use WebID Protocol, download and install the policy_manager_dav.vad VAD package. Once installed, to access the WebID Protocol ACLs UI, use the URL http://cname:port/policy_manager,
+then click the link WebID Protocol ACLs.</para>
   <figure id="sparqloauthendpoint1" float="1">
     <title>FOAFSSL</title>
     <graphic fileref="ui/SparqlOAuth4.png"/>
   </figure>
 <para>Note: You must log in as user dba</para>
 <para>
-Configuring FOAF+SSL ACLs is with a FOAF+SSL certificate and a Web ID allows secure SPARQL queries to be performed against a Virtuoso SPARQL-SSL endpoint and viewing of the query results.
+Configuring WebID Protocol ACLs is with a WebID Protocol certificate and a Web ID allows secure SPARQL queries to be performed against a Virtuoso SPARQL-SSL endpoint and viewing of the query results.
 The SPARQL-SSL endpoint URL is of the form https://cname:port/sparql-ssl</para>
-<para>The steps required to configure a sample  FOAF+SSL ACL are outlined below:</para>
+<para>The steps required to configure a sample  WebID Protocol ACL are outlined below:</para>
 <orderedlist>
 <listitem>Install the ods_framework_dav.vad, conductor_dav.vad and policy_manager_dav.vad packages.</listitem>
 <listitem>Using the ODS UI, register an ODS user, e.g. user <emphasis>demo</emphasis>.</listitem>
@@ -1429,7 +1429,7 @@ The SPARQL-SSL endpoint URL is of the form https://cname:port/sparql-ssl</para>
       <graphic fileref="ui/SparqlFOAFSSL1.png"/>
     </figure>
 </listitem>
-<listitem>The FOAF+SSL ACLs management form will be displayed.
+<listitem>The WebID Protocol ACLs management form will be displayed.
 <figure id="sparqloauthendpoint6" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL2.png"/>
@@ -1447,7 +1447,7 @@ A Web ID will be generated automatically for the selected user.</para></listitem
       <graphic fileref="ui/SparqlFOAFSSL3.png"/>
     </figure>
 </listitem>
-<listitem>Click the "Register" button to create a new FOAF+SSL ACL.
+<listitem>Click the "Register" button to create a new WebID Protocol ACL.
 <figure id="sparqloauthendpoint7" float="1">
       <title>FOAFSSL UI</title>
       <graphic fileref="ui/SparqlFOAFSSL4.png"/>
@@ -1468,7 +1468,7 @@ A Web ID will be generated automatically for the selected user.</para></listitem
 </listitem>
 </orderedlist>
   <tip><title>See Also:</title>
-    <para><link linkend="secureodbcx509foafsll">FOAF+SSL ODBC Login</link></para>
+    <para><link linkend="secureodbcx509foafsll">WebID Protocol ODBC Login</link></para>
   </tip>
 </sect4>
 <sect4 id="sparqloauthendpointfoafsslsparql"><title>Creating and Using a SPARQL-SSL based Endpoint</title>
@@ -1693,7 +1693,7 @@ _:_ res:solution [
 </orderedlist>
 
 <tip><title>See Also:</title>
-<para><ulink url="http://demo.openlinksw.com/tutorial/rdf/fs_s_1/fs_s_1.vsp">Demo Example</ulink> Using HTTP client to perform FOAF+SSL connection.</para>
+<para><ulink url="http://demo.openlinksw.com/tutorial/rdf/fs_s_1/fs_s_1.vsp">Demo Example</ulink> Using HTTP client to perform WebID Protocol connection.</para>
 </tip>
 </sect4>
 </sect3>
@@ -6483,6 +6483,256 @@ ORDER BY ASC (?dist)
 </sect4>
 </sect3>
 </sect2>
+<sect2 id="rdfsparqlimplementatioptragmas"><title>Supported SPARQL-BI "define" pragmas</title>
+<para>SPARQL-BI compiler and run-time support are not isolated from environment and some used heuristics 
+	are not perfect and sometimes different use cases require different behavior within same standard. 
+	These reasons are seen frequently in the industry, and the solution is well known: compiler pragmas. 
+	So we allow them at the beginning of any SPARQL query in form:
+</para>
+<programlisting><![CDATA[
+define QName value
+]]></programlisting>
+<sect3 id="rdfsparqlimplementatioptragmascinp"><title>Pragmas to control the input data set for 
+the query</title>
+<programlisting><![CDATA[
+input:default-graph-uri works like "FROM" clause;
+input:named-graph-uri works like "FROM NAMED" clause;
+input:default-graph-exclude works like "NOT FROM" clause;
+input:named-graph-exclude works like "NOT FROM NAMED" clause.
+]]></programlisting>
+<para>The difference is that these pragmas have higher priority and they can be used for security 
+	restrictions in combination with <code>define input:freeze</code> that blocks further changes in 
+	the list of source graphs. The web service endpoint (or similar non-web application) can edit 
+	the incoming query by placing list of pragmas ended with <code>input:freeze</code> in front of 
+	query text. Even if the intruder will try to place some graph names, it will get compilation error, 
+	not an access to the data. input:freeze disables all <code>input:grab-...</code> pragmas as well.
+</para>
+<itemizedlist mark="bullet">
+  <listitem><code>input:ifp</code>: adds IFP keyword in OPTION (QUIETCAST, ...) clause in the generated 
+  SQL. The value of this define is not used ATM, an empty string is safe for future extensions.</listitem>
+  <listitem><code>input:same-as</code>: works like input:ifp but adds SAME_AS keyword.</listitem>
+  <listitem><code>input:storage</code>: selects quad map storage to use. The value is an IRI of storage, 
+  the default value is, of course, virtrdf:DefaultQuadStorage. If the value is an empty string then only 
+  quads from RDF_VIEW are used. This is a good choice for low-level admin procedures, for two reasons: 
+  they will not interfere with any changes in virtrdf:DefaultQuadStorage and they will continue to work 
+  even if all compiler's metadata are corrupted, including the description of virtrdf:DefaultQuadStorage 
+  (define input:storage "" switches the SPARQL compiler to a small set of metadata that are built in 
+  server C code and thus are very hard to corrupt by users).</listitem>
+  <listitem><code>input:inference</code>: specifies the name of inference rule set to use.</listitem>
+  <listitem><code>input:param (and synonyms input:params, sql:param, sql:params)</code>: declares a 
+  variable name as a protocol parameter. The SPARQL query can refer to protocol parameter X via 
+  variable with special syntax of name ?::X . If a query text should be made by query builder that 
+  does not understand SPARQL-BI extensions then the text may contain variable ?X and define 
+  input:param "X" . This does not work for positional parameters, one can not replace a reference 
+  to ?::3 with ?3 and define input:param "3".</listitem>
+  <listitem><code>input:grab-var</code>: sponge values of variable;</listitem>
+  <listitem><code>input:grab-iri</code>: sponge the constant IRI;</listitem>
+  <listitem><code>input:grab-all</code>: sponge all constants and variables of the query;</listitem>
+  <listitem><code>input:grab-seealso (and synonym input:grab-follow-predicate)</code>: sets predicate 
+  that tells where to sponge more data about a subject;</listitem>
+  <listitem><code>input:grab-limit</code>: how many resources can be sponged;</listitem>
+  <listitem><code>input:grab-depth</code>: how many iterations can be done, sponging additional data 
+  on each iteration;</listitem>
+  <listitem><code>input:grab-base</code>: base to resolve relative IRIs before passing to sponge;</listitem>
+  <listitem><code>input:grab-resolver</code>: IRI resolving procedure (i.e., one that turns base and 
+  relative IRI to an absolute IRI);</listitem>
+  <listitem><code>input:grab-destination</code>: single resource that should be filled in with results 
+  of all sponges;</listitem>
+  <listitem><code>input:grab-loader</code>: a name of procedure that retrieve the resource via HTTP, 
+  parse it and store it.</listitem>
+</itemizedlist>
+<para>All these pragmas are described in more details 
+	<link linkend="rdfinputgrab">here</link>, 
+	but in addition there are some experimental:
+</para>
+<itemizedlist mark="bullet">
+  <listitem><code>input:grab-intermediate</code>: extends the set of IRIs to sponge, useful in 
+  combination with input:grab-seealso. If present then for a given subject, sponge will retrieve 
+  not only values of see-also predicates for that subject but the subject itself. The define value 
+  is not used in current implementation.</listitem>
+  <listitem><code>input:grab-group-destination</code>: resembles input:grab-destination but sponges will 
+  create individual graphs for sponge results, and in additional to this common routine, a copy of each 
+  sponge result is added to the resource specified by the value of input:grab-group-destination. 
+  input:grab-destination redirects loadings, input:grab-group-destination duplicates them.</listitem>
+  <listitem><code>get:soft</code>: "soft" or "replacing", depending on mode of loading source graph;
+  </listitem>
+  <listitem><code>get:uri</code>: an URI of web resource where the graph should come from (e.g., a local 
+  mirror);</listitem>
+  <listitem><code>get:method</code>: "GET" or "MGET", depending on loading the resource itself or loading 
+  metadata about the resource;</listitem>
+  <listitem><code>get:refresh</code>: limits the lifetime of a local cached copy of the source, the value 
+  is in seconds;</listitem>
+  <listitem><code>get:proxy</code>: the proxy server to use, as "host:port" string.</listitem>
+</itemizedlist>
+<para>These defines are described also <link linkend="rdfinputgrab">here</link>. Note that all of them can be used in option list of "FROM ... OPTION (get:... )" extended SPARQL-BI syntax for FROM/FROM NAMED clause.
+</para>
+<para>Note that all of them can be used in option list of "FROM ... OPTION (get:... )" extended SPARQL-BI syntax for FROM/FROM NAMED clause.
+</para>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmasccg"><title>Pragmas to control code generation</title>
+<itemizedlist mark="bullet">
+  <listitem><code>sql:assert-user</code>: defines the user who is supposed to be the single "proper" use 
+  for the query. If the compiler is launched by other user, an error is signaled. The typical use is 
+  define sql:assist-user "dba". This is too weak to be a security measure, but may help in debugging 
+  of security issues.</listitem>
+  <listitem><code>sql:gs-app-callback</code>: application-specific callback that returns permission 
+  bits of a given graph;</listitem>
+  <listitem><code>sql:gs-app-uid</code>: application-specific user id to use in callback.
+    <tip><title>See Also:</title>
+    <para><link linkend="rdfgraphsecurityappcallb">RDF Graph Security</link></para>
+  </tip>
+  </listitem>
+  <listitem><code>sql:globals-mode</code>: tells how to print names of global variables, supported 
+  values are "XSLT" (print colon before name of global variable and "SQL" (print as usual).</listitem>
+  <listitem><code>sql:log-enable</code>: value that will be passed to SPARUL procedures and there 
+  it will be passed to log_enable() BIF. Thus define sql:log-enable N will result in log_enable(N, 1) 
+  at the beginning of the operation and other log_enable() call will restore previous mode of 
+  transaction log at exit from the procedure or at any error signalled from it.</listitem>
+  <listitem><code>sql:table-option</code>: value will be added as an option to each triple in the 
+  query and later it will be printed in TABLE OPTION (...) clause of source table clause. This 
+  works only for SQL code for plain triples from RDF_QUAD, fragments of queries related to RDF 
+  Views will remain unchanged.</listitem>
+  <listitem><code>sql:select-option</code>: value will be added as an global OPTION () clause of 
+  the generated SQL SELECT. This clause is always printed, it is always at least OPTION (QUIETCAST, ...). 
+  The most popular use case is define sql:table-option "ORDER" to tell the SQL compiler execute joins 
+  in the order of their use in the query (this can make query compilation much faster but the 
+  compilation result can be terrible if you do not know precisely what you're doing and not inspected 
+  execution plan of the generated SQL query).</listitem>
+  <listitem><code>sql:describe-mode</code>: sets procedures that will produce the result of a DESCRIBE 
+  query. The pragma is ignored for other types of SPARQL queries. In the default mode, the result 
+  contains all X ?p ?o and all ?s ?p X triples for each given X. In "SPO" mode, the result contains 
+  X ?p ?o triples only. In "CBD" mode, the result contains concise bound descriptions of given 
+  subjects. Application developers may add more modes.</listitem>
+  <listitem><code>sql:signal-void-variables</code>: the most useful debugging variable if RDF Views 
+  are in use. It tells the SPARQL compiler to signal an error if it can prove that some variable can 
+  never be bound. Usually it means error in query, like typo in IRI or totally wrong triple 
+  pattern.</listitem> 
+</itemizedlist>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmasctr"><title>Pragmas to control the type of the result</title>
+<itemizedlist mark="bullet">
+  <listitem><code>output:valmode</code>: tells the compiler which SQL datatypes should be used for 
+  output values. ODBC clients and the like known nothing about RDF and expect plain SQL values, 
+  so the appropriate value for them is "SQLVAL" and that's the default. When a Virtuoso/PL procedure 
+  is RDF-aware and keeps results for further passing to other SPARQL queries or some low-level RDF 
+  routines, the value "LONG" tells the compiler to preserve RDF boxes as is and to return IRI IDs 
+  instead of IRI string value. Third possible value, "AUTO", is for dirty hackers that do not want 
+  any conversion of any sort at the output to read the SQL output of SPARQL front-end, find the 
+  format of each column and add the needed conversions later. You will probably never need it.</listitem>
+  <listitem><code>output:format</code>: tells the compiler that the query should produce a string 
+  output with the serialization of the result, not a result set. There are three of them because 
+  the caller, like SPARQL web service endpoint, may not know the actual type of the query that 
+  should be executed. The value of output:format is used for SELECT and data manipulation queries, 
+  if specified, it can also be used for CONSTRUCT, DESCRIBE or ASK, if it is specified but related 
+  output:dict-format or output:scalar-format is not.</listitem>
+  <listitem><code>output:scalar-format</code>: tells the compiler that the query should produce a 
+  string output with the serialization of the result, not a result set. There are three of them 
+  because the caller, like SPARQL web service endpoint, may not know the actual type of the query 
+  that should be executed. The value of output:scalar-format is used for ASK queries only, if 
+  specified.</listitem>
+  <listitem><code>output:dict-format</code>: tells the compiler that the query should produce 
+  a string output with the serialization of the result, not a result set. There are three of 
+  them because the caller, like SPARQL web service endpoint, may not know the actual type of 
+  the query that should be executed. The value of output:dict-format is used for CONSTRUCT 
+  and DESCRIBE queries only, if specified.</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmassfs"><title>Supported formats that return a string session</title>
+<itemizedlist mark="bullet">
+  <listitem>"RDF/XML",</listitem>
+  <listitem>"TURTLE" (and "TTL" is a synonym),</listitem>
+  <listitem>"JSON" (canonical JSON for result sets, Talis-style JSON for CONSTRUCT and DESCRIBE),</listitem>
+  <listitem>"JSON;ODATA" (oData-style JSON for CONSTRUCT and DESCRIBE, error otherwise),</listitem>
+  <listitem>"RDFA;XHTML" (only for CONSTRUCT and DESCRIBE, error otherwise),</listitem>
+  <listitem>"ATOM;XML" (only for CONSTRUCT and DESCRIBE as well).</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmassdfs"><title>Supported formats that do not return a string 
+session to the caller</title>
+<para>Supported formats that do not return a string session to the caller, but form an HTTP response 
+	instead and send it directly to the client HTTP connection with an appropriate HTTP header:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>"HTTP+XML mime/type",</listitem>
+  <listitem>"HTTP+TTL mime/type",</listitem>
+  <listitem>"HTTP+NT mime/type". A MIME type in value will be placed in the returned header, 
+  it should be separated from the starting keyword with one white space.</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmassspfs"><title>Supported Special formats</title>
+<para>A special format "_JAVA_" is for SPARQL queries sent via JDBC. 
+	It changes only the output of ASK queries.
+</para>
+<para>Note: Pragmas output:valmode and output:format may conflict if used together, and if 
+	they're not in conflict then output:valmode is redundant: the compiler knows for sure which 
+	output:valmode-s are needed by various output:format-s.
+</para>
+<itemizedlist mark="bullet">
+  <listitem><code>output:route</code>: works only for SPARUL operators and tells the SPARQL compiler 
+  to generate procedure names that differ from default. As a result, the effect of operator will 
+  depend on application. That is for tricks. E.g., consider an application that extracts metadata 
+  from DAV resources stored in the Virtuoso and put them to RDF storage to make visible from outside. 
+  When a web application has permissions and credentials to execute a SPARUL query, the changed metadata 
+  can be written to the DAV resource (and after that the trigger will update them in the RDF storage), 
+  transparently for all other parts of application.</listitem>
+  <listitem><code>output:maxrows</code>: limits the number of rows in the returned result set. The 
+  integer value is expected, the positive integer value is obviously recommended.</listitem>
+</itemizedlist>
+</sect3>
+<sect3 id="rdfsparqlimplementatioptragmasmnotes"><title>Minor notes</title>
+<para>Values of most pragmas are strings. Exceptions are:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>input:grab-depth,</listitem>
+  <listitem>input:grab-limit,</listitem>
+  <listitem>output:maxrows,</listitem>
+  <listitem>sql:log-enable,</listitem>
+  <listitem>sql:signal-void-variables</listitem>
+</itemizedlist>
+<para>that have integer values.
+</para>
+<para>Values of some pragmas a passed through the compiler to the run-time so they are seen in the 
+	generated SQL code as arguments of procedures:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>get:method,</listitem>
+  <listitem>get:proxy,</listitem>
+  <listitem>get:query,</listitem>
+  <listitem>get:refresh,</listitem>
+  <listitem>get:soft,</listitem>
+  <listitem>get:uri</listitem>  
+</itemizedlist>
+<para>so sometimes you may meet them in SQL debuggers output and the like.
+</para>
+</sect3>
+
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+<para>
+</para>
+
+</sect2>
 </sect1>
 
 <sect1 id="rdfgraphsecurity"><title>RDF Graphs Security</title>
@@ -8318,6 +8568,7 @@ SPARQL clear graph <A-Named-Graph>;
 </sect4>
 <sect4 id="virtuosospongerfacetinstallpreinst">
 <title>Pre Installation</title>
+<para><emphasis>Note</emphasis>: This step is not required for Virtuoso Release 6.1 and above builds</para>
 <para>If you have an existing Virtuoso 6.x installation, and your Quad Store has greater than
 10K worth of triples, please perform the following steps:
 </para>
@@ -8365,20 +8616,20 @@ package using the Conductor System Admin - &gt; Packages tab.
       <graphic fileref="ui/fctinst1.png"/>
     </figure>
 </listitem>
-  <listitem>Grant <emphasis>select</emphasis> privileges on the <emphasis>RDF_QUAD</emphasis> table to the
+  <!--listitem>Grant <emphasis>select</emphasis> privileges on the <emphasis>RDF_QUAD</emphasis> table to the
 <emphasis>SPARQL</emphasis> user:
 <programlisting><![CDATA[
 grant SELECT  on DB.DBA.RDF_QUAD to "SPARQL";
 ]]></programlisting>
-</listitem>
-  <listitem>An updated Virtuoso RDF Mappers VAD is required. Download and install the
+</listitem-->
+  <!--listitem>An updated Virtuoso RDF Mappers VAD is required. Download and install the
 <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD</ulink>
 package using the Conductor System Admin - &gt; Packages tab.
     <figure id="fctinst2" float="1">
       <title>Install the RDF Mappers package</title>
       <graphic fileref="ui/fctinst2.png"/>
         </figure>
-</listitem>
+</listitem-->
   <listitem>The HTML interface of the Faceted Browser Engine is exposed at: <emphasis>http://&lt;cname&gt;/fct</emphasis>,
 where "cname" is the hostname:portno your Virtuoso instance is running on.
     <figure id="fctinst3" float="1">
@@ -8762,10 +9013,10 @@ limit 20
 </sect4>
 <sect4 id="virtuosospongerfacetexample"><title>Examples</title>
 <para><emphasis>Example for Use Faceted Navigation to Explore Virtuoso hosted Linked Data</emphasis></para>
-<para>The following example demonstrates a simple scenario of tracking Kingsley Idehen's conversations $
-across the Web, using the Virtuoso Faceted Browser hosted on URIBurner.</para>
+<para>The following example demonstrates a simple scenario of tracking Kingsley Idehen's conversations 
+across the Web, using the Virtuoso Faceted Browser hosted on LOD.</para>
 <orderedlist>
-   <listitem>Go to http://uriburner.com/fct/
+   <listitem>Go to http://lod.openlinksw.com/fct/
      <figure id="fct1" float="1">
        <title>Faceted Navigation Example</title>
        <graphic fileref="ui/fct1.png"/>
@@ -8817,9 +9068,7 @@ based on the values of this property
    </listitem>
    <listitem>From the list of "foaf:interest" Values, click on "dbpedia:Linked_Data", which filters
 the result-set further to display reveal Entity Identifier Links (Generic HTTP URIs) and Labels for
-each "foaf:Person" associated with the property "foaf:interest", in the URIBurner data space. At
-the time of writing guide, there is only one Entity of Type: foaf:person, and the Generic HTTP URI
-for this Entity is: http:///www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this.
+each "foaf:Person" associated with the property "foaf:interest", in the URIBurner data space. 
      <figure id="fct8" float="1">
        <title>Faceted Navigation Example</title>
        <graphic fileref="ui/fct8.png"/>
@@ -36190,6 +36439,390 @@ create bitmap index RDF_QUAD_PSGO on DB.DBA.RDF_QUAD (P, S, G, O);
 ]]></programlisting>
     </sect3>
   </sect2>
+  <sect2 id="fastapproxdiffandpatch"><title>Fast Approximate RDF Graph Diff and Patch</title>
+<para>Two algorithms described below resemble "unified diff" and "patch by unified diff" 
+but they work on RDF graphs, not on plain texts.
+</para>
+<para>They work reasonably for graphs composed from CBDs (concise bounded descriptions) of 
+some subjects, if these subjects are either "named" IRIs or can be identified by values of 
+their inverse functional properties.
+</para>
+<para>Many sorts of commonly used graphs match these restrictions, including all graphs 
+without blank nodes, most of FOAF files, graphs that can be "pretty-printed" in JSON, most 
+of dumps of relational databases etc.
+</para>
+<para>The basic idea is as simple as zipper: 
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Place one graph at the left and one to the right,</listitem>
+  <listitem>Find a retainer box at the right and a matching pin at the left,</listitem>
+  <listitem>Join them</listitem>
+  <listitem>Pull the slider as long as possible.</listitem>
+  <listitem>Repeat this while there are pins and boxes that can be matched and sliders that can be moved.</listitem>
+</itemizedlist>
+<para>An IRI in left graph <code>(say, G1)</code> matches to same IRI in right graph <code>(G2)</code> 
+as pin to box. The same is true for literals too.
+</para>
+<para>Functional and inverse functional properties are teeth that form chains, algorithm "moves sliders" along these chains, incrementally connecting more and more nodes.
+</para>
+<para>If there is a match of this sort <code>(O1 in G1 matches O2 in G2)</code> and the matched nodes 
+are values of same inverse functional property <code>P</code> (there are <code>{ S1 P O1 }</code> in 
+<code>G1</code> and <code>{ S2 P O2 }</code>  in <code>G2</code>) then we guess that <code>S1</code> 
+matches <code>S2</code>.
+</para>
+<para>If <code>S1</code> in <code>G1</code> matches <code>S2</code> in <code>G2</code> and the matched 
+nodes are subjects of same functional property <code>P</code> ( there are <code>{ S1 P N1 }</code> in 
+<code>G1</code> and <code>{ S2 P N2 }</code> in <code>G2</code> ) then we guess that <code>N1</code> 
+matches <code>N2</code>, now it's possible to try same interaction on triples where <code>N1</code> and 
+<code>N2</code> are in subject position, that's how slides move. A typical example of a long zipper 
+is closed list with matched heads.
+</para>
+<sect3 id="fastapproxdiffandpatchhow"><title>Make a Diff And Use It</title>
+<itemizedlist mark="bullet">
+  <listitem>Using <link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></listitem>
+  <listitem>Using <link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL</link></listitem>
+  <listitem>Using <link linkend="fn_rdf_suo_apply_patch">DB.DBA.RDF_SUO_APPLY_PATCH</link></listitem>  
+</itemizedlist>
+</sect3>
+<sect3 id="fastapproxdiffandpatchclt"><title>Collect Functional And Inverse Functional Properties</title>
+<para>Lists of functional properties can be retrieved from an ontology graph by query like:</para>
+<programlisting><![CDATA[
+SPARQL define output:valmode "LONG"
+SELECT (<LONG::sql:VECTOR_AGG(?s)) 
+FROM <my-ontology-graph>
+WHERE 
+  { 
+    ?s a owl:functionalProperty 
+  }
+]]></programlisting>
+<para>Inverse functional properties could be retrieved by a similar query, but unfortunately the 
+	ontology may mention so called NULL values that can be property values for many subjects. Current 
+	implementation of diff and patch does not recognize NULL values so they can cause patch with 
+	"false alarm" errors. The workaround is to retrieve only properties that have no NULL values declared:
+</para>
+<programlisting><![CDATA[
+SPARQL define output:valmode "LONG"
+SELECT (<LONG::sql:VECTOR_AGG(?s)) 
+FROM <my-ontology-graph>
+WHERE
+  {
+    ?s a owl:inverseFunctionalProperty .
+    OPTIONAL { ?s owl:nullIFPValue ?v }
+    FILTER (!Bound(?v)) 
+  }
+]]></programlisting>
+<para>If no ontology is available then appropriate predicates can be obtained from sample graphs using 
+	<link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link>.
+</para>
+</sect3>
+<sect3 id="fastapproxdiffandpatchimpl"><title>Implementation-Specific Extensions of GUO Ontology</title>
+<para><emphasis>Note</emphasis>: This section contains implementation details that are needed only 
+if you want to write your own patch or diff procedure, you don't have to worry about internals if 
+you want to use existing procedures.
+</para>
+<para>Basic GUO ontology is not expressive enough to work with blank nodes, so some custom extensions $
+are needed.
+</para>
+<para>In the rest of the description:</para>
+<programlisting><![CDATA[
+@prefix guo: <http://webr3.org/owl/guo#>
+]]></programlisting>
+<para>is assumed.</para>
+<para>The diff contains one node of <code>rdf:type guo:diff</code>.
+</para>
+<para>For debugging purpose it has properties <code>guo:graph1</code> and <code>guo:graph2</code> that 
+corespond to <code>gfrom</code> and <code>gto</code> arguments of <link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL</link>.
+</para>
+<para>The diff also contains zero or more nodes of <code>rdf:type guo:UpdateInstruction</code>. These 
+nodes are as described in basic GUO ontology, but <code>guo:target_graph</code> is now optional, 
+<code>guo:target_subject</code> can be a blank node and objects of predicates "inside" values of 
+<code>guo:insert</code> and <code>guo:delete</code> can also be blank nodes. These blank nodes are 
+"placeholders" for values, calculated according to the most important GUO extension - rule nodes.
+</para>
+<para>There are eight sorts of rule nodes, four for <code>gfrom</code> side of diff and four similar for 
+<code>gto</code> side. Out of four sorts related to one side, two are for functional properties and 
+two similar are for inverse functional properties. Thus <code>rdf:type-s</code> of these nodes are:
+</para>
+<programlisting><![CDATA[
+guo:from-rule-FP0, 
+guo:from-rule-FP1, 
+guo:from-rule-IFP0, 
+guo:from-rule-IFP1
+]]></programlisting>
+<para>and
+</para>
+<programlisting><![CDATA[
+guo:to-rule-FP0, 
+guo:to-rule-FP1, 
+guo:to-rule-IFP , 
+guo:to-rule-IFP1 .
+]]></programlisting>
+<para>Each rule node has property <code>guo:order</code> that is an non-negative integer.
+</para>
+<para>These integers enumerate all <code>guo:from-rule-</code>... nodes, starting from zero.
+</para>
+<para>When patch procedure works, these rules are used in this order, the result of each rule 
+	is a blank node that either exists in the graph or just created.
+</para>
+<para>All results are remembered for use in the rest of the patch procedure.
+</para>
+<para>Similarly, other sequence of these integers enumerate all <code>guo:to-rule-</code>... nodes, 
+also starting from zero.
+</para>
+<para>Consider a sequence of <code>guo:from-rule-</code>... nodes, because <code>guo:to-rule-</code> 
+nodes have identical properties.
+</para>
+<para>A rule node can have zero or more values of <code>guo:dep</code> property, each value is a 
+bnode that is rule node that should be calculated before the current one.
+</para>
+<para>Every rule has exactly one predicate <code>guo:path</code> that is a blank node. Each property 
+of this blank node describes one possible "move of slider": predicate to follow is in predicate 
+position and a node to start from is in object position. An IRI or a literal in object position is 
+used as is, a blank node in object position should be of type <code>guo:from-rule-</code>... and 
+have smaller <code>guo:order</code> so it refers to already calculated result bnode of some 
+preceding rule.
+</para>
+<para>Rule of form:
+</para>
+<programlisting><![CDATA[
+R a guo:from-rule-IFP1 ;
+  guo:path [ P1 O1 ; P2 O2 ; ... ; Pn On ] .
+]]></programlisting>
+<para>searches for a unique blank node <code>_:Rres</code> that is a common subject of triples:
+</para>
+<programlisting><![CDATA[
+ _:Rres P1 O1
+ _:Rres P2 O2
+  . . .
+ _:Rres Pn On
+]]></programlisting>
+<para>in the gfrom graph.
+</para>
+<para>If subjects differ in these triples or some triples are not found or the subject is not a 
+	blank node then an appropriate error is logged and rule fails, otherwise <code>_:Rres</code> 
+	is remembered as the result of the rule.
+</para>
+<para>Similarly, rule of form:
+</para>
+<programlisting><![CDATA[
+R a guo:from-rule-FP1 ;
+  guo:path [ P1 O1 ; P2 O2 ; ... ; Pn On ] .
+]]></programlisting>
+<para>searches for a unique blank node <code>_:Rres</code> that is a common object of triples:
+</para>
+<programlisting><![CDATA[
+ O1 P1 _:Rres
+ O2 P2 _:Rres
+  . . .
+ On Pn _:Rres
+]]></programlisting>
+<para>in the gfrom graph.
+</para>
+<para>Rule of form:
+</para>
+<programlisting><![CDATA[
+R a guo:from-rule-IFP0 ;
+  guo:path [ P1 O1 ; P2 O2 ; ... ; Pn On ] .
+]]></programlisting>
+<para>ensures that the <code>gfrom</code> graph does not contain any triple like:
+</para>
+<programlisting><![CDATA[
+ _:Rres P1 O1
+ _:Rres P2 O2
+]]></programlisting>
+<para>or
+</para>
+<programlisting><![CDATA[
+_:Rres Pn On
+]]></programlisting>
+<para>It is an error if something exists. If nothing found then the result of the rule is 
+	newly created unique blank node. That's how patch procedure creates new blank nodes when 
+	it inserts "totally new" data.
+</para>
+<para>Similarly, rule of form:
+</para>
+<programlisting><![CDATA[
+R a guo:from-rule-IFP0 ;
+  guo:path [ P1 O1 ; P2 O2 ; ... ; Pn On ] .
+]]></programlisting>
+<para>ensures that the <code>gfrom</code> graph does not contain any triple like:
+</para>
+<programlisting><![CDATA[
+O1 P1 _:Rres
+O2 P2 _:Rres
+]]></programlisting>
+<para>or
+</para>
+<programlisting><![CDATA[
+ On Pn _:Rres
+]]></programlisting>
+<para>Current version of patch procedure does not use rules <code>guo:to-rule-</code>...  , 
+however they can be used by custom procedure of few sorts. First, these rules can be used to 
+produce a "reversed diff". Next, these rules can be used to validate the result of the patch - 
+if the patch can not be reverted then the result is "suspicious". 
+</para>
+</sect3>
+</sect2>
+  <sect2 id="rdb2rdftriggers"><title>RDB2RDF Triggers</title>
+<para>RDF Views have many advantages, if compared to static dumps of the database in RDF triples. 
+	However, they does not solve few problems. First, inference is supported only for physically stored 
+	triples, so one had to chose between convenience of inference and convenience of RDF Views. Next, 
+	algorithms that selects triples with non-constant graphs and predicates tend to produce enormous 
+	texts of SQL queries if RDF Views are complicated enough. Finally, there may be a need in export 
+	of big and fresh static RDF dump but preparing this dump would take too much time via both RDF 
+	Views and traditional methods.
+</para>
+<para>The solution is set of triggers on source tables of an RDF View that edit parts of physical 
+	dump on each change of source data. Unlike RDF Views that cost nothing while not queried, these 
+	triggers add a significant overhead on any data manipulation on sources, continuously. To 
+	compensate this, the dump should be in an intensive use and not replaceable by RDF Views. In 
+	other cases, do not add these triggers.
+</para>
+<para>It is next to impossible to write such triggers by hands so a small API is provided to 
+	generate SQL texts from metadata of RDF Views.
+</para>
+<para>First of all, views in an RDF storage does not work in full isolation from each other. 
+	Some of them may partially disable others due to OPTION(EXCLUSIVE) and some may produce one 
+	triple in different ways. As a result, triggers are not made on per-view basis. Instead, a 
+	special RDF storage is introduced, namely virtrdf:SyncToQuads , all required triples are 
+	added to it and triggers are created for the whole storage. Typically an RDF View is created 
+	in some other storage, e.g., virtrdf:DefaultQuadStorage and then added to virtrdf:SyncToQuads via:
+</para>
+<programlisting><![CDATA[
+sparql alter quad storage virtrdf:SyncToQuads {
+   create <my_rdf_view> using storage virtrdf:DefaultQuadStorage };
+]]></programlisting>
+<para>The following example procedure copies all user-defined RDF Views from default quad storage 
+	to virtrdf:SyncToQuads:
+</para>
+<programlisting><![CDATA[
+create procedure DB.DBA.RDB2RDF_COPY_ALL_RDF_VIEWS_TO_SYNC ()
+{
+  for (sparql define input:storage ""
+    select (bif:aref(bif:sprintf_inverse (str(?idx), bif:concat (str(rdf:_), "%d"), 0), 0)) ?qm
+    from virtrdf:
+    where { virtrdf:DefaultQuadStorage-UserMaps ?idx ?qm . ?qm a virtrdf:QuadMap }
+    order by asc (bif:sprintf_inverse (bif:concat (str(rdf:_), "%d"), str (?idx), 1)) ) do
+    exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', "qm"));
+}
+;
+]]></programlisting>
+<para>When the virtrdf:SyncToQuads storage is fully prepared, two API functions can be used:
+</para>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="fn_sparql_rdb2rdf_list_tables">DB.DBA.SPARQL_RDB2RDF_LIST_TABLES</link>: 
+  The function returns a vector of names of tables that are used as sources for RDF Views. Application 
+  developer should decide what to do with each of them - create triggers or do some application-specific 
+  workarounds.
+  <para>Note that if some SQL views are used as sources for RDF Views and these views does not have 
+  	INSTEAD triggers then workarounds become mandatory for them, not just a choice, because BEFORE 
+  	or AFTER triggers on views are not allowed if there is no appropriate INSTEAD trigger. The mode 
+  	argument should be zero in current version.
+  </para>
+  </listitem>
+  <listitem><link linkend="fn_sparql_rdb2rdf_codegen">DB.DBA.SPARQL_RDB2RDF_CODEGEN</link>: The 
+  function creates an SQL text for a given table and an operation specified by an opcode.
+  </listitem>
+</itemizedlist>
+<para>In some cases, RDF Views are complicated enough so that BEFORE UPDATE and AFTER DELETE 
+	triggers are required in additional to the minimal set. In this case, sparql_rdb2rdf_codegen 
+	calls will return a vector of two string sessions, not single string session, and both sessions 
+	are sql texts to inspect or execute. In this case, the BEFORE trigger will not delete obsolete 
+	quads from RDF_QUAD table, instead it will create records in a special table RDF_QUAD_DELETE_QUEUE 
+	as guesses what can be deleted. The AFTER trigger will re-check these guesses, delete related quads 
+	if needed and shorten the RDF_QUAD_DELETE_QUEUE.
+</para>
+<para>The extra activity of triggers on RDF_QUAD, RDF_OBJ, RDF_QUAD_DELETE_QUEUE and other tables 
+	and indexes of the storage of "physical" triples may cause deadlocks so the application should 
+	be carefully checked for proper support of deadlocks if they were very seldom before turning 
+	RDB2RDF triggers on. In some cases, the whole processing of RDB2RDF can be moved to a separate 
+	server and connected to the main workhorse server via replication.
+</para>
+<para>The following example functions create texts of all triggers, save them to files in for 
+	further studying and try to load them. That's probably quite bad scenario for a production 
+	database, because it's better to read procedures before loading them, especially if they're 
+	triggers, especially if some of them may contain errors.
+</para>
+<programlisting><![CDATA[
+-- This creates one or two files with one or two triggers or other texts and try to load the 
+generated sql texts.
+create procedure DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE 
+(  in dump_prefix varchar, 
+   in tbl varchar, 
+   in dump_id any, 
+   in txt any )
+{
+  declare fname varchar;
+  declare stat, msg varchar;
+  if (isinteger (dump_id))
+    dump_id := cast (dump_id as varchar);
+  if (__tag of vector = __tag (txt))
+    {
+      DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE (dump_prefix, tbl, dump_id, txt[0]);
+      DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE (dump_prefix, tbl, dump_id || 'p' , txt[1]);
+      return;
+    }
+  if (__tag of varchar <> __tag (txt))
+    txt := string_output_string (txt);
+  fname := sprintf ('%s_Rdb2Rdf.%s.%s.sql', dump_prefix, tbl, dump_id);
+  string_to_file (fname, txt || '\n;\n', -2);
+  if ('0' = dump_id)
+    return;
+  stat := '00000';
+  msg := '';
+  exec (txt, stat, msg);
+  if ('00000' <> stat)
+    {
+      string_to_file (fname, '\n\n- - - - - 8< - - - - -\n\nError ' || stat || ' ' || msg, -1);
+      if (not (subseq (msg, 0, 5) in ('SQ091')))
+        signal (stat, msg);
+    }
+}
+;
+
+-- This creates and loads all triggers, init procedure and debug dump related to one table.
+create procedure DB.DBA.RDB2RDF_PREPARE_TABLE (in dump_prefix varchar, in tbl varchar)
+{
+  declare ctr integer;
+  for (ctr := 0; ctr <= 4; ctr := ctr+1 )
+    DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE (dump_prefix, tbl, ctr, sparql_rdb2rdf_codegen (tbl, ctr));
+}
+;
+
+-- This creates and loads all triggers, init procedure and debug dump related to all tables used by and RDF View.
+create procedure DB.DBA.RDB2RDF_PREPARE_ALL_TABLES (in dump_prefix varchar)
+{
+  declare tbl_list any;
+  tbl_list := sparql_rdb2rdf_list_tables (0);
+  foreach (varchar tbl in tbl_list) do
+    {
+      DB.DBA.RDB2RDF_PREPARE_TABLE (dump_prefix, tbl);
+    }
+}
+;
+]]></programlisting>
+<para>The following combination of calls prepares all triggers for all RDF Views of the default storage:
+</para>
+<programlisting><![CDATA[
+DB.DBA.RDB2RDF_COPY_ALL_RDF_VIEWS_TO_SYNC ();
+DB.DBA.RDB2RDF_PREPARE_ALL_TABLES (cast (now() as varchar));
+]]></programlisting>
+<para>This does not copy the initial state of RDB2RDF graphs to the physical storage, because this can 
+	be dangerous for existing RDF data and even if all procedures will work as expected then they may 
+	produce huge amounts of RDF data, run out of transaction log limits and thus require 
+	application-specific precautions. It is also possible to make initial loading by a SPARUL statements 
+	like:
+</para>
+<programlisting><![CDATA[
+SPARQL 
+INSERT IN <snapshot-graph> { ?s ?p ?o } 
+FROM <snapshot-htaph> 
+WHERE 
+ { quad map <id-of-rdf-view> 
+ 	  { ?s ?p ?o } 
+ };
+]]></programlisting>
+</sect2>  
 </sect1>
 
 

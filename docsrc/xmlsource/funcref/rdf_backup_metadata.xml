@@ -33,9 +33,9 @@
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_rdf_backup_metadata">
       <funcprototype id="fproto_rdf_backup_metadata">
-        varchar <funcdef><function>DB.DBA.RDF_BACKUP_METADATA</function></funcdef>
-	<optional><paramdef>in <parameter>save_to_file</parameter> integer := 0</paramdef></optional>
-	<optional><paramdef>in <parameter>backup_name</parameter> varchar := null</paramdef></optional>
+        <funcdef><function>DB.DBA.RDF_BACKUP_METADATA</function></funcdef>
+	      <paramdef><optional>in <parameter>save_to_file</parameter> integer := 0</optional></paramdef>
+	      <paramdef><optional>in <parameter>backup_name</parameter> varchar := null</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

@@ -1268,7 +1268,7 @@ then the service will be disabled.</para>
   <member><emphasis>X509ClientVerify = 3</emphasis> - accept optionally any certificate even self-signed</member>
  </simplelist>
   <tip><title>See Also:</title>
-    <para><link linkend="secureodbcx509foafsll">FOAF+SSL ODBC Login</link></para>
+    <para><link linkend="secureodbcx509foafsll">WebID Protocol ODBC Login</link></para>
   </tip>
 				</listitem>
 				<listitem id="ini_HTTPServer_X509ClientVerifyDepth">

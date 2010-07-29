@@ -311,6 +311,14 @@
 
 <!ENTITY rdf_load_rdfxml        		SYSTEM "funcref/rdf_load_rdfxml.xml">
 <!ENTITY rdf_load_rdfxml_mt     		SYSTEM "funcref/rdf_load_rdfxml_mt.xml">
+
+<!ENTITY rdf_graph_collect_fp_list              SYSTEM  "funcref/rdf_graph_collect_fp_list.xml">
+<!ENTITY rdf_graph_diff                         SYSTEM  "funcref/rdf_graph_diff.xml">
+<!ENTITY rdf_suo_apply_patch                    SYSTEM  "funcref/rdf_suo_apply_patch.xml">
+<!ENTITY rdf_suo_diff_ttl                       SYSTEM  "funcref/rdf_suo_diff_ttl.xml">
+<!ENTITY sparql_rdb2rdf_codegen                 SYSTEM  "funcref/sparql_rdb2rdf_codegen.xml">
+<!ENTITY sparql_rdb2rdf_list_tables             SYSTEM  "funcref/sparql_rdb2rdf_list_tables.xml">
+
 <!ENTITY ttlp                   		SYSTEM "funcref/ttlp.xml">
 <!ENTITY ttlp_mt                		SYSTEM "funcref/ttlp_mt.xml">
 <!ENTITY ttlp_mt_local_file                     SYSTEM  "funcref/ttlp_mt_local_file.xml">
@@ -943,7 +951,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xmla    				SYSTEM "xmla.xml">
 <!ENTITY jsphosting  		  		SYSTEM "jsphosting.xml">
 <!ENTITY rth.aspx    				SYSTEM "rth.aspx.xml">
-<!ENTITY migrate27to30    			SYSTEM "migrate27to30.xml">
+  <!--ENTITY migrate27to30    SYSTEM "migrate27to30.xml"-->
 <!ENTITY rendezvous    				SYSTEM "rendezvous.xml">
 <!ENTITY secureodbc    				SYSTEM "secureodbc.xml">
 <!ENTITY virtclientref    			SYSTEM "virtclientref.xml">

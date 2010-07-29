@@ -46,8 +46,8 @@ ID (OID) of the username attribute can be used any valid object identifier that
 does not conflict with existing OIDs (for example 2.16.840.1.NNNNNN).
 It will be best to have one's own registered OID for that purpose.</para>
 
-  <sect3 id="secureodbcx509foafsll"><title>FOAF+SSL ODBC Login</title>
-    <para>Virtuoso supports FOAF+SSL ODBC Login. Thus, the INI parameter X509ClientVerify can accept the following values:</para>
+  <sect3 id="secureodbcx509foafsll"><title>WebID Protocol ODBC Login</title>
+    <para>Virtuoso supports WebID Protocol ODBC Login. Thus, the INI parameter X509ClientVerify can accept the following values:</para>
     <itemizedlist mark="bullet">
       <listitem>0 - do not require</listitem>
       <listitem>1 - ask for trusted certificates</listitem>

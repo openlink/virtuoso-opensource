@@ -1048,9 +1048,8 @@ SET PASSWORD &lt;old password&gt; &lt;new password&gt;
 			<title>User Roles</title>
 		<para>
 
-Virtuoso supports a SQL 2K compatible role based security model.  This
-is the Virtuoso 3.0 replacement for the multiple group membership
-feature in Virtuoso 2.7.  A role is a grantee in the same namespace as
+Virtuoso supports a SQL 2K compatible role based security model. 
+A role is a grantee in the same namespace as
 users but is itself not a user account.  Thus one cannot login as a
 role.  A role is a grantable object.  Any role or user may be granted
 an arbitrary number of roles.  The effective privileges of a role or

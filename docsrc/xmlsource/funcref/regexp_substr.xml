@@ -72,7 +72,7 @@ _______________________________________________________________________________
 
 1 Rows. -- 0 msec.
       </screen>
-<para>This returns the hole matched string from the expression.</para>
+      <para>This returns the whole matched string from the expression.</para>
       <screen>
 SQL> select regexp_substr('(2[34]).*(2[35])','22242226222527', 1);
 callret

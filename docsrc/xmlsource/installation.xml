@@ -58,14 +58,6 @@ section.
 
 	<sect1 id="installwin32">
 		<title>Virtuoso for Windows 95/98/NT/2000/XP</title>
-			<sect2 id="doyouwannamigrate">
-				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using 
-        the migration utility.  The Virtuoso database file structure has been considerably 
-        altered between versions.  Please consult the 
-        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
-        section for more details.</para>
-			</sect2>
 		<sect2 id="b4ustart">
 			<title>Before You Start</title>
 			<para>To ensure a smooth installation, please review the

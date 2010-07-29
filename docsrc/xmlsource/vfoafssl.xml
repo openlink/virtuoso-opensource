@@ -22,21 +22,21 @@
  -
 -->
 
-<sect1 id="vfoafssl"><title>FOAF+SSL Support</title>
-  <para>FOAF+SSL is an authentication and authorization protocol that links a "Web ID" or
+<sect1 id="vfoafssl"><title>WebID Protocol Support</title>
+  <para>WebID Protocol is an authentication and authorization protocol that links a "Web ID" or
 "<ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/GetAPersonalURIIn5MinutesOrLess">Personal URI</ulink>"
 to a public key to create a global, decentralized, distributed, and secure authentication system that
 functions with existing browsers.</para>
-  <para>FOAF+SSL uses PKI standards - usually thought of as hierarchical trust management tools -
+  <para>WebID Protocol uses PKI standards - usually thought of as hierarchical trust management tools -
 <ulink url="http://blogs.sun.com/bblfish/entry/foaf_ssl_pki_and_the">in a decentralized web-of-trust way</ulink>.
 The web of trust is built using semantic web vocabularies (particularly <ulink url="http://www.foaf-project.org/">FOAF</ulink>) published in RESTful manner to
 form Linked Data.</para>
-  <para>Based on well known existing standards, FOAF+SSL is currently in development, and is being discussed
+  <para>Based on well known existing standards, WebID Protocol is currently in development, and is being discussed
 on the <ulink url="http://lists.foaf-project.org/mailman/listinfo/foaf-protocols">FOAF protocols mailing list</ulink>.</para>
   <para>For the most recent description of the protocol, read the one-page
-"<ulink url="http://blogs.sun.com/bblfish/entry/foaf_ssl_adding_security_to">FOAF+SSL: Adding Security to
+"<ulink url="http://blogs.sun.com/bblfish/entry/foaf_ssl_adding_security_to">WebID Protocol: Adding Security to
 Open Distributed Social Networks</ulink>". For a more detailed explanation of how the authentication works,
-see "<ulink url="http://blogs.sun.com/bblfish/entry/more_on_authorization_in_foaf">FOAF+SSL: Creating a Web of Trust without Key Signing Parties</ulink>".</para>
+see "<ulink url="http://blogs.sun.com/bblfish/entry/more_on_authorization_in_foaf">WebID Protocol: Creating a Web of Trust without Key Signing Parties</ulink>".</para>
   <para>Automatic discovery of interpersonal trust relationships enables automatic application of appropriate
 permissions.</para>
   <para>In other words, data owners can set fuzzy permissions like "only let my friends see this" or "only
@@ -52,7 +52,7 @@ and the visitor), and if they matched up (in other words, the visitor could not 
 a family relationship; the relationship must be confirmed by the owner's FOAF data), the pictures would
 be shown.</para>
   <sect2 id="vfoafsslx509"><title>x.509 certificate</title>
-  <para>The FOAF+SSL consumer needs an x509 certificate with v3 extension "Subject Alternate Name". This
+  <para>The WebID Protocol consumer needs an x509 certificate with v3 extension "Subject Alternate Name". This
 attribute is used for the owner's Web ID. For testing purposes we used OpenSSL demo CA to generate such
 certificates. If you are not using the OpenSSL demo CA, you must first setup a self-signed CA; read
 OpenSSL documents on how to do this.</para>
@@ -148,7 +148,7 @@ configured, i.e., https://virtuoso.example.com:4443/</listitem>
    <listitem>Click to the "Your Certificates" tab, and import mycert.p12.</listitem>
 </orderedlist>
   </sect2>
-  <sect2 id="vfoafsslconf"><title>Configuring ODS Account to use FOAF+SSL</title>
+  <sect2 id="vfoafsslconf"><title>Configuring ODS Account to use WebID Protocol</title>
 <orderedlist>
   <listitem>Log in to your ODS account, and edit your profile. </listitem>
   <listitem>Click to the Security Tab, and scroll to the bottom, where you will
@@ -187,8 +187,8 @@ public data!
 </listitem>
 </orderedlist>
   </sect2>
-  <sect2 id="vfoafsslacl"><title>FOAF+SSL ACLs</title>
-  <para>You can <link linkend="sparqloauthendpointfoafssl">set FOAF+SSL ACLs</link> from the Virtuoso Authentication Server UI. </para>
+  <sect2 id="vfoafsslacl"><title>WebID Protocol ACLs</title>
+    <para>You can <link linkend="sparqloauthendpointfoafssl">set WebID Protocol ACLs</link> from the Virtuoso Authentication Server UI. </para>
   </sect2>
   <sect2 id="sparqloauthendpointfoafsslsparql"><title>SPARQL-SSL based Endpoint</title>
     <para>See details how to <link linkend="sparqloauthendpointfoafssl">create and use a SPARQL-SSL based Endpoint</link>.</para>
@@ -344,7 +344,7 @@ ask for a certificate; select the one generated in the steps above.
        <graphic fileref="ui/foafssl25.png"/>
      </figure>
 </listitem>
-   <listitem>You should now be logged in to ODS via FOAF+SSL.
+   <listitem>You should now be logged in to ODS via WebID Protocol.
      <figure id="foafssl26" float="1">
        <title>Setting-Up issuer CA</title>
        <graphic fileref="ui/foafssl26.png"/>
@@ -352,7 +352,7 @@ ask for a certificate; select the one generated in the steps above.
 </listitem>
 </orderedlist>
   </sect2>
-  <sect2 id="vfoafsslsethttpsfoafsll"><title>FOAF+SSL ODBC Login</title>
+  <sect2 id="vfoafsslsethttpsfoafsll"><title>WebID Protocol ODBC Login</title>
     <para>See details and examples <link linkend="secureodbcx509foafsll">here</link>.</para>
   </sect2>
 </sect1>

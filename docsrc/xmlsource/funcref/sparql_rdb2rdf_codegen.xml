@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_sparql_rdb2rdf_codegen">
+  <refmeta>
+    <refentrytitle>DB.DBA.SPARQL_RDB2RDF_CODEGEN</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.SPARQL_RDB2RDF_CODEGEN</refname>
+    <refpurpose>Creates an SQL text for a given table and an operation specified by an opcode</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sparql_rdb2rdf_codegen">
+      <funcprototype id="fproto_sparql_rdb2rdf_codegen">
+        <funcdef><function>DB.DBA.SPARQL_RDB2RDF_CODEGEN</function></funcdef>
+	        <paramdef>in <parameter>table_name</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>opcode</parameter> integer</paramdef>	        
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_sparql_rdb2rdf_codegen">
+    <title>Description</title>
+    <para>The function creates an SQL text for a given table and an operation specified by an opcode.</para>
+  </refsect1>
+  <refsect1 id="params_sparql_rdb2rdf_codegen">
+    <title>Parameters</title>
+    <refsect2><title>table_name</title>
+      <para>The name of the table.</para>
+    </refsect2>
+    <refsect2><title>opcode</title>
+      <para>Currently supported opcodes are:</para>
+      <itemizedlist mark="bullet">
+        <listitem>0: debugging dump of internal state of code generator, it can be requested by the 
+        	help-desk.</listitem>
+        <listitem>1: text of procedure that makes an initial RDF dump of triples, created from the 
+        	specified table. It is used if the table is not empty when triggers are added, so existing 
+        	data should be dumped as a batch before being continuously edited by triggers.</listitem>
+        <listitem>2: text of AFTER INSERT trigger.</listitem>
+        <listitem>3: text of AFTER UPDATE trigger.</listitem>
+        <listitem>4: text of BEFORE DELETE trigger.</listitem>
+      </itemizedlist>
+    </refsect2>    
+  </refsect1>
+  <refsect1 id="ret_sparql_rdb2rdf_codegen"><title>Return Types</title>
+    <para>string session or vector</para>
+  </refsect1>
+
+  <!--refsect1 id="examples_sparql_rdb2rdf_codegen">
+    <title>Examples</title>
+    <example id="ex_sparql_rdb2rdf_codegen"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1-->
+  <refsect1 id="seealso_sparql_rdb2rdf_codegen">
+    <title>See Also</title>
+    <para><link linkend="rdb2rdftriggers">RDB2RDF Triggers</link></para>             
+    <para><link linkend="fn_sparql_rdb2rdf_list_tables">DB.DBA.SPARQL_RDB2RDF_LIST_TABLES</link></para>            
+  </refsect1>
+</refentry>

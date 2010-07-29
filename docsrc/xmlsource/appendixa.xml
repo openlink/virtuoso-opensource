@@ -37,7 +37,7 @@
  &relnotes;
  &support;
  &systemtables;
-&migrate27to30;
+ <!--&migrate27to30;-->
 
 <sect1 id="apndxregexp"><title>Basic Syntax of Regular Expressions</title>
 
