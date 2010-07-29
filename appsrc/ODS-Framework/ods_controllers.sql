@@ -4150,17 +4150,7 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 
 create procedure ODS.ODS_API.SSL_WEBID_GET (in cert any := null)
 {
-  declare agent, alts any;
-  agent := get_certificate_info (7, cert, 0, '', '2.5.29.17');
-  if (agent is not null)
-    {
-      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
-      alts := split_and_decode (alts, 0, '\0\0,:');
-      if (alts is null)
-	return null;
-      agent := get_keyword ('URI', alts);
-    }
-  return agent;
+  return DB.DBA.FOAF_SSL_WEBID_GET (cert);
 }
 ;
 
