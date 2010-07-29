@@ -34,6 +34,22 @@ create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
 }
 ;
 
+create procedure FOAF_SSL_WEBID_GET (in cert any := null)
+{
+  declare agent, alts any;
+  agent := get_certificate_info (7, cert, 0, '', '2.5.29.17');
+  if (agent is not null)
+    {
+      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+      alts := split_and_decode (alts, 0, '\0\0,:');
+      if (alts is null)
+	return null;
+      agent := get_keyword ('URI', alts);
+    }
+  return agent;
+}
+;
+
 create procedure DB.DBA.FOAF_MOD (in m any)
 {
   declare modulus any;

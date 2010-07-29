@@ -246,15 +246,12 @@ function loadCSS(cssContainer)
   {
     var cssNode = document.createElement('style');
     cssNode.type = 'text/css';
-    if(cssNode.styleSheet)
-    {// IE
+    if (cssNode.styleSheet) {
+      // IE
       cssNode.styleSheet.cssText = cssObj.innerHTML;
-    }else
-    {
+    } else {
       cssNode.textContent =cssObj.innerHTML;
-    };
-
-
+    }
     _head.appendChild(cssNode);
   }
   else if(cssUrl.length)
@@ -268,11 +265,8 @@ function loadCSS(cssContainer)
   }
   return;
 }
-
 if(odsbarCSSloaded==0)
-{
    loadCSS('odsBarCss');
-}
 
 var ODSInitArray = new Array();
 
@@ -284,12 +278,10 @@ if (typeof (OAT) == 'undefined')
   var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
   var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat/";
 
-
-  var featureList = ["dom"];
+  var featureList = [];
 
   var script = document.createElement("script");
   script.src = '<?V self.odsbar_ods_gpath ?>oat/loader.js';
-//  alert ("OAT loader path: "+script.src);
   _head.appendChild(script);
 }
 
@@ -340,7 +332,6 @@ if (typeof (OAT) == 'undefined')
           doPost (fld.form.name, btn);
           return false;
         }
-      else
         return true;
     }
 
@@ -355,22 +346,52 @@ if (typeof (OAT) == 'undefined')
       else
         return true;
 
-
       if (keycode == 13)
         {
-
-//        alert('<?V sprintf('%ssearch.vspx',self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value);
           document.location.href =
             '<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value+
             '<?vsp http(case when self.sid is not null then '&amp;sid='||self.sid||'&amp;realm='||coalesce(self.realm,'wa') else '' end);?>'+
             '<?vsp http(case when coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null then '&amp;ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) else '' end);?>'
             ;
-
           return false;
         }
-      else
         return true;
     }
+function showSSLLink()
+{
+  if (inFrame)
+    return;
+
+  if (document.location.protocol == 'https:')
+    return;
+
+	var x = function(data) {
+		var o = null;
+		try {
+			o = OAT.JSON.parse(data);
+		} catch (e) {
+			o = null;
+		}
+		if (o && o.sslPort && !$('a_ssl_link')) {
+			var href = 'https://' +
+			           document.location.hostname +
+			           ((o.sslPort != '443')? ':'+o.sslPort: '') +
+			           document.location.pathname +
+			           document.location.search +
+			           document.location.hash;
+			var a = OAT.Dom.create("a");
+			a.id = 'a_ssl_link';
+			a.href = href;
+			var img = OAT.Dom.create('img');
+			img.src = '/ods/images/icons/lock_16.png';
+			img.alt = 'ODS SSL Link';
+      a.appendChild(img);
+			$('span_ssl_link').appendChild(a);
+		}
+	}
+	OAT.AJAX.GET('/ods/api/server.getInfo?info=sslPort', false, x, {onstart : function(){}, onend : function(){}});
+}
+
 //-->
 ]]></script>
 
@@ -428,31 +449,17 @@ if (typeof (OAT) == 'undefined')
                      url="--self.odsbar_ods_gpath||'app_settings.vspx'"
                      value="Application Settings"
                      is-local="1"/>
-            </vm:if>
-
             <!-- Site admin settings link -->
-
-            <vm:if test=" length (self.sid) and wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
+              <vm:if test="wa_user_is_dba (self.odsbar_u_name, self.odsbar_u_group) ">
               <v:url name="site_settings_lnk"
                      value="Site Settings"
                      url="--self.odsbar_ods_gpath||'site_settings.vspx'"
                      render-only="1"
                      is-local="1"/>
+            </vm:if>
               |
             </vm:if>
-
-            <vm:if test=" length (self.sid) ">
-              |
-            </vm:if>
-
-            <v:url name="odsbar_help_button"
-                   value="Help"
-                   url="--self.odsbar_ods_gpath||'help.vspx'"
-                   xhtml_target="_blank"
-                   is-local="1"/>
-
             <vm:if test=" length (self.sid) = 0 ">
-              |
               <v:url name="odsbar_login_button"
                      value="Sign In"
                      url="--self.odsbar_ods_gpath||'login.vspx'||(case when length(self.odsbar_current_url)>0 then sprintf('?URL=%U',self.odsbar_current_url) else '' end)"
@@ -467,14 +474,8 @@ if (typeof (OAT) == 'undefined')
               <v:template name="ods_barregister_txt"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
                   Sign Up
               </v:template>
-
             </vm:if>
             <vm:if test=" length (self.sid) > 0 ">
-              <img class="ods_bar_inline_icon"
-                   style="float:none"
-                   src="<?V self.odsbar_ods_gpath ?>images/icons/lock_16.png"
-                   alt="lock icon"/>
-
               <v:url name="odsbar_userinfo_button"
                      value="--self.odsbar_u_full_name"
                      url="--self.odsbar_dataspace_path||wa_identity_dstype(self.odsbar_u_name)||'/'||self.odsbar_u_name||'#this'"
@@ -490,6 +491,18 @@ if (typeof (OAT) == 'undefined')
                      xhtml_class="logout_lnk"
                      is-local="1"/>
             </vm:if>
+            |
+            <v:url name="odsbar_help_button"
+                   value="Help"
+                   url="--self.odsbar_ods_gpath||'help.vspx'"
+                   xhtml_target="_blank"
+                   is-local="1"/>
+            <span id="span_ssl_link"></span>
+            <script type="text/javascript">
+              <![CDATA[
+                ODSInitArray.push(function(){OAT.Loader.load(["ajax", "json"], function(){showSSLLink();});});
+              ]]>
+            </script>
           </div><!-- ods_bar_top_cmds -->
         </div> <!-- ods_bar_top -->
         <vm:odsbar_navigation_level2/>
@@ -813,8 +826,7 @@ if(top.location.href!=window.location.href)
 {
     inFrame=1;
     ODSInitArray.push(function(){OAT.Dom.hide('FT');});
-}else
-{
+} else {
    create_cookie ('interface', 'vspx', 1);
 }
 

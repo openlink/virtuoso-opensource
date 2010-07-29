@@ -18,9 +18,92 @@
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
-
+var serviceList = [
+  ["twelveseconds.jpg", "http://12seconds.tv/", "12seconds"],
+  ["amazon.jpg", "http://www.amazon.com/", "Amazon.com"],
+  ["ameba.jpg", "http://www.ameba.jp/", "Ameba"],
+  ["backtype.jpg", "http://www.backtype.com/", "Backtype"],
+  ["blog.jpg", "http://en.wikipedia.org/wiki/Blog/", "Blog"],
+  ["brightkite.jpg", "http://brightkite.com/", "brightkite.com"],
+  ["feed.jpg", "http://en.wikipedia.org/wiki/Web_feed/", "Custom RSS/Atom"],
+  ["dailymotion.jpg", "http://www.dailymotion.com/", "Dailymotion"],
+  ["delicious.jpg", "http://del.icio.us/", "Del.icio.us"],
+  ["digg.jpg", "http://www.digg.com/", "Digg"],
+  ["diigo.jpg", "http://www.diigo.com/", "Diigo"],
+  ["disqus.jpg", "http://www.disqus.com/", "Disqus"],
+  ["facebook.jpg", "http://www.facebook.com/", "Facebook"],
+  ["flickr.jpg", "http://www.flickr.com/", "Flickr"],
+  ["fotolog.jpg", "http://www.fotolog.com/", "Fotolog"],
+  ["friendfeed.jpg", "http://www.friendfeed.com/", "FriendFeed"],
+  ["furl.jpg", "http://www.furl.net/", "Furl"],
+  ["googletalk.jpg", "http://talk.google.com/", "Gmail/Google Talk"],
+  ["goodreads.jpg", "http://www.goodreads.com/", "Goodreads"],
+  ["googlereader.jpg", "http://reader.google.com/", "Google Reader"],
+  ["googleshared.jpg", "http://www.google.com/s2/sharing/stuff/", "Google Shared Stuff"],
+  ["identica.jpg", "http://identi.ca/", "identi.ca"],
+  ["ilike.jpg", "http://www.ilike.com/", "iLike"],
+  ["intensedebate.jpg", "http://www.intensedebate.com/", "Intense Debate"],
+  ["jaiku.jpg", "http://www.jaiku.com/", "Jaiku"],
+  ["joost.jpg", "http://www.joost.com/", "Joost"],
+  ["lastfm.jpg", "http://www.last.fm/user/", "Last.fm"],
+  ["librarything.jpg", "http://www.librarything.com/", "LibraryThing"],
+  ["linkedin.jpg", "http://www.linkedin.com/", "LinkedIn"],
+  ["livejournal.jpg", "http://www.livejournal.com/", "LiveJournal"],
+  ["magnolia.jpg", "http://ma.gnolia.com/", "Ma.gnolia"],
+  ["meneame.jpg", "http://meneame.net/", "meneame"],
+  ["misterwong.jpg", "http://www.mister-wong.com/", "Mister Wong"],
+  ["mixx.jpg", "http://www.mixx.com/", "Mixx"],
+  ["myspace.jpg", "http://www.myspace.com/", "MySpace"],
+  ["netflix.jpg", "http://www.netflix.com/", "Netflix"],
+  ["netvibes.jpg", "http://www.netvibes.com/", "Netvibes"],
+  ["pandora.jpg", "http://www.pandora.com/", "Pandora"],
+  ["photobucket.jpg", "http://www.photobucket.com/", "Photobucket"],
+  ["picasa.jpg", "http://picasaweb.google.com/", "Picasa Web Albums"],
+  ["plurk.jpg", "http://www.plurk.com/", "Plurk"],
+  ["polyvore.jpg", "http://www.polyvore.com/", "Polyvore"],
+  ["pownce.jpg", "http://pownce.com/", "Pownce"],
+  ["reddit.jpg", "http://reddit.com/", "Reddit"],
+  ["seesmic.jpg", "http://www.seesmic.com/", "Seesmic"],
+  ["skyrock.jpg", "http://www.skyrock.com/", "Skyrock"],
+  ["slideshare.jpg", "http://www.slideshare.net/", "SlideShare"],
+  ["smotri.jpg", "http://smotri.com/", "Smotri.com"],
+  ["smugmug.jpg", "http://www.smugmug.com/", "SmugMug"],
+  ["stumbleupon.jpg", "http://www.stumbleupon.com/", "StumbleUpon"],
+  ["tipjoy.jpg", "http://tipjoy.com/", "tipjoy"],
+  ["tumblr.jpg", "http://www.tumblr.com/", "Tumblr"],
+  ["twine.jpg", "http://www.twine.com/", "Twine"],
+  ["twitter.jpg", "http://twitter.com/", "Twitter"],
+  ["upcoming.jpg", "http://upcoming.yahoo.com/", "Upcoming"],
+  ["vimeo.jpg", "http://www.vimeo.com/", "Vimeo"],
+  ["wakoopa.jpg", "http://wakoopa.com/", "Wakoopa"],
+  ["yahoo.jpg", "http://www.yahoo.com/", "Yahoo"],
+  ["yelp.jpg", "http://www.yelp.com/", "Yelp"],
+  ["youtube.jpg", "http://www.youtube.com/", "YouTube"],
+  ["zooomr.jpg", "http://www.zooomr.com/", "Zooomr"]
+]
 var TBL = new Object();
+TBL.setServiceUrl = function(fld)
+{
+  for (N = 0; N < serviceList.length; N = N + 1)
+  {
+    if (fld.value == serviceList[N][2])
+    {
+      if (fld.input) {fld = fld.input;}
+
+      $(fld.name.replace(/fld_1_/, 'fld_2_')).value = serviceList[N][1]+$v('c_nick');
+
+      var S = '/ods/api/user.onlineAccounts.uri?url='+encodeURIComponent(serviceList[N][1]+$v('c_nick'));
+      var x = function(data) {
+        $(fld.name.replace(/fld_1_/, 'fld_3_')).value = data;
+      }
+      OAT.AJAX.GET(S, '', x);
+      return;
+    }
+  }
+}
+
 TBL.createRow = function (prefix, No, optionObject)
 {
   if (No != null)
@@ -231,13 +314,13 @@ TBL.createCell2 = function (td, prefix, fldName, No, fldOptions) {
 }
 
 TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
-  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: setServiceUrl});
+  var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: TBL.setServiceUrl});
   fld.input.setAttribute("autocomplete", "off");
   for (N = 0; N < serviceList.length; N = N + 1)
     fld.addOption('<img src="/ods/images/services/'+serviceList[N][0]+'"/> '+serviceList[N][2], serviceList[N][2]);
 
 	var ta = new TypeAhead(fld.input.id, 'onlineAccounts', '');
-	fld.input.onchange = setServiceUrl;
+	fld.input.onchange = TBL.setServiceUrl;
 	fld.input.form.onsubmit = CheckSubmit;
 	taVars[taVars.length] = ta;
 

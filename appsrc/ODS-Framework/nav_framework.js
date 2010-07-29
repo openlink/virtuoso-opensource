@@ -2282,8 +2282,7 @@ ODS.Nav = function(navOptions) {
 				OAT.Dom.append( [ rootDiv, loginfoDiv ], [ loginfoDiv,
 						aSettings, aUserProfile, aLogout, aHelp ]);
       } else {
-				OAT.Dom.append( [ rootDiv, loginfoDiv ], [ loginfoDiv, aLogin,
-						aSignUp, aHelp ]);
+				OAT.Dom.append( [ rootDiv, loginfoDiv ], [ loginfoDiv, aLogin, aSignUp, aHelp ]);
       }
     }
     var x = function (data) {
@@ -2301,14 +2300,14 @@ ODS.Nav = function(navOptions) {
 				} catch (e) {
 					o = null;
 				}
-				if (o && o.sslPort) {
+				if (o && o.sslPort && !$('ssl_link')) {
 	  var hostname = document.location.hostname;
 	  if (o.sslHost && o.sslHost.length > 0)
 	    hostname = o.sslHost;
           aSSL = OAT.Dom.create ("a");
+					aSSL.id = 'ssl_link';
 	  if (o.sslPort != '443')
-						aSSL.href = 'https://' + hostname + ':' + o.sslPort
-								+ '/ods/index.html?alog=1';
+						aSSL.href = 'https://' + hostname + ':' + o.sslPort + '/ods/index.html?alog=1';
 	  else
             aSSL.href = 'https://' + hostname + '/ods/index.html?alog=1';
           var aImg = OAT.Dom.create ('img');

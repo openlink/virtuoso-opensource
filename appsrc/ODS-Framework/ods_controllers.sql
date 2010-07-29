@@ -1422,9 +1422,6 @@ create procedure ODS.ODS_API."user.update.fields" (
   in securitySecretAnswer varchar := null,
   in securitySiocLimit varchar := null,
 
-  in certificate varchar := null,
-  in certificateLogin varchar := null,
-
   in photo varchar := null,
   in photoContent varchar := null,
 
@@ -1538,27 +1535,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   if (not isnull (securitySiocLimit))
     DB.DBA.USER_SET_OPTION (uname, 'SIOC_POSTS_QUERY_LIMIT', atoi (securitySiocLimit));
 
-  --XXX: obsolete
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT', certificate);
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_CERT_LOGIN', certificateLogin);
-
   -- Photo & Audio
   ODS.ODS_API."user.upload.internal" (uname, photo, photoContent, audio, audioContent);
 
-  if (not isnull (onlineAccounts))
-  {
-    declare _u_id integere;
-
-    _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-    for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = onlineAccounts) do
-	  {
-	    if (length (fld1) and not exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _u_id and WUO_TYPE = 'P' and WUO_NAME = fld1 and WUO_URL = fld2))
-	    {
-        insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
-          values (fld1, fld2, _u_id, 'P');
-	    }
-	  }
-  }
   return ods_serialize_int_res (1);
 }
 ;
@@ -2038,17 +2017,6 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
 
-      if (0) -- certificate is not longer part of user_info table
-	{
-      ods_xml_item ('certificate',            WAUI_CERT);
-      if (length(WAUI_CERT))
-      {
-        ods_xml_item ('certificateSubject',   get_certificate_info (2, cast (WAUI_CERT as varchar), 0, ''));
-	    -- XXX: 
-	    -- ods_xml_item ('certificateAgentID',   replace (get_certificate_info (7, cast (WAUI_CERT as varchar), 0, '', '2.5.29.17'), 'URI:', ''));
-      }
-      ods_xml_item ('certificateLogin',       WAUI_CERT_LOGIN);
-	}
       ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
 
       ods_xml_item ('photo',                  WAUI_PHOTO_URL);
@@ -2861,6 +2829,21 @@ create procedure ODS.ODS_API."user.annotation.delete" (
 }
 ;
 
+create procedure ODS.ODS_API."user.onlineAccounts.uri" (
+  in url varchar) __soap_http 'text/plain'
+{
+  declare rc varchar;
+
+  rc := null;
+  if (__proc_exists ('DB.DBA.RDF_PROXY_ENTITY_IRI'))
+    rc := DB.DBA.RDF_PROXY_ENTITY_IRI(url);
+  if (isnull (rc))
+    rc := url || '#this';
+
+  return rc;
+}
+;
+
 create procedure ODS.ODS_API."user.onlineAccounts.list" (
   in "type" varchar) __soap_http 'application/json'
 {
@@ -2876,9 +2859,9 @@ create procedure ODS.ODS_API."user.onlineAccounts.list" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select WUO_ID, WUO_NAME, WUO_URL from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = "type" and WUO_U_ID = _u_id) do
+  for (select WUO_ID, WUO_NAME, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = "type" and WUO_U_ID = _u_id) do
   {
-    retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL)));
+    retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL, WUO_URI)));
   }
   return obj2json (retValue);
 }
@@ -2887,6 +2870,7 @@ create procedure ODS.ODS_API."user.onlineAccounts.list" (
 create procedure ODS.ODS_API."user.onlineAccounts.new" (
   in name varchar,
   in url varchar,
+  in uri varchar := null,
   in "type" varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2903,8 +2887,8 @@ create procedure ODS.ODS_API."user.onlineAccounts.new" (
   rc := (select WUO_ID from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _u_id and WUO_TYPE = "type" and WUO_NAME = name and WUO_URL = url);
   if (isnull (rc))
   {
-  insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL)
-    values (_u_id, "type", name, url);
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
+      values (_u_id, "type", name, url, uri);
   rc := (select max (WUO_ID) from DB.DBA.WA_USER_OL_ACCOUNTS);
   }
   return ods_serialize_int_res (rc);
@@ -2915,6 +2899,7 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
   in id integer := null,
   in name varchar := null,
   in url varchar := null,
+  in uri varchar := null,
   in "type" varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2935,7 +2920,8 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
      where WUO_U_ID = _u_id
        and WUO_TYPE = "type"
        and (name is null or WUO_NAME = name)
-       and (url  is null or WUO_URL = url);
+       and (url  is null or WUO_URL = url)
+       and (uri  is null or WUO_URI = uri);
   } else {
     delete
       from DB.DBA.WA_USER_OL_ACCOUNTS
@@ -3691,8 +3677,7 @@ create procedure ODS.ODS_API."user.certificates.get" (
   for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
   {
     subject := get_certificate_info (2, UC_CERT, 0, '');
-    -- XXX:
-    -- agentID := replace (get_certificate_info (7, UC_CERT, 0, '', '2.5.29.17'), 'URI:', '');
+    agentID := ODS.ODS_API.SSL_WEBID_GET (UC_CERT);
     fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
     certificate := UC_CERT;
     enableLogin := UC_LOGIN;
@@ -3727,7 +3712,7 @@ create procedure ODS.ODS_API."user.certificates.update" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
-  agent := get_certificate_info (7, certificate, 0, '', '2.5.29.17');
+  agent := ODS.ODS_API.SSL_WEBID_GET (certificate);
   if ((agent is null and length (certificate)) or (0 = length (certificate)))
 	  signal ('', 'The certificate must be in PEM format and must have Alternate Name attribute.');
 
@@ -4163,19 +4148,9 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 }
 ;
 
-create procedure ODS.ODS_API.SSL_WEBID_GET ()
+create procedure ODS.ODS_API.SSL_WEBID_GET (in cert any := null)
 {
-  declare agent, alts any;
-  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
-  if (agent is not null)
-    {
-      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
-      alts := split_and_decode (alts, 0, '\0\0,:');
-      if (alts is null)
-	return null;
-      agent := get_keyword ('URI', alts);
-    }
-  return agent;
+  return DB.DBA.FOAF_SSL_WEBID_GET (cert);
 }
 ;
 
@@ -4703,6 +4678,7 @@ grant execute on ODS.ODS_API."user.thingOfInterest.new" to ODS_API;
 grant execute on ODS.ODS_API."user.thingOfInterest.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.new" to ODS_API;
 grant execute on ODS.ODS_API."user.annotation.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.onlineAccounts.uri" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.list" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.new" to ODS_API;
 grant execute on ODS.ODS_API."user.onlineAccounts.delete" to ODS_API;

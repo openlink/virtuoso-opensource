@@ -1520,19 +1520,31 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_t
   }
 };
 
-create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
+create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in name varchar, in url varchar, in uri varchar := null)
 {
-  declare acc_iri, pers_iri any;
-  pers_iri := person_iri (iri);
-  acc_iri := person_ola_iri (iri, nam);
-  -- XXX, have to know if this is URL
-  DB.DBA.ODS_QUAD_URI (graph_iri, acc_iri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
-  DB.DBA.ODS_QUAD_URI (graph_iri, acc_iri, foaf_iri ('accountServiceHomepage'), url);
-  DB.DBA.ODS_QUAD_URI_L (graph_iri, acc_iri, foaf_iri ('accountName'), nam);
-  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), acc_iri);
-};
--- Group
+  declare pers_iri any;
 
+  pers_iri := person_iri (iri);
+  if (isnull (uri))
+    uri := person_ola_iri (iri, name);
+  -- XXX, have to know if this is URL
+  DB.DBA.ODS_QUAD_URI (graph_iri, uri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
+  DB.DBA.ODS_QUAD_URI (graph_iri, uri, foaf_iri ('accountServiceHomepage'), url);
+  DB.DBA.ODS_QUAD_URI_L (graph_iri, uri, foaf_iri ('accountName'), name);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), uri);
+};
+
+create procedure sioc_user_account_delete (in graph_iri varchar, in iri varchar, in name varchar, in uri varchar := null)
+{
+  declare pers_iri any;
+
+  pers_iri := person_iri (iri);
+  if (isnull (uri))
+    uri := person_ola_iri (iri, name);
+  delete_quad_s_or_o (graph_iri, uri, uri);
+};
+
+-- Group
 create procedure sioc_group (in graph_iri varchar, in iri varchar, in u_name varchar)
 {
   if (iri is not null)
@@ -2260,9 +2272,9 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI);
 		    }
-		  for select WUO_NAME, WUO_URL from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID do
+		  for select WUO_NAME, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID do
 		    {
-		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_URL);
+		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_URL, WUO_URI);
 		    }
 		  for select WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = U_ID do
 		    {
@@ -2999,12 +3011,10 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
       DB.DBA.ODS_QUAD_URI (graph_iri, niri, owl_iri ('sameAs'), sas_iri);
     }
   if (length (O.WAUI_SKYPE))
-    {
-      del_iri := person_ola_iri (iri, O.WAUI_SKYPE);
-      delete_quad_s_or_o (graph_iri, del_iri, del_iri);
-    }
+    sioc_user_account_delete (graph_iri, iri, O.WAUI_SKYPE);
   if (length (N.WAUI_SKYPE))
     sioc_user_account (graph_iri, iri, N.WAUI_SKYPE, 'skype:'||N.WAUI_SKYPE||'?chat');
+
   return;
 };
 
@@ -3060,7 +3070,7 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_I after insert on DB.DBA.WA_USER_OL_ACCO
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUO_U_ID);
-  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL);
+  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL, N.WUO_URI);
 };
 
 create trigger WA_USER_OL_ACCOUNTS_SIOC_U after update on DB.DBA.WA_USER_OL_ACCOUNTS referencing old as O, new as N
@@ -3073,22 +3083,17 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_U after update on DB.DBA.WA_USER_OL_ACCO
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUO_U_ID);
-  del_iri := person_ola_iri (iri, O.WUO_NAME);
-  delete_quad_s_or_o (graph_iri, del_iri, del_iri);
-  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL);
+  sioc_user_account_delete (graph_iri, iri, N.WUO_NAME, N.WUO_URI);
+  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL, N.WUO_URI);
 };
 
 create trigger WA_USER_OL_ACCOUNTS_SIOC_D after delete on DB.DBA.WA_USER_OL_ACCOUNTS referencing old as O
 {
-  declare graph_iri, iri, opiri, del_iri any;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  graph_iri := get_graph ();
-  iri := user_iri (O.WUO_U_ID);
-  del_iri := person_ola_iri (iri, O.WUO_NAME);
-  delete_quad_s_or_o (graph_iri, del_iri, del_iri);
+  sioc_user_account_delete (get_graph (), user_iri (O.WUO_U_ID), O.WUO_NAME, O.WUO_URI);
 };
 
 -- Bioevents
