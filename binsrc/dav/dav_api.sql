@@ -1639,13 +1639,12 @@ create function
 DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
   declare rc integer;
-  declare puid, pgid, auth_req integer;
+  declare puid, pgid integer;
   declare u_password, pperms, resName, resPath varchar;
   declare allow_anon integer;
   declare pacl varbinary;
 
   what := upper (what);
-  auth_req := 0;
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP (', id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
 
   if (length (req) <> 3)
@@ -1708,7 +1707,8 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
         }
         if (DAV_AUTHENTICATE_SSL (_res_id, what, _res_full_path, req, a_uid, a_gid, _perms))
           return a_uid;
-	auth_req := 1;
+	if (rc < 0)
+          return rc;	
       }
     }
   }
@@ -1753,7 +1753,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
   }
 
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -13 due to failed DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
-  return (-13 + auth_req);
+  return -13;
 
 nf_col_or_res:
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -1');
