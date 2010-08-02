@@ -1105,7 +1105,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       whenever sqlstate '*' goto load_grddl;
-      log_enable (2, 1);
+      --log_enable (2, 1);
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
@@ -1115,7 +1115,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
         DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-      log_enable (saved_log_mode, 1);
+      --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -1132,7 +1132,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
       whenever sqlstate '*' goto load_grddl;
-      log_enable (2, 1);
+      --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri), 255);
@@ -1140,7 +1140,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
         DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-      log_enable (saved_log_mode, 1);
+      --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -1148,11 +1148,11 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   else if (only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null)
     {
       whenever sqlstate '*' goto load_grddl;
-      log_enable (2, 1);
+      --log_enable (2, 1);
       DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, coalesce (dest, graph_iri), 2);
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
 	DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, groupdest, 2);
-      log_enable (saved_log_mode, 1);
+      --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -1266,7 +1266,7 @@ load_grddl:;
       'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
       graph_iri, new_origin_uri, ret_content_type ) );
 resignal_parse_error:
-  log_enable (saved_log_mode, 1);
+--  log_enable (saved_log_mode, 1);
   resignal;
 }
 ;
@@ -1298,6 +1298,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
     options := vector_concat (options, vector ('rdf_sponge_debug', connection_get ('__rdf_sponge_debug')));
   if (is_http_ctx ())
     options := vector_concat (options, vector ('http_host', http_request_header(http_request_header (), 'Host', null, null)));
+  options := vector_concat (options, vector ('__rdf_sponge_log_mode', log_enable (null, 1)));
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
@@ -1316,7 +1317,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
 create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri, cookie varchar;
-  declare perms integer;
+  declare perms, log_mode integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   set_user_id ('dba', 1);
@@ -1332,6 +1333,9 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     connection_set ('__rdf_sponge_debug', get_keyword ('rdf_sponge_debug', options));
   if (get_keyword ('http_host', options) is not null)
     connection_set ('__http_host', get_keyword ('http_host', options));
+  log_mode := get_keyword ('__rdf_sponge_log_mode', options);
+  if (log_mode is not null) -- when in aq mode
+    log_enable (log_mode, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP (', graph_iri, options, ') set local_iri=', local_iri);
   perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
