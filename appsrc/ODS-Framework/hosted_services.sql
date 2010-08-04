@@ -7084,6 +7084,10 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/ods/api', 
       ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'), sec=>_sec, auth_opts=>_opts);
 
+  DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/about');
+  DB.DBA.VHOST_DEFINE (vhost=>_host, lhost=>_lhost, lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'), sec=>_sec, auth_opts=>_opts);
+
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {
   if (not (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/')))

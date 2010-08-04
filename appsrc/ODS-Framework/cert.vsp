@@ -38,6 +38,7 @@
        cvalue := xenc_pem_export (kname);
        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
 		         values (uid, cvalue, get_certificate_info (6, cvalue, 0, ''), 0);
+       http_rewrite (); 
        http_header ('Content-Type: application/x-x509-user-cert\r\n');
        http (decode_base64 (xenc_X509_certificate_serialize (kname)));
        xenc_key_remove (kname);

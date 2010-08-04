@@ -22,11 +22,11 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-     version="1.0"
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
      xmlns:v="http://www.openlinksw.com/vspx/"  exclude-result-prefixes="v"
      xmlns:xhtml="http://www.w3.org/1999/xhtml">
-<xsl:output method="text" omit-xml-declaration="yes" indent="yes" />
+<xsl:output method="text" omit-xml-declaration="yes" indent="yes" encoding="utf-8"/>
 
 <xsl:template match="/">
   <xsl:apply-templates />
@@ -42,8 +42,8 @@
       <th>Content</th>
     </tr>
     <xsl:for-each select="./dash-row">
-      <xsl:sort select="@class"/>
       <xsl:sort select="@time" order="descending"/>
+        <xsl:sort select="@class"/>
       <xsl:if test="position() <= $nrows">
         <xsl:if test=" (position() mod 2)= 0">
            <xsl:apply-templates select=".">
@@ -78,7 +78,7 @@
     <td valign="top" nowrap="true">
       <xsl:value-of select="@time"/>
     </td>
-    <td valign="top">
+    <td valign="top" nowrap="true">
       <xsl:if test="string-length(@application) < 23">
         <xsl:value-of select="@application"/>
       </xsl:if>
