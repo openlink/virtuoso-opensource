@@ -9,6 +9,13 @@
    declare do_sponge, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
 
    set http_charset='utf-8';
+   if (0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
+     {
+       http_rewrite ();
+       http_status_set (403);
+       return;  
+     }
+
    label := '';
    iri_type := 'unknown';
    _subject := '';
@@ -232,7 +239,7 @@
 
 <!-- header -->
 <head profile="http://www.w3.org/1999/xhtml/vocab">
-    <base href="http://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
+    <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V http_request_header (lines, 'Host') ?><?V http_map_get ('domain') ?>/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>&output=rdf" title="Metadata in RDF/XML format" />
     <link rel="alternate" type="text/n3" href="<?=rdf_link?>&output=n3" title="Metadata in N3/Turtle format" />

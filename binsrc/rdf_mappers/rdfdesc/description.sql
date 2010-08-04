@@ -349,8 +349,8 @@ create procedure rdfdesc_http_url (in url varchar)
     }
   if (host is null)
     host := http_request_header(lines, 'Host', null, null);
-  pref := 'http://'||host||'/about/html/';
-  pref2 := 'http://'||host||'/about/id/';
+  pref := 'http%://'||host||'/about/html/';
+  pref2 := 'http%://'||host||'/about/id/';
   if (url not like pref || '%' and url not like pref2 || '%')
     {
       ua := rfc1808_parse_uri (url);
@@ -662,6 +662,23 @@ DB.DBA.RDF_VIEW_GET_BINARY (in path varchar, in accept varchar) __SOAP_HTTP 'app
 
 grant execute on DB.DBA.RDF_VIEW_GET_BINARY to PROXY;
 
+create procedure DB.DBA.RDF_SPONGE_AUTH (in realm varchar)
+{
+  declare auth_func, agent varchar;
+  if (__proc_exists ('DB.DBA.FOAF_SSL_AUTH_GEN') is null or 0 = is_https_ctx ())
+    return 1;
+  if (0 = DB.DBA.FOAF_SSL_AUTH_GEN (realm, 1))
+    return 0;
+  agent := DB.DBA.FOAF_SSL_WEBID_GET ();
+  if (agent is null) 
+    return 0;
+  if (http_acl_get ('Sponger', agent, '*') = 1)
+    return 0;
+  connection_set ('SPARQLUserId', 'SPARQL');
+  return 1;
+}
+;
+
 
 -- /* extended http proxy service */
 create procedure virt_proxy_init_about ()
@@ -713,7 +730,7 @@ create procedure virt_proxy_init_about ()
 
   DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about');
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/about', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
-      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'));
+      opts=>vector('url_rewrite', 'ext_about_http_proxy_rule_list1'), auth_fn=>'DB.DBA.RDF_SPONGE_AUTH', realm=>'Virtuoso Sponger');
 
   DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/object.binary');
   DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/object.binary', ppath=>'/SOAP/Http/RDF_VIEW_GET_BINARY', soap_user=>'PROXY');
@@ -950,5 +967,105 @@ create procedure rdfdesc_virt_info ()
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ())); 
   http (case when sys_stat ('cl_run_local_only') = 1 then 'Single' else 'Cluster' end); http (' Edition ');
   http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end); 
+}
+;
+
+create procedure RDF_CARTRIDGES_SECURE_VD (in vhost varchar, in lhost varchar)
+{
+  declare opts, rdfdesc any;
+  opts := (select top 1 deserialize(HP_AUTH_OPTIONS) from http_path where hp_host = vhost);
+  rdfdesc := (select HP_PPATH from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/rdfdesc');
+
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about');
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/rdfdesc');
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/sparql'); 
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/id');
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/id/entity'); 
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/data'); 
+  DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about/data/entity');
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      ses_vars=>0,
+      auth_opts=>opts,
+      lpath=>'/about',
+      ppath=>'/SOAP/Http/ext_http_proxy',
+      is_dav=>0,
+      soap_user=>'PROXY',
+      opts=>vector ('url_rewrite', 'ext_about_http_proxy_rule_list1')
+      );
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      sec=>'SSL',
+      ses_vars=>0,
+      auth_opts=>opts,
+      lpath=>'/rdfdesc',
+      ppath=>rdfdesc,
+      is_dav=>0,
+      vsp_user=>'dba'
+
+      );
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      auth_opts=>opts,
+      lpath=>'/sparql',
+      ppath=>'/!sparql/',
+      is_dav=>1,
+      vsp_user=>'dba',
+      opts=>vector ('noinherit', 1)
+
+      );
+
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      auth_opts=>opts,
+      lpath=>'/about/id', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_new')
+      );
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      auth_opts=>opts,
+      lpath=>'/about/id/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_entity_rll')
+      );
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      auth_opts=>opts,
+      lpath=>'/about/data', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'ext_ahp_rule_list_data')
+      );
+
+  DB.DBA.VHOST_DEFINE (
+      lhost=>lhost,
+      vhost=>vhost,
+      realm=>'Virtuoso Sponger',
+      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      sec=>'SSL',
+      auth_opts=>opts,
+      lpath=>'/about/data/entity', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector('url_rewrite', 'sp_ent_data_rll')
+      );
 }
 ;
