@@ -156,6 +156,11 @@ BMK.WA.exec_no_error('
 ;
 
 BMK.WA.exec_no_error(
+  'alter type wa_bookmark add overriding method wa_dashboard () returns any'
+)
+;
+
+BMK.WA.exec_no_error(
   'alter type wa_bookmark add method wa_dashboard_last_item () returns any'
 )
 ;
@@ -381,13 +386,38 @@ create method get_param (in param varchar) for wa_bookmark
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_bookmark
+{
+  declare iWaiID integer;
+
+  iWaiID := self.BookmarkID;
+  return (select XMLAGG (
+                         XMLELEMENT (
+                                     'dash-row',
+                                     XMLATTRIBUTES (
+                                                    'normal' as "class",
+                                                    BMK.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                    self.wa_name as "application"
+                                                   ),
+                                     XMLELEMENT(
+                                                'dash-data',
+                                                XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..bmk_post_iri (iWaiID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                              0 "comments"
+	                                                            )
+                                          	   )
+                                    )
+                     	  )
+            from BMK.WA.dashboard_rs(p0)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_bookmark
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-  return BMK.WA.dashboard_get(domainID, userID);
+  return BMK.WA.dashboard_get (self.BookmarkID);
 }
 ;
 
@@ -397,9 +427,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_bookmark
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := self.BookmarkID;
+  userID := BMK.WA.domain_owner_id (domainID);
   return concat(BMK.WA.dav_url2(domainID, userID), 'BM.rdf');
 }
 ;

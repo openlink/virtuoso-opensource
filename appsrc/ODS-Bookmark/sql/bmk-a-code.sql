@@ -3639,45 +3639,51 @@ create procedure BMK.WA.show_excerpt(
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.dashboard_get(
-  in domain_id integer,
-  in user_id integer)
+create procedure BMK.WA.dashboard_rs(
+  in p0 integer)
 {
-  declare ses any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
 
-  ses := string_output ();
-  http ('<bookmark-db>', ses);
-  for select top 10 *
-        from (select a.BD_NAME,
-                     b.B_URI,
-                     a.BD_UPDATED
-                from BMK.WA.BOOKMARK_DOMAIN a,
-                     BMK.WA.BOOKMARK b,
-                     DB.DBA.WA_INSTANCE c,
-                     DB.DBA.WA_MEMBER d
-                where a.BD_BOOKMARK_ID = b.B_ID
-                  and a.BD_DOMAIN_ID = domain_id
-                  and d.WAM_USER = user_id
-                  and d.WAM_INST = C.WAI_NAME
-                  and c.WAI_ID = a.BD_DOMAIN_ID
+  result_names(c0, c1, c2);
+  for (select top 10 *
+         from (select BD_ID,
+                      BD_NAME,
+                      BD_UPDATED
+                 from BMK.WA.BOOKMARK_DOMAIN
+                where BD_DOMAIN_ID = p0
                 order by BD_UPDATED desc
-             ) x do {
-
-    declare uname, full_name varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
-
-    http ('<bookmark>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (BD_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', BD_NAME), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', B_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
-    http ('</bookmark>', ses);
+              ) x) do
+  {
+    result (BD_ID, BD_NAME, coalesce (BD_UPDATED, now ()));
   }
-  http ('</bookmark-db>', ses);
-  return string_output_string (ses);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.dashboard_get(
+  in domain_id integer)
+{
+  declare account_id integer;
+  declare aStream any;
+
+  account_id := BMK.WA.domain_owner_id (domain_id);
+  aStream := string_output ();
+  http ('<bookmark-db>', aStream);
+  for (select x.* from BMK.WA.dashboard_rs(p0)(_id integer, _name varchar, _time datetime) x where p0 = domain_id) do
+  {
+    http ('<bookmark>', aStream);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (_time)), aStream);
+    http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
+    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..bmk_post_iri (domain_id, _id)), aStream);
+    http (sprintf ('<from><![CDATA[%s]]></from>', BMK.WA.account_fullName (account_id)), aStream);
+    http (sprintf ('<uid>%s</uid>', BMK.WA.account_name (account_id)), aStream);
+    http ('</bookmark>', aStream);
+  }
+  http ('</bookmark-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 
@@ -3758,91 +3764,70 @@ create procedure BMK.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
+  declare N integer;
+  declare ch, S varchar;
+
   declare exit handler for sqlstate '*' {
     return '';
   };
 
-  declare N integer;
-  declare ch, S varchar;
-
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
@@ -3853,15 +3838,9 @@ create procedure BMK.WA.dt_deformat(
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   N := 1;
   I := 0;

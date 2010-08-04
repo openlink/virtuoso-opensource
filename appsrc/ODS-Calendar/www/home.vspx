@@ -520,7 +520,7 @@
         T := 'abbr';
       if (fProperty = 'dtend')
         T := 'abbr';
-      return sprintf ('<%s%s>%s</%s>', T, P, FS, T);
+      return sprintf ('<%s%s>%s</%s>', T, P, CAL.WA.utf2wide (FS), T);
     ]]>
   </v:method>
 

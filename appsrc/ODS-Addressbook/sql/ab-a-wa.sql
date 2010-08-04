@@ -63,8 +63,6 @@ create procedure AB.WA.exec_no_error(in expr varchar, in execType varchar := '',
 
 ------------------------------------------------------------------------------
 --
-------------------------------------------------------------------------------
---
 create procedure AB.WA.vhost()
 {
   declare
@@ -192,6 +190,11 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter type wa_AddressBook add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
+AB.WA.exec_no_error (
+  'alter type wa_AddressBook add overriding method wa_dashboard () returns any'
 )
 ;
 
@@ -397,13 +400,34 @@ create method get_param (in param varchar) for wa_AddressBook
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_AddressBook
+{
+  declare iWaiID integer;
+
+  iWaiID := self.wa_id ();
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       AB.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..addressbook_contact_iri (iWaiID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from AB.WA.dashboard_rs(p0)(_id integer, _title varchar, _time datetime) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_AddressBook
 {
-  declare domainID, userID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return AB.WA.dashboard_get (domainID, userID);
+  return AB.WA.dashboard_get (self.wa_id ());
 }
 ;
 
@@ -413,9 +437,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_AddressBook
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := self.wa_id ();
+  userID := AB.WA.domain_owner_id (domainID);
   return concat(AB.WA.dav_url2(domainID, userID), 'AddressBook.rdf');
 }
 ;
