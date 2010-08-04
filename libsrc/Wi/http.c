@@ -3833,7 +3833,7 @@ http_set_client_address (ws_connection_t * ws)
   caddr_t xfwd;
   if (!http_proxy_address || (ws && ws->ws_client_ip && strcmp (ws->ws_client_ip, http_proxy_address)))
     return;
-  if (ws && ws->ws_lines  && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
+  if (ws && ws->ws_lines && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
     {
       dk_free_box (ws->ws_client_ip);
       ws->ws_client_ip = xfwd;
@@ -4838,12 +4838,15 @@ bif_http_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t deflt = ((BOX_ELEMENTS (args) > 0) ? bif_arg (qst, args, 0, "http_host") : NULL);
   caddr_t host = NULL;
-  ws_connection_t * ws = qi->qi_client->cli_ws;
-  if (ws && ws->ws_lines && NULL == (host = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
-    host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+  if (ws && ws->ws_lines)
+    {
+      if (NULL == (host = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
+	host = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
+    }
   if (!host)
     host = box_copy (deflt);
   return host;
@@ -8152,7 +8155,8 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t host = http_host_normalize (bif_string_arg (qst, args, 0, "http_listen_host"), 0);
   ptrlong stop = bif_long_arg (qst, args, 1, "http_listen_host");
-  caddr_t *https_opts = BOX_ELEMENTS (args) > 2 ? (caddr_t *) bif_array_or_null_arg (qst, args, 2, "http_listen_host") : NULL;
+  caddr_t * https_opts = BOX_ELEMENTS (args) > 2 ?
+      (caddr_t *) bif_array_or_null_arg (qst, args, 2, "http_listen_host") : NULL;
   dk_session_t *listening = NULL;
   int rc = 0;
   dk_session_t **place = NULL;
@@ -8424,7 +8428,11 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
 #endif
 
   tcpses_addr_info (ws->ws_session->dks_session, listen_host, sizeof (listen_host), 80, 1);
-  host_hf = ws_get_packed_hf (ws, "Host:", listen_host);
+  /* was: host_hf = ws_get_packed_hf (ws, "Host:", listen_host);*/
+  if (NULL == (host_hf = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
+    host_hf = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
+  if (NULL == host_hf)
+    host_hf = box_dv_short_string (listen_host);
   host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80));
   http_trace (("host hf: %s, host nfo:, %s nif: %s\n", host, listen_host, nif));
 
