@@ -4343,6 +4343,9 @@ adm_get_file_dsn ()
   declare _err_code, _err_message varchar;
   declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error; };
 
+  if (not sys_dir_is_allowed ('.'))
+    goto error;
+
   _all := sys_dirlist ('.', 1);
   s_root := server_root ();
 
