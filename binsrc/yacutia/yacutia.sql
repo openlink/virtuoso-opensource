@@ -464,6 +464,7 @@ case when 0 and check_package('rdf_mappers') then
    '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
+   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />
    <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
    <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
    <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>

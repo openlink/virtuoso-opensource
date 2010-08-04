@@ -289,6 +289,7 @@ conductor/msg_news_groups.vspx
 conductor/msg_news_server_details.vspx
 conductor/msg_news_server_info.vspx
 conductor/page.xsl
+conductor/persistent_xmlns.vspx
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
 conductor/rdf_console.vspx
