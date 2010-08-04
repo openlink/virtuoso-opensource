@@ -30,6 +30,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY opltesco "http://www.openlinksw.com/schemas/tesco#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -44,7 +45,7 @@
     xmlns:oplbb="&oplbb;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:tesco="http://www.tesco.com/">
+    xmlns:opltesco="&opltesco;">
 
     <xsl:output method="xml" indent="yes" />
 
@@ -54,7 +55,7 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-    <xsl:variable name="ns">http://www.tesco.com/</xsl:variable>
+    <xsl:variable name="ns">http://www.openlinksw.com/schemas/tesco#</xsl:variable>
 
     <xsl:template match="results|Products" priority="1">
 		<xsl:apply-templates select="*"/>
@@ -77,10 +78,8 @@
 					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
 					<gr:includes rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
-					<!--gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom-->
 					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
-					<gr:availableDeliveryMethods rdf:resource="&gr;UPS"/>
-					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModeMail"/>
+                    <gr:eligibleRegions>UK</gr:eligibleRegions>
 					<!--xsl:apply-templates mode="offering" /-->
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
@@ -90,12 +89,13 @@
 				<xsl:apply-templates/>
 			</rdf:Description>
 				<gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
-					<rdfs:comment>The legal agent making the offering</rdfs:comment>
+					<rdfs:comment>Tesco PLC</rdfs:comment>
 					<rdfs:label>Tesco PLC</rdfs:label>
 					<gr:legalName>Tesco PLC</gr:legalName>
 					<gr:offers rdf:resource="{$resourceURL}"/>
 					<foaf:homepage rdf:resource="http://www.tesco.com" />
 					<rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.tesco.com')}"/>
+                    <foaf:depiction rdf:resource="http://www.tesco.com/shopping/images/logoTesco.gif"/>
 				</gr:BusinessEntity>
 		</rdf:RDF>
 		</xsl:if>
@@ -132,9 +132,17 @@
     <xsl:template match="Price">
 		<gr:hasPriceSpecification>
 		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
-	    <rdfs:label><xsl:value-of select="concat('List Price of ', ., ' GBP')"/></rdfs:label>
+            <rdfs:label><xsl:value-of select="concat('Price of ', ., ' GBP')"/></rdfs:label>
             <gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="."/></gr:hasCurrencyValue>
             <gr:hasCurrency rdf:datatype="&xsd;string">GBP</gr:hasCurrency>
+          </gr:UnitPriceSpecification>
+		</gr:hasPriceSpecification>
+    </xsl:template>
+
+    <xsl:template match="PriceDescription">
+		<gr:hasPriceSpecification>
+		  <gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'price')}">
+            <rdfs:label><xsl:value-of select="."/></rdfs:label>
           </gr:UnitPriceSpecification>
 		</gr:hasPriceSpecification>
     </xsl:template>

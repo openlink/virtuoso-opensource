@@ -1,0 +1,261 @@
+<!--
+  Generated from opltesco.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
+  to handle product descriptions from the Tesco Web Service.
+ 
+  See:
+  Technical Documentation for tesco Product Advertising API
+  http://developer.tesco.com
+--> 
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/tesco#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:opltesco="http://www.openlinksw.com/schemas/tesco#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/tesco">
+        <creator xmlns="http://purl.org/dc/elements/1.1/"
+            rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</creator>
+        <owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
+    </owl:Ontology>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#ASIN">
+        <rdfs:comment>Tesco Standard Item Number - an alphanumeric token that uniquely identifies items in the tesco marketplace</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>ASIN</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#BaseProductId">
+        <rdfs:comment>Tesco Base Product Id - an alphanumeric token that uniquely identifies items in the tesco marketplace</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>Base Product Id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#hasStockKeepingUnit"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#ProductId">
+        <rdfs:comment>Tesco Product Id - an alphanumeric token that uniquely identifies items in the tesco marketplace</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>ProductId</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#hasStockKeepingUnit"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#ProductType">
+        <rdfs:comment>Tesco Product Type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>Product Type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#EANBarcode">
+        <rdfs:comment>EANBarcode</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>EAN Barcode</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#hasEAN_UCC-13"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#ImagePath">
+        <rdfs:comment>ImagePath</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>ImagePath</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/depiction"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#UnitPrice">
+        <rdfs:comment>UnitPrice</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>Unit Price</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#DetailPageURL">
+        <rdfs:comment>DetailPageURL</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>DetailPageURL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/tesco#Product">
+        <rdfs:comment>A specialization of the GoodRelations ProductOrService class for describing tesco products</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>Product</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#availability">
+        <rdfs:comment>how soon is an item dispatched</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>availability</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#color">
+        <rdfs:comment>color</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>color</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#condition">
+        <rdfs:comment>condition of the item - new/used/refurbished</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>condition</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#conditionNote">
+        <rdfs:comment>notes on the condition of the item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>condition note</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#feature">
+        <rdfs:comment>a description of a feature of the item</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>feature</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#hasListPrice">
+        <rdfs:comment>manufacturer's list price</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>list price</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#UnitPriceSpecification"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#itemHeight">
+        <rdfs:comment>the item's height</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>item height</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#itemLength">
+        <rdfs:comment>the item's length</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>item length</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#itemWeight">
+        <rdfs:comment>the item's weight</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>item weight</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#itemWidth">
+        <rdfs:comment>the item's width</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>item width</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#merchantId">
+        <rdfs:comment>tesco assigned MerchantID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>merchantID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#offerListingId">
+        <rdfs:comment>tesco assigned offer listing ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>offer listing ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#packageHeight">
+        <rdfs:comment>the package's height</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>package height</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#packageLength">
+        <rdfs:comment>the package's length</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>package length</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#packageWeight">
+        <rdfs:comment>the package's weight</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>package weight</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#packageWidth">
+        <rdfs:comment>the package's width</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>package width</rdfs:label>
+        <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#QuantitativeValueFloat"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#productGroup">
+        <rdfs:comment>the product group to which the item belongs</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>product group</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/tesco#vendorSynopsisUrl">
+        <rdfs:comment>URL of brief details of tesco merchant or seller</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/tesco#Product"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/tesco"/>
+        <rdfs:label>vendor synopsis URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+
