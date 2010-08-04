@@ -56,6 +56,7 @@ client_connection_t *repl_util_cli;
 dk_mutex_t *repl_uc_mtx;
 
 static void repl_sync (repl_acct_t * ra, char * usr, char * pwd);
+void ws_connection_vars_clear (client_connection_t * cli);
 
 static int
 repl_input_ready (dk_session_t * ses)
@@ -170,6 +171,7 @@ repl_process_message (dk_session_t * ses)
 		}
 
 	      dk_free (trx_string, bytes);
+	      ws_connection_vars_clear (repl_cli);
 	    }
 	}
       else if (IS_REPL_DISC(header))

@@ -2870,7 +2870,7 @@ error_end:
 }
 #endif
 
-static void
+void
 ws_connection_vars_clear (client_connection_t * cli)
 {
   caddr_t *name, *val;
