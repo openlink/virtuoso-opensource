@@ -181,9 +181,8 @@ create procedure ODRIVE.WA.dc_get_criteria (
   aXml := ODRIVE.WA.dc_xml_doc (search);
   retValue := cast (xpath_eval (sprintf('/dc/criteria/entry[%s]/%s', S, getValue), aXml) as varchar);
   if (is_empty_or_null(retValue))
-  {
     return defaultValue;
-  }
+
   return retValue;
 }
 ;
@@ -193,18 +192,14 @@ create procedure ODRIVE.WA.dc_get_criteria (
 create procedure ODRIVE.WA.dc_filter (
   inout search varchar)
 {
-  declare I, N integer;
-  declare aXml, aEntity, aFilter any;
+  declare entries, filter any;
 
-  aFilter := vector();
-  aXml := ODRIVE.WA.dc_xml_doc (search);
-  I := xpath_eval('count(/dc/criteria/entry)', aXml);
-  for (N := 1; N <= I; N := N + 1)
-{
-    aEntity := xpath_eval('/dc/criteria/entry', aXml, N);
-    ODRIVE.WA.dc_subfilter(aFilter, aEntity);
-  }
-  return aFilter;
+  filter := vector();
+  entries := xpath_eval('/dc/criteria/entry', ODRIVE.WA.dc_xml_doc (search), 0);
+  foreach (any entry in entries) do
+    ODRIVE.WA.dc_subfilter(filter, entry);
+
+  return filter;
 }
 ;
 

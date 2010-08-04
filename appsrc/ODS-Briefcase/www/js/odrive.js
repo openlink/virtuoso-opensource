@@ -861,13 +861,13 @@ ODRIVE.readCookie = function (name)
   return false;
 }
 
-ODRIVE.readField = function (field, doc)
+ODRIVE.readField = function (fld, doc)
 {
   var v;
   if (!doc) {doc = document;}
   if (doc.forms[0])
   {
-    v = doc.forms[0].elements[field];
+    v = doc.forms[0].elements[fld];
     if (v)
     {
       v = v.value;
@@ -876,12 +876,12 @@ ODRIVE.readField = function (field, doc)
   return v;
 }
 
-ODRIVE.createParam = function (field, doc)
+ODRIVE.createParam = function (fld, doc)
 {
   var S = '';
-  var v = ODRIVE.readField(field, doc);
+  var v = ODRIVE.readField(fld, doc);
   if (v)
-    S = '&'+field+'='+ encodeURIComponent(v);
+    S = '&'+fld+'='+ encodeURIComponent(v);
   return S;
 }
 
@@ -1049,148 +1049,116 @@ ODRIVE.formPostAfter = function (action)
 {
   var formParams = action.split('/')[0].toLowerCase();
   var form = ODRIVE.forms[formParams];
-  if (form)
-  {
+  if (form) {
     var actions = form.postActions;
-    if (actions)
-    {
+    if (actions) {
       for (var i = 0; i < actions.length; i++)
-      {
         eval(actions[i]);
       }
     }
   }
-}
 
-ODRIVE.searchRowAction = function (rowID)
+ODRIVE.searchRowAction = function (No)
 {
   var tbody = $('search_tbody');
   if (tbody)
   {
-    var seqNo = parseInt($v('search_seqNo'));
-    if (seqNo == rowID)
-    {
-      var span = $('search_span_5_' + seqNo);
-      if (span)
-      {
-        var S = span.innerHTML;
-        S = S.replace(/add_16/g, 'del_16');
-        S = S.replace(/Add/g, 'Delete');
-        span.innerHTML = S;
-      }
-      OAT.Dom.unlink('search_tr');
-      var tr = OAT.Dom.create('tr');
-      tr.id = 'search_tr';
-      var td = OAT.Dom.create('td');
-      td.colSpan = '6';
-      td.appendChild(OAT.Dom.create('hr'));
-      tr.appendChild(td);
-      tbody.appendChild(tr);
-
-      seqNo++;
-      $('search_seqNo').value = seqNo;
-      ODRIVE.searchRowCreate(seqNo);
-    }
-    else
-    {
-      OAT.Dom.unlink('search_tr_'+rowID);
+    OAT.Dom.unlink('search_tr_'+No);
       ODRIVE.searchColumnHide(1);
       ODRIVE.searchColumnHide(2);
+    var No = parseInt($v('search_no'));
+    for (var N = 0; N < No; N++)
+    {
+      if ($('search_tr_'+N))
+        return;
     }
+    OAT.Dom.show('search_tr_no');
   }
 }
 
-ODRIVE.searchRowCreate = function (rowID, values)
+ODRIVE.searchRowCreate = function (values)
 {
   var tbody = $('search_tbody');
-  if (tbody)
-  {
-    var seqNo = parseInt($v('search_seqNo'));
+  if (tbody) {
+    if (!$('search_no')) {
+    	var fld = OAT.Dom.create("input");
+      fld.type = 'hidden';
+      fld.name = 'search_no';
+      fld.id = fld.name;
+      fld.value = '0';
+      tbody.appendChild(fld);
+    }
+    var No = parseInt($v('search_no'));
+    OAT.Dom.hide ('search_tr_no');
+
     var tr = OAT.Dom.create('tr');
-    tr.id = 'search_tr_' + rowID;
-    if (seqNo != rowID)
-    {
-      tr_line = $('search_tr');
-      tbody.insertBefore(tr, tr_line);
-    }
-    else
-    {
+    tr.id = 'search_tr_' + No;
       tbody.appendChild(tr);
-    }
     if (!values)
       values = new Object();
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_0_' + rowID;
+    td.id = 'search_td_0_' + No;
     tr.appendChild(td);
-    ODRIVE.searchColumnCreate(rowID, 0, values['field_0']);
+    ODRIVE.searchColumnCreate(No, 0, values['field_0']);
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_1_' + rowID;
-    if (ODRIVE.searchColumnHideCheck(1))
-    {
+    td.id = 'search_td_1_' + No;
+    if (!values['field_1'])
       td.style.display = 'none';
-    }
     tr.appendChild(td);
     if (values['field_1'])
-      ODRIVE.searchColumnCreate(rowID, 1, values['field_1']);
+      ODRIVE.searchColumnCreate(No, 1, values['field_1']);
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_2_' + rowID;
-    if (ODRIVE.searchColumnHideCheck(2))
-    {
+    td.id = 'search_td_2_' + No;
+    if (!values['field_2'])
       td.style.display = 'none';
-    }
     tr.appendChild(td);
     if (values['field_2'])
-      ODRIVE.searchColumnCreate(rowID, 2, values['field_2']);
+      ODRIVE.searchColumnCreate(No, 2, values['field_2']);
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_3_' + rowID;
+    td.id = 'search_td_3_' + No;
     tr.appendChild(td);
     if (values['field_3'])
-      ODRIVE.searchColumnCreate(rowID, 3, values['field_3']);
+      ODRIVE.searchColumnCreate(No, 3, values['field_3']);
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_4_' + rowID;
+    td.id = 'search_td_4_' + No;
     tr.appendChild(td);
     if (values['field_4'])
-      ODRIVE.searchColumnCreate(rowID, 4, values['field_4']);
+      ODRIVE.searchColumnCreate(No, 4, values['field_4']);
 
     var td = OAT.Dom.create('td');
-    td.id = 'search_td_5_' + rowID;
+    td.id = 'search_td_5_' + No;
     td.style['whiteSpace'] = 'nowrap';
     var span = OAT.Dom.create('span');
-    span.id = 'search_span_5_' + rowID;
-    span.onclick = function (){ODRIVE.searchRowAction(rowID)};
-    OAT.Dom.addClass(span, 'button3');
+    span.onclick = function (){ODRIVE.searchRowAction(No)};
+    OAT.Dom.addClass(span, 'button');
     OAT.Dom.addClass(span, 'pointer');
-    var imgSrc = (seqNo != rowID)? 'image/del_16.png': 'image/add_16.png';
-    var img = OAT.Dom.image(imgSrc);
-    img.id = 'search_img_5_' + rowID;
+    var img = OAT.Dom.image('/ods/images/icons/trash_16.png');
+    OAT.Dom.addClass(img, 'button');
     span.appendChild(img);
-    span.appendChild((seqNo != rowID)? OAT.Dom.text(' Delete'): OAT.Dom.text(' Add'));
+    span.appendChild(OAT.Dom.text(' Delete'));
     td.appendChild(span);
     tr.appendChild(td);
-    if (values['field_5'])
-      ODRIVE.searchColumnCreate(rowID, 5, values['field_5']);
+
+    $('search_no').value = No + 1;
+
   }
 }
 
-ODRIVE.searchColumnsInit = function (rowID, columnNo)
-{
-  var tr = $('search_tr_' + rowID);
-  if (tr)
+ODRIVE.searchColumnsInit = function (No, columnNo)
   {
+  var tr = $('search_tr_' + No);
+  if (tr) {
     var tds = tr.getElementsByTagName("td");
     for (var i = columnNo; i < tds.length-1; i++)
-    {
       tds[i].innerHTML = '';
-    }
+
     if (columnNo == 0)
-    {
-      ODRIVE.searchColumnCreate(rowID, columnNo)
-    }
+      ODRIVE.searchColumnCreate(No, columnNo)
     if (columnNo <= 1)
       ODRIVE.searchColumnHide(1)
     if (columnNo <= 2)
@@ -1198,150 +1166,129 @@ ODRIVE.searchColumnsInit = function (rowID, columnNo)
   }
 }
 
-ODRIVE.searchColumnCreate = function (rowID, columnNo, columnValue)
+ODRIVE.searchColumnCreate = function (No, columnNo, columnValue)
 {
-  var tr = $('search_tr_' + rowID);
+  var tr = $('search_tr_' + No);
   if (tr)
   {
-    var td = $('search_td_' + columnNo + '_' + rowID);
-    if (td)
-    {
-      var predicate = ODRIVE.searchGetPredicate(rowID);
-      if (columnNo == 0)
-      {
-        var field = OAT.Dom.create('select');
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '95%';
-        OAT.Dom.option('', '', field);
+    var td = $('search_td_' + columnNo + '_' + No);
+    if (td) {
+      var predicate = ODRIVE.searchGetPredicate(No);
+      if (columnNo == 0) {
+        var fld = OAT.Dom.create('select');
+        fld.id = 'search_field_' + columnNo + '_' + No;
+        fld.name = fld.id;
+        fld.style.width = '95%';
+        OAT.Dom.option('', '', fld);
         for (var i = 0; i < ODRIVE.searchPredicates.length; i = i + 2)
         {
           if (ODRIVE.searchPredicates[i+1][0] == 1)
-          {
-            OAT.Dom.option(ODRIVE.searchPredicates[i+1][1], ODRIVE.searchPredicates[i], field);
-          }
+            OAT.Dom.option(ODRIVE.searchPredicates[i+1][1], ODRIVE.searchPredicates[i], fld);
         }
         if (columnValue)
-          field.value = columnValue;
-        field.onchange = function(){ODRIVE.searchColumnChange(this)};
-        td.appendChild(field);
+          fld.value = columnValue;
+        fld.onchange = function(){ODRIVE.searchColumnChange(this)};
+        td.appendChild(fld);
       }
-      if (columnNo == 1)
+      else if (columnNo == 1)
       {
-        if (predicate && (predicate[2] == 'rdfSchema'))
-        {
-          var field = OAT.Dom.create('select');
-          field.id = 'search_field_' + columnNo + '_' + rowID;
-          field.name = field.id;
-          field.style.width = '95%';
-          OAT.Dom.option('', '', field);
-          td.appendChild(field);
+        if (predicate && (predicate[2] == 'rdfSchema')) {
+          var fld = OAT.Dom.create('select');
+          fld.id = 'search_field_' + columnNo + '_' + No;
+          fld.name = fld.id;
+          fld.style.width = '95%';
+          OAT.Dom.option('', '', fld);
+          td.appendChild(fld);
+          ODRIVE.searchColumnShow(1);
 
           var x = function(data) {
             var o = OAT.JSON.parse(data);
             for (var i = 0; i < o.length; i = i + 2)
-            {
-              OAT.Dom.option(o[i+1], o[i], field);
-            }
+              OAT.Dom.option(o[i+1], o[i], fld);
+
             if (columnValue)
-              field.value = columnValue;
-            field.onchange = function(){ODRIVE.searchColumnChange(this)};
+              fld.value = columnValue;
+            fld.onchange = function(){ODRIVE.searchColumnChange(this)};
           }
           var s = 'ajax.vsp?a=search&sa=schemas';
-          OAT.AJAX.GET(s, '', x);
-          ODRIVE.searchColumnShow(1);
+          OAT.AJAX.GET(s, '', x, {async: false});
         }
       }
-      if (columnNo == 2)
+      else if (columnNo == 2)
       {
-        if (predicate && (predicate[3] == 'davProperties'))
-        {
-          var cl = new OAT.Combolist([], '');
-          cl.input.id = 'search_field_' + columnNo + '_' + rowID;;
-          cl.input.name = cl.input.id;
-          cl.input.style.width = "90%";
-          if (columnValue)
-            cl.input.value = columnValue;
-          td.appendChild(cl.div);
-          ODRIVE.propertyAddOptions(cl);
+        if (predicate && (predicate[3] == 'davProperties')) {
+          TBL.createCell40(td, 'search', 'search_field_'+columnNo+'_'+No, No, {value: columnValue})
           ODRIVE.searchColumnShow(2);
         }
-        if (predicate && (predicate[3] == 'rdfProperties'))
+        else if (predicate && (predicate[3] == 'rdfProperties'))
         {
-          var fieldSchema = $('search_field_1_' + rowID)
-          if (fieldSchema && (fieldSchema.value != ''))
-          {
-            var field = OAT.Dom.create('select');
-            field.id = 'search_field_' + columnNo + '_' + rowID;
-            field.name = field.id;
-            field.style.width = '95%';
-            OAT.Dom.option('', '', field);
-            td.appendChild(field);
+          var fldSchema = $('search_field_1_' + No)
+          if (fldSchema && (fldSchema.value != '')) {
+            var fld = OAT.Dom.create('select');
+            fld.id = 'search_field_' + columnNo + '_' + No;
+            fld.name = fld.id;
+            fld.style.width = '95%';
+            OAT.Dom.option('', '', fld);
+            td.appendChild(fld);
+            ODRIVE.searchColumnShow(2);
 
             var x = function(data) {
               var o = OAT.JSON.parse(data);
               for (var i = 0; i < o.length; i = i + 2)
-              {
-                OAT.Dom.option(o[i+1], o[i], field);
-              }
+                OAT.Dom.option(o[i+1], o[i], fld);
+
               if (columnValue)
-                field.value = columnValue;
+                fld.value = columnValue;
             }
-            var s = 'ajax.vsp?a=search&sa=schemaProperties&schema='+fieldSchema.value;
+            var s = 'ajax.vsp?a=search&sa=schemaProperties&schema='+fldSchema.value;
             OAT.AJAX.GET(s, '', x);
-            ODRIVE.searchColumnShow(2);
           }
         }
       }
-      if (columnNo == 3)
+      else if (columnNo == 3)
       {
-        var field = OAT.Dom.create('select');
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '95%';
-        OAT.Dom.option('', '', field);
+        var fld = OAT.Dom.create('select');
+        fld.id = 'search_field_' + columnNo + '_' + No;
+        fld.name = fld.id;
+        fld.style.width = '95%';
+        OAT.Dom.option('', '', fld);
         var predicateType = predicate[4];
-        for (var i = 0; i < ODRIVE.searchCompares.length; i = i + 2)
-        {
+        for (var i = 0; i < ODRIVE.searchCompares.length; i = i + 2) {
           var compareTypes = ODRIVE.searchCompares[i+1][1];
           for (var j = 0; j < compareTypes.length; j++)
           {
             if (compareTypes[j] == predicateType)
-            {
-              OAT.Dom.option(ODRIVE.searchCompares[i+1][0], ODRIVE.searchCompares[i], field);
-            }
+              OAT.Dom.option(ODRIVE.searchCompares[i+1][0], ODRIVE.searchCompares[i], fld);
           }
         }
         if (columnValue)
-          field.value = columnValue;
-        td.appendChild(field);
+          fld.value = columnValue;
+        td.appendChild(fld);
       }
-      if (columnNo == 4)
+      else if (columnNo == 4)
       {
     		var properties = OAT.Dom.create("input");
-    		var field = OAT.Dom.create("input");
-    		field.type = 'text';
-        field.id = 'search_field_' + columnNo + '_' + rowID;
-        field.name = field.id;
-        field.style.width = '93%';
+    		var fld = OAT.Dom.create("input");
+    		fld.type = 'text';
+        fld.id = 'search_field_' + columnNo + '_' + No;
+        fld.name = fld.id;
+        fld.style.width = '93%';
         if (columnValue)
-          field.value = columnValue;
-        td.appendChild(field);
-        for (var i = 0; i < predicate[5].length; i = i + 2)
-        {
-          if (predicate[5][i] == 'size')
-          {
-    		    field['size'] = predicate[5][i+1];
-            field.style.width = null;
+          fld.value = columnValue;
+        td.appendChild(fld);
+        for (var i = 0; i < predicate[5].length; i = i + 2) {
+          if (predicate[5][i] == 'size') {
+    		    fld['size'] = predicate[5][i+1];
+            fld.style.width = null;
           }
-          if (predicate[5][i] == 'onclick')
+          else if (predicate[5][i] == 'onclick')
           {
-			      OAT.Event.attach(field, "click", new Function((predicate[5][i+1]).replace(/-FIELD-/g, field.id)));
+			      OAT.Event.attach(fld, "click", new Function((predicate[5][i+1]).replace(/-FIELD-/g, fld.id)));
           }
-          if (predicate[5][i] == 'button')
+          else if (predicate[5][i] == 'button')
           {
     		    var span = OAT.Dom.create("span");
-    		    span.innerHTML = ' ' + (predicate[5][i+1]).replace(/-FIELD-/g, field.id);
+    		    span.innerHTML = ' ' + (predicate[5][i+1]).replace(/-FIELD-/g, fld.id);
             td.appendChild(span);
           }
         }
@@ -1352,8 +1299,8 @@ ODRIVE.searchColumnCreate = function (rowID, columnNo, columnValue)
 
 ODRIVE.searchColumnShow = function (columnNo)
 {
-  var seqNo = parseInt($v('search_seqNo'));
-  for (var i = 0; i <= seqNo; i++)
+  var No = parseInt($v('search_no'));
+  for (var i = 0; i <= No; i++)
   {
     var td = $('search_td_' + columnNo + '_' + i);
     if (td)
@@ -1364,8 +1311,8 @@ ODRIVE.searchColumnShow = function (columnNo)
 
 ODRIVE.searchColumnHideCheck = function (columnNo)
 {
-  var seqNo = parseInt($v('search_seqNo'));
-  for (var i = 0; i <= seqNo; i++)
+  var No = parseInt($v('search_no'));
+  for (var i = 0; i <= No; i++)
   {
     var td = $('search_td_' + columnNo + '_' + i);
     if (td && (td.innerHTML != '')) {return false;}
@@ -1377,8 +1324,8 @@ ODRIVE.searchColumnHide = function (columnNo)
 {
   if (ODRIVE.searchColumnHideCheck(columnNo))
   {
-    var seqNo = parseInt($v('search_seqNo'));
-    for (var i = 0; i <= seqNo; i++)
+    var No = parseInt($v('search_no'));
+    for (var i = 0; i <= No; i++)
     {
       var td = $('search_td_' + columnNo + '_' + i);
       if (td)
@@ -1392,42 +1339,42 @@ ODRIVE.searchColumnChange = function (obj)
 {
   var parts = obj.id.split('_');
   var columnNo = parseInt(parts[2]);
-  var rowID = parts[3];
-  var predicate = ODRIVE.searchGetPredicate(rowID);
+  var No = parts[3];
+  var predicate = ODRIVE.searchGetPredicate(No);
   if (columnNo == 0)
   {
-    ODRIVE.searchColumnsInit(rowID, 1);
+    ODRIVE.searchColumnsInit(No, 1);
     if (obj.value == '') {return;}
     if (predicate && (predicate[2]))
     {
-      ODRIVE.searchColumnCreate(rowID, 1)
+      ODRIVE.searchColumnCreate(No, 1)
       return;
     }
   }
   if (columnNo == 1)
   {
-    ODRIVE.searchColumnsInit(rowID, 2);
+    ODRIVE.searchColumnsInit(No, 2);
     if (obj.value == '') {return;}
   }
   if (predicate)
   {
     if (predicate[3])
     {
-      ODRIVE.searchColumnCreate(rowID, 2)
+      ODRIVE.searchColumnCreate(No, 2)
     }
-    ODRIVE.searchColumnCreate(rowID, 3)
-    ODRIVE.searchColumnCreate(rowID, 4)
+    ODRIVE.searchColumnCreate(No, 3)
+    ODRIVE.searchColumnCreate(No, 4)
   }
 }
 
-ODRIVE.searchGetPredicate = function (rowID)
+ODRIVE.searchGetPredicate = function (No)
 {
-  var field = $('search_field_0_' + rowID)
-  if (field)
+  var fld = $('search_field_0_' + No)
+  if (fld)
   {
     for (var i = 0; i < ODRIVE.searchPredicates.length; i = i + 2)
     {
-      if (ODRIVE.searchPredicates[i] == field.value)
+      if (ODRIVE.searchPredicates[i] == fld.value)
       {
         return ODRIVE.searchPredicates[i+1];
       }
@@ -1439,8 +1386,7 @@ ODRIVE.searchGetPredicate = function (rowID)
 ODRIVE.searchGetCompares = function (predicate)
 {
   if (predicate)
-  {
-  }
+  {}
   return null;
 }
 
