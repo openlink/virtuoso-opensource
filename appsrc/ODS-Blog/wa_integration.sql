@@ -790,15 +790,18 @@ create method wa_dashboard () for wa_blog2 {
               XMLAGG(XMLELEMENT('dash-row',
                          XMLATTRIBUTES('normal' as "class", BLOG.DBA.BLOG2_DATE_FOR_HUMANS(B_TS) as "time", self.wa_name as "application"),
                          XMLELEMENT('dash-data',
-	    XMLATTRIBUTES(sprintf('<a href=\"%s/%s\">%s</a>', url, B_POST_ID,
-		BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT)) "content", B_COMMENTS_NO "comments")
+	    XMLATTRIBUTES(
+
+	      concat ( N'<a href="' , cast (url as nvarchar),
+	       	       N'/', cast (B_POST_ID as nvarchar), N'">',
+		       charset_recode (BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT), 'UTF-8', '_WIDE_'), N'</a>')
+
+	      "content", B_COMMENTS_NO "comments")
                          )
                     )
               )
             from
       (select top 10 * from BLOG.DBA.SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = self.blogid order by B_TS desc) T);
-  notf:
-  return '';
 }
 ;
 
