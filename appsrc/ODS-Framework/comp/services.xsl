@@ -86,10 +86,7 @@
                     <v:after-data-bind>
                       <![CDATA[
                         control.ufl_value := '<img src="images/icons/add_16.png" border="0" alt="Join" title="Join"/>&#160;Join';
-			control.vc_enabled :=
-			DB.DBA.WA_USER_CAN_JOIN_INSTANCE (
-			  self.u_id,
-			  (control.vc_parent as vspx_row_template).te_rowset[3]);
+                  			control.vc_enabled := DB.DBA.WA_USER_CAN_JOIN_INSTANCE (self.u_id, (control.vc_parent as vspx_row_template).te_rowset[3]);
                       ]]>
                     </v:after-data-bind>
                   </vm:url>
@@ -150,22 +147,16 @@
         declare _str any;
         _str := string_output();
         http('<dashboard>', _str);
-        for select
-          inst.WAI_INST.wa_dashboard() as r
-        from
-          WA_INSTANCE inst
-        where
-          inst.WAI_IS_PUBLIC >= 1 or
-          exists(select
-                   1
-                 from
-                   WA_MEMBER
-                 where
-                   WAM_INST = inst.WAI_NAME and
-                   WAM_STATUS <= 2 and
-                   WAM_USER = self.u_id
-                 )
-        do {
+            for select inst.WAI_INST.wa_dashboard() as r
+                  from WA_INSTANCE inst
+                  where inst.WAI_IS_PUBLIC >= 1
+                     or exists (select 1
+                                  from WA_MEMBER
+                                 where WAM_INST = inst.WAI_NAME
+                                   and WAM_STATUS <= 2
+                                   and WAM_USER = self.u_id)
+            do
+            {
           http_value(r, null, _str);
         }
         http('</dashboard>', _str);
@@ -179,13 +170,15 @@
         declare _is_dav, _xsl_fullname, _xsl_string, _xsl_uri any;
         declare _dav_path, _dav_fullpath any;
         _is_dav := http_map_get('is_dav');
-        if(not _is_dav) {
+            if (not _is_dav)
+            {
           -- file system
           _xsl_fullname := concat(_real_dir, '/', _style, '.xsl');
           _xsl_string := file_to_string(_xsl_fullname);
           _xsl_uri := concat('file://', _request_dir, '/', _style, '.xsl');
         }
-        else {
+            else
+            {
           -- dav collection
           declare _position any;
           _dav_path := http_physical_path();
@@ -210,7 +203,8 @@
       </v:before-render>
     </v:template>
     <?vsp
-      if(length(self.dashboard_content) = 0) {
+      if (length(self.dashboard_content) = 0)
+      {
         http('<br/>');
       }
       else {
@@ -230,12 +224,9 @@
   <![CDATA[
 function selectAllCheckboxes (form, btn, txt)
 {
-  var i;
-  for (i =0; i < form.elements.length; i++)
-    {
+        for (var i =0; i < form.elements.length; i++) {
       var contr = form.elements[i];
-      if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)
-        {
+          if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1) {
     contr.focus();
     if (btn.value == 'Select All')
       contr.checked = true;
@@ -371,12 +362,9 @@ function selectAllCheckboxes (form, btn, txt)
                     ]]>
                   </v:after-data-bind>
                   <v:on-post>
-                    <v:script>
                     <![CDATA[
-		    self.vc_redirect (sprintf('freeze.vspx?app=%s',
-		    	(control.vc_parent as vspx_row_template).te_rowset[3]));
+		                  self.vc_redirect (sprintf('freeze.vspx?app=%s', (control.vc_parent as vspx_row_template).te_rowset[3]));
                     ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <v:button style="url" value="Unfreeze" action="simple" name="unfreeze_instance">
@@ -386,7 +374,6 @@ function selectAllCheckboxes (form, btn, txt)
                     ]]>
                   </v:after-data-bind>
                   <v:before-data-bind>
-                    <v:script>
                       <![CDATA[
                         declare freeze varchar;
                         freeze := (select WAI_IS_FROZEN from WA_INSTANCE where WAI_NAME = (control.vc_parent as vspx_row_template).te_rowset[3]);
@@ -395,15 +382,12 @@ function selectAllCheckboxes (form, btn, txt)
                         else
                           control.vc_enabled := 0;
                       ]]>
-                    </v:script>
                   </v:before-data-bind>
                   <v:on-post>
-                    <v:script>
                     <![CDATA[
                       update WA_INSTANCE set WAI_IS_FROZEN = 0 where WAI_NAME = (control.vc_parent as vspx_row_template).te_rowset[3];
                       self.vc_redirect ('security.vspx');
                     ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <vm:url value="Delete"
@@ -414,14 +398,12 @@ function selectAllCheckboxes (form, btn, txt)
                     ]]>
                   </v:after-data-bind>
                   <v:before-data-bind>
-                    <v:script>
                       <![CDATA[
                         if (wa_user_is_dba (self.u_name, self.u_group))
                           control.vc_enabled := 1;
                         else
                           control.vc_enabled := 0;
                       ]]>
-                    </v:script>
                   </v:before-data-bind>
                 </vm:url>
               </td>
@@ -444,7 +426,8 @@ function selectAllCheckboxes (form, btn, txt)
 	       v := rtrim (v, ',');
 	       if (length (v))
 	         self.vc_redirect ('freeze.vspx?apps='||v);
-	       ]]></v:on-post>
+	       ]]>
+	     </v:on-post>
        </v:button>
        <v:button name="remove_btn" value="Delete Selected" action="simple" >
 	   <v:on-post><![CDATA[
