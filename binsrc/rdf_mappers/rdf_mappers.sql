@@ -948,6 +948,14 @@ create procedure DB.DBA.RM_SPONGE_DOC_IRI (in url varchar, in frag varchar := 't
 }
 ;
 
+create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
+{
+  if (is_https_ctx ())
+    return 'https';
+  return 'http';
+}
+;
+
 --
 -- # this is used to make proxy IRI of the document
 --
@@ -975,9 +983,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login var
   uri := ltrim (uri, '/');
 
   if (length (login))
-    ret := sprintf ('http://%s/about/rdf/%s/%U/%s%s', cname, url_sch, login, uri, frag);
+    ret := sprintf ('%s://%s/about/rdf/%s/%U/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, login, uri, frag);
   else
-    ret := sprintf ('http://%s/about/id/%s/%s%s', cname, url_sch, uri, frag);
+    ret := sprintf ('%s://%s/about/id/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
   return ret;
 }
 ;
@@ -1031,7 +1039,7 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
   uri := vspx_uri_compose (ua);
   uri := ltrim (uri, '/');
 
-  ret := sprintf ('http://%s/about/id/entity/%s/%s%s', cname, url_sch, uri, frag);
+  ret := sprintf ('%s://%s/about/id/entity/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
   return ret;
 }
 ;
@@ -6453,6 +6461,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
       if (get_keyword ('add-html-meta', opts) = 'yes')
         add_html_meta := 1;
     }
+    
   set_user_id ('dba');
   mdta := 0;
   ret_flag := 1;
