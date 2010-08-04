@@ -1960,90 +1960,70 @@ create procedure POLLS.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
+
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
@@ -2054,15 +2034,9 @@ create procedure POLLS.WA.dt_deformat(
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   N := 1;
   I := 0;
@@ -3015,43 +2989,52 @@ create procedure POLLS.WA.search_sql (
 
 -------------------------------------------------------------------------------
 --
-create procedure POLLS.WA.dashboard_get(
-  in domain_id integer,
-  in user_id integer)
+create procedure POLLS.WA.dashboard_rs(
+  in p0 integer)
 {
-  declare ses any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
 
-  ses := string_output ();
-  http ('<poll-db>', ses);
-  for select top 10 *
-        from (select a.P_NAME,
-                     SIOC..poll_post_iri (domain_id, P_ID) P_URI,
-                     a.P_UPDATED
-                from POLLS.WA.POLL a,
-                     DB.DBA.WA_INSTANCE b,
-                     DB.DBA.WA_MEMBER c
-                where a.P_DOMAIN_ID = domain_id
-                  and b.WAI_ID = a.P_DOMAIN_ID
-                  and c.WAM_INST = b.WAI_NAME
-                  and c.WAM_USER = user_id
-                order by a.P_UPDATED desc
-             ) x do {
-
-    declare uname, full_name varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
-
-    http ('<poll>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (P_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', P_NAME), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', P_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
-    http ('</poll>', ses);
+  result_names(c0, c1, c2);
+  for (select top 10 *
+         from (select P_ID,
+                      P_NAME,
+                      P_UPDATED
+                 from POLLS.WA.POLL
+                where P_DOMAIN_ID = p0
+                order by P_UPDATED desc
+              ) x
+      ) do
+  {
+    result (P_ID, P_NAME, coalesce (P_UPDATED, now ()));
   }
-  http ('</poll-db>', ses);
-  return string_output_string (ses);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.dashboard_get(
+  in domain_id integer)
+{
+  declare account_id integer;
+  declare aStream any;
+
+  account_id := POLLS.WA.domain_owner_id (domain_id);
+  aStream := string_output ();
+  http ('<poll-db>', aStream);
+  for (select x.* from POLLS.WA.dashboard_rs(p0)(_id integer, _name varchar, _time datetime) x where p0 = domain_id) do
+  {
+    http ('<poll>', aStream);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (_time)), aStream);
+    http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
+    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..poll_post_iri (domain_id, _id)), aStream);
+    http (sprintf ('<from><![CDATA[%s]]></from>', POLLS.WA.account_fullName (account_id)), aStream);
+    http (sprintf ('<uid>%s</uid>', POLLS.WA.account_name (account_id)), aStream);
+    http ('</poll>', aStream);
+  }
+  http ('</poll-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 

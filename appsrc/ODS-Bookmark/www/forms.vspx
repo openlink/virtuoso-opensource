@@ -110,7 +110,7 @@
           {
             http (left (cast (fValue as varchar), 10));
           } else {
-            http (BMK.WA.utf2wide (fValue));
+            http (fValue);
           }
         }
       }
@@ -612,7 +612,7 @@
                       node := (control as vspx_row_template).te_column_value('_NODE');
                       id := BMK.WA.node_id (node);
                       domain_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
-                      title := (control as vspx_row_template).te_column_value('_NAME');
+                      title := BMK.WA.utf2wide ((control as vspx_row_template).te_column_value('_NAME'));
                       if (lcase(BMK.WA.node_type ((control as vspx_row_template).te_column_value('_NODE'))) = 'b')
                       {
                         uri := (control as vspx_row_template).te_column_value('_URI');

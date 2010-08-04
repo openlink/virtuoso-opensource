@@ -4365,37 +4365,63 @@ _end:;
 
 -----------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.dashboard_get(
-  in _domain_id integer,
-  in _user_id   integer)
+create procedure ENEWS.WA.dashboard_rs (
+  in p0 integer)
 {
-  declare _user_name varchar;
-  declare sStream any;
+  declare N integer;
+  declare xt, xp any;
+  declare id, title, dt, autor, mail any;
 
-  _user_name := ENEWS.WA.account_name (_user_id);
-  sStream := string_output ();
+  declare c0 integer;
+  declare c1 integer;
+  declare c2 varchar;
+  declare c3 datetime;
+  declare c4 varchar;
+  declare c5 varchar;
 
-  for (select EF_ID, EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id and EF_DASHBOARD is not null) do
+  result_names (c0, c1, c2, c3, c4, c5);
+  for (select EF_ID,
+              EF_DASHBOARD
+         from ENEWS.WA.FEED,
+              ENEWS.WA.FEED_DOMAIN
+        where EFD_FEED_ID = EF_ID
+          and EFD_DOMAIN_ID = p0
+          and EF_DASHBOARD is not null) do
   {
-      declare I, J integer;
-      declare xt, xp any;
-      declare _id, _title, _dt, _from, _email any;
-
       xt := xtree_doc (EF_DASHBOARD);
       xp := xpath_eval ('/feed-db/*', xt, 0);
-      http ('<feed-db>', sStream);
-    for (j := 0; j < length (xp); j := j + 1)
+    for (N := 0; N < length (xp); N := N + 1)
     {
-      _id    := serialize_to_UTF8_xml (xpath_eval ('string(@id)', xp[j]));
-      _title := serialize_to_UTF8_xml (xpath_eval ('string(./title)', xp[j]));
-      _dt    := serialize_to_UTF8_xml (xpath_eval ('string(./dt)', xp[j]));
-      _from  := serialize_to_UTF8_xml (xpath_eval ('string(./from)', xp[j]));
-      _email := serialize_to_UTF8_xml (xpath_eval ('string(./email)', xp[j]));
-        http (sprintf ('<post id="%s"><title><![CDATA[%s]]></title><dt>%s</dt><link>%V?instance=%d</link><from><![CDATA[%s]]></from><uid>%V</uid><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _user_name, _email), sStream);
+      id    := xpath_eval ('@id', xp[N]);
+      title := serialize_to_UTF8_xml (xpath_eval ('string(./title)', xp[N]));
+      dt    := stringdate (xpath_eval ('string(./dt)', xp[N]));
+      autor := serialize_to_UTF8_xml (xpath_eval ('string(./from)', xp[N]));
+      mail  := serialize_to_UTF8_xml (xpath_eval ('string(./email)', xp[N]));
+      result (EF_ID, cast (id as integer), title, coalesce (dt, now()), autor, mail);
       }
-      http ('</feed-db>', sStream);
     }
-  return string_output_string (sStream);
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.dashboard_get (
+  in domain_id integer)
+{
+  declare account_name varchar;
+  declare aStream any;
+
+  account_name := ENEWS.WA.domain_owner_name (domain_id);
+  aStream := string_output ();
+  http ('<feed-db>', aStream);
+  for (select TOP 10 x.*
+         from ENEWS.WA.dashboard_rs(p0)(_feed_id integer, _id integer, _name varchar, _time datetime, _autor varchar, _mail varchar) x
+        where p0 = domain_id order by x._time desc) do
+  {
+    http (sprintf ('<post id="%d"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><uid>%V</uid><email>%V</email></post>', _id, ENEWS.WA.utf2wide (_name), ENEWS.WA.dt_iso8601 (_time), SIOC..feed_item_iri (_feed_id, _id), domain_id, _autor, account_name, _mail), aStream);
+  }
+  http ('</feed-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 
@@ -5851,90 +5877,70 @@ create procedure ENEWS.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
+
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
@@ -5945,15 +5951,9 @@ create procedure ENEWS.WA.dt_deformat(
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   N := 1;
   I := 0;

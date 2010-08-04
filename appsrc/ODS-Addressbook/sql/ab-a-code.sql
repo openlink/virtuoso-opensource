@@ -2260,83 +2260,62 @@ create procedure AB.WA.dt_format(
   };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
@@ -2787,43 +2766,51 @@ create procedure AB.WA.ab_graph_create ()
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.dashboard_get(
-  in domain_id integer,
-  in user_id integer)
+create procedure AB.WA.dashboard_rs(
+  in p0 integer)
 {
-  declare ses any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
 
-  ses := string_output ();
-  http ('<ab-db>', ses);
-  for select top 10 *
-        from (select a.P_NAME,
-                     SIOC..addressbook_contact_iri (domain_id, P_ID) P_URI,
-                     coalesce (a.P_UPDATED, now ()) P_UPDATED
-                from AB.WA.PERSONS a,
-                     DB.DBA.WA_INSTANCE b,
-                     DB.DBA.WA_MEMBER c
-                where a.P_DOMAIN_ID = domain_id
-                  and b.WAI_ID = a.P_DOMAIN_ID
-                  and c.WAM_INST = b.WAI_NAME
-                  and c.WAM_USER = user_id
-                order by a.P_UPDATED desc
-             ) x do
+  result_names(c0, c1, c2);
+  for (select top 10 *
+         from (select P_ID,
+                      P_NAME,
+                      P_UPDATED
+                 from AB.WA.PERSONS
+                where P_DOMAIN_ID = p0
+                order by P_UPDATED desc
+              ) x) do
   {
-    declare uname, full_name varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
-
-    http ('<ab>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (P_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', P_NAME), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', P_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
-    http ('</ab>', ses);
+    result (P_ID, P_NAME, P_UPDATED);
   }
-  http ('</ab-db>', ses);
-  return string_output_string (ses);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.dashboard_get(
+  in domain_id integer)
+{
+  declare account_id integer;
+  declare aStream any;
+
+  account_id := AB.WA.domain_owner_id (domain_id);
+  aStream := string_output ();
+  http ('<ab-db>', aStream);
+  for (select x.* from AB.WA.dashboard_rs(p0)(_id integer, _name varchar, _time datetime) x where p0 = domain_id) do
+  {
+    http ('<ab>', aStream);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (coalesce (_time, now ()))), aStream);
+    http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
+    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..addressbook_contact_iri (domain_id, _id)), aStream);
+    http (sprintf ('<from><![CDATA[%s]]></from>', AB.WA.account_fullName (account_id)), aStream);
+    http (sprintf ('<uid>%s</uid>', AB.WA.account_name (account_id)), aStream);
+    http ('</ab>', aStream);
+  }
+  http ('</ab-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 

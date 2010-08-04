@@ -3515,57 +3515,66 @@ create procedure CAL.WA.checkedAttribute (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.dashboard_get(
-  in _domain_id integer,
-  in _account_id integer,
-  in _privacy integer := 0)
+create procedure CAL.WA.dashboard_rs (
+  in p0 integer,
+  in p1 integer := 0)
 {
-  declare sStream any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
 
-  sStream := string_output ();
-  http ('<calendar-db>', sStream);
-  if (_privacy = 1)
+  result_names(c0, c1, c2);
+  if (p1 = 1)
   {
     for (select top 10 *
-        from (select a.E_SUBJECT,
-                        SIOC..calendar_event_iri (_domain_id, E_ID) E_URI,
-                     coalesce (a.E_UPDATED, now ()) E_UPDATED
-                from CAL.WA.EVENTS a,
-                     DB.DBA.WA_INSTANCE b,
-                     DB.DBA.WA_MEMBER c
-                  where a.E_DOMAIN_ID = _domain_id
-                    and a.E_PRIVACY >= _privacy
-                  and b.WAI_ID = a.E_DOMAIN_ID
-                  and c.WAM_INST = b.WAI_NAME
-                    and c.WAM_USER = _account_id
-                order by a.E_UPDATED desc
+           from (select E_ID,
+                        E_SUBJECT,
+                        E_UPDATED
+                   from CAL.WA.EVENTS
+                  where E_DOMAIN_ID = p0
+                    and E_PRIVACY >= p1
+                  order by E_UPDATED desc
                 ) x
         ) do
   {
-      CAL.WA.dashboard_item (sStream, _account_id, E_SUBJECT, E_URI, E_UPDATED);
+      result (E_ID, E_SUBJECT, coalesce (E_UPDATED, now ()));
   }
   } else {
     for (select top 10 *
-           from (select a.E_SUBJECT,
-                        SIOC..calendar_event_iri (_domain_id, a.E_ID) E_URI,
-                        coalesce (a.E_UPDATED, now ()) E_UPDATED
+           from (select a.E_ID,
+                        a.E_SUBJECT,
+                        a.E_UPDATED
                    from CAL.WA.EVENTS a,
-                        CAL..MY_CALENDARS b,
-                        DB.DBA.WA_INSTANCE c,
-                        DB.DBA.WA_MEMBER d
-                  where b.domain_id = _domain_id
-                    and b.privacy = _privacy
+                        CAL..MY_CALENDARS b
+                  where b.domain_id = p0
+                    and b.privacy = p1
                     and a.E_DOMAIN_ID = b.CALENDAR_ID
                     and a.E_PRIVACY >= b.CALENDAR_PRIVACY
-                    and c.WAI_ID = _domain_id
-                    and d.WAM_INST = c.WAI_NAME
-                    and d.WAM_USER = _account_id
                   order by a.E_UPDATED desc
                 ) x
         ) do
     {
-      CAL.WA.dashboard_item (sStream, _account_id, E_SUBJECT, E_URI, E_UPDATED);
+      result (E_ID, E_SUBJECT, coalesce (E_UPDATED, now ()));
     }
+    }
+  }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dashboard_get (
+  in domain_id integer,
+  in privacy integer := 0)
+{
+  declare account_id integer;
+  declare sStream any;
+
+  account_id := CAL.WA.domain_owner_id (domain_id);
+  sStream := string_output ();
+  http ('<calendar-db>', sStream);
+  for (select x.* from CAL.WA.dashboard_rs(p0, p1)(_id integer, _name varchar, _time datetime) x where p0 = domain_id and p1 = privacy) do
+  {
+    CAL.WA.dashboard_item (sStream, account_id, _name, SIOC..calendar_event_iri (domain_id, _id), _time);
   }
   http ('</calendar-db>', sStream);
   return string_output_string (sStream);

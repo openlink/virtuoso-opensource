@@ -162,6 +162,11 @@ ENEWS.WA.exec_no_error (
 ;
 
 ENEWS.WA.exec_no_error (
+  'alter type wa_eNews2 add overriding method wa_dashboard () returns any'
+)
+;
+
+ENEWS.WA.exec_no_error (
   'alter type wa_eNews2 add method wa_dashboard_last_item () returns any'
 )
 ;
@@ -382,14 +387,34 @@ create method get_param (in param varchar) for wa_eNews2
 
 -------------------------------------------------------------------------------
 --
+create method wa_dashboard () for wa_eNews2
+{
+  declare iWaiID integer;
+
+  iWaiID := cast (self.eNewsID as integer);
+  return (select XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       ENEWS.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..feed_item_iri (_feed_id, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from ENEWS.WA.dashboard_rs(p0)(_feed_id integer, _id integer, _title varchar, _time datetime, _autor varchar, _mail varchar) x
+           where p0 = iWaiID
+         );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_eNews2
 {
-  declare domainID, ownerID integer;
-
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
-  return ENEWS.WA.dashboard_get (domainID, ownerID);
+  return ENEWS.WA.dashboard_get (cast (self.eNewsID as integer));
 }
 ;
 
@@ -399,9 +424,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_eNews2
 {
   declare domainID, ownerID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
-
+  domainID := cast (self.eNewsID as integer);
+  ownerID := ENEWS.WA.domain_owner_id (domainID);
   return concat(ENEWS.WA.dav_url2 (domainID, ownerID), 'OFM.rdf');
 }
 ;
