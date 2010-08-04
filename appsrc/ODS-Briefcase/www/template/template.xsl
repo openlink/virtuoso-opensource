@@ -692,16 +692,9 @@
         </tr>
       </table>
       <br />
-		  <?vsp
-		    declare I, N integer;
-		    declare S varchar;
-		    declare aCriteria, criteria any;
-        declare V, f0, f1, f2, f3, f4 any;
-
-        aCriteria := ODRIVE.WA.dc_xml_doc (self.search_dc);
-        I := xpath_eval('count(/dc/criteria/entry)', aCriteria);
-		  ?>
-      <input name="search_seqNo" id="search_seqNo" type="hidden" value="<?V I ?>" />
+      <table style="width: 100%;">
+        <tr>
+          <td>
       <table id="searchProperties" class="form-list" style="width: 100%;" cellspacing="0">
         <thead>
           <tr>
@@ -714,15 +707,18 @@
           </tr>
         </thead>
         <tbody id="search_tbody">
-          <tr id="search_tr">
-            <td colspan="6">
-              <hr />
-            </td>
-          </tr>
+                <tr id="search_tr_no"><td colspan="6"><b>No Criteria</b></td></tr>
     		  <![CDATA[
     		    <script type="text/javascript">
               OAT.MSG.attach(OAT, "PAGE_LOADED", ODRIVE.initFilter);
     		  <?vsp
+            		    declare I, N integer;
+            		    declare S varchar;
+            		    declare aCriteria, criteria any;
+                    declare V, f0, f1, f2, f3, f4 any;
+
+                    aCriteria := ODRIVE.WA.dc_xml_doc (self.search_dc);
+                    I := xpath_eval('count(/dc/criteria/entry)', aCriteria);
               for (N := 1; N <= I; N := N + 1)
               {
                 criteria := xpath_eval('/dc/criteria/entry', aCriteria, N);
@@ -731,16 +727,20 @@
                 f2 := coalesce (cast (xpath_eval ('@property', criteria) as varchar), 'null');
                 f3 := coalesce (cast (xpath_eval ('@criteria', criteria) as varchar), 'null');
                 f4 := coalesce (cast (xpath_eval ('.', criteria) as varchar), 'null');
-                S := sprintf ('field_0:\'%s\', field_1:\'%s\', field_2:\'%s\', field_3:\'%s\', field_4:\'%s\'', f0, f1, f2, f3, f4);
-                S := replace (S, '\'null\'', 'null');
+                      S := replace (sprintf ('field_0:\'%s\', field_1:\'%s\', field_2:\'%s\', field_3:\'%s\', field_4:\'%s\'', f0, f1, f2, f3, f4), '\'null\'', 'null');
 
-                http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\', {%s});});', N - 1, S));
+                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate({%s});});', S));
               }
-              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){ODRIVE.searchRowCreate(\'%d\');})', I));
     		  ?>
     		    </script>
     		  ]]>
         </tbody>
+      </table>
+          </td>
+          <td valign="top" nowrap="nowrap" width="1%">
+            <span class="button pointer" onclick="javascript: ODRIVE.searchRowCreate();"><img src="image/add_16.png" border="0" class="button" alt="Add Criteria" title="Add Criteria" /> Add</span><br /><br />
+          </td>
+        </tr>
       </table>
         </div>
   </xsl:template>

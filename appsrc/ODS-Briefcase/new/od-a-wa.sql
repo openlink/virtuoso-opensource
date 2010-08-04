@@ -184,6 +184,11 @@ ODRIVE.WA.exec_no_error (
 ;
 
 ODRIVE.WA.exec_no_error (
+  'alter type wa_oDrive add overriding method wa_dashboard () returns any'
+)
+;
+
+ODRIVE.WA.exec_no_error (
   'alter type wa_oDrive add method wa_dashboard_last_item () returns any'
 )
 ;
@@ -405,98 +410,54 @@ create method get_param (in param varchar) for wa_oDrive
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create method wa_dashboard () for wa_oDrive
+{
+  declare domainID integer;
+
+  domainID := self.wa_id ();
+  return (select TOP 10
+                 XMLAGG ( XMLELEMENT ( 'dash-row',
+                                       XMLATTRIBUTES ( 'normal' as "class",
+                                                       ODRIVE.WA.dt_format(_time, 'Y/M/D H:N') as "time",
+                                                       self.wa_name as "application"
+                                                      ),
+                                       XMLELEMENT ( 'dash-data',
+                                                    XMLATTRIBUTES ( concat (N'<a href="', cast (_link as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                                  0 as "comments"
+	                                                                )
+                                          	      )
+                                     )
+                     	  )
+            from ODRIVE.WA.dashboard_rs(p0)(_id integer, _title varchar, _link varchar, _time datetime, _owner integer) x
+           where p0 = domainID
+         );
+      }
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_dashboard_last_item () for wa_oDrive
 {
-  declare ses, vspxUser, c_iri any;
-  declare iUserID integer;
+  declare domainID integer;
+  declare aStream any;
 
-  c_iri := SIOC..briefcase_iri (self.wa_name);
-  vspxUser := connection_get ('vspx_user');
-  iUserID := (select top 1 U_ID from SYS_USERS A, WA_MEMBER B where B.WAM_USER = A.U_ID and B.WAM_INST = self.wa_name and B.WAM_MEMBER_TYPE = 1);
-  ses := string_output ();
-
-  http ('<dav-db>', ses);
-  if (isnull (vspxUser)) {
-    for (select top 10 RES_ID,
-                RES_FULL_PATH,
-                RES_MOD_TIME,
-                RES_NAME,
-                RES_OWNER
-           from WS.WS.SYS_DAV_RES
-          where RES_FULL_PATH like '/DAV/home/%'
-            and RES_OWNER = iUserID
-            and substring (RES_PERMS, 7, 1) = '1'
-          order by RES_MOD_TIME desc) do {
-
-      declare uname, full_name varchar;
-
-      uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
-      full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
-
-      http ('<resource>', ses);
-      http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
-      http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
-      http (sprintf ('<link><![CDATA[%s]]></link>', RES_FULL_PATH), ses);
-      http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-      http (sprintf ('<uid>%s</uid>', uname), ses);
-      http ('</resource>', ses);
-    }
-  } else {
-  for select top 10 *
-        from (select *
-              from (select top 10 RES_ID,
-                           RES_FULL_PATH,
-                           RES_MOD_TIME,
-                           RES_NAME,
-                           RES_OWNER
-                        from WS.WS.SYS_DAV_RES
-                               join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
-                                 join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
-                     where RES_FULL_PATH like '/DAV/home/%'
-                       and AI_PARENT_TYPE = 'R'
-                           and GI_SUPER = iUserID
-                         and AI_FLAG = 'G'
-                       order by RES_MOD_TIME desc
-                     ) acl
-              union
-                select *
-                from (select top 10 RES_ID,
-                             RES_FULL_PATH,
-                             RES_MOD_TIME,
-                             RES_NAME,
-                             RES_OWNER
-                          from WS.WS.SYS_DAV_RES
-                       where RES_FULL_PATH like '/DAV/home/' || vspxUser || '%'
-                         and RES_OWNER = iUserID
-                           and RES_PERMS like '1%'
-                         order by RES_MOD_TIME desc
-                     ) own
-             ) sub
-       order by RES_MOD_TIME desc do {
-
-      declare uname, full_name, wai_name, link varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
-
-      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
-      if (isnull (wai_name)) {
-        link := RES_FULL_PATH;
-      } else {
-        link := SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID);
-      }
-
-    http ('<resource>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
-      http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
-      http (sprintf ('<link><![CDATA[%s]]></link>', link), ses);
-      http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
-    http ('</resource>', ses);
+  domainID := self.wa_id ();
+  aStream := string_output ();
+  http ('<dav-db>', aStream);
+  for (select x.* from ODRIVE.WA.dashboard_rs (p0)(_id integer, _name varchar, _link varchar, _time datetime, _owner integer) x where p0 = domainID) do
+  {
+    http ('<resource>', aStream);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (_time)), aStream);
+    http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
+    http (sprintf ('<link><![CDATA[%s]]></link>', _link), aStream);
+    http (sprintf ('<from><![CDATA[%s]]></from>', ODRIVE.WA.account_fullName(_owner)), aStream);
+    http (sprintf ('<uid>%s</uid>', ODRIVE.WA.account_name(_owner)), aStream);
+    http ('</resource>', aStream);
   }
-  }
-  http ('</dav-db>', ses);
-  return string_output_string (ses);
+  http ('</dav-db>', aStream);
+  return string_output_string (aStream);
 }
 ;
 
@@ -506,8 +467,8 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_oDrive
 {
   declare domainID, userID integer;
 
-  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  domainID := self.wa_id ();
+  userID := ODRIVE.WA.domain_owner_id (domainID);
   return sprintf ('%sexport.vspx?output=about&did=%d&aid=%d', ODRIVE.WA.odrive_url (), domainID, userID);
 }
 ;

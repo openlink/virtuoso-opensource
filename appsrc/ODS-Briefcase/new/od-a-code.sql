@@ -408,6 +408,83 @@ create procedure ODRIVE.WA.show_excerpt(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.dashboard_rs(
+  in p0 integer)
+{
+  declare account_id, vspxUser any;
+  declare wai_name, link varchar;
+
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 varchar;
+  declare c3 datetime;
+  declare c4 integer;
+
+  result_names(c0, c1, c2, c3, c4);
+  account_id := ODRIVE.WA.domain_owner_id (p0);
+  vspxUser := connection_get ('vspx_user');
+  if (isnull (vspxUser))
+  {
+    for (select top 10 RES_ID,
+                RES_FULL_PATH,
+                RES_MOD_TIME,
+                RES_NAME,
+                RES_OWNER
+           from WS.WS.SYS_DAV_RES
+          where RES_FULL_PATH like '/DAV/home/%'
+            and RES_OWNER = account_id
+            and substring (RES_PERMS, 7, 1) = '1'
+          order by RES_MOD_TIME desc) do
+    {
+      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
+    }
+  }
+  else
+  {
+    for (select top 10 *
+           from (select *
+                   from (select top 10 RES_ID,
+                                RES_FULL_PATH,
+                                RES_MOD_TIME,
+                                RES_NAME,
+                                RES_OWNER
+                           from WS.WS.SYS_DAV_RES
+                                  join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
+                                    join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
+                          where RES_FULL_PATH like '/DAV/home/%'
+                            and AI_PARENT_TYPE = 'R'
+                            and GI_SUPER = account_id
+                            and AI_FLAG = 'G'
+                          order by RES_MOD_TIME desc
+                        ) acl
+                 union
+                 select *
+                   from (select top 10 RES_ID,
+                                RES_FULL_PATH,
+                                RES_MOD_TIME,
+                                RES_NAME,
+                                RES_OWNER
+                           from WS.WS.SYS_DAV_RES
+                          where RES_FULL_PATH like '/DAV/home/' || vspxUser || '%'
+                            and RES_OWNER = account_id
+                            and RES_PERMS like '1%'
+                          order by RES_MOD_TIME desc
+                        ) own
+                ) sub
+          order by RES_MOD_TIME desc) do
+    {
+      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.show_column_header (
   in columnLabel varchar,
   in columnName varchar,
@@ -597,69 +674,73 @@ create procedure ODRIVE.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
+
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat)) {
-    ch := chr(pFormat[N]);
-    if (ch = 'M') {
+  for (N := 1; N <= length(pFormat); N := N + 1)
+  {
+    ch := substring(pFormat, N, 1);
+    if (ch = 'M')
+    {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm') {
-        S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else {
-        if (ch = 'Y') {
-          S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else {
-          if (ch = 'y') {
-            S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd') {
-              S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else {
-              if (ch = 'D') {
-                S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else {
-                if (ch = 'H') {
-                  S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else {
-                  if (ch = 'h') {
-                    S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else {
-                    if (ch = 'N') {
-                      S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else {
-                      if (ch = 'n') {
-                        S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else {
-                        if (ch = 'S') {
-                          S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else {
-                          if (ch = 's') {
-                            S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else {
-                            S := concat(S, ch);
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     }
-    N := N + 1;
+    else if (ch = 'm')
+    {
+        S := concat(S, xslt_format_number(month(pDate), '##'));
+                          }
+    else if (ch = 'Y')
+    {
+      S := concat(S, xslt_format_number(year(pDate), '0000'));
+                        }
+    else if (ch = 'y')
+    {
+      S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
+                      }
+    else if (ch = 'd')
+    {
+      S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
+                    }
+    else if (ch = 'D')
+    {
+      S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
+                  }
+    else if (ch = 'H')
+    {
+      S := concat(S, xslt_format_number(hour(pDate), '00'));
+                }
+    else if (ch = 'h')
+    {
+      S := concat(S, xslt_format_number(hour(pDate), '##'));
+              }
+    else if (ch = 'N')
+    {
+      S := concat(S, xslt_format_number(minute(pDate), '00'));
+            }
+    else if (ch = 'n')
+    {
+      S := concat(S, xslt_format_number(minute(pDate), '##'));
+          }
+    else if (ch = 'S')
+    {
+      S := concat(S, xslt_format_number(second(pDate), '00'));
+        }
+    else if (ch = 's')
+    {
+      S := concat(S, xslt_format_number(second(pDate), '##'));
+      }
+    else
+    {
+      S := concat(S, ch);
+    }
   }
   return S;
-};
+}
+;
 
 -------------------------------------------------------------------------------
 --
