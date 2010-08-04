@@ -36,7 +36,7 @@ command line SQL interface.
 
 <sect2 id="dbadm"><title>Database</title>
 
-  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
+  <sect3 id="srvadminstallreqtdb"><title>Installation Requirements</title>
     <para>A typical installation will require a minimum of 400Mb of hard disk
     space to install the code, samples, documentation and sample database.
 The database will need additional space for data inserted, backups,
@@ -83,7 +83,16 @@ The below table lists the most important parameters and limits for a database or
 </para>
 
 
-<table> 
+<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+  <title>Limits</title>
+  <tgroup align="char" charoff="50" char="." cols="2">
+  <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+    <thead>
+      <row>
+        <entry>Limit Description</entry>
+        <entry>Value</entry>
+      </row>
+    </thead>
 <tbody>
 <row><entry>Identifier length</entry> <entry>100</entry></row>
 <row><entry>User name and password length</entry> <entry>100</entry></row>
@@ -108,6 +117,7 @@ The below table lists the most important parameters and limits for a database or
 <row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
 <row><entry>Memory per connection</entry> <entry>22K plus up to 100 cached SQL statement compilations</entry></row>
 </tbody>
+ </tgroup>
 </table>
 
 </sect3>

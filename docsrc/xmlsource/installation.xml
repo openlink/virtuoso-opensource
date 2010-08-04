@@ -57,7 +57,7 @@ section.
 </para>
 
 	<sect1 id="installwin32">
-		<title>Virtuoso for Windows 95/98/NT/2000/XP</title>
+		<title>Virtuoso for Windows</title>
 		<sect2 id="b4ustart">
 			<title>Before You Start</title>
 			<para>To ensure a smooth installation, please review the
@@ -104,6 +104,23 @@ section.
 				as part of the download process. It is therefore important to supply a valid email
 				address. The installer will prompt for the license file location.</para>
 			</sect3>
+			
+			  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
+    <para>A typical installation will require a minimum of 400Mb of hard disk
+    space to install the code, samples, documentation and sample database.
+The database will need additional space for data inserted, backups,
+    logs and reports, web pages, etc.
+
+</para>
+    <para>The size of the database .db file will not reduce when data is
+    removed. The spare space will however be reclaimed for later use.</para>
+    
+  <tip><title>See Also:</title>
+    <para><link linkend="dbadm">Virtuoso Database Administration</link></para>
+  </tip>
+
+
+  </sect3>
 			<sect3 id="reinstvirt">
 				<title>Reinstalling Virtuoso?</title>
 				<para>If you are reinstalling Virtuoso, you must first shutdown any
@@ -456,6 +473,33 @@ netstat -an | more
 				</sect4>
 			</sect3>
 		</sect2>
+		
+		<sect2 id="wininstpost"><title>Post Installation</title>  
+  <sect3 id="wininstpostsan">
+			<title>Post-Installation Sanity Check</title>
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+		</sect3>
+		<sect3 id="wininstposttrb"><title>Troubleshooting DB Startup Failures</title>  
+  <para><emphasis>Install failure</emphasis></para> 
+  <para>Check the .log file in your Virtuoso installation db location, for ex:</para>
+<programlisting><![CDATA[
+	C:\Program Files\OpenLink Software\Virtuoso 6.0\db\virtuoso.log  
+]]></programlisting>  
+<para>which is for the database and log files etc. in order to review the installed files 
+binaries and databases (defaults) for issues if install fails.</para>
+   <para><emphasis>.lck existance</emphasis></para>   
+   <para>Check .log in case of .lck issue</para>
+   <para>Delete the .lck file and repeat the steps from above.</para>
+   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
+   <para>Check .log in case of .trx incompatiblity issue</para>
+  </sect3> 
+  </sect2>
+  
 		<sect2 id="startvdbms">
 			<title>Starting Your Virtuoso Server</title>
 			<para>Due to subtle differences between Windows 95/98 and Windows
@@ -526,16 +570,7 @@ virtuoso-odbc-f +instance demo +service start
 				</sect4>
 			</sect3>
 		</sect2>
-		<sect2 id="postinstsanitywin32">
-			<title>Post-Installation Sanity Check</title>
-			<para>A quick way to check that the database is running, is to point a browser to the
-			http port. The following example URLs will show the System Manager for
-			the default, and the demo Virtuoso databases:</para>
-			<programlisting>http://localhost:8889
-http://localhost:8890
-http://a_virtuoso_server.org:8890</programlisting>
-			<para>See the following Quick Start chapter for further ways to verify the database.</para>
-		</sect2>
+	
 		<sect2 id="CreatingDeletingServices">
 			<title>Creating and Deleting Virtuoso Services </title>
 			<para>At sometime you may need to have multiple Virtuoso server
@@ -685,14 +720,14 @@ isqlo &lt;enter a valid ODBC Data Source Name&gt;</programlisting>
 	<!-- ############################################################# -->
 	<sect1 id="linuxinstall">
 		<title>Virtuoso for Linux (Enterprise Edition)</title>
-			<sect2 id="lindoyouwannamigrate">
+			<!--sect2 id="lindoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
 				<para>You can migrate your existing Virtuoso servers to 3.0 using 
         the migration utility.  The Virtuoso database file structure has been considerably 
         altered between versions.  Please consult the 
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
-			</sect2>
+			</sect2-->
 		<sect2 id="b4instlin">
 			<title>Before You Install</title>
 			<para>To ensure a smooth installation, please review the
@@ -1092,7 +1127,9 @@ one via e-mail; in case of difficulties please contact
 </listitem>
 </orderedlist>
 		</sect2>
-		<sect2 id="linpostchck">
+		
+		   <sect2 id="linuxinstpost"><title>Post Installation</title>  
+  <sect3 id="linuxinstpostsan">
 			<title>Post-Installation Sanity Check</title>
 			<para>A quick way to check that the database is running, is to point a browser to the
 			http port. The following example URLs will show the System Manager for
@@ -1100,8 +1137,23 @@ one via e-mail; in case of difficulties please contact
 			<programlisting>http://localhost:8889
 http://localhost:8890
 http://a_virtuoso_server.org:8890</programlisting>
-			<para>See the following Quick Start chapter for further ways to verify the database.</para>
+		</sect3>
+		<sect3 id="linuxinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
+  <para><emphasis>Install failure</emphasis></para> 
+  <para>Check the .log file in:</para>
+<programlisting><![CDATA[
+$<Directory where Virtuoso is installed>/bin/virtuoso.log
+]]></programlisting>  
+ <para>in order to review the installed files binaries and databases (defaults) 
+ for issues if install fails.</para>
+   <para><emphasis>.lck existance</emphasis></para>   
+   <para>Check .log in case of .lck issue</para>
+   <para>Delete the .lck file and repeat the steps from above.</para>
+   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
+   <para>Check .log in case of .trx incompatiblity issue</para>
+  </sect3>
 		</sect2>
+  
     <sect2 id="linautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
 
     <para>Two files, named initd_startup.template and 
@@ -1147,14 +1199,14 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 	</sect1>
 	<sect1 id="unxinstvirt">
 		<title>Virtuoso for Unix (Enterprise Edition)</title>
-			<sect2 id="unixdoyouwannamigrate">
+			<!--sect2 id="unixdoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
 				<para>You can migrate your existing Virtuoso servers to 3.0 using 
         the migration utility.  The Virtuoso database file structure has been considerably 
         altered between versions.  Please consult the 
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
-			</sect2>
+			</sect2-->
 		<sect2 id="b4instunx">
 			<title>Before You Install</title>
 			<para>To ensure a smooth installation, please review the
@@ -1536,7 +1588,9 @@ one via e-mail; in case of difficulties please contact
 </listitem>
 </orderedlist>
 		</sect2>
-		<sect2 id="postinstsanityunx">
+		
+   <sect2 id="unxinstvirtinstpost"><title>Post Installation</title>  
+  <sect3 id="unxinstvirtpost">
 			<title>Post-Installation Sanity Check</title>
 			<para>A quick way to check that the database is running, is to point a browser to the
 			http port. The following example URLs will show the System Manager for
@@ -1544,8 +1598,23 @@ one via e-mail; in case of difficulties please contact
 			<programlisting>http://localhost:8889
 http://localhost:8890
 http://a_virtuoso_server.org:8890</programlisting>
-			<para>See the following Quick Start chapter for further ways to verify the database.</para>
+		</sect3>
+		<sect3 id="unxinstvirtinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
+  <para><emphasis>Install failure</emphasis></para> 
+  <para>Check the .log file in:</para>
+<programlisting><![CDATA[
+$<Directory where Virtuoso is installed>/bin/virtuoso.log
+]]></programlisting>  
+ <para>in order to review the installed files binaries and databases (defaults) 
+ for issues if install fails.</para>
+   <para><emphasis>.lck existance</emphasis></para>   
+   <para>Check .log in case of .lck issue</para>
+   <para>Delete the .lck file and repeat the steps from above.</para>
+   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
+   <para>Check .log in case of .trx incompatiblity issue</para>
+  </sect3>
 		</sect2>
+
     <sect2 id="unxautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
 
     <para>Two files, named initd_startup.template and 
@@ -1656,6 +1725,31 @@ $
 ]]></programlisting>
     </itemizedlist>
 </sect2>
+   <sect2 id="unixpersonainstallinstpost"><title>Post Installation</title>  
+  <sect3 id="unixpersonainstallpost">
+			<title>Post-Installation Sanity Check</title>
+			<para>A quick way to check that the database is running, is to point a browser to the
+			http port. The following example URLs will show the System Manager for
+			the default, and the demo Virtuoso databases:</para>
+			<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+		</sect3>
+		<sect3 id="unixpersonainstallinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
+  <para><emphasis>Install failure</emphasis></para> 
+  <para>Check the .log file in:</para>
+<programlisting><![CDATA[
+$<Directory where Virtuoso is installed>/bin/virtuoso.log
+]]></programlisting>  
+ <para>in order to review the installed files binaries and databases (defaults) 
+ for issues if install fails.</para>
+   <para><emphasis>.lck existance</emphasis></para>   
+   <para>Check .log in case of .lck issue</para>
+   <para>Delete the .lck file and repeat the steps from above.</para>
+   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
+   <para>Check .log in case of .trx incompatiblity issue</para>
+  </sect3>
+  </sect2>
 <sect2 id="unixpersonainstallconfg">
     <title>Configuration</title>
     <itemizedlist>
@@ -1693,16 +1787,15 @@ page is presented:
 </sect1>
 <sect1 id="installmacosx"><title>Virtuoso for Mac OS X</title>
 
-			<sect2 id="macxdoyouwannamigrate">
+			<!--sect2 id="macxdoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
 				<para>You can migrate your existing Virtuoso servers to 3.0 using 
         the migration utility.  The Virtuoso database file structure has been considerably 
         altered between versions.  Please consult the 
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
-			</sect2>
+			</sect2-->
   <sect2 id="macosxbeforeuinst"><title>Before You Install</title>
-
   <para>Before installing the Virtuoso software for Mac OS X you must ensure
   that you have the correct package from the <ulink url="http://www.openlinksw.com/">OpenLink</ulink>
   Web Site.</para>
@@ -1839,6 +1932,26 @@ page is presented:
 
 	</sect2>
 
+   <sect2 id="macosxinstpost"><title>Post Installation</title>  
+  <sect3 id="macosxinstpostsan">
+		<title>Post-Installation Sanity Check</title>
+		<para>A quick way to check that the database is running, is to point a browser to the
+		http port. The following example URLs will show the System Manager for
+		the default, and the demo Virtuoso databases:</para>
+		<programlisting>http://localhost:8889
+http://localhost:8890
+http://a_virtuoso_server.org:8890</programlisting>
+	</sect3> 
+  <sect3 id="macosxinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
+  <para><emphasis>Install failure</emphasis></para> 
+   <para><emphasis>.lck existance</emphasis></para>   
+   <para>Check .log in case of .lck issue</para>
+   <para>Delete the .lck file and repeat the steps from above.</para>
+   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
+   <para>Check .log in case of .trx incompatiblity issue</para>
+  </sect3>
+  </sect2>
+  
 	<sect2 id="macosxodbcdsnconf"><title>Configuring an ODBC Data Source</title>
 
 	  <para>Launch the iODBC Administrator, assuming that you have the iODBC
@@ -1932,16 +2045,6 @@ page is presented:
 
 	</sect2>
 
-	<sect2 id="postinstsanitymac">
-		<title>Post-Installation Sanity Check</title>
-		<para>A quick way to check that the database is running, is to point a browser to the
-		http port. The following example URLs will show the System Manager for
-		the default, and the demo Virtuoso databases:</para>
-		<programlisting>http://localhost:8889
-http://localhost:8890
-http://a_virtuoso_server.org:8890</programlisting>
-		<para>See the following Quick Start chapter for further ways to verify the database.</para>
-	</sect2>
 	<sect2 id="defpasschgmac">
 		<title>Default passwords</title>
 		<para>See the following Quick Start chapter for very important information about
