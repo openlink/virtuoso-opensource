@@ -671,8 +671,8 @@ create procedure "oMail_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_MOD_TIME',		vector ('MESSAGES'	, 0, 'datetime'	, 'coalesce (RCV_DATE, SND_DATE)'	),
     'RES_PERMS',		vector ('MESSAGES'	, 0, 'varchar'	, '(''110000000RR'')'	),
     'RES_CONTENT',		vector ('MSG_PARTS'	, 0, 'text'	, 'TDATA'	),
-    'PROP_NAME',		vector ('MESSAGES'	, 0, 'varchar'	, '(''Content'')'	),
-    'PROP_VALUE',		vector ('MESSAGES'	, 1, 'text'	, 'TDATA'	),
+    'PROP_NAME',    vector ('MSG_PARTS'  , 0, 'varchar'  , '(''Content'')'  ),
+    'PROP_VALUE',    vector ('MSG_PARTS'  , 1, 'text'  , 'TDATA'  ),
     'RES_TAGS',			vector ('MESSAGES'	, 0, 'varchar'  , '('''')'	), -- 'varchar', not 'text-tag' because there's no free-text on union
     'RES_PUBLIC_TAGS',		vector ('MESSAGES'	, 0, 'varchar'	, '('''')'	),
     'RES_PRIVATE_TAGS',		vector ('MESSAGES'	, 0, 'varchar'	, '('''')'	),
