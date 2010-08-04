@@ -3264,6 +3264,33 @@ create procedure OMAIL.WA.omail_set_settings_data(
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.dashboard_rs (
+  in p0 integer,
+  in p1 integer)
+{
+  declare S, posts, _id, _title, _time any;
+  declare c0 integer;
+  declare c1 varchar;
+  declare c2 datetime;
+
+  result_names(c0, c1, c2);
+  S := OMAIL.WA.dashboard_get (p0, p1);
+  if (S <> '')
+  {
+    posts := xpath_eval ('//mail', xml_tree_doc (xml_tree(S)), 0);
+    foreach (any post in posts) do
+    {
+      _id    := cast (xpath_eval ('@id', post) as integer);
+      _title := serialize_to_UTF8_xml (xpath_eval ('string(./title)', post));
+      _time  := stringdate (xpath_eval ('string(./dt)', post));
+      result (_id, _title, _time);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.dashboard_get(
   in _domain_id integer,
   in _user_id integer)
@@ -3304,7 +3331,8 @@ create procedure OMAIL.WA.dashboard_update(
   stream := string_output ();
   http ('<mail-db>', stream);
 
-  if (not is_empty_or_null(dashboard)) {
+  if (not is_empty_or_null(dashboard))
+  {
     declare xt, xp, xn any;
     declare i, l int;
 
@@ -3318,7 +3346,8 @@ create procedure OMAIL.WA.dashboard_update(
     i := 0;
     if ((l = 10) and isnull(xn))
       i := 1;
-    for (;i < l; i := i + 1) {
+    for (;i < l; i := i + 1)
+    {
       if (cast(xpath_eval ('number(@id)', xp[i], 1) as integer) <> _msg_id)
   	    http (serialize_to_UTF8_xml (xp[i]), stream);
   	}
@@ -3357,14 +3386,16 @@ create procedure OMAIL.WA.dashboard_delete(
   stream := string_output ();
   http ('<mail-db>', stream);
 
-  if (not is_empty_or_null(dashboard)) {
+  if (not is_empty_or_null(dashboard))
+  {
     declare xt, xp any;
     declare i, l int;
 
     xt := xtree_doc (dashboard);
     xp := xpath_eval ('/mail-db/*', xt, 0);
     l := length (xp);
-    for (i := 0; i < l; i := i + 1) {
+    for (i := 0; i < l; i := i + 1)
+    {
       if (cast(xpath_eval ('number(@id)', xp[i], 1) as integer) <> _msg_id)
   	    http (serialize_to_UTF8_xml (xp[i]), stream);
 	  }
@@ -8479,90 +8510,70 @@ create procedure OMAIL.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
+
+  declare exit handler for sqlstate '*' {
+    return '';
+  };
 
   S := '';
-  N := 1;
-  while (N <= length(pFormat))
+  for (N := 1; N <= length(pFormat); N := N + 1)
   {
     ch := substring(pFormat, N, 1);
     if (ch = 'M')
     {
       S := concat(S, xslt_format_number(month(pDate), '00'));
-    } else {
-      if (ch = 'm')
+    }
+    else if (ch = 'm')
       {
         S := concat(S, xslt_format_number(month(pDate), '##'));
-      } else
-      {
-        if (ch = 'Y')
+    }
+    else if (ch = 'Y')
         {
           S := concat(S, xslt_format_number(year(pDate), '0000'));
-        } else
-        {
-          if (ch = 'y')
+    }
+    else if (ch = 'y')
           {
             S := concat(S, substring(xslt_format_number(year(pDate), '0000'),3,2));
-          } else {
-            if (ch = 'd')
+    }
+    else if (ch = 'd')
             {
               S := concat(S, xslt_format_number(dayofmonth(pDate), '##'));
-            } else
-            {
-              if (ch = 'D')
+    }
+    else if (ch = 'D')
               {
                 S := concat(S, xslt_format_number(dayofmonth(pDate), '00'));
-              } else
-              {
-                if (ch = 'H')
+    }
+    else if (ch = 'H')
                 {
                   S := concat(S, xslt_format_number(hour(pDate), '00'));
-                } else
-                {
-                  if (ch = 'h')
+    }
+    else if (ch = 'h')
                   {
                     S := concat(S, xslt_format_number(hour(pDate), '##'));
-                  } else
-                  {
-                    if (ch = 'N')
+    }
+    else if (ch = 'N')
                     {
                       S := concat(S, xslt_format_number(minute(pDate), '00'));
-                    } else
-                    {
-                      if (ch = 'n')
+    }
+    else if (ch = 'n')
                       {
                         S := concat(S, xslt_format_number(minute(pDate), '##'));
-                      } else
-                      {
-                        if (ch = 'S')
+    }
+    else if (ch = 'S')
                         {
                           S := concat(S, xslt_format_number(second(pDate), '00'));
-                        } else
-                        {
-                          if (ch = 's')
+    }
+    else if (ch = 's')
                           {
                             S := concat(S, xslt_format_number(second(pDate), '##'));
-                          } else
+    }
+    else
                           {
                             S := concat(S, ch);
-                          };
-                        };
-                      };
-                    };
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    N := N + 1;
-  };
+    }
+  }
   return S;
 }
 ;
