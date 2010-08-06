@@ -89,7 +89,7 @@
         <xsl:variable name="url"><xsl:value-of select="$iri" /></xsl:variable>
        <xsl:variable name="label">Home</xsl:variable>
       </xsl:when>
-      <xsl:when test="not(starts-with($url,'javascript'))">
+      <xsl:when test="not(starts-with($url, 'javascript')) and not(starts-with($url, 'http'))">
         <xsl:variable name="url"><xsl:value-of select="$iri" />/<xsl:value-of select="$url" /></xsl:variable>
       </xsl:when>
     </xsl:choose>
@@ -297,7 +297,8 @@
     <xsl:param name="listname"/>
     <xsl:param name="treelist">0</xsl:param>
     <xsl:param name="size">1</xsl:param>
-    <xsl:param name="class">-1</xsl:param>
+    <xsl:param name="class" />
+    <xsl:param name="style" />
     <xsl:param name="onclick">-1</xsl:param>
     <xsl:param name="onchange">-1</xsl:param>
     <xsl:param name="onblur">-1</xsl:param>
@@ -316,8 +317,11 @@
       <xsl:attribute name="size"><xsl:value-of select="$size"/></xsl:attribute>
 
       <!-- process conditional attributes -->
-      <xsl:if test="$class != '-1'">
+      <xsl:if test="$class">
         <xsl:attribute name="class"><xsl:value-of select="$class"/></xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$style">
+        <xsl:attribute name="style"><xsl:value-of select="$style" /></xsl:attribute>
       </xsl:if>
       <xsl:if test="$onclick != '-1'">
         <xsl:attribute name="onClick"><xsl:value-of select="$onclick"/></xsl:attribute>

@@ -137,6 +137,27 @@
           </xsl:choose>
         </td>
       </tr>
+      <!-- Options -->
+      <xsl:if test="options/ssl = 1">
+        <tr>
+          <th>Options</th>
+          <td>
+            Signed: <b>Yes</b>
+            <xsl:choose>
+              <xsl:when test="options/sslVerified = 1">
+                <b><i>(verified)</i></b>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:if test="options/webID != ''">; WebID: <b><xsl:value-of select="options/webID" /></b>
+                  <xsl:if test="options/webIDVerified">
+                    (<img src="/ods/images/icons/lock_16.png" height="14" />)
+                  </xsl:if>
+                </xsl:if>
+              </xsl:otherwise>
+            </xsl:choose>
+          </td>
+        </tr>
+      </xsl:if>
       <!-- Tags -->
       <tr>
         <th>Comma separated tags</th>
