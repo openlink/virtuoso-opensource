@@ -42,6 +42,8 @@ OMAIL.WA.exec_no_error (
     PRIORITY         INTEGER         NOT NULL,
     SUBJECT          VARCHAR(255),
     ADDRES_INFO      VARCHAR(255)    NOT NULL,
+    M_CONTENT        LONG VARCHAR,
+    M_OPTIONS        LONG VARCHAR,
     M_RFC_ID         VARCHAR,
     M_RFC_HEADER     LONG VARCHAR,
     M_RFC_REFERENCES VARCHAR,
@@ -53,6 +55,16 @@ OMAIL.WA.exec_no_error (
 
 OMAIL.WA.exec_no_error (
   'update DB.DBA.SYS_COLS set COL_PREC=1000 where "TABLE" = \'OMAIL.WA.MESSAGES\' and "COLUMN" = \'REF_ID\''
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.MESSAGES add M_CONTENT LONG VARCHAR', 'C', 'OMAIL.WA.MESSAGES', 'M_CONTENT'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.MESSAGES add M_OPTIONS LONG VARCHAR', 'C', 'OMAIL.WA.MESSAGES', 'M_OPTIONS'
 )
 ;
 
@@ -152,6 +164,7 @@ OMAIL.WA.exec_no_error (
     USER_ID     INTEGER      NOT NULL,
     ACC_ID      INTEGER      NOT NULL,
     ACC_NAME    VARCHAR(100) NOT NULL,
+    POP_TYPE    VARCHAR      NOT NULL,
     POP_SERVER  VARCHAR(100) NOT NULL,
     POP_PORT    INTEGER      NOT NULL,
     USER_NAME   VARCHAR(100) NOT NULL,
@@ -164,6 +177,11 @@ OMAIL.WA.exec_no_error (
 
     PRIMARY KEY (DOMAIN_ID,USER_ID,ACC_ID)
   )'
+)
+;
+
+OMAIL.WA.exec_no_error (
+  'alter table OMAIL.WA.EXTERNAL_POP_ACC add POP_TYPE VARCHAR', 'C', 'OMAIL.WA.EXTERNAL_POP_ACC', 'POP_TYPE'
 )
 ;
 
@@ -294,7 +312,7 @@ OMAIL.WA.exec_no_error (
 )
 ;
 
--- CREATE TRIGERS --------------------------------------------------------------
+-- CREATE TRIGGERS -------------------------------------------------------------
 
 OMAIL.WA.exec_no_error (
   'CREATE TRIGGER EML_MESSAGES_A_I after insert on OMAIL.WA.MESSAGES referencing new as N
@@ -549,12 +567,17 @@ create procedure OMAIL.WA.dsize_update (in _domain_id integer, in _user_id integ
 --
 create procedure OMAIL.WA.MESSAGES_ADDRESS_HOOK (inout vtb any, inout d_id any, in mode any)
 {
-  declare _user_id, _folder_id, _address any;
+  declare S, _user_id, _folder_id, _address, _options any;
 
-  select USER_ID, FOLDER_ID, ADDRESS into _user_id, _folder_id, _address from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
+  select USER_ID, FOLDER_ID, ADDRESS, M_OPTIONS into _user_id, _folder_id, _address, _options from OMAIL.WA.MESSAGES where FREETEXT_ID = d_id;
 
+  S := '';
   if (not isnull(_address))
-    vt_batch_feed (vtb, _address, mode, 1);
+    S := S || _address;
+  if (not isnull(_options))
+    S := S || _options;
+  if (S <> '')
+    vt_batch_feed (vtb, S, mode, 1);
   if (not isnull(_folder_id))
     vt_batch_feed (vtb, sprintf ('^F%d', _folder_id), mode);
   if (not isnull(_user_id))
@@ -568,7 +591,9 @@ create procedure OMAIL.WA.MESSAGES_ADDRESS_HOOK (inout vtb any, inout d_id any, 
 --
 create procedure OMAIL.WA.drop_index ()
 {
-  if (registry_get ('mail_index_version') <> '1')
+  if (registry_get ('mail_index_version') = '2')
+    return;
+
     OMAIL.WA.exec_no_error('drop table OMAIL.WA.MESSAGES_ADDRESS_WORDS');
 }
 ;
@@ -593,15 +618,9 @@ create procedure OMAIL.WA.MESSAGES_ADDRESS_UNINDEX_HOOK (inout vtb any, inout d_
 ;
 
 OMAIL.WA.exec_no_error(
-  'create text xml index on OMAIL.WA.MESSAGES (ADDRESS) with key FREETEXT_ID not insert CLUSTERED WITH (FOLDER_ID) using function'
+  'create text xml index on OMAIL.WA.MESSAGES (ADDRESS) with key FREETEXT_ID not insert CLUSTERED WITH (FOLDER_ID) using function language \'x-ViDoc\''
 )
 ;
-
-OMAIL.WA.VT_INDEX_OMAIL_WA_MESSAGES ()
-;
-DB.DBA.vt_batch_update ('OMAIL.WA.MESSAGES', 'off', null)
-;
-
 -------------------------------------------------------------------------------
 --
 create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, in mode any)
@@ -637,7 +656,9 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_HOOK (inout vtb any, inout d_id any, i
 --
 create procedure OMAIL.WA.drop_index()
 {
-  if (registry_get ('mail_index_version') <> '1')
+  if (registry_get ('mail_index_version') = '2')
+    return;
+
     OMAIL.WA.exec_no_error ('drop table OMAIL.WA.MSG_PARTS_TDATA_WORDS');
 }
 ;
@@ -661,19 +682,14 @@ create procedure OMAIL.WA.MSG_PARTS_TDATA_unindex_hook (inout vtb any, inout d_i
   }
 ;
 
-OMAIL.WA.exec_no_error('
-  create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert CLUSTERED WITH (TAGS) using function
-')
-;
-
-OMAIL.WA.vt_index_OMAIL_WA_MSG_PARTS ()
-;
-DB.DBA.vt_batch_update('OMAIL.WA.MSG_PARTS', 'off', null)
+OMAIL.WA.exec_no_error(
+  'create text index on OMAIL.WA.MSG_PARTS(TDATA) with key FREETEXT_ID not insert CLUSTERED WITH (TAGS) using function language \'x-ViDoc\''
+)
 ;
 
 -------------------------------------------------------------------------------
 --
-registry_set ('mail_index_version', '1')
+registry_set ('mail_index_version', '2')
 ;
 
 -------------------------------------------------------------------------------

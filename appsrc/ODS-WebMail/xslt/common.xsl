@@ -252,6 +252,8 @@
       var featureList=["ajax", "json", "anchor", "dialog", "dav", "combolist", "calendar"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/oMail/i/js/tbl.js"></script>
     <script type="text/javascript" src="/ods/app.js"></script>
     <script type="text/javascript">
       function myInit() {

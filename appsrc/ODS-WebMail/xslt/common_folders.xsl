@@ -209,9 +209,13 @@
     <xsl:param name="scope" select="'N'" />
     <xsl:param name="selectID" select="-1" />
     <xsl:param name="skipID" select="-1" />
+    <xsl:param name="style" />
     <select>
       <xsl:attribute name="name"><xsl:value-of select="$ID"/></xsl:attribute>
       <xsl:attribute name="id"><xsl:value-of select="$ID"/></xsl:attribute>
+      <xsl:if test="$style">
+        <xsl:attribute name="style"><xsl:value-of select="$style" /></xsl:attribute>
+      </xsl:if>
       <xsl:if test="$startOption != ''">
         <option value="0"><xsl:value-of select="$startOption"/></option>
       </xsl:if>

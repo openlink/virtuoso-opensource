@@ -162,11 +162,13 @@
       <xsl:with-param name="format" select="'%d.%m.%Y'"/>
     </xsl:call-template>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="account">
-    <table width="600" cellpadding="0" cellspacing="0" class="content">
+    <table width="650" cellpadding="0" cellspacing="0" class="content">
       <colgroup>
         <col class="w160"/>
+        <col/>
         <col/>
       </colgroup>
       <caption>
@@ -196,13 +198,13 @@
   <xsl:template match="acc_edit">
     <tr>
       <th>
-        <label for="acc">Account Name</label>
+        <label for="acc">Name</label>
       </th>
       <td>
         <input type="hidden" name="acc_id">
           <xsl:attribute name="value"><xsl:value-of select="acc_id"/></xsl:attribute>
         </input>
-        <input type="text" name="acc_name" id="acc">
+        <input type="text" name="acc_name" id="acc" style="width: 300px;">
           <xsl:attribute name="value"><xsl:value-of select="acc_name"/></xsl:attribute>
         </input>
       </td>
@@ -212,10 +214,23 @@
     </tr>
     <tr>
       <th>
+        <label for="type">Server Type</label>
+      </th>
+      <td colspan="2">
+        <xsl:call-template name="make_select">
+          <xsl:with-param name="name">pop_type</xsl:with-param>
+          <xsl:with-param name="selected"><xsl:value-of select="pop_type"/></xsl:with-param>
+          <xsl:with-param name="list">none:None;ssl:SSL/TSL;</xsl:with-param>
+          <xsl:with-param name="style">width: 100px;</xsl:with-param>
+        </xsl:call-template>
+      </td>
+    </tr>
+    <tr>
+      <th>
         <label for="server">Server Address</label>
       </th>
       <td>
-        <input type="text" name="pop_server" id="server">
+        <input type="text" name="pop_server" id="server"  style="width: 300px;">
           <xsl:attribute name="value"><xsl:value-of select="pop_server"/></xsl:attribute>
         </input>
       </td>
@@ -225,10 +240,10 @@
     </tr>
     <tr>
       <th>
-        <label for="port">Port</label>
+        <label for="port">Server Port</label>
       </th>
       <td>
-        <input type="text" name="pop_port" id="port">
+        <input type="text" name="pop_port" id="port"  style="width: 50px;">
           <xsl:attribute name="value"><xsl:value-of select="pop_port"/></xsl:attribute>
         </input>
       </td>
@@ -241,7 +256,7 @@
         <label for="user">User Name</label>
       </th>
       <td>
-        <input type="text" name="user_name" id="user">
+        <input type="text" name="user_name" id="user" style="width: 100px;">
           <xsl:attribute name="value"><xsl:value-of select="user_name"/></xsl:attribute>
         </input>
       </td>
@@ -253,8 +268,8 @@
       <th>
         <label for="pass">Password</label>
       </th>
-      <td>
-        <input type="password" name="user_pass" id="pass">
+      <td colspan="2">
+        <input type="password" name="user_pass" id="pass" style="width: 100px;">
           <xsl:attribute name="value"><xsl:value-of select="user_pass"/></xsl:attribute>
         </input>
       </td>
@@ -268,45 +283,52 @@
           <xsl:with-param name="ID" select="'fid'" />
           <xsl:with-param name="showPath" select="1" />
           <xsl:with-param name="selectID" select="/page/account/acc_edit/folder_id" />
+          <xsl:with-param name="style">min-width: 100px;</xsl:with-param>
         </xsl:apply-templates> / <input type="text" name="fname"/>
       </td>
     </tr>
     <tr>
       <th>Check Interval</th>
-      <td>
+      <td colspan="2">
+        <label>
         <input type="radio" name="ch_interval" value="1" id="ed">
           <xsl:if test="intervals = 1">
             <xsl:attribute name="checked"/>
           </xsl:if>
         </input>
-        <label for="ed">Every Day</label>
-      </td>
-      <td>
+          Every Day
+        </label>
+        <label>
         <input type="radio" name="ch_interval" value="2" id="eh">
           <xsl:if test="intervals = 2">
             <xsl:attribute name="checked"/>
           </xsl:if>
         </input>
-        <label for="eh">Every Hour</label>
+          Every Hour
+        </label>
       </td>
     </tr>
     <tr>
       <th>
         <label for="org">After get</label>
       </th>
-      <td>
+      <td colspan="2">
+        <label>
         <input type="radio" name="mcopy" value="1" id="org">
           <xsl:if test="mcopy = 1">
             <xsl:attribute name="checked"/>
           </xsl:if>
-        </input> Leave original
-      </td>
-      <td>
+          </input>
+          Leave original
+        </label>
+        <label>
         <input type="radio" name="mcopy" value="0">
           <xsl:if test="mcopy = 0">
             <xsl:attribute name="checked"/>
           </xsl:if>
-        </input> Delete from server
+          </input>
+          Delete from server
+        </label>
 	    </td>
     </tr>
   </xsl:template>
