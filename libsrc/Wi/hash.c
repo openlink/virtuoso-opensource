@@ -1463,6 +1463,8 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
     {
       if (inx >= ha->ha_n_keys)
 	break;
+      if (ssl->ssl_type == SSL_CONSTANT)
+	continue;
       qst_set (inst, ssl, save[inx]);
     }
   END_DO_BOX;

@@ -1321,6 +1321,8 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	  out_map_t * om = ITC_OUT_MAP (itc);
 	  DO_SET (state_slot_t *, ssl, &ks->ks_out_slots)
 	    {
+	      if (ssl->ssl_type == SSL_CONSTANT)
+		continue;
 	      if (om[inx].om_is_null)
 		{
 		  if (OM_NULL == om[inx].om_is_null)
