@@ -89,7 +89,8 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:method', get_method,
         'get:destination', final_dest,
         'get:group-destination', final_gdest,
-        'get:strategy', get_keyword_ucase ('get:strategy', env)
+        'get:strategy', get_keyword_ucase ('get:strategy', env),
+        'get:error-recovery', get_keyword_ucase ('get:error-recovery', env)
 	 );
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env))(url, opts);
@@ -110,11 +111,14 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   }
 end_of_sponge:
   commit work;
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE will try to recover after ', __SQL_STATE, __SQL_MESSAGE, ' with ', get_keyword_ucase ('get:error-recovery', env));
   recov := get_keyword_ucase ('get:error-recovery', env);
   if (recov is not null)
     {
+      if (recov = 'signal')
+        signal (__SQL_STATE, __SQL_MESSAGE);
       whenever sqlstate '*' goto end_of_recov;
-      call (recov) (__SQL_STATE, __SQL_MESSAGE);
+      call (recov) (__SQL_STATE, __SQL_MESSAGE, val, grabbed, env);
       commit work;
       return 0;
 end_of_recov:
@@ -568,6 +572,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare ret_dt_date, ret_dt_last_modified, ret_dt_expires datetime;
   declare ret_304_not_modified integer;
   declare parser_rc, max_refresh int;
+  declare stat, msg varchar;
 
   -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP (', local_iri, get_uri, options, ')');
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
@@ -821,7 +826,8 @@ resp_received:
 error_during_load:
   rollback work;
   -- dbg_obj_princ ('error during load: ', __SQL_STATE, __SQL_MESSAGE);
-
+  stat := __SQL_STATE;
+  msg := __SQL_MESSAGE;
   load_end_msec := msec_time();
   if (new_expiration is null)
     new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now());
@@ -829,13 +835,16 @@ error_during_load:
     new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
 
   update DB.DBA.SYS_HTTP_SPONGE
-  set HS_SQL_STATE = __SQL_STATE,
-    HS_SQL_MESSAGE = __SQL_MESSAGE,
+  set HS_SQL_STATE = stat,
+    HS_SQL_MESSAGE = msg,
     HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
     HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;
+  -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP logged ', stat, msg, local_iri, parser, ', get:error-recovery is ', get_keyword_ucase ('get:error-recovery', options));
+  if (get_keyword_ucase ('get:error-recovery', options) is not null)
+    signal (stat, msg);
   return local_iri;
 }
 ;
@@ -883,7 +892,7 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'text/rdf+n3';
     }
   declare ret_begin, ret_html any;
-  ret_begin := subseq (ret_body, 0, 1024);
+  ret_begin := subseq (ret_body, 0, 4096);
   ret_html := xtree_doc (ret_begin, 2);
   if (xpath_eval ('/html|/xhtml', ret_html) is not null)
     return 'text/html';
@@ -1249,24 +1258,27 @@ load_grddl:;
     }
   if (strstr (ret_content_type, 'text/plain') is not null)
     {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal text/plain error re. ', graph_iri, new_origin_uri, ret_content_type);
       signal ('RDFXX', sprintf (
-          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
-          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], subseq (ret_body, 0, 500) ) );
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s'' body %.300s',
+          graph_iri, new_origin_uri, ret_content_type, ret_hdr[0], subseq (ret_body, 0, 300) ) );
     }
   if (strstr (ret_content_type, 'text/html') is not null)
     {
+      -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal text/html error re. ', graph_iri, new_origin_uri, ret_content_type);
       signal ('RDFZZ', sprintf (
-          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.500s',
+          'Unable to load RDF graph <%.500s> from <%.500s>: returned Content-Type ''%.300s'' status ''%.300s''\n%.300s',
           graph_iri, new_origin_uri, ret_content_type, ret_hdr[0],
---          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 500)
-          subseq (ret_body, 0, 500)
- ) );
+--          "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 300)
+          subseq (ret_body, 0, 300) ) );
     }
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will signal generic error re. ', graph_iri, new_origin_uri, ret_content_type);
   signal ('RDFZZ', sprintf (
       'Unable to load RDF graph <%.500s> from <%.500s>: returned unsupported Content-Type ''%.300s''',
       graph_iri, new_origin_uri, ret_content_type ) );
 resignal_parse_error:
 --  log_enable (saved_log_mode, 1);
+  -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE will resignal ', __SQL_STATE, __SQL_MESSAGE);
   resignal;
 }
 ;
