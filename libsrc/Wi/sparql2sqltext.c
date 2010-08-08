@@ -7811,10 +7811,14 @@ void ssg_print_limofs_expn (spar_sqlgen_t *ssg)
   if ((DV_LONG_INT == DV_TYPE_OF (lim)) && (DV_LONG_INT == DV_TYPE_OF (ofs)))
     {
       char limofs_strg [50];
-      if (0 != unbox ((caddr_t)(ofs)))
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", (long)unbox ((caddr_t)(ofs)), (long)unbox ((caddr_t)(lim)));
+      long lim_num = unbox ((caddr_t)(lim));
+      long ofs_num = unbox ((caddr_t)(ofs));
+      if ((SPARP_MAXLIMIT == lim_num) && (0 < ofs_num))
+        lim_num -= ofs_num;
+      if (0 != ofs_num)
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld, %ld", ofs_num, lim_num);
       else
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld", (long)unbox ((caddr_t)(lim)));
+        snprintf (limofs_strg, sizeof (limofs_strg), " TOP %ld", lim_num);
       ssg_puts (limofs_strg);
       return;
     }
