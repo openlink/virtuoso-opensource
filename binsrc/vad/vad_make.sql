@@ -726,6 +726,7 @@ create procedure "VAD"."DBA"."VAD_TEST_CREATE" (
   {
     s2 := cast (xpath_eval ('@type', aref (items, j)) as varchar);
     s6 := cast (xpath_eval ('@source', aref (items, j)) as varchar);
+    s5 := cast (xpath_eval ('@source_uri', aref (items, j)) as varchar);
     s3 := cast (xpath_eval ('@target_uri', aref (items, j)) as varchar);
     s4 := get_keyword (s6, iniarr);
     if (s4 is null or length(s4)=0)
@@ -733,11 +734,14 @@ create procedure "VAD"."DBA"."VAD_TEST_CREATE" (
       _err_message := sprintf ('Illegal resource type:%s for %s', s2,s3);
       goto error_fin;
     }
-    s4 := sprintf ('%s/%s', s4, s3);
+    if (s5 is null or length(s5)=0)
+    {
+      s5 := sprintf ('%s/%s', s4, s3);
+    }
     if (neq (s6, 'dav'))
-      "VAD"."DBA"."VAD_OUT_ROW_FILE" (fname, pos, s3, s4, ctx);
+      "VAD"."DBA"."VAD_OUT_ROW_FILE" (fname, pos, s3, s5, ctx);
     else
-      "VAD"."DBA"."VAD_OUT_ROW_DAV" (fname, pos, s3, s4, ctx, iniarr);
+      "VAD"."DBA"."VAD_OUT_ROW_DAV" (fname, pos, s3, s5, ctx, iniarr);
     j := j + 1;
   }
   data := md5_final (ctx);
