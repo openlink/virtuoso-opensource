@@ -429,7 +429,7 @@ end_scan:
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
 	  long_path := replace (long_path, '^{DynamicLocalFormat}^', 
-	  	sprintf ('%s://%{WSHost}U', case when is_https_ctx () then 'https' else 'http' end));
+	  	sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }
   return long_path;
@@ -999,7 +999,7 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
       ret := replace (ret, '^{URIQADefaultHost}^', host);
       if (strstr (ret, '^{DynamicLocalFormat}^') is not null)
         {
-	  ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('%s://%{WSHost}U', case when is_https_ctx () then 'https' else 'http' end));
+	  ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }
    return ret;
