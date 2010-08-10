@@ -95,7 +95,7 @@
             else
               btn.value = 'Select All';
             btn.focus();
-          };
+          }
 
           function getFileName()
           {
@@ -177,7 +177,6 @@
           <v:variable name="dav_list_ord" persist="0" type="varchar" default="''" />
           <v:variable name="dav_list_ord_seq" persist="0" type="varchar" default="'asc'" />
           <v:on-init>
-            <v:script>
               <![CDATA[
   self.show_details := atoi (get_keyword ('details_dropdown', self.vc_page.vc_event.ve_params, '0'));
 
@@ -264,10 +263,8 @@
     self.curpath := trim (self.curpath, '/');
 
               ]]>
-            </v:script>
           </v:on-init>
           <v:before-data-bind>
-            <v:script>
               <![CDATA[
   self.show_details := atoi (get_keyword ('details_dropdown', self.vc_page.vc_event.ve_params, '0'));
   if (self.crfolder_mode = 0)
@@ -280,7 +277,6 @@
         self.item_permissions := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
     }
               ]]>
-            </v:script>
           </v:before-data-bind>
     <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control">
       <![CDATA[
@@ -340,21 +336,15 @@
                   <td>
                     <v:select-list name="search_dropdown">
                       <v:after-data-bind>
-                        <v:script>
                           <![CDATA[
                             (control as vspx_select_list).vsl_items := vector();
                             (control as vspx_select_list).vsl_item_values := vector();
                             (control as vspx_select_list).vsl_selected_inx := self.search_type;
-                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
-                                                                                      vector ('By resource name'));
-                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
-                                                                                            vector ('0'));
-                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items,
-                                                                                       vector ('By content'));
-                            (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values,
-                                                                                            vector ('1'));
+                          (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector ('By resource name'));
+                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('0'));
+                          (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector ('By content'));
+                          (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector ('1'));
                           ]]>
-                        </v:script>
                       </v:after-data-bind>
                     </v:select-list>
                   </td>
@@ -663,9 +653,7 @@ self.vc_data_bind (e);
                   <script type="text/javascript" src="toolkit/loader.js"><xsl:text> </xsl:text></script>-->
                   <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
                   <script type="text/javascript">
-                    function init() {
-            		      init_upload();
-                    }
+                    function init() {init_upload();}
             		  </script>
                   <v:template name="dav_template0021" type="simple" enabled="-- case when self.crfolder_mode = 2 then 1 else 0 end">
               		  <!--tr>
@@ -1306,6 +1294,7 @@ self.vc_data_bind (e);
                 nferr:;
               </v:before-data-bind>
               <script type="text/javascript" src="dav_browser_props.js"><xsl:text> </xsl:text></script>
+              <script type="text/javascript" src="tbl.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
                   declare _name, perms, cur_user, _res_type, _inh varchar;
@@ -1799,6 +1788,51 @@ self.vc_data_bind (e);
                 <?vsp
                   if (is_dir = 0)
                   {
+                    if (DB.DBA.Y_VAD_CHECK('Framework') and DB.DBA.Y_VAD_CHECK('Briefcase'))
+                    {
+                ?>
+                <tr>
+                  <th valign="top" nowrap="nowrap">WebID</th>
+                  <td>
+                    <table>
+                      <tr>
+                        <td width="100%">
+                          <table id="f_tbl" class="form-list" style="width: 100%;" cellspacing="0">
+                            <tr>
+                              <th width="1%" nowrap="nowrap">Access Type</th>
+                              <th nowrap="nowrap">WebID</th>
+                              <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <th width="1%">Action</th>
+                            </tr>
+                            <tr id="f_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
+                      		  <![CDATA[
+                      		    <script type="text/javascript">
+                              <?vsp
+                                declare N integer;
+                                declare aci_values any;
+
+                                aci_values := DB.DBA.Y_ACI_LOAD (self.source_dir);
+                                for (N := 0; N < length (aci_values); N := N + 1)
+                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                              ?>
+                      		    </script>
+                      		  ]]>
+                          </table>
+                        </td>
+                        <td valign="top" nowrap="nowrap">
+                          <span class="button pointer">
+                            <xsl:attribute name="onclick">
+                              TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: '_validate_ _uri_'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});
+                            </xsl:attribute>
+                            <img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <?vsp
+                    }
                 ?>
                 <tr id="fi10">
                   <th valign="top" nowrap="nowrap">Versioning</th>
@@ -2303,12 +2337,12 @@ self.vc_data_bind (e);
                             if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id))
                             {
                               _operm := '000000000N';
-
-                              select RES_PERMS, RES_OWNER, RES_GROUP into _operm, _own, _grp
+                              select RES_PERMS, RES_OWNER, RES_GROUP
+                                into _operm, _own, _grp
                                 from WS.WS.SYS_DAV_RES
                                 where RES_ID = _res_id;
 
-                              declare cur_type1, cur_perms1 varchar;
+                              declare dav_aci, cur_type1, cur_perms1 varchar;
 
                               declare res_cur1 cursor for
                                 select RES_PERMS, RES_TYPE
@@ -2331,14 +2365,20 @@ self.vc_data_bind (e);
                                   update WS.WS.SYS_DAV_RES set RES_PERMS = _perms where current of res_cur1;
 
                                 if (mimetype <> '' and cur_type1 <> mimetype)
-                                  {
                                     update WS.WS.SYS_DAV_RES set RES_TYPE = _res_type where current of res_cur1;
-                                  }
 
                                 commit work;
                               }
+
                             next_one1:
                               close res_cur1;
+                              if (DB.DBA.Y_VAD_CHECK('Framework') and DB.DBA.Y_VAD_CHECK('Briefcase'))
+                              {
+                                dav_aci := DB.DBA.Y_ACI_N3 (DB.DBA.Y_ACI_PARAMS (params));
+                                YAC_DAV_PROP_REMOVE (self.source_dir, 'virt:aci_meta_n3', connection_get ('vspx_user'), 1);
+                                if (not isnull (dav_aci))
+                                  YAC_DAV_PROP_SET (self.source_dir, 'virt:aci_meta_n3', dav_aci, connection_get ('vspx_user'));
+                              }
                               YACUTIA_DAV_MOVE (self.source_dir, full_path, 1);
                             }
                             else
@@ -2681,6 +2721,7 @@ self.vc_data_bind (e);
                 <script type="text/javascript">
                   function init(){
                     init_properties_mod();
+                    OAT.MSG.send(OAT, 'PAGE_LOADED');
                   }
                 </script>
                 <div>
@@ -3338,11 +3379,9 @@ self.vc_data_bind (e);
                 <label for="dav_br_t_path">Path</label>
     <v:text name="t_path" xhtml_id="dav_br_t_path" value="''" format="%s">
                   <v:before-render>
-                        <v:script>
                           <![CDATA[
                             control.ufl_value := self.curpath;
                           ]]>
-                        </v:script>
                       </v:before-render>
                 </v:text>
   <script type="text/javascript"><![CDATA[
@@ -3367,7 +3406,6 @@ self.vc_data_bind (e);
       ]]></script>
                 <v:button style="image" name="b_go_path" value="--'images/dav_browser/go_16.png'" xhtml_alt="Go" xhtml_title="Go" action="simple">
                   <v:on-post>
-                        <v:script>
                           <![CDATA[
                             declare path varchar;
                             path := self.t_path.ufl_value;
@@ -3389,19 +3427,15 @@ self.vc_data_bind (e);
                             self.ds_items.vc_data_bind(e);
                             self.vc_data_bind(e);
                           ]]>
-                        </v:script>
                       </v:on-post>
                 </v:button>
                 <v:button name="b_up" style="image" value="--'images/dav_browser/up_16.png'" xhtml_alt="Up" xhtml_title="Up" action="simple">
                   <v:before-render>
-                        <v:script>
                           <![CDATA[
                             control.ufl_active := case when length(self.curpath) > 0 then 1 else 0 end;
                           ]]>
-                        </v:script>
                       </v:before-render>
                   <v:on-post>
-                        <v:script>
                           <![CDATA[
                             declare pos integer;
                             pos := strrchr(self.curpath, '/');
@@ -3414,7 +3448,6 @@ self.vc_data_bind (e);
                             self.ds_items.vc_data_bind(e);
                             self.vc_data_bind(e);
                           ]]>
-                        </v:script>
                       </v:on-post>
                 </v:button>
                 <v:button name="b_create"

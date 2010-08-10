@@ -292,6 +292,7 @@ conductor/page.xsl
 conductor/persistent_xmlns.vspx
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
+conductor/rdf_conf.vspx
 conductor/rdf_console.vspx
 conductor/rdf_filters_pp.vspx
 conductor/rdf_filters.vspx

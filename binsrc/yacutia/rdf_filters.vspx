@@ -75,6 +75,9 @@
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
 		      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+		      </td>
                       <?vsp } ?>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
