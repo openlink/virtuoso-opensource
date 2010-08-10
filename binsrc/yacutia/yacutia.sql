@@ -457,6 +457,7 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
      <node name="Console" url="rdf_console.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
+     <node name="Configuration" url="rdf_conf.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
    '<node name="Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
    '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
@@ -3337,6 +3338,158 @@ create procedure DB.DBA.Y_DAV_GET_INFO (
     return DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '');
   }
   return '';
+}
+;
+
+create procedure DB.DBA.Y_ACI_LOAD (
+  in path varchar)
+{
+  declare retValue, graph any;
+  declare S, st, msg, data, meta any;
+
+  retValue := vector ();
+
+  graph := SIOC..dav_res_iri (path);
+  S := sprintf (' sparql \n' ||
+                ' define input:storage "" \n' ||
+                ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+                ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+                ' select ?rule ?agent ?mode \n' ||
+                '   from <%s> \n' ||
+                '  where { \n' ||
+                '          { \n' ||
+                '            ?rule rdf:type acl:Authorization ; \n' ||
+                '            acl:accessTo <%s> ; \n' ||
+                '            acl:mode ?mode ; \n' ||
+                '            acl:agent ?agent. \n' ||
+                '          } \n' ||
+                '          union \n' ||
+                '          { \n' ||
+                '            ?rule rdf:type acl:Authorization ; \n' ||
+                '            acl:accessTo <%s> ; \n' ||
+                '            acl:mode ?mode ; \n' ||
+                '            acl:agentClass ?agent. \n' ||
+                '          } \n' ||
+                '        }\n' ||
+                '  order by ?rule\n',
+                graph,
+                graph,
+                graph);
+  commit work;
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st = '00000' and length (data))
+  {
+    declare N, aclNo, aclRule, aclMode, V any;
+
+    V := null;
+    aclNo := 0;
+    aclRule := '';
+    for (N := 0; N < length (data); N := N + 1)
+    {
+      if (aclRule <> data[N][0])
+      {
+        if (not isnull (V))
+          retValue := vector_concat (retValue, vector (V));
+        aclNo := aclNo + 1;
+        aclRule := data[N][0];
+        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
+      }
+      if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
+        V[2] := 'public';
+      if (data[N][1] like SIOC..waGraph() || '%')
+        V[2] := 'group';
+      aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
+      if (aclMode = 'acl:Read')
+        V[3] := 1;
+      if (aclMode = 'acl:Write')
+        V[4] := 1;
+      if (aclMode = 'acl:Control')
+        V[5] := 1;
+    }
+    if (not isnull (V))
+      retValue := vector_concat (retValue, vector (V));
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_ACI_PARAMS (
+  in params any)
+{
+  declare N, M integer;
+  declare aclNo, retValue, V any;
+
+  M := 1;
+  retValue := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if (params[N] like 'f_fld_2_%')
+    {
+      aclNo := replace (params[N], 'f_fld_2_', '');
+      V := vector (M,
+                   trim (params[N+1]),
+                   get_keyword ('f_fld_1_' || aclNo, params, 'person'),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_r', params, '0')),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_w', params, '0')),
+                   atoi (get_keyword ('f_fld_3_' || aclNo || '_x', params, '0'))
+                  );
+      retValue := vector_concat (retValue, vector (V));
+      M := M + 1;
+    }
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_ACI_N3 (
+  in aciArray any)
+{
+  declare N integer;
+  declare retValue any;
+
+  if (length (aciArray) = 0)
+    return null;
+
+  retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
+              ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
+              ' @prefix foaf: <http://xmlns.com/foaf/0.1/> . \n';
+  for (N := 0; N < length (aciArray); N := N + 1)
+  {
+    if (length (aciArray[N][1]))
+    {
+      retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
+      if (aciArray[N][2] = 'person')
+      {
+        retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
+      }
+      else if (aciArray[N][2] = 'group')
+      {
+        retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
+      }
+      else if (aciArray[N][2] = 'public')
+      {
+        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
+      }
+      if (aciArray[N][3])
+        retValue := retValue || ';\n   acl:mode acl:Read';
+      if (aciArray[N][4])
+        retValue := retValue || ';\n   acl:mode acl:Write';
+      if (aciArray[N][5])
+        retValue := retValue || ';\n   acl:mode acl:Control';
+      retValue := retValue || '.\n';
+    }
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.Y_VAD_CHECK (in vad_name varchar)
+{
+  if (isnull (VAD_CHECK_VERSION (vad_name)))
+    return 0;
+  return 1;
 }
 ;
 
