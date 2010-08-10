@@ -360,6 +360,10 @@ create procedure rdfdesc_http_url (in url varchar)
 	ua [2] := '';
       url := vspx_uri_compose (ua);
       url := ltrim (url, '/');
+      pref := replace (pref, 'http%://', 'http://');
+      ua := rfc1808_parse_uri (pref);
+      ua[0] := DB.DBA.RDF_SPONGE_IRI_SCH ();
+      pref := vspx_uri_compose (ua);
       url := pref || url_sch || '/' || url;
     }
   url := replace (url, '#', '%01');
@@ -972,9 +976,10 @@ create procedure rdfdesc_virt_info ()
 
 create procedure RDF_CARTRIDGES_SECURE_VD (in vhost varchar, in lhost varchar)
 {
-  declare opts, rdfdesc any;
+  declare opts, rdfdesc, rdfdesc_is_dav any;
   opts := (select top 1 deserialize(HP_AUTH_OPTIONS) from http_path where hp_host = vhost);
   rdfdesc := (select HP_PPATH from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/rdfdesc');
+  rdfdesc_is_dav := (select HP_STORE_AS_DAV from HTTP_PATH where HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*' and HP_LPATH = '/rdfdesc');
 
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/about');
   DB.DBA.VHOST_REMOVE ( lhost=>lhost, vhost=>vhost, lpath=>'/rdfdesc');
@@ -1007,7 +1012,7 @@ create procedure RDF_CARTRIDGES_SECURE_VD (in vhost varchar, in lhost varchar)
       auth_opts=>opts,
       lpath=>'/rdfdesc',
       ppath=>rdfdesc,
-      is_dav=>0,
+      is_dav=>rdfdesc_is_dav,
       vsp_user=>'dba'
 
       );
