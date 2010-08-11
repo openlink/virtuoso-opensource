@@ -445,6 +445,8 @@ sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper)
   if ((SPAR_GP != SPART_TYPE (subq_gp_wrapper)) || (SELECT_L != subq_gp_wrapper->_.gp.subtype))
     GPF_T1("sparp_" "down_to_sub (): bad subq_gp_wrapper");
   subq = subq_gp_wrapper->_.gp.subquery;
+  if (SPAR_REQ_TOP != SPART_TYPE (subq))
+    spar_internal_error (sparp, "sparp_" "down_to_sub() gets strange subquery");
   sparp_gp_trav_suspend (sparp);
   sub_sparp = (sparp_t *)t_box_copy ((caddr_t)sparp);
   sub_sparp->sparp_expr = subq;
@@ -1532,7 +1534,7 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_r
     }
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (rvr->rvrFixedValue))
     {
-      if (!SPAR_LIT_OR_QNAME_VAL (rvr->rvrFixedValue))
+      if (!SPAR_LIT_OR_QNAME_VAL ((SPART *)(rvr->rvrFixedValue)))
         GOTO_RVR_ERR("weird non-NULL rvrFixedValue");
     }
   return;
@@ -3901,19 +3903,24 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
       for (ctr = indent; ctr--; /*no step*/ )
         session_buffered_write_char (' ', ses);
     }
+  else
+    {
+      session_buffered_write_char ('\t', ses);
+      indent = -indent;
+    }
   if (title)
     {
       SES_PRINT (ses, title);
       SES_PRINT (ses, ": ");
     }
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    {
+      SES_PRINT (ses, "special: ");
+      hint = 0;
+    }
   if ((-1 == hint) && IS_BOX_POINTER(tree))
     {
-      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
-        {
-          SES_PRINT (ses, "special: ");
-          hint = 0;
-        }
-      else if ((SPART_HEAD >= BOX_ELEMENTS(tree)) || IS_BOX_POINTER (tree->type))
+      if ((SPART_HEAD >= BOX_ELEMENTS(tree)) || IS_BOX_POINTER (tree->type))
         {
           SES_PRINT (ses, "special: ");
           hint = -2;
@@ -3952,9 +3959,9 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    {
 	      sprintf (buf, "BLANK NODE:");
 	      SES_PRINT (ses, buf);
-	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
-	      spart_dump (tree->_.var.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.var.tabid, ses, indent+2, "TABLE ID", 0);
+	      spart_dump (tree->_.var.vname, ses, -(indent+2), "NAME", 0);
+	      spart_dump (tree->_.var.selid, ses, -(indent+2), "SELECT ID", 0);
+	      spart_dump (tree->_.var.tabid, ses, -(indent+2), "TABLE ID", 0);
 	      break;
 	    }
 	  case SPAR_BUILT_IN_CALL:
@@ -4069,9 +4076,9 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
                     spart_dump_opname (tr_idx, 0);
                 }
 	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
-	      spart_dump (tree->_.var.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.var.tabid, ses, indent+2, "TABLE ID", 0);
-	      spart_dump ((void*)(tree->_.var.equiv_idx), ses, indent+2, "EQUIV", 0);
+	      spart_dump (tree->_.var.selid, ses, -(indent+2), "SELECT ID", 0);
+	      spart_dump (tree->_.var.tabid, ses, -(indent+2), "TABLE ID", 0);
+	      spart_dump ((void*)(tree->_.var.equiv_idx), ses, -(indent+2), "EQUIV", 0);
 	      break;
 	    }
 	  case SPAR_TRIPLE:

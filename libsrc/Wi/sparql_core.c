@@ -1951,6 +1951,7 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
     SPART *grp, *triple, *retvar, *gvar;
     caddr_t retname, gname;
     int ctr1, ctr2;
+    if (NULL != sparp->sparp_env->spare_parent_env) break;
     if (DISTINCT_L != subtype) break;
     if (NULL != sparp->sparp_env->spare_named_graphs) break;
     if (!IS_BOX_POINTER (retvals)) break;
