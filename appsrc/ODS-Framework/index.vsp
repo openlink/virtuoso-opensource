@@ -180,6 +180,10 @@ skip_meta:
        links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate";\r\n type="%s"; title="Structured Descriptor Document (%s format)",\r\n', 
        server_dataspace, utype, uname, ss[0], ss[2], ss[1]);
     }
+  for select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = uname do
+    {
+      links := links || sprintf (' <%s/ods/describe?uri=%U>; rel="webfinger",', server_root, 'acct:' || U_E_MAIL);
+    }
   links := rtrim (links, ',\r\n');
 
   http_rewrite();

@@ -48,7 +48,7 @@
 ?>
   <body style="background-color: #EFEFEF;">
      <?vsp
-       if (coalesce (strstr (ua, 'MSIE'), -1) > 0)
+       if (coalesce (strstr (ua, 'MSIE'), -1) > 0 or regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
        {
 	 declare svc_url varchar;
 	 svc_url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
