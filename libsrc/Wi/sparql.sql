@@ -3964,11 +3964,11 @@ from DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_T
 
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (inout _env any)
 {
-  _env := string_output();
+  _env := vector (0, 0, string_output());
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rs: <http://www.w3.org/2005/sparql-results#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n', _env);
+_:_ <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2005/sparql-results#results> .\n', _env[2]);
 }
 ;
 
@@ -3978,6 +3978,8 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
   declare rowid varchar;
   declare blank_ids any;
   if (__tag of vector <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
+  if (isinteger (_env[1]))
     {
       declare col_buf any;
       col_count := length (colnames);
@@ -3986,7 +3988,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
       col_buf := make_array (col_count * 7, 'any');
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
         col_buf [col_ctr * 7] := colnames[col_ctr];
-      _env := vector (0, col_buf, _env);
+      _env[1] := col_buf;
     }
   sparql_rset_nt_write_row (0, _env, colvalues);
 }
@@ -3994,9 +3996,9 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of vector <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
-  return string_output_string (_env);
+  return string_output_string (_env[2]);
 }
 ;
 
@@ -4361,7 +4363,9 @@ create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN (inout _env any) returns
 ;
 
 create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT (inout one any) returns long varchar
-from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_INIT
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_ACC
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
 ;
 
 
