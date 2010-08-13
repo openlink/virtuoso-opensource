@@ -175,6 +175,7 @@ skip_meta:
   links := 'Link:';
   links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",\r\n', server_dataspace, utype, uname);
   links := links || sprintf (' <%s%s%s#this>; rev="describedby",\r\n', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",\r\n', server_root, uname);
   foreach (any ss in exts) do
     {
        links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate";\r\n type="%s"; title="Structured Descriptor Document (%s format)",\r\n', 
@@ -187,7 +188,7 @@ skip_meta:
   links := rtrim (links, ',\r\n');
 
   http_rewrite();
-  http_header (links || '\r\nContent-Type: text/html; charset=UTF-8\r\n');
+  http_header (http_header_get () || links || '\r\nContent-Type: text/html; charset=UTF-8\r\n');
   http (html_content);
 
 ?>

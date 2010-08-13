@@ -883,7 +883,10 @@ create procedure sioc_user_info (
   if (length (full_name) and wa_user_pub_info (flags, 3))
     DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (mail) and wa_user_pub_info (flags, 4))
+    {
     DB.DBA.ODS_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:' || mail);
+      DB.DBA.ODS_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), 'acct:' || mail);
+    }
 
   if (is_person and length (gender) and wa_user_pub_info (flags, 5))
     DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
@@ -4427,6 +4430,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
 	    ?person pingback:to ?pb .
+	    ?person foaf:made `iri (bif:sprintf (''http://%%{WSHost}s/ods/describe?uri=%%U'', ?mbox))` .
 	  }
 	  WHERE
 	  {
@@ -4434,6 +4438,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    {
 	      {
 	      ?person foaf:holdsAccount <%s/%s#this> .
+		optional { ?person foaf:mbox ?mbox . } .  
 	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } } .
 	      optional { ?person foaf:interest ?interest } .
 	      optional { ?interest rdfs:label ?interest_label  } .
