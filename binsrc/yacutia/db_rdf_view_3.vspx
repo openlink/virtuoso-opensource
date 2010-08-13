@@ -346,7 +346,7 @@
 	  <?vsp } ?>
 	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
 	  <br /><v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
-	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Initialize physical triples</label> <br/>
+	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
 	  <v:button action="simple" name="cncl" value="Start Over">
