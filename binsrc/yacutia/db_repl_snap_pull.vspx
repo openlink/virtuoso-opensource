@@ -113,7 +113,7 @@
               _ex := 0;
               for select SN_SOURCE_TABLE as src, SN_NAME as dst, SN_LAST_TS as ts, RT_DSN from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_SOURCE_TABLE = RT_NAME and SN_IS_INCREMENTAL is not null do
               {
-                _sch := coalesce ((select yac_hum_min_to_dur(SE_INTERVAL) from SYS_SCHEDULED_EVENT where SE_NAME = dst), 'none');
+                _sch := coalesce ((select yac_hum_min_to_dur(SE_INTERVAL) from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT '||dst), 'none');
                 _ex := _ex + 1;
                 _ts := '**source not changed**';
                 if (ts is not null)
