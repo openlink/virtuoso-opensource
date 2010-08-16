@@ -554,11 +554,13 @@ DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid%20%28([0-9]*)%29\x24', 'iid%20%2
 create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 {
   declare host, lines, exts any;
-  declare links, tmp, path varchar;
+  declare links, tmp, path, mail, uname varchar;
 
   lines := http_request_header ();
   host := http_request_header (lines, 'Host', null, '');
   links := '';
+  mail := null;
+  uname := null;
 --  dbg_obj_print_vars (in_path);
   exts := 
   vector (
@@ -570,6 +572,13 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
   path := regexp_replace (in_path, '/(about|foaf|sioc)\\.([a-z0-9]+)\x24', '', 1, null);	
   if (regexp_match ('/dataspace/(person|organization)/([^/]+)\x24', path) is not null)
     {
+      declare a any;
+      a := sprintf_inverse (path, '/dataspace/%s/%s', 1);
+      if (length (a) = 2)
+	{
+	mail := (select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = a[1]);
+	  uname := a[1];
+	}
       tmp := path || '#this';
     }
   else
@@ -579,6 +588,8 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
   links := 'Link: ';
   links := links || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', host, tmp);
   links := links || sprintf ('\r\n <http://%s%s>; rev="describedby",', host, tmp);
+  if (uname is not null)
+    links := links || sprintf ('\r\n <http://%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",', host, uname);
   tmp := regexp_replace (in_path, '\\.([a-z0-9]+)\x24', '', 1, null);	
   if (tmp = in_path)
     {
@@ -595,6 +606,8 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 	  host, tmp, ss[0], ss[2], ss[1]);
 	}
     }
+  if (mail is not null)
+    links := links || sprintf ('\r\n <http://%s/ods/describe?uri=%U>; rel="webfinger",', host, 'acct:' || mail);
   links := rtrim (links, ',');
   return links;
 }
