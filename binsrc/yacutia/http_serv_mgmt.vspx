@@ -383,6 +383,8 @@
 		      declare xt, xp any;
 		      xt := (control.vc_parent as vspx_tree_node).tn_element;
 		      xp := cast (xpath_eval ('@type',xt) as varchar);
+		      if (xp = 'SOAP')
+		        xp := 'Web Service';
 		      control.ufl_value := xp;
 		    </v:after-data-bind>
 		  </v:label>
