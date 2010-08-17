@@ -190,7 +190,7 @@ create procedure sessionValidateX509 (
   set_user_id ('dba');
   fingerPrint := get_certificate_info (6);
   for (select cast (UC_CERT as varchar) cert,
-              U_NAME uname
+              U_NAME uName
          from DB.DBA.WA_USER_CERTS,
               DB.DBA.SYS_USERS
         where UC_U_ID = U_ID
@@ -202,7 +202,13 @@ create procedure sessionValidateX509 (
       return 0;
     agent := ODS.ODS_API.SSL_WEBID_GET ();
     if (agent is null)
+      {
+	agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+	if (agent is null)
       return 0;
+	else
+	  goto authenticated;
+      }
     declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -233,6 +239,7 @@ create procedure sessionValidateX509 (
     if (graph is not null)
       exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
     commit work;
+    authenticated:
     retValue := vector (uName);
   }
 _exit:;

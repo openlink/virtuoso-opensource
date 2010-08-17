@@ -4165,8 +4165,31 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
   if (not isnull (foafIRI))
   {
-    V := ODS.ODS_API."user.getFOAFData" (foafIRI, 0, sslFOAFCheck, outputMode, sslLoginCheck);
-    return V;
+    V := ODS.ODS_API.get_foaf_data_array (foafIRI, 0, sslFOAFCheck, sslLoginCheck);
+    return case when outputMode then params2json (V) else V end;
+  }
+  else if (is_https_ctx ()) -- try webfinger
+  {
+    declare agent any;
+    agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+    if (agent is not null)
+      {
+	declare certLogin, certLoginEnable any;
+	certLogin := 0;
+	certLoginEnable := 0;
+	V := vector ();
+	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
+	  {
+	    certLogin := 1;
+	    certLoginEnable := coalesce (UC_LOGIN, 0);
+	    appendProperty (V, 'certLogin', certLogin);
+	    appendProperty (V, 'certLoginEnable', certLoginEnable);
+	    appendProperty (V, 'iri', agent);
+	    appendProperty (V, 'mbox', get_certificate_info (10, null, 0, '', 'emailAddress'));
+	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
+	    return case when outputMode then params2json (V) else V end;
+	  }
+      }
   }
   return case when outputMode then obj2json (null) else null end;
 }
