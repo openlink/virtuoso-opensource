@@ -197,6 +197,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
+%token NOT_FROM_L	/*:: PUNCT_SPAR_LAST("NOT FROM") ::*/
 %token NULL_L		/*:: PUNCT_SPAR_LAST("NULL") ::*/
 %token OBJECT_L		/*:: PUNCT_SPAR_LAST("OBJECT") ::*/
 %token OF_L		/*:: PUNCT_SPAR_LAST("OF") ::*/
@@ -689,6 +690,8 @@ spar_dataset_clause_subtype
 	| FROM_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
 	| NOT_L FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
 	| NOT_L FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
+	| NOT_FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
+	| NOT_FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
 	;
 
 spar_sponge_optionlist_opt	/* [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'	*/

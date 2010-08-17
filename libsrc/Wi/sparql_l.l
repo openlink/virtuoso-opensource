@@ -456,6 +456,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{N}{A}{M}{E}{D}			{ return NAMED_L	; }
 <SPARQL>{N}{I}{L}			{ return NIL_L		; }
 <SPARQL>{N}{O}{T}			{ return NOT_L		; }
+<SPARQL>{N}{O}{T}[ \t]+{F}{R}{O}{M}	{ return NOT_FROM_L	; }
 <SPARQL>{N}{U}{L}{L}			{ return NULL_L		; }
 <SPARQL>{O}{B}{J}{E}{C}{T}		{ return OBJECT_L	; }
 <SPARQL>{O}{F}				{ return OF_L		; }
