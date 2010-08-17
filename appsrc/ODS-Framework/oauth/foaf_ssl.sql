@@ -50,6 +50,43 @@ create procedure FOAF_SSL_WEBID_GET (in cert any := null)
 }
 ;
 
+create procedure FOAF_SSL_WEBFINGER (in cert any := null)
+{
+  declare mail, webid, domain, host_info, xrd, template, url any;
+  declare xt, xd, tmpcert any;
+
+  mail := get_certificate_info (10, cert, 0, '', 'emailAddress');
+  if (mail is null)
+    return null;
+
+  declare exit handler for sqlstate '*'
+    {
+      -- connection error or parse error
+      return null;
+    };
+
+  domain := subseq (mail, position ('@', mail));
+  host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
+  xd := xtree_doc (host_info);
+  template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
+  url := replace (template, '{uri}', 'acct:' || mail);
+  xrd := http_get (url);
+  xd := xtree_doc (xrd);
+  xt := xpath_eval ('/XRD/Property[@type="certificate"]/@href', xd, 0);
+  foreach (any x in xt) do
+    {
+      x := cast (x as varchar);
+      tmpcert := http_get (x);
+      if (get_certificate_info (6, cert, 0, '') = get_certificate_info (6, tmpcert, 0, ''))
+	{
+	  webid := cast (xpath_eval ('/XRD/Property[@type="webid"]/@href', xd) as varchar);
+	  return coalesce (webid, 'acct:' || mail);
+	}
+    }
+  return null;
+}
+;
+
 create procedure DB.DBA.FOAF_MOD (in m any)
 {
   declare modulus any;
@@ -69,9 +106,9 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
-  declare acc int;
+  declare acc, wf int;
   acc := 0;
-
+  wf := 0;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -79,18 +116,21 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
     }
   ;
 
+  gr := uuid ();
   info := get_certificate_info (9);
   fing := get_certificate_info (6);
-  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+  agent := FOAF_SSL_WEBID_GET ();
 
-  if (not isarray (info) or agent is null)
+  if (not isarray (info))
     return 0;
-
-  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
-  alts := split_and_decode (alts, 0, '\0\0,:');
-  if (alts is null)
-    return 0;
-  agent := get_keyword ('URI', alts);
+  if (agent is null)
+    {
+      agent := FOAF_SSL_WEBFINGER ();
+      if (agent is not null)
+	{
+	  wf := 1;
+	}
+    }
   if (agent is null)
     return 0;
 
@@ -99,10 +139,10 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       connection_set ('SPARQLUserId', VS_UID);
       return 1;
     }
-
+  if (wf)
+    goto authenticated;
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
-  gr := uuid ();
   graph := DB.DBA.vspx_uri_compose (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
@@ -120,6 +160,7 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
     {
       declare arr, uid any;
+	      authenticated:
       uid := coalesce ((select FS_UID from FOAF_SSL_ACL where FS_URI = agent), 'nobody');
       if ('nobody' = uid and allow_nobody = 0)
 	goto err_ret;
@@ -207,9 +248,10 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
-  declare acc, rc int;
+  declare acc, rc, wf int;
   acc := 0;
   rc := 0;
+  wf := 0;  -- authenticated via webfinger
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -219,16 +261,15 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
 
   info := get_certificate_info (9);
   fing := get_certificate_info (6);
-  agent := get_certificate_info (7, null, null, null, '2.5.29.17');
+  agent := FOAF_SSL_WEBID_GET ();
 
   if (not isarray (info) or agent is null)
     return 0;
-
-  alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
-  alts := split_and_decode (alts, 0, '\0\0,:');
-  if (alts is null)
-    return 0;
-  agent := get_keyword ('URI', alts);
+  if (agent is null)
+    {
+      agent := FOAF_SSL_WEBFINGER ();
+      wf := 1;
+    }
   if (agent is null)
     return 0;
 
@@ -242,9 +283,13 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
       return 1;
     }
 
+  gr := uuid ();
+
+  if (wf) 
+    goto authenticated;
+
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
-  gr := uuid ();
   graph := DB.DBA.vspx_uri_compose (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
@@ -260,6 +305,7 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
         {
 	  if (_row [0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row [1]) = bin2hex (info[2]))
     {
+	      authenticated:
       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, realm, 'nobody', now ());
       rc := 1;
       goto err_ret;

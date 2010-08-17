@@ -52,23 +52,21 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
   http ('<?xml version="1.0" encoding="UTF-8"?>\n');
   http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0">\n');
   http (sprintf ('<Subject>%s</Subject>\n', "uri"));
-  http (sprintf ('<Alias>%s</Alias>\n', sioc..user_obj_iri (uname)));
-  http (sprintf ('<Link rel="http://openid.net/signon/1.1/provider" title="OpenID v1 Server" href="http://%{WSHost}s/openid" />\n'));
-  http (sprintf ('<Link rel="http://specs.openid.net/auth/2.0/provider" title="OpenID v2 Server" href="http://%{WSHost}s/openid" />\n'));
+  http (sprintf ('  <Alias>%s</Alias>\n', sioc..user_doc_iri (uname)));
+  http (sprintf ('  <Link rel="http://openid.net/signon/1.1/provider" href="http://%{WSHost}s/openid" />\n'));
+  http (sprintf ('  <Link rel="http://specs.openid.net/auth/2.0/provider" href="http://%{WSHost}s/openid" />\n'));
   http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/openid" href="%s"/>\n', sioc..user_doc_iri (uname)));
 
   for select U_NAME from DB.DBA.SYS_USERS where U_E_MAIL = mail do 
     {
-      http (sprintf ('<Link rel="%s" href="%s" />\n',
-	    sioc..owl_iri ('sameAs'), 
-	    sioc..person_iri (sioc..user_obj_iri (U_NAME))));
+      http (sprintf ('  <Link rel="%s" href="%s" />\n', sioc..owl_iri ('sameAs'), sioc..person_iri (sioc..user_obj_iri (U_NAME))));
     }
   http (sprintf ('<Link rel="http://webfinger.net/rel/profile-page" type="text/html" href="%s" />\n', 
 	sioc..person_iri (sioc..user_obj_iri (uname), '')));
   --http (sprintf ('<Link rel="http://portablecontacts.net/spec/1.0#me" href="%s" />\n', sioc..user_doc_iri (uname)));
   --http (sprintf ('<Link rel="http://microformats.org/profile/hcard" type="text/html" href="http://%s/ods/uhome.vspx?ufname=%s" />\n', host, uname));
   http (sprintf ('<Property type="webid" href="%s" />\n', sioc..person_iri (sioc..user_obj_iri (uname))));
-  --http (sprintf ('<Link rel="me" href="%s" />\n', sioc..person_iri (sioc..user_obj_iri (uname))));
+  http (sprintf ('  <Link rel="me" href="%s" />\n', sioc..person_iri (sioc..user_obj_iri (uname))));
   http (sprintf ('<Link rel="http://schemas.google.com/g/2010#updates-from" href="http://%s/activities/feeds/activities/user/%U" type="application/atom+xml" />\n', host, uname));
   for select * from DB.DBA.WA_USER_CERTS, DB.DBA.SYS_USERS where UC_U_ID = U_ID and U_NAME = uname do
     {
@@ -76,12 +74,11 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
     }
   for select WUO_NAME, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where U_NAME = uname and WUO_U_ID = U_ID do
     {
-      http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/OnlineAccount" href="%V"><Title>%V</Title></Link>\n', 
-	    WUO_URI, WUO_NAME));
+      http (sprintf ('  <Link rel="http://xmlns.com/foaf/0.1/OnlineAccount" href="%V"><Title>%V</Title></Link>\n', WUO_URI, WUO_NAME));
     }
   http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/made" href="http://%s%s?uri=%s" />\n', host, http_path (), "uri"));
-  http (sprintf ('<Link rel="describedby" href="%s" />\n', 
-	sioc..person_iri (sioc..user_obj_iri (uname), '')));
+  http (sprintf ('  <Link rel="describedby" href="%s" type="text/html" />\n', sioc..person_iri (sioc..user_obj_iri (uname), '')));
+  http (sprintf ('  <Link rel="describedby" href="%s/foaf.rdf" type="application/rdf+xml" />\n', sioc..person_iri (sioc..user_obj_iri (uname), '')));
   for select WAM_HOME_PAGE, WAM_INST, WAM_APP_TYPE 
     from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER where WAM_USER = U_ID and U_NAME = uname and WAM_MEMBER_TYPE = 1 do
     {

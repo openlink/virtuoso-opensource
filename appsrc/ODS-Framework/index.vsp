@@ -173,12 +173,12 @@ skip_meta:
   html_content:=replace(html_content,'<!-- #META# -->',string_output_string (resMeta));
 
   links := 'Link:';
-  links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",\r\n', server_dataspace, utype, uname);
-  links := links || sprintf (' <%s%s%s#this>; rev="describedby",\r\n', server_dataspace, utype, uname);
-  links := links || sprintf (' <%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",\r\n', server_root, uname);
+  links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s%s%s#this>; rev="describedby",', server_dataspace, utype, uname);
+  links := links || sprintf (' <%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",', server_root, uname);
   foreach (any ss in exts) do
     {
-       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate";\r\n type="%s"; title="Structured Descriptor Document (%s format)",\r\n', 
+       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', 
        server_dataspace, utype, uname, ss[0], ss[2], ss[1]);
     }
   for select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = uname do
