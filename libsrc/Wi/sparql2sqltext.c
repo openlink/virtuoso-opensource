@@ -380,7 +380,7 @@ ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
     return;
   if (NULL == jso_name)
     {
-      jso_rtti_t *jso_rtti = gethash (jso_inst, jso_rttis_of_names);
+      jso_rtti_t *jso_rtti = gethash (jso_inst, jso_rttis_of_structs);
       if (NULL == jso_rtti)
         return; /* Built-in anonymous JSO, like one used when define input:storage "" */
       jso_name = jso_rtti->jrtti_inst_iri;
@@ -7876,6 +7876,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     {
       if ('\0' != ssg->ssg_sparp->sparp_env->spare_storage_name[0])
         ssg_qr_uses_jso (ssg, NULL, ssg->ssg_sparp->sparp_env->spare_storage_name);
+      else
+        ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadMap); /* this is to reflect security changes even if the used built-in JSO has no associated IRI */
     }
   else
     ssg_qr_uses_jso (ssg, NULL, uname_virtrdf_ns_uri_DefaultQuadStorage);
