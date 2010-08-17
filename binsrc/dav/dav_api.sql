@@ -1786,6 +1786,8 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
   declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
   declare S, V, info, st, msg, data, meta any;
 
+  set_user_id ('dba');
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
   foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
   V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
   V := split_and_decode (V, 0, '\0\0,:');
@@ -1793,9 +1795,15 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
     V := vector ();
   foafIRI := get_keyword ('URI', V);
   if (isnull (foafIRI))
+    {
+      if (__proc_exists ('FOAF_SSL_WEBFINGER') is null)
+        goto _exit;
+      foafIRI := FOAF_SSL_WEBFINGER ();
+      if (foafIRI is null)
     goto _exit;
+      goto authenticated;
+    }
 
-  set_user_id ('dba');
 
   localIRI := foafIRI;
   V := rfc1808_parse_uri (localIRI);
@@ -1810,7 +1818,6 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
   V := rfc1808_parse_uri (foafIRI);
   V[5] := '';
   loadIRI := DB.DBA.vspx_uri_compose (V);
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
   S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
   st := '00000';
   exec (S, st, msg, vector (), 0);
@@ -1843,7 +1850,7 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
         lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
       declare resMode varchar;
-
+      authenticated:
       graph := SIOC.DBA.dav_res_iri (path);
       --dbg_obj_print ('graph', graph);
       resMode := '';
