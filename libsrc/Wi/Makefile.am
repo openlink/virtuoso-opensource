@@ -244,7 +244,6 @@ libwi_la_SOURCES = \
 	srvstat.c \
 	string.c \
 	trans.c \
-	uname_const_decl.c \
 	update.c \
 	uuencode.c \
 	wirpc.c \
@@ -404,6 +403,7 @@ libwi_la_SOURCES += \
 	shuric.c \
 	subseq.c \
 	text.c \
+	uname_const_decl.c \
 	xmlenc_algos.c \
 	xmlenc.c \
 	xmlenc-dec.c \
@@ -436,6 +436,7 @@ libwi_odbc_la_SOURCES += \
 	shuric.c \
 	subseq.c \
 	text.c \
+	uname_const_decl.c \
 	xmlenc_algos.c \
 	xmlenc.c \
 	xmlenc-dec.c \
