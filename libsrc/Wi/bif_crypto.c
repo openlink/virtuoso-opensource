@@ -1104,6 +1104,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   long type = bif_long_arg (qst, args, 0, "get_certificate_info");
   caddr_t scert = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "get_certificate_info") : NULL;
   int internal = 0;
+  char buffer[4096];
 
   if (qi->qi_client->cli_ws)
     ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws->ws_session->dks_session);
@@ -1173,7 +1174,6 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	X509_NAME *subj = X509_get_subject_name (cert);
 	if (subj)
 	  {
-	    char buffer[4096];
 	    X509_NAME_oneline (subj, buffer, sizeof (buffer));
 	    ret = box_dv_short_string (buffer);
 	    break;
@@ -1185,7 +1185,6 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	X509_NAME *subj = X509_get_issuer_name (cert);
 	if (subj)
 	  {
-	    char buffer[4096];
 	    X509_NAME_oneline (subj, buffer, sizeof (buffer));
 	    ret = box_dv_short_string (buffer);
 	    break;
@@ -1311,6 +1310,43 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	  }
 	else
 	  *err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
+	break;
+      }
+    case 10:
+      {
+	char *attr = BOX_ELEMENTS (args) > 4 ? bif_string_arg (qst, args, 4, "get_certificate_info") : "CN";
+	X509_NAME *subj = X509_get_subject_name (cert);
+	X509_NAME_ENTRY *ne, *ne_ret = NULL;
+	int n, i, len;
+	char *s, *data_ptr;
+	BIO *mem = BIO_new (BIO_s_mem ());
+	for (i = 0; NULL != subj && i < sk_X509_NAME_ENTRY_num(subj->entries); i++)
+	  {
+	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
+	    n = OBJ_obj2nid (ne->object);
+	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	      {
+		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
+		s = buffer;
+	      }
+	    if (!strcmp (s, attr))
+	      {
+		ne_ret = ne;
+		break;
+	      }
+	  }
+	if (ne_ret)
+	  {
+	    ASN1_STRING_print (mem, ne_ret->value);
+	    len = BIO_get_mem_data (mem, &data_ptr);
+	    if (len > 0 && data_ptr)
+	      {
+		ret = dk_alloc_box (len + 1, DV_SHORT_STRING);
+		memcpy (ret, data_ptr, len);
+		ret[len] = 0;
+	      }
+	  }
+	BIO_free (mem);
 	break;
       }
     default:
