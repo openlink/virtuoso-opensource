@@ -1021,7 +1021,7 @@ create procedure RDF_CARTRIDGES_SECURE_VD (in vhost varchar, in lhost varchar)
       lhost=>lhost,
       vhost=>vhost,
       realm=>'Virtuoso Sponger',
-      auth_fn=>'DB.DBA.RDF_SPONGE_AUTH',
+      auth_fn=>'DB.DBA.FOAF_SSL_AUTH',
       sec=>'SSL',
       auth_opts=>opts,
       lpath=>'/sparql',
