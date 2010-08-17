@@ -58,6 +58,7 @@
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
+#include "uname_const_decl.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -3762,7 +3763,7 @@ srv_global_init (char *mode)
  	}
       return;
     }
-
+  uname_const_decl_init ();
 #ifdef BIF_XML
   html_hash_init ();
 #endif

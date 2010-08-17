@@ -26,6 +26,7 @@
 #ifndef _XMLTREE_H
 #define _XMLTREE_H
 
+#include "uname_const_decl.h"
 #include "xpath.h"
 #ifdef __cplusplus
 extern "C" {
@@ -41,23 +42,6 @@ extern "C" {
 #define XPATH_DEBUG
 #endif
 */
-
-/*				 0         1         2         3        */
-/*				 01234567890123456789012345678901234567 */
-
-#define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
-#define SWAP_REIFY_NS_URI_LEN	37
-
-/*				 0         1         2         3         4   */
-/*				 0123456789012345678901234567890123456789012 */
-#define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
-#define VIRTRDF_NS_URI_LEN	42
-
-/*				 0         1         2         3      */
-/*				 012345678901234567890123456789012345 */
-#define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
-#define XHV_NS_URI_LEN		35
-
 
 #define MAX_XML_LNAME_LENGTH 500				/* for local names, namespace prefixes and namespace URIs */
 #define MAX_XML_QNAME_LENGTH (2*MAX_XML_LNAME_LENGTH + 1)	/* for qualified names (that have semicolons) */
@@ -1016,116 +1000,6 @@ extern void xslt_instantiate (xparse_ctx_t * xp, xslt_template_t * xst, xml_enti
 #define xslt_traverse_1(XP) xslt_traverse_inner ((XP), NULL)
 
 extern caddr_t xml_get_ns_uri (client_connection_t *cli, caddr_t pref, ptrlong persistent, int ret_in_mp_box);
-
-extern caddr_t uname___empty;
-extern caddr_t uname__bang_cdata_section_elements;
-extern caddr_t uname__bang_exclude_result_prefixes;
-extern caddr_t uname__bang_file;
-extern caddr_t uname__bang_location;
-extern caddr_t uname__bang_name;
-extern caddr_t uname__bang_ns;
-extern caddr_t uname__bang_uri;
-extern caddr_t uname__bang_use_attribute_sets;
-extern caddr_t uname__bang_xmlns;
-extern caddr_t uname__attr;
-extern caddr_t uname__comment;
-extern caddr_t uname__disable_output_escaping;
-extern caddr_t uname__root;
-extern caddr_t uname__pi;
-extern caddr_t uname__ref;
-extern caddr_t uname__srcfile;
-extern caddr_t uname__srcline;
-extern caddr_t uname__txt;
-extern caddr_t uname__xslt;
-extern caddr_t uname_lang;
-extern caddr_t uname_nil;
-extern caddr_t uname_nodeID_ns;
-extern caddr_t uname_rdf_ns_uri;
-extern caddr_t uname_rdf_ns_uri_Description;
-extern caddr_t uname_rdf_ns_uri_ID;
-extern caddr_t uname_rdf_ns_uri_RDF;
-extern caddr_t uname_rdf_ns_uri_Seq;
-extern caddr_t uname_rdf_ns_uri_Statement;
-extern caddr_t uname_rdf_ns_uri_XMLLiteral;
-extern caddr_t uname_rdf_ns_uri_about;
-extern caddr_t uname_rdf_ns_uri_first;
-extern caddr_t uname_rdf_ns_uri_li;
-extern caddr_t uname_rdf_ns_uri_nil;
-extern caddr_t uname_rdf_ns_uri_nodeID;
-extern caddr_t uname_rdf_ns_uri_object;
-extern caddr_t uname_rdf_ns_uri_predicate;
-extern caddr_t uname_rdf_ns_uri_resource;
-extern caddr_t uname_rdf_ns_uri_rest;
-extern caddr_t uname_rdf_ns_uri_subject;
-extern caddr_t uname_rdf_ns_uri_type;
-extern caddr_t uname_rdf_ns_uri_datatype;
-extern caddr_t uname_rdf_ns_uri_parseType;
-extern caddr_t uname_rdf_ns_uri_value;
-extern caddr_t uname_space;
-extern caddr_t uname_swap_reify_ns_uri;
-extern caddr_t uname_swap_reify_ns_uri_statement;
-extern caddr_t uname_virtrdf_ns_uri;
-extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
-extern caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
-extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
-extern caddr_t uname_virtrdf_ns_uri_QuadMap;
-extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
-extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
-extern caddr_t uname_virtrdf_ns_uri_array_of_any;
-extern caddr_t uname_virtrdf_ns_uri_array_of_string;
-extern caddr_t uname_virtrdf_ns_uri_bitmask;
-extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
-extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
-extern caddr_t uname_virtrdf_ns_uri_loadAs;
-extern caddr_t uname_xhv_ns_uri;
-extern caddr_t uname_xhv_ns_uri_alternate;
-extern caddr_t uname_xhv_ns_uri_appendix;
-extern caddr_t uname_xhv_ns_uri_bookmark;
-extern caddr_t uname_xhv_ns_uri_cite;
-extern caddr_t uname_xhv_ns_uri_chapter;
-extern caddr_t uname_xhv_ns_uri_contents;
-extern caddr_t uname_xhv_ns_uri_copyright;
-extern caddr_t uname_xhv_ns_uri_first;
-extern caddr_t uname_xhv_ns_uri_glossary;
-extern caddr_t uname_xhv_ns_uri_help;
-extern caddr_t uname_xhv_ns_uri_icon;
-extern caddr_t uname_xhv_ns_uri_index;
-extern caddr_t uname_xhv_ns_uri_last;
-extern caddr_t uname_xhv_ns_uri_license;
-extern caddr_t uname_xhv_ns_uri_meta;
-extern caddr_t uname_xhv_ns_uri_next;
-extern caddr_t uname_xhv_ns_uri_p3pv1;
-extern caddr_t uname_xhv_ns_uri_prev;
-extern caddr_t uname_xhv_ns_uri_role;
-extern caddr_t uname_xhv_ns_uri_section;
-extern caddr_t uname_xhv_ns_uri_stylesheet;
-extern caddr_t uname_xhv_ns_uri_subsection;
-extern caddr_t uname_xhv_ns_uri_start;
-extern caddr_t uname_xhv_ns_uri_up;
-extern caddr_t uname_xml;
-extern caddr_t uname_xmlns;
-extern caddr_t uname_xml_colon_base;
-extern caddr_t uname_xml_colon_lang;
-extern caddr_t uname_xml_colon_space;
-extern caddr_t uname_xml_ns_uri;
-extern caddr_t uname_xml_ns_uri_colon_base;
-extern caddr_t uname_xml_ns_uri_colon_lang;
-extern caddr_t uname_xml_ns_uri_colon_space;
-extern caddr_t uname_xmlschema_ns_uri;
-extern caddr_t uname_xmlschema_ns_uri_hash;
-extern caddr_t uname_xmlschema_ns_uri_hash_any;
-extern caddr_t uname_xmlschema_ns_uri_hash_anyURI;
-extern caddr_t uname_xmlschema_ns_uri_hash_boolean;
-extern caddr_t uname_xmlschema_ns_uri_hash_date;
-extern caddr_t uname_xmlschema_ns_uri_hash_dateTime;
-extern caddr_t uname_xmlschema_ns_uri_hash_decimal;
-extern caddr_t uname_xmlschema_ns_uri_hash_double;
-extern caddr_t uname_xmlschema_ns_uri_hash_float;
-extern caddr_t uname_xmlschema_ns_uri_hash_integer;
-extern caddr_t uname_xmlschema_ns_uri_hash_string;
-extern caddr_t uname_xmlschema_ns_uri_hash_time;
-extern caddr_t unames_colon_number[20];
-
 
 extern void DBG_NAME(xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * ret, dtp_t dtp);
 #ifdef MALLOC_DEBUG
