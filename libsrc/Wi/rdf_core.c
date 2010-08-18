@@ -1043,6 +1043,7 @@ bif_rdf_load_turtle_local_file (caddr_t * qst, caddr_t * err_ret, state_slot_t *
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_turtle() should be a vector of %d texts of SQL statements",
       COUNTOF__TRIPLE_FEED );
+  file_path_assert (str, NULL, 0);
   res = rdf_load_turtle (str, 1, base_uri, graph_uri, flags,
     (ccaddr_t *) cbk_names, app_env,
     (query_instance_t *)qst, QST_CHARSET(qst), &err );
