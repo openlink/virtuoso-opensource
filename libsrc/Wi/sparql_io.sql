@@ -24,7 +24,7 @@
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_RSET_XML_WRITE_NS (inout ses any)
 {
-  -- http ('<?xml version="1.0" ?>\n', ses);
+  --http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
   http ('<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">', ses);
 }
 ;
@@ -569,15 +569,16 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
   if (N'' <> qtext_posmap)
     {
       declare qtext_ses any;
-      declare prev_pos, qctr integer;
+      declare prev_pos, qctr, qcount integer;
       qtext_ses := string_output ();
       prev_pos := 0;
-      for (qctr := length (qtext_posmap); qctr > 0; qctr := qctr-2)
+      qcount := length (qtext_posmap)-1;
+      for (qctr := 0; qctr < qcount; qctr := qctr+2)
         {
           declare qpos integer;
-          qpos := qtext_posmap[qctr-2];
+          qpos := qtext_posmap[qctr];
           http (subseq (qtext_template, prev_pos, qpos), qtext_ses);
-          http_nt_object (param_row[qtext_posmap[qctr-1]-1], qtext_ses);
+          http_nt_object (param_row[qtext_posmap[qctr+1]-1], qtext_ses);
           prev_pos := qpos+8;
         }
       http (subseq (qtext_template, prev_pos), qtext_ses);
