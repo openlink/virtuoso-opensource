@@ -1430,6 +1430,7 @@ spar_arg_list_opt	/* ::=  ArgList?	*/
 
 spar_arg_list		/* [56]*	ArgList	 ::=  ( NIL | '(' Expns ')' )	*/
 	: NIL_L				{ $$ = (dk_set_t)NIL_L; }
+	| _LPAR _RPAR			{ $$ = (dk_set_t)NIL_L; }
 	| _LPAR spar_expns _RPAR	{ $$ = $2; }
 	;
 
