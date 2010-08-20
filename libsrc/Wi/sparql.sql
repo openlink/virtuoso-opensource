@@ -1452,7 +1452,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
       return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (
         o_val,
         iri_to_id (o_type),
-        o_lang );
+        null );
     }
   if (__tag (o_lang) in (__tag of varchar, 217))
     return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
