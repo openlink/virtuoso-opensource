@@ -3049,7 +3049,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                     goto literal_elt_printed; /* see below */
                   }
                 else
-                  SES_PRINT (ses, "<!-- bad datatype ID -->");
+                  SES_PRINT (ses, "<literal><!-- bad datatype ID -->");
               }
             else if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
               {
@@ -3062,7 +3062,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                     goto literal_elt_printed; /* see below */
                   }
                 else
-                  SES_PRINT (ses, "<!-- bad language ID -->");
+                  SES_PRINT (ses, "<literal><!-- bad language ID -->");
               }
             else
               SES_PRINT (ses, "<literal>");
@@ -3883,7 +3883,7 @@ rdf_box_init ()
   bif_define ("http_talis_json_triple", bif_http_talis_json_triple);
   bif_set_uses_index (bif_http_talis_json_triple);
   bif_define ("http_nt_object", bif_http_nt_object);
-  bif_set_uses_index (bif_http_nt_triple);
+  bif_set_uses_index (bif_http_nt_object);
   bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
   bif_set_uses_index (bif_sparql_rset_ttl_write_row);
   bif_define ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row);
