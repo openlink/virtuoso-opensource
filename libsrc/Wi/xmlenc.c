@@ -5995,6 +5995,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long days = bif_long_arg (qst, args, 3, "xenc_x509_generate");
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 5, "xenc_x509_generate");
+  float hours = BOX_ELEMENTS (args) > 6 ? (float) bif_float_arg (qst, args, 6, "xenc_x509_generate") : 0;
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1);
   xenc_key_t * cli_key = xenc_get_key_by_name (cli_pub_key, 1);
   X509 *x = NULL;
@@ -6075,7 +6076,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   X509_set_version (x,2);
   ASN1_INTEGER_set (X509_get_serialNumber (x), serial);
   X509_gmtime_adj (X509_get_notBefore (x), 0);
-  X509_gmtime_adj (X509_get_notAfter (x), (long) 60 * 60 * 24 * days);
+  X509_gmtime_adj (X509_get_notAfter (x), (long) (((days * 24) + hours) * 60 * 60));
   X509_set_pubkey (x, cli_pk);
   name = X509_get_subject_name(x);
 
