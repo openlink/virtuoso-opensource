@@ -3240,19 +3240,23 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
 
 
 int
-is_call_only_dep_on (df_elt_t * dfe, op_table_t * ot)
+is_call_only_dep_on (df_elt_t * dfe, op_table_t * ot, int skip_first_n)
 {
-  int inx;
+  ST **args;
+  int argctr, argcount;
+#ifndef NDEBUG
   if (!ST_P (dfe->dfe_tree, CALL_STMT))
-    return 0;
+    GPF_T;
+#endif
   if (!(dfe->dfe_tables && !dfe->dfe_tables->next && dfe->dfe_tables->data == (void*) ot))
     return 0;
-  DO_BOX (ST *, arg, inx, dfe->dfe_tree->_.call.params)
+  args = dfe->dfe_tree->_.call.params;
+  argcount = BOX_ELEMENTS (args);
+  for (argctr = skip_first_n; argctr < argcount; argctr++)
     {
-      if (!ST_COLUMN (arg, COL_DOTTED))
+      if (!ST_COLUMN (args[argctr], COL_DOTTED))
 	return 0;
     }
-  END_DO_BOX;
   return  1;
 }
 
@@ -3291,32 +3295,113 @@ sqlo_make_inv_pred (sqlo_t * so, sinv_map_t * map, df_elt_t * left, df_elt_t * r
   *preds_ret = dk_set_conc (res, *preds_ret);
 }
 
+void
+sqlo_make_inv_sprintf (sqlo_t * so, const char *inv_name, df_elt_t * left, df_elt_t * right, dk_set_t * preds_ret)
+{
+  /* left is an invertible sprintf function call with columns as args, right is an exp. */
+  client_connection_t * cli = sqlc_client ();
+  dk_set_t res = NULL;
+  int inx_inv;
+  int col_ctr, col_count;
+  int old_top_and = so->so_is_top_and;
+  ST * left_tree = left->dfe_tree;
+  ST * right_tree = right->dfe_tree;
+  ST ** left_params = left_tree->_.call.params;
+  so->so_is_top_and = 0;
+  col_count = BOX_ELEMENTS (left_tree->_.call.params) - 1;
+  for (col_ctr = 0; col_ctr < col_count; col_ctr++)
+    {
+      ST *clause;
+      ST *new_left, *new_right;
+      new_left =
+	(ST *) t_box_copy_tree ((caddr_t)(left_params[col_ctr+1]));
+      new_right =
+	t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("aref"),
+	  t_listst (2,
+	    t_listst (3, CALL_STMT, t_sqlp_box_id_upcase (inv_name),
+	      t_list (3,
+		right_tree,
+		t_box_copy_tree ((caddr_t)(left_params[0])),
+		t_box_num (2) ) ),
+	    t_box_num_nonull (col_ctr) ) );
+      new_left = sinv_check_inverses (new_left, cli);
+      new_right = sinv_check_inverses (new_right, cli);
+      BIN_OP (clause, BOP_EQ, new_left, new_right);
+      clause = sinv_check_exp (so, clause);
+      t_set_push (&res, (void*) sqlo_df (so, clause));
+    }
+  so->so_is_top_and = old_top_and;
+  *preds_ret = dk_set_conc (res, *preds_ret);
+}
 
+int sprintff_is_proven_bijection (const char *f);
+
+static const char *
+sqlo_is_call_invertible_sprintf (ST *st)
+{
+  const char *ret;
+  caddr_t arg1;
+  if (casemode_strncmp (st->_.call.name, "__spf", 5))
+    return NULL;
+  if (!casemode_strcmp (st->_.call.name, "__spf"))
+    ret = "__spfinv";
+  else if (!casemode_strcmp (st->_.call.name, "__spfn"))
+    ret = "__spfinv";
+  else if (!casemode_strcmp (st->_.call.name, "__spfin"))
+    ret = "__spfinv";
+  if (NULL == ret)
+    return NULL;
+  if (2 > BOX_ELEMENTS (st->_.call.params))
+    return NULL;
+  arg1 = st->_.call.params[0];
+  if (DV_STRING != DV_TYPE_OF (arg1))
+    return NULL;
+  if (!sprintff_is_proven_bijection (arg1))
+    return NULL;
+  return ret;
+}
+
+int
+sqlo_col_inverse_eq_1 (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t *left, df_elt_t *right, dk_set_t * col_preds, dk_set_t * after_preds)
+{
+  sinv_map_t * map;
+  const char *inv;
+  if (is_call_only_dep_on (left, tb_dfe->_.table.ot, 0)
+      && !dk_set_member (right->dfe_tables, (void*) tb_dfe->_.table.ot)
+      && (map = sinv_call_map (left->dfe_tree, sqlc_client ())))
+    {
+      sqlo_make_inv_pred  (so, map, left, right, col_preds);
+      return 1;
+    }
+  inv = sqlo_is_call_invertible_sprintf (left->dfe_tree);
+  if ((NULL != inv) && is_call_only_dep_on (left, tb_dfe->_.table.ot, 1)
+      && !dk_set_member (right->dfe_tables, (void*) tb_dfe->_.table.ot) )
+    {
+      sqlo_make_inv_sprintf (so, inv, left, right, col_preds);
+      return 1;
+    }
+  return 0;
+}
 
 int
 sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds, dk_set_t * after_preds)
 {
   /* if pred is f (c1,...cn) = exp independent of tb_dfe and inverse of f exists and c1...cn are cols of tb_dfe
   * then generate AND of inverses of f app,lied to exp, equated to each of c1...cn */
-  sinv_map_t * map;
   if (sqlo_solve (so, tb_dfe, pred, col_preds, after_preds))
     return 1;
   if (BOP_EQ != pred->_.bin.op)
     return 0;
 
   /* left if func of table and right is not of table ? */
-  if (is_call_only_dep_on (pred->_.bin.left, tb_dfe->_.table.ot)
-      && !dk_set_member (pred->_.bin.right->dfe_tables, (void*) tb_dfe->_.table.ot)
-      && (map = sinv_call_map (pred->_.bin.left->dfe_tree, sqlc_client ())))
+  if (ST_P (pred->_.bin.left->dfe_tree, CALL_STMT))
     {
-      sqlo_make_inv_pred  (so, map, pred->_.bin.left, pred->_.bin.right, col_preds);
+      if (sqlo_col_inverse_eq_1 (so, tb_dfe, pred->_.bin.left, pred->_.bin.right, col_preds, after_preds))
       return 1;
     }
-  else if (is_call_only_dep_on (pred->_.bin.left, tb_dfe->_.table.ot)
-      && !dk_set_member (pred->_.bin.right->dfe_tables, (void*) tb_dfe->_.table.ot)
-	   && (map = sinv_call_map (pred->_.bin.left->dfe_tree, sqlc_client ())))
+  if (ST_P (pred->_.bin.right->dfe_tree, CALL_STMT))
     {
-      sqlo_make_inv_pred  (so, map, pred->_.bin.right, pred->_.bin.left, col_preds);
+      if (sqlo_col_inverse_eq_1 (so, tb_dfe, pred->_.bin.right, pred->_.bin.left, col_preds, after_preds))
       return 1;
     }
   return 0;
