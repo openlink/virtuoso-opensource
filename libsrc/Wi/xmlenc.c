@@ -3300,10 +3300,16 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  END_DO_BOX;
 	}
       else
-	dk_free_box ((box_t) security_tags);
+	{
+	  dk_free_box ((box_t) security_tags);
+	  security_tags = NULL;
+	}
     }
   else
-    dk_free_box ((box_t) security_tags);
+    {
+      dk_free_box ((box_t) security_tags);
+      security_tags = NULL;
+    }
 
   xenc_nss_add_namespace_prefix (_nss, security_tags, WSSE_URI(&sctx), "wsse");
   xenc_nss_add_namespace_prefix (_nss, security_tags, DSIG_URI, "ds");
