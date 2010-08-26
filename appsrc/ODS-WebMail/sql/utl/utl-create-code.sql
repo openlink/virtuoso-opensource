@@ -171,3 +171,54 @@ create procedure OMAIL.WA.utl_redirect_adv(
 	return;
 }
 ;
+
+create procedure OMAIL.WA.utl_decode_field (in str varchar)
+{
+  declare match varchar;
+  declare inx int;
+
+  inx := 50;
+
+  match := regexp_match ('=\\?[^\\?]+\\?[A-Z]\\?[^\\?]+\\?=', str);
+  while (match is not null and inx > 0)
+    {
+      declare enc, ty, dat, tmp, cp, dec any;
+
+      cp := match;
+      tmp := regexp_match ('^=\\?[^\\?]+\\?[A-Z]\\?', match);
+
+      match := substring (match, length (tmp)+1, length (match) - length (tmp) - 2);
+
+      enc := regexp_match ('=\\?[^\\?]+\\?', tmp);
+
+      tmp := replace (tmp, enc, '');
+
+      enc := trim (enc, '?=');
+      ty := trim (tmp, '?');
+
+      if (ty = 'B')
+	{
+	  dec := decode_base64 (match);
+	}
+      else if (ty = 'Q')
+	{
+	  dec := uudecode (match, 12);
+	}
+      else
+	{
+	  dec := '';
+	}
+      declare exit handler for sqlstate '2C000'
+	{
+	  return;
+	};
+      dec := charset_recode (dec, enc, 'UTF-8');
+
+      str := replace (str, cp, dec);
+
+      --dbg_printf ('encoded=[%s] enc=[%s] type=[%s] decoded=[%s]', match, enc, ty, dec);
+      match := regexp_match ('=\\?[^\\?]+\\?[A-Z]\\?[^\\?]+\\?=', str);
+      inx := inx - 1;
+    }
+  return str;
+};
