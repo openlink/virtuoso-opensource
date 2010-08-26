@@ -327,7 +327,7 @@ create method wa_state_edit_form (inout stream any) for wa_AddressBook
   {
     sid := (select VS_SID from VSPX_SESSION where VS_REALM = 'wa' and VS_UID = connection_get('vspx_user'));
     http_request_status ('HTTP/1.1 302 Found');
-    http_header(sprintf('Location: %s?sid=%s&realm=%s\r\n', WS.WS.EXPAND_URL (self.wa_home_url(), 'settings.vspx'), sid, 'wa'));
+    http_header(sprintf('Location: %s?action=settings&sid=%s&realm=%s\r\n', WS.WS.EXPAND_URL (self.wa_home_url(), 'home.vspx'), sid, 'wa'));
   } else {
     signal('42001', 'Not a owner');
   }
