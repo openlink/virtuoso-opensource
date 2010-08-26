@@ -253,11 +253,11 @@ create procedure OMAIL.WA.omail_address2xml(
       }
     }
     if (_count = 1)
-      return either(length(_name),trim(_name),trim(_addr));
+      return either(length (_name),OMAIL.WA.utl_decode_field (trim (_name)),trim (_addr));
     if (_count = 2)
       return trim (_addr);
     if (length(_name) > 0)
-      _name  := sprintf('<name><![CDATA[%s]]></name>',trim(_name),_x);
+      _name  := sprintf ('<name><![CDATA[%s]]></name>',OMAIL.WA.utl_decode_field (trim (_name)),_x);
     if (length(_addr) > 0)
       _addr  := sprintf('<email><![CDATA[%s]]></email>',_addr);
 
@@ -5147,7 +5147,7 @@ create procedure OMAIL.WA.omail_receive_message(
 
   _msg_id        := sequence_next ('OMAIL.WA.omail_seq_eml_msg_id');
   _freetext_id   := sequence_next ('OMAIL.WA.omail_seq_eml_freetext_id');
-  _subject       := get_keyword_ucase('Subject',_attrs,'');
+  _subject       := OMAIL.WA.utl_decode_field (get_keyword_ucase ('Subject',_attrs,''));
   _from          := get_keyword_ucase('From',_attrs,'');
   _returnPath    := get_keyword_ucase ('Return-Path',_attrs, '');
   _to            := get_keyword_ucase('To',_attrs,'');
