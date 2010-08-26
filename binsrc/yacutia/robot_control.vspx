@@ -144,8 +144,8 @@
 			declare exit handler for sqlstate '*'
 			{
                           log_enable (old_mode, 1);
-			  self.vs_is_valid := 0;
-			  self.vs_error_message := 'The delete failed. You must manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.';
+			  self.vc_is_valid := 0;
+			  self.vc_error_message := sprintf ('The delete failed due to SQL error: %s. You must delete manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.', __SQL_MESSAGE);
 			  return;
 			};
                         old_mode := log_enable (3, 1);
