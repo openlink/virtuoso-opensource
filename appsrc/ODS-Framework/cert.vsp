@@ -4,11 +4,13 @@
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
   <head>
+      <link rel="stylesheet" type="text/css" href="/ods/default.css" />
   </head>
 <?vsp
    declare sid, ua varchar;
    declare kname, cvalue varchar;
    declare cn, c, o, ou, mail, webid, pk, uname varchar;
+   declare days, hours any;
    declare uid int;
    --dbg_obj_print (params);
 
@@ -16,28 +18,46 @@
    sid := {?'sid'};
    if (get_keyword ('pubkey', params) is not null)
      {
+       declare exts any;
        whenever not found goto nf;
        select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY, U_ID 
          into uname, cn, mail, o, c, uid
        	 from SYS_USERS, WA_USER_INFO, VSPX_SESSION
       	where VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID;
        webid := sioc..person_iri (sioc..user_obj_iri (uname));
+       
        pk := replace (get_keyword ('pubkey', params), '\r\n', '');
        pk := replace (pk, '\n', '');
        pk := replace (pk, '\r', '');
        kname := xenc_SPKI_read (null, pk);
-       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365,
+       cn := get_keyword ('cn', params, cn);
+       c := get_keyword ('c', params, c);
+       o := get_keyword ('o', params, o);
+       mail := get_keyword ('email', params, mail);
+       webid := get_keyword ('webid', params, webid);
+       if (length (webid))
+         {  
+	   webid := 'URI:' || webid;
+	   exts := vector ('subjectAltName', webid, 'nsComment', 'Virtuoso Generated Certificate');
+         }
+       else
+         {
+	   exts := vector ('nsComment', 'Virtuoso Generated Certificate');
+	 }
+       days := atoi (get_keyword ('days', params, '365'));
+       hours := atof (get_keyword ('hours', params, '0.0'));
+       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), days,
 		vector (
 			'CN', cn,
 			'C',  c,
 			'O',  o,
-			'OU', ou,
 			'emailAddress', mail
 			),
-		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate'));
+			exts,
+		        hours);
        cvalue := xenc_pem_export (kname);
-       insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
-		         values (uid, cvalue, get_certificate_info (6, cvalue, 0, ''), 0);
+       insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN, UC_TS)
+		         values (uid, cvalue, get_certificate_info (6, cvalue, 0, ''), 0, now ());
        http_rewrite (); 
        http_header ('Content-Type: application/x-x509-user-cert\r\n');
        http (decode_base64 (xenc_X509_certificate_serialize (kname)));
@@ -74,11 +94,87 @@
        }
        else
        {
+         for select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY from SYS_USERS, VSPX_SESSION, WA_USER_INFO
+      	    where VS_SID = sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID do 
+	    {
+	      cn := coalesce (U_FULL_NAME, U_NAME);
+              webid := sioc..person_iri (sioc..user_obj_iri (U_NAME));
+	      mail := coalesce (U_E_MAIL, '');
+	      o := WAUI_BORG;
+              c := WAUI_BCOUNTRY;
+              
+	    }
      ?>
      <form>
 	<input type="hidden" name="sid" value="<?V {?'sid'} ?>"/>
-	     Key strength: <br /><keygen name="pubkey"/><br />
-	<input type="submit" name="gen" value="Generate"/>
+	 <table border="0">
+	     <tr>
+		 <td nowrap="1">
+		     Common Name: 
+		 </td>
+		 <td>
+		     <input type="text" name="cn" value="<?V cn ?>" size="50"/>
+		 </td>
+	     </tr>
+	     <tr>
+		 <td nowrap="1">
+		     Country: 
+		 </td>
+		 <td>
+		     <input type="text" name="c" value="<?V c ?>" size="50"/>
+		 </td>
+	     </tr>
+	     <tr>
+		 <td nowrap="1">
+		     Organization: 
+		 </td>
+		 <td>
+		     <input type="text" name="o" value="<?V o ?>" size="50"/>
+		 </td>
+	     </tr>
+	     <tr>
+		 <td>
+		     E-mail:
+		 </td>
+		 <td>
+		     <input type="text" name="email" value="<?V mail ?>" size="50"/>
+		 </td>
+	     </tr>
+	     <tr>
+		 <td>
+		     WebID:       
+		 </td>
+		 <td>
+		     <input type="text" name="webid" value="<?V webid ?>" size="80" />
+		 </td>
+	     </tr>
+	     <tr>
+		 <td>
+		     Key strength: 
+		 </td>
+		 <td>
+		     <keygen name="pubkey" />
+		 </td>
+	     </tr>
+	     <tr>
+		 <td rowspan="2">
+		     Valid for 
+		 </td>
+		 <td>
+		     <input type="text" name="hours" value="0.0" size="4"/> hours
+		 </td>
+	     </tr>
+	     <tr>
+		 <td>
+		     <input type="text" name="days" value="356" size="4"/> days
+		 </td>
+	     </tr>
+	     <tr>
+		 <td colspan="2">
+		     <input type="submit" name="gen" value="submit certificate request"/>
+		 </td>
+	     </tr>
+	 </table>
      </form>
      <?vsp
        }

@@ -617,7 +617,7 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_DEFAULT_MAIL_DOMAIN', 'varchar')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_VERIFY_TIP', 'int')
 ;
 
-wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 0')
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'hourly\'')
@@ -1920,7 +1920,8 @@ create procedure INIT_SERVER_SETTINGS ()
   	   WS_WELCOME_MESSAGE2,
   	   WS_COPYRIGHT,
   	   WS_DISCLAIMER,
-  	   WS_DEFAULT_MAIL_DOMAIN
+  	   WS_DEFAULT_MAIL_DOMAIN,
+	   WS_UNIQUE_MAIL
   	  )
 	  values
 	    (
@@ -1941,7 +1942,8 @@ create procedure INIT_SERVER_SETTINGS ()
 	     '',
 	     'Copyright &copy; 1998-2010 OpenLink Software',
 	     '',
-	     sys_stat ('st_host_name')
+	     sys_stat ('st_host_name'),
+	     1
 	    );
   }
   update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2010 OpenLink Software';
@@ -3309,11 +3311,14 @@ DB.DBA.EXEC_STMT (
   UC_CERT 	long varchar,
   UC_FINGERPRINT varchar,
   UC_LOGIN	int default 0,
+  UC_TS		datetime,
   primary key (UC_U_ID, UC_FINGERPRINT)
   )
 create unique index WA_USER_CERTS_FINGERPRINT on WA_USER_CERTS (UC_FINGERPRINT)
 ', 
 0);
+
+wa_add_col ('DB.DBA.WA_USER_CERTS', 'UC_TS', 'datetime');
 
 create procedure WA_CERTS_UPGRADE ()
 {
@@ -3338,6 +3343,29 @@ create procedure WA_CERTS_UPGRADE ()
    --update WA_USER_INFO set WAUI_CERT = null, WAUI_CERT_FINGERPRINT = null, WAUI_CERT_LOGIN = 0 
    --    where WAUI_CERT is not null;
   registry_set ('WA_CERTS_UPGRADE', '1');  
+}
+;
+
+WA_CERTS_UPGRADE ();
+
+create procedure ODS..cert_date_to_ts (in x varchar)
+{
+  declare a any;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  a := sprintf_inverse (x, '%s %s %s %s %s', 0);
+  return http_string_date (sprintf ('Wdy, %s %s %s %s %s', a[1], a[0], a[3], a[2], a[4]));
+}
+;
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE2') = '1')
+    return;
+  update WA_USER_CERTS set UC_TS = ODS..cert_date_to_ts (get_certificate_info (4,UC_CERT));
+  registry_set ('WA_CERTS_UPGRADE2', '1');
 }
 ;
 

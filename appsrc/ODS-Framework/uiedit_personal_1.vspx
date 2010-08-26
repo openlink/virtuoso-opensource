@@ -548,7 +548,7 @@
                      <?vsp
                        for (select interest from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar) P where txt = self.efoaf) do
                        {
-                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _url_ _canEmpty_"}});});});', interest));
+                           http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x1", null, {fld_1: {value: "%s", className: "_validate_ _webid_ _canEmpty_"}});});});', interest));
                        }
                      ?>
                 		   </script>
@@ -557,7 +557,7 @@
                    </table>
                  </td>
                  <td valign="top" nowrap="1">
-                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                   <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                    <vm:u-prop-select name="sel_8" value="self.sav8" />
                  </td>
                </tr>

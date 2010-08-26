@@ -92,6 +92,34 @@
 	<v:url name="sec_url_2" value="Facebook" url="--sprintf('uiedit.vspx?page=3&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
     </vm:if>
       <v:url name="sec_url_4" value="Limits" url="--sprintf('uiedit.vspx?page=3&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
+  <?vsp 
+       declare ua any;
+       ua := http_request_header (http_request_header (), 'User-Agent');
+       if (coalesce (strstr (ua, 'MSIE'), -1) > 0 or regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+       {
+	 declare svc_url varchar;
+	 svc_url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
+         if (length (svc_url)) {
+         for select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY from SYS_USERS, VSPX_SESSION, WA_USER_INFO
+      	 where VS_SID = self.sid and VS_REALM = 'wa' and VS_UID = U_NAME and U_ID = WAUI_U_ID do
+            {
+            declare url, webid varchar;
+            webid := sioc..person_iri (sioc..user_obj_iri (U_NAME));
+            url := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U',
+		svc_url, webid, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, ''));
+
+     ?>
+ 	  <a name="sec_url" href='<?vsp http (url); ?>' class="tabX">Certificate Generator</a>
+     <?vsp
+	     }
+	   }
+	 }
+	 else
+	 { ?>
+      <v:url name="sec_url_6" value="Certificate Generator" url="--sprintf('uiedit.vspx?page=3&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
+      <?vsp
+          }
+       ?>
       <v:url name="sec_url_5" value="X.509 Certificates" url="--sprintf('uiedit.vspx?page=3&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
     </div>
     <div class="contents">
@@ -199,7 +227,7 @@
               <tr>
                 <th><label for="oid_url1">OpenID URL</label></th>
                 <td nowrap="nowrap">
-          <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
+            <v:text error-glyph="*" xhtml_id="oid_url1" name="oid_url1" value="--self.oid_urlv" xhtml_size="100" xhtml_class="_validate_ _uri_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
                   <div style="display:inline; color:red;"><v:error-summary match="oid_url1" /></div>
                 </td>
               </tr>
@@ -241,7 +269,7 @@
           <th><label>Saved Facebook ID</label></th>
           <td nowrap="nowrap">
             <?vsp
-              if (isnull (self.fbLoginID))
+              if (DB.DBA.is_empty_or_null (self.fbLoginID))
               {
                 http ('not yet');
               } else {
@@ -412,16 +440,20 @@
 	  <table class="listing">
 	      <tr class="listing_header_row">
 		  <th>Subject</th>
+		  <th>Created</th>
+		  <th>Fingerprint</th>
 		  <th>Login enabled</th>
 		  <th>Action</th>
 	      </tr>
 		  <?vsp 
 		  if (self.cert_del is not null)
 		    delete from WA_USER_CERTS where UC_ID = self.cert_del and UC_U_ID = self.u_id;
-		  for select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from WA_USER_CERTS where UC_U_ID = self.u_id do {
+		  for select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT, UC_TS from WA_USER_CERTS where UC_U_ID = self.u_id order by UC_TS desc do {
 		  ?>
 		  <tr>
 		      <td><?vsp http_value (get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), 'b'); ?></td>
+		      <td><?vsp http_value (wa_abs_date (UC_TS), 'b'); ?></td>
+		      <td><?vsp http_value (UC_FINGERPRINT, 'b'); ?></td>
 		      <td><?V case when UC_LOGIN = 1 then 'Yes' else 'No' end ?></td>
 		      <td>
 			  <v:url name="ce1" value="Edit" url="--sprintf ('uiedit.vspx?page=3&tabNo=5&cert_edit=%d', UC_ID)" render-only="1"/>
@@ -435,7 +467,7 @@
 	  <br/>
     <fieldset>
 			<legend><b>X.509 Certificate</b></legend>
-			<table>
+			<table width="100%">
       <tr>
 	  <td colspan="2" align="left">
 	      <?vsp if (length (self.certificate_content)) { ?>
@@ -460,9 +492,6 @@
 	      <?vsp } ?>
 	    <v:textarea name="cert1" value="--self.certificate_content" xhtml_cols="70" xhtml_rows="20" />
   	          <!--?vsp if (not length (self.certificate_content) and xenc_key_exists ('id_rsa')) { ?-->
-	    <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="200" height="200" frameborder="0" scrolling="no">
-	       <p>Your browser does not support iframes.</p>
-	   </iframe>
   	        <!--?vsp } ?-->
 	</td>
       </tr>
@@ -490,12 +519,13 @@
             <v:button name="bt_set2" value="Save Certificate" action="simple">
               <v:on-post>
                 <![CDATA[
-		  declare agent varchar;
+  		    declare agent, mail varchar;
 
                   if(self.vc_is_valid = 0)
                     return;
                     agent := ODS.ODS_API.SSL_WEBID_GET (self.cert1.ufl_value);
-                    if ((agent is null and length (self.cert1.ufl_value)) or (0 = length (self.cert1.ufl_value)))
+                    mail := FOAF_SSL_MAIL_GET (self.cert1.ufl_value);
+                    if ((agent is null and mail is null and length (self.cert1.ufl_value)) or (0 = length (self.cert1.ufl_value)))
 		    {
                       self.vc_is_valid := 0;
 		      self.vc_error_message := 'The certificate must be in PEM format and must have Alternate Name attribute.';
@@ -503,8 +533,8 @@
 		    }
 		    if (self.cert_edit is null)
                       {
-		        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN) 
-		         values (self.u_id, self.cert1.ufl_value, get_certificate_info (6, self.cert1.ufl_value, 0, ''), self.cert_login.ufl_selected);
+		        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN, UC_TS) 
+		         values (self.u_id, self.cert1.ufl_value, get_certificate_info (6, self.cert1.ufl_value, 0, ''), self.cert_login.ufl_selected, now ());
 		      }
 		    else
 		      {
@@ -524,6 +554,15 @@
       </tr>
     </table>
     </fieldset>
+  </v:template>
+      <v:template name="sec_tmpl_6" type="simple" enabled="-- equ (self.tab_no, 6)">
+	  <input type="hidden" value="6" name="tabNo" />
+    <fieldset>
+	<legend><b>X.509 Certificate Parameters</b></legend>
+  	          <iframe id="cert" src="cert.vsp?sid=<?V self.sid ?>" width="650" height="270" frameborder="0" scrolling="no">
+  	            <p>Your browser does not support iframes.</p>
+  	          </iframe>
+  </fieldset>
   </v:template>
     </v:form>
 </div>

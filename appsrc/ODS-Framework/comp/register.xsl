@@ -462,7 +462,7 @@ no_date:
         {
           -- openid post
           declare hdr, xt, is_agreed,ods_returnurl any;
-          declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+          declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate, profile_page varchar;
           declare oi2_srv, oi2_delegate varchar;
 
           host := http_request_header (self.vc_page.vc_event.ve_lines, 'Host');
@@ -488,7 +488,11 @@ no_date:
             return;
           };
 
+	  profile_page := ODS.DBA.WF_PROFILE_GET (self.openid_url.ufl_value);
+	  if (profile_page is null)
           url := self.openid_url.ufl_value;
+	  else
+            url := profile_page; 
           oi_ident := url;
         again:
           hdr := null;
