@@ -1557,3 +1557,56 @@ create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
 }
 ;
 
+-- /* host-meta */
+
+create table WS.WS.HTTP_HOST_META (
+    HM_APP 	varchar primary key,
+    HM_META	long varchar
+    )
+;
+
+create procedure WS.WS.host_meta_add (in app varchar, in meta varchar)
+{
+  -- check if it is valid xml
+  xtree_doc (meta);
+  insert replacing WS.WS.HTTP_HOST_META (HM_APP, HM_META)
+      values (app, meta);
+}
+;
+
+
+create procedure WS.WS."host-meta" () __SOAP_HTTP 'application/xrd+xml'
+{
+  declare ses any;
+  ses := string_output ();
+  http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+  http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0">\n', ses);
+  http (sprintf ('  <hm:Host>%{WSHost}s</hm:Host>\n'), ses);
+  for select * from WS.WS.HTTP_HOST_META do
+    {
+      HM_META := sprintf (blob_to_string (HM_META));
+      http ('  ', ses);
+      http (HM_META, ses);
+      http ('\n', ses);
+    }
+  http ('</XRD>\n', ses);
+  return string_output_string (ses);
+}
+;
+
+create procedure WS.WS.host_meta_init ()
+{
+  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
+    {
+      DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
+      EXEC_STMT ('grant execute on WS.WS."host-meta" to WebMeta', 0);
+    }
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
+  DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+}
+;
+
+WS.WS.host_meta_init ()
+;
+
