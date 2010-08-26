@@ -42,9 +42,6 @@
 <!ENTITY xsl "http://www.w3.org/1999/XSL/Transform">
 <!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 <!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
-<!--
-<!ENTITY vi "xalan://openlink.virtuoso.XalanExtensions.Sponger">
--->
 <!ENTITY virtrdf "http://www.openlinksw.com/schemas/virtrdf#">
 <!ENTITY wgs84 "http://www.w3.org/2003/01/geo/wgs84_pos#">
 ]>
@@ -115,7 +112,9 @@
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		<xsl:if test="$numEntries = 1">
 			<!-- Only if baseUri identified a single item directly and isn't a query returning many items -->
-			<rdfs:label><xsl:value-of select="concat('Google Base: ', g:item_type, ' Snippet ', $entryID)"/></rdfs:label>
+      <rdfs:label>
+        <xsl:value-of select="concat('Google Base: ', g:item_type, ' Snippet ', $entryID)"/>
+      </rdfs:label>
 		</xsl:if>
     </xsl:template>
 
@@ -131,7 +130,9 @@
 					<rdf:type rdf:resource="&foaf;Organization" />
 					<foaf:member>
 	    				<foaf:Person rdf:about="{vi:proxyIRI($baseUri, '', concat('Contact_', $entryID))}">
-							<foaf:name><xsl:value-of select="a:title"/></foaf:name>
+              <foaf:name>
+                <xsl:value-of select="a:title"/>
+              </foaf:name>
 							<rdfs:seeAlso rdf:resource="{./a:link[@rel='alternate']/@href}"/>
 						</foaf:Person>
 					</foaf:member>
@@ -139,8 +140,12 @@
 				<xsl:otherwise>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			<gr:amountOfThisGood>1</gr:amountOfThisGood>
-	    			<dc:title><xsl:value-of select="a:title"/></dc:title>
-					<rdfs:label><xsl:value-of select="a:title"/></rdfs:label>
+          <dc:title>
+            <xsl:value-of select="a:title"/>
+          </dc:title>
+          <rdfs:label>
+            <xsl:value-of select="a:title"/>
+          </rdfs:label>
 				</xsl:otherwise>
 			</xsl:choose>
 			<!-- OpenLink GoogleBase schema declares a class for each supported item type -->
@@ -172,11 +177,17 @@
 
 		<xsl:choose>
 			<xsl:when test="contains($itemType, 'BusinessLocation')">
-		   		<gr:legalName><xsl:value-of select="."/></gr:legalName>
-		   		<rdfs:label><xsl:value-of select="."/></rdfs:label>
+        <gr:legalName>
+          <xsl:value-of select="."/>
+        </gr:legalName>
+        <rdfs:label>
+          <xsl:value-of select="."/>
+        </rdfs:label>
 			</xsl:when>
 			<xsl:otherwise>
-		<dc:description><xsl:value-of select="."/></dc:description>
+        <dc:description>
+          <xsl:value-of select="."/>
+        </dc:description>
 			</xsl:otherwise>
 		</xsl:choose>
     </xsl:template>
@@ -190,11 +201,15 @@
     </xsl:template>
 
     <xsl:template match="a:entry//a:published">
-		<dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dcterms:created>
+    <dcterms:created rdf:datatype="&xsd;dateTime">
+      <xsl:value-of select="."/>
+    </dcterms:created>
     </xsl:template>
 
     <xsl:template match="a:entry//a:updated">
-		<dcterms:modified rdf:datatype="&xsd;dateTime"><xsl:value-of select="."/></dcterms:modified>
+    <dcterms:modified rdf:datatype="&xsd;dateTime">
+      <xsl:value-of select="."/>
+    </dcterms:modified>
     </xsl:template>
 
     <xsl:template match="a:category"/>
@@ -217,7 +232,9 @@
 				</xsl:otherwise>
 			</xsl:choose>
 		    <gr:includes rdf:resource="{$resourceURL}"/>
-		    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="../g:expiration_date"/></gr:validThrough>
+      <gr:validThrough rdf:datatype="&xsd;dateTime">
+        <xsl:value-of select="../g:expiration_date"/>
+      </gr:validThrough>
 
 			<gr:hasPriceSpecification>
 		  		<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price_', $entryID))}">
@@ -228,11 +245,16 @@
 						</xsl:when>
 						<xsl:otherwise>
 							<rdfs:label>Price</rdfs:label>
-							<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement> <!-- C62 implies 'one' -->	
+              <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+              <!-- C62 implies 'one' -->
 						</xsl:otherwise>
 					</xsl:choose>
-           			<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="substring-before(., ' ')"/></gr:hasCurrencyValue>
-           			<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="translate (substring-after(., ' '), $lc, $uc)"/></gr:hasCurrency>
+          <gr:hasCurrencyValue rdf:datatype="&xsd;float">
+            <xsl:value-of select="substring-before(., ' ')"/>
+          </gr:hasCurrencyValue>
+          <gr:hasCurrency rdf:datatype="&xsd;string">
+            <xsl:value-of select="translate (substring-after(., ' '), $lc, $uc)"/>
+          </gr:hasCurrency>
           		</gr:UnitPriceSpecification>
 			</gr:hasPriceSpecification>
 		</gr:Offering>
@@ -249,15 +271,22 @@
 		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', concat('Offer_', $entryID))}">
 		   	<gr:hasBusinessFunction rdf:resource="&gr;Buy"/>
 		    <gr:includes rdf:resource="{$resourceURL}"/>
-		    <gr:validThrough rdf:datatype="&xsd;dateTime"><xsl:value-of select="g:expiration_date"/></gr:validThrough>
+      <gr:validThrough rdf:datatype="&xsd;dateTime">
+        <xsl:value-of select="g:expiration_date"/>
+      </gr:validThrough>
 
 			<xsl:if test="g:price">
 				<gr:hasPriceSpecification>
 		  			<gr:UnitPriceSpecification rdf:about="{vi:proxyIRI ($baseUri, '', concat('Price_', $entryID))}">
 						<rdfs:label>Price</rdfs:label>
-						<gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement> <!-- C62 implies 'one' -->	
-           				<gr:hasCurrencyValue rdf:datatype="&xsd;float"><xsl:value-of select="substring-before(g:price, ' ')"/></gr:hasCurrencyValue>
-           				<gr:hasCurrency rdf:datatype="&xsd;string"><xsl:value-of select="translate (substring-after(g:price, ' '), $lc, $uc)"/></gr:hasCurrency>
+            <gr:hasUnitOfMeasurement>C62</gr:hasUnitOfMeasurement>
+            <!-- C62 implies 'one' -->
+            <gr:hasCurrencyValue rdf:datatype="&xsd;float">
+              <xsl:value-of select="substring-before(g:price, ' ')"/>
+            </gr:hasCurrencyValue>
+            <gr:hasCurrency rdf:datatype="&xsd;string">
+              <xsl:value-of select="translate (substring-after(g:price, ' '), $lc, $uc)"/>
+            </gr:hasCurrency>
           			</gr:UnitPriceSpecification>
 				</gr:hasPriceSpecification>
 			</xsl:if>
@@ -271,11 +300,16 @@
 			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}"/>
 		</rdf:Description>
 
-		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}"> <!-- TO DO : Risks multiple URIs for same vendor -->
+    <gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Vendor_', $entryID))}">
+      <!-- TO DO : Risks multiple URIs for same vendor -->
       		<gr:offers rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer_', $entryID))}"/>
 			<rdfs:comment>The legal agent making the offering</rdfs:comment>
-		    <rdfs:label><xsl:value-of select="a:name"/></rdfs:label>
-		    <gr:legalName><xsl:value-of select="a:name"/></gr:legalName>
+      <rdfs:label>
+        <xsl:value-of select="a:name"/>
+      </rdfs:label>
+      <gr:legalName>
+        <xsl:value-of select="a:name"/>
+      </gr:legalName>
     	</gr:BusinessEntity>
     </xsl:template>
 
@@ -286,11 +320,16 @@
 			<foaf:topic rdf:resource="{vi:proxyIRI($baseUri, '', concat('Buyer_', $entryID))}"/>
 		</rdf:Description>
 
-		<gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Buyer_', $entryID))}"> <!-- TO DO : Risks multiple URIs for same buyer -->
+    <gr:BusinessEntity rdf:about="{vi:proxyIRI($baseUri, '', concat('Buyer_', $entryID))}">
+      <!-- TO DO : Risks multiple URIs for same buyer -->
       		<gr:seeks rdf:resource="{vi:proxyIRI ($baseUri, '', concat('Offer_', $entryID))}"/>
 			<rdfs:comment>The legal agent seeking the offering</rdfs:comment>
-		    <rdfs:label><xsl:value-of select="a:name"/></rdfs:label>
-		    <gr:legalName><xsl:value-of select="a:name"/></gr:legalName>
+      <rdfs:label>
+        <xsl:value-of select="a:name"/>
+      </rdfs:label>
+      <gr:legalName>
+        <xsl:value-of select="a:name"/>
+      </gr:legalName>
     	</gr:BusinessEntity>
     </xsl:template>
 
@@ -336,24 +375,36 @@
 				<vcard:adr>
 					<vcard:Address rdf:about="{vi:proxyIRI($baseUri, '', concat('VCardAddress_', $entryID))}">
 						<xsl:if test="string-length($pt1) &gt; 0">
-						<vcard:street-address><xsl:value-of select="$pt1"/></vcard:street-address>
+            <vcard:street-address>
+              <xsl:value-of select="$pt1"/>
+            </vcard:street-address>
 						</xsl:if>
 						<xsl:if test="string-length($pt2) &gt; 0">
-						<vcard:locality><xsl:value-of select="$pt2"/></vcard:locality>
+            <vcard:locality>
+              <xsl:value-of select="$pt2"/>
+            </vcard:locality>
 						</xsl:if>
 						<xsl:if test="string-length($pt3) &gt; 0">
-						<vcard:region><xsl:value-of select="$pt3"/></vcard:region>
+            <vcard:region>
+              <xsl:value-of select="$pt3"/>
+            </vcard:region>
 						</xsl:if>
 						<xsl:choose>
 							<xsl:when test="string-length($pt4) &gt; 0">
-						<vcard:postal-code><xsl:value-of select="$pt4"/></vcard:postal-code>
+              <vcard:postal-code>
+                <xsl:value-of select="$pt4"/>
+              </vcard:postal-code>
 							</xsl:when>
 							<xsl:otherwise>
-								<vcard:postal-code><xsl:value-of select="$pt3a"/></vcard:postal-code>
+              <vcard:postal-code>
+                <xsl:value-of select="$pt3a"/>
+              </vcard:postal-code>
 							</xsl:otherwise>
 						</xsl:choose>
 						<xsl:if test="string-length($pt5) &gt; 0">
-						<vcard:country-name><xsl:value-of select="$pt5"/></vcard:country-name>
+            <vcard:country-name>
+              <xsl:value-of select="$pt5"/>
+            </vcard:country-name>
 						</xsl:if>
 					</vcard:Address>
 				</vcard:adr>
@@ -367,21 +418,29 @@
     </xsl:template>
 
     <xsl:template match="g:latitude">
-		<wgs84:lat><xsl:value-of select="."/></wgs84:lat>
+    <wgs84:lat>
+      <xsl:value-of select="."/>
+    </wgs84:lat>
     </xsl:template>
 
     <xsl:template match="g:longitude">
-		<wgs84:long><xsl:value-of select="."/></wgs84:long>
+    <wgs84:long>
+      <xsl:value-of select="."/>
+    </wgs84:long>
     </xsl:template>
 
-    <xsl:template match="g:price" /> <!-- Already handled by "offers" mode -->
-    <xsl:template match="a:author" /> <!-- Already handled by "offers" mode -->
+  <xsl:template match="g:price" />
+  <!-- Already handled by "offers" mode -->
+  <xsl:template match="a:author" />
+  <!-- Already handled by "offers" mode -->
 
 	<!-- UPCs should be 12 characters, not all Google Base entries conform -->
     <xsl:template match="g:upc"> 
 		<xsl:choose>
 			<xsl:when test="string-length(.)=12">
-				<gr:hasEAN_UCC-13><xsl:value-of select="concat('0', .)"/></gr:hasEAN_UCC-13>
+        <gr:hasEAN_UCC-13>
+          <xsl:value-of select="concat('0', .)"/>
+        </gr:hasEAN_UCC-13>
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:element name="{local-name(.)}" namespace="&oplgb;">
@@ -400,7 +459,8 @@
 		<xsl:element name="{local-name(.)}" namespace="&oplgb;">
 			<xsl:choose>
 				<xsl:when test="contains(local-name(.), 'bathrooms')">
-	    			<xsl:value-of select="floor(.)"/><!-- floor used to force e.g 1.0 to 1 -->
+          <xsl:value-of select="floor(.)"/>
+          <!-- floor used to force e.g 1.0 to 1 -->
 				</xsl:when>
 				<xsl:otherwise>
 	    			<xsl:value-of select="."/>

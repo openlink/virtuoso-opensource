@@ -1,0 +1,590 @@
+<!--
+  Generated from oplbestbuy.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+ 
+  An OpenLink ontology for specializing the ProductOrService class of the GoodRelations ontology
+  to handle item descriptions from the Google Base Web Service.
+ 
+  Not all item types supported by Google Base are mapped to OWL here. Only those which are amenable
+  to mapping to GoodRelations are included. Essentially this subset includes only those item types 
+  which have associated price information.  i.e. housing, local products, products, services, 
+  travel packages, vacation rentals and vehicles.
+
+  A list of available item types and their attributes is available from:
+  http://www.google.com/base/feeds/itemtypes/en_US
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/evri#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplevri="http://www.openlinksw.com/schemas/evri#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+  <owl:Ontology xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri">
+    <dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/" rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</dc:creator>
+  </owl:Ontology>
+
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#occupation">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Occupation</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Occupation</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#political_party">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Political party</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Political party</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#birth_date">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Birth Date</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Birth Date</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#website">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Website</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Website</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#wikipedia_normalized_name">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Name</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Name</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#source_url">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Entity url for a particular source</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Entity url for a particular source</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#preceded_by">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Preceded By</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Preceded By</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#birth_place">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Birthplace</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Birthplace</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#religion">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Religion</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Religion</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#child">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Children</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Children</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#wikipedia_paragraph">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Wikipedia Paragraph</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Wikipedia Paragraph</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#wikipedia_inbound_page_count">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Wikipedia inbound page count</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Wikipedia inbound page count</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#residence">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Residence</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Residence</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#spouse">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Spouse</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Spouse</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#holds_office">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Office</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Office</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#university_attended">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">University Attended</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">University Attended</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#term_start">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Start</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Start</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#citizenship">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Citizenship</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Citizenship</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#name">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Name</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Name</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#nationality">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Nationality</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Nationality</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#gdp_nominal_per_capita">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (nominal per capita)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (nominal per capita)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#capital">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Capital</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Capital</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#legislature">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Legislature</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Legislature</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#longitude_degree">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude (Degrees)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude (Degrees)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#calling_code">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Country Calling Code</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Country Calling Code</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#human_development_index_rank">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">HDI Rank</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">HDI Rank</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#anthem">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Anthem</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Anthem</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#demonym">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Demonym</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Demonym</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#area_total_km">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Total Area (km)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Total Area (km)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#currency_code">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Currency (code)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Currency (code)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#area_rank">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Area Rank</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Area Rank</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_density_sq_mi">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density (sq mi)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density (sq mi)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_density_rank">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density Rank</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density Rank</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#gdp_nominal_total">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (nominal)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (nominal)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#sovereignty">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Sovereignty</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Sovereignty</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_density_km">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density (sq km)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Density (sq km)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#gini_coefficient">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Gini</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Gini</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_total">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Total Population</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Total Population</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#latitude_minute">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude (Minutes)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude (Minutes)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#country_code_top_level_domain">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">ccTLD</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">ccTLD</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#language">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Language</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Language</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#motto">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Motto</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Motto</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#name_local">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Local Name</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Local Name</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#human_development_index">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">HDI</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">HDI</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#legislature_lower_house">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Lower House</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Lower House</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#legislature_upper_house">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Upper House</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Upper House</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#gdp_per_capita">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (per capita PPP)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (per capita PPP)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#currency">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Currency</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Currency</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#largest_city">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Largest City</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Largest City</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#area">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Area</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Area</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#longitude_minute">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude (Minutes)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude (Minutes)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#area_water_percent">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Water Area (%)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Water Area (%)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#latitude_ns">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#latitude_degee">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude (Degrees)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Latitude (Degrees)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_rank">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Rank</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population Rank</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#population_census">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population (census)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Population (census)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#longitude_ew">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Longitude</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#drives_on_side">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Drives On</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Drives On</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#gdp_per_capita_num">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (per capita PPP)</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">GDP (per capita PPP)</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#government_type">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Government type</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Government type</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#ethnic_group">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Ethnic groups</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Ethnic groups</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#time_zone">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Time Zone</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Time Zone</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#prime_minister">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Prime Minister</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Prime Minister</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#frequency">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Frequency</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Frequency</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#publisher">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Published By</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Published By</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#editor">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Editor</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Editor</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#circulation">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Circulation</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Circulation</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#first_date">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">First</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">First</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#company_subsidiary">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Subsidiaries</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Subsidiaries</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#location">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Location</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Location</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#key_person">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Key People</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Key People</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#location_region">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Region</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Region</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#organization_type">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Type</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Type</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#founded">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Founded</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Founded</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#number_employee">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">No. of Employees</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">No. of Employees</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#products_produced">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Products</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Products</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#company_industry">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Industry</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Industry</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#founder">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Founder</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Founder</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#owner">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Owned by</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Owned by</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty xmlns:owl="http://www.w3.org/2002/07/owl#" rdf:about="http://www.openlinksw.com/schemas/evri#headquarter">
+    <rdfs:comment xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Headquarters</rdfs:comment>
+    <rdfs:domain xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri#ItemType" />
+    <rdfs:isDefinedBy xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.openlinksw.com/schemas/evri" />
+    <rdfs:label xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">Headquarters</rdfs:label>
+    <rdfs:range xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+  </owl:DatatypeProperty>
+
+</rdf:RDF>

@@ -121,9 +121,11 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='author']">
+	<xsl:if test="string-length(@content) &gt; 0">      
       <dc:creator>
 		<xsl:value-of select="@content"/>
       </dc:creator>
+	</xsl:if>
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='byl']">
