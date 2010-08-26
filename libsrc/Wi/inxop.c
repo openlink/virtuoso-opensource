@@ -417,7 +417,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
   if (0 && IOP_TARGET == op)
     check_target (itc);
   iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
-  if (iob &&  iob->iob_is_inited)
+  if (iob &&  iob->iob_is_inited && itc->itc_bp.bp_is_pos_valid)
     {
       rc = inxop_iob_next (iop, itc, iob, op, qst);
       if (rc != IOP_READ_INDEX)
