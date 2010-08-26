@@ -98,17 +98,14 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_svc)
 		  <label for="svc_name">Service</label>
         <br />
 		  <v:select-list name="svc_name">
-		      <v:item name="Amazon API" value="AmazonKey"/>
-		      <v:item name="Amazon WishList" value="AmazonID"/>
-		      <v:item name="Ebay" value="EbayID"/>
-		      <v:item name="FaceBook" value="FBKey"/>
-		      <v:item name="Flickr" value="FlickrKey"/>
-		      <v:item name="Google Associates" value="GoogleAdsenseID"/>
-		      <v:item name="Google API" value="GoogleKey"/>
           <v:on-init>
             <![CDATA[
 declare v any;
 declare sel, val any;
+
+              control.vsl_items := vector ('Amazon API', 'Amazon WishList', 'Ebay', 'FaceBook', 'Flickr', 'Google Associates', 'Google API');
+              control.vsl_item_values := vector ('AmazonKey', 'AmazonID', 'EbayID', 'FBKey', 'FlickrKey', 'GoogleAdsenseID', 'GoogleKey');
+
 val := control.vsl_items;
 sel := control.vsl_item_values;
 v := make_array (length (sel)*2, 'any');
@@ -134,10 +131,13 @@ for (declare i, l int, i := 0, l := length (sel); i < l; i := i + 1)
   {
      if (position (sel[i], ex) = 0 or sel[i] = self.svc_name.ufl_value)
        {
+                  if ((sel[i] <> 'FBKey') or (self.u_id = 0))
+                  {
          newn := vector_concat (newn, vector (val[i]));
          newv := vector_concat (newv, vector (sel[i]));
        }
   }
+              }
 control.vsl_items := newn;
 control.vsl_item_values := newv;
 control.vs_set_selected ();
@@ -156,7 +156,9 @@ control.vs_set_selected ();
           if (__proc_exists ('DB.DBA.FB_SIG') is not null)
           {
         ?>
-		  <v:browse-button name="fbt1" value="Get FaceBook session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
+        <v:template name="template_fb2" type="simple" enabled="--equ(self.u_id,0)">
+          <v:browse-button name="fbt1" xhtml_id="fbt1" value="Get FaceBook session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
+        </v:template>
         <?vsp
           }
         ?>

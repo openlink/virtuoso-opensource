@@ -58,10 +58,14 @@ OPENID_INIT ();
 
 create procedure yadis (in uname varchar, in tp varchar := null)
 {
-  declare url, srv varchar;
+  declare url, ssl, srv varchar;
   if (tp not in ('person/', 'organization/'))
     tp := '';
   url := db.dba.wa_link (1, '/dataspace/'||tp||uname);
+  ssl := ODS..getDefaultHttps ();
+  if (exists (select 1 from DB..WA_SETTINGS where WS_HTTPS = 1) and ssl is not null)
+    srv := 'https://' || ssl || '/openid';
+  else  
   srv := db.dba.wa_link (1, '/openid');
   for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK
     from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname

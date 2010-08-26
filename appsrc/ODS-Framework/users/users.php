@@ -305,7 +305,8 @@
       }
       else if (
           (isset ($_REQUEST['pf_update']) && ($_REQUEST['pf_update'] <> "")) ||
-          (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))
+                (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))     ||
+                (isset ($_REQUEST['pf_clear']) && ($_REQUEST['pf_clear'] <> ""))
          )
       {
         $_formMode = "";
@@ -625,8 +626,16 @@
                   "&securityOpenID=" . myUrlencode ($_REQUEST['pf_securityOpenID']);
 
             if ($_formSubtab == 3)
+            {
+              if (isset ($_REQUEST['pf_clear']) && ($_REQUEST['pf_clear'] <> ""))
+              {
+                $_params .=
+                    "&securityFacebookID=";
+              } else {
               $_params .=
                   "&securityFacebookID=" . myUrlencode ($_REQUEST['pf_securityFacebookID']);
+              }
+            }
 
             if ($_formSubtab == 4)
               $_params .=
@@ -660,7 +669,7 @@
           $_formSubtab = $_formSubtab + 1;
           if (
               (($_formTab == 1) && ($_formSubtab > 3)) ||
-              (($_formTab == 2) && ($_formSubtab > 5))
+              (($_formTab == 2) && ($_formSubtab > 6))
              )
           {
             $_formTab = $_formTab + 1;
@@ -1287,12 +1296,12 @@
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<?php print(str_replace("\n", "\\n", $_xml->webIDs)); ?>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                     <select name="pf_acl_webIDs" id="pf_acl_webIDs">
                                       <?php
                                         for ($N = 0; $N < count ($ACL); $N += 2)
@@ -2713,6 +2722,7 @@
                       <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
                       <li id="pf_tab_2_4" title="Limits">Limits</li>
                       <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
+                      <li id="pf_tab_2_6" title="Certificate Generator" style="display:none;">Certificate Generator</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
@@ -2806,6 +2816,14 @@
                               Saved Facebook ID
                         </th>
                             <td>
+                              <?php
+                                if (isset ($_xml->securityFacebookID))
+                                {
+                                  print ($_xml->securityFacebookName);
+                                } else {
+                                  print ('not yet');
+                                }
+                              ?>
                             </td>
                       </tr>
                       <tr>
@@ -2906,9 +2924,6 @@
                         </th>
                         <td>
                                 <textarea name="pf25_certificate" id="pf25_certificate" rows="20" style="width: 560px;"></textarea>
-                	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="200" height="200" frameborder="0" scrolling="no">
-                	            <p>Your browser does not support iframes.</p>
-                	          </iframe>
                         </td>
                       </tr>
                       <tr>
@@ -2935,11 +2950,29 @@
                       </div>
                       <?php
                         }
+                      else if (($_formTab == 2) and ($_formSubtab == 6))
+                      {
+                      ?>
+                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+            	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="650" height="270" frameborder="0" scrolling="no">
+            	            <p>Your browser does not support iframes.</p>
+            	          </iframe>
+                      </div>
+                      <?php
+                      }
                         else
                         {
                       ?>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <?php
+                        if (($_formTab == 2) and ($_formSubtab == 3) and isset($_xml->securityFacebookID))
+                        {
+                        ?>
+                        <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
+                        <?php
+                        }
+                        ?>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>

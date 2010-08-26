@@ -50,12 +50,34 @@ create procedure FOAF_SSL_WEBID_GET (in cert any := null)
 }
 ;
 
-create procedure FOAF_SSL_WEBFINGER (in cert any := null)
+create procedure FOAF_SSL_MAIL_GET (in cert any := null)
+{
+  declare alts, mail any;
+  mail := get_certificate_info (10, cert, 0, '', 'emailAddress');
+  if (mail is null)
+    {
+      alts := get_certificate_info (7, cert, 0, '', '2.5.29.17');
+      if (alts is not null)
+	{
+	  alts := regexp_replace (alts, ',[ ]*', ',', 1, null);
+	  alts := split_and_decode (alts, 0, '\0\0,:');
+	  mail := get_keyword ('email', alts);
+	}
+    }
+  return mail;
+}
+;
+
+
+--
+-- WHEN USE try_loading_webid must clear the graph named as webid
+-- 
+create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0)
 {
   declare mail, webid, domain, host_info, xrd, template, url any;
   declare xt, xd, tmpcert any;
 
-  mail := get_certificate_info (10, cert, 0, '', 'emailAddress');
+  mail := FOAF_SSL_MAIL_GET (cert);
   if (mail is null)
     return null;
 
@@ -79,7 +101,24 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null)
       tmpcert := http_get (x);
       if (get_certificate_info (6, cert, 0, '') = get_certificate_info (6, tmpcert, 0, ''))
 	{
+	  webid := null;
+	  if (try_loading_webid)
+	    {
+	      declare hf, gr, graph, qr, stat, msg any;
 	  webid := cast (xpath_eval ('/XRD/Property[@type="webid"]/@href', xd) as varchar);
+	      hf := rfc1808_parse_uri (webid);
+	      hf[5] := '';
+	      gr := DB.DBA.vspx_uri_compose (hf);
+	      graph := uuid ();
+	      qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
+	      stat := '00000';
+	      exec (qr, stat, msg);
+	      commit work;
+	      if (stat = '00000')
+		return graph;
+	      else
+		return null;
+	    }
 	  return coalesce (webid, 'acct:' || mail);
 	}
     }

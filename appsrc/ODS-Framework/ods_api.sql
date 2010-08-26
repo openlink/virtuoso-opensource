@@ -827,7 +827,7 @@ create procedure ODS..openid_url_set (
   in uid integer,
   in url varchar)
 {
-  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate any;
+  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate, profile_page any;
 
   declare exit handler for sqlstate '*'
     {
@@ -841,6 +841,9 @@ create procedure ODS..openid_url_set (
       goto clear_auth;
     }
 
+  profile_page := ODS.DBA.WF_PROFILE_GET (url);
+  if (profile_page is not null)
+    url := profile_page;
   oi_ident := url;
 again:
   hdr := null;

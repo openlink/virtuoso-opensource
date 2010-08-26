@@ -1011,6 +1011,40 @@ create procedure ODS.ODS_API."lookup.list" (
 }
 ;
 
+create procedure ODS..getDefaultHttps ()
+{
+  declare host, port, tmp varchar;
+  host := null; port := null;
+  for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+    where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
+	and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
+	 {
+	    tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
+	    if (length (tmp) = 2)
+	      tmp := tmp[1];
+	    else
+	      tmp := HP_LISTEN_HOST;
+	    host := HP_HOST;
+	    port := tmp;  
+	    if (port <> '443')
+	      host := host || ':' || port;
+	 }
+  if (server_https_port () is not null and host is null)
+    {
+      host := registry_get ('URIQADefaultHost');
+      tmp := split_and_decode (host, 0, '\0\0:');
+      if (length (tmp) = 2)
+	tmp := tmp[0];
+      else
+	tmp := host;
+      port := server_https_port (); 
+      if (port <> '443')
+	host := host || ':' || port;
+    }
+  return host;
+}
+;
+
 -- Server Info
 create procedure ODS.ODS_API."server.getInfo" (
   in info varchar) __soap_http 'application/json'
@@ -1431,7 +1465,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   in mode varchar := null,
   in onlineAccounts varchar := null) __soap_http 'text/xml'
 {
-  declare uname varchar;
+  declare rc, uid, uname any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -1526,8 +1560,16 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BMESSAGING', businessMessaging);
 
   -- Security
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_OPENID_URL', securityOpenID);
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  rc := ODS..openid_url_set (uid, securityOpenID);
+  if (not isnull (rc))
+    signal ('23023', rc);
 
+  if (not DB.DBA.is_empty_or_null (securityFacebookID))
+  {
+    if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_LOGIN_ID = securityFacebookID))
+      signal ('23023', 'This Facebook identity is already registered.');
+  }
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_LOGIN_ID', securityFacebookID);
 
   ODS.ODS_API."user.update.field" (uname, 'SEC_QUESTION', securitySecretQuestion);
@@ -1724,7 +1766,6 @@ create procedure ODS.ODS_API."user.upload.internal" (
   in audioContent varchar := null)
 {
   -- Photo
-  -- dbg_obj_print('photo', length(photoContent), length(photo));
   if (length(photo) and length(photoContent))
   {
     declare rc, uid integer;
@@ -1780,7 +1821,6 @@ create procedure ODS.ODS_API."user.upload.internal" (
   }
 
   -- Audio
-  -- dbg_obj_print('audio', length(audioContent), length(audio));
   if (length(audio) and length (audioContent))
   {
     declare rc, uid integer;
@@ -2013,6 +2053,18 @@ create procedure ODS.ODS_API."user.info" (
       -- Security
       ods_xml_item ('securityOpenID',         WAUI_OPENID_URL);
       ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_LOGIN_ID);
+      if (not isnull (WAUI_FACEBOOK_LOGIN_ID))
+      {
+        declare fb_options any;
+        declare fb DB.DBA.Facebook;
+
+        if (DB.DBA._get_ods_fb_settings (fb_options))
+        {
+          fb := new DB.DBA.Facebook(fb_options[0], fb_options[1], http_param (), http_request_header ());
+          rc := fb.api_client.users_getInfo(WAUI_FACEBOOK_LOGIN_ID, 'name');
+          ods_xml_item ('securityFacebookName', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', rc)));
+        }
+      }
       ods_xml_item ('securitySecretQuestion', WAUI_SEC_QUESTION);
       ods_xml_item ('securitySecretAnswer',   WAUI_SEC_ANSWER);
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
@@ -2134,7 +2186,6 @@ create procedure ODS.ODS_API."user.info.webID" (
       if ((N > 0) and (metaName not like 'x_%'))
         goto _skip;
 
-      -- dbg_obj_print('', metaName, metaValue);
       metaValue := data[N][M];
       if (metaName like 'x_%')
       {

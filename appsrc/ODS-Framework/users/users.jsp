@@ -411,7 +411,7 @@
         {
           $_formMode = "";
         }
-        else if ((getParameter(items, request, "pf_update") != null) || (getParameter(items, request, "pf_next") != null))
+        else if ((getParameter(items, request, "pf_update") != null) || (getParameter(items, request, "pf_next") != null) || (getParameter(items, request, "pf_clear") != null))
         {
           $_formMode = "";
           String tmp = "";
@@ -757,8 +757,16 @@
                        httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
 
                 if ($_formSubtab == 3)
+                {
+                  if (getParameter(items, request, "pf_clear") != null)
+                  {
+                    params +=
+                         httpParam ("&", "securityFacebookID", "");
+                  } else {
                   params +=
                        httpParam ("&", "securityFacebookID", getParameter(items, request, "pf_securityFacebookID"));
+                  }
+                }
 
                 if ($_formSubtab == 4)
                   params +=
@@ -1460,12 +1468,12 @@
                                       </thead>
                                       <tr id="x1_tr_no" style="display: none;"><td colspan="2"><b>No Personal URIs</b></td></tr>
                                       <script type="text/javascript">
-                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});});});
+                                        OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowRows("x1", '<% out.print(xpathEvaluate($_document, "/user/webIDs").replace("\n", "\\n")); %>', ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});});});
                                       </script>
                                     </table>
                                   </td>
                                   <td valign="top" nowrap="nowrap">
-                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                                    <span class="button pointer" onclick="TBL.createRow('x1', null, {fld_1: {className: '_validate_ _webid_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                     <select name="pf_acl_webIDs" id="pf_acl_webIDs">
                                       <%
                                         {
@@ -2878,6 +2886,7 @@
                       <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
                       <li id="pf_tab_2_4" title="Limits">Limits</li>
                       <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
+                      <li id="pf_tab_2_6" title="Certificate Generator" style="display:none;">Certificate Generator</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
@@ -2971,6 +2980,14 @@
                               Saved Facebook ID
                         </th>
                             <td>
+                              <%
+                                if ((xpathEvaluate($_document, "/user/securityFacebookID") != null) && (xpathEvaluate($_document, "/user/securityFacebookID") != ""))
+                                {
+                                  out.print(xpathEvaluate($_document, "/user/securityFacebookName"));
+                                } else {
+                                  out.print("not yet");
+                                }
+                              %>
                             </td>
                       </tr>
                       <tr>
@@ -2981,14 +2998,6 @@
                               <br />
                               <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
                               <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                              <input type="submit" name="pf_update" value="Change" onclick="return pfUpdateSubmit(32);"/>
-                              <input type="submit" name="pf_update" value="Clear" onclick="return pfUpdateSubmit(33);" />
                         </td>
                       </tr>
                         </table>
@@ -3079,9 +3088,6 @@
                         </th>
                         <td>
                                 <textarea name="pf25_certificate" id="pf25_certificate" rows="20" style="width: 560px;"></textarea>
-                    	          <iframe id="cert" src="/ods/cert.vsp?sid=<?V vSid %>" width="200" height="200" frameborder="0" scrolling="no">
-                	            <p>Your browser does not support iframes.</p>
-                	          </iframe>
                         </td>
                       </tr>
                       <tr>
@@ -3108,11 +3114,29 @@
                       </div>
                       <%
                         }
+                      else if (($_formTab == 2) && ($_formSubtab == 6))
+                      {
+                      %>
+                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+            	          <iframe id="cert" src="/ods/cert.vsp?sid=<% out.print($_sid); %>" width="650" height="270" frameborder="0" scrolling="no">
+            	            <p>Your browser does not support iframes.</p>
+            	          </iframe>
+                      </div>
+                      <%
+                      }
                         else
                         {
                       %>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
+                        <%
+                          if (($_formTab == 2) && ($_formSubtab == 3) && (xpathEvaluate($_document, "/user/securityFacebookID") != null))
+                          {
+                        %>
+                        <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
+                        <%
+                          }
+                        %>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>

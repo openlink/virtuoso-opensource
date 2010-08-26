@@ -664,6 +664,7 @@ ODS.session = function(customEndpoint) {
 					self.openId.version = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/version', {})[0]);
 					self.openId.server = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/server', {})[0]);
 					self.openId.delegate = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/delegate', {})[0]);
+					openIdUrl = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdServer_response/identity', {})[0]);
 
 			    if (!self.openId.server || self.openId.server.length == 0)
 				showLoginErr (' Cannot locate OpenID server');
@@ -2976,7 +2977,6 @@ ODS.Nav = function(navOptions) {
 			if (self.facebookData && self.regData.facebookEnable) {
         self.showFacebookData(true);
         OAT.Dom.show('loginT3');
-        $('loginBtn').value = 'Facebook Login';
       }
         loginTab.add('loginT4', 'loginP4');
 			var toGo = 0;
@@ -3023,7 +3023,7 @@ ODS.Nav = function(navOptions) {
 					  $('loginUserName').focus();
 			});
 			OAT.Event.attach('loginT2', 'click', function() {
-                        $('loginBtn').value = 'Login';
+				$('loginBtn').value = 'OpenID Login';
 				      OAT.Dom.hide ($('loginForgot'));
 				      $('loginErrDiv').innerHTML = '';
                           if (!OAT.Browser.isIE)

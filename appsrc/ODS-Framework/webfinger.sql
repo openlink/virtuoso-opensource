@@ -40,11 +40,23 @@ create procedure "host-meta" () __SOAP_HTTP 'application/xrd+xml'
 create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
 {
   declare host, mail, uname varchar;
-  declare arr any;
+  declare arr, tmp, graph, uri_copy any;
   host := http_host ();
   arr := WS.WS.PARSE_URI ("uri");
-  if (arr [0] <> 'acct')
+  if (arr [0] = '' or arr[0] = 'mailto')
     "uri" := 'acct:' || arr[2];
+  else if (arr [0] = 'http')
+    {
+      graph := sioc..get_graph ();
+      uri_copy := "uri";
+      tmp := (sparql define input:storage "" prefix foaf: <http://xmlns.com/foaf/0.1/> 
+      	select ?mbox { graph `iri(?:graph)` { `iri(?:uri_copy)` foaf:mbox ?mbox }});
+      if (tmp is not null)
+        {
+	  arr := WS.WS.PARSE_URI (tmp);
+    "uri" := 'acct:' || arr[2];
+	}	  
+    } 
   mail := arr[2];
   uname := (select top 1 U_NAME from DB.DBA.SYS_USERS where U_E_MAIL = mail order by U_ID);
   if (uname is null)
@@ -99,8 +111,23 @@ create procedure "certs" (in "id" int, in format varchar) __SOAP_HTTP 'text/plai
 }
 ;
 
+create procedure WF_INIT ()
+{
+  if (__proc_exists ('WS.WS.host_meta_add') is not null)
+    {
+      WS.WS.host_meta_add ('ODS.webfinger', '<Link rel="lrdd" template="http://%{WSHost}s/ods/describe?uri={uri}"/>');
+    }
+  else
+    {
 DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
 DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'ODS_API');
+    }
+}
+;
+
+WF_INIT ()
+;    
+
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/describe');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/describe', ppath=>'/SOAP/Http/describe', soap_user=>'ODS_API');
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/certs');
@@ -118,5 +145,37 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cert_rule1', 1,
 grant execute on ODS.DBA."host-meta" to ODS_API;
 grant execute on ODS.DBA."describe" to ODS_API;
 grant execute on ODS.DBA."certs" to ODS_API;
+
+create procedure WF_PROFILE_GET (in acct varchar)
+{
+  declare mail, webid, domain, host_info, xrd, template, url any;
+  declare xt, xd, tmpcert, h any;
+
+  h := rfc1808_parse_uri (acct);
+  if (h[0] = '' or h[0] = 'acct' or h[0] = 'mailto')
+    mail := h[2];
+  else   
+    mail := acct; 
+
+  if (mail is null or position ('@', mail) = 0)
+    return null;
+
+  declare exit handler for sqlstate '*'
+    {
+      -- connection error or parse error
+      return null;
+    };
+
+  domain := subseq (mail, position ('@', mail));
+  host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
+  xd := xtree_doc (host_info);
+  template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
+  url := replace (template, '{uri}', 'acct:' || mail);
+  xrd := http_get (url);
+  xd := xtree_doc (xrd);
+  xt := cast (xpath_eval ('/XRD/Link[@rel="http://webfinger.net/rel/profile-page"]/@href', xd) as varchar);
+  return xt;
+}
+;
 
 use DB;

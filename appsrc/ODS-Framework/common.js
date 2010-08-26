@@ -539,10 +539,28 @@ function validateURL(fld)
 function validateURI(fld)
 {
   var regex = /^([a-z0-9+.-]+):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
+  var mail = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  if (!regex.test(fld.value) && !acct.test(fld.value))
     return validateError(fld, 'Invalid URI address : ' + fld.value);
 
   return true;
+}
+
+function validateWebID(fld)
+{
+  var regex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  if (regex.test(fld.value))
+    return true;
+
+  var regex  = /^acct:([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-:])+)+\.?([a-zA-Z0-9]{0,4})+$/;
+  if (regex.test(fld.value))
+    return true;
+
+  var regex = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  if (regex.test(fld.value))
+    return true;
+
+  return validateError(fld, 'Invalid URI address');
 }
 
 function validateField(fld)
@@ -555,6 +573,8 @@ function validateField(fld)
     return validateURL(fld);
   if (OAT.Dom.isClass(fld, '_uri_'))
     return validateURI(fld);
+  if (OAT.Dom.isClass(fld, '_webid_'))
+    return validateWebID(fld);
   if (fld.value.length == 0)
     return validateError(fld, 'Field cannot be empty');
   return true;

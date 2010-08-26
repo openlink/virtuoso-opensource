@@ -494,7 +494,7 @@ function buildObjByChildNodes(elm) {
 var lfTab;
 var rfTab;
 var ufTab;
-var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5']];
+var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5', 'pf_page_2_6']];
 
 var setupWin;
 var cRDF;
@@ -729,6 +729,11 @@ function init() {
     OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 3);});
     OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 4);});
     OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 5);});
+    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 6);});
+    var regex = /Mozilla.*Windows.*Firefox.*\.NET CLR .*/;
+    if (!(OAT.Browser.isIE || regex.test(navigator.userAgent)))
+      OAT.Dom.show("pf_tab_2_6");
+
     pfTabInit('pf_tab_2_', $v('formSubtab'));
 	}
   OAT.MSG.send(OAT, 'PAGE_LOADED');
@@ -1277,8 +1282,6 @@ function pfShowCertificate(mode, id) {
     OAT.Dom.show("pf25_form_1");
     OAT.Dom.show("pf25_form_2");
   }
-  if ($('cert'))
-    $('cert').src = '/ods/cert.vsp?sid='+$v('sid');
   pfShowItem('user.certificates.get', 'pf25', ['subject', 'agentID', 'fingerPrint', 'certificate', 'enableLogin']);
 }
 
@@ -1331,13 +1334,21 @@ function showFacebookData(skip) {
 	var rfLabel = $('rf_facebookData');
 	var pfLabel = $('pf_facebookData');
 	if (lfLabel || rfLabel || pfLabel) {
-  	if (lfLabel) {lfLabel.innerHTML = '';}
-  	if (rfLabel) {rfLabel.innerHTML = '';}
-  	if (pfLabel) {pfLabel.innerHTML = '';}
+    if (lfLabel)
+      lfLabel.innerHTML = '';
+    if (rfLabel)
+      rfLabel.innerHTML = '';
+    if (pfLabel)
+      pfLabel.innerHTML = '';
   	if (facebookData && facebookData.name) {
-  		if (lfLabel) {lfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>'};
-  		if (rfLabel) {rfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>'};
-  		if (pfLabel) {pfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>'};
+      if (lfLabel)
+        lfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>';
+      if (rfLabel)
+        rfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>';
+      if (pfLabel) {
+        pfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>'
+        hiddenCreate('pf_securityFacebookID', null, facebookData.uid);
+      }
   	}
   	else if (!skip) {
   		self.loadFacebookData(function() {self.showFacebookData(true);});
@@ -1352,6 +1363,9 @@ function hideFacebookData() {
 	var label = $('rf_facebookData');
 	if (label)
   	label.innerHTML = '';
+  var label = $('pf_facebookData');
+  if (label)
+    label.innerHTML = '';
 	if (facebookData) {
 	var o = {}
 	o.api_key = facebookData.api_key;
@@ -1979,7 +1993,7 @@ function ufProfileCallback(data) {
 			fieldUpdate(user, 'gender', 'pf_gender', aclData);
 			fieldUpdate(user, 'birthday', 'pf_birthday', aclData);
 			fieldUpdate(user, 'homepage', 'pf_homepage', aclData);
-      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}});}, aclData, 'pf_acl_webIDs');
+      pfShowRows("x1", tagValue(user, "webIDs"), ["\n"], function(prefix, val1){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _webid_ _canEmpty_'}});}, aclData, 'pf_acl_webIDs');
 			fieldUpdate(user, 'mailSignature', 'pf_mailSignature');
 			fieldUpdate(user, 'summary', 'pf_summary', aclData);
 			fieldUpdate(user, 'photo', 'pf_photo', aclData);
@@ -2085,6 +2099,13 @@ function ufProfileCallback(data) {
       // security
 			fieldUpdate(user, 'securityOpenID', 'pf_securityOpenID');
 
+      var S = tagValue(user, 'securityFacebookID');
+      if (S) {
+        $('span_facebookName').innerHTML = tagValue(user, 'securityFacebookName');
+      } else {
+        $('span_facebookName').innerHTML = 'not yet';
+      }
+
 			fieldUpdate(user, 'securitySecretQuestion', 'pf_securitySecretQuestion');
       fieldUpdate(user, 'securitySecretAnswer',   'pf_securitySecretAnswer');
 
@@ -2114,11 +2135,11 @@ function ufProfileCallback(data) {
 	    }
 	    S = tagValue(user, 'certificate');
 	    if (S) {
-	      OAT.Dom.hide('iframe_certificate');
-	      $('iframe_certificate').src = '';
+        OAT.Dom.hide('cert');
+        $('cert').src = '';
 	    } else {
-	      OAT.Dom.show('iframe_certificate');
-	      $('iframe_certificate').src = '/ods/cert.vsp?sid=' + encodeURIComponent($v('sid'));
+        OAT.Dom.show('cert');
+        $('cert').src = '/ods/cert.vsp?sid=' + encodeURIComponent($v('sid'));
 	    }
       showTitle('profile');
 
@@ -2522,8 +2543,13 @@ function pfUpdateSubmit(No) {
     	}
       else if (formSubtab == 3)
       {
+        if (No == 2)
+        {
+          S += '&securityFacebookID=';
+        } else {
         S += '&securityFacebookID=' + encodeURIComponent(facebookData.uid);
     	}
+      }
       else if (formSubtab == 4)
       {
         S += '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));

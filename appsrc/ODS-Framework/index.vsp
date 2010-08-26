@@ -24,7 +24,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
-  declare sid,realm,server_root,server_dataspace,oldui_url,uname,utype varchar;
+  declare sid,realm,server_root,server_dataspace,oldui_url,uname,utype,https varchar;
 
   utype:=get_keyword('utype',params,'');
   uname:=get_keyword('uname',params,'');
@@ -90,6 +90,10 @@
     else
       _country_code:=null;
 
+    https := ODS..getDefaultHttps ();
+    if (exists (select 1 from WA_SETTINGS where WS_HTTPS = 1) and https is not null)
+      _openid_server := 'https://' || https;
+    else
     _openid_server := server_root;
 --META openID start
     if (length (_oid_url) and length (_oid_server))
@@ -176,6 +180,7 @@ skip_meta:
   links := links || sprintf (' <%s%s%s#this>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', server_dataspace, utype, uname);
   links := links || sprintf (' <%s%s%s#this>; rev="describedby",', server_dataspace, utype, uname);
   links := links || sprintf (' <%s/activities/feeds/activities/user/%U>; rel="http://schemas.google.com/g/2010#updates-from"; type="application/atom+xml",', server_root, uname);
+  links := links || sprintf (' <%s/sparql?default-graph-uri=%s/dataspace>; title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint", ', server_root, server_root);
   foreach (any ss in exts) do
     {
        links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', 

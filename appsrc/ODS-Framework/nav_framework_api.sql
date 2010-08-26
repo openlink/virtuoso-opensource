@@ -199,13 +199,13 @@ create procedure sessionValidateX509 (
   {
     info := get_certificate_info (9, cert);
     if (not isarray (info))
-      return 0;
+      return NULL;
     agent := ODS.ODS_API.SSL_WEBID_GET ();
     if (agent is null)
       {
 	agent := DB.DBA.FOAF_SSL_WEBFINGER ();
 	if (agent is null)
-      return 0;
+	  return NULL;
 	else
 	  goto authenticated;
       }
@@ -1655,6 +1655,7 @@ create procedure openIdServer (
   declare errCode integer;
   declare errMsg varchar;
   declare resXml any;
+  declare profilePage varchar;
 
   resXml  := string_output ();
   errCode := 0;
@@ -1673,6 +1674,9 @@ create procedure openIdServer (
   oi_srv := null;
   oi2_srv := null;
   oi_delegate := null;
+  profilePage := ODS.DBA.WF_PROFILE_GET (openIdUrl);
+  if (profilePage is not null)
+    openIdUrl := profilePage;
 
   if (DB.DBA.is_empty_or_null (mode))
   {
@@ -1712,9 +1716,9 @@ again:
   http('<version>'||oi_version||'</version>',resXml);
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);
+  http('<identity>'||openIdUrl||'</identity>',resXml);
 
 _end:
-
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'openIdServer');
   else
