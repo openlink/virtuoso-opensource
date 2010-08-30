@@ -199,9 +199,9 @@
         http ('<tr><th class="property">Properties</th><th class="value">Objects</th></tr>');
       else
         http ('<tr><th class="property">Attributes</th><th class="value">Values</th></tr>');
-
       all_lang := vector ('*', 1.0);
-      qry_str := sprintf ('select "p" as PRED, "o" as OBJECT from (sparql %s select distinct ?p ?o where { <%S> ?p ?o }) sp order by 1', inf, _S);
+      
+      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o where { <%S> ?p ?o }  order by 1) sp', inf, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       curr_pred := '';
       while (0 = exec_next (h1, null, null, data))	
@@ -224,7 +224,7 @@
       exec_close (h1);
       if (curr_pred <> '') http ('</ul></td></tr>');
 
-      qry_str := sprintf ('select "p" as PRED, "o" as OBJECT from (sparql %s select distinct ?p ?o where { ?o ?p <%S> }) sp order by 1', inf, _S);
+      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o where { ?o ?p <%S> } order by 1) sp', inf, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       inx := 0;	
       curr_pred := '';
