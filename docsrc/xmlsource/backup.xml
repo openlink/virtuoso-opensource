@@ -103,13 +103,6 @@
   can be used to backup the database in the state effective at the last checkpoint
   to a series of backup files.</para>
 
-  <para><link linkend="fn_backup_online"><function>backup_online
-  <paramdef><parameter>file_prefix</parameter></paramdef>
-  <paramdef><parameter>pages</parameter></paramdef>
-  <paramdef><optional><parameter>timeout</parameter></optional></paramdef>
-  <paramdef><optional><parameter>dirst</parameter></optional></paramdef>
-  </function></link></para>
-
   <para>
 
 The database storage is divided into a checkpoint space that is a read

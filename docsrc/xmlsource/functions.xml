@@ -198,7 +198,8 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &REPL_CREATE_SNAPSHOT_PUB; &REPL_CREATE_SNAPSHOT_SUB;
 &REPL_DROP_SNAPSHOT_SUB; &REPL_DROP_SNAPSHOT_PUB; &REPL_INIT_SNAPSHOT;
 &REPL_UPDATE_SNAPSHOT; &REPL_SNP_SERVER; &REPL_SERVER_NAME;
-&REPL_ADD_CR; &REPL_ADD_DAV_CR; &REPL_ADD_SNAPSHOT_CR;
+&REPL_ADD_CR; &REPL_ADD_DAV_CR; &REPL_ADD_SNAPSHOT_CR; &rdf_repl_start; 
+&rdf_repl_graph_ins; &rdf_repl_graph_del;
 &result; &result_names; &rexecute; &rstmtexec; &right; &rmoreresults;
 &rnd; &rnext; &row_count; &rtrim;
 

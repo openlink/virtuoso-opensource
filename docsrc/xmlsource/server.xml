@@ -36,93 +36,11 @@ command line SQL interface.
 
 <sect2 id="dbadm"><title>Database</title>
 
-  <sect3 id="srvadminstallreqtdb"><title>Installation Requirements</title>
-    <para>A typical installation will require a minimum of 400Mb of hard disk
-    space to install the code, samples, documentation and sample database.
-The database will need additional space for data inserted, backups,
-    logs and reports, web pages, etc.
 
-</para>
-    <para>The size of the database .db file will not reduce when data is
-    removed. The spare space will however be reclaimed for later use.</para>
-  </sect3>
-
-  <sect3 id="srvadmopreq"><title>Operational Requirements</title>
-    <para>The Virtuoso database requires a minimum of 64Mb of system memory
-    for each instance to operate in. Each connection will take between 70kb
-    and 130kb of memory.</para>
-    <para>The memory usage is affected by the following parameters in the
-    <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
-    <simplelist>
-      <member>ServerThreads</member>
-      <member>ServerThreadSize</member>
-      <member>MainThreadSize</member>
-      <member>FutureThreadSize</member>
-      <member>NumberOfBuffers</member>
-    </simplelist>
-    <para>See the following <link linkend="parameters">Parameter section</link>
-    for more details.</para>
-  </sect3>
-
-  <sect3 id="srvadmossupport"><title>Operating System Support</title>
-    <para>Virtuoso runs on the following operating systems:</para>
-    <simplelist>
-      <member>Windows 2000,XP,ME,98,95</member>
-      <member>Linux</member>
-      <member>Unix</member>
-      <member>Mac OS X</member>
-    </simplelist>
-  </sect3>
-
-
-<sect3 id="limitsandparameters">
-<title>Limits</title>
-
-<para>
-The below table lists the most important parameters and limits for a database or a Virtuoso server instance.  For space consumption of individual data types, see <link linkend="SpaceConsump">Space Consumption</link>.
-</para>
-
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-  <title>Limits</title>
-  <tgroup align="char" charoff="50" char="." cols="2">
-  <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Limit Description</entry>
-        <entry>Value</entry>
-      </row>
-    </thead>
-<tbody>
-<row><entry>Identifier length</entry> <entry>100</entry></row>
-<row><entry>User name and password length</entry> <entry>100</entry></row>
-<row><entry>SQLstmt and proc text</entry> <entry>100K+</entry></row>
-<row><entry>varchar length</entry> <entry>Constrained by max row length when stored into non-LOB column, 10MB inside procedure code.</entry></row>
-<row><entry>Numeric precision</entry> <entry>Max 40 digits</entry></row>
-<row><entry>LOB column length</entry> <entry>2GB</entry></row>
-<row><entry>row length</entry> <entry>4086</entry></row>
-<row><entry>Columns per row</entry> <entry>200</entry></row>
-<row><entry>Database size</entry> <entry>32TB for data, 32TB for temp data </entry></row>
-<row><entry>Page size</entry> <entry>8K</entry></row>
-<row><entry>File size</entry> <entry>64 bit file offsets on supporting OS's</entry></row>
-<row><entry>Files per database</entry> <entry>unlimited</entry></row>
-<row><entry>Table size</entry> <entry>Up to database size </entry></row>
-<row><entry>Tables per database</entry> <entry>64K keys, a table takes 1 key for primary key, 1 key per index and 1 key for each obsolete primary key layout  resulting from adding or dropping columns.</entry></row>
-<row><entry>Indexes per table</entry> <entry>Unlimited, subject to global cap on keys.</entry></row>
-<row><entry>Row in sorting/distinct temp</entry> <entry>4078b, as in tables </entry></row>
-<row><entry>Locks per transaction</entry> <entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
-<row><entry>Changes per transaction</entry> <entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
-<row><entry>Virtual memory></entry> <entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
-<row><entry>Threads</entry> <entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thread pools.</entry></row>
-<row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
-<row><entry>Memory per connection</entry> <entry>22K plus up to 100 cached SQL statement compilations</entry></row>
-</tbody>
- </tgroup>
-</table>
-
-</sect3>
-
-
+<para>See details for <link linkend="srvadminstallreqt">Installation Requirements</link>, 
+<link linkend="srvadmopreq">Operational Requirements</link>, 
+	<link linkend="srvadmossupport">Operating System Support</link> and 
+	<link linkend="limitsandparameters">Limits</link>.</para>
 
   <sect3 id="srvadmsrvinst"><title>Server Instance Creation</title>
     <para>Multiple Virtuoso server instances  may coexist on a single machine. Each
@@ -1006,6 +924,8 @@ LIMIT 1000
                     <listitem>the relevant tables to the above are not created</listitem>
                     <listitem>the index tree maps is set to 8 if no other setting is given</listitem>
                     <listitem>memory reserve is not allocated</listitem>
+                    <listitem>affects DisableTcpSocket. So DisableTcpSocket setting is treated as 1 
+                    	when LiteMode=1, regardless of value in INI file</listitem>
                   </itemizedlist>
 		</para>
 	    </formalpara>
@@ -1031,9 +951,9 @@ lite is 2 in 'normal' mode is 256 by default.
 	<listitem id="ini_DisableTcpSocket">
 	    <formalpara>
 		<title>DisableTcpSocket = 1/0 </title>
-		<para>Disable odbc listen on tcp port, if this given unix socket will always be used.
-In lite mode is 0, thus no tcp listen for sql/odbc connections, can connect
-only via unix socket.
+		<para>Default = 0. If set to 1, disables database listener on TCP port; unix socket must be 
+			used for data access connections (ODBC, JDBC, ADO.NET, OLE DB). When LiteMode=1, 
+			DisableTcpSocket setting in INI file is ignored and treated as if set to 1.
 		</para>
 	    </formalpara>
 	</listitem>
@@ -2636,6 +2556,10 @@ where the remote is not available. It is SYNCING if a resync is in
 progress, IN SYNC if the account is up to date or REMOTE DISCONNECTED if
 there was a connection to a remote party which subsequently disconnected.
 </para>
+
+  <tip><title>See Also:</title>
+    <para><link linkend="rdfgraphreplication">RDF Graph Replication</link></para>
+  </tip>
 		</sect4>
 		<sect4 id="indexusage">
 			<title>Index Usage</title>

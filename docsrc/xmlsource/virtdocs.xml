@@ -393,6 +393,12 @@
 <!ENTITY REPL_ADD_CR  	 			SYSTEM "funcref/REPL_ADD_CR.xml">
 <!ENTITY REPL_ADD_DAV_CR  	 		SYSTEM "funcref/REPL_ADD_DAV_CR.xml">
 <!ENTITY REPL_ADD_SNAPSHOT_CR  	 		SYSTEM "funcref/REPL_ADD_SNAPSHOT_CR.xml">
+
+<!ENTITY rdf_repl_start  	     SYSTEM	"funcref/rdf_repl_start.xml">
+<!ENTITY rdf_repl_graph_ins  	 SYSTEM	"funcref/rdf_repl_graph_ins.xml">
+<!ENTITY rdf_repl_graph_del  	 SYSTEM	"funcref/rdf_repl_graph_del.xml">
+
+
 <!ENTITY replace				SYSTEM "funcref/replace.xml">
 <!ENTITY replay					SYSTEM "funcref/replay.xml">
 <!ENTITY result					SYSTEM "funcref/result.xml">
