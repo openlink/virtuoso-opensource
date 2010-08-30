@@ -964,7 +964,8 @@ ext_http_proxy_exec_qry (in exec varchar, in params any)
       http_request_status ('HTTP/1.1 400 Bad request');
       proxy_sp_html_error_page ('Error: insufficient no of params',
         		        'Insufficient number of parameters',
-                                'This query takes exactly ' || _n_parms || 'parameters');
+                                'This query takes exactly ' || cast (_n_parms as varchar) || ' parameters');
+      return;
     }
 
   declare xec_str varchar;
@@ -1394,7 +1395,7 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varch
        else
          modt := now();
        if (dirname <> '.')
-         xte_nodebld_acc (xte_list, xte_node (xte_head ('SUBDIR', 'name', dirname,
+         xte_nodebld_acc (xte_list, xte_node (xte_head ('SUBDIR', 'name', sprintf('%U',dirname),
                'modify', soap_print_box (modt, '', 2) ) ) );
        ix := ix + 1;
      }
@@ -1418,7 +1419,7 @@ create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varch
 	   mult := mult + 1;
 	   flen := flen / 1000;
 	 }
-       xte_nodebld_acc (xte_list, xte_node (xte_head ('FILE', 'name', dirname,
+       xte_nodebld_acc (xte_list, xte_node (xte_head ('FILE', 'name', sprintf('%U',dirname),
              'modify', soap_print_box (modt, '', 2), 'rs', rflen,
              'hs', sprintf ('%d %s', flen, aref (fsize, mult)) ) ) );
        ix := ix + 1;
