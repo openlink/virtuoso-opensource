@@ -1801,6 +1801,7 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
       foafIRI := FOAF_SSL_WEBFINGER ();
       if (foafIRI is null)
     goto _exit;
+      st := '00000';
       goto authenticated;
     }
 
