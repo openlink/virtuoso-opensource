@@ -3849,20 +3849,6 @@ ws_read_req (ws_connection_t * ws)
   dk_session_t * ses = ws->ws_session;
   ws_clear (ws, 0);
   ws->ws_client_ip = http_client_ip (ws->ws_session->dks_session);
-#ifdef _IMSG
-  if (
-      (!pop3_port || ws->ws_port != pop3_port)
-      && (!nntp_port || ws->ws_port != nntp_port)
-      && (!ftp_port || ws->ws_port != ftp_port)
-      && 0 == ws_check_acl (ws, &hit)
-     )
-#else
-  if (0 == ws_check_acl (ws, &hit))
-#endif
-    {
-      ws->ws_try_pipeline = 0;
-      goto end_req;
-    }
 
   if (!_thread_sched_preempt)
     {
@@ -3931,6 +3917,12 @@ ws_read_req (ws_connection_t * ws)
 	    }
 	  ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
 	  http_set_client_address (ws);
+	  if (0 == ws_check_acl (ws, &hit))
+	    {
+	      ws->ws_try_pipeline = 0;
+	      ws_strses_reply (ws, hit ? "HTTP/1.1 509 Bandwidth Limit Exceeded" : "HTTP/1.1 403 Forbidden");
+	      goto end_req;
+	    }
 	  if (ws_path_and_params (ws))
 	    goto end_req;
 #ifdef _IMSG
