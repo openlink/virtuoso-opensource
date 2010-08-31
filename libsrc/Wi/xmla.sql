@@ -281,8 +281,9 @@ create procedure
 	       )
 {
   declare res, mdta, dta any;
-  declare cat, fmt, axis_fmt, what, dsn, state, msg, stmt, tree, blob_limit any;
+  declare cat, fmt, axis_fmt, what, dsn, state, msg, stmt, tree, blob_limit, stmt_is_ddl any;
   declare uname, passwd varchar;
+
   declare exit handler for sqlstate '*'
     {
       declare xcode int;
@@ -330,9 +331,10 @@ create procedure
   set_user_id (uname, 1, passwd);
   set_qualifier (cat);
 
+  dta := vector ();
+  stmt_is_ddl := 0;
   if (not xmla_not_local_dsn (dsn))
     {
-	dta := NULL;
 --	mxla_fk_pk_check_local (stmt, mdta, dta);
 	tree := sql_parse (stmt);
 	if (tree [0] = 609)
@@ -341,27 +343,29 @@ create procedure
 	    tree := sql_parse (stmt);
 	  }
 	if (tree [0] <> 100)
+	  {
+	    if (registry_get ('XMLA-DML') = '1')
+	      {
+		exec_metadata ('select 1 as res', null, null, mdta);
+		stmt_is_ddl := 1;
+	      }
+	    else
 	   signal ('00004', 'Only select statements are supported via XML for Analysis provider');
-
-	if (dta is NULL)
+	  }
 	   res := exec (stmt, state, msg, vector (), 0, mdta, dta);
-
+	if (isinteger (dta))
+	  dta := vector (vector (dta));
 --  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
 --    	   xmla_add_quot_to_table (dta);
-
 	blob_limit := atoi (xmla_get_property ("Properties", 'BLOBLimit', '0'));
-
 	if (blob_limit > 0)
 	   connection_set ('SOAPBlobLimit', blob_limit);
      }
    else
      {
-	dta := NULL;
 --	mxla_fk_pk_check (dsn, stmt, mdta, dta);
 	dsn := xmla_get_dsn_name (dsn);
-
-	if (dta is NULL)
-	  rexecute (dsn, stmt, state, msg, vector (), 0, mdta, dta);;
+	rexecute (dsn, stmt, state, msg, vector (), 0, mdta, dta);
      }
 
   if (state <> '00000')
@@ -369,6 +373,7 @@ create procedure
 
   -- data needs to be re-organized
   xmla_format_mdta (mdta);
+  if (not stmt_is_ddl)
   xmla_make_cursors_state ("Properties", dta, stmt);
   xmla_sparql_result (mdta, dta, stmt);
   xmla_make_struct (mdta, dta);
