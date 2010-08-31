@@ -25,6 +25,20 @@ cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
 DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'dba');
 
+create procedure fct_init ()
+{
+  if (__proc_exists ('WS.WS.host_meta_add') is not null)
+    {
+      WS.WS.host_meta_add ('FCT.service', '<Link rel="http://openlinksw.com/virtuoso/fct/service" href="http://%{WSHost}s/fct/service"/>');
+      WS.WS.host_meta_add ('FCT.browser', '<Link rel="http://openlinksw.com/virtuoso/fct/browser" href="http://%{WSHost}s/fct/"/>');
+      WS.WS.host_meta_add ('FCT.describe', 
+      	'<Link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
+    }
+}
+;
+
+fct_init ();
+
 create procedure fct_svc_log (in qr varchar, in lines varchar)
 {
   declare fname, ua any;
