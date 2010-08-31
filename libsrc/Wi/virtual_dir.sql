@@ -1575,6 +1575,12 @@ create procedure WS.WS.host_meta_add (in app varchar, in meta varchar)
 }
 ;
 
+create procedure WS.WS.host_meta_del (in app varchar)
+{
+  delete from WS.WS.HTTP_HOST_META where HM_APP = app;
+}
+;
+
 
 create procedure WS.WS."host-meta" () __SOAP_HTTP 'application/xrd+xml'
 {
