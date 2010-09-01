@@ -483,14 +483,8 @@
             self.v_relationships := self.v_relationships || trim (params [N+1]) || '\n';
           }
         }
-        else if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 's_fld_2_', '');
-          acl := vector_concat (acl, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
-        }
       }
-      acl := vector_concat (vector (vector ('v1.0', length (acl))), acl);
-      self.v_acl := serialize (acl);
+      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
     ]]>
   </v:method>
 
@@ -1220,7 +1214,7 @@
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
-                              permissions := AB.WA.person_permissions (id, self.domain_id, self.account_role);
+                              permissions := AB.WA.contact_permissions (id, self.domain_id, self.account_role);
                               title2 := self.prepareField (AB.WA.stringCut(title, self.abChars), 'nickname', null);
 
                               http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, title, title2));
@@ -1588,9 +1582,7 @@
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="2" caption="Home" />
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="3" caption="Business" />
                   &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="4" caption="Relationships" />
-                  <vm:if test="AB.WA.domain_is_public (self.domain_id) = 2">
-                    &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Access" />
-                  </vm:if>
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Sharing" />
               </div>
                 <div class="contents vcard">
                 <div id="a_content_0" class="tabContent" style="display: none;">
@@ -2506,10 +2498,8 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px">Access</th>
-                                <vm:if test="self.abAction <> 'view'">
+                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                   <th width="50px">Action</th>
-                                </vm:if>
                               </tr>
                             </thead>
                       		  <![CDATA[
@@ -2518,26 +2508,23 @@
                                 declare N, L integer;
                                 declare acl, aType, aAccess any;
 
-                                aType := vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression');
-                                aAccess := vector ('G', 'Grant', 'R', 'Revoke');
-
                               L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                               }
                               acl := deserialize (self.v_acl);
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
                                   if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), ''));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                                   }
                                 }
                            		    ?>
@@ -2548,7 +2535,7 @@
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {}, fld_3: {mode: 31}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                           </td>
                         </vm:if>
                       </tr>
