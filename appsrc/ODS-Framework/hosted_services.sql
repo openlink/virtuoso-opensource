@@ -463,8 +463,6 @@ wa_add_col('DB.DBA.WA_MEMBER', 'WAM_HOME_PAGE', 'varchar')
  --wa_add_col('DB.DBA.WA_MEMBER', 'WAM_REQUESTED_MEMBER_TYPE', 'int')
  --;
 
---zdravko
-
 create procedure wa_member_upgrade() {
 
   if (registry_get ('__wa_member_upgrade') = 'done')
@@ -519,6 +517,65 @@ create procedure wa_member_doinstcount() {
 wa_member_doinstcount()
 ;
 
+wa_exec_no_error ('
+  create table WA_GROUPS_ACL (
+    WACL_ID integer identity,
+    WACL_USER_ID integer not null,
+    WACL_NAME varchar not null,
+    WACL_DESCRIPTION long varchar,
+    WACL_WEBIDS long varchar,
+
+    constraint FK_WA_GROUPS_ACL_01 FOREIGN KEY (WACL_USER_ID) references DB.DBA.SYS_USERS(U_ID) on delete cascade,
+
+    primary key (WACL_ID)
+  )
+');
+
+wa_exec_no_error ('
+  create unique index SK_WA_GROUPS_ACL_01 on WA_GROUPS_ACL (WACL_USER_ID, WACL_NAME)
+');
+
+create procedure wa_groups_acl_update () {
+
+  if (registry_get ('__wa_groups_acl_update') = 'done')
+    return;
+
+  wa_exec_no_error ('insert into DB.DBA.WA_GROUPS_ACL (WACL_USER_ID, WACL_NAME, WACL_DESCRIPTION, WACL_WEBIDS) select FG_USER_ID, FG_NAME, FG_DESCRIPTION, FG_WEBIDS from ODRIVE.WA.FOAF_GROUPS');
+  wa_exec_no_error ('update DB.DBA.WA_INSTANCE set WAI_ACL = null');
+  registry_set ('__wa_groups_acl_update', 'done');
+}
+;
+
+wa_groups_acl_update()
+;
+
+create procedure wa_acl_params (
+  in params any)
+{
+  declare N, M integer;
+  declare aclNo, retValue, V any;
+
+  M := 1;
+  retValue := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if (params[N] like 's_fld_2_%')
+    {
+      aclNo := replace (params[N], 's_fld_2_', '');
+      V := vector (M,
+                   trim (params[N+1]),
+                   get_keyword ('s_fld_1_' || aclNo, params, 'person'),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_r', params, '0')),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_w', params, '0')),
+                   atoi (get_keyword ('s_fld_3_' || aclNo || '_x', params, '0'))
+                  );
+      retValue := vector_concat (retValue, vector (V));
+      M := M + 1;
+    }
+  }
+  return retValue;
+}
+;
 
 wa_exec_no_error_log(
 'create table WA_INVITATIONS
@@ -4546,6 +4603,168 @@ create procedure WA_USER_IS_TAGGED (in uid integer, in tagee integer)
 
 }
 ;
+
+create procedure WA_CLEAR (
+  in S any)
+{
+  return substring(S, 1, coalesce (strstr(S, '<>'), length (S)));
+}
+;
+
+create procedure WA_VALIDATE (
+  in value any,
+  in params any := null)
+{
+  declare valueType, valueClass, valueName, valueMessage, tmp any;
+
+  declare exit handler for SQLSTATE '*' {
+    if (not is_empty_or_null(valueMessage))
+      signal ('TEST', valueMessage);
+    if (__SQL_STATE = 'EMPTY')
+      signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
+    if (__SQL_STATE = 'CLASS') {
+      if (valueType in ('free-text', 'tags')) {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
+      } else {
+        signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
+      }
+    }
+    if (__SQL_STATE = 'TYPE')
+      signal ('TEST', sprintf('Field ''%s'' contains invalid characters for \'%s\'!<>', valueName, valueType));
+    if (__SQL_STATE = 'MIN')
+      signal ('TEST', sprintf('''%s'' value should be greater than %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAX')
+      signal ('TEST', sprintf('''%s'' value should be less than %s!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MINLENGTH')
+      signal ('TEST', sprintf('The length of field ''%s'' should be greater than %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'MAXLENGTH')
+      signal ('TEST', sprintf('The length of field ''%s'' should be less than %s characters!<>', valueName, cast (tmp as varchar)));
+    signal ('TEST', 'Unknown validation error!<>');
+    --resignal;
+  };
+
+  value := trim(value);
+  if (is_empty_or_null(params))
+    return value;
+
+  valueClass := coalesce (get_keyword ('class', params), get_keyword ('type', params));
+  valueType := coalesce (get_keyword ('type', params), get_keyword ('class', params));
+  valueName := get_keyword ('name', params, 'Field');
+  valueMessage := get_keyword ('message', params, '');
+  tmp := get_keyword ('canEmpty', params);
+  if (isnull (tmp))
+  {
+    if (not isnull (get_keyword ('minValue', params))) {
+      tmp := 0;
+    } else if (get_keyword ('minLength', params, 0) <> 0) {
+      tmp := 0;
+    }
+  }
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null(value)) {
+    signal('EMPTY', '');
+  } else if (is_empty_or_null(value)) {
+    return value;
+  }
+
+  value := WA_VALIDATE2 (valueClass, value);
+
+  if (valueType = 'integer') {
+    tmp := get_keyword ('minValue', params);
+    if ((not isnull (tmp)) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+
+  } else if (valueType = 'float') {
+    tmp := get_keyword ('minValue', params);
+    if (not isnull (tmp) and (value < tmp))
+      signal('MIN', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxValue', params);
+    if (not isnull (tmp) and (value > tmp))
+      signal('MAX', cast (tmp as varchar));
+
+  } else if (valueType = 'varchar') {
+    tmp := get_keyword ('minLength', params);
+    if (not isnull (tmp) and (length (value) < tmp))
+      signal('MINLENGTH', cast (tmp as varchar));
+
+    tmp := get_keyword ('maxLength', params);
+    if (not isnull (tmp) and (length (value) > tmp))
+      signal('MAXLENGTH', cast (tmp as varchar));
+  }
+  return value;
+}
+;
+
+create procedure WA_VALIDATE2 (
+  in propertyType varchar,
+  in propertyValue varchar)
+{
+  declare exit handler for SQLSTATE '*' {
+    if (__SQL_STATE = 'CLASS')
+      resignal;
+    signal('TYPE', propertyType);
+    return;
+  };
+
+  if (propertyType = 'boolean') {
+    if (propertyValue not in ('Yes', 'No'))
+      goto _error;
+  } else if (propertyType = 'integer') {
+    if (isnull (regexp_match('^[0-9]+\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as integer);
+  } else if (propertyType = 'float') {
+    if (isnull (regexp_match('^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as float);
+  } else if (propertyType = 'dateTime') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+        goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'dateTime2') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'date') {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'date2') {
+    if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as datetime);
+  } else if (propertyType = 'time') {
+    if (isnull (regexp_match('^([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
+      goto _error;
+    return cast (propertyValue as time);
+  } else if (propertyType = 'folder') {
+    if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
+      goto _error;
+  } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+      goto _error;
+  } else if (propertyType = 'email') {
+    if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
+      goto _error;
+  } else if (propertyType = 'free-text') {
+    if (length (propertyValue))
+      vt_parse(propertyValue);
+  } else if (propertyType = 'tags') {
+    -- if (not ODRIVE.WA.validate_tags(propertyValue))
+      goto _error;
+  }
+  return propertyValue;
+
+_error:
+  signal('CLASS', propertyType);
+}
+;
+
 
 create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any, in own integer, in umode integer default 0)
 {

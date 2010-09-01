@@ -132,41 +132,44 @@ function trim(sString, ch)
 function rowSelect(obj)
 {
   var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
+  var srcForm = obj.form;
+  var dstForm = eval('window.opener.document.'+$v('form'));
+  if (!dstForm)
+    return false;
+
+  if (srcForm.elements['src'])
+    if (srcForm.elements['src'].value.indexOf('s') != -1)
       submitMode = true;
   if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
+    if (dstForm && dstForm.elements['submitting'])
         return false;
   var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
+  if (srcForm.elements['dst'])
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
       closeMode = false;
   var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
+  if (srcForm.elements['dst'])
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
       singleMode = false;
 
   var s2 = (obj.name).replace('b1', 's2');
   var s1 = (obj.name).replace('b1', 's1');
 
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.params.value;
   var myArray;
   while(true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
     if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+      if (dstForm && dstForm.elements[myArray[1]]) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+          if (dstForm.elements[myArray[1]])
+            rowSelectValue(dstForm.elements[myArray[1]], srcForm.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+          if (dstForm.elements[myArray[1]])
+            rowSelectValue(dstForm.elements[myArray[1]], srcForm.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;
@@ -174,7 +177,7 @@ function rowSelect(obj)
   }
   if (submitMode) {
     window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    dstForm.submit();
   }
   if (closeMode)
     window.close();

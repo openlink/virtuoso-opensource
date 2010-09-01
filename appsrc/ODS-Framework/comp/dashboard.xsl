@@ -2263,6 +2263,15 @@
   </xsl:template>
 
   <xsl:template match="vm:dash-my-photos">
+    <?vsp
+
+      declare has_gallery integer;
+
+      has_gallery := 0;
+      if (exists (select 1 from wa_member where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id))
+        has_gallery := 1;
+    ?>
+    <vm:if test="has_gallery">
     <div class="widget w_my_photos">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
@@ -2278,22 +2287,11 @@
         </div>
       </div>
       <div class="w_pane content_pane">
-<?vsp
-  if (wa_check_package('oGallery'))
-    {
-      declare i,ii int;
-      declare ogallery_id varchar;
-      ogallery_id:='';
-      ogallery_id := coalesce ((select WAM_INST from wa_member
-                                  where WAM_APP_TYPE='oGallery' and WAM_MEMBER_TYPE=1 and WAM_USER=self.u_id)
-                               ,'');
-      if (ogallery_id <> '')
-        {
-?>
         <br/>
         <table border="0" cellpadding="0" cellspacing="0" class="infoarea2">
           <tr>
 <?vsp
+                declare i, ii int;
   declare q_str, rc, dta, h, curr_davres any;
   declare _gallery_folder_name varchar;
 
@@ -2341,18 +2339,9 @@
            {
                _home_url:=rows[0][0];
                _inst_name:=rows[0][1];
-           }
-           else
-               goto _skip;
-
-
---           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
            photo_href:= sprintf(' href="/dataspace/%s/photos/%U#/%s/%s" target="_blank" ',self.u_name,_inst_name, gallery_path_arr[5], gallery_path_arr[6]);
-
           }
-
-          _skip:;
-
+                    }
           declare img_size_arr,new_img_size_arr any;
 
           img_size_arr:=wa_get_image_sizes(dta[5]);
@@ -2364,8 +2353,7 @@
             if(_img_aspect_ratio>=1.333)
             {
               new_img_size_arr:=vector(100,ceiling(100/_img_aspect_ratio));
-            }else
-            {
+                      } else {
               new_img_size_arr:=vector(ceiling(75*_img_aspect_ratio),75);
             }
           }
@@ -2397,7 +2385,9 @@
                 </tr>
               </table>
             </td>
-            <td><p></p></td>
+              <td>
+                <p></p>
+              </td>
 <?vsp
            ii := ii + 1;
          }
@@ -2419,15 +2409,24 @@
           </tr>
         </table>
         <br/>
-      </div>
       <div class="w_footer">
-        <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1) ?&gt;">More&amp;#8230;</a>
+            <a href="search.vspx?newest=photos&l=1<?V self.login_pars ?>">More&amp;#8230;</a>
+          </div>
       </div>
-     <?vsp
-           }
-     }
-     ?>
     </div> <!-- widget -->
+    </vm:if>
+    <vm:if test="not has_gallery">
+      <div class="app_ad">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=oGallery&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
+          <img border="0" src="images/app_ads/ods_bann_photos.jpg" alt="Let us help you organize and share your contacts!" />
+        </a>
+        <div class="app_ad_ft">
+          <input type="checkbox" id="gallery_app_ad_nuke"/>
+          <label for="gallery_app_ad_nuke">Do not show this next time</label>
+          <a href="#">Dismiss</a>
+        </div>
+      </div> <!-- app_ad -->
+    </vm:if>
   </xsl:template>
 
   <xsl:template match="vm:dash-my-facebook">
