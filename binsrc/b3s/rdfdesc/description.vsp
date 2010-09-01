@@ -123,7 +123,7 @@
   declare __res_desc varchar;
 
   __res_desc := b3s_uri_curie(page_resource_uri);
-
+  fct_links_hdr (_S, rdf_link);
   if (not length (label))
     label := page_resource_uri;
   --http_flush (1);
@@ -142,6 +142,7 @@
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
+<?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
   <body about="<?V page_resource_uri ?>">
     <div id="PG">

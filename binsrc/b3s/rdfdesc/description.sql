@@ -683,3 +683,38 @@ create procedure b3s_page_get_short (in val any)
 }
 ;
 
+create procedure fct_links_hdr (in subj any, in desc_link any)
+{
+  declare links varchar;
+  desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
+  links := 'Link: ';
+  links := links || 
+  sprintf ('<%s&output=application%%2Frdf%%2Bxml>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=text%%2Fn3>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)",', desc_link);
+  links := links || 
+  sprintf ('<%s&output=application%%2Frdf%%2Bjson>; rel="alternate"; type="application/rdf+json"; title="Structured Descriptor Document (RDF/JSON format)",', desc_link);
+  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
+  links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
+  http_header (http_header_get () || links);
+}
+;
+
+
+create procedure fct_links_mup (in subj any, in desc_link any)
+{
+  declare links varchar;
+  desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
+  links := '';
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
+  links := links || repeat (' ', 5) ||
+  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bjson" rel="alternate" type="application/rdf+json" title="Structured Descriptor Document (RDF/JSON format)" />\n', desc_link);
+  links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
+  links := links || repeat (' ', 5) || sprintf ('<link href="%V" rev="describedby" />\n', subj);
+  http (links);
+}
+;
+
