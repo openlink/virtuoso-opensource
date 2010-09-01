@@ -1283,6 +1283,11 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
               http_headers := replace (http_headers, tmp, repl);
               tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	    }
+	  if (strstr (http_headers, '^{DynamicLocalFormat}^') is not null)
+	    {
+	      http_headers := replace (http_headers, '^{DynamicLocalFormat}^',
+	         sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
+	    }
 
 	  http_headers := rtrim (http_headers, '\r\n');
 	  if (length (http_headers))

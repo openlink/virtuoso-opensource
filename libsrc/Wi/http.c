@@ -2675,6 +2675,7 @@ ws_file (ws_connection_t * ws)
 	      "Date: %s\r\n"
 	      "Server: %.1000s\r\n"
 	      "Connection: %s\r\n"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -2684,6 +2685,7 @@ ws_file (ws_connection_t * ws)
 	      date_now,
 	      http_server_id_string,
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
 	      );
 	  SES_PRINT (ws->ws_session, head);
