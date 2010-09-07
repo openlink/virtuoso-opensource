@@ -912,6 +912,11 @@ create procedure virt_proxy_init_about ()
 
   --# grants
   EXEC_STMT ('grant execute on  DB.DBA.HTTP_RDF_ACCEPT to PROXY', 0);
+  if (__proc_exists ('WS.WS.host_meta_add') is not null)
+    {
+      WS.WS.host_meta_add ('SPONGER.service', 
+     	'<Link rel="http://openlinksw.com/virtuoso/sponger" template="http://%{WSHost}s/about/{uri}"/>');
+    }
 
   registry_set ('DB.DBA.virt_proxy_init_about_state', rdf_virt_proxy_ver ());
 }
