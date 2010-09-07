@@ -33,7 +33,6 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 ]>
 <xsl:stylesheet
@@ -45,7 +44,6 @@
   xmlns:sioc="&sioc;"
   xmlns:rdfs="&rdfs;"
   xmlns:foaf="&foaf;"
-  xmlns:atom="&atomowl;"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"

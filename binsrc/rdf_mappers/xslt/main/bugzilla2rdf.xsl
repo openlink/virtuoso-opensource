@@ -33,7 +33,6 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
-<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY wf "http://www.w3.org/2005/01/wf/flow#">

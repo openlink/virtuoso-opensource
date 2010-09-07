@@ -43,7 +43,6 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:a="http://www.w3.org/2005/Atom"
-    xmlns:xn="http://www.ning.com/atom/1.0"
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
