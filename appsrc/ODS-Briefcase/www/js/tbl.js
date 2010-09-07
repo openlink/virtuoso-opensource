@@ -40,7 +40,8 @@ TBL.createCell40 = function (td, prefix, fldName, No, fldOptions)
   return fld;
 }
 
-TBL.createCell41 = function (td, prefix, fldName, No, fldOptions) {
+TBL.createCell41 = function (td, prefix, fldName, No, fldOptions)
+{
 	var fld = OAT.Dom.create("select");
 	fld.name = fldName;
 	fld.id = fldName;
@@ -51,36 +52,8 @@ TBL.createCell41 = function (td, prefix, fldName, No, fldOptions) {
   return fld;
 }
 
-TBL.createCell42 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
-	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
-	TBL.selectOption(fld, fldOptions.value, "Group", "group");
-	TBL.selectOption(fld, fldOptions.value, "Public", "public");
-  if (fldOptions.onchange)
-    fld.onclick = fldOptions.onchange;
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
+TBL.createCell42 = function (td, prefix, fldName, No, fldOptions, disabled)
 {
-  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  td.appendChild(OAT.Dom.text(' '));
-  var img = OAT.Dom.image('/ods/images/select.gif');
-  img.id = fldName+'_img';
-  img.className = "pointer";
-  img.onclick = function (){webidShow(fld)};
-  if (fldOptions.imgCssText)
-    img.style.cssText = fldOptions.imgCssText;
-
-  td.appendChild(img);
-  return fld;
-}
-
-TBL.createCell44 = function (td, prefix, fldName, No, fldOptions, disabled) {
   function cb(td, prefix, fldName, No, fldOptions, disabled, ndx) {
   	var fld = OAT.Dom.create("input");
     fld.type = 'checkbox';
@@ -103,7 +76,8 @@ TBL.createCell44 = function (td, prefix, fldName, No, fldOptions, disabled) {
   cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
 }
 
-TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
+TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
+{
 	var fld = OAT.Dom.create("select");
 	fld.name = fldName;
 	fld.id = fldName;
@@ -117,11 +91,12 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
   return fld;
 }
 
-TBL.viewCell44 = function (td, prefix, fldName, No, fldOptions) {
-  TBL.createCell44(td, prefix, fldName, No, fldOptions, true);
+TBL.viewCell42 = function (td, prefix, fldName, No, fldOptions)
+{
+  TBL.createCell42(td, prefix, fldName, No, fldOptions, true);
 }
 
-TBL.clickCell44 = function (fld)
+TBL.clickCell42 = function (fld)
 {
   var fldName = fld.name;
   if (fldName.indexOf('_deny') != -1) {
@@ -133,24 +108,4 @@ TBL.clickCell44 = function (fld)
     fldName = fldName.replace('fld_3', 'fld_4');
   }
   $(fldName).checked = false;
-}
-
-TBL.changeCell42 = function (srcFld) {
-  var srcValue = $v(srcFld.name);
-  var dstName = srcFld.name.replace('fld_1', 'fld_2');
-  var dstFld = $(dstName);
-  var dstImg = $(dstName+'_img');
-  if (srcValue == 'public') {
-    dstFld.value = 'foaf:Agent';
-    dstFld.readOnly = true;
-  } else {
-    if (dstFld.value == 'foaf:Agent')
-      dstFld.value = '';
-    dstFld.readOnly = false;
-  }
-  if (srcValue == 'public') {
-    OAT.Dom.hide(dstImg);
-  } else {
-    OAT.Dom.show(dstImg);
-  }
 }

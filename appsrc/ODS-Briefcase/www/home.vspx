@@ -1840,9 +1840,9 @@
                       acl := acl_values[N];
                                 if (self.dav_enable and (acl[1] <> 3))
                                 {
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s"}, fld_2: {mode: 45, value: %d, objectType: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell44(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 1, value: "%s"}, fld_2: {mode: 43, value: %d, objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 } else {
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_name (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 }
                   }
                   ?>
@@ -1853,7 +1853,7 @@
                       </td>
                       <td valign="top" nowrap="nowrap">
                         <vm:if test="self.dav_enable">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 45, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 44, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 44,  suffix: '_deny', onclick: function(){TBL.clickCell44(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </vm:if>
                       </td>
                     </tr>
@@ -1885,9 +1885,9 @@
                                 for (N := 0; N < length (aci_values); N := N + 1) {
                                   M := M + 1;
                                   if (self.dav_enable) {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 43, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
                                   }
                         		    ?>
@@ -1898,7 +1898,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: '_validate_ _uri_'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>

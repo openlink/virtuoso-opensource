@@ -500,7 +500,7 @@ function webidShow(obj, width, height)
   if (obj.id.replace('fld_2', 'fld_1') != obj.id)
     S = $v(obj.id.replace('fld_2', 'fld_1'));
 
-  windowShow('webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;', width, height);
+  windowShow('/ods/webid_select.vspx?form=F1&mode='+S.charAt(0)+'&params='+obj.id+':s1;', width, height);
 }
 
 function windowShow(sPage, width, height)
