@@ -768,8 +768,8 @@ resp_received:
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
 
-  if (__tag (ret_body) = 185)
-    ret_body := string_output_string (subseq (ret_body, 0, 10000000));
+  --if (__tag (ret_body) = 185)
+  --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
 
   {
   whenever sqlstate '*' goto error_during_load;
