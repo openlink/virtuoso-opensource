@@ -39,10 +39,9 @@
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');
       hf := http_request_header (lines, 'Host');
-
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
       {
-        ods_path := 'http://' || hf || '/ods/';
+        ods_path := DB.DBA.WA_GET_PROTOCOL() || hf || '/ods/';
       } else {
         ods_path := DB.DBA.WA_LINK (1, '/ods/');
       }

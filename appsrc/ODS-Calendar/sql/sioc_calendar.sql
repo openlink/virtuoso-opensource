@@ -109,6 +109,17 @@ create procedure fill_ods_calendar_sioc (
   declare c_iri, creator_iri, iri varchar;
 
   {
+    for (select WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+    {
+      graph_iri := SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) || '/webaccess';
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+    }
+
     id := -1;
     deadl := 3;
     cnt := 0;
@@ -143,7 +154,8 @@ create procedure fill_ods_calendar_sioc (
                 E_CREATED,
                 E_UPDATED,
                 E_TAGS,
-                E_NOTES
+                E_NOTES,
+                E_ACL
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 CAL.WA.EVENTS
@@ -178,6 +190,7 @@ create procedure fill_ods_calendar_sioc (
                     E_UPDATED,
                     E_TAGS,
                     E_NOTES);
+      event_acl_insert (E_DOMAIN_ID, E_ID, E_ACL);
 
 	    for (select EC_ID,
                   EC_DOMAIN_ID,
@@ -496,6 +509,83 @@ create trigger EVENTS_SIOC_D before delete on CAL.WA.EVENTS referencing old as O
   event_delete (O.E_ID,
                 O.E_DOMAIN_ID,
                 O.E_TAGS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure event_acl_insert (
+  inout domain_id integer,
+  inout event_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..calendar_event_iri (domain_id, event_id);
+  graph_iri := CAL.WA.webaccess_iri (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure event_acl_delete (
+  inout domain_id integer,
+  inout event_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..calendar_event_iri (domain_id, event_id);
+  graph_iri := CAL.WA.webaccess_iri (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger EVENTS_SIOC_ACL_I after insert on CAL.WA.EVENTS order 100 referencing new as N
+{
+  if (coalesce (N.E_ACL, '') <> '')
+    event_acl_insert (N.E_DOMAIN_ID,
+                        N.E_ID,
+                        N.E_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger EVENTS_SIOC_ACL_U after update on CAL.WA.EVENTS order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.E_ACL, '') <> '') and (coalesce (O.E_ACL, '') <> coalesce (N.E_ACL, '')))
+    event_acl_delete (O.E_DOMAIN_ID,
+                      O.E_ID,
+                      O.E_ACL);
+  if ((coalesce (N.E_ACL, '') <> '') and (coalesce (O.E_ACL, '') <> coalesce (N.E_ACL, '')))
+    event_acl_insert (N.E_DOMAIN_ID,
+                      N.E_ID,
+                      N.E_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger EVENTS_SIOC_ACL_D before delete on CAL.WA.EVENTS order 100 referencing old as O
+{
+  if (coalesce (O.E_ACL, '') <> '')
+    event_acl_delete (O.E_DOMAIN_ID,
+                      O.E_ID,
+                      O.E_ACL);
 }
 ;
 
