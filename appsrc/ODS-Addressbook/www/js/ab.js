@@ -318,6 +318,8 @@ function sortSelect(box) {
 }
 
 function showTab(tabs, tabsCount, tabNo) {
+	if (tabNo == null) { tabNo = $v('tabNo'); }
+	if (tabNo == null) { tabNo = 0; }
 	if ($(tabs)) {
 		for ( var i = 0; i < tabsCount; i++) {
       var l = $(tabs+'_tab_'+i);      // tab labels
@@ -569,13 +571,13 @@ function addCheckedTags(openerName, checkName) {
 }
 
 function changeType(obj) {
-  showTab(1, 4); 
+	showTab('a', 7, 1);
   if (obj.value != "1") {
-    OAT.Dom.show ('a_tab_1');
     OAT.Dom.show ('a_tab_2');
+		OAT.Dom.show('a_tab_3');
   } else {
-    OAT.Dom.hide ('a_tab_1');
     OAT.Dom.hide ('a_tab_2');
+		OAT.Dom.hide('a_tab_3');
 }
 	var trNodes = document.getElementsByTagName("tr");
 
@@ -789,7 +791,7 @@ AB.getFOAFData = function(iri) {
 			o = null;
 		}
 		if (o && o.iri) {
-			if (confirm('New data for \'' + o.iri + '\' is founded. Do you like to fill in the corresponding fields?')) {
+			if (confirm('New data for \'' + o.iri + '\' is founded. Would you like to import discovered data into the corresponding contact details fields?')) {
         AB.setFOAFValue(o.iri, 'ab_iri');
 				AB.setFOAFValue(o.nickName, 'ab_name');
 				AB.setFOAFValue(o.title, 'ab_title');
@@ -850,14 +852,7 @@ AB.getFOAFData = function(iri) {
       alert('No data founded for \''+iri+'\'');
     }
   }
-	OAT.AJAX.GET(S, '', x, {
-		onstart : function() {
-			OAT.Dom.show('ab_import_image')
-		},
-		onend : function() {
-			OAT.Dom.hide('ab_import_image')
-		}
-	});
+	OAT.AJAX.GET(S, '', x, {onstart : function() {OAT.Dom.show('ab_import_image')}, onend : function() {OAT.Dom.hide('ab_import_image')}});
 }
 
 AB.setFOAFValue = function(fValue, fName) {

@@ -87,7 +87,7 @@
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
-          showTab('a', 4, 0);
+          showTab('a', 7);
           showTab('s', 2, 0);
 
         	/* panelbar_content */

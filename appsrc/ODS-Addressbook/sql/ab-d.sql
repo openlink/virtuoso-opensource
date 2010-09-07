@@ -77,6 +77,7 @@ registry_remove ('ab_version');
 registry_remove ('ab_build');
 registry_remove ('ab_index_version');
 registry_remove ('ab_path_upgrade2');
+registry_remove ('ab_acl_update');
 registry_remove ('__ods_addressbook_sioc_init');
 
 -- Procedures

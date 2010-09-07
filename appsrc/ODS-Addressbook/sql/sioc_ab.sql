@@ -117,6 +117,17 @@ create procedure fill_ods_addressbook_sioc2 (
   declare graph_iri, addressbook_iri, socialnetwork_iri, contact_iri, creator_iri, role_iri, iri varchar;
 
   {
+    for (select WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+    {
+      graph_iri := SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) || '/webaccess';
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+    }
+
     id := -1;
     deadl := 3;
     cnt := 0;
@@ -181,7 +192,8 @@ create procedure fill_ods_addressbook_sioc2 (
                 P_UPDATED,
 								P_TAGS,
 	              P_FOAF,
-		      P_IRI
+                P_IRI,
+                P_ACL
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 AB.WA.PERSONS
@@ -252,6 +264,8 @@ create procedure fill_ods_addressbook_sioc2 (
 											P_TAGS,
 		                  P_FOAF,
 				  P_IRI);
+
+      contact_acl_insert (P_DOMAIN_ID, P_ID, P_ACL);
 
       cnt := cnt + 1;
 		   if (mod (cnt, 500) = 0)
@@ -800,6 +814,83 @@ create trigger PERSONS_SIOC_D before delete on AB.WA.PERSONS referencing old as 
                   O.P_DOMAIN_ID,
                   O.P_ID,
                   O.P_TAGS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure contact_acl_insert (
+  inout domain_id integer,
+  inout contact_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
+  graph_iri := AB.WA.webaccess_iri (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure contact_acl_delete (
+  inout domain_id integer,
+  inout contact_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
+  graph_iri := AB.WA.webaccess_iri (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSONS_SIOC_ACL_I after insert on AB.WA.PERSONS order 100 referencing new as N
+{
+  if (coalesce (N.P_ACL, '') <> '')
+    contact_acl_insert (N.P_DOMAIN_ID,
+                        N.P_ID,
+                        N.P_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSONS_SIOC_ACL_U after update on AB.WA.PERSONS order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+    contact_acl_delete (O.P_DOMAIN_ID,
+                        O.P_ID,
+                        O.P_ACL);
+  if ((coalesce (N.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+    contact_acl_insert (N.P_DOMAIN_ID,
+                        N.P_ID,
+                        N.P_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger PERSONS_SIOC_ACL_D before delete on AB.WA.PERSONS order 100 referencing old as O
+{
+  if (coalesce (O.P_ACL, '') <> '')
+    contact_acl_delete (O.P_DOMAIN_ID,
+                        O.P_ID,
+                        O.P_ACL);
 }
 ;
 

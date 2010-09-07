@@ -24,6 +24,54 @@
 -- Session Functions
 --
 -------------------------------------------------------------------------------
+--
+create procedure AB.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_ACL is not null))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare acl_graph_iri, acl_iris any;
+
+  rc := '';
+  if (AB.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (AB.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..addressbook_contact_iri (domain_id, id), AB.WA.forum_iri (domain_id));
+
+    acl_graph_iri := AB.WA.webaccess_iri (domain_id);
+
+    rc := SIOC..acl_check (acl_graph_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+-- Session Functions
+--
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.session_domain (
   inout params any)
 {
@@ -37,13 +85,15 @@ create procedure AB.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
+  }
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
     domain_id := -1;
 
 _end:;
@@ -56,30 +106,11 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
 
-  declare exit handler for sqlstate '*'
-  {
-    domain_id := -2;
-    goto _end;
-  };
-
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-    domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id))
-  {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
-  domain_id := cast (domain_id as integer);
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
+  domain_id := AB.WA.session_domain (params);
   user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
@@ -94,22 +125,41 @@ _end:
     user_name := AB.WA.user_name(U_NAME, U_FULL_NAME);
     user_role := AB.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
+  if ((user_id = -1) or (domain_id <= 0))
+  {
+    rc := '';
+    if (domain_id > 0)
+    {
+      rc := AB.WA.acl_check (domain_id);
+      if ((rc = '') and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
+    {
+      user_role := 'expire';
+      user_name := 'Expire session';
+        goto _skip;
+    }
+    }
     if (domain_id = -1)
     {
       user_role := 'expire';
       user_name := 'Expire session';
-    } else if (domain_id = -2) {
+    }
+    else if (rc = 'R')
+    {
       user_role := 'public';
       user_name := 'Public User';
-    } else {
+    }
+    else if (rc = 'W')
+    {
+      user_role := 'author';
+      user_name := 'Author User';
+    }
+    else
+    {
       user_role := 'guest';
       user_name := 'Guest User';
     }
-
+  }
+_skip:;
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -846,6 +896,15 @@ create procedure AB.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..addressbook_iri (AB.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.webaccess_iri (
+  in domain_id integer)
+{
+  return AB.WA.forum_iri (domain_id) || '/webaccess';
 }
 ;
 
@@ -3427,24 +3486,27 @@ create procedure AB.WA.contact_delete (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.person_permissions (
+create procedure AB.WA.contact_permissions (
   in id integer,
   in domain_id integer,
   in access_role varchar)
 {
   declare person_domain_id integer;
+  declare retValue varchar;
 
   person_domain_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = id);
-  if (isnull (person_domain_id))
+  if (isnull (person_domain_id) or (person_domain_id <> domain_id))
     return '';
-  if (person_domain_id = domain_id)
-  {
+
     if (AB.WA.access_is_write (access_role))
       return 'W';
+
+  retValue := AB.WA.acl_check (domain_id, id);
+  if (retValue <> '')
+    return retValue;
+
     return 'R';
   }
-  return '';
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -7852,8 +7914,6 @@ create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
   apiBody := string_output_string (http_body_read ());
   if (apiBody = '')
     apiBody := get_keyword ('content', apiParams);
-  --dbg_obj_print('', apiParams);
-  --dbg_obj_print('', apiBody);
 
   domain_id := 22;
   domain_id := atoi (get_keyword_ucase ('inst_id', apiParams));
@@ -7869,7 +7929,6 @@ create procedure AB.WA.yahoocontacts () __SOAP_HTTP 'text/xml'
   apiPath := substring (apiPath, length ('/ods/yahoocontacts/')+1, length (apiPath));
   apiMap := AB.WA.yahooMap();
   AB.WA.yahooPathAnalyze (apiParams, apiPath, apiMethod, apiMap, apiCommand, apiOptions);
-  -- dbg_obj_print('', apiCommand, apiOptions);
 
   if (get_keyword ('view', apiOptions, '') = 'rev')
     signal ('__406', '');
@@ -8497,7 +8556,6 @@ create procedure AB.WA.googleSQL (
   sql := replace (sql, '%TOP%', cast (_min as varchar));
 
   exec (sql, st, msg, params, 0, _meta, _data);
-  -- dbg_obj_print('', st, msg);
   if ('00000' <> st)
     return 0;
 
@@ -8615,7 +8673,6 @@ create procedure AB.WA.googlecontacts () __SOAP_HTTP 'text/xml'
       apiFields := apiFields || apiMap[N] || ',';
     apiFields := trim (apiFields, ',');
 
-    -- dbg_obj_print('', apiMethod);
     set_user_id ('dba');
     if (apiMethod = 'GET')
     {
