@@ -595,26 +595,6 @@
     ]]>
   </v:method>
 
-  <v:method name="getAcl" arglist="">
-    <![CDATA[
-      declare N integer;
-      declare tmp, suffix, params any;
-
-      params := self.vc_page.vc_event.ve_params;
-      tmp := vector ();
-      for (N := 0; N < length (params); N := N + 4)
-      {
-        if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 's_fld_2_', '');
-          tmp := vector_concat (tmp, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
-        }
-      }
-      tmp := vector_concat (vector (vector ('v1.0', length (tmp))), tmp);
-      return serialize (tmp);
-    ]]>
-  </v:method>
-
   <v:method name="initNewEvent" arglist="">
     <![CDATA[
       declare pYear, pMonth, pDay, pHour, pMinute integer;
@@ -686,7 +666,7 @@
       self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
       self.v_notes := trim (get_keyword ('e_notes', params, ''));
-      self.v_acl := self.getAcl ();
+      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
       CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
@@ -853,7 +833,7 @@
       self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
       self.v_notes := trim (get_keyword ('t_notes', params, ''));
-      self.v_acl := self.getAcl ();
+      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
       CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
@@ -1374,11 +1354,15 @@
                           }
                     kind := CAL.WA.event_kind (self.v_id);
                     if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
+                          {
                       self.cScope := 'events';
-                    if (kind = 'task')
+                          }
+                          else if (kind = 'task')
+                          {
                       self.cScope := 'tasks';
                   }
                 }
+                      }
 
                       cCommand := get_keyword ('view', params, '');
                       if (cCommand <> '')
@@ -1388,14 +1372,10 @@
                         {
                           self.v_id := cast (cParams [1] as integer);
                           cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role);
-                          if ((cPermission = 'W') or (cPermission = 'R'))
-                          {
-                            self.cAction := 'view';
-                          }
-                          else
-                          {
+                          if (not ((cPermission = 'W') or (cPermission = 'R')))
                             return;
-                          }
+
+                          self.cAction := 'view';
                           kind := CAL.WA.event_kind (self.v_id);
                           if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
                             self.cScope := 'events';
@@ -1412,9 +1392,8 @@
                         {
                           self.v_id := cast (cParams [1] as integer);
                           if (CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) <> 'W')
-                          {
                             return;
-                          }
+
                           CAL.WA.event_delete (self.v_id, get_keyword ('onOffset', params));
                         }
                 }
@@ -2090,11 +2069,9 @@
                   <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th class="checkbox" width="1%">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
-                        </vm:if>
                               <vm:if test="self.cScope = 'events'">
                         <th nowrap="nowrap" width="10%">
                           <?vsp self.sortColumn ('Duration', 'E_EVENT_START', 'e_sortColumn', self.e_order, self.e_direction); ?>
@@ -2129,11 +2106,9 @@
                                   <?vsp self.sortColumn ('Updated', 'E_UPDATED', 's_sortColumn', self.s_order, self.s_direction); ?>
                                 </th>
                               </vm:if>
-                              <vm:if test="((self.access_role not in ('public', 'guest')) or (CAL.WA.discussion_check () and CAL.WA.conversation_enable (self.domain_id)))">
                           <th width="1%">
                             Action
                           </th>
-                        </vm:if>
                       </tr>
                     </thead>
                   </table>
@@ -2173,13 +2148,10 @@
                           <table>
                             <tr class="vevent" typeof="sioct:EventCalendar">
                               <?vsp
-                                if (self.access_role not in ('public', 'guest'))
-                                {
                                   http (sprintf ('<td align="center" valign="top" %s>', self.showEventColor (e_id)));
                                   if (CAL.WA.event_permissions (e_id, self.domain_id, self.access_role) = 'W')
                                     http (sprintf ('<input type="checkbox" name="cb_item" value="%d" onclick="selectCheck(this, \'cb_item\')" />', e_id));
                                   http ('</td>');
-                                }
                               ?>
                               <vm:if test="self.cScope = 'events'">
                         <td nowrap="nowrap">
@@ -2267,16 +2239,18 @@
                         </td>
                               </vm:if>
                               <?vsp
-                                declare actions any;
+                                declare permissions, actions any;
 
                                 actions := '';
-                                if (self.access_role not in ('public', 'guest'))
-                                  actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'command\', \'edit\', \'x_%d\'); return false;" class="link">edit</span>', e_id);
-                                if (self.access_role not in ('public', 'guest'))
-                                  actions := actions || either (equ (actions, ''), '', ' | ') || self.windowOpen (sprintf ('annotea.vspx?oid=%d', e_id), 'annotate', e_subject);
+                                permissions := CAL.WA.event_permissions (e_id, self.domain_id, self.access_role);
+                                if (permissions = 'W')
+                                {
+                                  actions := sprintf ('<span onclick="javascript: vspxPost (\'command\', \'edit\', \'x_%d\'); return false;" class="link">edit</span>', e_id)
+                                             || ' | '
+                                             || self.windowOpen (sprintf ('annotea.vspx?oid=%d', e_id), 'annotate', e_subject);
+                                }
                                 if (CAL.WA.discussion_check () and CAL.WA.conversation_enable (self.domain_id))
                                   actions := actions || either (equ(actions, ''), '', ' | ') || self.windowOpen (sprintf ('conversation.vspx?id=%d', e_id), 'discuss', e_subject);
-                                if (actions <> '')
                                   http ('<td nowrap="nowrap">' || actions || '</td>');
                               ?>
                       </tr>
@@ -2383,9 +2357,7 @@
                   &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="0" caption="Main" />
                   &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="1" caption="Repeats" />
                   &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="2" caption="Notes" />
-                  <vm:if test="CAL.WA.domain_is_public (self.domain_id) = 2">
-                    &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="3" caption="Access" />
-                  </vm:if>
+                  &nbsp;<vm:tabCaption tab="e" tabsCount="4" tabNo="3" caption="Sharing" />
           </div>
           <div class="contents">
             <div id="e_content_0" class="tabContent" style="display: none;">
@@ -3054,7 +3026,7 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px">Access</th>
+                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                 <th width="50px">Action</th>
                               </tr>
                             </thead>
@@ -3064,32 +3036,36 @@
                                 declare N, L integer;
                                 declare acl, aType, aAccess any;
 
-                                aType := vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression');
-                                aAccess := vector ('G', 'Grant', 'R', 'Revoke');
-
                               L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                               }
                               acl := deserialize (self.v_acl);
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                  if (self.cAction <> 'view')
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                  }
                                 }
                            		    ?>
                            		    </script>
                            		  ]]>
-                            <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
+                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
                           </table>
                         </td>
+                        <vm:if test="self.cAction <> 'view'">
                         <td valign="top" nowrap="nowrap">
-                          <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                         </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </div>
@@ -3580,7 +3556,7 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px">Access</th>
+                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                 <th width="50px">Action</th>
                               </tr>
                             </thead>
@@ -3590,32 +3566,36 @@
                                 declare N, L integer;
                                 declare acl, aType, aAccess any;
 
-                                aType := vector ('URI', 'Person URI', 'Property', 'RDF Property', 'SPARQL', 'SPARQL Expression');
-                                aAccess := vector ('G', 'Grant', 'R', 'Revoke');
-
                               L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s"}, fld_3: {value: "%s"}, fld_4: {value: "%s"}});});', get_keyword (acl[N][0], aType), acl[N][1], get_keyword (acl[N][2], aAccess), 'Inherited'));
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                               }
                               acl := deserialize (self.v_acl);
-                              for (N := 1; N < length (acl); N := N + 1)
+                                for (N := 0; N < length (acl); N := N + 1)
                               {
                                 L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 30, value: "%s"}, fld_2: {mode: 0, value: "%s"}, fld_3: {mode: 31, value: "%s"}});});', acl[N][0], acl[N][1], acl[N][2]));
+                                  if (self.cAction <> 'view')
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                  }
                                 }
                            		    ?>
                            		    </script>
                            		  ]]>
-                            <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
+                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
                           </table>
                         </td>
+                        <vm:if test="self.cAction <> 'view'">
                         <td valign="top" nowrap="nowrap">
-                          <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 30}, fld_2: {mode: 0}, fld_3: {mode: 31}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                         </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </div>

@@ -21,6 +21,53 @@
 --
 -------------------------------------------------------------------------------
 --
+-- ACL Functions
+--
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  if (exists (select 1 from CAL.WA.EVENTS where E_ID = id and E_ACL is not null))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare acl_graph_iri, acl_iris any;
+
+  rc := '';
+  if (CAL.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (CAL.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..calendar_event_iri (domain_id, id), CAL.WA.forum_iri (domain_id));
+
+    acl_graph_iri := CAL.WA.webaccess_iri (domain_id);
+
+    rc := SIOC..acl_check (acl_graph_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -38,11 +85,12 @@ create procedure CAL.WA.session_domain (
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'Calendar'))
     domain_id := -1;
 
 _end:;
@@ -55,7 +103,7 @@ _end:;
 create procedure CAL.WA.session_restore (
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role, sid, realm any;
+  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
@@ -76,19 +124,41 @@ create procedure CAL.WA.session_restore (
     user_name := CAL.WA.user_name(U_NAME, U_FULL_NAME);
     user_role := CAL.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
+  if ((user_id = -1) or (domain_id <= 0))
+  {
+    rc := '';
+    if (domain_id > 0)
+    {
+      rc := CAL.WA.acl_check (domain_id);
+      if ((rc = '') and (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
+      {
+        user_role := 'expire';
+        user_name := 'Expire session';
+        goto _skip;
+      }
+    }
     if (domain_id = -1)
     {
       user_role := 'expire';
-      user_name := 'Expire User';
-    } else {
+      user_name := 'Expire session';
+    }
+    else if (rc = 'R')
+    {
+      user_role := 'public';
+      user_name := 'Public User';
+    }
+    else if (rc = 'W')
+    {
+      user_role := 'author';
+      user_name := 'Author User';
+    }
+    else
+    {
       user_role := 'guest';
       user_name := 'Guest User';
     }
-
+  }
+_skip:
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -824,6 +894,15 @@ create procedure CAL.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..calendar_iri (CAL.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.webaccess_iri (
+  in domain_id integer)
+{
+  return CAL.WA.forum_iri (domain_id) || '/webaccess';
 }
 ;
 
@@ -4061,6 +4140,7 @@ create procedure CAL.WA.event_permissions (
   in access_role varchar)
 {
   declare event_domain_id integer;
+  declare retValue varchar;
 
   event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
   if (isnull (event_domain_id))
@@ -4068,8 +4148,14 @@ create procedure CAL.WA.event_permissions (
   if (event_domain_id = domain_id)
   {
     if (CAL.WA.access_is_write (access_role))
-    return 'W';
-    return 'R';
+    {
+      retValue := 'W';
+    } else {
+      retValue := CAL.WA.acl_check (domain_id, id);
+      if (retValue <> 'W')
+        retValue := 'R';
+    }
+    return retValue;
   }
   for (select a.WAI_IS_PUBLIC,
               b.*,
@@ -5121,9 +5207,8 @@ create procedure CAL.WA.send_mail (
   _mail_body := _date || _subject || mime_body (vector (_mail_body_html, _mail_body_text));
 
   if(not _smtp_server or length(_smtp_server) = 0)
-  {
     signal('WA002', 'The Mail Server is not defined. Mail can not be sent.');
-  }
+
   smtp_send (_smtp_server, _from, _to, _mail_body);
 }
 ;
