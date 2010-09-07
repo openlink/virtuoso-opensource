@@ -672,7 +672,7 @@ TBL.viewCell50 = function (td, prefix, fldName, No, fldOptions) {
 	} else if (fldOptions.value == "group") {
 	  td.innerHTML = "Group";
 	} else {
-	  td.innerHTML = "Personel";
+	  td.innerHTML = "Personal";
 	}
 }
 

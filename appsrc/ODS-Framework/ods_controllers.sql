@@ -164,6 +164,15 @@ create procedure check_authentication_ssl (
 }
 ;
 
+create procedure normalize_url_like_browser (in x varchar)
+{
+  declare h any;
+  h := rfc1808_parse_uri (x);
+  h [5] := '';
+  return DB.DBA.vspx_uri_compose (h);
+}
+;
+
 create procedure get_ses (in uname varchar)
 {
   declare params, lines any;
@@ -1190,7 +1199,7 @@ create procedure ODS.ODS_API."user.register" (
   if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
     signal ('23023', 'This OpenID identity is already registered.');
 
-  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = get_keyword ('uid', data)))
+  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_ID = get_keyword ('uid', data)))
     signal ('23023', 'This Facebook identity is already registered.');
 
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
@@ -1217,7 +1226,7 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_LOGIN_ID', get_keyword ('uid', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_ID', get_keyword ('uid', data));
   }
   else if (mode = 3)
   {
@@ -1272,7 +1281,7 @@ create procedure ODS.ODS_API."user.authenticate" (
   uname := null;
     if (not isnull (facebookUID))
     {
-      uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
     }
   else if (not isnull (openIdUrl))
     {
@@ -1567,10 +1576,10 @@ create procedure ODS.ODS_API."user.update.fields" (
 
   if (not DB.DBA.is_empty_or_null (securityFacebookID))
   {
-    if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_LOGIN_ID = securityFacebookID))
+    if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_ID = securityFacebookID))
       signal ('23023', 'This Facebook identity is already registered.');
   }
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_LOGIN_ID', securityFacebookID);
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_ID', securityFacebookID);
 
   ODS.ODS_API."user.update.field" (uname, 'SEC_QUESTION', securitySecretQuestion);
   ODS.ODS_API."user.update.field" (uname, 'SEC_ANSWER', securitySecretAnswer);
@@ -2052,8 +2061,8 @@ create procedure ODS.ODS_API."user.info" (
 
       -- Security
       ods_xml_item ('securityOpenID',         WAUI_OPENID_URL);
-      ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_LOGIN_ID);
-      if (not isnull (WAUI_FACEBOOK_LOGIN_ID))
+      ods_xml_item ('securityFacebookID',     WAUI_FACEBOOK_ID);
+      if (not isnull (WAUI_FACEBOOK_ID))
       {
         declare fb_options any;
         declare fb DB.DBA.Facebook;
@@ -2061,7 +2070,7 @@ create procedure ODS.ODS_API."user.info" (
         if (DB.DBA._get_ods_fb_settings (fb_options))
         {
           fb := new DB.DBA.Facebook(fb_options[0], fb_options[1], http_param (), http_request_header ());
-          rc := fb.api_client.users_getInfo(WAUI_FACEBOOK_LOGIN_ID, 'name');
+          rc := fb.api_client.users_getInfo(WAUI_FACEBOOK_ID, 'name');
           ods_xml_item ('securityFacebookName', serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', rc)));
         }
       }
@@ -4165,8 +4174,6 @@ loginin:
       }
   }
   }
-  if (certLogin <> '')
-    appendProperty (V, 'certLogin', certLogin);
   if ("interest" <> '')
     appendProperty (V, 'interest', "interest");
   if ("topic_interest" <> '')
@@ -4175,6 +4182,8 @@ loginin:
     appendProperty (V, 'onlineAccounts', "onlineAccounts");
   if ("sameAs" <> '')
     appendProperty (V, 'sameAs', "sameAs");
+  if ((certLogin <> '') and length (V))
+    appendProperty (V, 'certLogin', certLogin);
 
 _exit:;
   exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
@@ -4216,6 +4225,7 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
   if (not isnull (foafIRI))
   {
+    try_auth:
     V := ODS.ODS_API.get_foaf_data_array (foafIRI, 0, sslFOAFCheck, sslLoginCheck);
     return case when outputMode then params2json (V) else V end;
   }
@@ -4240,6 +4250,12 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
 	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
 	    return case when outputMode then params2json (V) else V end;
 	  }
+      }
+    else
+      {
+	foafIRI := ODS..FINGERPOINT_WEBID_GET ();
+	if (foafIRI is not null)
+	  goto try_auth;
       }
   }
   return case when outputMode then obj2json (null) else null end;

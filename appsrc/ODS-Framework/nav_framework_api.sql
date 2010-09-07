@@ -112,7 +112,7 @@ wa_exec_no_error('drop procedure DB.DBA.usersinfo_sql');
 wa_exec_no_error('drop procedure DB.DBA.VSPX_EXPIRE_ANONYMOUS_SESSIONS');
 wa_exec_no_error('drop procedure DB.DBA.xml_nodename');
 
-USE "ODS";
+USE ODS;
 
 create procedure sessionStart (in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 {
@@ -204,10 +204,11 @@ create procedure sessionValidateX509 (
     if (agent is null)
       {
 	agent := DB.DBA.FOAF_SSL_WEBFINGER ();
+	if (agent is not null)
+	  goto authenticated;
+	agent := ODS..FINGERPOINT_WEBID_GET ();
 	if (agent is null)
 	  return NULL;
-	else
-	  goto authenticated;
       }
     declare exit handler for sqlstate '*'
     {
@@ -268,7 +269,7 @@ create procedure sessionValidate (
 
   if (facebookUID <> 0)
   {
-    userName := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = facebookUID);
+    userName := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
     if (isnull (userName))
       goto _authbad;
 
@@ -1662,7 +1663,7 @@ create procedure openIdServer (
   errMsg  := '';
 
   declare hdr, xt, loc any;
-  declare url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate varchar;
+  declare url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate, webid varchar;
   declare exit handler for sqlstate '*'
   {
     errCode:=501;
@@ -1677,6 +1678,14 @@ create procedure openIdServer (
   profilePage := ODS.DBA.WF_PROFILE_GET (openIdUrl);
   if (profilePage is not null)
     openIdUrl := profilePage;
+  if (openIdUrl like '%@%' and profilePage is null)
+    {
+      webid := ODS..FINGERPOINT_WEBID_GET (null, openIdUrl);
+      if (webid is not null)
+	{
+	  openIdUrl := normalize_url_like_browser (webid);
+	}
+    }
 
   if (DB.DBA.is_empty_or_null (mode))
   {

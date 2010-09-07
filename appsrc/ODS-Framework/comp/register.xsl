@@ -27,6 +27,60 @@
     xmlns:v="http://www.openlinksw.com/vspx/"
     xmlns:vm="http://www.openlinksw.com/vspx/ods/">
   <xsl:template match="vm:register-form">
+    <script type="text/javascript">
+      <![CDATA[
+        function loginTabReset()
+        {
+          $('tabDigest').className='login_tab';
+          $('tabOpenID').className='login_tab';
+          $('tabSSL').className='login_tab';
+          $('tabFB').className='login_tab';
+          OAT.Dom.hide($('paneDigest'));
+          OAT.Dom.hide($('paneOpenID'));
+          OAT.Dom.hide($('paneSSL'));
+          OAT.Dom.hide($('paneFB'));
+        }
+        function loginTabToggle(tabObj)
+        {
+          if (!tabObj)
+            return;
+          loginTabReset();
+          tabObj.className='login_tabactive';
+          if (tabObj.id == 'tabDigest')
+          {
+            OAT.Dom.show($('paneDigest'));
+            $('uoid').value = 0;
+          }
+          else if (tabObj.id == 'tabOpenID')
+          {
+            OAT.Dom.show($('paneOpenID'));
+            $('uoid').value = 1;
+          }
+          else if(tabObj.id == 'tabSSL')
+          {
+            OAT.Dom.show($('paneSSL'));
+            $('uoid').value = 2;
+          }
+          else if(tabObj.id == 'tabFB')
+          {
+            OAT.Dom.show($('paneFB'));
+            $('uoid').value = 3;
+          }
+        }
+        function loginTabToggleNo(activeTab)
+        {
+          if (activeTab == 1)
+            loginTabToggle($('tabOpenID'));
+          else if (activeTab == 2)
+            loginTabToggle($('tabSSL'));
+          else if (activeTab == 3)
+            loginTabToggle($('tabFB'));
+          else
+            loginTabToggle($('tabDigest'));
+        }
+        ODSInitArray.push(function(){OAT.Loader.load([], function(){loginTabToggleNo(<?V cast (self.uoid as integer) ?>)});});
+      ]]>
+    </script>
     <v:method name="decodeName" arglist="in S varchar">
       <![CDATA[
         declare N Integer;
@@ -194,7 +248,7 @@
             self.vc_is_valid := 0;
             return;
           }
-          if ((self.uoid = 3) and exists (select 1 from WA_USER_INFO where WAUI_FACEBOOK_LOGIN_ID = self.fb._user))
+          if ((self.uoid = 3) and exists (select 1 from WA_USER_INFO where WAUI_FACEBOOK_ID = self.fb._user))
           {
             self.vc_error_message := 'This Facebook identity is already registered.';
             self.vc_is_valid := 0;
@@ -297,7 +351,7 @@ no_date:
                   WA_USER_EDIT (u_name1, 'WAUI_GENDER'       , get_keyword ('gender', data));
 
                   -- facebook
-                  WA_USER_EDIT (u_name1, 'WAUI_FACEBOOK_LOGIN_ID', self.fb._user);
+              WA_USER_EDIT (u_name1, 'WAUI_FACEBOOK_ID', self.fb._user);
                }
      declare exit handler for sqlstate '*';
 
@@ -707,7 +761,7 @@ no_date:
       </v:template>
       <v:template name="registration" type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
         <div>
-          <div class="<?V case when self.uoid = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabODS" onclick="loginTabToggle(this);">Digest</div>
+          <div class="<?V case when self.uoid = 0 then 'login_tabactive' else 'login_tab' end ?>" id="tabDigest" onclick="loginTabToggle(this);">Digest</div>
           <?vsp
             if ((select top 1 WS_REGISTER_OPENID from WA_SETTINGS) = 1)
               http (sprintf ('<div class="%s" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>', case when self.uoid = 1 then 'login_tabactive' else 'login_tab' end));
@@ -719,7 +773,7 @@ no_date:
         </div>
         <br/>
         <div class="login_tabdeck"><!--container div start-->
-          <div id="login_info" style="height: 115px;<?V case when self.uoid = 0 then '' else 'display:none;' end ?>">
+          <div id="paneDigest" style="height: 115px;<?V case when self.uoid = 0 then '' else 'display:none;' end ?>">
             <table width="100%">
               <tr>
                 <th width="30%"><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
@@ -759,7 +813,7 @@ no_date:
                 </td>
               </tr>
               <tr>
-                <td></td>
+                <td>&nbsp;</td>
                 <td>
                   <?vsp if (self.im_enabled) { ?>
                   <img src="data:image/jpeg;base64,<?V self.reg_number_img ?>" border="1"/>
@@ -775,12 +829,12 @@ no_date:
             if ((select top 1 WS_REGISTER_OPENID from WA_SETTINGS) = 1)
                {
           ?>
-          <div id="login_openid" style="height: 115px;<?V case when self.uoid = 1 then '' else 'display:none;' end ?>">
+          <div id="paneOpenID" style="height: 115px;<?V case when self.uoid = 1 then '' else 'display:none;' end ?>">
             <table width="100%">
               <tr>
                 <th width="30%"><label for="reguid">OpenID</label></th>
                 <td>
-                  <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
+                  <img src="images/login-bg.gif" alt="openID"  class="paneOpenID" />
                   <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%" default_value="--self.oid_identity"/>
                   <script type="text/javascript">
                     <![CDATA[
@@ -788,8 +842,8 @@ no_date:
                       if (is_disabled && $('openid_url'))
                       {
                         $('openid_url').disabled = true;
-                        if ($('tabODS'))
-                        $('tabODS').style.display = 'none';
+                        if ($('tabDigest'))
+                          $('tabDigest').style.display = 'none';
                         if ($('tabSSL'))
                         $('tabSSL').style.display = 'none';
                         if ($('tabFB'))
@@ -827,7 +881,7 @@ no_date:
             if (((select top 1 WS_REGISTER_SSL from WA_SETTINGS) = 1) and length (self.reg_foafData) and (get_keyword ('certLogin', self.reg_foafData, 0) = 0))
          {
           ?>
-          <div id="login_ssl" style="height: 115px;<?V case when self.uoid = 2 then '' else 'display:none;' end ?>">
+          <div id="paneSSL" style="height: 115px;<?V case when self.uoid = 2 then '' else 'display:none;' end ?>">
             <table width="100%">
               <?vsp
                 if (get_keyword ('iri', self.reg_foafData, '') <> '')
@@ -852,7 +906,7 @@ no_date:
             if (((select top 1 WS_REGISTER_FACEBOOK from WA_SETTINGS) = 1) and not isnull(self.fb))
          {
           ?>
-          <div id="login_fb" style="height: 115px;<?V case when self.uoid = 3 then '' else 'display:none;' end ?>">
+          <div id="paneFB" style="height: 115px;<?V case when self.uoid = 3 then '' else 'display:none;' end ?>">
             <table width="100%">
               <?vsp
                 if (length (self.fb._user))
@@ -874,14 +928,14 @@ no_date:
           ?>
           <table width="100%">
             <tr>
-              <td width="30%"></td>
+              <td width="30%">&nbsp;</td>
               <td>
                 <v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
                 <label for="is_agreed">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>.</label>
               </td>
             </tr>
             <tr>
-              <td></td>
+              <td>&nbsp;</td>
               <td class="ctrl">
                 <span class="fm_ctl_btn" id="signup_span">
                  <v:button action="simple" name="regb1" value="Sign Up">
@@ -889,66 +943,9 @@ no_date:
                 </span>
               </td>
             </tr>
-            <input type="hidden" name="ret" value="<?=get_keyword_ucase ('ret', self.vc_page.vc_event.ve_params, '')?>" />
           </table>
+          <input type="hidden" name="ret" value="<?=get_keyword_ucase ('ret', self.vc_page.vc_event.ve_params, '')?>" />
         </div><!--container div end-->
-        <script type="text/javascript">
-          <![CDATA[
-            <!--
-            function loginTabReset()
-  {
-              $('tabOpenID').className='login_tab';
-              $('tabODS').className='login_tab';
-              $('tabSSL').className='login_tab';
-              $('tabFB').className='login_tab';
-              OAT.Dom.hide($('login_info'));
-              OAT.Dom.hide($('login_openid'));
-              OAT.Dom.hide($('login_ssl'));
-              OAT.Dom.hide($('login_fb'));
-  }
-            function loginTabToggle(tabObj)
-{
-              if (!tabObj)
-  return;
-              loginTabReset();
-              if (tabObj.id == 'tabODS')
-  {
-                $('tabODS').className='login_tabactive';
-                OAT.Dom.show($('login_info'));
-                $('uoid').value = 0;
-  }
-              else if (tabObj.id == 'tabOpenID')
-  {
-                $('tabOpenID').className='login_tabactive';
-                OAT.Dom.show($('login_openid'));
-                $('uoid').value = 1;
-  }
-              else if(tabObj.id == 'tabSSL')
-  {
-                $('tabSSL').className='login_tabactive';
-                OAT.Dom.show($('login_ssl'));
-                $('uoid').value = 2;
-  }
-              else if(tabObj.id == 'tabFB')
-              {
-                $('tabFB').className='login_tabactive';
-                OAT.Dom.show($('login_fb'));
-                $('uoid').value = 3;
-}
-            }
-
-            var activeTab=<?Vself.uoid?>+0;
-            if (activeTab == 1)
-              loginTabToggle($('tabOpenID'));
-            else if (activeTab == 2)
-              loginTabToggle($('tabSSL'));
-            else if (activeTab == 3)
-              loginTabToggle($('tabFB'));
-            else
-              loginTabToggle($('tabODS'));
-            // -->
-          ]]>
-        </script>
         <v:on-post>
           <![CDATA[
             return self.makeRegistration();

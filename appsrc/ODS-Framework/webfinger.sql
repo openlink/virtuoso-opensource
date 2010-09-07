@@ -1,6 +1,8 @@
 --
 --  $Id$
 --
+--  Webfinger & fingerpoint protocol support.
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -175,6 +177,65 @@ create procedure WF_PROFILE_GET (in acct varchar)
   xd := xtree_doc (xrd);
   xt := cast (xpath_eval ('/XRD/Link[@rel="http://webfinger.net/rel/profile-page"]/@href', xd) as varchar);
   return xt;
+}
+;
+
+create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar := null)
+{
+  declare webid, domain, page, template, url, fp, links, head, xd, tmpcert, res, tmp, link, qr, xd, xp any;
+
+  res := null;
+  declare exit handler for sqlstate '*'
+    {
+      -- connection error or parse error
+      return null;
+    };
+
+  if (mail is null)
+    mail := DB.DBA.FOAF_SSL_MAIL_GET (cert);
+  else
+    {
+      declare h any;
+      h := rfc1808_parse_uri (mail);
+      if (h[0] = '' or h[0] = 'acct' or h[0] = 'mailto')
+        mail := h[2];
+    }
+  if (mail is null)
+    return null;
+
+  domain := subseq (mail, position ('@', mail));
+  page := http_get (sprintf ('http://%s/', domain), head, 'GET', null, null, null, 15);
+  links := http_request_header_full (head, 'Link');
+  if (links is null)
+    return null;
+  links := regexp_replace (links, ',[ \n\t]*', ',', 1, null);
+  links := regexp_replace (links, ';[ \n\t]*', ';', 1, null);
+  links := split_and_decode (links, 0, '\0\0,');
+  foreach (varchar str in links) do
+    {
+      link := split_and_decode (str, 0, '\0\0;');
+      link := ltrim(rtrim (link[0], '>'), '<');
+      tmp := subseq (str, position (';', str));
+      tmp := split_and_decode (tmp, 0, '\0\0;=');
+      if (get_keyword ('rel', tmp) = '"http://ontologi.es/sparql#fingerpoint"')
+	{
+	  fp := link;
+	  goto do_check;
+	}
+    }
+  return null;
+  do_check:
+--  dbg_obj_print_vars (fp);
+  if (strchr (fp, '?') is null)
+    fp := fp || '?';
+  else  
+    fp := fp || '&';
+  qr := sprintf ('prefix owl: <%s> SELECT ?webid WHERE {{ ?webid owl:sameAs <acct:%s> } UNION { <acct:%s> owl:sameAs ?webid }}',
+  	sioc..owl_iri (''), mail, mail);
+  url := sprintf ('%squery=%U', fp, qr); 
+  page := http_get (url);
+  res := cast (xpath_eval ('/sparql/results/result/binding[@name="webid"]/uri/text()', xtree_doc (page)) as varchar);
+  return res;
 }
 ;
 

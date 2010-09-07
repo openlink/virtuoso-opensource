@@ -100,6 +100,8 @@
     {
       http('  <link rel="openid.server" title="OpenID Server" href="'|| _oid_server ||'" />\r\n',resMeta);
       http('   <link rel="openid.delegate" title="OpenID URL" href="'|| _oid_url ||'" />\r\n',resMeta);
+      http('  <link rel="openid2.provider" title="OpenID v2 Server" href="'|| _oid_server ||'" />\r\n',resMeta);
+      http('   <link rel="openid2.local_id" title="OpenID v2 URL" href="'|| _oid_url ||'" />\r\n',resMeta);
     }
     else
     {

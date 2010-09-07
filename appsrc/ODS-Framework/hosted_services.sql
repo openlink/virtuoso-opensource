@@ -820,6 +820,21 @@ db.dba.wa_exec_ddl ('create table WA_USER_SVC (
       )'
 );
 
+create procedure wa_facebook_upgrade() {
+
+  if (registry_get ('__wa_facebook_upgrade') = 'done')
+    return;
+
+  delete from DB.DBA.WA_USER_SVC where US_U_ID <> 0 and US_SVC = 'FBKey';
+  update DB.DBA.WA_USER_SVC set US_U_ID = http_dav_uid () where US_SVC = 'FBKey';
+
+  registry_set ('__wa_facebook_upgrade', 'done');
+}
+;
+
+wa_facebook_upgrade()
+;
+
 db.dba.wa_exec_ddl ('create table WA_RELATED_APPS (
       RA_ID int identity,
       RA_WAI_ID int,
@@ -3269,7 +3284,6 @@ wa_exec_no_error_log(
     WAUI_OPENID_URL varchar,
     WAUI_OPENID_SERVER varchar,
     WAUI_FACEBOOK_ID integer,
-    WAUI_FACEBOOK_LOGIN_ID varchar,
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
     WAUI_NICK		varchar,
@@ -3349,7 +3363,6 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INTEGER');
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_LOGIN_ID', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_NICK', 'varchar');
@@ -3360,6 +3373,19 @@ update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 wa_exec_no_error('create index WA_USER_INFO_NICK on DB.DBA.WA_USER_INFO (WAUI_NICK)');
+
+create procedure WA_FACEBOOK_UPGRADE ()
+{
+  if (registry_get ('WA_FACEBOOK_UPGRADE') = 'done')
+    return;
+
+  wa_exec_no_error ('update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID = atoi (WAUI_FACEBOOK_LOGIN_ID) where coalesce (WAUI_FACEBOOK_ID, 0) = 0');
+
+  registry_set ('WA_FACEBOOK_UPGRADE', 'done');
+}
+;
+WA_FACEBOOK_UPGRADE ()
+;
 
 DB.DBA.EXEC_STMT (
 'create table WA_USER_CERTS (
@@ -4136,8 +4162,6 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_OPENID_SERVER = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_FACEBOOK_ID')
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_FACEBOOK_LOGIN_ID')
-    UPDATE WA_USER_INFO SET WAUI_FACEBOOK_LOGIN_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT_LOGIN')
@@ -7244,7 +7268,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
     null, null, 2, null, 'MS-Author-Via: DAV'
     );
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_root_rule', 1,
+      '/\x24',
+      vector (),
+      0,
+      '/index.html',
+      vector (),
+      NULL, NULL, 2, 0,
+      'Link: <^{DynamicLocalFormat}^/sparql?default-graph-uri=^{DynamicLocalFormat}^/dataspace>;'||
+      ' title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint"'
+      );
+
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule', 'ods_root_rule'));
 
 
 create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)

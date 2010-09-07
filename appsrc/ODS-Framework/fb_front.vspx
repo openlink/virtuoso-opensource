@@ -80,8 +80,7 @@
             if(_qstr_pos>0)
             {
                params := vector_concat (subseq (params, 0, _qstr_pos-1),
-                                        vector('_http_query_str',_http_query_str),
-                                        subseq (params, _qstr_pos));
+                                         vector('_http_query_str', _http_query_str), subseq (params, _qstr_pos));
             } else {
                params:=vector_concat(params, vector('_http_query_str',_http_query_str));
           }
@@ -99,17 +98,12 @@
           self._ods_u_name:=_user_name;
 
           declare _ods_fb_id,_fb_user_assocexist integer;
-
-          declare exit handler for not found {
-          _ods_fb_id:=null;
-          };
-            select WAUI_FACEBOOK_ID into _ods_fb_id from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id;
-
           declare _cfb_id integer;
           declare _cfb_session varchar;
           declare _fb_user integer;
           declare fb_dba_options any;
 
+            _ods_fb_id := (select WAUI_FACEBOOK_ID from DB.DBA.WA_USER_INFO where WAUI_U_ID = _user_id);
             if (_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
              self._fb_isset:=1;
@@ -129,8 +123,8 @@
           self.syncdata_arr:=vector();
 
           declare _html,_src,_fb_user_fullname varchar;
-          _fb_user_fullname:='';
 
+            _fb_user_fullname := '';
           if(self._fb_isset)
           {
             _fb_user_assocexist:=0;
@@ -167,20 +161,21 @@
                if (_fb_user<>0 and _user_name is not null)
                {
                  if(_assoc_action='assoc')
+                  {
                     update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=_fb_user where WAUI_U_ID=_user_id;
-
-                 if(_assoc_action='unassoc')
+                  }
+                  else if (_assoc_action = 'unassoc')
+                  {
                     update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=null where WAUI_U_ID=_user_id;
                }
             }
-
-
-
+              }
 
             -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has connected his ods user to facebook user
             if(_fb_user<>0 and _user_name is null)
             {
-              declare exit handler for not found {
+                declare exit handler for not found
+                {
                 _user_name := null;
                 _user_id := null;
               };
@@ -310,13 +305,9 @@
               self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
               if(get_keyword('import', params,'')='create_import')
               {
-                 declare _inst_id integer;
-
-                 _inst_id:=DB.DBA.ODS_CREATE_NEW_APP_INST ('AddressBook', _user_name||'\'s AddressBook', _user_name);
-
+                  DB.DBA.ODS_CREATE_NEW_APP_INST ('AddressBook', _user_name||'''s AddressBook', _user_name);
                  sync_fbf_odsab(self._fb,_user_id,_fb_user);
               }
-
               if(get_keyword('import', params,'')='import')
                  sync_fbf_odsab(self._fb,_user_id,_fb_user);
 
@@ -357,14 +348,13 @@
 
                _html:=_html||'<br/>';
             }
-
             if(_user_id is not null and _fb_user>0 and _are_assoc=0)
             {
-               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not <a id="a_assoc_1" style="text-decoration: underline;cursor: pointer;">connected</a>.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to connect them?</a>';
+                _html := _html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not logically connected in ODS.<br /> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to connect them?</a>';
             }
             else if (_user_id is not null and _fb_user<>0 and _are_assoc=1)
             {
-               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are <a id="a_assoc_2" style="text-decoration: underline;cursor: pointer;">connected</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Disconnect?</a>';
+                _html := _html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are logically connected in ODS.<br /><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Disconnect?</a>';
             }
             else if(_user_id is not null and _fb_user=0)
             {
@@ -390,15 +380,15 @@
 
               if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
                 _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contact'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
-                              ' that may be imported to your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',self._ods_login_params)||'">Import</a>';
+                                ' that may be imported to your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a> application.<br /><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',self._ods_login_params)||'">Import</a>';
 
               if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
                 _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                              ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
+                                ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a> application.<br /><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
 
               if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
                 _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                              ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
+                                ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a> application.<br /><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
             }
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
 
@@ -406,17 +396,13 @@
 
               _html := 'var validateObj={};';
             validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = _user_id), vector());
-            declare i integer;
             if(validate_by_fields is not null and length(validate_by_fields)>0)
             {
+                declare i integer;
                for (i := 0; i < length (validate_by_fields); i := i + 2)
                    _html:=sprintf('%s\nvalidateObj[''%s'']=%s ;',_html,validate_by_fields[i],coalesce(validate_by_fields[i+1],0));
-
             }
-
             self._dhtml:=vector_concat(self._dhtml,vector('validation_obj',_html));
-
-
          }
         ]]>
         </v:before-data-bind>
@@ -452,8 +438,7 @@ function fbInitPrepare()
   ods_bar_state_set('min');
   OAT.Preferences.imagePath='./images/oat/';
   if(typeof(fbInit)!='undefined')
-    OAT.Loader.load(["dock","animation","ajax","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
-  return;
+                OAT.Loader.load(["dock","animation","ajax","xml","combobutton","mswin","window","anchor","sparql"], function(){setTimeout(fbInit,80)});
 }
 
 var colors = ["#99c","#cc9","#c8c","#9c9"];
@@ -496,40 +481,6 @@ function dockAdd(win_title,custom_colsize)
   return win;
 }
 
-function assignPopup(element,textContent)
-{
-	var elm = $(element);
-	var popup = OAT.Dom.create("div",{},"popup");
-	OAT.Style.opacity(popup,0);
-	popup.innerHTML = textContent;
-	OAT.Dom.hide(popup);
-	document.body.appendChild(popup);
-
-	var a1 = new OAT.AnimationOpacity(popup,{opacity:1});
-	var a2 = new OAT.AnimationOpacity(popup,{opacity:0});
-
-	OAT.MSG.attach(a2.animation,"ANIMATION_STOP",function(){ /* hide after opacity gets to 0 */
-		OAT.Dom.hide(popup);
-	});
-
-	OAT.Event.attach(elm,"mouseover",function(event) { /* start displaying on mouseover */
-		a2.stop();
-
-		var position = OAT.Event.position(event);
-		popup.style.left = position[0]+"px";
-		popup.style.top = (position[1]+10)+"px";
-
-		OAT.Dom.show(popup);
-		a1.start();
-	});
-
-	OAT.Event.attach(elm,"mouseout",function(event) { /* start hiding on mouseout */
-		a1.stop();
-		a2.start();
-	});
-}
-
-
 function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
 {
   var data='sid=<?Vself.sid?>&'+
@@ -563,17 +514,14 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
                                                                   i--;
                                                                 }, 1000);
 
-                                       }
-                                       else
-                                       {
+               } else {
                                         var err_msg_xml  = OAT.Xml.xpath(xmlDoc, '//err_msg', {});
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
                                         $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
-
                                        }
-                                     };
+             }
 
   OAT.AJAX.POST("facebook_helper.vsp", data, callback, options);
 }
@@ -611,23 +559,18 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,validationStr,t
                                          {
                                            $(dockObj.id+'_progress').style.width=OAT.Dom.getWH($(dockObj.id+'_bar'))[0]+'px';
                                            $(dockObj.id+'_counterdiv').innerHTML=totalCount+' of '+totalCount+' contacts synchronized';
-                                         }else
-                                         {
+                  } else {
                                            $(dockObj.id+'_progress').style.width=OAT.Dom.getWH($(dockObj.id+'_progress'))[0]+pbUnit+'px';
                                            $(dockObj.id+'_counterdiv').innerHTML=ajaxSuccCallCount+' of '+totalCount+' contacts synchronized';
                                          }
-                                       }
-                                       else
-                                       {
+                } else {
                                         var err_msg_xml  = OAT.Xml.xpath(xmlDoc, '//err_msg', {});
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
                                         $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
-
                                        }
-                                     };
-
+              }
   OAT.AJAX.POST("facebook_helper.vsp", data, callback, options);
 }
 
@@ -736,14 +679,13 @@ function derefFBP(fbCID)
                                           function constructElm(txt)
                                           {
                                             var simple=simpleUri(txt);
-                                            if(txt.indexOf('http')==0)
-                                            {
+                    if (txt.indexOf('http') == 0) {
                                               var _a=OAT.Dom.create("a");
                                               _a.href=txt;
                                               _a.innerHTML=simple;
                                               _a.target='_blank';
                                               return _a;
-                                            }else
+                    }
                                               return OAT.Dom.text(simple);
                                           }
 
@@ -771,19 +713,14 @@ function derefFBP(fbCID)
                                           var _endpoint='/sparql/';
                                           var _request=buildRequest(optObj);
                                       		OAT.AJAX.POST(_endpoint,_request,resCallback,{type:OAT.AJAX.TYPE_TEXT});
-
-                                       }
-                                       else
-                                       {
+                } else {
                                         var err_msg_xml  = OAT.Xml.xpath(xmlDoc, '//err_msg', {});
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
                                         $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
-
                                        }
-                                     };
-
+              }
   OAT.AJAX.POST("facebook_helper.vsp", data, callback, options);
 }
 
@@ -850,7 +787,7 @@ function genAbFieldsCb(cbId,defSelection)
   cb.value=defSelection;
 
   OAT.Dom.append([_tr,_td1],[_td1,_label],[_tr,_td2],[_td2,cb])
-  return _tr
+              return _tr;
 }
 
 function getCustomMapping(mappingDockId)
@@ -936,22 +873,15 @@ function fbInit()
  $(friends_win.id+'_body').innerHTML='<?vsp http(get_keyword('friends',self._dhtml,'')); ?>';
  $(ods_win.id+'_body').innerHTML='<?vsp http(get_keyword('ods_user',self._dhtml,'')); ?>';
 
-
- var assoc_txt = 'logically connected in ODS';
- assignPopup("a_assoc_1",assoc_txt);
- assignPopup("a_assoc_2",assoc_txt);
-
-
  derefFBP(<?Vself._fb._user?>);
-
 
 fbfStr='<?vsp http(get_keyword('fbf_jsarrstr',self._dhtml,'')); ?>';
 
  var fbfArr=fbfStr.split(',');
  for(var i=0;i<fbfArr.length;i++)
    derefFBP(fbfArr[i]);
-]]>
 }
+    ]]>
 </script>
 <div id="fbDock"></div>
 </v:template>
@@ -967,15 +897,6 @@ var win_mapping=false
 
 function fbInit()
 {
-
-// dd('<?Vself.syncdata_arr[0]?>'); //fb_user
-// dd('<?Vself.syncdata_arr[1]?>'); //sync_check_res 1 - the same; 0 - different
-// dd('<?Vself.syncdata_arr[2]?>'); //new contacts count
-// dd('<?Vself.syncdata_arr[3]?>'); //update contacts count
-// dd('<?Vself.syncdata_arr[4]?>'); //total contacts count
-// dd('<?Vself.syncdata_arr[5]?>'); //addressbook instance id
-
-
  dock = new OAT.Dock('fbDock',2);
 
  var win_info=dockAdd('Action');
@@ -1360,70 +1281,8 @@ function createImportObjDock(_syncData)
   _td2.appendChild(_cbutton.div);
 
   OAT.Dom.append([_table,_tbody],[_tbody,_tr],[_tr,_td1,_td2])
-
   OAT.Dom.append([_parent_div,_table,OAT.Dom.create('br')]);
-
-
-
-
-//  var _btnDiv=OAT.Dom.create("div",{padding:'0px 0px 0px 10px',clear: 'both'});
-//
-//
-//   var _def_button=OAT.Dom.create("input",{width:'100px'});
-//   _def_button.type='button';
-//   _def_button.value='Default';
-//   _def_button.id=_dock_obj.id+'_defsyncbtn';
-//   _def_button.c_ods_cid=d_ods_cid;
-//
-//   OAT.Event.attach(_def_button,"click",function(e){if(OAT.Browser.isIE)
-//                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
-//                                                  else
-//                                                     var _c_ods_cid = this.c_ods_cid;
-//                                                  ajaxUpdate(_syncData.odsab_instid,parseInt(_c_ods_cid),_syncData.fb_id,_dock_obj,getCustomMapping('mappingDivContent'));});
-//
-//  _btnDiv.appendChild(_def_button);
-//  _btnDiv.appendChild(OAT.Dom.create("br"));
-
-
-//   var _button=OAT.Dom.create("input",{width:'100px'});
-//   _button.type='button';
-//   _button.value='Manual';
-//
-//   _button.id=_dock_obj.id+'_syncbtn';
-//   _button.c_ods_cid=d_ods_cid;
-//
-//   OAT.Event.attach(_button,"click",function(e){if(OAT.Browser.isIE)
-//                                                     var _c_ods_cid = e.srcElement.c_ods_cid;
-//                                                  else
-//                                                     var _c_ods_cid = this.c_ods_cid;
-//
-//                                               $('manualMappingOK').odsab_instid=_syncData.odsab_instid;
-//                                               $('manualMappingOK').c_ods_cid=parseInt(_c_ods_cid);
-//                                               $('manualMappingOK').fb_id=_syncData.fb_id;
-//                                               $('manualMappingOK').dock_obj=_dock_obj;
-//                                               OAT.Dom.show($('manualMappingDiv'));
-//                                              });
-//
-//  _btnDiv.appendChild(_button);
-//  _btnDiv.appendChild(OAT.Dom.create("br"));
-
-
-//   var _cancel=OAT.Dom.create("input",{width:'60px'});
-//   _cancel.type='button';
-//   _cancel.value='Cancel';
-
-//   _cancel.id=_dock_obj.id+'_cancelbtn';
-
-//   OAT.Event.attach(_cancel,"click",function(){_dock_obj.dock.removeObject(_dock_obj);});
-
-//  _btnDiv.appendChild(_cancel);
-//  _parent_div.appendChild(_btnDiv);
-
-  return;
 }
-
-
-
 ]]>
 </script>
 <div id="fbDock"></div>

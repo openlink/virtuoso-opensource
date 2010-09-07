@@ -735,7 +735,7 @@
 
                         for (N := 0; N < length (self.iacl); N := N + 1)
                         {
-                          http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], self.iacl[N][1], case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
+                          http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], self.iacl[N][1], case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
         }
       ?>
               		    </script>
@@ -743,7 +743,7 @@
                   </table>
                 </td>
                 <td valign="top" nowrap="nowrap">
-                  <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                  <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                 </td>
               </tr>
             </table>

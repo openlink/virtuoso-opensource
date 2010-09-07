@@ -275,6 +275,37 @@ create procedure OAUTH..request_token (
 }
 ;
 
+create procedure OAUTH..hybrid_request_token (in sid varchar, in oauth_consumer_key varchar)
+{
+  declare ret, tok, sec varchar;
+  declare app_sec, url, meth, params, cookie, oauth_client_ip, timest, nonce varchar;
+  declare lines any;
+  declare app_id int;
+
+  declare exit handler for not found {
+    signal ('22023', 'Can not verify request, missing oauth_consumer_key or oauth_token');
+  };
+
+  select a_secret, a_id into app_sec, app_id from OAUTH..APP_REG where a_key = oauth_consumer_key;
+
+  url := get_requested_url ();
+  params := http_request_get ('QUERY_STRING');
+  meth := http_request_get ('REQUEST_METHOD');
+
+  get_key_and_secret (tok, sec);
+  sec := '';
+
+  oauth_client_ip := http_client_ip ();
+  timest := datediff ('second', stringdate ('1970-1-1'), now ());
+  nonce := xenc_rand_bytes (8, 1);
+
+  insert into OAUTH..SESSIONS (s_sid, s_nonce, s_timestamp, s_req_key, s_req_secret, s_a_id, s_method, s_state, s_ip)
+    values (sid, nonce, timest, tok, sec, app_id, meth, 2, oauth_client_ip);
+  commit work;
+  return tok;
+}
+;
+
 create procedure OAUTH..access_token (
   in oauth_consumer_key varchar,
   in oauth_token varchar,
@@ -616,7 +647,7 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
     params := hf[4] || '&' || params;
   params := OAUTH..normalize_params (params);
   url := OAUTH..normalize_url (url, vector ());
-  dbg_obj_print (params);
+  --dbg_obj_print (params);
 
   declare exit handler for not found {signal ('OAUTH', 'Cannot find secret');};
   select a_secret into consumer_secret from OAUTH..APP_REG where a_key = consumer_key;
@@ -632,7 +663,7 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
 	 ret := ret || ' ' || arr[inx] || '="' || sprintf ('%U', arr[inx+1]) || '"' || ','; 
      }
   ret := rtrim (ret, ',');   
-  dbg_obj_print (ret);
+  --dbg_obj_print (ret);
   return ret;
 }
 ;

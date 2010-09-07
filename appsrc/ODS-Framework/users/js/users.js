@@ -732,7 +732,7 @@ function init() {
     OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 6);});
     var regex = /Mozilla.*Windows.*Firefox.*\.NET CLR .*/;
     if (!(OAT.Browser.isIE || regex.test(navigator.userAgent)))
-      OAT.Dom.show("pf_tab_2_6");
+      OAT.Dom.show("pf_tab_2_5");
 
     pfTabInit('pf_tab_2_', $v('formSubtab'));
 	}
@@ -806,11 +806,11 @@ function mySubmit(prefix)
               + '&properties=' + encodeURIComponent(prepareItems('wl'));
     	OAT.AJAX.GET(S, '', function(data){pfShowSeeks();});
     }
-    if (prefix == 'pf25') {
+    if (prefix == 'pf26') {
       var S = '/ods/api/user.certificates.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf25_id'))
-              + '&certificate=' + encodeURIComponent($v('pf25_certificate'))
-              + '&enableLogin=' + encodeURIComponent($v('pf25_enableLogin'));
+              + '&id=' + encodeURIComponent($v('pf26_id'))
+              + '&certificate=' + encodeURIComponent($v('pf26_certificate'))
+              + '&enableLogin=' + encodeURIComponent($('pf26_enableLogin').checked? '1': '0');
       OAT.AJAX.GET(S, '', function(data){pfShowCertificates();});
     }
     OAT.Dom.show(prefix+'_list');
@@ -1207,7 +1207,7 @@ function pfEditListObject(prefix, id) {
       pfShowOffer('edit', id);
     if (prefix == 'pf09')
       pfShowSeek('edit', id);
-    if (prefix == 'pf25')
+    if (prefix == 'pf26')
       pfShowCertificate('edit', id);
     return false;
   }
@@ -1272,17 +1272,17 @@ function pfShowSeek(mode, id) {
 }
 
 function pfShowCertificate(mode, id) {
-  pfShowMode('pf25', mode, id);
+  pfShowMode('pf26', mode, id);
   if (mode == 'new') {
-    OAT.Dom.hide("pf25_form_0");
-    OAT.Dom.hide("pf25_form_1");
-    OAT.Dom.hide("pf25_form_2");
+    OAT.Dom.hide("pf26_form_0");
+    OAT.Dom.hide("pf26_form_1");
+    OAT.Dom.hide("pf26_form_2");
   } else {
-    OAT.Dom.show("pf25_form_0");
-    OAT.Dom.show("pf25_form_1");
-    OAT.Dom.show("pf25_form_2");
+    OAT.Dom.show("pf26_form_0");
+    OAT.Dom.show("pf26_form_1");
+    OAT.Dom.show("pf26_form_2");
   }
-  pfShowItem('user.certificates.get', 'pf25', ['subject', 'agentID', 'fingerPrint', 'certificate', 'enableLogin']);
+  pfShowItem('user.certificates.get', 'pf26', ['subject', 'agentID', 'fingerPrint', 'certificate', 'enableLogin']);
 }
 
 function pfShowFavorites() {
@@ -1302,7 +1302,7 @@ function pfShowSeeks() {
 }
 
 function pfShowCertificates() {
-  pfShowList('user.certificates.list', 'pf25', 'No Items', [1, 2], 0, function (data){pfShowCertificates();});
+  pfShowList('user.certificates.list', 'pf26', 'No Items', [1, 2], 0, function (data){pfShowCertificates();});
 }
 
 function isShow(element) {
@@ -1342,11 +1342,11 @@ function showFacebookData(skip) {
       pfLabel.innerHTML = '';
   	if (facebookData && facebookData.name) {
       if (lfLabel)
-        lfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>';
+        lfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
       if (rfLabel)
-        rfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>';
+        rfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
       if (pfLabel) {
-        pfLabel.innerHTML = 'Connect as <b><i>' + facebookData.name + '</i></b></b>'
+        pfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>'
         hiddenCreate('pf_securityFacebookID', null, facebookData.uid);
       }
   	}
@@ -2043,7 +2043,7 @@ function ufProfileCallback(data) {
         pfShowSeeks();
 
       // seek
-      if (($v('formTab') == "2") && ($v('formSubtab') == "5"))
+      if (($v('formTab') == "2") && ($v('formSubtab') == "6"))
         pfShowCertificates();
 
 			// contact

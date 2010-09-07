@@ -50,7 +50,7 @@
              WAUI_SEC_ANSWER,
              pwd_magic_calc (U_NAME, U_PASSWORD, 1),
 	     WAUI_OPENID_URL,
-		   WAUI_FACEBOOK_LOGIN_ID
+		         WAUI_FACEBOOK_ID
         INTO self.secretq,
              self.secreta,
              pwd,
@@ -273,10 +273,21 @@
               {
                 http ('not yet');
               } else {
+                {
+                  declare exit handler for sqlstate '*'
+                	{
+                    http ('bad connection/user');
+                	  goto _next;
+                	};
                 declare _res any;
-                _res := self.fb.api_client.users_getInfo(self.fbLoginID, 'name');
 
-                http (serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', _res)));
+                  _res := serialize_to_UTF8_xml (xpath_eval('string(/users_getInfo_response/user/name)', self.fb.api_client.users_getInfo(self.fbLoginID, 'name')));
+                  if (DB.DBA.is_empty_or_null (_res))
+                    signal ('23023', '');
+
+                  http (_res);
+                }
+              _next:;
               }
             ?>
           </td>
@@ -303,13 +314,13 @@
                     if (self.vc_is_valid = 0)
                       return;
 
-                    if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_FACEBOOK_LOGIN_ID = self.fb._user))
+                    if (exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_FACEBOOK_ID = self.fb._user))
                     {
                       self.vc_error_message := 'This Facebook identity is already registered.';
                       self.vc_is_valid := 0;
                       return;
                     }
-                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', self.fb._user);
+                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', self.fb._user);
                     self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>
@@ -320,7 +331,7 @@
                     if (self.vc_is_valid = 0)
                       return;
 
-                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_LOGIN_ID', null);
+                    WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', null);
                     self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>

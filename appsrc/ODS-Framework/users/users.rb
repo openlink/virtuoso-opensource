@@ -964,6 +964,9 @@ def main()
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";

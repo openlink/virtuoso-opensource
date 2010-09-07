@@ -42,6 +42,9 @@
         <vm:login redirect="myhome.vspx"/>
         <vm:dash-my-whats-new />
         <vm:dash-my-dataspaces />
+        <vm:if test="_get_ods_fb_settings(vector())">
+          <vm:dash-my-facebook />
+        </vm:if>
         <vm:if test="wa_vad_check ('blog2') is not null">
           <vm:dash-my-blog />
         </vm:if>
@@ -73,9 +76,6 @@
         </vm:if>
         <vm:if test="wa_vad_check ('oGallery') is not null">
           <vm:dash-my-photos />
-        </vm:if>
-        <vm:if test="_get_ods_fb_settings(vector())">
-          <vm:dash-my-facebook />
         </vm:if>
         <vm:if test="wa_vad_check ('oMail') is not null and 1=0">
           <vm:dash-my-guestbook />

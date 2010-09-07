@@ -446,7 +446,7 @@ return;
         _fb := new Facebook(_fb_options[0], _fb_options[1], self.vc_event.ve_params, self.vc_event.ve_lines);
         if (length (_fb._user))
         {
-          select U_NAME into uname from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_LOGIN_ID = _fb._user;
+          select U_NAME into uname from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = _fb._user;
           control.vl_authenticated := 1;
           connection_set ('vspx_user', uname);
           self.sid := vspx_sid_generate ();

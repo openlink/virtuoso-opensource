@@ -3702,14 +3702,12 @@ create procedure SIOC..acl_check (
   foafIRI := get_keyword ('URI', V);
   if (isnull (foafIRI))
   {
-    if (__proc_exists ('DB.DBA.FOAF_SSL_WEBFINGER') is null)
-      goto _exit;
-
     foafIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
+    if (foafIRI is not null)
+      goto _authenticated;
+    foafIRI := ODS..FINGERPOINT_WEBID_GET ();
     if (foafIRI is null)
       goto _exit;
-
-    goto _authenticated;
   }
 
   localIRI := foafIRI;
@@ -4511,6 +4509,8 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   set_user_id ('dba');
   info := get_certificate_info (9);
   agent := ODS.ODS_API.SSL_WEBID_GET (); 
+  if (agent is null)
+    agent := ODS..FINGERPOINT_WEBID_GET ();
 
 --  dbg_obj_print (info, agent);
   if (not isarray (info) or agent is null)

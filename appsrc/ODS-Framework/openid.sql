@@ -116,6 +116,13 @@ create procedure sreg_ns_v1 ()
   return 'http://openid.net/extensions/sreg/1.1';
 }
 ;
+
+create procedure oauth_ns ()
+{
+  return 'http://specs.openid.net/extensions/oauth/1.0';
+}
+;
+
 create procedure server
 	(
 	 in "openid.mode" varchar := 'unknown'
@@ -123,8 +130,8 @@ create procedure server
 	__SOAP_HTTP 'text/html'
 {
   declare ret, lines, params, oid_sid, cookies_vec any;
-  declare ns varchar;
-  declare ver int;
+  declare ns, oauth_ns varchar;
+  declare ver, pos int;
 
   params := http_param ();
   lines := http_request_header ();
@@ -135,6 +142,16 @@ create procedure server
   cookies_vec := DB.DBA.vsp_ua_get_cookie_vec (lines);
   oid_sid := get_keyword ('openid.sid', cookies_vec);
   ns := get_keyword ('openid.ns', params, 'http://openid.net/signon/1.1');
+  oauth_ns := 'openid.oauth.';	
+  pos := position (oauth_ns (), params);
+  if (pos > 1)
+    {
+      declare tmp any;
+      tmp := params [pos - 2];
+      tmp := sprintf_inverse (tmp, '%s.%s.%s', 0);
+      if (length (tmp) = 3 and tmp[0] = 'openid' and tmp[1] = 'ns')
+	oauth_ns := 'openid.' || tmp[2] || '.';
+    }
 
   if (ns = ns_v2 ())
     ver := 2;
@@ -159,7 +176,9 @@ create procedure server
 	0,
 	get_keyword ('openid.sreg.required', params),
 	get_keyword ('openid.sreg.optional', params),
-	get_keyword ('openid.sreg.policy_url', params)
+	get_keyword ('openid.sreg.policy_url', params),
+	get_keyword (oauth_ns || 'consumer', params),
+	get_keyword (oauth_ns || 'scope', params)
 	);
   else if ("openid.mode" = 'checkid_setup')
     ret := checkid_setup (
@@ -171,7 +190,9 @@ create procedure server
 	oid_sid,
 	get_keyword ('openid.sreg.required', params),
 	get_keyword ('openid.sreg.optional', params),
-	get_keyword ('openid.sreg.policy_url', params)
+	get_keyword ('openid.sreg.policy_url', params),
+	get_keyword (oauth_ns || 'consumer', params),
+	get_keyword (oauth_ns || 'scope', params)
 	);
   else if ("openid.mode" = 'check_authentication')
     ret := check_authentication (
@@ -454,11 +475,13 @@ create procedure checkid_immediate
 	 in flag int := 0, -- called via checkid_setup
 	 in sreg_required varchar := null,
 	 in sreg_optional varchar := null,
-	 in policy_url varchar := null
+	 in policy_url varchar := null,
+	 in oauth_consumer varchar := null,
+	 in oauth_scope varchar := null
     	)
 {
   declare signature, rhf, delim any;
-  declare login, hdr, usr, ns, ns_sign varchar;
+  declare login, hdr, usr, ns, ns_sign, tok, oauthf, oauth_resp varchar;
 
   if (trust_root is null)
     trust_root := _identity;
@@ -468,9 +491,11 @@ create procedure checkid_immediate
   if (length (return_to) = 0)
     return 'error:no_return_to';
 
---  dbg_obj_print ('checkid_immediate', sid, ' ver ', ver);
+  --dbg_obj_print_vars ('checkid_immediate', sid, ver);
   ns := '';
   ns_sign := '';
+  oauthf := ''; 
+  oauth_resp := '';
   if (isstring (ver))
     ver := atoi (ver);
   if (ver = 2)
@@ -489,8 +514,12 @@ create procedure checkid_immediate
         delim := '?';
       login :=
       sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U&ver=%d',
-	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), coalesce (trust_root, ''),
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''), ver);
+      if (length (oauth_consumer))
+        {
+          login := login || sprintf ('&oauth_consumer=%U&oauth_scope=%U', oauth_consumer, oauth_scope);
+        }	  
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
       http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res%s&openid.user_setup_url=%U\r\n',
 	    return_to, delim, ns, login));
@@ -586,6 +615,11 @@ create procedure checkid_immediate
 		  values (assoc_handle, ss_key, ss_key_data, '3DES', dateadd ('hour', 1, now()));
 	    }
 	}
+      -- make OAuth request_token call 
+      if (length (oauth_consumer) > 0)	  
+	tok := OAUTH..hybrid_request_token (sid, oauth_consumer);	  
+      else
+        tok := null;	
 
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
@@ -605,9 +639,11 @@ create procedure checkid_immediate
       if (ver = 2)
 	{
 	  declare op, nonce varchar;
-	  op := db.dba.wa_link (1, '/openid');
-	  if (0 and is_https_ctx ())
-	    op := 'https://' || DB.DBA.WA_HTTPS() || '/openid';
+	  --op := db.dba.wa_link (1, '/openid');
+	  if (is_https_ctx ())
+	    op := sprintf ('https://%{WSHost}s/openid');
+	  else  
+	    op := sprintf ('http://%{WSHost}s/openid');
 	  nonce := DB.DBA.date_iso8601 (dt_set_tz (curdatetime (0), 0)) || cast (msec_time () as varchar);
 	  ns := sprintf ('&openid.ns=%U&openid.ns.sreg=%U&openid.op_endpoint=%U&openid.response_nonce=%U&openid.claimed_id=%U',
 	  ns_v2 (), sreg_ns_v1 (), op, nonce, _identity);
@@ -638,7 +674,20 @@ create procedure checkid_immediate
 		}
 	    }
 	}
-
+      -- add ns.oauth, oauth.request_token and oauth.scope to the signature string
+      if (tok is not null)
+        {
+	  oauthf := ',ns.oauth,oauth.request_token';
+	  http (sprintf ('ns.oauth:%s\x0A', oauth_ns ()), ses);
+	  http (sprintf ('oauth.request_token:%s\x0A', tok), ses);
+	  oauth_resp := sprintf ('&openid.ns.oauth=%U&openid.oauth.request_token=%U', oauth_ns (), tok);
+	  if (length (oauth_scope) > 0)
+	    {
+	      oauthf := oauthf || ',oauth.scope';
+	      http (sprintf ('oauth.scope:%s\x0A', oauth_scope), ses);
+	      oauth_resp := oauth_resp || sprintf ('&openid.oauth.scope=%U', oauth_scope);
+	    }
+        }	  
 
       if (user <> 'OpenID')
         set_user_id ('OpenID');
@@ -652,9 +701,9 @@ create procedure checkid_immediate
       if (length (assoc_handle) = 0)
 	assoc_handle := '';
       hdr :=  sprintf ('Location: %s%sopenid.mode=id_res%s&openid.identity=%U&openid.return_to=%U'||
-      			'&openid.assoc_handle=%U&openid.signed=%U&openid.sig=%U%s%s\r\n',
+      			'&openid.assoc_handle=%U&openid.signed=%U&openid.sig=%U%s%s%s\r\n',
 	    		return_to, delim, ns, _identity, return_to, coalesce (assoc_handle, ''),
-			ns_sign||'mode,identity,return_to,assoc_handle'||sregf, signature, inv, sreg);
+			ns_sign||'mode,identity,return_to,assoc_handle'||sregf||oauthf, signature, inv, sreg, oauth_resp);
 --      dbg_obj_print ('hdr:', hdr);
       http_header (http_header_get () || hdr);
     }
@@ -672,7 +721,9 @@ create procedure checkid_setup
 	 in sid varchar,
 	 in sreg_required varchar := null,
 	 in sreg_optional varchar := null,
-	 in policy_url varchar := null
+	 in policy_url varchar := null,
+	 in oauth_consumer varchar := null,
+	 in oauth_scope varchar := null
 	 )
 {
   declare rhf, delim, login, ss_key any;
@@ -687,13 +738,18 @@ create procedure checkid_setup
 
       login :=
       sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U&ver=%d',
-	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    get_login_url (_identity), return_to, _identity, coalesce (assoc_handle, ''), coalesce (trust_root, ''),
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''), ver);
+      if (length (oauth_consumer))
+        {
+          login := login || sprintf ('&oauth_consumer=%U&oauth_scope=%U', oauth_consumer, oauth_scope);
+        }	  
       http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
       return '';
     }
-  return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url);
+  return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url, 
+      oauth_consumer, oauth_scope);
 };
 
 create procedure cancel (in ver int := 1, in return_to varchar)
@@ -735,8 +791,20 @@ create procedure oid_set_sid (in sid varchar, in pars any)
 
 create procedure oid_get_user_id (in _identity any)
 {
-  declare iarr, uname any;
+  declare iarr, uname, webid any;
+  declare webid, gr varchar;    
   uname := null;
+  --dbg_obj_print_vars (_identity);
+  if (strchr (_identity, '@') is not null)
+    { 
+      gr := sioc..get_graph ();
+      webid := (SPARQL 
+	       PREFIX owl: <http://www.w3.org/2002/07/owl#> 
+	       PREFIX foaf: <http://xmlns.com/foaf/0.1/>	 
+	       SELECT ?openid WHERE { graph `iri(?:gr)` { ?webid owl:sameAs `iri(?:_identity)` ; foaf:openid ?openid . }});
+      if (webid is not null)
+        _identity := webid;	
+    }	 
   if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null)
     {
       iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s/%s', 1);
@@ -805,6 +873,8 @@ create procedure get_login_url (in _identity any)
       return wa_ssl_link (1, 'openid_login.vspx');
     }
   nf:
+  if (is_https_ctx ())
+    return sprintf ('https://%{WSHost}s/ods/openid_login.vspx');
   return DB.DBA.wa_link(1, 'openid_login.vspx');
 }
 ;

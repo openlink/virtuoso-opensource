@@ -844,6 +844,12 @@ create procedure ODS..openid_url_set (
   profile_page := ODS.DBA.WF_PROFILE_GET (url);
   if (profile_page is not null)
     url := profile_page;
+  else  
+    {
+      profile_page := ODS..FINGERPOINT_WEBID_GET (null, url);
+      if (profile_page is not null)
+	url := profile_page;
+    }
   oi_ident := url;
 again:
   hdr := null;

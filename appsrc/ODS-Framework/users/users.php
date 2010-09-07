@@ -36,6 +36,7 @@
     <script type="text/javascript" src="/ods/common.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
     <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
     <script type="text/javascript">
       // OAT
       var toolkitPath="/ods/oat";
@@ -278,7 +279,7 @@
         }
         $_formMode = "";
       }
-      else if (isset ($_REQUEST['pf_update25']) && ($_REQUEST['pf_update25'] <> ""))
+      else if (isset ($_REQUEST['pf_update26']) && ($_REQUEST['pf_update26'] <> ""))
       {
         $_url = sprintf (
                           "%s/user.certificates.%s?sid=%s&realm=%s&id=%s&certificate=%s&enableLogin=%s",
@@ -286,9 +287,9 @@
                           $_formMode,
                           $_sid,
                           $_realm,
-                          myUrlencode ($_REQUEST ["pf25_id"]),
-                          myUrlencode ($_REQUEST ["pf25_certificate"]),
-                          myUrlencode ($_REQUEST ["pf25_enableLogin"])
+                          myUrlencode ($_REQUEST ["pf26_id"]),
+                          myUrlencode ($_REQUEST ["pf26_certificate"]),
+                          myUrlencode ($_REQUEST ["pf26_enableLogin"])
                         );
         $_result = file_get_contents($_url);
         if (substr_count($_result, "<failed>") <> 0)
@@ -2721,8 +2722,8 @@
                       <li id="pf_tab_2_2" title="OpenID">OpenID</li>
                       <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
                       <li id="pf_tab_2_4" title="Limits">Limits</li>
-                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
-                      <li id="pf_tab_2_6" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_5" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
@@ -2855,16 +2856,26 @@
                       {
                       ?>
                       <div id="pf_page_2_5" class="tabContent" style="display:none;">
+            	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="650" height="270" frameborder="0" scrolling="no">
+            	            <p>Your browser does not support iframes.</p>
+            	          </iframe>
+                      </div>
+                      <?php
+                      }
+                      else if (($_formTab == 2) and ($_formSubtab == 6))
+                      {
+                      ?>
+                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
                         <h3>X.509 Certificates</h3>
                         <?php
                           if ($_formMode == '')
                           {
                         ?>
-                        <div id="pf25_list">
+                        <div id="pf26_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add 'Fovorite'" alt="Add 'Fovorite'" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf25_tbl" class="listing">
+                      	  <table id="pf26_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Subject</th>
@@ -2872,7 +2883,7 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       </tr>
                             </thead>
-                      	    <tbody id="pf25_tbody">
+                      	    <tbody id="pf26_tbody">
                               <script type="text/javascript">
                                 OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowCertificates();});
                               </script>
@@ -2883,9 +2894,9 @@
                           }
                           else
                           {
-                            print sprintf("<input type=\"hidden\" id=\"pf25_id\" name=\"pf25_id\" value=\"%s\" />", (isset ($_REQUEST['pf25_id'])) ? $_REQUEST['pf25_id'] : "0");
+                            print sprintf("<input type=\"hidden\" id=\"pf26_id\" name=\"pf26_id\" value=\"%s\" />", (isset ($_REQUEST['pf26_id'])) ? $_REQUEST['pf26_id'] : "0");
                         ?>
-                        <div id="pf25_form">
+                        <div id="pf26_form">
                           <table class="form" cellspacing="5">
                             <?php
                             if ($_formMode == 'edit')
@@ -2896,7 +2907,7 @@
                 	    	  Subject
                         </th>
                         <td>
-                          		  <span id="pf25_subject"></span>
+                          		  <span id="pf26_subject"></span>
                     		</td>
                       </tr>
                       <tr>
@@ -2904,7 +2915,7 @@
                 	    	  Agent ID
                         </th>
                         <td>
-                          		  <span id="pf25_agentID"></span>
+                          		  <span id="pf26_agentID"></span>
                           		</td>
                             </tr>
                             <tr>
@@ -2912,7 +2923,7 @@
                       	    	  Fingerprint
                               </th>
                               <td>
-                          		  <span id="pf25_fingerPrint"></span>
+                          		  <span id="pf26_fingerPrint"></span>
                     		</td>
                       </tr>
             	        <?php
@@ -2920,17 +2931,17 @@
             	        ?>
                       <tr>
                         <th valign="top">
-                                <label for="pf25_certificate">Certificate</label>
+                                <label for="pf26_certificate">Certificate</label>
                         </th>
                         <td>
-                                <textarea name="pf25_certificate" id="pf25_certificate" rows="20" style="width: 560px;"></textarea>
+                                <textarea name="pf26_certificate" id="pf26_certificate" rows="20" style="width: 560px;"></textarea>
                         </td>
                       </tr>
                       <tr>
                         <th></th>
                         <td>
                           <label>
-                                  <input type="checkbox" name="pf25_enableLogin" id="pf25_enableLogin" value="1"/>
+                                  <input type="checkbox" name="pf26_enableLogin" id="pf26_enableLogin" value="1"/>
                             Enable Automatic WebID Login
                           </label>
                         </td>
@@ -2941,7 +2952,7 @@
                           </script>
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
-                            <input type="submit" name="pf_update25" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf25');"/>
+                            <input type="submit" name="pf_update26" value="Save" onclick="needToConfirm = false; return validateInputs(this, 'pf26');"/>
                           </div>
                         </div>
                         <?php
@@ -2950,16 +2961,6 @@
                       </div>
                       <?php
                         }
-                      else if (($_formTab == 2) and ($_formSubtab == 6))
-                      {
-                      ?>
-                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
-            	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="650" height="270" frameborder="0" scrolling="no">
-            	            <p>Your browser does not support iframes.</p>
-            	          </iframe>
-                      </div>
-                      <?php
-                      }
                         else
                         {
                       ?>
