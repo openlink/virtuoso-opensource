@@ -104,6 +104,25 @@ TBL.setServiceUrl = function(fld)
   }
 }
 
+TBL.No = function (tbl, prefix, options)
+{
+  var No = options.No;
+  if (!$(prefix+'_no')) {
+  	var fld = OAT.Dom.create("input");
+    fld.type = 'hidden';
+    fld.name = prefix+'_no';
+    fld.id = fld.name;
+    fld.value = '0';
+    tbl.appendChild(fld);
+  }
+  if (No) {
+    $(prefix+'_no').value = No;
+  } else {
+    No = $v(prefix+'_no');
+  }
+  return parseInt(No)
+}
+
 TBL.createRow = function (prefix, No, optionObject)
 {
   if (No != null)
@@ -120,22 +139,7 @@ TBL.createRow = function (prefix, No, optionObject)
       var options = {btn_1: {mode: 0}};
       for (var p in optionObject) {options[p] = optionObject[p]; }
 
-      No = options.No;
-        if (!$(prefix+'_no')) {
-        	var fld = OAT.Dom.create("input");
-          fld.type = 'hidden';
-          fld.name = prefix+'_no';
-          fld.id = fld.name;
-          fld.value = '0';
-          tbl.appendChild(fld);
-        }
-      if (No) {
-        $(prefix+'_no').value = No;
-      } else {
-        No = $v(prefix+'_no');
-      }
-      No = parseInt(No)
-
+      No = TBL.No(tbl, prefix, options);
       OAT.Dom.hide (prefix+'_tr_no');
 
       var tr = OAT.Dom.create('tr');
@@ -204,9 +208,11 @@ TBL.createViewRow = function (prefix, options)
   var tbl = $(prefix+'_tbl');
   if (tbl)
   {
+    var No = TBL.No(tbl, prefix, options);
     OAT.Dom.hide (prefix+'_tr_no');
 
     var tr = OAT.Dom.create('tr');
+    tr.id = prefix+'_tr_' + No;
     tbl.appendChild(tr);
 
     // fields
@@ -229,6 +235,7 @@ TBL.createViewRow = function (prefix, options)
           td.innerHTML = fldOptions.value;
         }
       }
+      $(prefix+'_no').value = No + 1;
     }
   }
 }
@@ -639,6 +646,121 @@ TBL.createCell48 = function (td, prefix, fldName, No, fldOptions) {
   }
 }
 
+TBL.changeCell50 = function (srcFld) {
+  var srcValue = $v(srcFld.name);
+  var dstName = srcFld.name.replace('fld_1', 'fld_2');
+  var dstFld = $(dstName);
+  var dstImg = $(dstName+'_img');
+  if (srcValue == 'public') {
+    dstFld.value = 'foaf:Agent';
+    dstFld.readOnly = true;
+  } else {
+    if (dstFld.value == 'foaf:Agent')
+      dstFld.value = '';
+    dstFld.readOnly = false;
+  }
+  if (srcValue == 'public') {
+    OAT.Dom.hide(dstImg);
+  } else {
+    OAT.Dom.show(dstImg);
+  }
+}
+
+TBL.viewCell50 = function (td, prefix, fldName, No, fldOptions) {
+	if (fldOptions.value == "public") {
+	  td.innerHTML = "Public";
+	} else if (fldOptions.value == "group") {
+	  td.innerHTML = "Group";
+	} else {
+	  td.innerHTML = "Personal";
+	}
+}
+
+TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
+	var fld = OAT.Dom.create("select");
+	fld.name = fldName;
+	fld.id = fldName;
+	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
+	TBL.selectOption(fld, fldOptions.value, "Group", "group");
+	TBL.selectOption(fld, fldOptions.value, "Public", "public");
+  if (fldOptions.onchange)
+    fld.onclick = fldOptions.onchange;
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  td.appendChild(OAT.Dom.text(' '));
+  var img = OAT.Dom.image('/ods/images/select.gif');
+  img.id = fldName+'_img';
+  img.className = "pointer";
+  img.onclick = function (){TBL.webidShow(fld, fldOptions.form)};
+  if (fldOptions.imgCssText)
+    img.style.cssText = fldOptions.imgCssText;
+
+  td.appendChild(img);
+  return fld;
+}
+
+TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
+  function cb(td, prefix, fldName, No, fldOptions, disabled, ndx) {
+  	var fld = OAT.Dom.create("input");
+    fld.type = 'checkbox';
+    fld.id = fldName;
+    fld.name = fld.id;
+    fld.value = 1;
+    if (fldOptions.value && fldOptions.value[ndx])
+      fld.checked = true;
+    if (fldOptions.onclick)
+      fld.onclick = fldOptions.onclick;
+    if (disabled)
+      fld.disabled = disabled;
+    td.appendChild(fld);
+  }
+  var suffix = '';
+  if (fldOptions.suffix)
+    suffix = fldOptions.suffix;
+  cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
+  cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
+  // cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+}
+
+TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell52(td, prefix, fldName, No, fldOptions, true);
+}
+
+TBL.clickCell52 = function (fld)
+{
+  var fldName = fld.name;
+  if (fldName.indexOf('_deny') != -1) {
+    fldName = fldName.replace('_deny', '_grant');
+    fldName = fldName.replace('fld_4', 'fld_3');
+  }
+  else if (fldName.indexOf('_grant') != -1) {
+    fldName = fldName.replace('_grant', '_deny');
+    fldName = fldName.replace('fld_3', 'fld_4');
+  }
+  $(fldName).checked = false;
+}
+
+TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  td.appendChild(OAT.Dom.text(' '));
+  var img = OAT.Dom.image('/ods/images/select.gif');
+  img.id = fldName+'_img';
+  img.className = "pointer";
+  img.onclick = function (){TBL.webidShow(fld)};
+  if (fldOptions.imgCssText)
+    img.style.cssText = fldOptions.imgCssText;
+
+  td.appendChild(img);
+  return fld;
+}
+
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
@@ -748,4 +870,28 @@ TBL.createButton43 = function (td, prefix, fldName, No, fldOptions)
 
   td.appendChild(fld);
   return fld;
+}
+
+TBL.webidShow = function(obj, frmName)
+{
+  var S = 'p';
+  if (obj.id.replace('fld_2', 'fld_1') != obj.id)
+    S = $v(obj.id.replace('fld_2', 'fld_1'));
+
+  var F = '';
+  if (frmName)
+    F = '&form='+frmName;
+
+  TBL.windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;'+F);
+}
+
+TBL.windowShow = function(sPage, width, height)
+{
+  if (!width)
+    width = 700;
+  if (!height)
+    height = 420;
+  sPage += '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
 }

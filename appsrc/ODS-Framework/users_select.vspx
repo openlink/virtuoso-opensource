@@ -145,7 +145,6 @@ input.button {
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="''"/>
-        <v:variable name="v_form" persist="0" param-name="form" type="varchar" default="'page_form'"/>
         <v:variable name="v_filter" persist="0" type="varchar" default="''"/>
       <v:variable name="v_value" persist="0" type="varchar" default="''"/>
       <v:variable name="v_mask" persist="0" type="varchar" default="''"/>
@@ -158,6 +157,7 @@ input.button {
         <v:variable name="v_s2" persist="0" param-name="s2" type="varchar" default="''" />
     </vm:variables>
   <vm:body>
+        <vm:login redirect="index.vspx"/>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
         <?vsp http(sprintf('<input type="hidden" name="form"  id="form"  value="%s"/>', get_keyword('form', self.vc_page.vc_event.ve_params, 'page_form'))); ?>
@@ -168,7 +168,7 @@ input.button {
       <v:text name="params" type="hidden" value="--self.v_params"/>
         <div style="padding: 0.2em;">
         <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/icons/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+            <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
         </div>
         <div class="boxHeader">
             Show
@@ -270,7 +270,6 @@ input.button {
         <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
               <table id="users" class="listing" cellspacing="0">
-              <thead class="sortHeader">
                 <tr class="listing_header_row">
                   <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
                     <th class="checkbox" width="1%">
@@ -296,7 +295,6 @@ input.button {
                     </th>
                   </v:template>
                 </tr>
-              </thead>
             </table>
           </v:template>
 

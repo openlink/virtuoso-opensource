@@ -245,6 +245,11 @@ create procedure wishlist_iri (in s varchar)
   return concat ('http://purl.org/vocab/barter/0.1/', s);
 };
 
+create procedure acl_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/ns/auth/acl#', s);
+};
+
 create procedure make_href (in u varchar)
 {
   return WS.WS.EXPAND_URL (sprintf ('http://%s/', get_cname ()), u);
@@ -2271,6 +2276,13 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
 		    DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
+
+      -- update WebAccess graph
+      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (SIOC..waGraph());
+      for (select * from DB.DBA.WA_GROUPS_ACL) do
+      {
+        wa_groups_acl_insert (WACL_USER_ID, WACL_NAME, WACL_WEBIDS);
+      }
 		  for select WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = U_ID do
 		    {
 		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI);
@@ -3560,6 +3572,277 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     }
 };
 
+-------------------------------------------------------------------------------
+--
+create procedure SIOC..wa_instance_acl_insert (
+  inout type_name varchar,
+  inout name varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..forum_iri (type_name, name);
+  graph_iri := iri || '/webaccess';
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure SIOC..acl_insert (
+  inout graph_iri varchar,
+  inout iri varchar,
+  inout acl any)
+{
+  declare acl_iri varchar;
+  declare N, aclArray any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  aclArray := deserialize (acl);
+  for (N := 0; N < length (aclArray); N := N + 1)
+  {
+    acl_iri := iri || sprintf('#acl%d', N);
+
+    DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, rdf_iri ('type'), acl_iri ('Authorization'));
+    DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('accessTo'), iri);
+    if (aclArray[N][2] = 'person')
+    {
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agent'), aclArray[N][1]);
+    }
+    else if (aclArray[N][2] = 'group')
+    {
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agentClass'), aclArray[N][1]);
+    }
+    else if (aclArray[N][2] = 'public')
+    {
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agentClass'), foaf_iri('Agent'));
+    }
+    if (aclArray[N][3])
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Read'));
+    if (aclArray[N][4])
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Write'));
+    if (aclArray[N][5])
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Control'));
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure SIOC..wa_instance_acl_delete (
+  inout type_name varchar,
+  inout name varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  iri := SIOC..forum_iri (type_name, name);
+  graph_iri := iri || '/webaccess';
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure SIOC..acl_delete (
+  inout graph_iri varchar,
+  inout iri varchar,
+  inout acl any)
+{
+  declare acl_iri varchar;
+  declare N, aclArray any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  -- ACL Data
+  aclArray := deserialize (acl);
+  for (N := 0; N < length (aclArray); N := N + 1)
+  {
+    acl_iri := iri || sprintf('#acl%d', N);
+    delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+  }
+}
+;
+
+create procedure SIOC..acl_check (
+  in acl_graph_iri varchar,
+  in acl_iris any)
+{
+  declare N, M, rc varchar;
+  declare graph_iri, foafIRI, foafGraph, loadIRI, localIRI any;
+  declare S, sql, V, info, st, msg, data, meta any;
+
+  rc := '';
+  st := '00000';
+
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
+  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
+  V := split_and_decode (V, 0, '\0\0,:');
+  if (V is null)
+    V := vector ();
+  foafIRI := get_keyword ('URI', V);
+  if (isnull (foafIRI))
+  {
+    foafIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
+    if (foafIRI is not null)
+      goto _authenticated;
+    foafIRI := ODS..FINGERPOINT_WEBID_GET ();
+    if (foafIRI is null)
+      goto _exit;
+  }
+
+  localIRI := foafIRI;
+  V := rfc1808_parse_uri (localIRI);
+  if (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
+  {
+    V [0] := 'local';
+    V [1] := '';
+    localIRI := db.dba.vspx_uri_compose (V);
+  }
+  V := rfc1808_parse_uri (foafIRI);
+  V[5] := '';
+  loadIRI := DB.DBA.vspx_uri_compose (V);
+
+  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
+  exec (S, st, msg, vector (), 0);
+  if (st <> '00000')
+    goto _exit;
+
+  info := get_certificate_info (9);
+  S := sprintf (' sparql define input:storage "" ' ||
+                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
+                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
+                '   from <%s> ' ||
+                '  where { ' ||
+                '          ?id cert:identity <%s> ; ' ||
+                '              rsa:public_exponent ?exp ; ' ||
+                '              rsa:modulus ?mod . ' ||
+                '          optional { ?exp cert:decimal ?exp_val . ' ||
+                '          ?mod cert:hex ?mod_val . } ' ||
+                '        }',
+                foafGraph,
+                localIRI);
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st <> '00000' or length (data) = 0)
+    goto _exit;
+
+  foreach (any _row in data) do
+  {
+    if (_row[0] = cast (info[1] as varchar) and lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
+    {
+    _authenticated:
+      declare resMode varchar;
+
+      graph_iri := SIOC..get_graph ();
+      S := ' sparql \n' ||
+           ' define input:storage "" \n' ||
+           ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+           ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+           ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
+           ' select ?aclMode \n' ||
+           '   from <%s> \n' ||
+           '   from <%s> \n' ||
+           '  where { \n' ||
+           '          { \n' ||
+           '            ?rule rdf:type acl:Authorization ; \n' ||
+           '                  acl:accessTo <%s> ; \n' ||
+           '                  acl:mode ?aclMode; \n' ||
+           '                  acl:agent <%s>. \n' ||
+           '          } \n' ||
+           '          union \n' ||
+           '          { \n' ||
+           '            ?rule rdf:type acl:Authorization ; \n' ||
+           '                  acl:accessTo <%s> ; \n' ||
+           '                  acl:mode ?aclMode; \n' ||
+           '                  acl:agentClass foaf:Agent. \n' ||
+           '          } \n' ||
+           '          union \n' ||
+           '          { \n' ||
+           '            ?rule rdf:type acl:Authorization ; \n' ||
+           '                  acl:accessTo <%s> ; \n' ||
+           '                  acl:mode ?aclMode; \n' ||
+           '                  acl:agentClass ?group. \n' ||
+           '                  ?group rdf:type foaf:Group ; \n' ||
+           '                  foaf:member <%s>. \n' ||
+           '          } \n' ||
+           '        }';
+      for (N := 0; N < length (acl_iris); N := N + 1)
+      {
+        commit work;
+        sql := sprintf (S, acl_graph_iri, graph_iri, acl_iris[N], foafIRI, acl_iris[N], acl_iris[N], foafIRI);
+        exec (sql, st, msg, vector (), vector ('use_cache', 1), meta, data);
+        if ((st = '00000') and length (data))
+        {
+          rc := 'R';
+          for (M := 0; M < length (data); M := M + 1)
+          {
+            if (data[M][0] like '%Write')
+            {
+              rc := 'W';
+              goto _break;
+            }
+          }
+        }
+      }
+    }
+  }
+_break:;
+  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+
+_exit:;
+  return rc;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_INSTANCE_ACL_I after insert on DB.DBA.WA_INSTANCE order 100 referencing new as N
+{
+  if (coalesce (N.WAI_ACL, '') <> '')
+    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_INSTANCE_ACL_U after update on DB.DBA.WA_INSTANCE order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
+    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+  if ((coalesce (N.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
+    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_INSTANCE_ACL_D before delete on DB.DBA.WA_INSTANCE order 100 referencing old as O
+{
+  if (coalesce (O.WAI_ACL, '') <> '')
+    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+}
+;
 
 -- DB.DBA.SYS_ROLE_GRANTS
 create trigger SYS_ROLE_GRANTS_SIOC_I after insert on DB.DBA.SYS_ROLE_GRANTS referencing new as N
@@ -3761,6 +4044,100 @@ create trigger WA_USER_CERTS_D after delete on DB.DBA.WA_USER_CERTS referencing 
   crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', O.UC_ID));
   delete_quad_s (graph_iri, crt_iri);
   return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure waGraph ()
+{
+  return sprintf ('http://%s/webdav/webaccess', get_cname ());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure waGroup (
+  in id integer,
+  in name varchar)
+{
+  return sprintf ('%s/%s#%U', waGraph (), ODRIVE.WA.account_name (id), name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure wa_groups_acl_insert (
+  inout id integer,
+  inout name varchar,
+  inout webIDs any)
+{
+  declare N integer;
+  declare graph_iri, group_iri varchar;
+  declare tmp any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..waGraph();
+  group_iri := SIOC..waGroup(id, name);
+  DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, rdf_iri ('type'), foaf_iri ('Group'));
+  tmp := split_and_decode (webIDs, 0, '\0\0\n');
+  for (N := 0; N < length (tmp); N := N + 1)
+  {
+    if (length (tmp[N]))
+      DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, foaf_iri ('member'), tmp[N]);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure wa_groups_acl_delete (
+  inout id integer,
+  inout name varchar)
+{
+  declare graph_iri, group_iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..waGraph();
+  group_iri := SIOC..waGroup(id, name);
+  delete_quad_s_or_o (graph_iri, group_iri, group_iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_GROUPS_ACL_SIOC_I after insert on DB.DBA.WA_GROUPS_ACL referencing new as N
+{
+  wa_groups_acl_insert (N.WACL_USER_ID,
+                        N.WACL_NAME,
+                        N.WACL_WEBIDS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_GROUPS_ACL_SIOC_U after update on DB.DBA.WA_GROUPS_ACL referencing old as O, new as N
+{
+  wa_groups_acl_delete (O.WACL_USER_ID,
+                        O.WACL_NAME);
+  wa_groups_acl_insert (N.WACL_USER_ID,
+                        N.WACL_NAME,
+                        N.WACL_WEBIDS);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger WA_GROUPS_ACL_SIOC_D before delete on DB.DBA.WA_GROUPS_ACL referencing old as O
+{
+  wa_groups_acl_delete (O.WACL_USER_ID,
+                        O.WACL_NAME);
 }
 ;
 
@@ -4132,6 +4509,8 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   set_user_id ('dba');
   info := get_certificate_info (9);
   agent := ODS.ODS_API.SSL_WEBID_GET (); 
+  if (agent is null)
+    agent := ODS..FINGERPOINT_WEBID_GET ();
 
 --  dbg_obj_print (info, agent);
   if (not isarray (info) or agent is null)

@@ -166,7 +166,7 @@
 	     </tr>
 	     <tr>
 		 <td>
-		     <input type="text" name="days" value="356" size="4"/> days
+		     <input type="text" name="days" value="365" size="4"/> days
 		 </td>
 	     </tr>
 	     <tr>

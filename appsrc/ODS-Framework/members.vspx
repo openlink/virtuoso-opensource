@@ -21,20 +21,23 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="blog_home_page"
+<v:page name="members_page"
+        fast-render="1"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <vm:page>
     <vm:header>
+      <script type="text/javascript" src="tbl.js">;</script>
       <vm:title>Application Members</vm:title>
     </vm:header>
     <v:on-init>
       <![CDATA[
-        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION
-          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, deserialize(WAI_ACL)
+          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc, self.iacl
           from WA_INSTANCE
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
@@ -67,42 +70,29 @@
       <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
       <vm:variable name="wa_type" type="varchar" default="null" persist="0"/>
-      <vm:variable name="imodel" type="int" default="null" persist="0"/>
-      <vm:variable name="is_public" type="int" default="null" persist="0"/>
-      <vm:variable name="is_visible" type="int" default="null" persist="0"/>
-      <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <vm:variable name="imodel" type="integer" default="null" persist="0"/>
+      <vm:variable name="is_public" type="integer" default="null" persist="0"/>
+      <vm:variable name="is_visible" type="integer" default="null" persist="0"/>
+      <vm:variable name="iid" type="integer" default="null" persist="0" param-name="wai_id"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>
       <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
       <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
       <vm:variable name="instance_descr" type="varchar" default="null" persist="0" />
+      <vm:variable name="iacl" type="any" default="null" persist="0" />
       <vm:variable name="wa_domain" type="varchar" default="null" persist="0"/>
-      <vm:variable name="domains" type="varchar" default="null" persist="0"/>
-      <vm:variable name="switch_adv" type="int" default="0" persist="0"/>
-      <vm:variable name="page_type" type="varchar" default="'edit'" persist="0"/>
       <vm:variable name="member_filter" type="varchar" default="'%'" persist="0"/>
       <vm:navigation on="settings"/>
       <vm:navigation1 on="services"/>
-      <vm:rawheader>
-        <h1 class="page_title"><v:label render-only="1" value="--self.iname || ' Members'" name="rah1" /></h1>
-      </vm:rawheader>
       <vm:body>
         <vm:login redirect="login.vspx"/>
-        <?vsp
-          if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
-          {
-        ?>
-        <input type="hidden" name="page" value="membership"/>
-        <?vsp
-          if (self.wa_type in ('oWiki') and self.imodel = 1)
-          {
-            ;
-          }
-          else
-          {
-        ?>
+        <h3 class="page_title">
+          <v:label value="--self.iname"/>
+        </h3>
+        <v:template name="template_01" type="simple" enabled="--case when self.wa_type in ('oDrive', 'oMail', 'IM') or (self.imodel = 1) then 0 else 1 end">
+          <fieldset>
+            <legend><b>Members</b></legend>
         <div>
           <?vsp
-          {
             declare cnt, cnt1 int;
             select count(*) into cnt from WA_INVITATIONS where WI_U_ID = self.u_id and WI_INSTANCE = self.iname;
             select count(*) into cnt1 from WA_MEMBER where WAM_INST = self.iname and WAM_STATUS > 2;
@@ -113,7 +103,6 @@
           <img src="images/icons/go_16.png" border="0" alt="Sent Invitations" /> <v:url name="app_inv_url" url="--sprintf ('app_sent_inv.vspx?wai_name=%U&wai_id=%d', self.iname, self.iid)" value="--sprintf ('You have %d pending Invitation(s)', cnt)" render-only="1"/>
           <?vsp
             }
-          }
           ?>
           <img src="images/icons/go_16.png" border="0" alt="Invite" /> <v:url name="app_inv1_url" url="--sprintf ('members_inv.vspx?wai_id=%d', self.iid)" value="Invite someone to join" render-only="1"/>
         </div>
@@ -178,19 +167,23 @@
                 <v:before-render>
                   control.vc_enabled := length((control as vspx_data_set).ds_rows_cache);
                 </v:before-render>
-                <v:template name="template2" type="repeat">
-                  <v:template name="template_ne4" type="if-not-exists">
-                    <tr><td colspan="4">No matching records</td></tr>
+
+                    <v:template name="ds_members_repeat" type="repeat">
+
+                      <v:template name="ds_members_empty" type="if-not-exists">
+                        <tr>
+                          <td colspan="4">No matching records</td>
+                        </tr>
                   </v:template>
 
-                  <v:template name="template99" type="edit">
+                      <v:template name="ds_members_edit2" type="edit">
                     <v:form name="upf" type="update" method="POST"  table="WA_MEMBER" if-not-exists="nothing">
                       <v:key name="upd_WAM_USER" column="WAM_USER" value="--self.ds_members.ds_current_row.te_rowset[2]" default="null"/>
                       <v:key name="upd_WAM_INST" column="WAM_INST" value="--self.iname" default="null"/>
                       <v:template name="template6" type="simple">
                       <tr>
                         <td>
-                          <v:label format="%s" name="ds_members_update_label_0" value="--self.ds_members.ds_current_row.te_rowset[0]"/>
+                              <v:label format="%s" value="--self.ds_members.ds_current_row.te_rowset[0]"/>
                         </td>
                         <td>
                           <v:data-list
@@ -226,13 +219,14 @@
                     </v:template>
                   </v:form>
                 </v:template>
-                <v:template name="template4" type="browse">
+
+                    <v:template name="ds_members_browse" type="browse">
                   <tr>
                     <td nowrap="1" width="20%">
-                      <v:label name="ds_members_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                          <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                     </td>
                     <td nowrap="1">
-                      <v:label name="ds_members_type" value="" format="%s" >
+                          <v:label value="" format="%s" >
                         <v:after-data-bind>
                           <![CDATA[
                             declare _type_name, _status any;
@@ -466,7 +460,8 @@
 
                     if (isnull(self.d_deleted))
                       self.d_deleted := vector();
-                    if (mode) {
+                        if (mode)
+                        {
                       declare tmp any;
                       tmp := vector();
                       for (N := 0; N < length(self.d_added); N := N + 1)
@@ -487,7 +482,7 @@
                     for (select U_NAME from DB.DBA.WA_MEMBER,DB.DBA.SYS_USERS where U_ID = WAM_USER and WAM_STATUS <> 1  and WAM_INST = self.iname) do
                     {
                       self.str_alreadymembers:=self.str_alreadymembers||','||U_NAME;
-                    };
+                        }
                     self.str_alreadyinlist :=  '';
 
                     declare exit handler for not found { goto _end; };
@@ -589,8 +584,6 @@
                   <v:button name="btn_invite" action="simple" value="Invite member(s)" xhtml_class="form-button" enabled="--length(self.d_added)">
                     <v:on-post>
                       <![CDATA[
-                        self.current_member_model := (select WAI_MEMBER_MODEL from WA_INSTANCE where WAI_ID = self.iid);
-
                         -- check if user exists
                         declare _u_id, _u_name any;
                         declare model_type integer;
@@ -643,7 +636,7 @@
                           }
                           -- create session
                           declare _expire, _sid any;
-                          if (self.current_member_model = 2)
+                              if (self.imodel = 2)
                           {
                             _sid := md5 (concat (datestring (dateadd ('second', N, now())), http_client_ip(), http_path()));
                             _expire := coalesce((select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS), 1);
@@ -681,7 +674,7 @@
                               goto nextcycle;
                             };
 
-                            if (self.current_member_model = 2)
+                                if (self.imodel = 2)
                             {
                               insert soft WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_STATUS)
                                 values(_u_id, self.iname, model_type, 4);
@@ -716,12 +709,59 @@
              </td>
            </tr>
         </table>
-        <vm:variable name="current_member_model" type="int" default="0" persist="0"/>
       </v:form>
+          </fieldset>
+        </v:template>
+        <v:template name="template_02" type="simple">
+          <fieldset>
+            <legend><b>ACL</b></legend>
+            <table>
+              <tr>
+                <td width="100%">
+                  <table id="s_tbl" class="listing" style="width: 100%;" cellspacing="0">
+                    <thead>
+                      <tr class="listing_header_row">
+                        <th width="1%" nowrap="nowrap">Access Type</th>
+                        <th nowrap="nowrap">WebID</th>
+                        <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                        <th width="1%">Action</th>
+                      </tr>
+                    </thead>
+                    <tr id="s_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
+              		  <![CDATA[
+              		    <script type="text/javascript">
       <?vsp
-          }
+                        declare N integer;
+
+                        for (N := 0; N < length (self.iacl); N := N + 1)
+                        {
+                          http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], self.iacl[N][1], case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
         }
       ?>
+              		    </script>
+              		  ]]>
+                  </table>
+                </td>
+                <td valign="top" nowrap="nowrap">
+                  <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                </td>
+              </tr>
+            </table>
+            <v:button name="btn_acl_update" action="simple" value="Update" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.iacl := DB.DBA.wa_acl_params (e.ve_params);
+                  update DB.DBA.WA_INSTANCE
+                     set WAI_ACL = serialize (self.iacl)
+                   where WAI_ID = self.iid;
+                  commit work;
+
+       		        self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </fieldset>
+        </v:template>
       </vm:body>
     </vm:pagewrapper>
   </vm:page>

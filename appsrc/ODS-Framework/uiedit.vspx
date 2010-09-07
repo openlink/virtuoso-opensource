@@ -188,25 +188,32 @@ function checkRest (form, sel)
                                  url="--sprintf('uiedit.vspx?page=4')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when self.pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url08"
+                        <td class="<?V case when self.pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url05"
                                  value="Annotations"
                                  format="%s"
-                                 url="--sprintf('uiedit.vspx?page=8')"
+                                 url="--sprintf('uiedit.vspx?page=5')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when self.pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url09"
+                        <td class="<?V case when self.pg = 6 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url06"
                                  value="Validation"
                                  format="%s"
-                                 url="--sprintf('uiedit.vspx?page=9')"
+                                 url="--sprintf('uiedit.vspx?page=6')"
                                  xhtml_class="tab"/>
                         </td>
-                        <td class="<?V case when self.pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
-                          <v:url name="b_url11"
+                        <td class="<?V case when self.pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url7"
                                  value="LDAP Servers"
                                  format="%s"
-                                 url="--sprintf('uiedit.vspx?page=10')"
+                                 url="--sprintf('uiedit.vspx?page=7')"
+                                 xhtml_class="tab"/>
+                        </td>
+                        <td class="<?V case when self.pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url name="b_url8"
+                                 value="ACL Groups"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=8')"
                                  xhtml_class="tab"/>
                         </td>
                   <td class="page_tab_empty" align="center" width="100%">
@@ -242,21 +249,26 @@ function checkRest (form, sel)
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '4')">
                             <v:include url="uiedit_svc.vspx"/>
                         </v:template>
-                        <v:template name="template8"
+                          <v:template name="template5"
                                      type="simple"
-                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '8')">
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '5')">
                             <v:include url="uiedit_related.vspx"/>
                         </v:template>
-                          <v:template name="template9"
+                          <v:template name="template6"
                                      type="simple"
-                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '9')">
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
                             <v:include url="uiedit_validation.vspx"/>
                           </v:template>
-                          <v:template name="template10"
+                          <v:template name="template7"
                                       type="simple"
-                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '10')">
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '7')">
                           <v:include url="uiedit_ldap.vspx"/>
                         </v:template>
+                          <v:template name="template8"
+                                      type="simple"
+                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '8')">
+                            <v:include url="uiedit_groups.vspx"/>
+                          </v:template>
                       </td>
                     </tr>
                   </table>

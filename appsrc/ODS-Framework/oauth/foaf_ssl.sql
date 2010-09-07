@@ -145,9 +145,8 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts any;
   declare agent varchar;
-  declare acc, wf int;
+  declare acc int;
   acc := 0;
-  wf := 0;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -167,7 +166,11 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       agent := FOAF_SSL_WEBFINGER ();
       if (agent is not null)
 	{
-	  wf := 1;
+	  goto authenticated;
+	}
+      else
+	{
+	  agent := ODS..FINGERPOINT_WEBID_GET ();
 	}
     }
   if (agent is null)
@@ -178,8 +181,6 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0)
       connection_set ('SPARQLUserId', VS_UID);
       return 1;
     }
-  if (wf)
-    goto authenticated;
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
   graph := DB.DBA.vspx_uri_compose (hf);

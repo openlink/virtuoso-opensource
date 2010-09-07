@@ -294,7 +294,10 @@
     <xsl:if test="@vm_onunload">
       <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
     </xsl:if>
-    <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
+    <![CDATA[
+      <script type="text/javascript" src="common.js"></script>
+      <script type="text/javascript" src="validate.js"></script>
+    ]]>
     <v:form name="page_form"
             type="simple"
             method="POST"
@@ -391,7 +394,10 @@
   <xsl:if test="@vm_onunload">
    <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
   </xsl:if>
-  <![CDATA[<script type="text/javascript" src="common.js"></script>]]>
+  <![CDATA[
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="validate.js"></script>
+  ]]>
   <v:form name="page_form" type="simple" method="POST" xhtml_enctype="multipart/form-data" xhtml_onsubmit="sflag=true;">
   <!-- user-defined area -->
   <xsl:apply-templates />

@@ -131,7 +131,7 @@ for (declare i, l int, i := 0, l := length (sel); i < l; i := i + 1)
   {
      if (position (sel[i], ex) = 0 or sel[i] = self.svc_name.ufl_value)
        {
-                  if ((sel[i] <> 'FBKey') or (self.u_id = 0))
+                  if ((sel[i] <> 'FBKey') or (self.u_id = http_dav_uid ()))
                   {
          newn := vector_concat (newn, vector (val[i]));
          newv := vector_concat (newv, vector (sel[i]));
@@ -156,7 +156,7 @@ control.vs_set_selected ();
           if (__proc_exists ('DB.DBA.FB_SIG') is not null)
           {
         ?>
-        <v:template name="template_fb2" type="simple" enabled="--equ(self.u_id,0)">
+        <v:template name="template_fb2" type="simple" enabled="--equ(self.u_id, http_dav_uid ())">
           <v:browse-button name="fbt1" xhtml_id="fbt1" value="Get FaceBook session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
         </v:template>
         <?vsp
