@@ -1794,18 +1794,24 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
   if (V is null)
     V := vector ();
   foafIRI := get_keyword ('URI', V);
-  if (isnull (foafIRI))
-    {
-      if (__proc_exists ('FOAF_SSL_WEBFINGER') is null)
-        goto _exit;
-      foafIRI := FOAF_SSL_WEBFINGER ();
       if (foafIRI is null)
-    goto _exit;
+    {
+      if (__proc_exists ('DB.DBA.FOAF_SSL_WEBFINGER') is not null)
+	{
+	  foafIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
+	  if (foafIRI is not null)
+	    {
       st := '00000';
       goto authenticated;
     }
-
-
+	}
+      if (__proc_exists ('ODS.DBA.FINGERPOINT_WEBID_GET') is not null)
+	{
+	  foafIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
+	}
+      if (foafIRI is null)
+	goto _exit;
+    }
   localIRI := foafIRI;
   V := rfc1808_parse_uri (localIRI);
   if (is_https_ctx () and
