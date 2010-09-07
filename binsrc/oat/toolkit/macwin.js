@@ -23,7 +23,7 @@ OAT.MacWin = function(optObj) {
 	this.options.statusHeight = 16;
 	this.options.moveHeight = 23;
 
-	OAT.Dom.applyStyle(this.div,{font:"menu",backgroundColor:"#c5c5c5"});
+	OAT.Style.set(this.div,{font:"menu",backgroundColor:"#c5c5c5"});
 
 	var opt = {
 		corners:[1,1,0,0], /* CW from LT */
@@ -32,7 +32,7 @@ OAT.MacWin = function(optObj) {
 		edgeFiles:[self.options.imagePath+"MacWin_top.gif",self.options.imagePath+"MacWin_left.gif","",self.options.imagePath+"MacWin_right.gif"],
 		thickness:[23,8,0,8] /* CW from T */
 	}
-	OAT.Dom.applyStyle(this.content,{position:"relative"});
+	OAT.Style.set(this.content,{position:"relative"});
 
 	OAT.SimpleFX.roundImg(this.div,opt);
 	OAT.SimpleFX.shadow(this.div,{offsetX:8,imagePath:self.options.imagePath});
@@ -98,7 +98,7 @@ OAT.MacWin = function(optObj) {
 	} else { this.maxBtn = false; }
 
 	if (self.options.resize) {
-		OAT.Dom.applyStyle(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"-8px",bottom:"0px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"MsWin_resize.gif)"});
+		OAT.Style.set(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"-8px",bottom:"0px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"MsWin_resize.gif)"});
 	}
 
 }
