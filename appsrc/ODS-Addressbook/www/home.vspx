@@ -1421,7 +1421,7 @@
                   declare exit handler for not found goto _end;
 
                 params := self.vc_page.vc_event.ve_params;
-                if (isnull (get_keyword ('ab_name', params)))
+                  if (isnull (get_keyword ('ab_name', params)) or (self.abAction = 'view'))
                   self.v_tabNo := '1';
                   if ((self.abAction in ('edit', 'view')) and isnull (get_keyword ('ab_name', params)))
                   {
@@ -1577,29 +1577,23 @@
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
             <div id="a" class="c1">
               <div class="tabs">
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="0" caption="Main" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="1" caption="Contact" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="2" caption="Home" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="3" caption="Business" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="4" caption="Relationships" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="6" tabNo="5" caption="Sharing" />
+                  <vm:if test="self.abAction <> 'view'">
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="0" caption="Import" />
+                  </vm:if>
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="1" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="2" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="3" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="4" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="5" caption="Relationships" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="6" caption="Sharing" />
               </div>
                 <div class="contents vcard">
+                  <vm:if test="self.abAction <> 'view'">
                 <div id="a_content_0" class="tabContent" style="display: none;">
                     <table class="form-body n" cellspacing="0">
-                      <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
-                    <tr>
-                        <th>
-                          <v:label for="ab_foaf" value="Contact URI" />
-                        </th>
-                        <td>
-                          <?vsp self.viewField (SIOC..addressbook_contact_iri (self.domain_id, self.v_id), 'uid', null); ?>
-                        </td>
-                      </tr>
-                      </vm:if>
                       <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Person''s FOAF URI" />
+                          <v:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1610,9 +1604,34 @@
                           <?vsp self.viewField (self.v_foaf, '', null); ?>
                         </td>
                       </tr>
+                    </table>
+                  </div>
+                  </vm:if>
+                  <div id="a_content_1" class="tabContent" style="display: none;">
+                    <table class="form-body n" cellspacing="0">
+                      <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
+                    <tr>
+                        <th>
+                          <v:label for="ab_foaf" value="Contact URI" />
+                        </th>
+                        <td>
+                          <?vsp http (self.prepareField(SIOC..addressbook_contact_iri (self.domain_id, self.v_id), 'uid', null)); ?>
+                        </td>
+                      </tr>
+                      </vm:if>
+                      <vm:if test="self.abAction = 'view'">
                       <tr>
                         <th>
-                          <v:label for="ab_iri" value="Person URI" />
+                          <v:label for="ab_foaf" value="Profile Document URL" />
+                        </th>
+                        <td>
+                          <?vsp self.viewField (self.v_foaf, '', null); ?>
+                        </td>
+                      </tr>
+                      </vm:if>
+                      <tr>
+                        <th>
+                          <v:label for="ab_iri" value="WebID" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1963,7 +1982,7 @@
                     </vm:if>
                   </table>
                 </div>
-                <div id="a_content_1" class="tabContent" style="display: none;">
+                  <div id="a_content_2" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -2044,7 +2063,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_2" class="tabContent adr" style="display: none;">
+                  <div id="a_content_3" class="tabContent adr" style="display: none;">
                     <span class="type" style="display: none;">HOME</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2221,7 +2240,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_3" class="tabContent adr" style="display: none;">
+                  <div id="a_content_4" class="tabContent adr" style="display: none;">
                     <span class="type" style="display: none;">WORK</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2446,7 +2465,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_4" class="tabContent" style="display: none;">
+                  <div id="a_content_5" class="tabContent" style="display: none;">
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 40em; background-color: white;">
@@ -2489,7 +2508,7 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="a_content_5" class="tabContent" style="display: none;">
+                  <div id="a_content_6" class="tabContent" style="display: none;">
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">

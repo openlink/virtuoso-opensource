@@ -66,7 +66,10 @@ create procedure AB.WA.acl_check (
 }
 ;
 
-
+-------------------------------------------------------------------------------
+--
+-- Session Functions
+--
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.session_domain (
@@ -82,13 +85,15 @@ create procedure AB.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
+  }
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'AddressBook'))
     domain_id := -1;
 
 _end:;
@@ -101,31 +106,11 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare aPath, rc, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
 
-  declare exit handler for sqlstate '*'
-  {
-    domain_id := -2;
-    goto _end;
-  };
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-  {
-    domain_id := get_keyword('domain', options);
-  }
-  if (is_empty_or_null (domain_id))
-  {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
-  domain_id := cast (domain_id as integer);
+  domain_id := AB.WA.session_domain (params);
   user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
@@ -140,25 +125,23 @@ _end:
     user_name := AB.WA.user_name(U_NAME, U_FULL_NAME);
     user_role := AB.WA.access_role(domain_id, U_ID);
   }
-  if (user_id = -1)
+  if ((user_id = -1) or (domain_id <= 0))
   {
     rc := '';
-    if (domain_id >= 0)
+    if (domain_id > 0)
     {
       rc := AB.WA.acl_check (domain_id);
       if ((rc = '') and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
+    {
+      user_role := 'expire';
+      user_name := 'Expire session';
+        goto _skip;
     }
-
+    }
     if (domain_id = -1)
     {
       user_role := 'expire';
       user_name := 'Expire session';
-    }
-    else if (domain_id = -2)
-    {
-      user_role := 'public';
-      user_name := 'Public User';
     }
     else if (rc = 'R')
     {
@@ -176,7 +159,7 @@ _end:
       user_name := 'Guest User';
     }
   }
-
+_skip:;
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,

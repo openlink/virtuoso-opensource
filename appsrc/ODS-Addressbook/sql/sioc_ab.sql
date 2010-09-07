@@ -265,9 +265,8 @@ create procedure fill_ods_addressbook_sioc2 (
 		                  P_FOAF,
 				  P_IRI);
 
-      contact_acl_insert (P_DOMAIN_ID,
-                          P_ID,
-                          P_ACL);
+      contact_acl_insert (P_DOMAIN_ID, P_ID, P_ACL);
+
       cnt := cnt + 1;
 		   if (mod (cnt, 500) = 0)
 		   {
