@@ -21,9 +21,9 @@ OAT.RectWin = function(optObj) {
 	this.options.statusHeight = 30;
 	this.options.moveHeight = 16;
 
-	OAT.Dom.applyStyle(this.div,{border:"1px solid rgb(164,163,163)",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{overflow:"auto",top:"16px",position:"relative"});
-	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:"0px",height:this.options.moveHeight+"px"});
+	OAT.Style.set(this.div,{border:"1px solid rgb(164,163,163)",font:"menu",backgroundColor:"#fff"});
+	OAT.Style.set(this.content,{overflow:"auto",top:"16px",position:"relative"});
+	OAT.Style.set(this.move,{position:"absolute",left:"0px",top:"0px",height:this.options.moveHeight+"px"});
 
 	if (self.options.move) {
 		this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
@@ -31,14 +31,14 @@ OAT.RectWin = function(optObj) {
 		}
 	}
 	if (self.closeBtn) {
-		OAT.Dom.applyStyle(this.closeBtn,{cssFloat:"right",styleFloat:"right",fontSize:"1px",marginTop:"2px",marginRight:"2px",cursor:"pointer",width:"14px",height:"13px",backgroundImage:"url("+self.options.imagePath+"RectWin_close.gif)"});
+		OAT.Style.set(this.closeBtn,{cssFloat:"right",styleFloat:"right",fontSize:"1px",marginTop:"2px",marginRight:"2px",cursor:"pointer",width:"14px",height:"13px",backgroundImage:"url("+self.options.imagePath+"RectWin_close.gif)"});
 	}
 
 	if (self.resize) {
-		OAT.Dom.applyStyle(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"2px",bottom:"2px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"RectWin_resize.gif)"});
+		OAT.Style.set(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"2px",bottom:"2px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"RectWin_resize.gif)"});
 	}
 
-	OAT.Dom.applyStyle(this.caption,{textAlign:"center",fontWeight:"bold"});
+	OAT.Style.set(this.caption,{textAlign:"center",fontWeight:"bold"});
 
 	this.resizeTo = function(w,h) {
 		if (w) {

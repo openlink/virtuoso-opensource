@@ -41,7 +41,9 @@ OAT.Xml = {
 		*/
 
 		if (!elem) { return; }
-	if (OAT.Xml._getImplementation()) {
+	if (window.ActiveXObject) {
+	    return elem.text;
+	} else if (OAT.Xml._getImplementation()) {
 			var result = elem.textContent;
 			/* safari hack */
 			if (typeof(result) == "undefined") {
@@ -49,8 +51,6 @@ OAT.Xml = {
 				return (result ? result.nodeValue : "");
 			}
 			return result;
-		} else if (window.ActiveXObject) {
-			return elem.text;
 		} else {
 		    alert("OAT.Xml.textValue:\nNo XML parser available");
 		    return false;

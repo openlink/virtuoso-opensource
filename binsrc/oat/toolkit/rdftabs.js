@@ -129,8 +129,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	var s = OAT.Dom.create("a");
 	var uri = OAT.IRIDB.getIRI(item.uri);
 
-	s.href = OAT.IRIDB.getIRI(uri);
-	s.title = s.href;
+	s.href = uri;
+	s.title = uri;
 	s.innerHTML = self.parent.getTitle(item);
 
 	OAT.Dom.append([s_ctr,h],[h,s]);
@@ -1313,7 +1313,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#lat",
 						     "http://www.w3.org/2003/01/geo/latitude", 
 						     "http://www.w3.org/2006/vcard/ns#latitude",
-						     "http://www.w3.org/2001/vcard-rdf/3.0#latitude"]);
+						     "http://www.w3.org/2001/vcard-rdf/3.0#latitude",
+						     "http://dbpedia.org/property/lat"]);
 
     this.lonProperties    = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/lng",
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#long",
@@ -1321,7 +1322,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/long",
 						     "http://www.w3.org/2003/01/geo/longitude",
 						     "http://www.w3.org/2006/vcard/ns#longitude",
-						     "http://www.w3.org/2001/vcard-rdf/3.0#longitude"]);
+						     "http://www.w3.org/2001/vcard-rdf/3.0#longitude",
+						     "http://dbpedia.org/property/long"]);
 
     this.lookupProperties = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/name",
 						     "http://xmlns.com/foaf/0.1/location"]); /* interesting to be put into lookup pin */

@@ -489,14 +489,14 @@ OAT.RDF = {
 
 		    var obj = a.nodeValue;
 
-		    var objNs = OAT.Xml.getNsURL (a);
+		    var objNs = OAT.Xml.getNsURI (a);
 		    var objNsPrefix = OAT.Xml.getNsPrefix(obj);
 
 		    OAT.IRIDB.insertIRI(objNs, objNsPrefix);
 
 		    triples.push([OAT.IRIDB.insertIRI(subj),
 				  OAT.IRIDB.insertIRI(pred),
-				  new OAT.RDFAtom (OAT.RDFTag.IRI, OAT.IRIDB.insertIRI(obj), ns)]);
+				  new OAT.RDFAtom (OAT.RDFTag.IRI, OAT.IRIDB.insertIRI(obj), objNs)]);
 		}
 	    } /* for all attributes */
 	    

@@ -21,8 +21,8 @@ OAT.RoundWin = function(optObj) {
 	this.options.statusHeight = 20;
 	this.options.moveHeight = 8;
 
-	OAT.Dom.applyStyle(this.div,{border:"1px solid rgb(160,160,164)",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{top:"8px",position:"relative"});
+	OAT.Style.set(this.div,{border:"1px solid rgb(160,160,164)",font:"menu",backgroundColor:"#fff"});
+	OAT.Style.set(this.content,{top:"8px",position:"relative"});
 
 	document.body.appendChild(this.div);
 	var tmp = OAT.SimpleFX.roundDiv(this.div,{antialias:0,size:15});
@@ -46,7 +46,7 @@ OAT.RoundWin = function(optObj) {
 		}
 	}
 
-	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:(-self.options.moveHeight)+"px",height:2*self.options.moveHeight+"px",borderBottom:"1px solid rgb(208,208,210)"});
+	OAT.Style.set(this.move,{position:"absolute",left:"0px",top:(-self.options.moveHeight)+"px",height:2*self.options.moveHeight+"px",borderBottom:"1px solid rgb(208,208,210)"});
 
 	if (self.options.move) {
 		this.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
@@ -55,13 +55,13 @@ OAT.RoundWin = function(optObj) {
 	}
 
 	if (self.closeBtn) {
-		OAT.Dom.applyStyle(this.closeBtn,{cssFloat:"right",styleFloat:"right",fontSize:"1px",marginTop:"2px",marginRight:"5px",cursor:"pointer",width:"14px",height:"13px",backgroundImage:"url("+self.options.imagePath+"RoundWin_close.gif)"});
+		OAT.Style.set(this.closeBtn,{cssFloat:"right",styleFloat:"right",fontSize:"1px",marginTop:"2px",marginRight:"5px",cursor:"pointer",width:"14px",height:"13px",backgroundImage:"url("+self.options.imagePath+"RoundWin_close.gif)"});
 	}
 
 	if (self.resize) {
-		OAT.Dom.applyStyle(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"5px",bottom:"-4px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"RoundWin_resize.gif)"});
+		OAT.Style.set(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"5px",bottom:"-4px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"RoundWin_resize.gif)"});
 		this.resize.parentNode.appendChild(this.resize);
 	}
 
-	OAT.Dom.applyStyle(this.caption,{textAlign:"center",fontWeight:"bold"});
+	OAT.Style.set(this.caption,{textAlign:"center",fontWeight:"bold"});
 }
