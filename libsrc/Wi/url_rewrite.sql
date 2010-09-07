@@ -428,10 +428,8 @@ end_scan:
       long_path := replace (long_path, '^{URIQADefaultHost}^', host);
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
-          if (strchr (host, ':') is not null)
-            long_path := replace (long_path, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHostName}U:%{WSHostPort}U'));
-          else
-            long_path := replace (long_path, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHost}U'));
+	  long_path := replace (long_path, '^{DynamicLocalFormat}^',
+	  	sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }
   return long_path;
@@ -1001,10 +999,7 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
       ret := replace (ret, '^{URIQADefaultHost}^', host);
       if (strstr (ret, '^{DynamicLocalFormat}^') is not null)
         {
-          if (strchr (host, ':') is not null)
-            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHostName}U:%{WSHostPort}U'));
-          else
-            ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('http://%{WSHost}U'));
+	  ret := replace (ret, '^{DynamicLocalFormat}^', sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }
    return ret;
@@ -1276,9 +1271,6 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	{
 	  declare fn, tmp, repl any;
 
-	  http_headers := rtrim (http_headers, '\r\n');
-	  http_headers := http_headers || '\r\n';
-
 	  tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	  while (tmp is not null)
 	    {
@@ -1291,7 +1283,18 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
               http_headers := replace (http_headers, tmp, repl);
               tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
 	    }
+	  if (strstr (http_headers, '^{DynamicLocalFormat}^') is not null)
+	    {
+	      http_headers := replace (http_headers, '^{DynamicLocalFormat}^',
+	         sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
+	    }
+
+	  http_headers := rtrim (http_headers, '\r\n');
+	  if (length (http_headers))
+	    {
+	      http_headers := http_headers || '\r\n';
 	  http_header (http_headers);
+	}
 	}
 
       if (http_redir in (301, 302, 303, 307))
