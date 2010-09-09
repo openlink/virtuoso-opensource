@@ -182,7 +182,7 @@
 </xsl:template>
 
 <xsl:template match="dc:creator">
-    <foaf:maker rdf:resource="{$baseUri}#{urlify (normalize-space (.))}"/>
+    <dcterms:creator rdf:resource="{$baseUri}#{urlify (normalize-space (.))}"/>
 </xsl:template>
 
 <xsl:template match="ff:comments">
@@ -209,7 +209,7 @@
 </xsl:template>
 
 <xsl:template match="ff:user">
-    <foaf:maker rdf:resource="{concat('http://friendfeed.com/', ff:user/ff:nickname)}"/>
+    <dcterms:creator rdf:resource="{concat('http://friendfeed.com/', ff:user/ff:nickname)}"/>
 </xsl:template>
 
 <xsl:template match="ff:user" mode="user">
@@ -235,7 +235,7 @@
 		<dcterms:created rdf:datatype="&xsd;dateTime">
 			<xsl:value-of select="ff:date"/>
 		</dcterms:created>
-		<foaf:maker rdf:resource="{ff:user/ff:profileUrl}"/>
+		<dcterms:creator rdf:resource="{ff:user/ff:profileUrl}"/>
 		<sioc:has_container rdf:resource="{../../@rdf:about}"/>
 		<sioc:reply_of rdf:resource="{../../@rdf:about}"/>
 		<rdf:type rdf:resource="&sioct;Comment"/>

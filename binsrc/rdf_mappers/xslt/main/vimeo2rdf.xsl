@@ -78,7 +78,7 @@
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&video;Recording"/>
             <vimeo:id><xsl:value-of select="id"/></vimeo:id>
-			<dcterms:title><xsl:value-of select="title"/></dcterms:title>
+			<dc:title><xsl:value-of select="title"/></dc:title>
 			<dc:description><xsl:value-of select="description"/></dc:description>
             <bibo:uri rdf:resource="{url}"/>
             <dcterms:created rdf:datatype="&xsd;dateTime"><xsl:value-of select="upload_date"/></dcterms:created>
@@ -86,7 +86,7 @@
             <foaf:img rdf:resource="{thumbnail_small}"/>
             <foaf:img rdf:resource="{thumbnail_medium}"/>
             <foaf:img rdf:resource="{thumbnail_large}"/>
-            <foaf:maker rdf:resource="{vi:proxyIRI(user_url)}" />
+            <dcterms:creator rdf:resource="{vi:proxyIRI(user_url)}" />
             <vimeo:stats_number_of_likes><xsl:value-of select="stats_number_of_likes"/></vimeo:stats_number_of_likes>
             <vimeo:stats_number_of_plays><xsl:value-of select="stats_number_of_plays"/></vimeo:stats_number_of_plays>
             <vimeo:stats_number_of_comments><xsl:value-of select="stats_number_of_comments"/></vimeo:stats_number_of_comments>

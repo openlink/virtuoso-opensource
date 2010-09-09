@@ -105,9 +105,9 @@
     <xsl:template match="lfm[@status='ok']/playlist">
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', $id)}">
 			<rdf:type rdf:resource="&sioct;PlayList"/>
-			<dcterms:title>
+			<dc:title>
                 <xsl:value-of select="title"/>
-            </dcterms:title>
+            </dc:title>
 			<xsl:for-each select="trackList/track">
 				<sioc:container_of rdf:resource="{vi:proxyIRI(identifier)}"/>
 			</xsl:for-each>
@@ -475,29 +475,26 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
-			<dcterms:title>
+			<dc:title>
                 <xsl:value-of select="name"/>
-            </dcterms:title>
+            </dc:title>
             <xsl:for-each select="image">
-				<media:depiction rdf:resource="{.}"/>
 				<foaf:depiction rdf:resource="{.}"/>
 			</xsl:for-each>
 			<xsl:choose>
 				<xsl:when test="string(artist/url)">
 					<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
-					<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:if test="string(artist)">
 						<dcterms:creator rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
-						<foaf:maker rdf:resource="{vi:proxyIRI(translate(concat($base, 'music/', artist), ' ', '+'))}"/>
 					</xsl:if>
 				</xsl:otherwise>
 			</xsl:choose>
 			<xsl:if test="releasedate">
-				<dcterms:published>
+				<dcterms:created>
 					<xsl:value-of select="releasedate" />
-				</dcterms:published>
+				</dcterms:created>
 			</xsl:if>
 			<xsl:if test="listeners">
 				<lfm:listeners>
@@ -521,9 +518,9 @@
 		<rdf:Description rdf:about="{vi:proxyIRI(url)}">
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
-			<dcterms:title>
+			<dc:title>
                 <xsl:value-of select="name"/>
-            </dcterms:title>
+            </dc:title>
             <xsl:if test="duration">
 				<media:duration rdf:datatype="&xsd;integer">
 					<xsl:value-of select="duration"/>
@@ -556,7 +553,6 @@
 				</mo:track_number>
 			</xsl:if>
 			<xsl:if test="string(artist/url)">
-				<foaf:maker rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 				<dcterms:creator rdf:resource="{vi:proxyIRI(translate(artist/url, ' ', '+'))}"/>
 			</xsl:if>
 			<xsl:if test="album/url">
@@ -729,9 +725,9 @@
 
 		<rdf:Description rdf:about="{vi:proxyIRI($baseUri, '', id)}">
 			<rdf:type rdf:resource="&sioct;PlayList"/>
-			<dcterms:title>
+			<dc:title>
                 <xsl:value-of select="title"/>
-            </dcterms:title>
+            </dc:title>
             <dc:description>
                 <xsl:value-of select="description"/>
             </dc:description>
@@ -757,13 +753,12 @@
 				</lfm:size>
 			</xsl:if>
 			<xsl:if test="creator">
-				<foaf:maker rdf:resource="{vi:proxyIRI(creator)}"/>
 				<dcterms:creator rdf:resource="{vi:proxyIRI(creator)}"/>
 			</xsl:if>
 			<xsl:if test="date">
-				<dcterms:published>
+				<dcterms:created>
 					<xsl:value-of select="date" />
-				</dcterms:published>
+				</dcterms:created>
 			</xsl:if>
 			<bibo:uri rdf:resource="{url}" />
 			<xsl:for-each select="image">

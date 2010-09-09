@@ -79,9 +79,9 @@
     <xsl:variable name="authors" select="authors/key" />
 
     <xsl:if test="title">
-	<dcterms:title>
+	<dc:title>
 	    <xsl:value-of select="title"/>
-	</dcterms:title>
+	</dc:title>
     </xsl:if>
     <xsl:if test="isbn_13">
 	<book:isbn>
@@ -151,9 +151,9 @@
 	</bibo:content>
     </xsl:if>
     <xsl:for-each select="subjects">
-	<dc:subject>
+	<dcterms:subject>
 	    <xsl:value-of select="."/>
-	</dc:subject>
+	</dcterms:subject>
     </xsl:for-each>
 
   </xsl:template>

@@ -126,7 +126,7 @@
 			<xsl:value-of select="title"/>
 		    </dc:title>
 		    <xsl:if test="dc:creator">
-			<foaf:maker rdf:resource="http://delicious.com/{dc:creator}"/>
+			<dcterms:creator rdf:resource="http://delicious.com/{dc:creator}"/>
 		    </xsl:if>
 		    <bibo:uri rdf:resource="{link}" />
 		    <xsl:for-each select="category">
@@ -218,7 +218,7 @@
 			<xsl:value-of select="title"/>
 		    </dc:title>
 		    <xsl:if test="dc:creator">
-			<foaf:maker rdf:resource="http://delicious.com/{dc:creator}"/>
+			<dcterms:creator rdf:resource="http://delicious.com/{dc:creator}"/>
 		    </xsl:if>
 		    <bibo:uri rdf:resource="{link}" />
 		    <xsl:for-each select="category">

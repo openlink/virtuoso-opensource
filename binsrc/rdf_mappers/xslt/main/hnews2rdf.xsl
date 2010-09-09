@@ -99,9 +99,6 @@ version="1.0">
         <dcterms:modified>
           <xsl:value-of select="@title" />
         </dcterms:modified>
-        <dc:date>
-          <xsl:value-of select="@title" />
-        </dc:date>
       </xsl:when>
 
       <xsl:when test="contains($field, 'dateline')">
@@ -111,13 +108,13 @@ version="1.0">
       </xsl:when>
 
       <xsl:when test="$field='author vcard'">
-        <foaf:maker>
+        <dcterms:creator>
           <foaf:Person>
             <foaf:name>
               <xsl:value-of select="./*[@class='fn']"/>
             </foaf:name>
           </foaf:Person>
-        </foaf:maker>
+        </dcterms:creator>
       </xsl:when>
       
       <xsl:when test="contains($field, 'entry-content')">

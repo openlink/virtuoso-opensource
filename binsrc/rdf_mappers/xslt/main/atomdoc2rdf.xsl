@@ -133,7 +133,7 @@
 </xsl:template>
 
 <xsl:template match="a:published">
-    <dc:date><xsl:value-of select="."/></dc:date>
+    <dcterms:created><xsl:value-of select="."/></dcterms:created>
 </xsl:template>
 
 <xsl:template match="a:link[@href]">

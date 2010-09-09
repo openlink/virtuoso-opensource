@@ -375,7 +375,7 @@
 				-->
 				<review:reviewer><xsl:value-of select="ebay:UserID"/></review:reviewer>
 				<review:rating><xsl:value-of select="ebay:Rating"/></review:rating>
-				<dc:dateTime><xsl:value-of select="ebay:CreationTime"/></dc:dateTime>
+				<dcterms:created><xsl:value-of select="ebay:CreationTime"/></dcterms:created>
 				<review:text><xsl:value-of select="ebay:Text"/></review:text>
 				<rdfs:seeAlso rdf:resource="{ebay:URL}"/>
 			</review:Review>

@@ -95,7 +95,7 @@
 	<xsl:for-each select="hist-price">
 	    <rdf:Description rdf:ID="{date}">
 		<rdfs:label><xsl:value-of select="../@symbol"/> on <xsl:value-of select="date"/></rdfs:label>
-		<dc:date><xsl:value-of select="date"/></dc:date>
+		<dcterms:issued><xsl:value-of select="date"/></dcterms:issued>
 		<rdf:type rdf:resource="&stock;PriceHistory"/>
 		<stock:highPrice><xsl:value-of select="high"/></stock:highPrice>
 		<stock:lowPrice><xsl:value-of select="low"/></stock:lowPrice>

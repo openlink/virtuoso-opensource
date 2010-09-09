@@ -141,23 +141,13 @@
   </xsl:template>
 
   <xsl:template match="meta[translate (@name, $uc, $lc)='keywords']">
-      <dc:subject>
+      <dcterms:subject>
 		<xsl:value-of select="@content"/>
-	  </dc:subject>
-      <!--xsl:variable name="res" select="vi:umbelGet (@content)"/>
-      <xsl:for-each select="$res//object[@type='umbel:SubjectConcept']">
-	  <umbel:isAbout rdf:resource="{@uri}"/>
-      </xsl:for-each>
-      <xsl:variable name="nes" select="vi:umbelGetNE (@content)"/>
-      <xsl:for-each select="$nes//object[@type='owl:Thing']">
-	  <owl:sameAs rdf:resource="{@uri}"/>
-      </xsl:for-each-->
+	  </dcterms:subject>
   </xsl:template>
 
   <xsl:template match="img[@src like 'http://farm%.static.flickr.com/%/%\\_%.%']">
-      <foaf:depiction>
-	  <foaf:Image rdf:about="{@src}"/>
-      </foaf:depiction>
+      <foaf:depiction rdf:resource="{@src}"/>
   </xsl:template>
 
   <xsl:template match="a[@href]">

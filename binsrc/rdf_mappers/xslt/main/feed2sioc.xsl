@@ -196,8 +196,9 @@
 			<sioc:links_to rdf:resource="{@href}" />
 		</xsl:for-each>
 	</xsl:template>
+
 	<xsl:template match="dc:creator[normalize-space (.) != '']">
-		<foaf:maker rdf:resource="{vi:proxyIRI ($baseUri, '', .)}" />
+        <dcterms:creator rdf:resource="{vi:proxyIRI ($baseUri, '', .)}" />
 	</xsl:template>
     
 	<xsl:template match="dc:creator[normalize-space (.) != '']" mode="user">
