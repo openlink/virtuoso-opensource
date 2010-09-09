@@ -51,11 +51,11 @@
     </xsl:template>
 
     <xsl:template match="a[@rel='tag']">
-	<dc:subject>
+	<sioc:topic>
 	    <skos:Concept rdf:about="{resolve-uri ($baseUri, @href)}">
 		<skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
 	    </skos:Concept>
-	</dc:subject>
+	</sioc:topic>
     </xsl:template>
 
     <xsl:template match="*[@class='meta']">

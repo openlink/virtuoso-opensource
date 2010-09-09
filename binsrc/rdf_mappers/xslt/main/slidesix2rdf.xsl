@@ -66,14 +66,14 @@
 	<xsl:template match="SLIDESHOWS/SLIDESHOW">
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&bibo;Slideshow"/>
-			<dcterms:title>
+			<dc:title>
 				<xsl:value-of select="SLIDESHOWTITLE" />
-			</dcterms:title>
+			</dc:title>
 			<foaf:img rdf:resource="{THUMBNAILIMAGEURL}"/>
 			<dcterms:created rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="vi:string2date2 (LASTPUBLISHEDDATE)" />
 			</dcterms:created>
-			<foaf:maker rdf:resource="{concat('http://slidesix.com/user/', CREATEDBYUSERNAME)}" />
+			<dcterms:creator rdf:resource="{concat('http://slidesix.com/user/', CREATEDBYUSERNAME)}" />
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="vi:string2date2 (LASTPUBLISHEDDATE)" />
 			</dcterms:modified>

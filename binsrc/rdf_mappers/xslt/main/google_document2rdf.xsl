@@ -82,9 +82,9 @@
 			<dcterms:modified rdf:datatype="&xsd;dateTime">
 				<xsl:value-of select="a:updated"/>
 			</dcterms:modified>
-			<dcterms:published>
+			<dcterms:created>
 				<xsl:value-of select="a:published"/>
-			</dcterms:published>
+			</dcterms:created>
 			<dc:title>
 				<xsl:value-of select="a:title"/>
 			</dc:title>

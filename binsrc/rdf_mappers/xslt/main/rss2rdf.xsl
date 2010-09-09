@@ -139,7 +139,7 @@
 </xsl:template>
 
 <xsl:template match="lastBuildDate|pubdate|r:lastBuildDate|r:pubdate">
-  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
+  <dcterms:issued><xsl:value-of select="vifunc:http_string_date(.)" /></dcterms:issued>
 </xsl:template>
 
 <xsl:template match="managingEditor|r:managingEditor">
@@ -196,7 +196,7 @@
 </xsl:template>
 
 <xsl:template match="pubDate|r:pubDate">
-  <dc:date><xsl:value-of select="vifunc:http_string_date(.)" /></dc:date>
+  <dcterms:issued><xsl:value-of select="vifunc:http_string_date(.)" /></dcterms:issued>
 </xsl:template>
 
 <xsl:template match="source|r:source">

@@ -162,7 +162,7 @@
 
     <xsl:template match="user_name">
 		<xsl:if test="$action = 'prod'">
-			<foaf:maker rdf:resource="{vi:proxyIRI (concat('http://www.etsy.com/people/', .))}"/>
+			<dcterms:creator rdf:resource="{vi:proxyIRI (concat('http://www.etsy.com/people/', .))}"/>
 		</xsl:if>
 		<xsl:if test="$action = 'user'">
 			<rdfs:label>

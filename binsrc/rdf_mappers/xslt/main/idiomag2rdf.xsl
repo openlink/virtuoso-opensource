@@ -84,9 +84,6 @@
 			<xsl:for-each select="related/artist">
 				<rdfs:seeAlso rdf:resource="{links/url}"/>
 			</xsl:for-each>
-			<!--xsl:for-each select="tags/tag">
-				<sioc:topic rdf:resource="{.}"/>			
-			</xsl:for-each-->
 		</rdf:Description>
 	</xsl:template>
 

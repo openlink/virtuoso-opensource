@@ -102,10 +102,10 @@ version="1.0">
 	<dc:title><xsl:value-of select="." /></dc:title>
   </xsl:when>
   <xsl:when test="$field='dtreview'">
-	<dc:date><xsl:value-of select="../*" /></dc:date>
+	<dcterms:issued><xsl:value-of select="../*" /></dcterms:issued>
   </xsl:when>
   <xsl:when test="$field='dtreviewed'">
-	<dc:date><xsl:value-of select="@title" /></dc:date>
+	<dcterms:modified><xsl:value-of select="@title" /></dcterms:modified>
   </xsl:when>
 </xsl:choose>
 

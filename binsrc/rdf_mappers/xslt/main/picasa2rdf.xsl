@@ -151,7 +151,7 @@
 </xsl:template>
 
 <xsl:template match="a:published">
-    <dc:date><xsl:value-of select="."/></dc:date>
+    <dcterms:created><xsl:value-of select="."/></dcterms:created>
 </xsl:template>
 
 <xsl:template match="a:link[@href]">
@@ -159,7 +159,7 @@
 </xsl:template>
 
 <xsl:template match="a:author[parent::a:entry]">
-    <foaf:maker rdf:resource="http://picasaweb.google.com/data/feed/api/user/{a:name}"/>
+    <dcterms:creator rdf:resource="http://picasaweb.google.com/data/feed/api/user/{a:name}"/>
 </xsl:template>
 
 

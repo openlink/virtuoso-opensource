@@ -89,9 +89,6 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'', replace(issue_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="vi:http_string_date (issue_when)"/>
-				</dc:date>
 				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
 				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
@@ -137,9 +134,6 @@
 		<xsl:for-each select="long_desc">
 			<rdf:Description rdf:about="{vi:proxyIRI($baseUri,'',replace(bug_when, ' ', '_'))}">
 				<rdf:type rdf:resource="&sioct;Comment"/>
-				<dc:date rdf:datatype="&xsd;dateTime">
-					<xsl:value-of select="vi:http_string_date (bug_when)"/>
-				</dc:date>
 				<dc:creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
 				<sioc:has_container rdf:resource="{$baseUri}"/>
 				<sioc:has_creator rdf:resource="{vi:proxyIRI($baseUri,'', replace(who, ' ', '_'))}"/>
