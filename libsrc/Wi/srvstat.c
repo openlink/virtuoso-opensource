@@ -2462,6 +2462,11 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	      fprintf (out, ")");
               break;
             }
+	case DV_DICT_ITERATOR:
+	    {
+	      fprintf (out, "<dictionary_reference>");
+	      break;
+	    }
 	default:
 	  {
 	    fprintf (out, "Wacky box tag = %d\n", (int) tag);
