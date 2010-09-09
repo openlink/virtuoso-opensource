@@ -1,5 +1,5 @@
 /*
- *  arith.h
+ *  strlike.h
  *
  *  $Id$
  *

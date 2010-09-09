@@ -127,6 +127,8 @@ typedef void * SQLHANDLE;
 #endif
 #endif
 
+#include "strlike.h"
+
 #define IS_INTERSOLV(drvr_name) (drvr_name[0] == 'I' && drvr_name[1] == 'V')
 #define IS_ORACLE(rcon) (strindex (rcon->rc_dbms, "Oracle"))
 #define IS_SQLSERVER(rcon) (strstr (rcon->rc_dbms, "SQL Server") || strstr (rcon->rc_dbms, "S Q L   S e r v e r"))
@@ -148,6 +150,7 @@ typedef void * SQLHANDLE;
 		  (strstr (rds_get_info (rds, SQL_DRIVER_VER), "ViaSQL")) \
 		)
 #define IS_ORACLE_RDS(rds) (strindex (rds_get_info (rds, SQL_DBMS_NAME), "Oracle"))
+#define IS_INFORMIX_RDS(rds) (nc_strstr (rds_get_info (rds, SQL_DBMS_NAME), "Informix") != NULL)
 #define SHOULD_USE_SCROLLABLE(rcon) (IS_SQLSERVER (rcon))
 #define SHOULD_USE_SCROLLABLE_RDS(rds) (IS_SQLSERVER_RDS (rds))
 
