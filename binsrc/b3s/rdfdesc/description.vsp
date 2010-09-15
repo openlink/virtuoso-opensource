@@ -120,8 +120,54 @@
 
   rdf_link := sprintf ('/sparql?query=%U', sprintf ('%s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 
 
-  declare __res_desc varchar;
+  declare __res_desc, qs, qv, best_variant, accept varchar;
+  declare best_q, curr float;
+  declare inx int;
 
+  accept := http_request_header_full (lines, 'Accept', 'text/html');
+  if (accept = '*/*')
+    accept := 'text/html';
+  -- accepted types
+  qs := vector ('text/html', 'application/xhtml+xml', 'text/n3', 'text/rdf+n3', 'application/rdf+xml', 'application/json', 'text/plain');
+  -- quality prefs
+  qv := vector (        0.5,                     0.7, 	    0.8,           0.8,                   1.0,                0.7,          0.1);
+  best_q := 0;
+  best_variant := null;
+  inx := 0;
+  foreach (varchar q in qs) do
+    {
+      curr := DB.DBA.URLREWRITE_CALC_QS (accept, q);
+      curr := curr;
+      if (best_q < curr)
+        {
+	  best_q := curr;
+	  best_variant := q;
+	} 
+      inx := inx + 1;
+    }
+  if (best_variant is null)
+    {
+      http_rewrite ();
+      http_status_set (406);
+      http_header ('Alternates: ');
+      http_header (http_header_get () || sprintf ('{ "http://%{WSHost}s/describe/?url=%U" 0.5 {type text/html}}', gr));
+      inx := 0;
+      foreach (varchar q in qs) do
+        {
+	  if (q  not in ('text/html', 'application/xhtml+xml'))
+	    http_header (http_header_get () || sprintf (', { "http://%{WSHost}s%s&format=%U" %.2f {type %s}}', rdf_link, q, qv[inx], q));
+          inx := inx + 1;
+	}
+      http_header (http_header_get () || '\r\n');
+      return; 
+    }
+  if (best_variant is not null and best_variant not in ('text/html', 'application/xhtml+xml'))
+    {
+      http_rewrite ();
+      http_status_set (303);
+      http_header (sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nLocation: http://%{WSHost}s%s&format=%U\r\n', rdf_link, best_variant));
+      return; 
+    }
   __res_desc := b3s_uri_curie(page_resource_uri);
   fct_links_hdr (_S, rdf_link);
   if (not length (label))
