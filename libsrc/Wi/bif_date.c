@@ -227,8 +227,11 @@ dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **er
             } while (isdigit (tail[0]));
           ts.fraction = acc * (msec_factor ? msec_factor : 1);
         }
-      err_msg_ret[0] = "Colon is expected after minute";
-      return 0;
+      if ('Z' != tail[0] && strncmp (tail, " GMT", 4))
+	{
+	  err_msg_ret[0] = "Colon or time zone is expected after minute";
+	  return 0;
+	}
     }
   else
     {
@@ -266,7 +269,7 @@ scan_tz:
     DT_SET_MINUTE (dt_ret[0], ts.minute);
     DT_SET_SECOND (dt_ret[0], ts.second);
     DT_SET_FRACTION (dt_ret[0], ts.fraction);
-    DT_SET_TZ (dt_ret[0], 0);
+    DT_SET_TZ (dt_ret[0], dt_local_tz);
   }
   SET_DT_TYPE_BY_DTP (dt_ret[0], (ymd_found ? (hms_found ? DV_DATETIME : DV_DATE) : DV_TIME));
   return (tail - buf);
