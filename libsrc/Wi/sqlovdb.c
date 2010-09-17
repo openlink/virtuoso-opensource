@@ -37,6 +37,7 @@
 #include "security.h"
 #include "sqlintrp.h"
 #include "sqlo.h"
+#include "strlike.h"
 
 
 
