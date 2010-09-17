@@ -49,12 +49,6 @@
 #define bitf_t unsigned
 #endif
 
-#ifndef REPLICATION_SUPPORT2
-#define REPLICATION_SUPPORT2 1
-#endif
-#ifndef REPLICATION_SUPPORT
-#define REPLICATION_SUPPORT 1
-#endif
 #include "Dk.h"
 
 #undef log
@@ -62,10 +56,6 @@
 /*
  *  Global features
  */
-#ifndef REPLICATION_SUPPORT	/* Support for replication */
-# define REPLICATION_SUPPORT	1
-# define REPLICATION_SUPPORT2	1
-#endif
 typedef struct free_set_cache_s	free_set_cache_t;
 typedef struct index_tree_s	index_tree_t;
 typedef struct search_spec_s	search_spec_t;

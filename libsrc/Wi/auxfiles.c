@@ -543,22 +543,9 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   if (t_future_sz < 140000) /* was 100000 */
     t_future_sz = 140000; /* was 100000 */
 
-#if REPLICATION_SUPPORT
-  /* reserved threads: repldb, replsub, replpush, mtwrite, server, main */
-  n_threads = MIN (n_threads, MAX_THREADS - 6);
-
-  db_name = cfg_get_parm (wholefile, "\ndb_name:", 1);
-
-  repl_server_enable = cfg_get_parm (wholefile, "\nreplication_server:", 1);
-
-  repl_queue_max = (long) (ptrlong) cfg_get_parm (wholefile, "\nreplication_queue:", 0);
-  if (!repl_queue_max)
-    repl_queue_max = 50000;
-#else
 
   /* reserved threads: mtwrite, server, main */
   n_threads = MIN (n_threads, MAX_THREADS - 3);
-#endif
 
   sqlc_add_views_qualifiers = (long) (ptrlong) cfg_get_parm (wholefile, "\nsqlc_add_views_qualifiers:", 0);
 

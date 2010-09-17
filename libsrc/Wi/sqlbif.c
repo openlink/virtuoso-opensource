@@ -10700,23 +10700,6 @@ bif_log_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_repl_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) inst;
-  caddr_t acct = bif_string_arg (inst, args, 0, "repl_text");
-  int n_args = BOX_ELEMENTS (args) - 1;
-  caddr_t *arr;
-  int inx;
-
-  sec_check_dba (qi, "repl_text");
-
-  arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-
-  for (inx = 0; inx < n_args; inx++)
-    arr[inx] = bif_arg (inst, args, inx + 1, "repl_text");
-
-  log_repl_text_array (qi->qi_trx, NULL, acct, (caddr_t) arr);
-
-  dk_free_box ((caddr_t) arr);
-
   return 0;
 }
 
@@ -10724,23 +10707,6 @@ bif_repl_text (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_repl_text_pushback (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) inst;
-  caddr_t srv = bif_string_arg (inst, args, 0, "repl_text_pushback");
-  caddr_t acct = bif_string_arg (inst, args, 1, "repl_text_pushback");
-  int n_args = BOX_ELEMENTS (args) - 2;
-  caddr_t *arr;
-  int inx;
-
-  sec_check_dba (qi, "repl_text_pushback");
-
-  arr = (caddr_t *) dk_alloc_box (n_args * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  for (inx = 0; inx < n_args; inx++)
-    arr[inx] = bif_arg (inst, args, inx + 2, "repl_text_pushback");
-
-  log_repl_text_array (qi->qi_trx, srv, acct, (caddr_t) arr);
-
-  dk_free_box ((caddr_t) arr);
-
   return 0;
 }
 
@@ -11449,10 +11415,6 @@ bif_proc_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       char *qual = lc_nth_col (lc, 2);
       user_t *owner_user = sec_name_to_user (owner);
       /* Procedure's calls published for replication */
-#ifdef REPLICATION_SUPPORT2
-      char *replic_acct = NULL;
-      char *procstmt = NULL;
-#endif
       int retry = 1;
       if (0 == strcmp (qual, "S")) qual = "DB";
 
@@ -11466,17 +11428,7 @@ bif_proc_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       /* Procedure's calls published for replication */
 retry_compile:
-#ifdef REPLICATION_SUPPORT2
-      procstmt = text;
-      replic_acct = find_repl_account_in_src_text (&procstmt);
-      proc_qr = sql_compile (procstmt, cli, &err, SQLC_DO_NOT_STORE_PROC);
-      if (proc_qr && !err)
-	proc_qr->qr_proc_repl_acct = ((NULL != replic_acct) ? box_string (replic_acct) : NULL);
-      if (!err)
-	qr_proc_repl_check_valid (proc_qr, &err);
-#else
       proc_qr = sql_compile (text, cli, &err, SQLC_DO_NOT_STORE_PROC);
-#endif
 #if 1
       if (err &&  0 != retry && cl_run_local_only == CL_RUN_CLUSTER && 0 == server_lock.sl_count && strstr (((caddr_t*)err)[2], "RDFNI"))
 	{

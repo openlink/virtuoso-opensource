@@ -104,9 +104,5 @@ repl_subscriber_t *rs_find (repl_acct_t *ra, char *subscriber);
 repl_subscriber_t *repl_save_subscriber (
     repl_acct_t *ra, char *subscriber, int level, int valid);
 query_t *repl_compile (char *text);
-#ifdef REPLICATION_SUPPORT2
-extern id_hash_t * repl_grants;
-int get_repl_grants (char *acct, char *user);
-#endif
 
 #endif /* _REPL_H */

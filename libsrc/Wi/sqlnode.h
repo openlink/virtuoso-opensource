@@ -304,9 +304,6 @@ struct query_s
     struct query_cursor_s *	qr_cursor;
     state_slot_t **	qr_xp_temp;
     dk_set_t		qr_unrefd_data;	/* garbage, free when freeing qr */
-#ifdef REPLICATION_SUPPORT2
-    caddr_t		qr_proc_repl_acct; /* transactional replication account name */
-#endif
     dk_set_t		qr_proc_result_cols; /* needed by SQLProcedureColumns */
     dk_set_t		qr_subq_queries;
 

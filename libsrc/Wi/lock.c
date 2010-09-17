@@ -513,13 +513,6 @@ lt_commit (lock_trx_t * lt, int free_trx)
 	return LTE_2PC_ERROR;
       }
 #endif
-  if (LTE_OK != lt_log_replication (lt))
-    {
-      lt_rollback_1 (lt, free_trx);
-      LT_ERROR_DETAIL_SET (lt, box_dv_short_string (
-	    "Problem writing to the replication log"));
-      return LTE_LOG_FAILED;
-    }
 
   LEAVE_TXN;
   mutex_enter (log_write_mtx);
@@ -534,7 +527,6 @@ lt_commit (lock_trx_t * lt, int free_trx)
     }
   mutex_leave (log_write_mtx);
   IN_TXN;
-  lt_send_repl_cast (lt);
   DBG_PT_COMMIT (lt);
       ASSERT_IN_TXN;
       LT_CLOSE_ACK_THREADS(lt);
@@ -631,7 +623,6 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   LEAVE_TXN;
   log_cl_final (lt, SQL_ROLLBACK);
   IN_TXN;
-  lt_repl_rollback (lt);
   DBG_PT_ROLLBACK (lt);
   if (lt->lt_status != LT_DELTA_ROLLED_BACK)
     {

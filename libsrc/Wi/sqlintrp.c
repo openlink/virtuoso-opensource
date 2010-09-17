@@ -72,113 +72,6 @@ unsigned char ins_lengths[INS_MAX + 1] = {
   ALIGN_INSTR(sizeof (dummy_ins_t._.bret))
 };
 
-#ifdef REPLICATION_SUPPORT2
-/* log call to replication */
-static void
-repl_proc_call (instruction_t * ins, caddr_t * qst, query_t *proc, caddr_t *pars)
-{
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
-  char * replic_acct;
-  int nel = 0, skip_repl = 0;
-  int inx = 0;
-  query_instance_t *cb = NULL;
-
-  replic_acct = proc->qr_proc_repl_acct;
-  cb = qi->qi_caller;
-  /* First check inside replicated proc call */
-  if (IS_POINTER (qi->qi_query))
-    {
-      if (qi->qi_query->qr_proc_repl_acct && 0 == strcmp (replic_acct, qi->qi_query->qr_proc_repl_acct))
-	skip_repl = 1;
-    }
-  while (IS_POINTER (cb) && !skip_repl)
-    {
-      if (cb->qi_query)
-	{
-	  /* if (cb->qi_query->qr_proc_repl_acct)
-	     fprintf (stdout, "Caller: %s\n", cb->qi_query->qr_proc_repl_acct); */
-	  if (cb->qi_query->qr_proc_repl_acct && 0 == strcmp (replic_acct, cb->qi_query->qr_proc_repl_acct))
-	    {
-	      skip_repl = 1;
-	      break;
-	    }
-	  cb = cb->qi_caller;
-	}
-    }
-  /* Do replication log */
-  if (!skip_repl)
-    {
-      /*state_slot_t *aparm;*/
-      dk_session_t *ses = strses_allocate (); /* the procedure's quoted name can have many quotes */
-      caddr_t * arr = NULL;
-      caddr_t proc_call;
-      s_node_t * iter = proc->qr_parms;
-      /*caddr_t * kwds = ins->_.call.kwds;*/
-
-#if 0
-      if (kwds)
-	inx = BOX_ELEMENTS (kwds);
-      else
-#endif
-        inx = dk_set_length (proc->qr_parms);
-
-      arr = (caddr_t *) dk_alloc_box ((inx + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-
-      session_buffered_write_char ('\"', ses);
-      sprintf_escaped_id (proc->qr_proc_name, NULL, ses);
-      session_buffered_write_char ('\"', ses);
-      session_buffered_write (ses, " (", 2);
-      for (nel = 0, iter = proc->qr_parms; nel < inx; nel++, iter = iter->next)
-	{
-	  state_slot_t *ssl = (state_slot_t *) iter->data;
-#if 0
-	  if (kwds)
-	    {
-	      session_buffered_write_char ('\"', ses);
-	      sprintf_escaped_id (kwds [nel], NULL, ses);
-	      session_buffered_write (ses, "\"=> ", 3);
-	    }
-#endif
-	  if (nel == inx-1)
-	    session_buffered_write (ses, "? ", 2);
-	  else
-	    session_buffered_write (ses, "?,", 2);
-	  if (ssl->ssl_type == SSL_REF_PARAMETER_OUT ||
-	      ssl->ssl_type == SSL_REF_PARAMETER)
-	    {
-		sqlr_new_error ("42000", "SQ206",
-		    "Procedure %s cannot be transactionally replicated "
-		    "(in publication %s) because it has out/inout parameter %s (parameter number %d). "
-		    "Publishing the calls to the procedure is disabled. "
-		    "Please remove the procedure from the transactional publication.",
-		    proc->qr_proc_name,
-		    proc->qr_proc_repl_acct,
-		    ssl->ssl_name ? ssl->ssl_name : "",
-		    nel + 1
-		    );
-	    }
-
-	}
-      session_buffered_write_char (')', ses);
-      proc_call = strses_string (ses);
-      strses_free (ses);
-      arr [0] = proc_call;
-#if 0
-      for (nel = 1; nel <= inx; nel++)
-	{
-	  aparm = ins->_.call.params[nel-1];
-          arr [nel] = qst_get (qst, aparm);
-	}
-#else
-      memcpy (&arr[1], pars, inx * sizeof (caddr_t));
-#endif
-      log_repl_text_array (qi->qi_trx, NULL, replic_acct, (caddr_t) arr);
-      dk_free_box ((caddr_t) arr);
-      dk_free_box (proc_call);
-    }
-}
-/* end replication log */
-#endif
 
 
 void
@@ -551,10 +444,6 @@ report_error:
 #endif
   qi->qi_thread->thr_func_value = NULL;
   /* Procedure's call is published */
-#ifdef REPLICATION_SUPPORT2
-  if ((proc != NULL) && (proc->qr_proc_repl_acct != NULL))
-      repl_proc_call (ins, qst, proc, pars);
-#endif
   if (CV_CALL_PROC_TABLE == ins->_.call.ret)
     {
       PROC_SAVE_PARENT;

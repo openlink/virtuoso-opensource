@@ -3901,13 +3901,6 @@ srv_global_init (char *mode)
       read_proc_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
-#if REPLICATION_SUPPORT
-      if (!lite_mode)
-	{
-	  repl_init ();
-	  repl_serv_init (0);
-	}
-#endif
     }
   ddl_obackup_init ();
 

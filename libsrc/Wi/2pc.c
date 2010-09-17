@@ -556,11 +556,6 @@ lt_2pc_prepare (lock_trx_t * lt)
   _2pc_printf (("lt_2pc_prepare\n"));
   lt->lt_status = LT_PREPARE_PENDING;
 
-  if (LTE_OK != lt_log_replication (lt))
-    {
-      rc = LTE_LOG_FAILED;
-      goto failed;
-    }
 
   LEAVE_TXN;
   mutex_enter (log_write_mtx);
@@ -612,7 +607,6 @@ lt_2pc_commit (lock_trx_t * lt)
   lt->lt_status = LT_COMMITTED;
 
   log_final_transact (lt, 1);
-  lt_send_repl_cast (lt);
   if (lt->lt_mode == TM_SNAPSHOT)
     {
       lt_close_snapshot (lt);

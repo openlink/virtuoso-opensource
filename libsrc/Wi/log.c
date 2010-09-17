@@ -1759,48 +1759,6 @@ int level_print = 0;
 void
 logh_set_level (lock_trx_t * lt, caddr_t * logh)
 {
-#if REPLICATION_SUPPORT
-  if (logh && logh[LOGH_REPLICATION])
-    {
-      caddr_t *replh = (caddr_t *) logh[LOGH_REPLICATION];
-      repl_acct_t *ra;
-      ra = ra_find (replh[REPLH_SERVER], replh[REPLH_ACCOUNT]);
-      if (level_print)
-        {
-	  dbg_printf ((" Rfwd level %s %s " BOXINT_FMT "\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
-	}
-      if (!ra)
-	{
-	  ra = ra_add (replh[REPLH_SERVER], replh[REPLH_ACCOUNT], 1, 0, 0);
-	}
-
-      if (replh[REPLH_LEVEL])
-	{
-	  caddr_t log_array;
-#ifdef UNIX
-	  gettimeofday (&ra->ra_last_txn, NULL);
-#else
-	  ra->ra_last_txn.tv_sec = (long) time (NULL);
-#endif
-	  log_array = list (4, box_string ("sequence_set (?, ?, ?)"),
-		box_string (ra->ra_sequence),
-		box_num (unbox (replh[REPLH_LEVEL])), box_num (SET_ALWAYS));
-	  ASSERT_IN_TXN;
-	  sequence_set (ra->ra_sequence, (long) unbox (replh[REPLH_LEVEL]), SET_ALWAYS, INSIDE_MAP);
-	  log_text_array (lt, log_array);
-	  dk_free_tree (log_array);
-	  /* having replayed a replication record, log its level as a sequence set in the roll forward
-	   * log of this txn since the replication feed record itself will not be logged */
-	}
-      else
-	{
-	  /* A zero level on an account means the replicator is now synced */
-	  ra->ra_synced = RA_IN_SYNC;
-	  log_info ("Replication Account %s %s IN sync, level %ld.\n",
-		    ra->ra_server, ra->ra_account, sequence_set (ra->ra_sequence, 0, SEQUENCE_GET, INSIDE_MAP));
-	}
-    }
-#endif
 }
 
 

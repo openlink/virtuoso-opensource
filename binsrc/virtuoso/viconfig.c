@@ -251,11 +251,6 @@ dk_set_t c_stripes;
 int32 c_log_segments_num;
 log_segment_t *c_log_segments;
 int32 c_log_audit_trail;
-#if REPLICATION_SUPPORT
-int32 c_repl_queue_max = 50000;
-char *c_db_name;
-char *c_repl_server_enable;
-#endif
 int32 c_use_array_params = 0;
 int32 c_num_array_params = 10;
 int32 c_server_thread_sz = 60000;
@@ -1338,18 +1333,6 @@ cfg_setup (void)
     }
 
   srv_client_defaults_init ();
-#if REPLICATION_SUPPORT
-  if (cfg_getstring (pconfig, "Replication", "ServerName", &c_db_name) == -1)
-    c_db_name = NULL;
-  if (cfg_getstring (pconfig, "Replication", "ServerEnable", &c_repl_server_enable) == -1)
-    c_repl_server_enable = NULL;
-  if (c_repl_server_enable &&
-      strcmp (c_repl_server_enable, "1") && stricmp (c_repl_server_enable, "On"))
-    c_repl_server_enable = NULL;
-
-  if (cfg_getlong (pconfig, "Replication", "QueueMax", &c_repl_queue_max) == -1)
-    c_repl_queue_max = 50000;
-#endif
 
   /*
    *  VDB related parameters
@@ -1423,13 +1406,8 @@ cfg_setup (void)
   else if (c_unremap_quota < 500)
     c_unremap_quota = 500;
 
-#if REPLICATION_SUPPORT
-  if (c_server_threads > MAX_THREADS - 5)
-    c_server_threads = MAX_THREADS - 5;
-#else
   if (c_server_threads > MAX_THREADS - 3)
     c_server_threads = MAX_THREADS - 3;
-#endif
 
   /* Initialization of UCMs */
 
@@ -1685,11 +1663,6 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   sqlo_max_layouts = c_sqlo_max_layouts;
   sql_proc_use_recompile = c_sql_proc_use_recompile;
 
-#if REPLICATION_SUPPORT
-  repl_queue_max = c_repl_queue_max;
-  repl_server_enable = c_repl_server_enable;
-  db_name = box_string (c_db_name);
-#endif
 
   callstack_on_exception = c_callstack_on_exception;
   log_file_line = c_log_file_line;

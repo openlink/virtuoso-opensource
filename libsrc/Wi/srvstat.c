@@ -312,11 +312,7 @@ long st_chkp_atomic_time;
 
 long st_cli_n_current_connections = 0;
 
-#if defined (REPLICATION_SUPPORT2)
-long fe_replication_support = 1;
-#else
 long fe_replication_support = 0;
-#endif
 
 long sparql_result_set_max_rows = 0;
 long sparql_max_mem_in_use = 0;
@@ -646,53 +642,6 @@ trx_status_report (lock_trx_t * lt)
 }
 
 
-#if REPLICATION_SUPPORT
-void
-repl_status (void)
-{
-  if (!db_name)
-    return;
-  rep_printf ("\n\nReplication Status: Server  %s.\n", db_name);
-  DO_SET (repl_acct_t *, ra, &repl_accounts)
-  {
-    char *sta = "";
-    switch (ra->ra_synced)
-      {
-      case RA_OFF:
-	sta = "OFF";
-	break;
-      case RA_SYNCING:
-	sta = "SYNCING";
-	break;
-      case RA_IN_SYNC:
-	sta = "IN SYNC";
-	break;
-      case RA_TO_DISCONNECT:
-	sta = "QUEUED FOR DISCONNECT";
-	break;
-      case RA_DISCONNECTED:
-	sta = "DISCONNECTED";
-	break;
-      case RA_REMOTE_DISCONNECTED:
-	sta = "REMOTE DISCONNECTED";
-	break;
-      }
-    if (RA_IS_PUSHBACK(ra->ra_account))
-      {
-        rep_printf ("   %-20s %-20s %10lu (%lu) %s.\n",
-	    ra->ra_server, ra->ra_account,
-            ra_trx_no (ra), ra_pub_trx_no(ra), sta);
-      }
-    else
-      {
-        rep_printf ("   %-20s %-20s %10lu %s.\n",
-	    ra->ra_server, ra->ra_account, ra_trx_no (ra), sta);
-      }
-  }
-  END_DO_SET ();
-  rep_printf ("\n\n");
-}
-#endif
 
 
 void
@@ -1145,10 +1094,6 @@ status_report (const char * mode, query_instance_t * qi)
       dk_set_free (set);
       set = NULL;
     }
-#if REPLICATION_SUPPORT
-  if (strchr (mode, 'r'))
-    repl_status ();
-#endif
   if (strchr (mode, 'k'))
     key_stats ();
   if (strchr (mode, 'h'))
@@ -1416,10 +1361,6 @@ stat_desc_t stat_descs [] =
     {"st_chkp_atomic_time", &st_chkp_atomic_time, NULL},
     {"st_chkp_autocheckpoint", (long *) &cfg_autocheckpoint, NULL},
     {"st_chkp_last_checkpointed", (long *) &checkpointed_last_time, NULL},
-#if REPLICATION_SUPPORT
-    {"st_repl_serv_name", NULL, &db_name},
-    {"st_repl_server_enable", NULL, &repl_server_enable},
-#endif
 
     {"st_started_since_year", &st_started_since_year, NULL},
     {"st_started_since_month", &st_started_since_month, NULL},
@@ -1664,11 +1605,7 @@ bif_identify_self (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	box_dv_short_string (host),
 	box_dv_short_string (pid),
 	box_dv_short_string (ip_addr),
-#ifdef REPLICATION_SUPPORT2
-	box_dv_short_string (db_name)
-#else
 	box_dv_short_string ("")
-#endif
        ));
 }
 

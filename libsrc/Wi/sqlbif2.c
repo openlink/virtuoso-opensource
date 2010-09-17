@@ -1434,6 +1434,14 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+
+static caddr_t
+bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NEW_DB_NULL;
+}
+
+
 void
 sqlbif2_init (void)
 {
@@ -1461,6 +1469,7 @@ sqlbif2_init (void)
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  bif_define ("repl_this_server", bif_this_server);
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();

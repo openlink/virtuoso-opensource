@@ -369,19 +369,6 @@ libwi_odbc_la_SOURCES = \
 	xpscn.c \
 	$(C_FILES_SPARQL)
 
-#KUBL_REPL_FILES
-libwi_la_SOURCES += \
-	repldb.c \
-	replsri.c \
-	replsub.c \
-	replpush.c
-
-libwi_odbc_la_SOURCES += \
-	repldb.c \
-	replsri.c \
-	replsub.c \
-	replpush.c
-
 libwi_la_SOURCES += \
 	$(PLDEBUG_FILES)
 

@@ -1305,37 +1305,6 @@ sqlc_assign_unknown_dtps (query_t *qr)
 }
 
 
-int
-qr_proc_repl_check_valid (query_t *qr, caddr_t *err)
-{
-  if (qr->qr_proc_repl_acct)
-    { /* check and disable procedures with INOUT / OUT parameters */
-      int inx = 1;
-      DO_SET (state_slot_t *, ssl, &qr->qr_parms)
-	{
-	  if (ssl->ssl_type == SSL_REF_PARAMETER_OUT ||
-	      ssl->ssl_type == SSL_REF_PARAMETER)
-	    {
-	      if (err)
-		*err = srv_make_new_error ("42000", "SQ205",
-		    "Procedure %s cannot be published for transactional replication "
-		    "(in publication %s) because it has out/inout parameter %s (parameter number %d). "
-		    "Publishing the calls to the procedure is disabled. "
-		    "Please remove the procedure from the transactional publication.",
-		    qr->qr_proc_name,
-		    qr->qr_proc_repl_acct,
-		    ssl->ssl_name ? ssl->ssl_name : "",
-		    inx
-		    );
-	      qr->qr_proc_repl_acct = NULL;
-	      return 0;
-	    }
-	  inx = inx + 1;
-	}
-      END_DO_SET ();
-    }
-  return 1;
-}
 
 static int
 sql_is_ddl (sql_tree_t * tree)
@@ -1653,11 +1622,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      sch_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name);
       user_t * p_user = cli->cli_user;
 
-#ifdef REPLICATION_SUPPORT2
-      if (old_place)
-	qr->qr_proc_repl_acct = old_place->qr_proc_repl_acct;
-      qr_proc_repl_check_valid (qr, err);
-#endif
       /* Only DBA can create procedures with owner different than creator */
       if (p_user && !sec_user_has_group (0, p_user->usr_g_id))
 	{

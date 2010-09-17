@@ -2748,10 +2748,6 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
 	log_text_cluster (qi, temp_tx);
       else
 	log_text (qi->qi_trx, temp_tx);
-      temp_tx_box = box_string (temp_tx);
-      log_repl_text_array_all (key->key_table->tb_name, 2, temp_tx_box, qi->qi_client, qi,
-	  LOG_REPL_TEXT_ARRAY_MASK_ALL);
-      dk_free_box (temp_tx_box);
     }
   dk_free_box(szTheTableName);
   dk_free_box(szTheIndexName);
@@ -3957,8 +3953,6 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 
 	ddl_index_def (qi, tree->_.index.name, tb_name,
 	  tree->_.index.cols, tree->_.index.opts);
-	trx_repl_log_ddl_index_def (qi, tree->_.index.name, tb_name,
-	  tree->_.index.cols, tree->_.index.opts);
 	break;
       }
     case ADD_COLUMN:
@@ -4657,10 +4651,6 @@ scan_SYS_PROCEDURES:
       long p_type = DV_TYPE_OF (p_type_box) == DV_LONG_INT ? (long) unbox (p_type_box) : 0;
       caddr_t p_name = lc_nth_col (lc, 5);
   /* Procedure's calls published for replication */
-#ifdef REPLICATION_SUPPORT2
-      char *replic_acct = NULL;
-      char *procstmt = NULL;
-#endif
       err = NULL;
       HANDLE_S_QUAL (qual);
       CLI_SET_QUAL (bootstrap_cli, qual);
@@ -4712,26 +4702,6 @@ scan_SYS_PROCEDURES:
 	    }
 	}
   /* Procedure's calls published for replication */
-#ifdef REPLICATION_SUPPORT2
-      procstmt = src_text;
-      replic_acct = find_repl_account_in_src_text (&procstmt);
-      if (p_type ||
-	  reading_user_aggregates ||
-	  !CASEMODESTRCMP (p_name, "DB.DBA.DBEV_COMPILE") ||
-	  replic_acct) /* has to be compiled on startup */
-	proc_qr = sql_compile (procstmt, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
-      else
-	{
-	  if (NULL == (proc_qr = sql_proc_to_recompile (procstmt, bootstrap_cli, p_name, 0)))
-	    proc_qr = sql_compile (procstmt, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
-	}
-      if (proc_qr)
-	{
-	  proc_qr->qr_proc_repl_acct = ((NULL != replic_acct) ? box_string (replic_acct) : NULL);
-	  if (!err)
-	    qr_proc_repl_check_valid (proc_qr, &err);
-	}
-#else
       if (p_type == 3 || reading_user_aggregates) /* is module or user aggr */
 	proc_qr = sql_compile (src_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
       else
@@ -4739,7 +4709,6 @@ scan_SYS_PROCEDURES:
 	  if (NULL == (proc_qr = sql_proc_to_recompile (src_text, bootstrap_cli, p_name, 0)))
 	    proc_qr = sql_compile (src_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
 	}
-#endif
 
       if (err)
 	{
@@ -5166,10 +5135,6 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 /* Procedure's calls published for replication */
   query_t *qr_proc = sch_proc_def (wi_inst.wi_schema,
       (char *) qst_get (state, op->op_arg_1));
-#ifdef REPLICATION_SUPPORT2
-  char * replic_acct = NULL;
-  caddr_t r_text = NULL;
-#endif
   caddr_t escapes_text = NULL;
   char trig_name [MAX_QUAL_NAME_LEN]; /*two-part trigger name*/
 
@@ -5213,22 +5178,6 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       short_text = text;
       long_text = db_null;
     }
-#ifdef REPLICATION_SUPPORT2
-  /* If procedure calls published for replication */
-  if (qr_proc)
-    replic_acct = qr_proc->qr_proc_repl_acct;
-  if (replic_acct)
-    {
-      r_text = dk_alloc_box (strlen (text) + strlen (replic_acct) + 9, DV_SHORT_STRING);
-      snprintf (r_text, box_length (r_text), "__repl %s %s", replic_acct, text);
-      if (long_text == db_null)
-	short_text = r_text;
-      else
-	long_text = r_text;
-    }
-  /* If procedure definition published for replication */
-  log_repl_text_array_all (qst_get (state, op->op_arg_1), 3, text, cli, qi, 2);
-#endif
 
   if (op->op_code == OP_STORE_TRIGGER)
     {
@@ -5276,9 +5225,6 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 	}
     }
 /* Procedure's calls published for replication */
-#ifdef REPLICATION_SUPPORT2
-  dk_free_box (r_text);
-#endif
   dk_free_box (db_null);
   if (escapes_text)
     dk_free_box (escapes_text);
@@ -5307,9 +5253,6 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 
 #ifdef VIRT30_40
 skip_incomp:
-#endif
-#ifdef REPLICATION_SUPPORT2
-   dk_free_box (r_text);
 #endif
   dk_free_box (db_null);
   if (escapes_text)
@@ -5838,7 +5781,7 @@ const char *proc_add_col =
 "  add_col_recursive (tb_name, col_id);\n"
 "  update DB.DBA.SYS_KEYS set KEY_MIGRATE_TO = NULL where KEY_MIGRATE_TO = -1;\n"
 "  ddl_read_table_tree (tb_name);\n"
-"  DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb_name);\n"
+"  --DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb_name);\n"
 "}";
 
 static const char *proc_decoy_repl_modify_col =
@@ -5877,7 +5820,7 @@ const char *proc_modify_col =
 "    COL_OPTIONS = _col_options \n"
 "   where COL_ID = _col_id;\n"
 "  ddl_read_table_tree (_tb_name);\n"
-"  DB.DBA.__INT_REPL_ALTER_ADD_COL (_tb_name, _col_name, _col_dtp, _col_scale, _col_prec, _col_check, 'MODIFY');\n"
+"  --DB.DBA.__INT_REPL_ALTER_ADD_COL (_tb_name, _col_name, _col_dtp, _col_scale, _col_prec, _col_check, 'MODIFY');\n"
 "}";
 
 
@@ -5995,10 +5938,10 @@ const char *proc_drop_col =
 "  ddl_drop_col_recursive (tb, c_id);"
 "  update DB.DBA.SYS_KEYS set KEY_MIGRATE_TO = NULL where KEY_MIGRATE_TO = -1;"
 "  ddl_read_table_tree (tb);"
-"  if (not sys_stat ('st_lite_mode')) { \n"
-"  DB.DBA.__INT_REPL_ALTER_DROP_COL (tb, col, _col_dtp, _col_scale, _col_prec, c_check, 'DROP');\n"
-"  DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb);\n"
-"  } \n"
+"  --if (not sys_stat ('st_lite_mode')) { \n"
+"  --DB.DBA.__INT_REPL_ALTER_DROP_COL (tb, col, _col_dtp, _col_scale, _col_prec, c_check, 'DROP');\n"
+"  --DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb);\n"
+"  --} \n"
 "  for select distinct PK_TABLE from DB.DBA.SYS_FOREIGN_KEYS where 0 = casemode_strcmp (FK_TABLE, tb)"
 /*"      and (UPDATE_RULE > 0 or DELETE_RULE > 0)"*/
 "      do {"
@@ -6123,7 +6066,7 @@ const char *proc_add_col_row =
 "			COL_NULLABLE, COL_CHECK, COL_DEFAULT, COL_OPTIONS)\n"
 "    values (tb, col, c_id, dv, prec, scale, nullable, ck, serialize (deflt), _col_options);\n"
 "\n"
-"  DB.DBA.__INT_REPL_ALTER_ADD_COL (tb, col, dv, scale, prec, ck);\n"
+"  --DB.DBA.__INT_REPL_ALTER_ADD_COL (tb, col, dv, scale, prec, ck);\n"
 "\n"
 "  if (_ddl_foreign_key is not null)\n"
 "    ddl_foreign_key (_ddl_foreign_key[0], _ddl_foreign_key[1], _ddl_foreign_key[2]);\n"
