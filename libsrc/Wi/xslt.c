@@ -1670,6 +1670,17 @@ xb_found:
               xb->xb_value = NULL;
               xb->xb_value = key_id_to_iri (qi, ((iri_id_t*)new_val)[0]);
               goto xb_done; /* see below */
+            case DV_RDF:
+              {
+                rdf_box_t *rb = (rdf_box_t *)new_val;
+                if (!rb->rb_is_complete)
+                  rb_complete (rb, qi->qi_trx, qi);
+/*
+                if ((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
+                  new_val = rb->rb_box;
+*/
+                break;
+              }
             default:
               if (NULL == new_val)
                 {

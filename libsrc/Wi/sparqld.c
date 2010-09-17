@@ -263,7 +263,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
           char buf[20];
           if (strcmp (vname, param_vname))
             continue;
-          if (SSG_SD_BI & ssg->ssg_sd_flags)
+          if (SSG_SD_GLOBALS & ssg->ssg_sd_flags)
             {
               sprintf (buf, "?:%d", paramctr+1);
               ssg_puts (buf);
@@ -622,10 +622,19 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
               for (ctr = 0; ctr < count; ctr += 2)
                 {
+                  caddr_t name = (caddr_t)(sinv->_.sinv.defines[ctr]);
+                  SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
+                  int valctr;
+                  if (!strcmp (name, "lang:dialect"))
+                    continue;
                   ssg_puts (" DEFINE ");
-                  ssg_puts ((caddr_t)(sinv->_.sinv.defines[ctr]));
-                  ssg_putchar (' ');
-                  ssg_sdprint_tree (ssg, sinv->_.sinv.defines[ctr+1]);
+                  ssg_puts (name);
+                  DO_BOX_FAST (SPART **, val, valctr, vals)
+                    {
+                      if (valctr) ssg_putchar (',');
+                      ssg_sdprint_tree (ssg, val[1]);
+                    }
+                  END_DO_BOX_FAST;
                 }
               ssg_puts (") ");
               break;

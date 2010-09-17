@@ -592,8 +592,8 @@ typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
 #define SPART_AUTO(ptr,buf,t) \
   do { \
     BOX_AUTO_TYPED(SPART *,ptr,buf,sizeof(SPART),DV_ARRAY_OF_POINTER); \
-    memset (ptr, 0, sizeof (SPART)); \
-    ptr->type = t; \
+    memset ((ptr), 0, sizeof (SPART)); \
+    (ptr)->type = t; \
     } while (0)
 
 extern sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre, int rewrite_all);
@@ -604,24 +604,24 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPAR_IS_BLANK_OR_VAR(tree) \
   ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && \
-   ((SPAR_VARIABLE == tree->type) || \
-    (SPAR_BLANK_NODE_LABEL == tree->type) ) )
+   ((SPAR_VARIABLE == (tree)->type) || \
+    (SPAR_BLANK_NODE_LABEL == (tree)->type) ) )
 
 #define SPAR_IS_LIT(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) || \
-   (SPAR_LIT == tree->type) )
+   (SPAR_LIT == (tree)->type) )
 
 #define SPAR_IS_LIT_OR_QNAME(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) || \
-   (SPAR_LIT == tree->type) || (SPAR_QNAME == tree->type)/* || (SPAR_QNAME_NS == tree->type)*/ )
+   (SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == (tree)->type)*/ )
 
 #define SPAR_LIT_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)tree) : \
-   (SPAR_LIT == tree->type) ? tree->_.lit.val : NULL )
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+   (SPAR_LIT == (tree)->type) ? (tree)->_.lit.val : NULL )
 
 #define SPAR_LIT_OR_QNAME_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)tree) : \
-   ((SPAR_LIT == tree->type) || (SPAR_QNAME == tree->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? tree->_.lit.val : NULL )
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+   ((SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? (tree)->_.lit.val : NULL )
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))

@@ -1000,7 +1000,7 @@ sparp_equiv_contains_t_io (sparp_t *sparp, sparp_equiv_t *eq)
 
 /*! For an equality in group \c curr between member of \c eq_l and expression \c r,
 the function restricts \c eq_l or even merges it with variable of other equiv.
-\returns SPART_VARR_XXX bits that can be added to eq_l->e_repoalces_filter if equality is no longer needed due to merge, 0 otherwise */
+\returns SPART_VARR_XXX bits that can be added to eq_l->e_replaces_filter if equality is no longer needed due to merge, 0 otherwise */
 int
 spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r)
 {
@@ -1160,6 +1160,51 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
                         }
                       rarg1_eq->e_rvr.rvrRestrictions |= flags;
                       rarg1_eq->e_replaces_filter |= flags;
+                    }
+                  return 0;
+                }
+            }
+          case SPAR_LIT:
+            {
+              caddr_t str_lval = NULL;
+              switch (DV_TYPE_OF (l))
+                {
+                case DV_ARRAY_OF_POINTER:
+                  str_lval = l->_.lit.val;
+                  if (DV_STRING != DV_TYPE_OF (str_lval))
+                    str_lval = NULL;
+                  break;
+                case DV_STRING:
+                  str_lval = (caddr_t)l;
+                  break;
+                }
+              if ((NULL != str_lval) && (SPAR_BUILT_IN_CALL == SPART_TYPE (r)) && (STR_L == r->_.builtin.btype))
+                {
+                  SPART *rarg1 = r->_.builtin.args[0];
+                  if (SPAR_IS_BLANK_OR_VAR (rarg1))
+                    {
+                      sparp_equiv_t *rarg1_eq = sparp_equiv_get (sparp, curr, rarg1, 0);
+                      flags = SPART_VARR_NOT_NULL;
+                      rarg1_eq->e_rvr.rvrRestrictions |= flags;
+                      rarg1_eq->e_replaces_filter |= flags;
+                      if (SPART_VARR_IS_REF & rarg1_eq->e_rvr.rvrRestrictions)
+                        {
+                          int old_rvr = rarg1_eq->e_rvr.rvrRestrictions;
+                          int restr_ret;
+                          SPART *lval_tmp_qname = spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_nchars (str_lval, box_length (str_lval)-1));
+                          restr_ret = sparp_equiv_restrict_by_constant (sparp, rarg1_eq, NULL, lval_tmp_qname);
+                          if (
+                            (SPARP_EQUIV_MERGE_OK != restr_ret) &&
+                            (SPARP_EQUIV_MERGE_CONFLICT != restr_ret) &&
+                            (SPARP_EQUIV_MERGE_DUPE != restr_ret) )
+                            return 0;
+                          flags = SPART_VARR_FIXED | (rarg1_eq->e_rvr.rvrRestrictions & ~old_rvr);
+/* no need in <code>if (sparp_equiv_contains_t_io (sparp, eq_l)) return 0;</code> as it is written in spar_var_eq_to_equiv(),
+because const=str(var) is never recognized as a special condition on t_in or t_out variables. */
+/* no need in <code>rarg1_eq->e_rvr.rvrRestrictions |= flags;</code>, because it is set in sparp_equiv_restrict_by_constant() above */
+                          rarg1_eq->e_replaces_filter |= flags;
+                          return 1;
+                        }
                     }
                   return 0;
                 }
@@ -5910,8 +5955,8 @@ end_of_equiv_checks:
       END_DO_SET();
     }
   END_DO_BOX_FAST;
-  if (sparp->sparp_query_uses_sinvs)
-    sparp_fill_sinv_varlists (sparp, root);
+  if ((NULL == sparp->sparp_parent_sparp) && sparp->sparp_query_uses_sinvs)
+    sparp_fill_sinv_varlists (sparp, root); /* This is global so can (and should) be made only at top level */
 }
 
 

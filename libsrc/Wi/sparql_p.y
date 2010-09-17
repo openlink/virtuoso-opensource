@@ -912,7 +912,9 @@ spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltIn
 spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionList? GroupGraphPattern	*/
 	: SERVICE_L spar_qm_iriref_const_expn {
 		sparp_arg->sparp_query_uses_sinvs++;
-		$<token_type>$ = sparp_arg->sparp_permitted_syntax; }
+		$<token_type>$ = sparp_arg->sparp_permitted_syntax;
+		sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS; /*!!! TBD config */
+		}
 	    spar_service_options_list_opt {
 		$<box>$ = t_alloc (sizeof (sparp_sources_t));
 		memcpy ($<box>$, &(sparp_arg->sparp_env->spare_src), sizeof (sparp_sources_t));
@@ -920,14 +922,11 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 	    spar_dataset_clauses_opt _LBRA {
 		SPART **sources;
 		caddr_t sinv_storage_uri = uname_virtrdf_ns_uri_DefaultServiceStorage /*!!! TBD config */;
-		ptrlong sinv_syntax;
 		SPART *sinv;
 		if ((NULL == sparp_arg->sparp_env->spare_default_graphs) && (NULL == sparp_arg->sparp_env->spare_named_graphs))
 		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
-		sinv_syntax = SSG_SD_GLOBALS; /*!!! TBD config */
-		sparp_arg->sparp_permitted_syntax = sinv_syntax;
 		sources = spar_make_sources_like_top (sparp_arg);
-		sinv = spar_make_service_inv (sparp_arg, $2, $4, sinv_syntax, sources, sinv_storage_uri);
+		sinv = spar_make_service_inv (sparp_arg, $2, $4, sparp_arg->sparp_permitted_syntax, sources, sinv_storage_uri);
 		t_set_push (&(sparp_env()->spare_context_sinvs), sinv);
 		spar_gp_init (sparp_arg, SERVICE_L); }
 	    spar_group_gp {
@@ -939,13 +938,23 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 		$$ = $9; }
 
 spar_service_options_list_opt	/* [Virt]	ServiceOptionList ::=  '(' ( 'DEFINE'? IRIref DefValue ( ',' DefValue )* )+ ')'	*/
-	: /* empty */				{ $$ = NULL; }
+        : /* empty */                           { $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)IN_L)); t_set_push (&($$), (S
+PART *)((ptrlong)_STAR)); }
 	| _LPAR spar_service_options _RPAR	{ $$ = $2; }
 	;
 
 spar_service_options
 	: QNAME spar_define_val_commalist		{ $$ = NULL; t_set_push (&($$), $1); t_set_push (&($$), $2); }
-	| DEFINE_L QNAME spar_define_val_commalist		{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)DEFINE_L)); t_set_push (&($$), t_list (2, $2, t_revlist_to_array($3))); }
+	| DEFINE_L QNAME spar_define_val_commalist	{
+		caddr_t defname = $2;
+		dk_set_t defvals = $3;
+		if (!strcmp (defname, "lang:dialect"))
+		  {
+		    if ((NULL == defvals) || (NULL != defvals->next) || (SPARQL_INTEGER != ((ptrlong *)(defvals->data))[0]))
+		      sparyyerror ("define lang:dialect needs an integer");
+		    sparp_arg->sparp_permitted_syntax = unbox (((caddr_t *)(defvals->data))[1]) | SSG_SD_GLOBALS;
+		  }
+		$$ = (SPART **)t_list (2, (SPART *)((ptrlong)DEFINE_L), t_list (2, defname, t_revlist_to_array(defvals))); }
 	| IN_L spar_triple_option_var_commalist		{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)IN_L)); t_set_push (&($$), $2); }
 	| spar_service_options QNAME spar_define_val_commalist	{ $$ = $1; t_set_push (&($$), $2); t_set_push (&($$), t_revlist_to_array($3)); }
 	| spar_service_options DEFINE_L QNAME spar_define_val_commalist	{ $$ = $1; t_set_push (&($$), (SPART *)((ptrlong)DEFINE_L)); t_set_push (&($$), t_list (2, $3, t_revlist_to_array($4))); }

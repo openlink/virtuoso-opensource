@@ -6863,9 +6863,19 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   define_count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
   for (define_ctr = 0; define_ctr < define_count; define_ctr += 2)
     {
+      caddr_t name = (caddr_t)(sinv->_.sinv.defines[define_ctr]);
+      SPART ***vals = (SPART ***)(sinv->_.sinv.defines[define_ctr+1]);
+      int valctr;
+      if (!strcmp (name, "lang:dialect"))
+        continue;
       ssg_puts (" DEFINE ");
-      ssg_puts ((caddr_t)(sinv->_.sinv.defines[define_ctr]));
-      ssg_sdprint_tree (parent_ssg, sinv->_.sinv.defines[define_ctr+1]);
+      ssg_puts (name);
+      DO_BOX_FAST (SPART **, val, valctr, vals)
+        {
+          if (valctr) ssg_putchar (',');
+          ssg_sdprint_tree (ssg, val[1]);
+        }
+      END_DO_BOX_FAST;
     }
   ssg_puts (" SELECT");
   DO_BOX_FAST (caddr_t, retname, retctr, sinv->_.sinv.rset_varnames)
@@ -6953,6 +6963,7 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
       ssg_putchar (')');
+      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
       ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
@@ -6969,7 +6980,22 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           int varctr, membctr;
           if (ctr)
             ssg_putchar (',');
-          local_eq = sparp_equiv_get (sparp, gp, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_GET_ASSERT);
+          local_eq = sparp_equiv_get (sparp, gp, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
+          if (NULL == local_eq)
+            {
+              SPART *new_var;
+              if (!SPART_VARNAME_IS_GLOB(varname))
+                goto param_value_cant_be_printed; /* see below */
+              /* dirty hack here */
+              new_var = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+                SPAR_VARIABLE, varname,
+                gp->_.gp.selid, NULL,
+                (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+              new_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
+              local_eq = sparp_equiv_get (sparp, gp, new_var, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE); /* Better late than never */
+              ssg_print_scalar_expn (ssg, local_eq->e_vars[0], SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
+              goto param_value_is_printed; /* see below */
+            }
           if (((SPART_VARR_FIXED | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & local_eq->e_rvr.rvrRestrictions))
             {
               ssg_print_scalar_expn (ssg, (SPART *)(local_eq->e_rvr.rvrFixedValue), SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
@@ -7018,7 +7044,8 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
               ssg_print_equiv_retval_expn (ssg, first_sibling_eq->e_gp, first_sibling_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
               goto param_value_is_printed; /* see below */
             }
-          spar_error (sparp, "Unable to compose an SQL code to pass parameter ?%.200s to the service <%.200s> (not use if it can be calculated before use)",
+param_value_cant_be_printed: ;
+          spar_error (sparp, "Unable to compose an SQL code to pass parameter ?%.200s to the service <%.200s>",
             varname, sinv->_.sinv.endpoint );
 param_value_is_printed: ;
         }
