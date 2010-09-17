@@ -1692,7 +1692,7 @@ iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_pre
             int local_len = strlen (local);
             for (tail = local + local_len; tail > local; tail--)
               {
-                char c = tail[-1];
+                unsigned char c = (unsigned char) tail[-1];
                 if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
                   break;
               }
@@ -3185,7 +3185,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   iri_strlen = strlen (iri);
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
-      char c = tail[-1];
+      unsigned char c = (unsigned char) tail[-1];
       if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }

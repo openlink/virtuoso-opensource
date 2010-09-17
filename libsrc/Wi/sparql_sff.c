@@ -60,7 +60,7 @@ sprintff_is_proven_bijection (const char *f)
       if ('{' == tail[1])
         {
           tail += 2;
-          while (isalnum (tail[0]) || ('_' == tail[0])) tail++;
+          while (isalnum ((unsigned char) (tail[0])) || ('_' == tail[0])) tail++;
           if ('}' != tail[0])
             return 0; /* Syntax error in placeholder for connection variable so the bijection is not proven */
           if (NULL == strchr ("Us", tail[1]))
@@ -127,7 +127,7 @@ sprintff_is_proven_unparseable (const char *f)
       if ('{' == tail[1])
         {
           tail += 2;
-          while (isalnum (tail[0]) || ('_' == tail[0])) tail++;
+          while (isalnum ((unsigned char) (tail[0])) || ('_' == tail[0])) tail++;
           if ('}' != tail[0])
             return 1; /* Syntax error in placeholder for connection variable so it's proven to be unparseable */
           if (NULL == strchr ("Us", tail[1]))
@@ -434,7 +434,7 @@ again:
       if ('{' == f1_tail[0])
         {
           f1_tail++;
-          while (isalnum (f1_tail[0]) || ('_' == f1_tail[0])) f1_tail++;
+          while (isalnum ((unsigned char) (f1_tail[0])) || ('_' == f1_tail[0])) f1_tail++;
           if ('}' != f1_tail[0])
             goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
           f1_tail++;
@@ -462,7 +462,7 @@ again:
           else if ('{' == f2[1])
             {
               f2_tail = f2 + 2;
-              while (isalnum (f2_tail[0]) || ('_' == f2_tail[0])) f2_tail++;
+              while (isalnum ((unsigned char) (f2_tail[0])) || ('_' == f2_tail[0])) f2_tail++;
               if ('}' != f2_tail[0])
                 goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
               f2_tail++;
@@ -837,7 +837,7 @@ again:
   if ('{' == f2_tail[0])
     {
       f2_tail++;
-      while (isalnum (f2_tail[0]) || ('_' == f2_tail[0])) f2_tail++;
+      while (isalnum ((unsigned char) (f2_tail[0])) || ('_' == f2_tail[0])) f2_tail++;
       if ('}' != f2_tail[0])
         goto generic_tails; /* Syntax error -- no '}' after "%{connvar" */
       f2_tail++;

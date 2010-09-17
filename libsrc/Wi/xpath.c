@@ -2726,7 +2726,7 @@ static int charref_to_unichar (const char **src_tail_ptr, const char *src_end, c
     {
       if ('=' == src_tail[0])
 	break;
-      if (!isalnum (src_tail[0]) && !(src_tail[0] & 0x80) && (NULL == strchr ("-_%+", src_tail[0])))
+      if (!isalnum ((unsigned char) (src_tail[0])) && !(src_tail[0] & 0x80) && (NULL == strchr ("-_%+", src_tail[0])))
         {
           err_msg_ret[0] = "Syntax error in &...; character reference";
 	  return -1;

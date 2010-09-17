@@ -894,7 +894,7 @@ rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret)
       const char *scan = iri;
       while (scan <  delim)
         {
-          if (!isalnum (scan[0]) && (NULL == strchr ("+-.", scan[0])))
+          if (!isalnum ((unsigned char) (scan[0])) && (NULL == strchr ("+-.", scan[0])))
             goto schema_done;
           scan++;
         }
@@ -973,7 +973,7 @@ rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret)
         {
           if (scan[0] & ~0x7f)
             goto schema_done;
-          if (!isalnum (scan[0]) && (NULL == strchr ("+-.", ((char *)scan)[0])))
+          if (!isalnum ((unsigned char) (scan[0])) && (NULL == strchr ("+-.", ((char *)scan)[0])))
             goto schema_done;
           scan++;
         }

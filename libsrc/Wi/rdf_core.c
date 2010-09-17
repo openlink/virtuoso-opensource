@@ -1820,7 +1820,7 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   iri_strlen = strlen (iri);
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
-      char c = tail[-1];
+      unsigned char c = tail[-1];
       if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }

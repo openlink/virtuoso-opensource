@@ -3125,7 +3125,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 	  ptr++;
 
-	  while (isalnum (ptr[0]) || ('_' == ptr[0]))
+	  while (isalnum ((unsigned char) (ptr[0])) || ('_' == ptr[0]))
 	    ptr++;
 
 	  if ('}' != ptr[0])
@@ -3689,7 +3689,7 @@ retry_unrdf:
 		  fmt_tail++;
 		  fmt_tail++;
 
-		  while (isalnum (fmt_tail[0]) || ('_' == fmt_tail[0]))
+		  while (isalnum ((unsigned char) (fmt_tail[0])) || ('_' == fmt_tail[0]))
 		    fmt_tail++;
 
 		  if ('}' != fmt_tail[0])

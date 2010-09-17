@@ -4083,7 +4083,7 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
             {
               const char *t = v + box_length (v) - 1;
               int ctr = 20;
-              while ((0 < ctr--) && (v < t) && (isalnum (t[-1]))) t--;
+              while ((0 < ctr--) && (v < t) && (isalnum ((unsigned char) (t[-1])))) t--;
               tail = t;
             }
           full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash (v), tail);
