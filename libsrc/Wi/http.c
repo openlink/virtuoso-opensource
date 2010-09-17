@@ -4793,6 +4793,56 @@ bif_http_dav_url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (bif_http_value_1 (qst, err_ret, args, "http_dav_url", DKS_ESC_DAV));
 }
 
+caddr_t
+bif_http_xmlelement_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int is_empty, const char *bifname)
+{
+  ws_connection_t * ws = ((query_instance_t *)qst)->qi_client->cli_ws;
+  caddr_t elt = bif_string_or_uname_arg (qst, args, 0, bifname);
+  dk_session_t * out = http_session_no_catch_arg (qst, args, 1, bifname);
+  int argctr, argcount = BOX_ELEMENTS (args), attr_printed = 0;
+  session_buffered_write_char ('<', out);
+  session_buffered_write (out, elt, box_length (elt)-1);
+  for (argctr = 2; argctr < argcount; argctr += 2)
+    {
+      caddr_t attrname = bif_string_or_uname_arg (qst, args, argctr, bifname);
+      caddr_t attrvalue = bif_arg (qst, args, argctr+1, bifname);
+      if (DV_DB_NULL == DV_TYPE_OF (attrvalue))
+        continue;
+      session_buffered_write_char (' ', out);
+      session_buffered_write (out, attrname, box_length (attrname)-1);
+      session_buffered_write (out, "=\"", 2);
+      dks_sqlval_esc_write (qst, out, attrvalue, WS_CHARSET (ws, qst), default_charset, DKS_ESC_DQATTR);
+      session_buffered_write_char ('"', out);
+      attr_printed++;
+    }
+  if (is_empty)
+    session_buffered_write_char ('/', out);
+  session_buffered_write_char ('>', out);
+  return box_num (attr_printed);
+}
+
+caddr_t
+bif_http_xmlelement_start (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_http_xmlelement_impl (qst, err_ret, args, 0, "http_xmlelement_start");
+}
+
+caddr_t
+bif_http_xmlelement_empty (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_http_xmlelement_impl (qst, err_ret, args, 1, "http_xmlelement_empty");
+}
+
+caddr_t
+bif_http_xmlelement_end (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t elt = bif_string_or_uname_arg (qst, args, 0, "http_xmlelement_end");
+  dk_session_t * out = http_session_no_catch_arg (qst, args, 1, "http_xmlelement_end");
+  session_buffered_write (out, "</", 2);
+  session_buffered_write (out, elt, box_length (elt)-1);
+  session_buffered_write_char ('>', out);
+  return box_num (0);
+}
 
 caddr_t
 bif_http_rewrite (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -9917,6 +9967,9 @@ http_init_part_one ()
   bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
   bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
   bif_define ("http", bif_http_result);
+  bif_define ("http_xmlelement_start", bif_http_xmlelement_start);
+  bif_define ("http_xmlelement_empty", bif_http_xmlelement_empty);
+  bif_define ("http_xmlelement_end", bif_http_xmlelement_end);
   bif_define ("http_value", bif_http_value);
   bif_define ("http_url", bif_http_url);
   bif_define ("http_uri", bif_http_uri);
@@ -10702,6 +10755,3 @@ soap_mime_tree (ws_connection_t * ws, dk_set_t * set, caddr_t * err, int soap_ve
 	}
     }
 }
-
-
-
