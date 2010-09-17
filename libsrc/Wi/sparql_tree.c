@@ -692,9 +692,6 @@ sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack
   int eqctr, eqcount;
   int varctr, varcount;
   int varnamectr, varnamecount;
-
-  eqcount = haystack_gp->_.gp.equiv_count;
-  eq_idxs = haystack_gp->_.gp.equiv_indexes;
 #ifdef DEBUG
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &equivs, 1000))
     spar_internal_error (NULL, "sparp_equiv_get_ro(): stack overflow");
@@ -718,6 +715,18 @@ sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack
   needle_var_name = (
     ((DV_STRING == DV_TYPE_OF (needle_var)) || (DV_UNAME == DV_TYPE_OF (needle_var))) ?
     ((caddr_t)(needle_var)) : needle_var->_.var.vname );
+  if (SPAR_BINDINGS_INV == haystack_gp->type)
+    {
+      DO_BOX_FAST_REV (SPART *, var, eqctr, haystack_gp->_.binv.vars)
+        {
+          if (!strcmp (var->_.var.vname, needle_var_name))
+            return equivs[var->_.var.equiv_idx];
+        }
+      END_DO_BOX_FAST_REV;
+      goto retnull;
+    }
+  eqcount = haystack_gp->_.gp.equiv_count;
+  eq_idxs = haystack_gp->_.gp.equiv_indexes;
 #ifdef DEBUG
   if (BOX_ELEMENTS_INT_0 (eq_idxs) < eqcount)
     spar_internal_error (NULL, "sparp_equiv_get_ro(): gp.equivs overflow");
@@ -3116,11 +3125,14 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int n
   return NULL;
 }
 
-qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var)
+qm_value_t *
+sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var)
 {
   int tr_idx = var->_.var.tr_idx;
   quad_map_t *qm;
   qm_value_t *qmv;
+  if (SPAR_BINDINGS_INV == gp->type)
+    spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): call for binding invocation");
   if (tr_idx >= SPART_TRIPLE_FIELDS_COUNT)
     spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): side effect var passed");
   if (NULL == var_triple)
@@ -3238,6 +3250,8 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var)
       sparp_equiv_t *merged_esrc = SPARP_EQUIV(sparp, esrc->e_merge_dest_idx);
       esrc = merged_esrc;
     }
+  if (SPAR_BINDINGS_INV == esrc->e_gp->type) /* An external variable may come from bindings invocation instead of a GP. Binding var is the only choice then. */
+    return esrc->e_vars[0];
 /* The best origin is triple pattern right in the GP because this increases the chance that SQL optimizer will find a good place for some condition on variable from subquery */
   for (vctr = esrc->e_var_count; vctr--; /*no step*/)
      {

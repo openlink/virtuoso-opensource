@@ -3645,7 +3645,7 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (old_val);
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
-      if (hit->hit_chilum != old_key_ptr)
+      if (hit->hit_chilum != (char *)old_key_ptr)
         hit->hit_dict_version++;
       res = 1;
     }
@@ -3750,7 +3750,7 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_tree (old_val);
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
-      if (hit->hit_chilum != old_key_ptr)
+      if (hit->hit_chilum != (char *)old_key_ptr)
         hit->hit_dict_version++;
       res = 0;
     }
@@ -3871,7 +3871,7 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
     len = batch_size;
   if (0 == len)
     {
-      res = list (0);
+      res = (caddr_t *)list (0);
       goto res_done; /* see below */
     }
   res = (caddr_t *)dk_alloc_box (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -3973,7 +3973,7 @@ bif_dict_iter_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (hit->hit_dict_version == ht->ht_dict_version)
     {
       caddr_t *key, *data;
-      res = hit_next (hit, &key, &data);
+      res = hit_next (hit, (char **)(&key), (char **)(&data));
       if (res)
         {
           if ((SSL_VARIABLE == args[1]->ssl_type) || (IS_SSL_REF_PARAMETER (args[1]->ssl_type)))
@@ -3991,24 +3991,8 @@ bif_dict_iter_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (res);
 }
 
-/*#define GVECTOR_SORT_DEBUG*/
-#define MAX_VECTOR_BSORT_BLOCK 8
-
-typedef struct vector_sort_s
-{
-  int vs_block_elts;
-  int vs_block_size;
-  int vs_key_ofs;
-  int vs_sort_asc;
-  int vs_whole_vector_elts;
-  caddr_t *vs_whole_vector;
-  caddr_t *vs_whole_tmp;
-}
-vector_sort_t;
-
-
 int
-vector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
+gvector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
 {
   caddr_t key1 = e1 [specs->vs_key_ofs];
   caddr_t key2 = e2 [specs->vs_key_ofs];
@@ -4051,21 +4035,21 @@ cmp_done:
 }
 
 
-#ifdef GVECTOR_SORT_DEBUG
-#define GVECTOR_CHECK_BLOCK(blk,specs) do { \
+#ifdef VECTOR_SORT_DEBUG
+#define VECTOR_CHECK_BLOCK(blk,specs) do { \
     int ctr = specs->vs_block_elts; \
     while (ctr--) dk_check_tree ((blk)[ctr]); \
   } while (0)
 #else
-#define GVECTOR_CHECK_BLOCK(blk,specs)
+#define VECTOR_CHECK_BLOCK(blk,specs)
 #endif
 
 
-#define GVECTOR_SORT_SWAP(a,b,specs) do { \
+#define VECTOR_SORT_SWAP(a,b,specs) do { \
     caddr_t tmp[MAX_VECTOR_BSORT_BLOCK]; \
     int bsize = specs->vs_block_size; \
-    GVECTOR_CHECK_BLOCK(a,specs); \
-    GVECTOR_CHECK_BLOCK(b,specs); \
+    VECTOR_CHECK_BLOCK(a,specs); \
+    VECTOR_CHECK_BLOCK(b,specs); \
     memcpy (tmp, (a), bsize); \
     memcpy ((a), (b), bsize); \
     memcpy ((b), tmp, bsize); \
@@ -4073,7 +4057,7 @@ cmp_done:
 
 
 void
-gvector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
+vector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
 {
   /* Bubble sort n_bufs first buffers in the array. */
   int bels = specs->vs_block_elts;
@@ -4084,36 +4068,36 @@ gvector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs)
 	{
           caddr_t *a = bs + (n * bels);
           caddr_t *b = a + bels;
-	  if (DVC_GREATER == vector_sort_cmp (a, b, specs))
-	    GVECTOR_SORT_SWAP (a, b, specs);
+	  if (DVC_GREATER == specs->vs_cmp_fn (a, b, specs))
+	    VECTOR_SORT_SWAP (a, b, specs);
 	}
     }
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
 #endif
 }
 
 
 static void
-gvector_sort_reverse_buffer (caddr_t *in, int n_in, vector_sort_t *specs)
+vector_sort_reverse_buffer (caddr_t *in, int n_in, vector_sort_t *specs)
 {
   int bels = specs->vs_block_elts;
   caddr_t *a = in;
   caddr_t *b = in + (n_in - 1) * bels;
   while (a < b)
     {
-      GVECTOR_SORT_SWAP (a, b, specs);
+      VECTOR_SORT_SWAP (a, b, specs);
       a += bels;
       b -= bels;
     }
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
 #endif
 }
 
 
 void
-gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t * specs)
+vector_qsort_int (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t * specs)
 {
   if (n_in < 3)
     {
@@ -4121,9 +4105,9 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       if (n_in < 2)
         return;
       bels = specs->vs_block_elts;
-      if (DVC_GREATER == vector_sort_cmp (in, in + bels, specs))
+      if (DVC_GREATER == specs->vs_cmp_fn (in, in + bels, specs))
 	{
-          GVECTOR_SORT_SWAP (in, in + bels, specs);
+          VECTOR_SORT_SWAP (in, in + bels, specs);
 	}
     }
   else
@@ -4137,7 +4121,7 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       int inx, above_is_all_splits = 1;
       if (depth > 30)
 	{
-	  gvector_bsort (in, n_in, specs);
+	  vector_bsort (in, n_in, specs);
 	  return;
 	}
 
@@ -4146,7 +4130,7 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
       for (inx = 0; inx < n_in; inx++)
 	{
 	  caddr_t * this_pg = in + inx * bels;
-	  int rc = vector_sort_cmp (this_pg, split, specs);
+	  int rc = specs->vs_cmp_fn (this_pg, split, specs);
 	  if (!mid_filled && DVC_MATCH == rc)
 	    {
               memcpy (mid, this_pg, bsize);
@@ -4162,24 +4146,43 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
 	      memcpy (left + (n_right--) * bels, this_pg, bsize);
 	    }
 	}
-      gvector_qsort (left, in, n_left, depth + 1, specs);
-      gvector_sort_reverse_buffer (left + (n_right + 1) * bels, (n_in - n_right) - 1, specs);
+      vector_qsort_int (left, in, n_left, depth + 1, specs);
+      vector_sort_reverse_buffer (left + (n_right + 1) * bels, (n_in - n_right) - 1, specs);
       if (!above_is_all_splits)
-	gvector_qsort (left + (n_right + 1) * bels, in + (n_right + 1) * bels,
+	vector_qsort_int (left + (n_right + 1) * bels, in + (n_right + 1) * bels,
 	    (n_in - n_right) - 1, depth + 1, specs);
       memcpy (in, left, n_left * bsize);
 #ifdef DEBUG
       if (!mid_filled)
-        GPF_T1("gvector_qsort can not find split value in range");
+        GPF_T1("gvector_qsort_int can not find split value in range");
 #endif
       memcpy (in + n_left * bels, mid, bsize);
       memcpy (in + (n_right + 1) * bels, left + (n_right + 1) * bels,
 	  ((n_in - n_right) - 1) * bsize);
-#ifdef GVECTOR_SORT_DEBUG
+#ifdef VECTOR_SORT_DEBUG
   dk_check_domain_of_connectivity (specs->vs_whole_vector);
   dk_check_domain_of_connectivity (specs->vs_whole_tmp);
 #endif
     }
+}
+
+void
+vector_qsort (caddr_t *vect, int group_count, vector_sort_t *specs)
+{
+  caddr_t *temp;
+  specs->vs_block_size = specs->vs_block_elts * sizeof (caddr_t);
+#ifdef VECTOR_SORT_DEBUG
+  temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
+  specs->vs_whole_vector = vect;
+  specs->vs_whole_tmp = temp;
+#else
+  temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
+#endif
+  vector_qsort_int (vect, temp, group_count, 0, specs);
+#ifdef VECTOR_SORT_DEBUG
+  dk_check_tree (vect);
+#endif
+  dk_free_box (temp);
 }
 
 typedef struct dsort_itm_s {
@@ -4210,25 +4213,11 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     return box_num (group_count); /* No need to sort empty or single-element vector */
   if ('Q' == algo)
     {
-      caddr_t *temp;
-#ifdef GVECTOR_SORT_DEBUG
-      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
-#else
-      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
-#endif
       specs.vs_block_elts = block_elts;
-      specs.vs_block_size = block_elts * sizeof (caddr_t);
       specs.vs_key_ofs = key_ofs;
       specs.vs_sort_asc = sort_asc;
-#ifdef GVECTOR_SORT_DEBUG
-      specs.vs_whole_vector = vect;
-      specs.vs_whole_tmp = temp;
-#endif
-      gvector_qsort (vect, temp, group_count, 0, &specs);
-#ifdef GVECTOR_SORT_DEBUG
-      dk_check_tree (vect);
-#endif
-      dk_free_box (temp);
+      specs.vs_cmp_fn = gvector_sort_cmp;
+      vector_qsort (vect, group_count, &specs);
     }
   else /* if ('D' == algo) */
     {
@@ -4357,26 +4346,11 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
     return box_num (vect_elems); /* No need to sort empty or single-element vector */
   if ('Q' == algo)
     {
-      caddr_t *temp;
-#ifdef GVECTOR_SORT_DEBUG
-      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
-#else
-      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
-#endif
       specs.vs_block_elts = 1;
-      specs.vs_block_size = sizeof (caddr_t);
       specs.vs_key_ofs = key_ofs;
       specs.vs_sort_asc = sort_asc;
-#ifdef GVECTOR_SORT_DEBUG
-      specs.vs_whole_vector = vect;
-      specs.vs_whole_tmp = temp;
-#endif
-      GPF_T1("rowvector_qsort is not yet implemented");
-      /*rowvector_qsort (vect, temp, vect_elems, 0, &specs); */
-#ifdef GVECTOR_SORT_DEBUG
-      dk_check_tree (vect);
-#endif
-      dk_free_box (temp);
+      GPF_T1("rowvector_qsort_int is not yet implemented");
+      /*rowvector_qsort_int (vect, temp, vect_elems, 0, &specs); */
     }
   else /* if (('D' == algo) || ('S' == algo)) */
     {

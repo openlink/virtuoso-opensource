@@ -249,4 +249,38 @@ extern shuric_vtable_t xslt_shuric_vtable;
 
 extern char * xslt_fmt_print_numbers (char *tail, int tail_max_fill, unsigned *nums,
     int nums_count, char *format);
+
+/* Historically, in-memory dictionaries and weird sortings are part of XSLT. That should be changed sooner or later. */
+
+/*#define VECTOR_SORT_DEBUG*/
+#define MAX_VECTOR_BSORT_BLOCK 8
+
+struct vector_sort_s;
+
+/*! Type of comparison callback for vector_qsort_int() and the like */
+typedef int vector_sort_cmp_t (caddr_t * e1, caddr_t * e2, struct vector_sort_s * specs);
+
+/*! Comparison callback used in gvector_qsort_int */
+extern int gvector_sort_cmp (caddr_t * e1, caddr_t * e2, struct vector_sort_s * specs);
+
+typedef struct vector_sort_s
+{
+  int vs_block_elts;		/*!< Number of elements in the sorting block */
+  int vs_block_size;		/*!< Size of sorting block in bytes */
+  int vs_key_ofs;		/*!< Offset of key element in sorting block, (offset in elements, not in bytes) */
+  int vs_sort_asc;		/*!< Descending sort if 0, ascending sort otherwise */
+  int vs_whole_vector_elts;	/*!< Number of elements in the whole vector to sort */
+  caddr_t *vs_whole_vector;	/*!< Whole vector to sort */
+  caddr_t *vs_whole_tmp;
+  vector_sort_cmp_t *vs_cmp_fn;	/*!< Comparison callback */
+  void *vs_env;			/*!< Callback-specific data */
+}
+vector_sort_t;
+
+/*! Bubble sort of a vactor or its fragment */
+void vector_bsort (caddr_t *bs, int n_bufs, vector_sort_t * specs);
+void vector_qsort (caddr_t *vect, int group_count, vector_sort_t *specs);
+
+
+
 #endif

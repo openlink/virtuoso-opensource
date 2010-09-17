@@ -404,6 +404,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{A}{S}{K}			{ return ASK_L		; }
 <SPARQL>{A}{V}{G}			{ return AVG_L		; }
 <SPARQL>{B}{A}{S}{E}			{ return BASE_L		; }
+<SPARQL>{B}{I}{N}{D}{I}{N}{G}{S}	{ return BINDINGS_L	; }
 <SPARQL>{B}{I}{J}{E}{C}{T}{I}{O}{N}	{ return BIJECTION_L	; }
 <SPARQL>{B}{O}{U}{N}{D}			{ return BOUND_L	; }
 <SPARQL>{B}{Y}				{ return BY_L		; }
@@ -505,6 +506,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>{T}_{S}{T}{E}{P}		{ return T_STEP_L	; }
 <SPARQL>{T}{R}{A}{N}{S}{I}{T}{I}{V}{E}	{ return TRANSITIVE_L	; }
 <SPARQL>{T}{R}{U}{E}			{ return true_L		; }
+<SPARQL>{U}{N}{B}{O}{U}{N}{D}		{ return UNBOUND_L	; }
 <SPARQL>{U}{N}{I}{O}{N}			{ return UNION_L	; }
 <SPARQL>{U}{S}{I}{N}{G}			{ return USING_L	; }
 

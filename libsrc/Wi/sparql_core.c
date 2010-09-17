@@ -1641,6 +1641,46 @@ in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
 }
 
+void
+spar_list_triple_vars_in_gp (sparp_t *sparp, SPART *tree, dk_set_t *all_varnames_ret)
+{
+  int ctr;
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_ALIAS: t_set_push_new_string (all_varnames_ret, tree->_.alias.aname); break;
+    case SPAR_VARIABLE: t_set_push_new_string (all_varnames_ret, tree->_.var.vname); break;
+    case SPAR_TRIPLE:
+      for (ctr = SPART_TRIPLE_FIELDS_COUNT; ctr--; /* no step */)
+        {
+          SPART *fld = tree->_.triple.tr_fields[ctr];
+          if (SPAR_VARIABLE == SPART_TYPE (fld))
+            t_set_push_new_string (all_varnames_ret, fld->_.var.vname);
+        }
+      break;
+    case SPAR_GP:
+      DO_BOX_FAST_REV (SPART *, memb, ctr, tree->_.gp.members)
+        {
+          spar_list_triple_vars_in_gp (sparp, memb, all_varnames_ret);
+        }
+      END_DO_BOX_FAST_REV;
+      if (NULL != tree->_.gp.subquery)
+        {
+          SPART **retvals = tree->_.gp.subquery->_.req_top.retvals;
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (retvals))
+            {
+              DO_BOX_FAST_REV (SPART *, memb, ctr, tree->_.req_top.retvals)
+                {
+                  spar_list_triple_vars_in_gp (sparp, memb, all_varnames_ret);
+                }
+              END_DO_BOX_FAST_REV;
+            }
+          else
+            spar_internal_error (sparp, "Usupported combination of subqueries and service invocations");
+        }
+      break;
+    }
+}
+
 SPART *
 spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage)
 {
@@ -1648,6 +1688,7 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
   dk_set_t param_varnames = NULL;
   dk_set_t rset_varnames = NULL;
   dk_set_t defines = NULL;
+  int in_list_implicit = 0;
   ptrlong sinvcount = sparp->sparp_sg->sg_sinv_count;
   SPART **sinvs = sparp->sparp_sg->sg_sinvs;
   SPART *sinv;
@@ -1662,6 +1703,21 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
         }
       else if (IN_L == (ptrlong)optname)
         {
+          if (_STAR == (ptrlong)optvalue)
+            {
+              in_list_implicit = 1;
+              DO_SET (dk_set_t, members_before, &(sparp->sparp_env->spare_acc_triples))
+                {
+                  DO_SET (SPART *, member, &members_before)
+                    {
+                      spar_list_triple_vars_in_gp (sparp, member, &param_varnames);
+                    }
+                  END_DO_SET()
+                }
+              END_DO_SET()
+            }
+          else
+            {
           DO_SET (SPART *, var, (dk_set_t *)(&optvalue))
             {
               caddr_t vname = var->_.var.vname;
@@ -1670,6 +1726,7 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
               t_set_push (&param_varnames, vname);
             }
           END_DO_SET()
+        }
         }
 /*! TBD: add other cases */
     }
@@ -1685,12 +1742,13 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
 #endif
       sparp->sparp_sg->sg_sinvs = sinvs = new_sinvs;
     }
-  sinv = spartlist (sparp, 10, SPAR_SERVICE_INV,
+  sinv = spartlist (sparp, 11, SPAR_SERVICE_INV,
     sparp->sparp_sg->sg_sinv_count,
     endpoint,
     t_revlist_to_array (iri_params),
     t_box_num (permitted_syntax),
     t_revlist_to_array (param_varnames),
+    (ptrlong)in_list_implicit,
     t_revlist_to_array (rset_varnames),
     t_revlist_to_array (defines),
     sources,
@@ -2009,6 +2067,75 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
 /* The default is, of course, a plain query */
   return spar_make_top (sparp, subtype, retvals, retselid, pattern, groupings, having, order, limit, offset);
 }
+
+void
+spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv)
+{
+  int varctr, rowctr;
+  DO_BOX_FAST_REV (SPART *, var, varctr, binv->_.binv.vars)
+    {
+      sparp_equiv_t *eq;
+      int restr_set = SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT;
+      int restr_drop = 0;
+      var->_.var.rvr.rvrRestrictions = SPART_VARR_CONFLICT;
+      DO_BOX_FAST (SPART **, row, rowctr, binv->_.binv.data_rows)
+        {
+          SPART *datum = row[varctr];
+          if (NULL == datum)
+            restr_drop |= SPART_VARR_NOT_NULL;
+          else
+            switch (SPART_TYPE (datum))
+              {
+              case SPAR_QNAME: restr_drop |= SPART_VARR_IS_LIT; break;
+              case SPAR_LIT: restr_drop |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI; break;
+              }
+        }
+      END_DO_BOX_FAST;
+      if (rowctr)
+        var->_.var.rvr.rvrRestrictions = restr_set & ~restr_drop;
+      else
+        var->_.var.rvr.rvrRestrictions = SPART_VARR_CONFLICT;
+      if (1 == rowctr)
+        {
+          SPART *datum = binv->_.binv.data_rows[0][varctr];
+          if (NULL == datum)
+            var->_.var.rvr.rvrRestrictions = SPART_VARR_ALWAYS_NULL;
+          else
+          switch (SPART_TYPE (datum))
+            {
+            case SPAR_QNAME:
+              var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
+              var->_.var.rvr.rvrFixedValue = datum->_.qname.val;
+              break;
+            case SPAR_LIT:
+              if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (datum))
+                {
+                  if (NULL != datum->_.lit.language)
+                    break;
+                  if (NULL != datum->_.lit.datatype)
+                    break;
+                  var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
+                  var->_.var.rvr.rvrFixedValue = datum->_.lit.val;
+                  break;
+                }
+              var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
+              var->_.var.rvr.rvrFixedValue = datum;
+              break;
+            }
+        }
+      eq = sparp_equiv_alloc (sparp);
+      eq->e_varnames = (caddr_t *)t_list (1, var->_.var.vname);
+      eq->e_vars = (SPART **)t_list (1, var);
+      eq->e_var_count = 1;
+      eq->e_nested_bindings = 1; /* fake, to not reset rvr to conflict */
+      eq->e_gp = binv;
+      eq->e_const_reads = 1;
+      sparp_equiv_tighten (sparp, eq, &(var->_.var.rvr), ~0);
+      var->_.var.equiv_idx = eq->e_own_idx;
+    }
+  END_DO_BOX_FAST_REV;
+}
+
 
 SPART **
 spar_make_sources_like_top (sparp_t *sparp)
@@ -4042,7 +4169,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       sparqre.sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
-      if (SQL_SUCCESS != sparqre.sparqre_catched_error) /* if err is SQL_SUCCESS will be done below as no jump will occur */
+      if (SQL_SUCCESS != sparqre.sparqre_catched_error) /* if err is SQL_SUCCESS will be done bellow as no jump will occur */
 	{
           ssg_free_internals (&ssg);
           MP_DONE ();
@@ -4295,6 +4422,8 @@ end_of_test:
 }
 #endif
 
+extern caddr_t bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+extern caddr_t bif_sparql_rdb2rdf_list_tables (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 void
 sparql_init (void)
@@ -4309,6 +4438,8 @@ sparql_init (void)
   bif_define ("sparql_lex_analyze", bif_sparql_lex_analyze);
   bif_define ("sparql_quad_maps_for_quad", bif_sparql_quad_maps_for_quad);
   bif_define ("sparql_sql_cols_for_quad", bif_sparql_sql_cols_for_quad);
+  bif_define ("sparql_rdb2rdf_codegen", bif_sparql_rdb2rdf_codegen);
+  bif_define ("sparql_rdb2rdf_list_tables", bif_sparql_rdb2rdf_list_tables);
   bif_define ("__sprintff_is_proven_bijection", bif_sprintff_is_proven_bijection);
   bif_define ("__sprintff_is_proven_unparseable", bif_sprintff_is_proven_unparseable);
   bif_define ("__sprintff_intersect", bif_sprintff_intersect);

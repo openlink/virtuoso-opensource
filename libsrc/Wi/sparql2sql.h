@@ -191,13 +191,15 @@ typedef struct sparp_equiv_s
 #define SPARP_EQUIV_ADD_OPTIONAL_READ	0x80	/*!< \c sparp_equiv_get() will increment \c e_optional_reads if variable is added */
 /* There's no SPARP_EQUIV_ADD_OPTIONAL_READ because subquery vars are not added to the equiv */
 
+/*! This allocates a new quivalence class. Don't use it in vain, use sparp_equiv_get with SPARP_EQUIV_INS_CLASS instead. */
+extern sparp_equiv_t *sparp_equiv_alloc (sparp_t *sparp);
+
 /*! Finds or create an equiv class for a \c needle_var in \c haystack_gp.
 The core behaviour is specified by (flags & (SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE)):
    when 0 then only existing equiv with existing occurrence is returned;
    when SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE then new equiv with 1 new variable can be added;
    when SPARP_EQUIV_INS_CLASS then new equiv with no variables can be added, for passing from alias to alias.
-If (flags & SPARP_EQUIV_GET_NAMESAKES) then \c needle_var can be a boxed string with name of variable.
-*/
+If (flags & SPARP_EQUIV_GET_NAMESAKES) then \c needle_var can be a boxed string with name of variable. */
 extern sparp_equiv_t *sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flags);
 /*! Similar to sparp_equiv_get(), but gets a vector of pointers to equivs instead of \c sparp */
 extern sparp_equiv_t *sparp_equiv_get_ro (sparp_equiv_t **equivs, ptrlong equiv_count, SPART *haystack_gp, SPART *needle_var, int flags);
@@ -610,6 +612,12 @@ extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcli
 /*! This turns \c gp into a union of zero cases and adjust VARR flags of variables to make them always-NULL */
 extern void sparp_gp_produce_nothing (sparp_t *sparp, SPART *gp);
 
+/*! This fills in "all atables" member of the given quad map */
+extern void sparp_collect_all_atable_uses (sparp_t *sparp_or_null, quad_map_t *qm);
+
+/*! This fills in "all conds" member of the given quad map */
+extern void sparp_collect_all_conds (sparp_t *sparp_or_null, quad_map_t *qm);
+
 /*! Perform all rewritings according to the type of the tree, grab logc etc. */
 extern void sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals);
 
@@ -721,8 +729,10 @@ typedef struct rdf_ds_usage_s
 #define NULL_ASNAME ((const char *)NULL)
 #define COL_IDX_ASNAME (((const char *)NULL) + 0x100)
 
+/*! Prints a subalias (and dot after alias, if flagged by the last argument), returns whether everything is printed */
+extern int ssg_prin_subalias (struct spar_sqlgen_s *ssg, const char *alias, const char *colalias, int dot_after_alias);
 /*! Prints the SQL expression based on \c tmpl template of \c qm_fmt valmode. \c asname is name used for AS xxx clauses, other arguments form context */
-extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, caddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
+extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, ccaddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname);
 extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_aliases);
 extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements);
 
@@ -776,6 +786,9 @@ typedef struct spar_sqlgen_s
   caddr_t		ssg_sd_single_from;	/*!< The IRI in FROM clause, if there's only one FROM clause, NULL otherwise */
   int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
   dk_set_t		ssg_param_pos_set;	/*!< revlist of byte offsets of params in text and numbers of params in question, for sinv templates with unsupported named params */
+/* RDB2RDF Codegen temporary values */
+  const char *		ssg_alias_to_search;	/*!< Alias to select for search-and-replace (say, to replace "main alias" with prefixes for old or new columns) */
+  const char *		ssg_alias_to_replace;	/*!< Replacing alias for search-and-replace */
 } spar_sqlgen_t;
 
 /*!< Releases non-mempooled internals of \c ssg (currently the ssg_out) but does not free \c ssg itself (it's supposed to be on stack (if top-level) or in mem pool (if top-level or nested) */
@@ -884,6 +897,7 @@ extern void ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_to
 extern void ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags, int retval_flags, ssg_valmode_t needed);
 
 extern void ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm);
+extern void ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location);
 
 /*! Returns nonzero if \c rv may produce value that may screw up result of SELECT DISTINCT if not wrapped in RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG */
 extern int sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv);

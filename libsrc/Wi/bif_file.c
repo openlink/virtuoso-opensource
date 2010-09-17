@@ -2428,11 +2428,10 @@ bif_mdigest5 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define MOD_ADLER 65521
 #define ADLER_MAX_BLOCK_LEN 5550
 #define MOD_ADLER_WRAP(x) x = (x & 0xffff) | ((x >> 16) * (65536 - MOD_ADLER))
-static caddr_t
-bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+
+int
+adler32_of_buffer (unsigned char *data, size_t len)
 {
-  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "adler32");
-  size_t len = box_length (data) - 1;
   unsigned lo = 1, hi = 0;
   while (len)
    {
@@ -2451,7 +2450,15 @@ bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     lo -= MOD_ADLER;
   if (hi >= MOD_ADLER)
     hi -= MOD_ADLER;
-  return box_num ((hi << 16) | lo);
+  return ((hi << 16) | lo);
+}
+
+static caddr_t
+bif_adler32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned char *data = (unsigned char *) bif_string_arg (qst, args, 0, "adler32");
+  size_t len = box_length (data) - 1;
+  return box_num (adler32_of_buffer (data, len));
 }
 
 static caddr_t

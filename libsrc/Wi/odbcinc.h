@@ -149,6 +149,7 @@ typedef void * SQLHANDLE;
 		)
 #define IS_ORACLE_RDS(rds) (strindex (rds_get_info (rds, SQL_DBMS_NAME), "Oracle"))
 #define IS_INFORMIX_RDS(rds) (nc_strstr ((unsigned char *) rds_get_info (rds, SQL_DBMS_NAME), (unsigned char *) "Informix") != NULL)
+#define IS_PROGRESS_RDS(rds) (nc_strstr ((unsigned char *) rds_get_info (rds, SQL_DBMS_NAME), (unsigned char *) "Progress") != NULL)
 #define SHOULD_USE_SCROLLABLE(rcon) (IS_SQLSERVER (rcon))
 #define SHOULD_USE_SCROLLABLE_RDS(rds) (IS_SQLSERVER_RDS (rds))
 

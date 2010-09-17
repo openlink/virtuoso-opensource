@@ -765,6 +765,16 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+static caddr_t
+bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
+  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
+  if (NULL == qi)
+    return NEW_DB_NULL;
+  return box_num ((ptrlong)qi);
+}
 
 static caddr_t
 bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1460,6 +1470,7 @@ sqlbif2_init (void)
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
+  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);

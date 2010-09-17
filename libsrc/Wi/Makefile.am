@@ -129,6 +129,7 @@ C_FILES_SPARQL	= \
 	sparql_qm.c \
 	sparql_sff.c \
 	sparql_tree.c \
+	sparql_rdb2rdf.c \
 	sparul2sql.c \
 	sql_code_sparql.c \
 	turtle_l.c \

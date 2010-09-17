@@ -34,7 +34,11 @@
 #define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
 #define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
+
+/*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
+extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
+extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
@@ -275,7 +279,9 @@ extern caddr_t boxed_nobody_uid;
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
 void rdf_graph_keyword (iri_id_t id, char *ret);
-caddr_t uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli);
+extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli);
+#define uriqa_dynamic_local_replace(name, cli) \
+  (strncmp ((name), "local:", 6) ? (name) : uriqa_dynamic_local_replace_nocheck ((name), (cli)))
 
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50

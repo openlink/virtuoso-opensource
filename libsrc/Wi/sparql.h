@@ -68,6 +68,7 @@ extern "C" {
 #define SPAR_GRAPH		(ptrlong)1018
 #define SPAR_WHERE_MODIFS	(ptrlong)1019
 #define SPAR_SERVICE_INV	(ptrlong)1020	/*!< Tree type for details of invocation of an external service endpoint */
+#define SPAR_BINDINGS_INV	(ptrlong)1021	/*!< Tree type for details of bindings associated with gp */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPARP_MAX_LEXDEPTH 50
@@ -224,6 +225,8 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
     dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
     dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
+    SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
+    SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
@@ -580,11 +583,18 @@ typedef struct spar_tree_s
         SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
         caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
         caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
+        ptrlong in_list_implicit;	/*!< Flags if IN variables were specified using '*' or not specified at all */
         caddr_t *rset_varnames;	/*!< Names of variables that are returned in the result set from the endpoint, in the order in the rset */
         SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
         SPART **sources;	/*!< List of sources, similar to one in req_top. If NULL then sources of parent req_top are used */
         caddr_t storage_uri;	/*!< Storage to use: JSO UNAME if specified explicitly for a service IRI, uname_virtrdf_ns_uri_DefaultServiceStorage if unknown service */
       } sinv;
+    struct {
+        /* define SPAR_BINDINGS_INV		(ptrlong)1021 */
+        ptrlong own_idx;	/*!< Boxed serial of the bindings invocation in the parser */
+        SPART *vars;		/*!< Names of variables that are passed as parameters */
+	SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
+      } binv;
   } _;
 } sparp_tree_t;
 
@@ -720,6 +730,7 @@ extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **r
 extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
+extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);

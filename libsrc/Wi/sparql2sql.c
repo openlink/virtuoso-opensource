@@ -199,7 +199,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       sparp_gp_localtrav_treelist (sparp, retvals,
         NULL, &lnar,
         NULL, NULL,
-        sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL, sparp_gp_trav_list_nonaggregate_retvals,
         NULL );
       if (NULL != query->_.req_top.having)
         {
@@ -210,13 +210,13 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
           stss[1].sts_ofs_of_curr_in_array = 0;
           sparp_gp_trav_int (sparp, query->_.req_top.having, stss+1, &lnar,
           NULL, NULL,
-          sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
+          sparp_gp_trav_list_nonaggregate_retvals, NULL, sparp_gp_trav_list_nonaggregate_retvals,
           NULL );
         }
       sparp_gp_localtrav_treelist (sparp, query->_.req_top.order,
         NULL, &lnar,
         NULL, NULL,
-        sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL, sparp_gp_trav_list_nonaggregate_retvals,
         NULL );
       if (0 == lnar.agg_found)
         return;
@@ -1659,6 +1659,17 @@ sparp_make_aliases (sparp_t *sparp)
 sparp_equiv_t *
 sparp_find_external_namesake_eq_of_varname (sparp_t *sparp, caddr_t varname, dk_set_t parent_gps)
 {
+  if (NULL != sparp->sparp_env->spare_bindings_vars)
+    {
+      int ctr;
+      DO_BOX_FAST_REV (SPART *, bvar, ctr, sparp->sparp_env->spare_bindings_vars)
+        {
+          if (strcmp (varname, bvar->_.var.vname))
+            continue;
+          return SPARP_EQUIV (sparp, bvar->_.var.equiv_idx);
+        }
+      END_DO_BOX_FAST_REV;
+    }
   DO_SET (SPART *, parent, &parent_gps)
     {
       sparp_equiv_t *parent_eq = sparp_equiv_get (sparp, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
@@ -1689,7 +1700,7 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
     return 0;
   if (SELECT_L == curr->_.gp.subtype)
     return SPAR_GPT_NODOWN;
-  if (NULL == parent_gps)
+  if ((NULL == parent_gps) && (NULL == sparp->sparp_env->spare_bindings_vars))
     return SPAR_GPT_ENV_PUSH;
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eqctr, eq)
     {
@@ -1733,7 +1744,7 @@ sparp_gp_trav_label_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_
   dk_set_t parent_gps = (dk_set_t)common_env;
   SPART *anc_gp = sts_this->sts_ancestor_gp;
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  if (NULL != anc_gp)
+  if ((NULL != anc_gp) || (NULL != sparp->sparp_env->spare_bindings_vars))
     {
       s_node_t tmp_env;
       tmp_env.data = anc_gp;
@@ -1755,7 +1766,10 @@ sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps)
   tmp_env.next = parent_gps;
   sparp_trav_out_clauses (sparp, top, &tmp_env,
     NULL, NULL,
-    ((NULL != parent_gps) ? sparp_gp_trav_label_external_vars_expn_in : NULL), NULL, sparp_gp_trav_label_external_vars_expn_subq,
+    (((NULL != parent_gps) || (NULL != sparp->sparp_env->spare_bindings_vars)) ?
+      sparp_gp_trav_label_external_vars_expn_in : NULL ),
+    NULL,
+    sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
   sparp_gp_trav (sparp, top_pattern, parent_gps,
     sparp_gp_trav_label_external_vars_gp_in, NULL,
@@ -4258,7 +4272,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
 }
 
 static void
-sparp_collect_single_atable_use (sparp_t *sparp, ccaddr_t alias, ccaddr_t tablename, qm_atable_use_t *uses, ptrlong *use_count_ptr )
+sparp_collect_single_atable_use (sparp_t *sparp_or_null, ccaddr_t alias, ccaddr_t tablename, qm_atable_use_t *uses, ptrlong *use_count_ptr )
 {
   ptrlong old_qmatu_idx = ecm_find_name (alias, uses, use_count_ptr[0], sizeof (qm_atable_use_t));
   if (ECM_MEM_NOT_FOUND == old_qmatu_idx)
@@ -4273,25 +4287,30 @@ sparp_collect_single_atable_use (sparp_t *sparp, ccaddr_t alias, ccaddr_t tablen
     {
       qm_atable_use_t *qmatu = uses + old_qmatu_idx;
       if (strcmp (tablename, qmatu->qmatu_tablename))
-        spar_internal_error (sparp, "sparp_" "collect_atable_uses(): probable corruption of some quad map");
+        {
+          if (NULL == sparp_or_null)
+            sqlr_new_error ("22023", "SR640", "internal error in processing table \"%.200s\" (alias \"%.200s\") in some RDF View", tablename, alias);
+          else
+            spar_internal_error (sparp_or_null, "sparp_" "collect_atable_uses(): probable corruption of some quad map");
+        }
     }
 }
 
 static void
-sparp_collect_atable_uses (sparp_t *sparp, ccaddr_t singletablename, qm_atable_array_t qmatables, qm_atable_use_t *uses, ptrlong *use_count_ptr )
+sparp_collect_atable_uses (sparp_t *sparp_or_null, ccaddr_t singletablename, qm_atable_array_t qmatables, qm_atable_use_t *uses, ptrlong *use_count_ptr )
 {
   int ata_ctr;
   if ((NULL != singletablename) && ('\0' != singletablename[0]))
-    sparp_collect_single_atable_use (sparp, uname___empty, singletablename, uses, use_count_ptr);
+    sparp_collect_single_atable_use (sparp_or_null, uname___empty, singletablename, uses, use_count_ptr);
   DO_BOX_FAST (qm_atable_t *, ata, ata_ctr, qmatables)
     {
-      sparp_collect_single_atable_use (sparp, ata->qmvaAlias, ata->qmvaTableName, uses, use_count_ptr);
+      sparp_collect_single_atable_use (sparp_or_null, ata->qmvaAlias, ata->qmvaTableName, uses, use_count_ptr);
     }
   END_DO_BOX_FAST;
 }
 
 void
-sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
+sparp_collect_all_atable_uses (sparp_t *sparp_or_null, quad_map_t *qm)
 {
   int fld_ctr, max_uses = 0, default_qm_table_used = 0;
   ptrlong use_count = 0;
@@ -4327,11 +4346,11 @@ sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
             }
         }
       END_DO_BOX_FAST;
-      sparp_collect_atable_uses (sparp,
+      sparp_collect_atable_uses (sparp_or_null,
         (default_qm_val_table_used ? qmv->qmvTableName : NULL),
         qmv->qmvATables, uses, &use_count );
     }
-  sparp_collect_atable_uses (sparp,
+  sparp_collect_atable_uses (sparp_or_null,
     (default_qm_table_used ? qm->qmTableName : NULL),
     qm->qmATables, uses, &use_count );
   qm->qmAllATableUses = (ptrlong *)uses;
@@ -4370,8 +4389,8 @@ qmatu_exists: ;
 }
 #endif
 
-static void
-sparp_collect_all_conds (sparp_t *sparp, quad_map_t *qm)
+void
+sparp_collect_all_conds (sparp_t *sparp_or_null, quad_map_t *qm)
 {
   int fld_ctr, max_conds = 0;
   ptrlong cond_ctr, cond_count = 0;
@@ -5751,8 +5770,12 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
                   continue;
                 }
               if (0 > dk_set_position_of_string (used_globals, param_var_name))
+                {
+                  if (!sinv->_.sinv.in_list_implicit)
                 spar_error (sparp, "SERVICE <%.200s> (...) declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
                   sinv->_.sinv.endpoint, param_var_name );
+                  param_varnames_ptr[0] = t_list_remove_nth ((caddr_t)(param_varnames_ptr[0]), varctr);
+                }
             }
         }
       END_DO_BOX_FAST_REV;

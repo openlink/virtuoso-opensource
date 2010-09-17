@@ -939,6 +939,7 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 5];
   void **params;
   caddr_t err;
+  caddr_t replica_of = box_copy (tf->tf_qi->qi_trx->lt_replica_of);
   query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE];
   if (NULL == cbk_qr)
     return;
@@ -960,6 +961,10 @@ tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri)
   err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   tf->tf_triple_count++;
+  if (!tf->tf_qi->qi_trx->lt_replica_of)
+    tf->tf_qi->qi_trx->lt_replica_of = replica_of;
+  else
+    dk_free_box (replica_of);
   if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
     tf_report (tf, 'P', NULL, NULL, "Loading is in progress");
   if (NULL != err)
@@ -971,6 +976,7 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 7];
   void **params;
   caddr_t err;
+  caddr_t replica_of = box_copy (tf->tf_qi->qi_trx->lt_replica_of);
   query_t *cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_TRIPLE_L];
   if (NULL == cbk_qr)
     return;
@@ -996,6 +1002,10 @@ void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_s
   err = qr_exec (tf->tf_qi->qi_client, cbk_qr, tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   tf->tf_triple_count++;
+  if (!tf->tf_qi->qi_trx->lt_replica_of)
+    tf->tf_qi->qi_trx->lt_replica_of = replica_of;
+  else
+    dk_free_box (replica_of);
   if (!(tf->tf_triple_count % TF_TRIPLE_PROGRESS_MESSAGE_MOD))
     tf_report (tf, 'P', NULL, NULL, "Loading is in progress");
   if (NULL != err)
@@ -2135,22 +2145,21 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
-
-caddr_t
-iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
+int
+iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
-  caddr_t box_to_delete = NULL;
-  caddr_t res = NULL;
   dtp_t dtp = DV_TYPE_OF (name);
   dtp_t orig_dtp = dtp;
-  err_ret[0] = NULL;
+  caddr_t box_to_delete = NULL;
+  res_ret[0] = NULL;
 again:
   switch (dtp)
     {
     case DV_DB_NULL:
+      return 0;
     case DV_IRI_ID:
-      return box_copy (name);
+      res_ret[0] = name;
+      return 1;
     case DV_WIDE:
       box_to_delete = name = box_wide_as_utf8_char (name, (box_length (name) / sizeof (wchar_t)) - 1, DV_STRING);
       break;
@@ -2177,8 +2186,8 @@ again:
         if (!rb->rb_is_complete)
           {
             if (IRI_TO_ID_IF_CACHED == mode)
-              return NULL;
-            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+              return 0;
+            rb_complete (rb, qi->qi_trx, qi);
           }
         name = rb->rb_box;
         dtp = DV_TYPE_OF (name);
@@ -2223,7 +2232,8 @@ again:
         }
       if (NULL != box_to_delete)
         dk_free_box (box_to_delete);
-      return box_iri_int64 (acc, DV_IRI_ID);
+      res_ret[0] = box_iri_int64 (acc, DV_IRI_ID);
+      return 1;
     }
   if (uriqa_dynamic_local)
     {
@@ -2237,42 +2247,90 @@ again:
           memcpy (localized_name, "local:", 6);
           memcpy (localized_name + 6, name + ofs, name_box_len - ofs);
           if (box_to_delete == name)
-            dk_free_box (name);
+            dk_free_box (box_to_delete);
           box_to_delete = name = localized_name;
         }
     }
+  res_ret[0] = name;
+  if ((NULL != box_to_delete) && (name != box_to_delete))
+    dk_free_box (box_to_delete);
+  return 2;
+return_error:
+  if (NULL != box_to_delete)
+    dk_free_box (box_to_delete);
+  return 0;
+}
+
+caddr_t
+canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *err_ret)
+{
   switch (cl_run_local_only)
     {
     case CL_RUN_LOCAL:
       switch (mode)
         {
         case IRI_TO_ID_IF_KNOWN:
-          res = key_name_to_iri_id (qi->qi_trx, name, 0); break;
+          return key_name_to_iri_id (qi->qi_trx, canon_name, 0); break;
         case IRI_TO_ID_WITH_CREATE:
-          res = key_name_to_iri_id (qi->qi_trx, name, 1);
+          return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
 #ifdef DEBUG
-	  if (!res) bing ();
+	  if (!boxed_iid) bing ();
 #endif
 	  break;
         case IRI_TO_ID_IF_CACHED:
-          res = key_name_to_existing_cached_iri_id (qi->qi_trx, name); break;
+          return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name); break;
         }
       break;
     default: err_ret[0] = srv_make_new_error ("RDFXX", ".....",
               "iri_to_id () refers to partitioned tables and can not be used before cluster is up");
     }
-  if (NULL == res)
+  return NULL;
+}
+
+caddr_t
+iri_to_id (caddr_t *qst, caddr_t raw_name, int mode, caddr_t *err_ret)
     {
-      if (NULL != box_to_delete)
-        dk_free_box (box_to_delete);
-      return NEW_DB_NULL;
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t canon_name = NULL;
+  caddr_t boxed_iid = NULL;
+  int status;
+  err_ret[0] = NULL;
+  status = iri_canonicalize (qi, raw_name, mode, &canon_name, err_ret);
+  if (NULL != err_ret[0])
+    goto return_error;
+  switch (status)
+    {
+    case 0:
+      break;
+    case 1:
+#ifndef NDEBUG
+      if (DV_IRI_ID != DV_TYPE_OF (canon_name))
+	GPF_T1 ("iri_to_id: weird dv_type, should be IRI_ID");
+#endif
+      return ((canon_name == raw_name) ? box_copy_tree (canon_name) : canon_name);
+    case 2:
+      boxed_iid = canon_iri_to_id (qi, canon_name, mode, err_ret);
+      break;
     }
-  if (NULL != box_to_delete)
-    dk_free_box (box_to_delete);
-  return res;
+  dk_check_tree (canon_name);
+#ifndef NDEBUG
+  if (DV_IRI_ID == DV_TYPE_OF (canon_name))
+    GPF_T1 ("iri_to_id: weird dv_type, should not be IRI_ID");
+  if ((canon_name == boxed_iid) && IS_BOX_POINTER (canon_name))
+    GPF_T1 ("iri_to_id: weird cast");
+#endif
+  if ((NULL != canon_name) && (canon_name != raw_name))
+    dk_free_box (canon_name);
+  if (NULL == boxed_iid)
+    return NEW_DB_NULL;
+#ifndef NDEBUG
+  if ((boxed_iid == raw_name) && IS_BOX_POINTER (raw_name))
+    GPF_T1 ("iri_to_id: arg not copied and returned");
+#endif
+  return boxed_iid;
 return_error:
-  if (NULL != box_to_delete)
-    dk_free_box (box_to_delete);
+  if (canon_name != raw_name)
+    dk_free_box (canon_name);
   return NULL;
 }
 
@@ -2292,6 +2350,79 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return NEW_DB_NULL;
     }
   return res;
+}
+
+caddr_t
+bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_arg (qst, args, 0, "iri_to_id_repl");
+  caddr_t tmp_name = NULL;
+  caddr_t err = NULL;
+  caddr_t res;
+  switch (DV_TYPE_OF (name))
+    {
+    case DV_LONG_INT: case DV_IRI_ID:
+      {
+        iri_id_t iid = unbox_iri_int64 (name);
+        if (iid < min_bnode_iri_id ())
+          sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
+#if 0
+        if (iid >= MIN_64BIT_BNODE_IRI_ID)
+          tmp_name = box_sprintf (40, "_:rr_b" BOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
+        else
+          tmp_name = box_sprintf (40, "_:rr" BOXINT_FMT, (boxint)iid);
+        res = canon_iri_to_id ((query_instance_t *)qst, tmp_name, IRI_TO_ID_WITH_CREATE, &err);
+        dk_free_box (tmp_name);
+        if (NULL != err)
+          sqlr_resignal (err);
+        return res;
+#else
+        return box_copy (name);
+#endif
+      }
+    case DV_STRING: case DV_UNAME:
+      break;
+    default:
+      sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is of wrong type");
+    }
+  res = canon_iri_to_id ((query_instance_t *)qst, name, IRI_TO_ID_WITH_CREATE, &err);
+  if (NULL != err)
+    sqlr_resignal (err);
+  return res;
+}
+
+caddr_t
+bif_iri_canonicalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t raw_name = bif_arg (qst, args, 0, "iri_canonicalize");
+  caddr_t canon_name = NULL;
+  caddr_t err = NULL;
+  err_ret[0] = NULL;
+  iri_canonicalize ((query_instance_t *)qst, raw_name, IRI_TO_ID_WITH_CREATE, &canon_name, &err);
+  if (NULL != err)
+    {
+      if ((NULL != canon_name) && (canon_name != raw_name))
+        dk_free_box (canon_name);
+      sqlr_resignal (err);
+    }
+  if (NULL == canon_name)
+    return NEW_DB_NULL;
+  if (DV_IRI_ID == DV_TYPE_OF (canon_name))
+    {
+      iri_id_t iid = unbox_iri_int64 (canon_name);
+      if (min_bnode_iri_id() > iid)
+        {
+          caddr_t iri = key_id_to_iri ((query_instance_t *)qst, iid);
+          if (canon_name != raw_name)
+            dk_free_tree (canon_name);
+          if (!iri)
+            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " BOXINT_FMT, (boxint)(iid));
+          return iri;
+        }
+    }
+  if (canon_name == raw_name)
+    return box_copy_tree (canon_name);
+  return canon_name;
 }
 
 caddr_t
@@ -2381,22 +2512,23 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
 }
 
 caddr_t
-uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli)
-{
-  if (!strncmp (name, "local:", 6))
+uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli)
     {
       caddr_t host;
       int is_https = 0;
+#ifndef NDEBUG
+  if (strncmp (name, "local:", 6))
+    GPF_T1 ("uriqa_dynamic_local_replace_nocheck(): should check but misused");
+#endif
       host = uriqa_get_host_for_dynamic_local (cli, &is_https);
       if (NULL != host)
         {
           int name_box_len = box_length (name);
           int host_strlen = strlen (host);
           caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7 + is_https + host_strlen), DV_STRING);
-/*                                01234567 */
-	  if (!is_https)
+      if (!is_https)         /* 01234567 */
 	    memcpy (expanded_name, "http://", 7);
-	  else
+      else                   /* 012345678 */
 	    memcpy (expanded_name, "https://", 8);
           memcpy (expanded_name + 7 + is_https, host, host_strlen);
           memcpy (expanded_name + 7 + is_https + host_strlen, name + 6, name_box_len - 6);
@@ -2404,12 +2536,11 @@ uriqa_dynamic_local_replace (caddr_t name, client_connection_t * cli)
           name = expanded_name;
 	  dk_free_box (host);
         }
-    }
   return name;
 }
 
 caddr_t
-key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
+key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
   boxint pref_id;
   lock_trx_t * lt = qi->qi_trx;
@@ -2468,32 +2599,21 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
   memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
   dk_free_box (prefix);
   dk_free_box (local);
-
-  /* may be replace following with uriqa_dynamic_local_replace */
-/*                    0123456 */
-  if (!strncmp (name, "local:", 6))
-    {
-      caddr_t host;
-      int is_https = 0;
-      host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
-      if (NULL != host)
-        {
-          int name_box_len = box_length (name);
-          int host_strlen = strlen (host);
-          caddr_t expanded_name = dk_alloc_box (name_box_len - 6 + (7 + is_https + host_strlen), DV_STRING);
-/*                                01234567 */
-	  if (!is_https)
-	    memcpy (expanded_name, "http://", 7);
-	  else
-	    memcpy (expanded_name, "https://", 8);
-          memcpy (expanded_name + 7 + is_https, host, host_strlen);
-          memcpy (expanded_name + 7 + is_https + host_strlen, name + 6, name_box_len - 6);
-          dk_free_box (name);
-          name = expanded_name;
-	  dk_free_box (host);
-        }
-    }
   return name;
+}
+
+
+caddr_t
+key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
+        {
+  caddr_t name = key_id_to_canonicalized_iri (qi, iri_id_no);
+  caddr_t name_with_local_extended;
+  dk_check_tree (name);
+  if (NULL == name)
+  return name;
+  name_with_local_extended = uriqa_dynamic_local_replace (name, qi->qi_client);
+  dk_check_tree (name_with_local_extended);
+  return name_with_local_extended;
 }
 
 int
@@ -3240,6 +3360,11 @@ rdf_core_init (void)
   bif_define ("iri_ensure", bif_iri_ensure);
   bif_set_uses_index (bif_iri_to_id);
   bif_set_no_cluster ("iri_to_id");
+  bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
+  bif_set_uses_index (bif_iri_to_id_repl);
+  bif_define ("iri_canonicalize", bif_iri_canonicalize);
+  bif_set_uses_index (bif_iri_canonicalize);
+  bif_set_no_cluster ("iri_to_id_repl");
   bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
   bif_set_uses_index (bif_iri_to_id_nosignal);
   bif_set_no_cluster ("iri_to_id_nosignal");

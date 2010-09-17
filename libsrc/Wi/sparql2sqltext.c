@@ -463,10 +463,53 @@ ccaddr_t ssg_find_jl_by_jr (spar_sqlgen_t *ssg, SPART *gp, ccaddr_t jr_alias)
   return "";
 }
 
+int
+ssg_prin_subalias (struct spar_sqlgen_s *ssg, const char *alias, const char *colalias, int dot_after_alias)
+{
+  if ((NULL != ssg->ssg_alias_to_search) &&
+    !strcmp (
+      ((NULL == colalias) ? "" : colalias),
+      ((NULL == ssg->ssg_alias_to_search) ? "" : ssg->ssg_alias_to_search) ) )
+    {
+      if (NULL != ssg->ssg_alias_to_replace)
+        {
+          ssg_prin_id (ssg, ssg->ssg_alias_to_replace);
+          if (dot_after_alias)
+            ssg_putchar ('.');
+          return 1;
+        }
+      if (dot_after_alias)
+        return 1; /* neither alias nor dot is printed but nothing has left to print, hence 1 */
+      return 0;
+    }
+  if (NULL != alias)
+    {
+      if ((NULL == colalias) || ('!' == colalias[0]))
+        ssg_prin_id (ssg, alias);
+      else
+        {
+          caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
+          ssg_prin_id (ssg, subalias);
+        }
+      if (dot_after_alias)
+        ssg_putchar ('.');
+      return 1;
+    }
+  if (!((NULL == colalias) || ('!' == colalias[0])))
+    {
+      ssg_prin_id (ssg, colalias);
+      if (dot_after_alias)
+        ssg_putchar ('.');
+      return 1;
+    }
+  if (dot_after_alias)
+    return 1; /* neither alias nor dot is printed but nothing has left to print, hence 1 */
+  return 0;
+}
 
 #define CMD_EQUAL(w,l) ((l == cmdlen) && (!memcmp (w, cmd, l)))
 int
-ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const char *tmpl, const char *tmpl_end, caddr_t alias, qm_value_t *qm_val, SPART *tree, int col_idx, const char *asname)
+ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const char *tmpl, const char *tmpl_end, ccaddr_t alias, qm_value_t *qm_val, SPART *tree, int col_idx, const char *asname)
 {
 /* IMPORTANT: keep this function in sync with sparp_check_tmpl(), otherwise syntax changes may be blocked by the compiler. */
   const char *tail;
@@ -500,14 +543,16 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
       if ('.' == cmd [cmdlen-1])
         {
           caddr_t a = t_box_dv_short_nchars (cmd, cmdlen - 1);
-          caddr_t subalias;
-          if (NULL == alias)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
-          if ('!' == a[0])
-            subalias = alias;
+          int res;
+          if ('.' == tail[0])
+            {
+              res = ssg_prin_subalias (ssg, alias, a, 1);
+              tail++;
+            }
           else
-            subalias = t_box_sprintf (210, "%.100s~%.100s", alias, a);
-          ssg_prin_id (ssg, subalias);
+            res = ssg_prin_subalias (ssg, alias, a, 0);
+          if (0 == res)
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
         }
 /*                   0         1         2 */
 /*                   012345678901234567890 */
@@ -533,26 +578,25 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("alias", 5))
         {
-          if (NULL == alias)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
+          if (NULL != alias)
           ssg_prin_id (ssg, alias);
+          else if ('.' == tail[0])
+            tail++;
+          else
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
       else if (CMD_EQUAL("alias-0", 7))
         {
           ccaddr_t colalias;
-          if (NULL == alias)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
           if (NULL == qm_val)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-0}^ if qm_val is NULL", asname_printed);
           colalias = qm_val->qmvColumns[0]->qmvcAlias;
-          if ((NULL == colalias) || ('!' == colalias[0]))
-            ssg_prin_id (ssg, alias);
-          else
+          if (!ssg_prin_subalias (ssg, alias, colalias, 0))
             {
-              caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
-              ssg_prin_id (ssg, subalias);
+              if (NULL == alias)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
             }
         }
 /*                        0         1         2 */
@@ -560,17 +604,13 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
       else if (CMD_EQUAL("alias-1", 7))
         {
           ccaddr_t colalias;
-          if (NULL == alias)
-            spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
           if (NULL == qm_val)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-1}^ if qm_val is NULL", asname_printed);
           colalias = qm_val->qmvColumns[1]->qmvcAlias;
-          if ((NULL == colalias) || ('!' == colalias[0]))
-            ssg_prin_id (ssg, alias);
-          else
+          if (!ssg_prin_subalias (ssg, alias, colalias, 0))
             {
-              caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
-              ssg_prin_id (ssg, subalias);
+              if (NULL == alias)
+                spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't print NULL alias", asname_printed);
             }
         }
 /*                        0         1         2 */
@@ -588,17 +628,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (col_idx >= 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-dot}^ inside a loop, should be ^{column-N}^", asname_printed);
           colalias = qm_val->qmvColumns[0]->qmvcAlias;
-          if (NULL != alias)
-            {
-              if ((NULL == colalias) || ('!' == colalias[0]))
-                ssg_prin_id (ssg, alias);
-              else
-                {
-                  caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
-                  ssg_prin_id (ssg, subalias);
-                }
-              ssg_putchar ('.');
-            }
+          ssg_prin_subalias (ssg, alias, colalias, 1);
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
@@ -612,17 +642,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           if (col_idx >= BOX_ELEMENTS (qm_val->qmvColumns))
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{alias-N-dot}^ exceeds number of columns", asname_printed);
           colalias = qm_val->qmvColumns[col_idx]->qmvcAlias;
-          if (NULL != alias)
-            {
-              if ((NULL == colalias) || ('!' == colalias[0]))
-                ssg_prin_id (ssg, alias);
-              else
-                {
-                  caddr_t subalias = t_box_sprintf (210, "%.100s~%.100s", alias, colalias);
-                  ssg_prin_id (ssg, subalias);
-                }
-              ssg_putchar ('.');
-            }
+          ssg_prin_subalias (ssg, alias, colalias, 1);
         }
 /*                        0         1         2 */
 /*                        012345678901234567890 */
@@ -1003,7 +1023,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
 }
 
 
-void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, caddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname)
+void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccaddr_t tmpl, ccaddr_t alias, qm_value_t *qm_val, SPART *tree, const char *asname)
 {
   const char *tmpl_end;
   int asname_printed;
@@ -1681,6 +1701,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
             }
           else
             {
+              if (SPAR_BINDINGS_INV == gp->type)
+                return SSG_VALMODE_LONG;
 #ifndef NDEBUG
               if (strcmp (gp->_.gp.selid, tree->_.retval.selid))
                 spar_internal_error (sparp, "sparp_" "expn_native_valmode(): bad cached gp in retval");
@@ -2141,16 +2163,6 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     value = (caddr_t)lit;
   if (NULL == type)
     type = dt;
-#if 0
-  if (uname_xmlschema_ns_uri_hash_boolean == type)
-    {
-      if (unbox (value))
-        ssg_puts ("1");
-      else
-        ssg_puts ("0");
-      return;
-    }
-#else
   if ((NULL != type) || (NULL != lang))
     {
       if (((NULL == lang) && (
@@ -2182,7 +2194,6 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       ssg_puts ("))");
       return;
     }
-#endif
   ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
 }
 

@@ -29,6 +29,10 @@
 #include "http.h" /* For DKS_ESC_XXX constants */
 #include "date.h" /* For DT_TYPE_DATE and the like */
 #include "security.h" /* For sec_check_dba() */
+#include "repl.h"	/* For repl_level_t in replsr.h */
+#include "replsr.h"	/* For log_repl_text_array() */
+#include "xslt_impl.h"	/* For vector_sort_t */
+#include "aqueue.h"	/* For aq_allocate() in rdf replication */
 
 void
 rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v, int is_local)
@@ -2262,7 +2266,6 @@ typedef struct nt_env_s {
 void
 nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
 {
-  caddr_t full_uri;
   caddr_t uri = ti->uri;
   if (NULL == uri)
     uri = dflt_uri;
@@ -3604,6 +3607,212 @@ bif_rgs_ack_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_rgs_impl (qst, err_ret, args, fname, RGU_ACK, 1);
 }
 
+caddr_t
+bif_rdf_graph_is_in_enabled_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+    return box_num (0);
+}
+
+#define RDF_REPL_QUAD_INS_PLAIN_LIT	80
+#define RDF_REPL_QUAD_INS_DT_LIT	81
+#define RDF_REPL_QUAD_INS_LANG_LIT	82
+#define RDF_REPL_QUAD_INS_AUTO_LIT	83
+#define RDF_REPL_QUAD_INS_REF		84
+#define RDF_REPL_QUAD_INS_GEO		85
+#define RDF_REPL_QUAD_INS_MAX_OP	85
+#define RDF_REPL_QUAD_HASH_MASK		0xF
+
+#define RDF_REPL_QUAD_DEL_PLAIN_LIT	160
+#define RDF_REPL_QUAD_DEL_DT_LIT	161
+#define RDF_REPL_QUAD_DEL_LANG_LIT	162
+#define RDF_REPL_QUAD_DEL_AUTO_LIT	163
+#define RDF_REPL_QUAD_DEL_REF		164
+
+#define RDF_REPL_BATCH_SIZE		10000
+
+id_hash_t *repl_items_to_del = NULL;
+id_hash_t *repl_items_to_ins = NULL;
+
+int
+rdf_repl_vector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
+{
+  caddr_t *rquad1 = (caddr_t *)(e1[0]);
+  caddr_t *rquad2 = (caddr_t *)(e2[0]);
+  dtp_t dtp1;
+  int cmp;
+  cmp = strcmp (rquad1[1], rquad2[1]);
+  if (cmp > 0) return DVC_GREATER;
+  else if (cmp < 0) return DVC_LESS;
+  cmp = strcmp (rquad1[2], rquad2[2]);
+  if (cmp > 0) return DVC_GREATER;
+  else if (cmp < 0) return DVC_LESS;
+  dtp1 = DV_TYPE_OF (rquad1[3]);
+  cmp = (int)(dtp1) - (int)(DV_TYPE_OF (rquad2[3]));
+  if (cmp > 0) return DVC_GREATER;
+  else if (cmp < 0) return DVC_LESS;
+  if (DV_STRING == dtp1)
+    {
+      cmp = strcmp (rquad1[3], rquad2[3]);
+      if (cmp > 0) return DVC_GREATER;
+      else if (cmp < 0) return DVC_LESS;
+    }
+  return DVC_MATCH;
+}
+
+caddr_t **
+rdf_repl_hash_to_sorted_vector (id_hash_t *ht)
+{
+  id_hash_iterator_t hit;
+  int quad_count = ht->ht_count;
+  caddr_t **quad_ptr, *val_stub_ptr;
+  caddr_t **res = (caddr_t **) dk_alloc_box (quad_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  caddr_t **tail = res;
+  vector_sort_t specs;
+  id_hash_iterator (&hit, ht);
+  while (hit_next (&hit, (char **)&quad_ptr, (char **)&val_stub_ptr))
+    {
+      (tail++)[0] = quad_ptr[0];
+    }
+  specs.vs_block_elts = 1;
+  specs.vs_key_ofs = 0;
+  specs.vs_sort_asc = 1;
+  specs.vs_cmp_fn = rdf_repl_vector_sort_cmp;
+  vector_qsort ((caddr_t *)res, quad_count, &specs);
+  dk_check_tree (res);
+  id_hash_clear (ht);
+  return res;
+}
+
+void
+rdf_repl_feed_batch_of_rquads (query_instance_t *qi, caddr_t **rquads_vector, ccaddr_t *cbk_names, caddr_t *app_env)
+{
+  static int fake_lineno = 0;
+  triple_feed_t *tf;
+  int rquads_count = BOX_ELEMENTS (rquads_vector);
+  int rquad_ctr;
+  query_t *geo_qr = NULL;
+  caddr_t prev_graph = "";
+  if (0 == rquads_count)
+    return; /* no data -- nothing to feed */
+  tf = tf_alloc ();
+  tf->tf_qi = qi;
+  tf->tf_default_graph_uri = NULL;
+  tf->tf_current_graph_uri = NULL;
+  tf->tf_app_env = app_env;
+  tf->tf_creator = "__rdf_repl_action";
+  tf->tf_input_name = NEW_DB_NULL;
+  tf->tf_line_no_ptr = &fake_lineno;
+  tf_set_cbk_names (tf, cbk_names);
+  DO_BOX_FAST (caddr_t *, rquad, rquad_ctr, rquads_vector)
+    {
+      int opcode = (ptrlong)(rquad[0]);
+      caddr_t g = rquad[1];
+      caddr_t s = rquad[2];
+      caddr_t p = rquad[3];
+      caddr_t oval = rquad[4];
+      if (strcmp (g, prev_graph))
+        {
+          if (NULL != tf->tf_current_graph_uri)
+            tf_commit (tf);
+          tf->tf_current_graph_uri = g;
+          if (TF_ONE_GRAPH_AT_TIME(tf))
+            {
+              dk_free_tree ((tf)->tf_current_graph_iid);
+              tf->tf_current_graph_iid = NULL; /* to avoid double free in case of error in tf_get_iid() below */
+              tf->tf_current_graph_iid = tf_get_iid ((tf), (tf)->tf_current_graph_uri);
+              tf_new_graph (tf, tf->tf_current_graph_uri);
+            }
+          prev_graph = g;
+        }
+      switch (opcode)
+        {
+        case RDF_REPL_QUAD_INS_PLAIN_LIT & RDF_REPL_QUAD_HASH_MASK:
+          tf_triple_l (tf, s, p, oval, NULL, NULL);
+          break;
+        case RDF_REPL_QUAD_INS_DT_LIT & RDF_REPL_QUAD_HASH_MASK:
+          tf_triple_l (tf, s, p, oval, rquad[5], NULL);
+          break;
+        case RDF_REPL_QUAD_INS_LANG_LIT & RDF_REPL_QUAD_HASH_MASK:
+          tf_triple_l (tf, s, p, oval, NULL, rquad[5]);
+          break;
+        case RDF_REPL_QUAD_INS_REF & RDF_REPL_QUAD_HASH_MASK:
+          tf_triple (tf, s, p, oval);
+	  break;
+        case RDF_REPL_QUAD_INS_GEO & RDF_REPL_QUAD_HASH_MASK:
+          {
+            caddr_t err = NULL;
+            char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 4];
+            void **params;
+            static const char *geo_qr_text = "insert soft DB.DBA.RDF_QUAD (G,S,P,O) \
+ values (iri_to_id_repl (?), iri_to_id_repl (?), iri_to_id (\'http://www.w3.org/2003/01/geo/wgs84_pos#geometry\'), \
+ rdf_geo_add (rdf_box (st_point (?, ?), 256, 257, 0, 1)))";
+            if (NULL == geo_qr)
+              {
+                geo_qr = sql_compile (geo_qr_text, qi->qi_client, &err, SQLC_DEFAULT);
+                if (NULL != err)
+                  GPF_T1 ("rdf_repl_feed_batch_of_rquads() failed to compile geo qr");
+              }
+            BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 4, DV_ARRAY_OF_POINTER);
+            params[0] = box_copy_tree(g);
+            params[1] = box_copy_tree(s);
+            params[2] = box_copy_tree(rquad[3]);
+            params[3] = box_copy_tree(rquad[4]);
+            err = qr_exec (qi->qi_client, geo_qr, qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
+            BOX_DONE (params, params_buf);
+            break;
+          }
+        }
+      dk_check_tree (rquad);
+    }
+  END_DO_BOX_FAST;
+  tf_commit (tf);
+  tf->tf_current_graph_uri = NULL; /* To not free it twice (there's no box_copy_tree from rquad[1] to it, just copying the pointer) */
+  dk_free_box ((caddr_t) tf->tf_input_name);
+  tf_free (tf);
+  dk_free_tree (rquads_vector);
+}
+
+
+caddr_t
+iri_canonicalize_and_cast_to_repl (query_instance_t *qi, caddr_t arg, caddr_t *err_ret)
+{
+  caddr_t res = NULL;
+  int status;
+  if (DV_IRI_ID == DV_TYPE_OF (arg))
+    {
+      iri_id_t arg_iidt = unbox_iri_id (arg);
+      if (arg_iidt >= min_bnode_iri_id())
+        return arg;
+      return key_id_to_canonicalized_iri (qi, arg_iidt);
+    }
+  status = iri_canonicalize (qi, arg, IRI_TO_ID_IF_CACHED, &res, err_ret);
+  if (0 == status)
+    err_ret[0] = srv_make_new_error ("22023", "SRxxx", "Can not cast IRI in RDF replication");
+  return res;
+}
+
+static caddr_t repl_pub_name;
+static caddr_t text5arg;
+static caddr_t text6arg;
+
+caddr_t
+bif_rdf_repl_quad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return 0;
+}
+
+caddr_t
+bif_rdf_repl_action (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
+
+caddr_t
+bif_rdf_repl_flush_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
+
 static int
 rdf_single_check (query_instance_t *qi, caddr_t start_box_arg, boxint ro_id, rdf_box_t **complete_rb_ptr, long opcode, caddr_t opval)
 {
@@ -3910,6 +4119,16 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
+  repl_pub_name = box_dv_short_string ("__rdf_repl");
+  text5arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?)");
+  text6arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?, ?)");
+  bif_define ("__rdf_graph_is_in_enabled_repl", bif_rdf_graph_is_in_enabled_repl);
+  bif_set_uses_index (bif_rdf_graph_is_in_enabled_repl);
+  bif_define ("__rdf_repl_quad", bif_rdf_repl_quad);
+  bif_define ("__rdf_repl_action", bif_rdf_repl_action);
+  bif_set_uses_index (bif_rdf_repl_action);
+  bif_define ("__rdf_repl_flush_queue", bif_rdf_repl_flush_queue);
+  bif_set_uses_index (bif_rdf_repl_flush_queue);
   bif_define ("__rdf_range_check", bif_rdf_range_check);
   bif_set_uses_index (bif_rdf_range_check );
 }

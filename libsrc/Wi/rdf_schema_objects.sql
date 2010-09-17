@@ -1061,3 +1061,98 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
    return ses;
 }
 ;
+
+create procedure
+RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
+{
+  declare tree, tbname any;
+  tree := sql_parse (sprintf ('SELECT 1 from %s', tb));
+  tbname := tree [4][1][0][1][1];
+  tbname := complete_table_name (tbname, 1);
+  if (exists (select 1 from SYS_VIEWS where V_NAME = tbname))
+    return 0;
+  return 1;
+}
+;
+
+create procedure
+RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0)
+{
+   declare mask varchar;
+   declare txt, tbls, err_ret any;
+   declare stat, msg varchar;
+
+   tbls := vector ();
+   err_ret := vector ();
+   mask := sprintf ('http://%s/schemas/%s/qm-%%', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), qualifier);
+   for select "o" from
+   (sparql define input:storage "" select ?o from virtrdf:
+     {
+       virtrdf:DefaultQuadStorage-UserMaps ?p ?o .
+       ?o a virtrdf:QuadMap  .
+       filter (?o like ?:mask)
+     }
+     order by asc (bif:sprintf_inverse (bif:concat (str(rdf:_), "%d"), str (?p), 1))) x do
+   {
+     declare qm varchar;
+     if ("o" not like '%/qm-VoidStatistics')
+       {
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', "o"), stat, msg);
+	 stat := '00000';
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', "o"), stat, msg);
+	 if (stat <> '00000')
+	   err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+
+	 qm := "o";
+	 for select "tb" from (sparql define input:storage ""
+	    select distinct ?tb from virtrdf:
+	    {
+	      ?:qm virtrdf:qmUserSubMaps ?sm .
+	      ?sm ?inx ?q .
+	      ?q virtrdf:qmTableName ?tb  .
+	    }) xx do
+	   {
+	     if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
+ 	       tbls := vector_concat (tbls, vector ("tb"));
+	     else
+	       err_ret := vector_concat (err_ret, vector (vector ('42000', sprintf ('Reference to VIEW %s cannot be added automatically', "tb"))));
+	   }
+       }
+   }
+  foreach (varchar tb in tbls) do
+    {
+      for (declare ctr int, ctr := 1; ctr <= 4; ctr := ctr + 1)
+        {
+	  txt := sparql_rdb2rdf_codegen (tb, ctr);
+	  stat := '00000';
+	  if (isvector (txt))
+	    {
+	      exec (cast (txt[0] as varchar), stat, msg);
+	      if (stat <> '00000')
+		{
+		  err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+		  stat := '00000';
+		}
+	      exec (cast (txt[1] as varchar), stat, msg);
+	      if (stat <> '00000')
+		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+	    }
+	  else
+	    {
+	      exec (cast (txt as varchar), stat, msg);
+	      if (stat <> '00000')
+		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+	    }
+	}
+      if (load_data)
+	{
+	  declare pname varchar;
+	  pname := sprintf ('DB.DBA."RDB2RDF_FILL__%s" ()', replace (replace (tb, '"', '`'), '.', '~'));
+	  stat := '00000';
+	  exec (pname, stat, msg);
+	  if (stat <> '00000') err_ret := vector_concat (err_ret, vector (sprintf ('%s: %s', stat, msg)));
+	}
+    }
+  return err_ret;
+}
+;

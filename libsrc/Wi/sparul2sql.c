@@ -469,6 +469,25 @@ spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
   return g->_.graph.expn;
 }
 
+int
+spar_find_sc_for_big_ssl_const (sparp_t *sparp, sql_comp_t **sc_ret)
+{
+  sc_ret[0] = sparp->sparp_sparqre->sparqre_super_sc;
+  if (NULL == sc_ret[0])
+    {
+#ifdef NDEBUG
+      spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text");
+#endif
+      return 0;
+    }
+  else
+    {
+      while (NULL != sc_ret[0]->sc_super)
+        sc_ret[0]->sc_super = sc_ret[0]->sc_super;
+    }
+  return 1;
+}
+
 void
 spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp)
 {
@@ -493,21 +512,7 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   if (big_ssl_const_mode)
-    {
-      sc_for_big_ssl_const = sparp->sparp_sparqre->sparqre_super_sc;
-      if (NULL == sc_for_big_ssl_const)
-        {
-          big_ssl_const_mode = 0;
-#ifdef NDEBUG
-          spar_error (sparp, "The query can be compiled and executed but not translated to an accurate SQL text");
-#endif
-        }
-      else
-        {
-          while (NULL != sc_for_big_ssl_const->sc_super)
-            sc_for_big_ssl_const->sc_super = sc_for_big_ssl_const->sc_super;
-        }
-    }
+    big_ssl_const_mode = spar_find_sc_for_big_ssl_const (sparp, &sc_for_big_ssl_const);
   if ((INSERT_L != top->_.req_top.subtype) && (SPARUL_INSERT_DATA != top->_.req_top.subtype))
     cve.cve_bnodes_are_prohibited = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", sc_for_big_ssl_const, NULL, NULL,
