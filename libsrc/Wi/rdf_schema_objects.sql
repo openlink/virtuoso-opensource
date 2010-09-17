@@ -891,6 +891,7 @@ skip_this:
 create procedure RDF_VIEW_GEN_VD (in qual varchar)
 {
   declare ses, pref any;
+  declare fct_installed int;
   ses := string_output ();
   pref := lower (qual);
 
@@ -905,6 +906,9 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     return '\n-- WARNING: there are already created virtual directory "/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 
+  if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+    fct_installed := 1;
+
   http (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_rule2'',
@@ -915,7 +919,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
@@ -932,7 +936,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fp+%%3Fo+}&format=%U'',
     vector(''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
@@ -948,26 +952,56 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/objects/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
 
   http ('\n', ses);
-  http (
+  http (concat (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_rule1'',
     1,
     ''([^#]*)'',
     vector(''path''),
-    1,
-    ''/about/html/http://^{URIQADefaultHost}^%s'',
-    vector(''path''),
+    1,\n',
+
+    case when fct_installed
+    then
+      '''/describe/?url=http://^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+    else
+      '''/about/html/http://^{URIQADefaultHost}^%s'','
+    end
+
+    ,'\nvector(''path''),
     null,
     null,
     2,
     303
-    );', ses);
+    );'), ses);
+  http ('\n', ses);
+
+  http (concat (
+  'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    ''<pref>_rule7'',
+    1,
+    ''/<qual>/stat([^#]*)'',
+    vector(''path''),
+    1,\n',
+
+    case when fct_installed
+    then
+      '''/describe/?url=http://^{URIQADefaultHost}^/<qual>/stat%%23&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+    else
+      '''/about/html/http://^{URIQADefaultHost}^/<qual>/stat%%01'','
+    end
+
+    ,'\nvector(''path''),
+    null,
+    null,
+    2,
+    303
+    );'), ses);
   http ('\n', ses);
 
   http (
@@ -986,7 +1020,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
     );', ses);
 
   http ('\n', ses);
-  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4'', ''<pref>_rule6''));', ses);
+  http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_rule_list1'', 1, vector ( ''<pref>_rule1'', ''<pref>_rule7'', ''<pref>_rule5'', ''<pref>_rule2'', ''<pref>_rule4'', ''<pref>_rule6''));', ses);
 
   http ('\n', ses);
   http ('DB.DBA.VHOST_REMOVE (lpath=>''/<qual>'');', ses);
@@ -1003,6 +1037,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
 create procedure RDF_OWL_GEN_VD (in qual varchar)
 {
+  declare fct_installed int;
   declare ses, pref any;
   ses := string_output ();
   pref := lower (qual);
@@ -1016,6 +1051,9 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
     return '\n-- WARNING: there are already created virtual directory "/schemas/'||qual||'", skipping virtual directory generation\n'||
     '-- WARNING: To avoid this message chose different base URL or drop existing virtual directory and its rewrite rules.\n';
 
+  if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+    fct_installed := 1;
+
   http (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_owl_rule2'',
@@ -1026,26 +1064,32 @@ create procedure RDF_OWL_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
     2,
     null
     );', ses);
 
   http ('\n', ses);
   http (
+  concat (
   'DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     ''<pref>_owl_rule1'',
     1,
     ''([^#]*)'',
     vector(''path''),
-    1,
-    ''/about/html/http://^{URIQADefaultHost}^%s'',
-    vector(''path''),
+    1,\n',
+    case when fct_installed
+    then
+    '''/describe/?url=http://^{URIQADefaultHost}^%U&graph=http%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23'','
+    else
+    '''/about/html/http://^{URIQADefaultHost}^%s'','
+    end,
+    '\nvector(''path''),
     null,
     null,
     2,
     303
-    );', ses);
+    );'), ses);
   http ('\n', ses);
   http ('DB.DBA.URLREWRITE_CREATE_RULELIST ( ''<pref>_owl_rule_list1'', 1, vector ( ''<pref>_owl_rule1'', ''<pref>_owl_rule2''));', ses);
 
