@@ -1136,26 +1136,28 @@ void bp_sec_user_check (query_instance_t * qi)
     }
 }
 
-void bp_sec_check_prefix (query_instance_t * qi, char * file_prefix)
+void
+bp_sec_check_prefix (query_instance_t * qi, char *file_prefix)
 {
   char * s;
+
   if (!file_prefix[0])
     sqlr_new_error ("42000", FILE_FORM_ERR_CODE , "Backup prefix must contains at least one char");
 
+  if (file_prefix[0] == '/')
+    sqlr_new_error ("42000", FILE_FORM_ERR_CODE, "Absolute path as backup prefix is not allowed");
 
   s = strchr (file_prefix, ':');
-
   if (s)
     sqlr_new_error ("42000", FILE_FORM_ERR_CODE , "Semicolon in backup prefix is not allowed");
 
-  do { /* .. check */
     s = strchr (file_prefix, '.');
-    if (s && s[1] == '.')
+  while (s)
+    {
+      if (s[1] == '.')
       sqlr_new_error ("42000", FILE_FORM_ERR_CODE , "\"..\" substring in backup prefix is not allowed");
-  } while (s);
-
-  if (file_prefix[0] == '/')
-    sqlr_new_error ("42000", FILE_FORM_ERR_CODE , "Absolute path as backup prefix is not allowed");
+      s = strchr (s + 1, '.');
+    }
 }
 
 
