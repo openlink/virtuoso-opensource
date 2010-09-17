@@ -4815,8 +4815,17 @@ bif_http_xmlelement_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       session_buffered_write_char ('"', out);
       attr_printed++;
     }
-  if (is_empty)
-    session_buffered_write_char ('/', out);
+  if ('?' == elt[0])
+    {
+      if (!is_empty)
+        sqlr_new_error ("22023", "SR641", "%s() is only for only plain elements, not for processing instructions like <%.200s ...?>", bifname, elt);
+      session_buffered_write_char ('?', out);
+    }
+  else
+    {
+      if (is_empty)
+        session_buffered_write (out, " /", 2);
+    }
   session_buffered_write_char ('>', out);
   return box_num (attr_printed);
 }

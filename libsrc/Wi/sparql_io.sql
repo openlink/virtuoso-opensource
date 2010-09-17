@@ -1330,6 +1330,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (triples, 1, ses);
       else if (ret_format = 'JSON;ODATA')
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
+      else if (ret_format = 'CXML')
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, status);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1458,6 +1460,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
       http ('\n  </rdf:Description>', ses);
       http ('\n</rdf:RDF>', ses);
+      goto body_complete;
+    }
+  if (ret_format = 'CXML')
+    {
+      SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
       goto body_complete;
     }
   ret_mime := 'application/sparql-results+xml';
@@ -1801,6 +1808,7 @@ http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
+http('    format.options[8] = new Option(\'CXML\',\'text/cxml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1816,6 +1824,7 @@ http('    format.options[5] = new Option(\'Javascript\',\'application/javascript
 http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
+http('    format.options[9] = new Option(\'CXML\',\'text/cxml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -1916,6 +1925,7 @@ http('			    <option value="application/sparql-results+xml">XML</option>\n');
 http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
 http('			    <option value="text/plain">NTriples</option>\n');
+http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
@@ -2085,6 +2095,7 @@ http('</html>\n');
         when 'xml' then 'application/sparql-results+xml'
         when 'rdf' then 'application/rdf+xml'
         when 'n3' then 'text/rdf+n3'
+        when 'cxml' then 'text/cxml'
         else format
       end);
   }
@@ -2280,6 +2291,7 @@ host_found:
       full_query := 'define sql:describe-mode "CBD" ' || full_query;
     }
   -- dbg_obj_princ ('accept = ', accept);
+  -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
   commit work;
@@ -2484,6 +2496,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       when 'xml' then 'application/sparql-results+xml'
       when 'rdf' then 'application/rdf+xml'
       when 'n3' then 'text/rdf+n3'
+      when 'cxml' then 'text/cxml'
       else _format
       end);
     }
@@ -2500,6 +2513,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or
       strcasestr (accept, 'application/rdf+turtle') is not null
+      strcasestr (accept, 'text/cxml') is not null
      )
     {
       http_request_status ('HTTP/1.1 303 See Other');

@@ -535,7 +535,10 @@ bif_uname (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
     default:
     case 3: allow_long = bif_long_arg (qst, args, 2, "uname");
     case 2: cs1_name = bif_string_or_null_arg (qst, args, 1, "uname");
-    case 1: break;
+    case 1:
+      if (DV_UNAME == dtp)
+        return box_copy (narrow);
+      break;
     }
   cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
 
