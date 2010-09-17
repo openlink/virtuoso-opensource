@@ -688,14 +688,15 @@ struct rdf_ds_field_s;
 struct rdf_ds_s;
 
 /* Special 'macro' names of ssg_valmode_t modes. The order of numeric values is important ssg_shortest_valmode() */
-#define SSG_VALMODE_SHORT_OR_LONG	((ssg_valmode_t)((ptrlong)(0x300)))
-#define SSG_VALMODE_LONG		((ssg_valmode_t)((ptrlong)(0x310)))
-#define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x320)))
-#define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x330)))
-#define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x340)))
-#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x350)))
-#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x360)))
-#define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x370)))
+#define SSG_VALMODE_SHORT_OR_LONG	((ssg_valmode_t)((ptrlong)(0x300)))	/*!< Any representation, whatever is "shorter" */
+#define SSG_VALMODE_NUM			((ssg_valmode_t)((ptrlong)(0x310)))	/*!< Something that is number for numbers, date for date, NULL or something else for everything else; a shortest reasonable input for arithmetics */
+#define SSG_VALMODE_LONG		((ssg_valmode_t)((ptrlong)(0x320)))	/*!< Completed RDF objects */
+#define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x330)))	/*!< SQL value to bereturned to the SQL caller */
+#define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x340)))	/*!< Datatype is needed, not a value */
+#define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x350)))	/*!< Language is needed, not a value */
+#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< Something simplest */
+#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x380)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 
 extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
@@ -796,6 +797,11 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+#ifdef NDEBUG
+#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+#else
+#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
+#endif
 #define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
 
 #ifdef DEBUG
@@ -827,6 +833,7 @@ extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
 extern void ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name);
 extern void ssg_qr_uses_table (spar_sqlgen_t *ssg, const char *tbl);
 
+extern ssg_valmode_t sparp_lit_native_valmode (SPART *tree);
 extern ssg_valmode_t sparp_expn_native_valmode (sparp_t *sparp, SPART *tree);
 extern ptrlong sparp_restr_bits_of_dtp (dtp_t dtp);
 extern ptrlong sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree);

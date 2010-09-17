@@ -758,9 +758,13 @@ rb_serialize (caddr_t x, dk_session_t * ses)
       rb_ext_serialize (rb, ses);
       return;
     }
-  if  ((!unbox_inline (rb->rb_box) && !rb->rb_is_complete)
-       || ((rdf_no_string_inline || rb->rb_serialize_id_only)
-	   && ((DV_STRINGP (rb->rb_box) && !with_content))))
+  if  (!unbox_inline (rb->rb_box) && !rb->rb_is_complete)
+    {
+      rb_id_serialize (rb, ses);
+      return;
+    }
+  if  ((rdf_no_string_inline || rb->rb_serialize_id_only)
+    && ((DV_STRINGP (rb->rb_box) && !with_content)) )
     {
       rb_id_serialize (rb, ses);
       return;
@@ -1783,7 +1787,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (22*2,
+      tmp = (caddr_t *)list (23*2,
         "text/rdf+n3"				, "TTL"		,
         "text/rdf+ttl"				, "TTL"		,
         "text/rdf+turtle"			, "TTL"		,
@@ -1804,8 +1808,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/rdf+xml"			, "RDFXML"	,
         "application/atom+xml"			, "ATOM;XML"	,
         "application/odata+json"		, "JSON;ODATA"	,
-	"text/rdf+nt"				, "NT"		,
-        "text/plain"				, "NT"	/* Increase count in this list() call when add more MIME types! */ );
+        "text/rdf+nt"				, "NT"		,
+        "text/plain"				, "NT"		,
+        "text/cxml"				, "CXML"	/* Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -1814,7 +1819,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (22*2,
+      tmp = (caddr_t *)list (24*2,
         "text/rdf+n3"				, "TTL"		,
         "text/rdf+ttl"				, "TTL"		,
         "text/rdf+turtle"			, "TTL"		,
@@ -1837,7 +1842,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/javascript"		, "JS"		,
         "application/atom+xml"			, "ATOM;XML"	,
         "application/odata+json"		, "JSON;ODATA"	,
-        "application/sparql-results+xml"	, "XML"		/* Increase count in this list() call when add more MIME types! */ );
+        "application/sparql-results+xml"	, "XML"		,
+        "text/cxml"				, "CXML"	/* Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;

@@ -5642,7 +5642,7 @@ sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv)
   if (SSG_VALMODE_LONG == rv_valmode)
     {
       ptrlong rv_restr = sparp_restr_bits_of_expn (sparp, rv);
-      if (rv_restr & SPART_VARR_IS_REF)
+      if (rv_restr & (SPART_VARR_IS_REF | SPART_VARR_LONG_EQ_SQL))
         return 0;
       return 1;
     }
@@ -5652,7 +5652,7 @@ sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART *rv)
       if (!rv_valmode->qmfWrapDistinct)
         return 0;
       rv_restr = sparp_restr_bits_of_expn (sparp, rv);
-      if (rv_restr & SPART_VARR_IS_REF)
+      if (rv_restr & (SPART_VARR_IS_REF | SPART_VARR_LONG_EQ_SQL))
         return 0;
       return 1;
     }

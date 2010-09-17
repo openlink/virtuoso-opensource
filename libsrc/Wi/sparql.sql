@@ -5090,7 +5090,12 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
   if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
     repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Insert into <%s>, %d triples -- done', graph_iri, ins_count);
+    {
+      if (ins_count)
+        return sprintf ('Insert into <%s>, %d (or less) triples -- done', graph_iri, ins_count);
+      else
+        return sprintf ('Insert into <%s>, 0 triples -- nothing to do', graph_iri);
+    }
   else
     return ins_count;
 }
@@ -5118,7 +5123,12 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
     repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Delete from <%s>, %d triples -- done', graph_iri, del_count);
+    {
+      if (del_count)
+        return sprintf ('Delete from <%s>, %d (or less) triples -- done', graph_iri, del_count);
+      else
+        return sprintf ('Delete from <%s>, 0 triples -- nothing to do', graph_iri);
+    }
   else
     return del_count;
 }
@@ -5151,7 +5161,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
   if (graph_iri is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (graph_iri)))
     repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
   if (compose_report)
-    return sprintf ('Modify <%s>, delete %d and insert %d triples -- done', graph_iri, del_count, ins_count);
+    return sprintf ('Modify <%s>, delete %d (or less) and insert %d (or less) triples -- done', graph_iri, del_count, ins_count);
   else
     return del_count + ins_count;
 }
@@ -11589,7 +11599,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2010-07-24 0011v6g';
+  ver := '2010-08-29 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
