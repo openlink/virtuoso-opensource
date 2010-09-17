@@ -1092,7 +1092,7 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
   int n_args = 0;
   caddr_t *entry = (caddr_t *) scan_session (in);
   dtp_t dtp = DV_TYPE_OF (entry);
-  caddr_t text = DV_ARRAY_OF_POINTER == dtp ? entry[0] : (caddr_t) entry;
+  caddr_t text = DV_ARRAY_OF_POINTER == dtp && BOX_ELEMENTS (entry) > 0 ? entry[0] : (caddr_t) entry;
   caddr_t err = NULL;
   caddr_t stmt_id = box_dv_short_string ("repl_stmt");
   query_t *qr;
@@ -1101,6 +1101,12 @@ log_replay_text (lock_trx_t * lt, dk_session_t * in, int is_pushback, int use_st
   int inx;
   caddr_t *arr = NULL;
   LOG_REPL_OPTIONS (opts);
+
+  if (!DV_STRINGP (text))
+    {
+      dk_free_box ((box_t) entry);
+      return srv_make_new_error ("42000", "TR100", "log_replay_text: invalid query text");
+    }
 
   if (!is_pushback)
     {
