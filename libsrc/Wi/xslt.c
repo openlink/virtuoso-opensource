@@ -3593,6 +3593,22 @@ bif_dict_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_dict_contains_key (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_contains_key", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_contains_key");
+  caddr_t *valptr;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  valptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return (caddr_t)((ptrlong)((NULL != valptr) ? 1 : 0));
+}
+
+
+caddr_t
 bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_remove", 0);
@@ -4741,6 +4757,7 @@ xslt_init (void)
   bif_define ("dict_duplicate", bif_dict_duplicate);
   bif_define ("dict_put", bif_dict_put);
   bif_define ("dict_get", bif_dict_get);
+  bif_define_typed ("dict_contains_key", bif_dict_contains_key, &bt_integer);
   bif_define ("dict_remove", bif_dict_remove);
   bif_define ("dict_inc_or_put", bif_dict_inc_or_put);
   bif_define ("dict_dec_or_remove", bif_dict_dec_or_remove);
