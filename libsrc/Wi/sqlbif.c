@@ -4289,7 +4289,7 @@ format_mismatch:
 caddr_t
 bif_strchr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "strchr");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "strchr");
   unsigned long chr = (unsigned long) bif_long_or_char_arg (qst, args, 1, "strchr");
   char *inx;
   int sizeof_char;
@@ -4324,7 +4324,7 @@ bif_strchr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_strrchr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "strrchr");
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "strrchr");
   unsigned long chr = (unsigned long) bif_long_or_char_arg (qst, args, 1, "strrchr");
   char *inx;
   int sizeof_char;
@@ -4363,8 +4363,8 @@ bif_strrchr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *func_name)
 {
-  caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, func_name);
-  caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, func_name);
+  caddr_t str1 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, func_name);
+  caddr_t str2 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, func_name);
   char *inx = NULL;
   dtp_t dtp1 = DV_TYPE_OF (str1);
   dtp_t dtp2 = DV_TYPE_OF (str2);
@@ -4499,8 +4499,8 @@ bif_nc_strstr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_casemode_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str1 = bif_string_arg (qst, args, 0, "casemode_strcmp");
-  caddr_t str2 = bif_string_arg (qst, args, 1, "casemode_strcmp");
+  caddr_t str1 = bif_string_or_uname_arg (qst, args, 0, "casemode_strcmp");
+  caddr_t str2 = bif_string_or_uname_arg (qst, args, 1, "casemode_strcmp");
   return box_num (CASEMODESTRCMP (str1, str2));
 }
 
@@ -4508,7 +4508,7 @@ bif_casemode_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_fix_identifier_case (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t ident = bif_string_arg (qst, args, 0, "fix_identifier_case");
+  caddr_t ident = bif_string_or_uname_arg (qst, args, 0, "fix_identifier_case");
   caddr_t out = sqlp_box_id_upcase (ident);
   caddr_t out1 = box_dv_short_string (out);
   dk_free_box (out);
@@ -4537,8 +4537,8 @@ bif_locate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char *me = "locate";
   int n_args = BOX_ELEMENTS (args);
-  caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, me);
-  caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, me);
+  caddr_t str1 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, me);
+  caddr_t str2 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, me);
   long int start = (long int) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
   long int len1, len2;
   char *inx;
@@ -4595,8 +4595,8 @@ caddr_t
 bif_matches_like (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int st = LIKE_ARG_CHAR, pt = LIKE_ARG_CHAR;
-  caddr_t str1 = bif_string_or_wide_or_null_arg (qst, args, 0, "matches_like");
-  caddr_t str2 = bif_string_or_wide_or_null_arg (qst, args, 1, "matches_like");
+  caddr_t str1 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "matches_like");
+  caddr_t str2 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "matches_like");
   dtp_t ltype = DV_TYPE_OF (str1);
   dtp_t rtype = DV_TYPE_OF (str2);
   long res1;
