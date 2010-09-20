@@ -276,9 +276,13 @@
 	    }
 	  ?>
 	  <?vsp
-	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr any;
+	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
 	       stat := '00000';
 	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+	         fct_installed := 1;
+               else 
+	         fct_installed := 0;
 	       if (__proc_exists (fix_identifier_case ('shcompo_clear'), 2) is not null)
 	         shcompo_clear ();
 	       if (self.view_vd)
@@ -297,6 +301,9 @@
 			       exec (qr, stat, msg, vector (), 1, meta2, data2);
 			       if (stat = '00000' and length (data2) and length (data2[0]))
 				 {
+                                   if (fct_installed)
+				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				   else
 				   http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
 				 }
 			     }
@@ -312,6 +319,9 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Statistics Data (VoiD Graph): <br/>');
+		   if (fct_installed)
+		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+                   else  
 	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
@@ -324,6 +334,9 @@
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
 		   http ('<div>Ontology: <br/>');
+		   if (fct_installed)
+	             http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+		   else
 	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
 		   http ('</div>');
 	           }
