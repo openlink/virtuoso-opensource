@@ -2449,7 +2449,7 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
   if (is_https_ctx () and SIOC..foaf_check_ssl (null))
   {
     declare N integer;
-    declare graph, waGraph, foafIRI any;
+    declare graph, baseGraph, foafIRI any;
     declare S, V, st, msg, data, meta any;
 
     foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
@@ -2458,42 +2458,59 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
 	  if (V is null)
 	    V := vector ();
 	  foafIRI := get_keyword ('URI', V);
-    if (not isnull (foafIRI))
-    {
-      if (SIOC..foaf_check_ssl (null))
+    if (not isnull (foafIRI) and SIOC..foaf_check_ssl (null))
       {
-        waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
+      graph := 'http://' || SIOC.DBA.get_cname ();
+      baseGraph := SIOC.DBA.get_graph ();
         S := sprintf (' sparql \n' ||
                       ' define input:storage "" \n' ||
                       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                       ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
                       ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                      ' select ?r \n' ||
-                      '   from <%s> \n' ||
+                    ' select distinct ?r \n' ||
                       '  where { \n' ||
                       '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
                       '              ?rule a acl:Authorization ; \n' ||
                       '                    acl:accessTo ?r ; \n' ||
                       '                    acl:agent <%s>. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
                       '          } \n' ||
                       '          union \n' ||
                       '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
                       '              ?rule a acl:Authorization ; \n' ||
                       '                    acl:accessTo ?r ; \n' ||
                       '                    acl:agentClass foaf:Agent. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
                       '          } \n' ||
                       '          union \n' ||
                       '          { \n' ||
+                    '            graph ?g0 \n' ||
+                    '            { \n' ||
                       '              ?rule a acl:Authorization ; \n' ||
                       '                    acl:accessTo ?r ; \n' ||
                       '                    acl:agentClass ?group. \n' ||
+                    '              filter (?g0 like <%s/DAV/home/%%>). \n' ||
+                    '            } \n' ||
+                    '            graph ?g1 \n' ||
+                    '            { \n' ||
                       '                    ?group rdf:type foaf:Group ; \n' ||
                       '                    foaf:member <%s>. \n' ||
+                    '              filter (?g1 like <%s/private/%%>). \n' ||
+                    '            } \n' ||
                       '          } \n' ||
                       '        }\n',
-                      waGraph,
                       foafIRI,
-                      foafIRI);
+                    graph,
+                    graph,
+                    graph,
+                    foafIRI,
+                    baseGraph);
         commit work;
         st := '00000';
         exec (S, st, msg, vector (), vector ('use_cache', 1), meta, data);
@@ -2525,7 +2542,6 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
         }
       }
     }
-  }
 
   name := '';
   for (select distinct COL_ID,
@@ -4531,7 +4547,7 @@ create procedure ODRIVE.WA.aci_load (
       }
       if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
         V[2] := 'public';
-      if (data[N][1] like SIOC..waGraph() || '%')
+      if (data[N][1] like SIOC.DBA.get_graph () || '/%/group/%')
         V[2] := 'group';
       aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
       if (aclMode = 'acl:Read')
