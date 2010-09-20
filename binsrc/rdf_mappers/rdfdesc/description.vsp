@@ -6,7 +6,7 @@
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
    declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr varchar;
-   declare do_sponge, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
+   declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
 
    set http_charset='utf-8';
    if (0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
@@ -35,8 +35,9 @@
        tmp := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 2);
        tmp := split_and_decode (ltrim (tmp, '?&'));
        sponge_type := get_keyword ('@Lookup@', tmp, '');
-       do_refresh := atoi (get_keyword ('refresh', tmp, '-1'));
-       if (do_refresh < 0)
+       force_clean := get_keyword ('refresh', tmp, '-1');
+       do_refresh := atoi (force_clean);
+       if (do_refresh < 0 or force_clean = 'clean')
          do_refresh := null;
        gr := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 1); 
      } 
@@ -162,6 +163,10 @@
        --DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL');
        --DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
        -- temporary work around to stop sponging twice
+       if (force_clean = 'clean')
+         {
+           sparql clear graph ?:_G;
+	 }
        DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh);
        commit work;
      }
