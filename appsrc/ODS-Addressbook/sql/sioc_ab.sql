@@ -123,7 +123,7 @@ create procedure fill_ods_addressbook_sioc2 (
            from DB.DBA.WA_INSTANCE
           where (_wai_name is null) or (WAI_NAME = _wai_name)) do
     {
-      graph_iri := SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) || '/webaccess';
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
       SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
     }
@@ -831,7 +831,7 @@ create procedure contact_acl_insert (
     return;
   };
   iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
-  graph_iri := AB.WA.webaccess_iri (domain_id);
+  graph_iri := AB.WA.acl_graph (domain_id);
 
   SIOC..acl_insert (graph_iri, iri, acl);
 }
@@ -851,7 +851,7 @@ create procedure contact_acl_delete (
     return;
   };
   iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
-  graph_iri := AB.WA.webaccess_iri (domain_id);
+  graph_iri := AB.WA.acl_graph (domain_id);
 
   SIOC..acl_delete (graph_iri, iri, acl);
 }

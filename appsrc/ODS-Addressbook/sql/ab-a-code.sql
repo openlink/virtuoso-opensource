@@ -49,7 +49,7 @@ create procedure AB.WA.acl_check (
   in id integer := null)
 {
   declare rc varchar;
-  declare acl_graph_iri, acl_iris any;
+  declare graph_iri, groups_iri, acl_iris any;
 
   rc := '';
   if (AB.WA.acl_condition (domain_id, id))
@@ -58,9 +58,9 @@ create procedure AB.WA.acl_check (
     if (not isnull (id))
       acl_iris := vector (SIOC..addressbook_contact_iri (domain_id, id), AB.WA.forum_iri (domain_id));
 
-    acl_graph_iri := AB.WA.webaccess_iri (domain_id);
-
-    rc := SIOC..acl_check (acl_graph_iri, acl_iris);
+    graph_iri := AB.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (AB.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
   }
   return rc;
 }
@@ -229,46 +229,7 @@ create procedure AB.WA.check_admin(
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
-{
-  whenever not found goto _end;
-
-  if (AB.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest') {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-  if (role_name = 'owner')
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-_end:
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure AB.WA.check_grants2(in role_name varchar, in page_name varchar)
+create procedure AB.WA.check_grants (in role_name varchar, in page_name varchar)
 {
   declare tree any;
 
@@ -281,10 +242,10 @@ create procedure AB.WA.check_grants2(in role_name varchar, in page_name varchar)
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.access_role(in domain_id integer, in user_id integer)
+create procedure AB.WA.access_role (
+  in domain_id integer,
+  in user_id integer)
 {
-  whenever not found goto _end;
-
   if (AB.WA.check_admin (user_id))
     return 'admin';
 
@@ -321,18 +282,25 @@ create procedure AB.WA.access_role(in domain_id integer, in user_id integer)
     return 'reader';
 
   if (exists(select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+  {
+    if (exists (select 1
                from SYS_USERS A
               where A.U_ID = user_id))
     return 'guest';
 
-_end:
   return 'public';
+}
+  return 'expire';
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.access_is_write (in access_role varchar)
+create procedure AB.WA.access_is_write (
+  in access_role varchar)
 {
   if (is_empty_or_null (access_role))
     return 0;
@@ -901,10 +869,10 @@ create procedure AB.WA.forum_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.webaccess_iri (
+create procedure AB.WA.acl_graph (
   in domain_id integer)
 {
-  return AB.WA.forum_iri (domain_id) || '/webaccess';
+  return SIOC..acl_graph ('AddressBook', AB.WA.domain_name (domain_id));
 }
 ;
 
@@ -3356,50 +3324,11 @@ create procedure AB.WA.contact_update4 (
 {
   declare L, N, M varchar;
   declare S varchar;
-  declare st, msg, meta, rows, F, V any;
+  declare tmp, V, F any;
 
-  if (not isnull (validation) and length (validation))
-  {
-    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
-    V := vector ();
-    for (N := 0; N < length (validation); N := N + 1)
-    {
-      M := AB.WA.vector_index (pFields, validation [N]);
-      if (not isnull (M))
-      {
-        if (not is_empty_or_null (pValues [M]))
-        {
-          S := S || sprintf (' and %s = ?', pFields [M]);
-          V := vector_concat (V, vector (pValues [M]));
-        }
-      }
-    }
-    if (length (V) = length (validation))
-    {
-      st := '00000';
-      exec (S, st, msg, V, 0, meta, rows);
-      if ((st = '00000') and (length (rows) > 0))
-      {
-        V := vector ();
-        F := vector ();
-        for (N := 0; N < length (pFields); N := N + 1) {
-          if (not AB.WA.vector_contains (validation, pFields [N]))
-          {
-            F := vector_concat (F, vector (pFields [N]));
-            V := vector_concat (V, vector (pValues [N]));
-          }
-        }
-        pFields := F;
-        pValues := V;
-
-        id := vector ();
-        for (N := 0; N < length (rows); N := N + 1)
-        {
-          id := vector_concat (id, vector (rows [N][0]));
-      }
-    }
-  }
-  }
+  tmp := AB.WA.contact_validation (domain_id, pFields, pValues, validation);
+  if (not isnull (tmp))
+    id := tmp;
 
   if ((isinteger (id)) and (id = -1))
   {
@@ -3427,11 +3356,11 @@ create procedure AB.WA.contact_update4 (
           );
       }
       }
+
   _exit:;
     if (isinteger (id) and (id = -1))
-    {
       return 0;
-    }
+
     V := vector ();
     F := vector ();
     for (N := 0; N < L; N := N + 1)
@@ -3481,6 +3410,65 @@ create procedure AB.WA.contact_delete (
   in domain_id integer)
 {
   delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.contact_validation (
+  in domain_id integer,
+  inout pFields any,
+  inout pValues any,
+  in validation any := null)
+{
+  declare N, M varchar;
+  declare S varchar;
+  declare id, st, msg, meta, rows, F, V any;
+
+  id := null;
+  if (not isnull (validation) and length (validation))
+  {
+    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
+    V := vector ();
+    for (N := 0; N < length (validation); N := N + 1)
+    {
+      M := AB.WA.vector_index (pFields, validation [N]);
+      if (not isnull (M))
+      {
+        if (not is_empty_or_null (pValues [M]))
+        {
+          S := S || sprintf (' and %s = ?', pFields [M]);
+          V := vector_concat (V, vector (pValues [M]));
+        }
+      }
+    }
+    if (length (V) = length (validation))
+    {
+      st := '00000';
+      exec (S, st, msg, V, 0, meta, rows);
+      if ((st = '00000') and (length (rows) > 0))
+      {
+        V := vector ();
+        F := vector ();
+        for (N := 0; N < length (pFields); N := N + 1) {
+          if (not AB.WA.vector_contains (validation, pFields [N]))
+          {
+            F := vector_concat (F, vector (pFields [N]));
+            V := vector_concat (V, vector (pValues [N]));
+          }
+        }
+        pFields := F;
+        pValues := V;
+
+        id := vector ();
+        for (N := 0; N < length (rows); N := N + 1)
+        {
+          id := vector_concat (id, vector (rows [N][0]));
+        }
+      }
+    }
+  }
+  return id;
 }
 ;
 

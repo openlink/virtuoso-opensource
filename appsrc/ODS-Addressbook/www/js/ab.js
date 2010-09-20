@@ -835,9 +835,7 @@ AB.getFOAFData = function(iri) {
 								  mode : 0,
 									value : T[0],
 									className : '_validate_ _url_',
-									onBlur : function() {
-										AB.validateField(this);
-									}
+									onBlur: function() {validateField(this);}
 								},
 								fld2 : {
 								  mode : 0,
@@ -926,56 +924,4 @@ AB.getFileName = function(from, to) {
     S = S.substr(0, N);
   }
   to.value = S;
-}
-
-AB.validateError = function(fld, msg) {
-  alert(msg);
-	setTimeout(function() {
-		fld.focus();
-	}, 1);
-  return false;
-}
-
-AB.validateMail = function(fld) {
-  if ((fld.value.length == 0) || (fld.value.length > 40))
-		return AB.validateError(fld,
-				'E-mail address cannot be empty or longer then 40 chars');
-
-  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value))
-    return AB.validateError(fld, 'Invalid E-mail address');
-
-  return true;
-}
-
-AB.validateURL = function(fld) {
-  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
-    return AB.validateError(fld, 'Invalid URL address');
-
-  return true;
-}
-
-AB.validateField = function(fld) {
-  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
-    return true;
-  if (OAT.Dom.isClass(fld, '_mail_'))
-    return AB.validateMail(fld);
-  if (OAT.Dom.isClass(fld, '_url_'))
-    return AB.validateURL(fld);
-  return true;
-}
-
-AB.validateInputs = function(fld) {
-  var retValue = true;
-  var form = fld.form;
-	for (i = 0; i < form.elements.length; i++) {
-    var fld = form.elements[i];
-		if (OAT.Dom.isClass(fld, '_validate_')) {
-      retValue = AB.validateField(fld);
-      if (!retValue)
-        return retValue;
-    }
-  }
-  return retValue;
 }

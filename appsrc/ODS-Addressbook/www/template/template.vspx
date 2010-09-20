@@ -54,8 +54,9 @@
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
-      <script type="text/javascript" src="js/ab.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="/ods/validate.js"></script>
+      <script type="text/javascript" src="js/ab.js"></script>
       <script type="text/javascript">
         function myInit() {
           if (!OAT._loaded) {
