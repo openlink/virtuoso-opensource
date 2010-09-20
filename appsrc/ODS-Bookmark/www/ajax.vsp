@@ -237,19 +237,7 @@
       tmp := BMK.WA.tags2vector (tags);
       tmp := BMK.WA.vector_unique (tmp);
       tags := BMK.WA.vector2tags (tmp);
-
-      -- acl
-      acl := vector ();
-      for (N := 0; N < length (params); N := N + 2)
-      {
-        if ((params [N] like 's_fld_2_%') and (trim (params [N+1]) <> ''))
-        {
-          suffix := replace (params [N], 's_fld_2_', '');
-          acl := vector_concat (acl, vector (vector (get_keyword ('s_fld_1_'||suffix, params, ''), get_keyword ('s_fld_2_'||suffix, params, ''), get_keyword ('s_fld_3_'||suffix, params, ''))));
-        }
-      }
-      acl := serialize (vector_concat (vector (vector ('v1.0', length (acl))), acl));
-
+      acl := serialize (DB.DBA.wa_acl_params (params));
       folder_id := BMK.WA.folder_create (_domain_id, folder_name, folder_id);
       id := BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, null, acl);
       BMK.WA.shareNode (_account_id, BMK.WA.make_node ('b', id), grants, 1);

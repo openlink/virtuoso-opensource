@@ -106,6 +106,17 @@ create procedure fill_ods_bookmark_sioc2 (
   declare domain_id, bookmark_id integer;
   declare graph_iri, forum_iri, creator_iri, bookmark_iri, iri varchar;
  {
+    for (select WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+    {
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+    }
+
     id := -1;
     deadl := 3;
     cnt := 0;
@@ -129,7 +140,8 @@ create procedure fill_ods_bookmark_sioc2 (
                 BD_DESCRIPTION,
                 BD_TAGS,
                 BD_UPDATED,
-                BD_CREATED
+                BD_CREATED,
+                BD_ACL
         from DB.DBA.WA_INSTANCE,
              BMK..BOOKMARK_DOMAIN,
              DB.DBA.WA_MEMBER
@@ -157,6 +169,8 @@ create procedure fill_ods_bookmark_sioc2 (
                               BD_CREATED,
                               BD_UPDATED
                              );
+      bookmark_acl_insert (BD_DOMAIN_ID, BD_ID, BD_ACL);
+
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
       {
@@ -374,6 +388,83 @@ create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN re
                           O.BD_DOMAIN_ID,
                           O.BD_ID);
     }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bookmark_acl_insert (
+  inout domain_id integer,
+  inout bookmark_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..bmk_post_iri (domain_id, bookmark_id);
+  graph_iri := BMK.WA.acl_graph (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bookmark_acl_delete (
+  inout domain_id integer,
+  inout bookmark_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..bmk_post_iri (domain_id, bookmark_id);
+  graph_iri := BMK.WA.acl_graph (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_I after insert on BMK.WA.BOOKMARK_DOMAIN order 100 referencing new as N
+{
+  if (coalesce (N.BD_ACL, '') <> '')
+    bookmark_acl_insert (N.BD_DOMAIN_ID,
+                         N.BD_ID,
+                         N.BD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_U after update on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.BD_ACL, '') <> '') and (coalesce (O.BD_ACL, '') <> coalesce (N.BD_ACL, '')))
+    bookmark_acl_delete (O.BD_DOMAIN_ID,
+                         O.BD_ID,
+                         O.BD_ACL);
+  if ((coalesce (N.BD_ACL, '') <> '') and (coalesce (O.BD_ACL, '') <> coalesce (N.BD_ACL, '')))
+    bookmark_acl_insert (N.BD_DOMAIN_ID,
+                         N.BD_ID,
+                         N.BD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_D before delete on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O
+{
+  if (coalesce (O.BD_ACL, '') <> '')
+    bookmark_acl_delete (O.BD_DOMAIN_ID,
+                        O.BD_ID,
+                        O.BD_ACL);
+}
 ;
 
 -------------------------------------------------------------------------------

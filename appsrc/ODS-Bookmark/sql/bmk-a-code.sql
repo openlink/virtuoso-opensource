@@ -19,6 +19,54 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+-------------------------------------------------------------------------------
+--
+-- ACL Functions
+--
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  if (exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id and BD_ACL is not null))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare graph_iri, groups_iri, acl_iris any;
+
+  rc := '';
+  if (BMK.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (BMK.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..bmk_post_iri (domain_id, id), BMK.WA.forum_iri (domain_id));
+
+    graph_iri := BMK.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (BMK.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Session Functions
@@ -37,12 +85,15 @@ create procedure BMK.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) {
+  }
+  if (is_empty_or_null (domain_id))
+  {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'Bookmark'))
     domain_id := -1;
 
 _end:;
@@ -55,28 +106,11 @@ _end:;
 create procedure BMK.WA.session_restore(
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
-
-  declare exit handler for sqlstate '*' {
-    domain_id := -2;
-    goto _end;
-  };
+  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
 
   sid := get_keyword('sid', params, '');
   realm := get_keyword('realm', params, '');
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-    domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id)) {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
-  domain_id := cast(domain_id as integer);
+  domain_id := BMK.WA.session_domain (params);
   user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
@@ -91,21 +125,41 @@ _end:
     user_name := BMK.WA.user_name(U_NAME, U_FULL_NAME);
     user_role := BMK.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-  domain_id := -1;
-
-  if (user_id = -1)
-    if (domain_id = -1) {
+  if ((user_id = -1) or (domain_id <= 0))
+  {
+    rc := '';
+    if (domain_id > 0)
+    {
+      rc := BMK.WA.acl_check (domain_id);
+      if ((rc = '') and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
+      {
       user_role := 'expire';
       user_name := 'Expire session';
-    } else if (domain_id = -2) {
+        goto _skip;
+      }
+    }
+    if (domain_id = -1)
+    {
+      user_role := 'expire';
+      user_name := 'Expire session';
+    }
+    else if (rc = 'R')
+    {
       user_role := 'public';
       user_name := 'Public User';
-    } else {
+    }
+    else if (rc = 'W')
+    {
+      user_role := 'author';
+      user_name := 'Author User';
+    }
+    else
+    {
       user_role := 'guest';
       user_name := 'Guest User';
     }
-
+  }
+_skip:;
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -175,46 +229,7 @@ create procedure BMK.WA.check_admin(
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
-{
-  whenever not found goto _end;
-
-  if (BMK.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest') {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-  if (role_name = 'owner')
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-_end:
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.check_grants2(in role_name varchar, in page_name varchar)
+create procedure BMK.WA.check_grants (in role_name varchar, in page_name varchar)
 {
   declare tree any;
 
@@ -229,10 +244,9 @@ create procedure BMK.WA.check_grants2(in role_name varchar, in page_name varchar
 --
 create procedure BMK.WA.access_role(in domain_id integer, in user_id integer)
 {
-  whenever not found goto _end;
-
   if (BMK.WA.check_admin(user_id))
     return 'admin';
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
@@ -262,13 +276,20 @@ create procedure BMK.WA.access_role(in domain_id integer, in user_id integer)
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
     return 'reader';
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+  {
   if (exists(select 1
                from SYS_USERS A
               where A.U_ID = user_id))
     return 'guest';
 
-_end:
   return 'public';
+}
+  return 'expire';
 }
 ;
 
@@ -645,6 +666,15 @@ create procedure BMK.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..bmk_iri (BMK.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.acl_graph (
+  in domain_id integer)
+{
+  return SIOC..acl_graph ('Bookmark', BMK.WA.domain_name (domain_id));
 }
 ;
 
