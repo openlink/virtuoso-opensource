@@ -148,14 +148,14 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 }
 ;
 
-create procedure b3s_type (in subj varchar, out url varchar)
+create procedure b3s_type (in subj varchar, in _from varchar, out url varchar)
 {
   declare meta, data, ll any;
   ll := 'unknown';
   url := 'javascript:void()';
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp  { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', subj), 
+      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
       if (length (data))
 	{
@@ -492,7 +492,7 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 ;
 
 create procedure 
-b3s_http_url (in url varchar, in sid varchar := null)
+b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 {
   declare host, pref, more, i varchar;
 
@@ -504,6 +504,8 @@ b3s_http_url (in url varchar, in sid varchar := null)
 --    more := '';
 
   i := b3s_render_ses_params();
+  if (length (_from))
+    i := sprintf ('%s&graph=%U', i, _from);
   
   return sprintf ('/describe/?url=%U%s', url, i);
 };
@@ -536,7 +538,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 ;
 
 create procedure 
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1, in acc any := null)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in label any, in rel int := 1, in acc any := null, in _from varchar := null)
 {
    declare lang, rdfs_type, rdfa, visible any;
 
@@ -588,7 +590,10 @@ again:
        http (sprintf ('<!-- %d -->', length (_url)));
 
        rdfa := b3s_rel_print (prop, rel, 0);
-       http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid), b3s_uri_curie(_url)));
+       if (http_mime_type (_url) like 'image/%')
+	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" border="0"/></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
+       else
+         http (sprintf ('<a class="uri" %s href="%s">%s</a>', rdfa, b3s_http_url (_url, sid, _from), b3s_uri_curie(_url)));
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
        --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
        --	       b3s_http_url (_url, sid)));
@@ -646,6 +651,18 @@ again:
      {
        http (sprintf ('<span %s>', rdfa));
        http (cast (_object as varchar));
+       http ('</span>');
+     }
+   else if (__tag (_object) = 222)
+     {
+       http (sprintf ('<span %s>', rdfa));
+       http (cast (_object as varchar));
+       http ('</span>');
+     }
+   else if (__tag (_object) = 126)
+     {
+       http (sprintf ('<span %s>', rdfa));
+       http ('&lt;binary object&gt;');
        http ('</span>');
      }
    else

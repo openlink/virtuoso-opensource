@@ -1,5 +1,5 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" version="XHTML+RDFa 1.0">
 <?vsp
 --
 --
@@ -34,7 +34,7 @@
    declare inf_parm varchar;
   declare ses_parms varchar;
   declare all_langs, dset any;
-  declare iri_type, iri_uri varchar;
+  declare iri_type, iri_uri, _F, _from varchar;
 
    dbg_enable := get_keyword ('dbg', params);
    if (dbg_enable = '1') 
@@ -69,6 +69,12 @@
   if (length (dset))
     all_langs := vector (dset, 1.0);
    gr := get_keyword ('g', params, '');
+  _from := get_keyword ('graph', params, '');
+--  dbg_obj_print_vars (gr, _F);
+  if (length (_from))
+    _F := concat ('FROM <', _from, '>');
+  else
+    _F := '';
 
   b3s_dbg_out (dbg_out, 'sid     : ' || sid);
   b3s_dbg_out (dbg_out, 'gr      : ' || gr);
@@ -86,7 +92,7 @@
 
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
 
-  if (get_keyword ('sp', params) = '1')
+  if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
       DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', gr), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
@@ -98,7 +104,7 @@
    http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
    label := ''; _subject := '';
 
-   qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S);
+  qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) %s where { <%S> virtrdf:label ?o }', _F, _S);
    b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
 
 --dbg_obj_print (qry_str);
@@ -107,9 +113,9 @@
 
    label := b3s_label_get (data, langs);
    true_label := label;
-  iri_type := b3s_type (_S, iri_uri);
+  iri_type := b3s_type (_S, _F, iri_uri);
 
-   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S);
+  qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
 
    b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
@@ -174,8 +180,6 @@
     label := page_resource_uri;
   --http_flush (1);
 ?>
-
-<!-- header -->
 <head>
     <base href="http://<?V host ?>/fct/rdfdesc/" />
     <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
@@ -248,7 +252,7 @@
         http ('<tr><th class="property">Attributes</th><th class="value">Values</th></tr>');
       all_lang := vector ('*', 1.0);
       
-      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o where { <%S> ?p ?o }  order by 1) sp', inf, _S);
+      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%S> ?p ?o }  order by 1) sp', inf, _F, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       curr_pred := '';
       while (0 = exec_next (h1, null, null, data))	
@@ -265,13 +269,13 @@
 	       b3s_http_print_l (PRED, odd_position, 0, sid);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 1, all_langs, _from);
 	   nxt1:;
 	}
       exec_close (h1);
       if (curr_pred <> '') http ('</ul></td></tr>');
 
-      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o where { ?o ?p <%S> } order by 1) sp', inf, _S);
+      qry_str := sprintf ('select id_to_iri ("p") as PRED, __ro2sq("o") as OBJECT LONG VARCHAR from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp', inf, _F, _S);
       exec (qry_str, null, null, vector (), 0, null, null, h1); 
       inx := 0;	
       curr_pred := '';
@@ -289,7 +293,7 @@
 	       b3s_http_print_l (PRED, odd_position, 1, sid);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, true_label, 0, all_langs, _from);
 	   nxt2:;
 	}
       exec_close (h1);
