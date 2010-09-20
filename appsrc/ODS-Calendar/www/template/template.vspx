@@ -57,6 +57,7 @@
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript" src="/ods/validate.js"></script>
       <script type="text/javascript" src="js/calendar.js"></script>
   	<script type="text/javascript">
         // publics
@@ -108,9 +109,9 @@
           }
           	
       		// init tabs
-          showTab('e', 2, 0);
-          showTab('t', 2, 0);
-          showTab('s', 2, 0);
+          showTab('e', 4, 0);
+          showTab('t', 3, 0);
+          showTab('s', 4, 0);
 
           // start reminder
           if (<?V self.owner_id ?> == <?V self.account_id ?>)
@@ -124,6 +125,7 @@
           }
         }
           setFooter();
+          window.onresize = function() {setFooter();}
           OAT.MSG.send(OAT, 'PAGE_LOADED');
         }
         function getWindowHeight() {
@@ -132,38 +134,34 @@
     			{
     				windowHeight = window.innerHeight;
     			}
-    			else
-    			{
-    				if (document.documentElement && document.documentElement.clientHeight)
+          else if (document.documentElement && document.documentElement.clientHeight)
     				{
     					windowHeight = document.documentElement.clientHeight;
     				}
-    				else
-    				{
-    					if (document.body && document.body.clientHeight)
+          else if (document.body && document.body.clientHeight)
     					{
     						windowHeight = document.body.clientHeight;
     					}
-    				}
-    			}
     			return windowHeight;
     		}
         function setFooter() {
-    			if (document.getElementById)
-    			{
+          if (!document.getElementById)
+            return;
+
     				var windowHeight = getWindowHeight();
-    				if (windowHeight > 0)
-    				{
+          if (windowHeight <= 0)
+            return;
+
     					var footerElement = document.getElementById('FT');
+          if (!footerElement)
+            return;
+
     					var footerHeight  = footerElement.offsetHeight;
     					if (document.getElementById('content'))
                 document.getElementById('content').style.height = (windowHeight - footerHeight - 225) + 'px';
     				}
-    			}
-    		}
         OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
         window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
-    		window.onresize = function() {setFooter();}
   	</script>
     ]]>
     <title></title>

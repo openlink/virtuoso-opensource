@@ -49,7 +49,7 @@ create procedure CAL.WA.acl_check (
   in id integer := null)
 {
   declare rc varchar;
-  declare acl_graph_iri, acl_iris any;
+  declare graph_iri, groups_iri, acl_iris any;
 
   rc := '';
   if (CAL.WA.acl_condition (domain_id, id))
@@ -58,9 +58,9 @@ create procedure CAL.WA.acl_check (
     if (not isnull (id))
       acl_iris := vector (SIOC..calendar_event_iri (domain_id, id), CAL.WA.forum_iri (domain_id));
 
-    acl_graph_iri := CAL.WA.webaccess_iri (domain_id);
-
-    rc := SIOC..acl_check (acl_graph_iri, acl_iris);
+    graph_iri := CAL.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (CAL.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
   }
   return rc;
 }
@@ -229,55 +229,10 @@ create procedure CAL.WA.check_admin(
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.check_grants (
-  in domain_id integer,
-  in user_id integer,
-  in role_name varchar)
+  in role_name varchar,
+  in page_name varchar)
 {
-  whenever not found goto _end;
-
-  if (CAL.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest')
-  {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-  if (role_name = 'owner')
-  {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-_end:
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.check_grants2(in role_name varchar, in page_name varchar)
-{
-  if (role_name = 'expire')
-    return 0;
-  return 1;
+  return case when (role_name = 'expire') then 0 else 1 end;
 }
 ;
 
@@ -299,14 +254,26 @@ create procedure CAL.WA.access_role(in domain_id integer, in user_id integer)
   {
     if (WAM_MEMBER_TYPE = 1)
     return 'owner';
+
     if (WAM_MEMBER_TYPE = 2)
     return 'author';
+
     return 'reader';
   }
-  if (exists (select 1 from SYS_USERS A where A.U_ID = user_id))
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+  {
+    if (exists (select 1
+                  from SYS_USERS A
+                 where A.U_ID = user_id))
     return 'guest';
 
   return 'public';
+}
+  return 'expire';
 }
 ;
 
@@ -899,10 +866,10 @@ create procedure CAL.WA.forum_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.webaccess_iri (
+create procedure CAL.WA.acl_graph (
   in domain_id integer)
 {
-  return CAL.WA.forum_iri (domain_id) || '/webaccess';
+  return SIOC..acl_graph ('Calendar', CAL.WA.domain_name (domain_id));
 }
 ;
 

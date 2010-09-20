@@ -51,20 +51,14 @@
         An error has occurred during processing of the "<?V self.page_name ?>" page.
       </div>
       <div class="error" style="text-align: left;">
-        <table>
+        <table cellspacing="5">
           <tr>
             <td valign="top">SQL State </td>
-            <td>
-              <?V self.code ?>
-            </td>
+            <td><?V self.code ?></td>
           </tr>
           <tr>
             <td valign="top">SQL Message </td>
-            <td>
-              <pre>
-                <?V self.msg ?>
-              </pre>
-            </td>
+            <td><pre><?V self.msg ?></pre></td>
           </tr>
         </table>
       </div>
