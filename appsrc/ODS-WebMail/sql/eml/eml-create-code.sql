@@ -2447,11 +2447,11 @@ create procedure OMAIL.WA.filter_apply (
         st := '00000';
         exec ('select ' || patternExpression, st, msg, vector (), 0, meta, rows);
         if (('00000' = st) and length (rows))
-        {
           conditionResult := rows[0][0];
-        }
+
         if ((conditionResult = 0) and (_filter[1] = 1))
           goto _end;
+
         if ((conditionResult = 1) and (_filter[1] = 0))
           goto _apply;
       }
@@ -2528,8 +2528,14 @@ create procedure OMAIL.WA.filter_value (
     if (not isnull (data))
       retValue := cast (xpath_eval ('//' || _valueType, xml_tree_doc (xml_tree (data))) as varchar);
 
-    if (isnull (retValue) and (_valueType in ('ssl', 'sslVerified', 'webIDVerified')))
+    if (isnull (retValue))
+    {
+      if (_valueType in ('ssl', 'sslVerified', 'webIDVerified'))
       retValue := '0';
+
+      if (_valueType in ('webID'))
+        retValue := '';
+    }
   }
   else
   {
