@@ -55,3 +55,16 @@ create procedure BMK.WA.tmp_update ()
 ;
 BMK.WA.tmp_update ();
 
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tmp_update ()
+{
+  if (registry_get ('bmk_acl_update') = '1')
+    return;
+  registry_set ('bmk_acl_update', '1');
+
+  update BMK.WA.BOOKMARK_DOMAIN set BD_ACL = null;
+}
+;
+
+BMK.WA.tmp_update ();
