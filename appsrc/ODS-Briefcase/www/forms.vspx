@@ -540,7 +540,7 @@
                             </table>
                           </td>
                           <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="image/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="image/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                           </td>
                         </tr>
                       </table>
@@ -582,14 +582,14 @@
                           <tr>
                               <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
                               <th nowrap="nowrap">WebID</th>
-                            <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                             <th width="1%" >Action</th>
                           </tr>
                             <tr id="f_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
                         </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>

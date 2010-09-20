@@ -149,6 +149,15 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
         briefcase_sioc_insert_ex (RES_FULL_PATH, RES_TYPE, RES_OWNER, _U_NAME, content);
       }
     }
+    for (select RES_FULL_PATH, RES_OWNER, RES_GROUP, PROP_VALUE
+           from WS.WS.SYS_DAV_RES
+                  join WS.WS.SYS_DAV_PROP ON PROP_PARENT_ID = RES_ID and PROP_TYPE = 'R'
+          where RES_FULL_PATH like ODRIVE.WA.dav_home(_U_NAME) || '%'
+            and PROP_NAME = 'virt:aci_meta_n3') do
+    {
+      WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
+      WS.WS.WAC_INSERT (RES_FULL_PATH, PROP_VALUE, RES_OWNER, RES_GROUP, 1);
+    }
   }
   return;
 }

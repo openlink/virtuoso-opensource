@@ -702,6 +702,7 @@
               {
                 retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
               } else {
+                --dbg_obj_print ('CatFilter_CONFIGURE');
               retValue := ODRIVE.WA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
               }
               if (ODRIVE.WA.DAV_ERROR(retValue))
@@ -1786,7 +1787,7 @@
                                     M := M + 1;
                                     if (self.dav_propEnable)
                                     {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
                                     } else {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', properties[N][0], properties[N][1]));
                                     }
@@ -1799,7 +1800,7 @@
                             </td>
                             <vm:if test="self.dav_propEnable">
                             <td valign="top" nowrap="nowrap">
-                              <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){ODRIVE.validateField(this);}}, fld_2: {mode: 0}});"><img src="image/add_16.png" border="0" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                              <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}});"><img src="image/add_16.png" border="0" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                               </td>
                             </vm:if>
                           </tr>
@@ -1869,7 +1870,7 @@
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                               <vm:if test="self.dav_enable">
                               <th width="1%" >Action</th>
                               </vm:if>
@@ -1885,7 +1886,7 @@
                                 for (N := 0; N < length (aci_values); N := N + 1) {
                                   M := M + 1;
                                   if (self.dav_enable) {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
@@ -1898,7 +1899,7 @@
                         </td>
                         <vm:if test="self.dav_enable">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
@@ -2007,7 +2008,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-          <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--self.dav_enable" xhtml_onclick="return ODRIVE.validateInputs(this);"/>
+          <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--self.dav_enable" xhtml_onclick="return validateInputs(this);"/>
           <v:button action="simple" name="cCancel" value="Cancel" >
             <v:on-post>
               <![CDATA[

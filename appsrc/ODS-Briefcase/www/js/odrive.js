@@ -1443,58 +1443,6 @@ ODRIVE.aboutDialog = function ()
   OAT.AJAX.POST("ajax.vsp", "a=about", x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
 }
 
-ODRIVE.validateError = function (fld, msg)
-{
-  alert(msg);
-  setTimeout(function(){fld.focus();}, 1);
-  return false;
-}
-
-ODRIVE.validateMail = function (fld)
-{
-  if ((fld.value.length == 0) || (fld.value.length > 40))
-    return ODRIVE.validateError(fld, 'E-mail address cannot be empty or longer then 40 chars');
-
-  var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value))
-    return ODRIVE.validateError(fld, 'Invalid E-mail address');
-
-  return true;
-}
-
-ODRIVE.validateURL = function (fld)
-{
-  var regex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
-    return ODRIVE.validateError(fld, 'Invalid URL address');
-
-  return true;
-}
-
-ODRIVE.validateURI = function (fld)
-{
-  var regex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-  var dbg  = /^acct:([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-:])+)+\.?([a-zA-Z0-9]{0,4})+$/;    
-  var mail = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value) && !dbg.test(fld.value) && !acct.test(fld.value))
-    return ODRIVE.validateError(fld, 'Invalid URI address');
-
-  return true;
-}
-
-ODRIVE.validateField = function (fld)
-{
-  if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
-    return true;
-  if (OAT.Dom.isClass(fld, '_mail_'))
-    return ODRIVE.validateMail(fld);
-  if (OAT.Dom.isClass(fld, '_url_'))
-    return ODRIVE.validateURL(fld);
-  if (OAT.Dom.isClass(fld, '_uri_'))
-    return ODRIVE.validateURI(fld);
-  return true;
-}
-
 ODRIVE.validateInputs = function (fld)
 {
   var retValue = true;
