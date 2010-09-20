@@ -2278,7 +2278,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    DB.DBA.ODS_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
 
       -- update WebAccess graph
-      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (SIOC..waGraph());
+      for (select distinct WACL_USER_ID from DB.DBA.WA_GROUPS_ACL) do
+      {
+        delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (SIOC..acl_groups_graph (WACL_USER_ID));
+      }
       for (select * from DB.DBA.WA_GROUPS_ACL) do
       {
         wa_groups_acl_insert (WACL_USER_ID, WACL_NAME, WACL_WEBIDS);
@@ -3572,34 +3575,38 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
     }
 };
 
--------------------------------------------------------------------------------
 --
-create procedure SIOC..wa_instance_acl_insert (
-  inout type_name varchar,
-  inout name varchar,
-  inout acl any)
+-- ACL
+--
+create procedure SIOC..acl_groups_graph (
+  in user_id integer)
 {
-  declare graph_iri, iri varchar;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-  iri := SIOC..forum_iri (type_name, name);
-  graph_iri := iri || '/webaccess';
-
-  SIOC..acl_insert (graph_iri, iri, acl);
+  return sprintf ('http://%s/dataspace/private/%U', get_cname (), (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id));
 }
 ;
 
--------------------------------------------------------------------------------
---
+create procedure SIOC..acl_group_iri (
+  in user_id integer,
+  in group_name varchar)
+  {
+  return sprintf ('http://%s/dataspace/%U/group/%U', get_cname (), (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id), group_name);
+}
+;
+
+create procedure SIOC..acl_graph (
+  in iType varchar,
+  in iName varchar)
+{
+  return SIOC..forum_iri (DB.DBA.wa_type_to_app (iType), iName) || '/webaccess';
+}
+;
+
 create procedure SIOC..acl_insert (
   inout graph_iri varchar,
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri varchar;
+  declare acl_iri, clean_iri varchar;
   declare N, aclArray any;
   declare exit handler for sqlstate '*'
   {
@@ -3607,10 +3614,15 @@ create procedure SIOC..acl_insert (
     return;
   };
 
+  clean_iri := iri;
+  N := strchr (clean_iri, '#');
+	if (N >= 0)
+    clean_iri := subseq (clean_iri, 0, N);
+
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
-    acl_iri := iri || sprintf('#acl%d', N);
+    acl_iri := clean_iri || sprintf('#acl%d', N);
 
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, rdf_iri ('type'), acl_iri ('Authorization'));
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('accessTo'), iri);
@@ -3636,29 +3648,6 @@ create procedure SIOC..acl_insert (
 }
 ;
 
--------------------------------------------------------------------------------
---
-create procedure SIOC..wa_instance_acl_delete (
-  inout type_name varchar,
-  inout name varchar,
-  inout acl any)
-{
-  declare graph_iri, iri varchar;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-
-  iri := SIOC..forum_iri (type_name, name);
-  graph_iri := iri || '/webaccess';
-
-  SIOC..acl_delete (graph_iri, iri, acl);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure SIOC..acl_delete (
   inout graph_iri varchar,
   inout iri varchar,
@@ -3684,6 +3673,7 @@ create procedure SIOC..acl_delete (
 
 create procedure SIOC..acl_check (
   in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
   in acl_iris any)
 {
   declare N, M, rc varchar;
@@ -3790,7 +3780,7 @@ create procedure SIOC..acl_check (
       for (N := 0; N < length (acl_iris); N := N + 1)
       {
         commit work;
-        sql := sprintf (S, acl_graph_iri, graph_iri, acl_iris[N], foafIRI, acl_iris[N], acl_iris[N], foafIRI);
+        sql := sprintf (S, acl_graph_iri, acl_groups_iri, acl_iris[N], foafIRI, acl_iris[N], acl_iris[N], foafIRI);
         exec (sql, st, msg, vector (), vector ('use_cache', 1), meta, data);
         if ((st = '00000') and length (data))
         {
@@ -3815,8 +3805,43 @@ _exit:;
 }
 ;
 
--------------------------------------------------------------------------------
---
+create procedure SIOC..wa_instance_acl_insert (
+  inout type_name varchar,
+  inout name varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..forum_iri (DB.DBA.wa_type_to_app (type_name), name);
+  graph_iri := SIOC..acl_graph (type_name, name);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+create procedure SIOC..wa_instance_acl_delete (
+  inout type_name varchar,
+  inout name varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  iri := SIOC..forum_iri (DB.DBA.wa_type_to_app (type_name), name);
+  graph_iri := SIOC..acl_graph (type_name, name);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
 create trigger WA_INSTANCE_ACL_I after insert on DB.DBA.WA_INSTANCE order 100 referencing new as N
 {
   if (coalesce (N.WAI_ACL, '') <> '')
@@ -3824,8 +3849,6 @@ create trigger WA_INSTANCE_ACL_I after insert on DB.DBA.WA_INSTANCE order 100 re
 }
 ;
 
--------------------------------------------------------------------------------
---
 create trigger WA_INSTANCE_ACL_U after update on DB.DBA.WA_INSTANCE order 100 referencing old as O, new as N
 {
   if ((coalesce (O.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
@@ -3835,8 +3858,6 @@ create trigger WA_INSTANCE_ACL_U after update on DB.DBA.WA_INSTANCE order 100 re
 }
 ;
 
--------------------------------------------------------------------------------
---
 create trigger WA_INSTANCE_ACL_D before delete on DB.DBA.WA_INSTANCE order 100 referencing old as O
 {
   if (coalesce (O.WAI_ACL, '') <> '')
@@ -4061,7 +4082,7 @@ create procedure waGroup (
   in id integer,
   in name varchar)
 {
-  return sprintf ('%s/%s#%U', waGraph (), ODRIVE.WA.account_name (id), name);
+  return sprintf ('%s/%s#%U', waGraph (), (select U_NAME from DB.DBA.SYS_USERS where U_ID = id), name);
 }
 ;
 
@@ -4080,8 +4101,8 @@ create procedure wa_groups_acl_insert (
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  graph_iri := SIOC..waGraph();
-  group_iri := SIOC..waGroup(id, name);
+  graph_iri := SIOC..acl_groups_graph (id);
+  group_iri := SIOC..acl_group_iri (id, name);
   DB.DBA.ODS_QUAD_URI (graph_iri, group_iri, rdf_iri ('type'), foaf_iri ('Group'));
   tmp := split_and_decode (webIDs, 0, '\0\0\n');
   for (N := 0; N < length (tmp); N := N + 1)
@@ -4104,8 +4125,8 @@ create procedure wa_groups_acl_delete (
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  graph_iri := SIOC..waGraph();
-  group_iri := SIOC..waGroup(id, name);
+  graph_iri := SIOC..acl_groups_graph (id);
+  group_iri := SIOC..acl_group_iri (id, name);
   delete_quad_s_or_o (graph_iri, group_iri, group_iri);
 }
 ;

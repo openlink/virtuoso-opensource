@@ -1086,10 +1086,17 @@ create procedure ODS.ODS_API."server.getInfo" (
   {
     for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
     {
+      declare facebookEnable integer;
+      declare facebookOptions any;
+
+      facebookEnable := WS_REGISTER_FACEBOOK;
+      if ((facebookEnable = 1) and (not DB.DBA._get_ods_fb_settings (facebookOptions)))
+        facebookEnable := 0;
+
   	  retValue := vector (
   	                      'register', WS_REGISTER,
   	                      'openidEnable', WS_REGISTER_OPENID,
-  	                      'facebookEnable', WS_REGISTER_FACEBOOK,
+  	                      'facebookEnable', facebookEnable,
   	                      'sslEnable', WS_REGISTER_SSL,
   	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
   	                     );
@@ -1160,7 +1167,7 @@ create procedure ODS.ODS_API."user.register" (
 	}
 	else if (mode = 2)
 	{
-	  -- facebook
+	  -- Facebook
 	  data := json_parse (data);
     name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
     "email" := null;
@@ -1271,12 +1278,16 @@ create procedure ODS.ODS_API."user.authenticate" (
 	in openIdIdentity varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare sid varchar;
+  declare sid, tmp varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
+  tmp := (select WAB_DISABLE_UNTIL from DB.DBA.WA_BLOCKED_IP where WAB_IP = http_client_ip ());
+  --if (tmp is not null and tmp > now ())
+  --  signal ('22023', 'Too many failed attempts. Try again in an hour.');
 
   uname := null;
     if (not isnull (facebookUID))
@@ -1290,9 +1301,7 @@ create procedure ODS.ODS_API."user.authenticate" (
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
-    {
         signal ('22023', 'OpenID Authentication Failed');
-    }
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     }
@@ -1305,9 +1314,15 @@ create procedure ODS.ODS_API."user.authenticate" (
     return ods_auth_failed ();
 
   sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
-    values (sid, 'wa', uname, now ());
-  return '<sid>' || sid  || '</sid>';
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
+    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
+  return
+    '<root>' ||
+      '<sid>' || sid  || '</sid>' ||
+      '<userName>' || uname || '</userName>' ||
+      '<userId>' || cast (username2id (uname) as varchar) || '</userId>' ||
+      '<dba>' || cast (is_dba (uname) as varchar) || '</dba>' ||
+    '</root>';
 }
 ;
 
@@ -1716,6 +1731,7 @@ create procedure ODS.ODS_API."user.password_change" (
 {
   declare uname, msg varchar;
   declare rc integer;
+  declare tmp, userPassword, noPassword varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1731,6 +1747,14 @@ create procedure ODS.ODS_API."user.password_change" (
   rc := -1;
   msg := 'Success';
   set_user_id ('dba');
+  for (select U_NAME, U_PASSWORD from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = uname) do
+  {
+    userPassword := pwd_magic_calc (U_NAME, U_PASSWORD, 1);
+    tmp := uuid ();
+    tmp := subseq (tmp, strrchr (tmp, '-'));
+    if ((userPassword like '%'||tmp) and (regexp_match ('[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', userPassword) is not null))
+      old_password := userPassword;
+  }
   DB.DBA.USER_CHANGE_PASSWORD (uname, old_password, new_password);
   rc := 1;
 ret:
@@ -1962,7 +1986,7 @@ create procedure ODS.ODS_API."user.info" (
   in "short" varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare rc integer;
+  declare rc, tmp, userPassword, noPassword integer;
   declare exit handler for sqlstate '*'
   {
     rollback work;
@@ -1979,12 +2003,18 @@ create procedure ODS.ODS_API."user.info" (
 
   for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = name) do
   {
+    userPassword := pwd_magic_calc (U_NAME, U_PASSWORD, 1);
+    tmp := uuid ();
+    tmp := subseq (tmp, strrchr (tmp, '-'));
+    noPassword := case when (userPassword like '%'||tmp) and (regexp_match ('[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', userPassword) is not null) then '1' else '0' end;
+
     http ('<user>');
 
     -- Personal
     ods_xml_item ('uid',       U_ID);
     ods_xml_item ('name',      U_NAME);
     ods_xml_item ('nickName',  WAUI_NICK);
+    ods_xml_item ('noPassword', noPassword);
     ods_xml_item ('iri',       SIOC..person_iri (SIOC..user_obj_iri (U_NAME)));
     ods_xml_item ('mail',      U_E_MAIL);
     ods_xml_item ('title',     WAUI_TITLE);
@@ -3707,9 +3737,9 @@ create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'applicatio
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   retValue := vector();
-  for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_U_ID = _u_id) do
+  for (select UC_ID, UC_CERT, UC_TS, UC_FINGERPRINT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_U_ID = _u_id order by UC_TS desc) do
   {
-    retValue := vector_concat (retValue, vector (vector (UC_ID, get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), case when UC_LOGIN = 1 then 'Yes' else 'No' end)));
+    retValue := vector_concat (retValue, vector (vector (UC_ID, get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), DB.DBA.wa_abs_date (UC_TS), UC_FINGERPRINT, case when UC_LOGIN = 1 then 'Yes' else 'No' end)));
   }
   return obj2json (retValue);
 }

@@ -12,7 +12,7 @@
   tok := get_keyword ('okey', params, '');
   akey := get_keyword ('openid.oauth.request_token', params, get_keyword ('akey', params, ''));
   step := 0;
-  dbg_obj_print_vars (params);
+--  dbg_obj_print_vars (params);
   if ({?'back'})
     OAUTH..session_terminate (get_keyword ('sid', params));
   sid := get_keyword ('sid', params, xenc_rand_bytes (10, 1));
@@ -106,10 +106,10 @@
 	declare tmp any;
 	insert into OAUTH..CLI_SESSIONS (cs_sid, cs_token, cs_secret) values (sid, akey, '');
 	commit work;
-	url :=  OAUTH..sign_request ('GET', 'http://localhost:8990/OAuth/access_token', '', tok, sid);
-	dbg_obj_print_vars (url);
+	url :=  OAUTH..sign_request ('GET', sprintf ('http://%{WSHost}s/OAuth/access_token'), '', tok, sid);
+	--dbg_obj_print_vars (url);
 	tmp := http_get (url);
-	dbg_obj_print (tmp);
+	--dbg_obj_print (tmp);
 	sid := OAUTH..parse_response (sid, tok, tmp);
         step := 2;
       }

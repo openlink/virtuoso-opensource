@@ -207,13 +207,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       	        <h3></h3>
       	      </div>
   	      <div class="w_content">
-                <div class="user_img_ctr">
-                  <a href="javascript:void(0)">
-		  <img alt="Profile image"
-		  id="userProfilePhotoImg"
-		  rel="foaf:depiction"
-		  class="prof_photo" src="images/profile.png"/>
-                  </a>
+                <div class="user_img_ctr" id="userProfilePhoto">
                 </div> <!-- user_img_ctr -->
                 <div class="gems_ctr">
                   <div class="prof_user_gems" id="profileUserGems">
@@ -321,10 +315,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                   </div>
                   <div id="ciP1" class="tab_page">
                     <div  class="vcard">
-		      <div class="vcard_l">
-			<img id="ciP1photo" rel="foaf:depiction"
-			     src="images/profile_small.png"
-			     alt="photo" class="photo"/>
+            	      <div class="vcard_l" id="ciP1photo">
 		      </div>
                       <div class="vcard_r">
                         <span class="fn" id="ciP1fn"></span>
@@ -1167,10 +1158,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
               </div>
             </div> <!-- tab_deck -->
             <div id="login_ctrls">
-              <input type="hidden" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
-              <input type="checkbox" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="checked" />
-          	  <label for="login_frm_cb_remember_me">Remember me</label>
-          	  <br />
               <input type="button" name="loginBtn" value="Login" id="loginBtn" />
               <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
               <span id="loginThrobber" style="display:none">Logging in ...

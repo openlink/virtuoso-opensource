@@ -1688,6 +1688,16 @@
                     </td>
                   </tr>
           <?vsp } ?>
+                  <tr>
+                    <td></td>
+                    <th><v:label value="WebID:" /></th>
+                    <td><v:url name="lwebid1"
+                               value="--SIOC..person_iri (SIOC..user_iri (self.ufid))"
+                               url="--SIOC..person_iri (SIOC..user_iri (self.ufid))"
+                               xhtml_target="_blank"
+                               xhtml_class="url" />
+                    </td>
+                  </tr>
                 </table>
               </td>
             </tr>

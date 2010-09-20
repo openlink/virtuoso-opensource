@@ -47,6 +47,7 @@
   <v:variable name="_policy_url" type="varchar" default="null" persist="0" param-name="policy_url" />
   <v:variable name="_oauth_consumer" type="varchar" default="null" persist="0" param-name="oauth_consumer" />
   <v:variable name="_oauth_scope" type="varchar" default="null" persist="0" param-name="oauth_scope" />
+  <v:variable name="_op_endpoint" type="varchar" default="null" persist="0" param-name="op_endpoint" />
   <v:variable name="_ver" type="varchar" default="1" persist="0" param-name="ver" />
   <v:variable name="_uname" type="varchar" default="null" persist="0" />
   <v:on-init><![CDATA[
@@ -57,7 +58,7 @@
 
     if (self._identity is null)
       {
-        self.vc_redirect ('login.vspx');
+        signal ('42000', 'Unknown identity.');
       }
     if (self._uname is null)
       {
@@ -86,15 +87,17 @@
 	  }
 	else
           {
-          self.vc_redirect ('login.vspx');
+            signal ('42000', sprintf ('Can not find ODS member for identity "%s"', self._identity));
       }
       }
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
-    if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null
+    if (get_keyword('sid', self.vc_event.ve_params) is null 
+        and get_keyword('sid', cookie_vec) is not null
     	and self._identity is not null)
       {
 	sid := get_keyword('sid', cookie_vec);
+        if (not OPENID.DBA.check_session (self._identity, sid))
 	self.vc_event.ve_params := OPENID.DBA.oid_set_sid (sid, self.vc_event.ve_params);
 	  }
     if (get_keyword ('sid', self.vc_event.ve_params) is null and is_https_ctx ())
@@ -218,7 +221,7 @@
           </div> <!-- form_col -->
 	  <v:template type="if-login" name="login_if_login"><?vsp
 	 OPENID..checkid_immediate (self._ver, self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
-         self._sreg_required, self._sreg_optional, self._policy_url, self._oauth_consumer, self._oauth_scope);
+         self._sreg_required, self._sreg_optional, self._policy_url, self._oauth_consumer, self._oauth_scope, self._op_endpoint);
 	 ?></v:template>
         <v:on-post><![CDATA[
   declare cook_str, expire varchar;
@@ -259,7 +262,6 @@
       self.vc_authenticated := 0;
       control.vl_authenticated := 0;
       connection_vars_set (null);
-      self.vc_redirect ('login.vspx');
       return;
     }
   else if (length (self.sid) and self.login_ip is null)

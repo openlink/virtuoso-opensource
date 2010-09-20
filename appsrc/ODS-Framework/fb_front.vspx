@@ -314,19 +314,18 @@
               self._sync:=0;
               if(get_keyword('import', params,'')='update')
               {
-                 self._sync:=1;
                  declare syncdata_jsarrstr varchar;
-                 syncdata_jsarrstr:='';
-                 syncdata_jsarrstr:=get_syncdata_arr(self._fb,_user_id,1);
 
+                  self._sync := 1;
+                  syncdata_jsarrstr := get_syncdata_arr(self._fb,_user_id, 1);
                  if(length(syncdata_jsarrstr))
                   self._dhtml:=vector_concat(self._dhtml,vector('syncdata_jsarrstr',syncdata_jsarrstr));
               }
               else if (get_keyword('import', params,'')='updateadvanced')
               {
-                 self._sync:=2;
                  declare syncdata_jsarrstr varchar;
-                 syncdata_jsarrstr:='';
+
+                  self._sync := 2;
                  syncdata_jsarrstr:=get_syncdata_arr(self._fb,_user_id);
                  if(length(syncdata_jsarrstr))
                   self._dhtml:=vector_concat(self._dhtml,vector('syncdata_jsarrstr',syncdata_jsarrstr));
@@ -1225,10 +1224,9 @@ function createImportObjDock(_syncData)
   var d_ods_cid=0;
   for(var ii=0;ii < _syncData.ods_contacts.length;ii++)
   {
-   var _radio=OAT.Dom.radio(_dock_obj.id+'_syncgrp');
-   OAT.Dom.append([_parent_div,_radio]);
+          var _radio = OAT.Dom.create("input", {type: "radio", id: _dock_obj.id+'_syncgrp'});
    _radio.value=_syncData.ods_contacts[ii].ods_cid;
-
+          OAT.Dom.append([_parent_div,_radio]);
     OAT.Event.attach(_radio,"click",function(e){
       if (OAT.Browser.isIE)
                                                 var _objval=e.srcElement.value;
@@ -1272,7 +1270,8 @@ function createImportObjDock(_syncData)
   _cbutton.addOption(""," Default ",function(){
                                                ajaxUpdate(_syncData.odsab_instid,parseInt($(_dock_obj.id+'_body').c_ods_cid),_syncData.fb_id,_dock_obj,getCustomMapping('mappingDivContent'));
                                               })
-	_cbutton.addOption(""," Manual ",function(){ $('manualMappingOK').odsab_instid=_syncData.odsab_instid;
+      	_cbutton.addOption(""," Manual ",function(){
+      	  $('manualMappingOK').odsab_instid=_syncData.odsab_instid;
                                                $('manualMappingOK').c_ods_cid=parseInt($(_dock_obj.id+'_body').c_ods_cid);
                                                $('manualMappingOK').fb_id=_syncData.fb_id;
                                                $('manualMappingOK').dock_obj=_dock_obj;

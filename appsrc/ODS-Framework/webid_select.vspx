@@ -176,11 +176,11 @@
                 group_sql := '';
                 if (self.v_filter <> 'p')
                 {
-                  group_sql := sprintf ('select ''Group'' F1, SIOC..waGroup(%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d', self.u_id, self.u_id);
+                  group_sql := sprintf ('select ''Group'' F1, SIOC..acl_group_iri (%d, WACL_NAME) F2, WACL_DESCRIPTION F3 from WA_GROUPS_ACL where WACL_USER_ID = %d', self.u_id, self.u_id);
                 }
                 if (self.v_filter <> 'g')
                 {
-                  if (ODRIVE.WA.check_app ('AddressBook', self.u_id))
+                  if (DB.DBA.wa_check_app ('AddressBook', self.u_id))
                   {
                     user_sql := sprintf ('select ''Person'' F1, a.P_IRI F2, a.P_NAME F3 from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_IRI) <> 1', self.u_id);
                   } else {
@@ -223,8 +223,12 @@
                       <v:label value="Type" format="%s"/>
                     </th>
                   </v:template>
-                  <?vsp http (ODRIVE.WA.show_column_header ('WebID', 'F2', self.v_order, self.v_direction)); ?>
-                  <?vsp http (ODRIVE.WA.show_column_header ('Description', 'F3', self.v_order, self.v_direction)); ?>
+                  <th>
+                    <?vsp self.sortColumn('WebID', 'F2'); ?>
+                  </th>
+                  <th>
+                    <?vsp self.sortColumn('Description', 'F3'); ?>
+                  </th>
                   <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
                     <th width="1%">
                       Action

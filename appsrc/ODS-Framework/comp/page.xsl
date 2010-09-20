@@ -295,6 +295,7 @@
       <xsl:attribute name="onunload"><xsl:value-of select="@vm_onunload" /></xsl:attribute>
     </xsl:if>
     <![CDATA[
+      <script type="text/javascript" src="oat/loader.js"></script>
       <script type="text/javascript" src="common.js"></script>
       <script type="text/javascript" src="validate.js"></script>
     ]]>

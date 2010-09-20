@@ -1665,6 +1665,14 @@ create procedure wa_check_package (in pname varchar) -- Duplicate conductor proc
 ;
 
 
+create procedure wa_check_app (
+  in app_type varchar,
+  in user_id integer)
+{
+  return coalesce ((select top 1 WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = user_id and WAI_TYPE_NAME = app_type order by WAI_ID), 0);
+}
+;
+
 create procedure wa_vad_check (in pname varchar)
 {
   declare nam varchar;
@@ -3659,6 +3667,21 @@ create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 
   update WA_USER_OL_ACCOUNTS set WUO_URI = ODS.ODS_API."user.onlineAccounts.uri"(WUO_URL) where WUO_URI is null;
 };
+
+create procedure WA_USER_OL_ACCOUNTS_UPGRADE ()
+{
+  if (exists (select 1 from SYS_KEYS where KEY_NAME = 'WA_USER_OL_ACCOUNTS_URL'))
+    return;
+  if (exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS group by WUO_URL having count(*) > 1))
+    {
+      log_message ('Duplicate online account URL');
+      return;
+    }
+  wa_exec_no_error_log ('create unique index WA_USER_OL_ACCOUNTS_URL on DB.DBA.WA_USER_OL_ACCOUNTS (WUO_URL)');
+}
+;
+
+WA_USER_OL_ACCOUNTS_UPGRADE ();
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_RELATED_RES (
@@ -6758,7 +6781,7 @@ create procedure wa_make_url_from_vd (in host varchar, in lhost varchar, in path
 
 -- NEW version of this procedure is stored in ods_api.sql and is called ODS_CREATE_NEW_APP_INST. The new version is exposed to SOAP.
 create procedure
-WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 0, in pub int := 1)
+WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varchar, in model int := 1, in pub int := 0)
 {
   declare inst web_app;
   declare ty, h, id any;

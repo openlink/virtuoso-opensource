@@ -437,8 +437,8 @@ create procedure ODS_CREATE_NEW_APP_INST (
   in app_type varchar,
   in inst_name varchar,
   in owner varchar,
-  in model int := null,
-  in pub int := null,
+  in model integer := 1,
+  in pub integer := 0,
   in inst_descr varchar := null)
 {
   declare inst web_app;
@@ -485,10 +485,6 @@ create procedure ODS_CREATE_NEW_APP_INST (
           };
    select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;
   }
-  if (isnull (model))
-    model := case when app_type in ('oDrive', 'oMail', 'IM') then 1 else 0 end;
-  if (isnull (pub))
-    pub := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
   visible := case when app_type in ('oDrive', 'oMail', 'IM') then 0 else 1 end;
 
   inst := __udt_instantiate_class (fix_identifier_case (ty), 0);
@@ -827,7 +823,7 @@ create procedure ODS..openid_url_set (
   in uid integer,
   in url varchar)
 {
-  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate, profile_page any;
+  declare oi_ident, hdr, cnt, xt, oi_srv, oi2_srv, oi_delegate, profile_page, xrds, xrds_url any;
 
   declare exit handler for sqlstate '*'
     {
@@ -866,15 +862,29 @@ again:
   oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
   oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
   oi_delegate := cast (xpath_eval ('//link[contains (@rel, "openid.delegate")]/@href', xt) as varchar);
+  xrds_url := http_request_header (hdr, 'X-XRDS-Location');
 
   if (oi2_srv is not null)
     oi_srv := oi2_srv;
+
+  if (oi_srv is null and xrds_url is not null)
+    {
+       xrds := http_client (xrds_url, n_redirects=>15);
+       xrds := xtree_doc (xrds);
+       oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/URI/text()', xrds) as varchar);
+    }
 
   if (oi_srv is null)
     return 'Cannot locate OpenID server.';
 
   if (oi_delegate is not null)
     oi_ident := oi_delegate;
+
+  -- if we want to change OpenID URI to local we would get same as it is will find delegate
+  if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID = uid))
+    {
+      oi_ident := url;
+    }
 
   if (exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = oi_ident and WAUI_U_ID <> uid))
     return 'This OpenID identity is already registered.';

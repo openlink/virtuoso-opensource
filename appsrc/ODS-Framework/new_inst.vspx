@@ -39,8 +39,6 @@
 
         if (self.wa_type in ('oDrive', 'oMail', 'IM'))
         {
-          self.imodel := 1;
-          self.is_public := 0;
           self.is_visible := 0;
         }
         self.domains := '<domains/>';
@@ -471,8 +469,8 @@
       <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
       <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
       <vm:variable name="wa_type" type="varchar" default="null" persist="0"/>
-      <vm:variable name="imodel" type="int" default="2" persist="0"/>
-      <vm:variable name="is_public" type="int" default="1" persist="0"/>
+      <vm:variable name="imodel" type="int" default="1" persist="0"/>
+      <vm:variable name="is_public" type="int" default="0" persist="0"/>
       <vm:variable name="is_visible" type="int" default="1" persist="0"/>
       <vm:variable name="iid" type="int" default="null" persist="0"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>

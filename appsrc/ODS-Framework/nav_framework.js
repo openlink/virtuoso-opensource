@@ -680,8 +680,13 @@ ODS.session = function(customEndpoint) {
 					var trustRoot = document.location.protocol + '//'
 							+ document.location.host;
 
+					var delim = "?";
+
+					if (self.openId.server.lastIndexOf ("?") != -1)
+					  delim = "&"; 
+
 					var checkImmediate = self.openId.server
-							+ '?openid.mode=checkid_setup'
+						+ delim + 'openid.mode=checkid_setup'
 						+ '&openid.return_to=' + encodeURIComponent(thisPage);
 
           if (self.openId.version == '1.0')
@@ -796,9 +801,13 @@ ODS.session = function(customEndpoint) {
     var openIdIdentity     = uriParams['openid.identity'];
     var openIdAssoc_handle = uriParams['openid.assoc_handle'];
     var openIdSigned       = uriParams['openid.signed'];
+    var delim = "?";
 
-    var url = openIdServer +
-      '?openid.mode=check_authentication' +
+    if (self.openId.server.lastIndexOf ("?") != -1)
+      delim = "&"; 
+
+    var url = openIdServer + delim +
+      'openid.mode=check_authentication' +
       '&openid.assoc_handle=' + encodeURIComponent (openIdAssoc_handle) +
       '&openid.sig='          + encodeURIComponent (openIdSig) +
       '&openid.signed='       + encodeURIComponent (openIdSigned);
@@ -3559,30 +3568,28 @@ ODS.Nav = function(navOptions) {
 					     '/usersGetInfo_response/user/userName',{})[0]);
 
 	self.profile.userName = userProfileName;
-
-		var userDisplayName = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-					      '/usersGetInfo_response/user/fullName',{})[0]);
-
-	self.profile.userFullName = userDisplayName;
-
-		var userProfilePhoto = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-					      '/usersGetInfo_response/user/photo',{})[0]);
-
-		var userProfileDataspace = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-					      '/usersGetInfo_response/user/dataspace',{})[0]);
-		var userFOAFURI = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-				      '/usersGetInfo_response/user/foaf_ds', {})[0]);
-
-		var userSIOCURI = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
-				      '/usersGetInfo_response/user/sioc_ds', {})[0]);
-
+		var userDisplayName = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/fullName', {})[0]);
 	if (userDisplayName == '')
 	    userDisplayName = self.profile.userName;
+		self.profile.userFullName = userDisplayName;
+
+		var userProfileDataspace = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/dataspace', {})[0]);
+		var userFOAFURI = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/foaf_ds', {})[0]);
+		var userSIOCURI = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/sioc_ds', {})[0]);
 
 		$('userProfilePhotoName').innerHTML = '<h3>' + userDisplayName + '</h3>';
-
-		$('userProfilePhotoImg').src = userProfilePhoto ? userProfilePhoto: 'images/missing_profile_picture.png';
-	$('userProfilePhotoImg').alt = userDisplayName;
+ 		$('ProfilePhoto').innerHTML = '';
+ 		var userProfilePhoto = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo', {})[0]);
+    if (userProfilePhoto) {
+      var img = OAT.Dom.create('img');
+      img.className = 'prof_photo';
+      img.src = userProfilePhoto;
+      img.alt = userDisplayName;
+      img.rel = 'foaf:depiction';
+      $('userProfilePhoto').appendChild(img);
+  	} else {
+      $('userProfilePhoto').innerHTML = '<br /><b>Photo Not Available</b><br /><br />';
+  	}
 
 	var gems = $('profileUserGems').getElementsByTagName ("a");
 
@@ -4072,17 +4079,9 @@ ODS.Nav = function(navOptions) {
 					+ OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc,
 							'/usersGetInfo_response/user/fullName', {})[0]);
 
-	    var photo = OAT.Xml.textValue (OAT.Xml.xpath (xmlDoc,
-							  '/usersGetInfo_response/user/photo',{})[0]);
-	    if (photo.length < 1)
-		photo = 'images/missing_person_tnail.png';
-
-			var _home = OAT.Xml.xpath(xmlDoc,
-					'/usersGetInfo_response/user/home', {});
-			var _business = OAT.Xml.xpath(xmlDoc,
-					'/usersGetInfo_response/user/organization', {});
-			var _im = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/im',
-					{})[0];
+			var _home = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/home', {});
+			var _business = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/organization', {});
+			var _im = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/im', {})[0];
 
 	    OAT.Dom.clear ($('ciP3'));
 
@@ -4098,23 +4097,17 @@ ODS.Nav = function(navOptions) {
 		}
 
 	    var organization = {};
-
 			for ( var i = 0; i < _business[0].childNodes.length; i++) {
-				organization[_business[0].childNodes[i].nodeName] = OAT.Xml
-						.textValue(_business[0].childNodes[i]);
+				organization[_business[0].childNodes[i].nodeName] = OAT.Xml.textValue(_business[0].childNodes[i]);
 		}
 
 			$('ciP2title').innerHTML = '<a href="'
-					+ ((organization.url.indexOf('http://') >= 0) ? organization.url
-							: 'http://' + organization.url) + '">'
+					+ ((organization.url.indexOf('http://') >= 0) ? organization.url : 'http://' + organization.url) + '">'
 					+ organization.title + '</a>';
-			$('ciP2address').innerHTML = organization.address1
-					+ organization.address2;
-			$('ciP2city').innerHTML = (organization.city.length) > 0 ? organization.city + ', '
-					: organization.city;
+			$('ciP2address').innerHTML = organization.address1 + organization.address2;
+			$('ciP2city').innerHTML = (organization.city.length) > 0 ? organization.city + ', ' : organization.city;
 	    $('ciP2state').innerHTML   = organization.state;
-			$('ciP2zip').innerHTML = (organization.state.length + organization.zip.length) > 0 ? organization.zip + ', '
-					: ' ';
+			$('ciP2zip').innerHTML = (organization.state.length + organization.zip.length) > 0 ? organization.zip + ', ' : ' ';
 	    $('ciP2country').innerHTML = organization.country;
 			$('ciP2tel').innerHTML = (organization.mobile.length > 0) ? organization.phone
 					+ ', ' + organization.mobile
@@ -4139,21 +4132,29 @@ ODS.Nav = function(navOptions) {
 						.textValue(_home[0].childNodes[i]);
 		}
 
-	    $('ciP1photo').src           = photo;
+			var photo = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo', {})[0]);
+			$('ciP1photo').innerHTML = '';
+      if (photo) {
+        var img = OAT.Dom.create('img');
+        img.className = 'photo';
+        img.src = photo;
+        img.alt = 'photo';
+        img.rel = 'foaf:depiction';
+        $('ciP1photo').appendChild(img);
+    	}
+
 	    $('ciP1fn').innerHTML        = titledFullname;
 	    $('ciP1org').innerHTML       = organization.title;
 	    $('ciP1email').style.display = 'none';
 	    $('ciP1address').innerHTML   = home.address1+home.address2;
 	    $('ciP1city').innerHTML      = home.city.length ? home.city+', ' : '';
 	    $('ciP1state').innerHTML     = home.state;
-			$('ciP1zip').innerHTML = (home.state.length + home.zip.length) > 0 ? home.zip + ', '
-					: home.zip;
+			$('ciP1zip').innerHTML = (home.state.length + home.zip.length) > 0 ? home.zip + ', ' : home.zip;
 	    $('ciP1country').innerHTML   = home.country;
 
  //       $('ciP1tel').style.display='none';
 
-			$('ciP1tel').innerHTML = (home.mobile.length > 0) ? home.phone
-					+ ', ' + home.mobile : home.phone;
+			$('ciP1tel').innerHTML = (home.mobile.length > 0) ? home.phone + ', ' + home.mobile : home.phone;
 
 	    //  	    self.profile.ciMap.centerAndZoom (home.latitude,home.longitude,8); /* africa, middle zoom */
 	    //	    self.profile.ciMap.addTypeControl ();
@@ -4442,8 +4443,7 @@ ODS.Nav = function(navOptions) {
 			    if (i == 0)
 				OAT.Dom.append ([interestsP,interestA]);
 			    else
-						OAT.Dom.append( [ interestsP, OAT.Dom.text(', '),
-								interestA ]);
+						OAT.Dom.append( [ interestsP, OAT.Dom.text(', '), interestA ]);
 			}
 		}
 

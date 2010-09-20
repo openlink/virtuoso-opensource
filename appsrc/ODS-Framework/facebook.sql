@@ -1550,10 +1550,10 @@ declare ab_domain_id integer;
       for (i := 0; i < length(_res); i := i + 1)
       {
         declare uid,full_name,first_name,last_name varchar;
-        uid        := trim(xpath_eval('string(uid)',_res[i]));
-        full_name  := trim(xpath_eval('string(name)',_res[i]));
-        first_name := trim(xpath_eval('string(first_name)',_res[i]));
-        last_name  := trim(xpath_eval('string(last_name)',_res[i]));
+        uid        := serialize_to_UTF8_xml (xpath_eval('string(uid)',_res[i]));
+        full_name  := serialize_to_UTF8_xml (xpath_eval('string(name)',_res[i]));
+        first_name := serialize_to_UTF8_xml (xpath_eval('string(first_name)',_res[i]));
+        last_name  := serialize_to_UTF8_xml (xpath_eval('string(last_name)',_res[i]));
 
           declare addressbook_cid_arr any;
           declare addressbook_cid_sqlstr varchar;
@@ -1570,8 +1570,8 @@ declare ab_domain_id integer;
           } else {
               declare m integer;
               declare _tmp_str varchar;
-              _tmp_str:='';
 
+            _tmp_str := '';
               for(m:=0; m<length(addressbook_cid_arr); m:=m+1)
               {
                   if(m=0)
