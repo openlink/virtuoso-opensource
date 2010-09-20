@@ -585,7 +585,7 @@ create procedure OAUTH..parse_response (in sid any := null, in consumer_key varc
 }
 ;
 
-create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in sid varchar := null) __SOAP_HTTP 'text/plain'
+create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in sid varchar := null, in tz int := 0) __SOAP_HTTP 'text/plain'
 {
   declare signature, timest, nonce varchar;
   declare ret varchar;
@@ -593,6 +593,8 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
 
   nonce := xenc_rand_bytes (8, 1);
   timest := datediff ('second', stringdate ('1970-1-1'), now ());
+  if (tz)
+    timest := timest - timezone (now()) * 60; 
   if (length (params) and params not like '%&')
     params := params || '&';
 
@@ -621,7 +623,7 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
 }
 ;
 
-create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in oauth_secret varchar := '', in sid varchar := null) __SOAP_HTTP 'text/plain'
+create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url varchar, in params varchar := '', in consumer_key varchar, in oauth_secret varchar := '', in sid varchar := null, in tz int := 0) __SOAP_HTTP 'text/plain'
 {
   declare signature, timest, nonce varchar;
   declare ret varchar;
@@ -631,6 +633,8 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
 
   nonce := xenc_rand_bytes (8, 1);
   timest := datediff ('second', stringdate ('1970-1-1'), now ()) - (timezone (now()) * 60);
+  if (tz)
+    timest := timest - timezone (now()) * 60; 
   if (length (params) and params not like '%&')
     params := params || '&';
 

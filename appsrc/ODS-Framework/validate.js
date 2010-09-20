@@ -60,6 +60,9 @@ function validateURI(fld)
 
 function validateWebID(fld)
 {
+  if (fld.value == 'foaf:Agent')
+    return true;
+
   var regex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
   if (regex.test(fld.value))
     return true;

@@ -320,6 +320,12 @@ TBL.createCell2 = function (td, prefix, fldName, No, fldOptions) {
   return fld.input;
 }
 
+TBL.createCell3 = function (td, prefix, fldName, No, fldOptions) {
+  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  fld.onclick = function(){datePopup(fldName);};
+  return fld;
+}
+
 TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: TBL.setServiceUrl});
   fld.input.setAttribute("autocomplete", "off");

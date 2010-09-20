@@ -2727,12 +2727,19 @@
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
+                        <?php
+                          print $_xml->noPassword;
+                        ?>
                     <table class="form" cellspacing="5">
                       <tr>
                         <td align="center" colspan="2">
                           <span id="pf_change_txt"></span>
                         </td>
                       </tr>
+                          <?php
+                          if ($_xml->noPassword == '0')
+                          {
+                          ?>
                       <tr>
                         <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
@@ -2741,8 +2748,11 @@
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
+                          <?php
+                          }
+                          ?>
                       <tr>
-                        <th>
+                            <th width="30%">
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td>
@@ -2879,7 +2889,9 @@
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Subject</th>
-                        		    <th>Login Enabled</th>
+                          		  <th>Created</th>
+                          		  <th>Fingerprint</th>
+                          		  <th>Login enabled</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       </tr>
                             </thead>

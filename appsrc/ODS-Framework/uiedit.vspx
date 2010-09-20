@@ -146,7 +146,7 @@ function checkRest (form, sel)
         <table cellpadding='10' cellspacing='0' border='0' width='100%'>
           <tr>
             <td class="tab_deck">
-              <table cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
         		    <tr class="navtab_row">
         		      <?vsp
         		         declare btn varchar;
@@ -219,7 +219,7 @@ function checkRest (form, sel)
                   <td class="page_tab_empty" align="center" width="100%">
                      <table cellpadding="0" cellspacing="0">
                         <tr>
-                          <td width="100%" >
+                                <td width="100%">&nbsp;
                           </td>
                         </tr>
                      </table>

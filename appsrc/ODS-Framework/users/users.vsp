@@ -2861,6 +2861,10 @@
                           <span id="pf_change_txt"></span>
                         </td>
                       </tr>
+                          <?vsp
+                          if (xpath_eval ('string (/user/noPassword)', vXml) = '0')
+                          {
+                          ?>
                       <tr>
                         <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
@@ -2869,8 +2873,11 @@
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
+                          <?vsp
+                          }
+                          ?>
                       <tr>
-                        <th>
+                            <th width="30%">
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td>
@@ -3007,7 +3014,9 @@
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Subject</th>
-                        		    <th>Login Enabled</th>
+                          		  <th>Created</th>
+                          		  <th>Fingerprint</th>
+                          		  <th>Login enabled</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       </tr>
                             </thead>

@@ -45,22 +45,33 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
   declare arr, tmp, graph, uri_copy any;
   host := http_host ();
   arr := WS.WS.PARSE_URI ("uri");
+  graph := sioc..get_graph ();
   if (arr [0] = '' or arr[0] = 'mailto')
     "uri" := 'acct:' || arr[2];
   else if (arr [0] = 'http')
     {
-      graph := sioc..get_graph ();
-      uri_copy := "uri";
-      tmp := (sparql define input:storage "" prefix foaf: <http://xmlns.com/foaf/0.1/> 
-      	select ?mbox { graph `iri(?:graph)` { `iri(?:uri_copy)` foaf:mbox ?mbox }});
+      tmp := (sparql define input:storage "" 
+        prefix foaf: <http://xmlns.com/foaf/0.1/> 
+      	select ?mbox where 
+	 { graph `iri(?:graph)` { `iri(?:uri_copy)` foaf:mbox ?mbox }});
       if (tmp is not null)
         {
 	  arr := WS.WS.PARSE_URI (tmp);
     "uri" := 'acct:' || arr[2];
 	}	  
     } 
+  uri_copy := "uri";
   mail := arr[2];
   uname := (select top 1 U_NAME from DB.DBA.SYS_USERS where U_E_MAIL = mail order by U_ID);
+  if (uname is null)
+    {
+      uname := (sparql define input:storage "" 
+      	prefix owl: <http://www.w3.org/2002/07/owl#> 
+        prefix foaf: <http://xmlns.com/foaf/0.1/> 
+      	select ?nick 
+         where { graph `iri(?:graph)` { ?s owl:sameAs `iri(?:uri_copy)` ; foaf:nick ?nick . }});
+    }
+
   if (uname is null)
     signal ('22023', sprintf ('The user account "%s" does not exist', "uri"));
   http ('<?xml version="1.0" encoding="UTF-8"?>\n');
@@ -70,11 +81,7 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
   http (sprintf ('  <Link rel="http://openid.net/signon/1.1/provider" href="http://%{WSHost}s/openid" />\n'));
   http (sprintf ('  <Link rel="http://specs.openid.net/auth/2.0/provider" href="http://%{WSHost}s/openid" />\n'));
   http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/openid" href="%s"/>\n', sioc..user_doc_iri (uname)));
-
-  for select U_NAME from DB.DBA.SYS_USERS where U_E_MAIL = mail do 
-    {
-      http (sprintf ('  <Link rel="%s" href="%s" />\n', sioc..owl_iri ('sameAs'), sioc..person_iri (sioc..user_obj_iri (U_NAME))));
-    }
+  http (sprintf ('  <Link rel="%s" href="%s" />\n', sioc..owl_iri ('sameAs'), sioc..person_iri (sioc..user_obj_iri (uname))));
   http (sprintf ('<Link rel="http://webfinger.net/rel/profile-page" type="text/html" href="%s" />\n', 
 	sioc..person_iri (sioc..user_obj_iri (uname), '')));
   --http (sprintf ('<Link rel="http://portablecontacts.net/spec/1.0#me" href="%s" />\n', sioc..user_doc_iri (uname)));
@@ -200,7 +207,7 @@ create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar
       if (h[0] = '' or h[0] = 'acct' or h[0] = 'mailto')
         mail := h[2];
     }
-  if (mail is null)
+  if (mail is null or position ('@', mail) = 0)
     return null;
 
   domain := subseq (mail, position ('@', mail));

@@ -21,6 +21,11 @@
  *
  */
 
+function showError(msg) {
+  alert(msg);
+  return false;
+}
+
 function toggleControl (ctr1, val, ctr2)
 {
   if (ctr2 == null)
@@ -506,6 +511,22 @@ function sortSelect(obj)
 	for (var i=0; i<o.length; i++) {
 		obj.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 	}
+}
+
+function hiddenCreate(objName, objForm, objValue) {
+  var obj = $(objName);
+  if (!obj) {
+    obj = OAT.Dom.create("input");
+    obj.setAttribute("type", "hidden");
+    obj.setAttribute("name", objName);
+    obj.setAttribute("id", objName);
+    if (!objForm)
+      objForm = document.forms[0];
+    objForm.appendChild(obj);
+  }
+  if (objValue)
+    obj.setAttribute("value", objValue);
+  return obj;
 }
 
 // RDF Relations

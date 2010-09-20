@@ -1650,8 +1650,7 @@ _err:
 grant execute on userMessageStatusSet to GDATA_ODS;
 
 create procedure openIdServer (
-  in openIdUrl varchar,
-  in mode varchar := null) __SOAP_HTTP 'text/xml'
+  in openIdUrl varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -1663,7 +1662,7 @@ create procedure openIdServer (
   errMsg  := '';
 
   declare hdr, xt, loc any;
-  declare url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate, webid varchar;
+  declare url, xrds_url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate, oi_params, oi_priority, webid varchar;
   declare exit handler for sqlstate '*'
   {
     errCode:=501;
@@ -1675,6 +1674,7 @@ create procedure openIdServer (
   oi_srv := null;
   oi2_srv := null;
   oi_delegate := null;
+  oi_params := 'sreg';
   profilePage := ODS.DBA.WF_PROFILE_GET (openIdUrl);
   if (profilePage is not null)
     openIdUrl := profilePage;
@@ -1682,13 +1682,9 @@ create procedure openIdServer (
     {
       webid := ODS..FINGERPOINT_WEBID_GET (null, openIdUrl);
       if (webid is not null)
-	{
 	  openIdUrl := normalize_url_like_browser (webid);
 	}
-    }
 
-  if (DB.DBA.is_empty_or_null (mode))
-  {
     url := openIdUrl;
 again:
   hdr := null;
@@ -1701,6 +1697,13 @@ again:
   }
     if (http_request_header (hdr, 'Content-Type') <> 'application/xrds+xml')
     {
+  	xrds_url := http_request_header (hdr, 'X-XRDS-Location');
+  	if (xrds_url is not null)
+	  {
+	    cnt := http_client (xrds_url, n_redirects=>15);
+	    goto _xrds;
+	  }
+
   xt := xtree_doc (cnt, 2);
   oi_srv := cast (xpath_eval ('//link[contains (@rel, "openid.server")]/@href', xt) as varchar);
       oi2_srv := cast (xpath_eval ('//link[contains (@rel, "openid2.provider")]/@href', xt) as varchar);
@@ -1710,22 +1713,51 @@ again:
         oi_version := '2.0';
         oi_srv := oi2_srv;
       }
-    } else {
-      xt := xtree_doc (cnt);
-      oi_version := '2.0';
-      oi_srv := cast (xpath_eval ('//XRD/Service/URI', xt) as varchar);
-    }
   }
-  else if (mode = 'google')
+  else
   {
-    oi_version := '2.0';
-    oi_srv := 'https://www.google.com/accounts/o8/ud';
+  _xrds:;
+      xt := xtree_doc (cnt);
+
+    -- version 2.0
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+    {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://specs.openid.net/auth/2.0/signon"]/@priority', xt) as varchar);
+      oi_version := '2.0';
+      goto _params;
+    }
+
+    -- version 1.1
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.1"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+    {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.1"]/@priority', xt) as varchar);
+      oi_version := '1.1';
+      goto _params;
   }
 
+    -- version 1.0
+    oi_srv := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.0"]/URI/text()', xt) as varchar);
+    if (not isnull (oi_srv))
+  {
+      oi_priority := cast (xpath_eval ('/XRDS/XRD/Service[Type/text() = "http://openid.net/signon/1.0"]/@priority', xt) as varchar);
+      oi_version := '1.1';
+    }
+  _params:;
+    if (isnull (oi_srv))
+      signal ('501', 'Invalid OpenID URL');
+
+    if (not isnull (xpath_eval (sprintf ('/XRDS/XRD/Service[@priority = "%s"]/Type[text() = "http://openid.net/srv/ax/1.0"]/text()', oi_priority), xt)))
+      oi_params := 'ax';
+  }
+
+_exit:;
   http('<version>'||oi_version||'</version>',resXml);
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);
   http('<identity>'||openIdUrl||'</identity>',resXml);
+  http('<params>'||oi_params||'</params>',resXml);
 
 _end:
   if(errCode<>0)

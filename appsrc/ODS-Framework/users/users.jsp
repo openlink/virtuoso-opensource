@@ -492,8 +492,13 @@
             {
               params = httpParam( "", "sid", $_sid) +
                        httpParam("&", "realm", $_realm) +
-                       httpParam("&", "newPassword", getParameter(items, request, "pf_newPassword")) +
-                       httpParam("&", "oldPassword", getParameter(items, request, "pf_oldPassword"));
+                       httpParam("&", "new_password", getParameter(items, request, "pf_newPassword"));
+              if (getParameter(items, request, "pf_oldPassword") == null)
+              {
+                params+= httpParam("&", "old_password", "x");
+              } else {
+                params+= httpParam("&", "old_password", getParameter(items, request, "pf_oldPassword"));
+              }
               $_retValue = httpRequest ("POST", "user.password_change", params);
               if ($_retValue.indexOf("<failed>") == 0)
               {
@@ -2897,6 +2902,10 @@
                           <span id="pf_change_txt"></span>
                         </td>
                       </tr>
+                          <%
+                          if (xpathEvaluate($_document, "/user/noPassword").equals("0"))
+                          {
+                          %>
                       <tr>
                         <th width="30%">
                           <label for="pf_oldPassword">Old Password</label>
@@ -2905,8 +2914,11 @@
                           <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
                         </td>
                       </tr>
+                          <%
+                          }
+                          %>
                       <tr>
-                        <th>
+                            <th width="30%">
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td>
@@ -3043,7 +3055,9 @@
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Subject</th>
-                        		    <th>Login Enabled</th>
+                          		  <th>Created</th>
+                          		  <th>Fingerprint</th>
+                          		  <th>Login enabled</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>

@@ -101,7 +101,7 @@
                 <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WACL_NAME')" format="%s"/>
               </td>
               <td nowrap="nowrap">
-                <v:label value="--SIOC..waGroup(self.u_id, (control.vc_parent as vspx_row_template).te_column_value('WACL_NAME'))" format="%s"/>
+                <v:label value="--SIOC..acl_group_iri (self.u_id, (control.vc_parent as vspx_row_template).te_column_value('WACL_NAME'))" format="%s"/>
               </td>
               <td nowrap="nowrap">
                 <v:button name="fgEdit" action="simple" style="url" value="''" xhtml_class="img_button">
@@ -180,7 +180,7 @@
                 <v:label for="fg_name" value="Group name"/>
               </th>
               <td>
-                <v:text name="fg_name" value="--self.acl_name" xhtml_class="field-short"/>
+                <v:text name="fg_name" value="--self.acl_name" xhtml_size="40" />
               </td>
             </tr>
             <tr>
@@ -188,7 +188,7 @@
                 <v:label for="fg_description" value="Group description"/>
               </th>
               <td>
-                <v:text name="fg_description" value="--self.acl_description" xhtml_class="field-text"/>
+                <v:text name="fg_description" value="--self.acl_description" xhtml_size="80" />
               </td>
             </tr>
           </table>

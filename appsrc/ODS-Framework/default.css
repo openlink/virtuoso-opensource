@@ -1082,6 +1082,47 @@ img.button {
   margin-bottom: -3px;
 }
 
+div.form {
+  width: 550px;
+  background-color: #FFF;
+  margin: 5px;
+}
+
+div.header {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+div.footer {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+table.form {
+  width: 100%;
+}
+
+table.form th {
+  text-align: right;
+  padding-right: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+table.form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
 .tabs {
 	margin-top: 24px;
 	list-style-type: none;
@@ -1111,4 +1152,8 @@ img.button {
 
 .tabs li.tab:hover {
 	background-color: #FFF;
+}
+
+#lf_logo {
+  margin: 50px 25px 25px 30px
 }

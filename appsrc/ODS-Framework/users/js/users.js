@@ -170,13 +170,10 @@ function isErr(xmlDoc) {
 	return 0;
 }
 
-function widgetToggle (elm)
-{
+function widgetToggle(elm) {
   var _divs = elm.parentNode.parentNode.parentNode.getElementsByTagName ('div');
-  for (var i = 0; i < _divs.length; i++)
-  {
-    if (_divs[i].className == 'w_content')
-    {
+  for (var i = 0; i < _divs.length; i++) {
+    if (_divs[i].className == 'w_content') {
        if (_divs[i].style.display == 'none')
          OAT.Dom.show (_divs[i]);
        else
@@ -562,15 +559,22 @@ function init() {
             data[property] = params[param];
         }
         var data = {};
-        if (typeof (uriParams['openid.ns.ax']) != 'undefined' && uriParams['openid.ns.ax'] == 'http://openid.net/srv/ax/1.0') {
-          x(uriParams, 'openid.ax.value.country', data, 'homeCountry');
-          x(uriParams, 'openid.ax.value.email', data, 'mbox');
-          x(uriParams, 'openid.ax.value.firstname', data, 'firstName');
-          x(uriParams, 'openid.ax.value.fname', data, 'name');
-          x(uriParams, 'openid.ax.value.language', data, 'language');
-          x(uriParams, 'openid.ax.value.lastname', data, 'family_name');
-          x(uriParams, 'openid.ax.value.fname', data, 'nick');
-          x(uriParams, 'openid.ax.value.timezone', data, 'timezone');
+        var ns;
+        for (var prop in uriParams) {
+          if (uriParams.hasOwnProperty(prop) && (uriParams[prop] == 'http://openid.net/srv/ax/1.0')) {
+            ns = prop.replace('openid.ax.', '');
+            break;
+          }
+        }
+        if (ns) {
+          x(uriParams, 'openid.'+ns+'.value.country', data, 'homeCountry');
+          x(uriParams, 'openid.'+ns+'.value.email', data, 'mbox');
+          x(uriParams, 'openid.'+ns+'.value.firstname', data, 'firstName');
+          x(uriParams, 'openid.'+ns+'.value.fname', data, 'name');
+          x(uriParams, 'openid.'+ns+'.value.language', data, 'language');
+          x(uriParams, 'openid.'+ns+'.value.lastname', data, 'family_name');
+          x(uriParams, 'openid.'+ns+'.value.fname', data, 'nick');
+          x(uriParams, 'openid.'+ns+'.value.timezone', data, 'timezone');
         } else {
         x(uriParams, 'openid.sreg.nickname', data, 'nick');
         x(uriParams, 'openid.sreg.email', data, 'mbox');
@@ -1302,7 +1306,7 @@ function pfShowSeeks() {
 }
 
 function pfShowCertificates() {
-  pfShowList('user.certificates.list', 'pf26', 'No Items', [1, 2], 0, function (data){pfShowCertificates();});
+  pfShowList('user.certificates.list', 'pf26', 'No Items', [1, 2, 3, 4], 0, function (data){pfShowCertificates();});
 }
 
 function isShow(element) {
@@ -1372,22 +1376,6 @@ function hideFacebookData() {
 	o.secret = facebookData.secret;
 	facebookData = o;
 }
-}
-
-function hiddenCreate(objName, objForm, objValue) {
-	var obj = $(objName);
-	if (!obj) {
-		obj = OAT.Dom.create("input");
-		obj.setAttribute("type", "hidden");
-		obj.setAttribute("name", objName);
-		obj.setAttribute("id", objName);
-		if (!objForm)
-			objForm = document.forms[0];
-		objForm.appendChild(obj);
-	}
-	if (objValue)
-		obj.setAttribute("value", objValue);
-	return obj;
 }
 
 function tagValue(xml, tName) {
@@ -2097,6 +2085,11 @@ function ufProfileCallback(data) {
       pfShowRows("y2", tagValue(user, "businessMessaging"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1}, fld_2: {value: val2, cssText: 'width: 220px;'}});});
 
       // security
+      if (tagValue(user, 'noPassword') == '1') {
+        OAT.Dom.hide('tr_oldPassword');
+      } else {
+        OAT.Dom.show('tr_oldPassword');
+      }
 			fieldUpdate(user, 'securityOpenID', 'pf_securityOpenID');
 
       var S = tagValue(user, 'securityFacebookID');
@@ -2866,8 +2859,8 @@ function openIdLoginURL(uriParams) {
   var openIdAssoc_handle = uriParams['openid.assoc_handle'];
   var openIdSigned       = uriParams['openid.signed'];
 
-  var url = openIdServer +
-    '?openid.mode=check_authentication' +
+  var url = openIdServer + ((openIdServer.lastIndexOf('?') != -1)? '&': '?') +
+    'openid.mode=check_authentication' +
     '&openid.assoc_handle=' + encodeURIComponent (openIdAssoc_handle) +
     '&openid.sig='          + encodeURIComponent (openIdSig) +
     '&openid.signed='       + encodeURIComponent (openIdSigned);
@@ -2896,15 +2889,19 @@ function openIdAuthenticate(prefix) {
     if (error.length)
       showError('Invalied OpenID Server');
 
-    var oidVersion = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/version', {})[0]);
     var oidServer = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/server', {})[0]);
-    var oidDelegate = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/delegate', {})[0]);
-
-    if (!(oidServer && oidServer.length > 0))
+    if (!oidServer || !oidServer.length)
       showError(' Cannot locate OpenID server');
 
-    var oidIdent = $v(prefix+'_openId');
-    if (oidDelegate && oidDelegate.length > 0)
+    var oidVersion = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/version', {})[0]);
+    var oidDelegate = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/delegate', {})[0]);
+		var oidUrl = OAT.Xml.textValue(OAT.Xml.xpath(xml, '/openIdServer_response/identity', {})[0]);
+    var oidParams = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/params', {})[0]);
+    if (!oidParams || !oidParams.length)
+      oidParams = 'sreg';
+
+    var oidIdent = oidUrl;
+    if (oidDelegate && oidDelegate.length)
       oidIdent = oidDelegate;
 
     var thisPage  = document.location.protocol +
@@ -2916,8 +2913,8 @@ function openIdAuthenticate(prefix) {
 
     var trustRoot = document.location.protocol + '//' + document.location.host;
 
-    var S = oidServer +
-      '?openid.mode=checkid_setup' +
+    var S = oidServer + ((oidServer.lastIndexOf('?') != -1)? '&': '?') +
+      'openid.mode=checkid_setup' +
       '&openid.return_to=' + encodeURIComponent(thisPage);
 
     if (oidVersion == '1.0')
@@ -2926,13 +2923,15 @@ function openIdAuthenticate(prefix) {
 
     if (oidVersion == '2.0')
       S +='&openid.ns=' + encodeURIComponent('http://specs.openid.net/auth/2.0')
-        + '&openid.claimed_id=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
-        + '&openid.identity=' + encodeURIComponent('http://specs.openid.net/auth/2.0/identifier_select')
+        + '&openid.claimed_id=' + encodeURIComponent(oidIdent)
+        + '&openid.identity=' + encodeURIComponent(oidIdent)
 
     if (prefix == 'rf') {
-      if (oidVersion == '1.0')
-      S += '&openid.sreg.optional='+encodeURIComponent('fullname,nickname,dob,gender,postcode,country,timezone') + '&openid.sreg.required=' + encodeURIComponent('email,nickname');
-      if (oidVersion == '2.0')
+      if (oidParams = 'sreg')
+        S +='&openid.sreg.optional='+encodeURIComponent('fullname,nickname,dob,gender,postcode,country,timezone')
+          + '&openid.sreg.required=' + encodeURIComponent('email,nickname');
+
+      if (oidParams = 'ax')
         S +='&openid.ns.ax=http://openid.net/srv/ax/1.0'
           + '&openid.ax.mode=fetch_request'
           + '&openid.ax.required=country,email,firstname,fname,language,lastname,timezone'
@@ -2947,11 +2946,6 @@ function openIdAuthenticate(prefix) {
     document.location = S;
   };
   OAT.AJAX.POST ("/ods_services/Http/openIdServer", q, x);
-}
-
-function showError(msg) {
-	alert(msg);
-	return false;
 }
 
 function showTitle(txt) {
