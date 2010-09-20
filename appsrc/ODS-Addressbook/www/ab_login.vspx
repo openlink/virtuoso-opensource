@@ -34,8 +34,14 @@
       if (page_name = 'error.vspx')
         return;
 
-      if (AB.WA.check_grants2 (self.account_role, page_name))
+      if (AB.WA.check_grants (self.account_role, page_name))
         return;
+
+      if ((self.account_role = 'expire') and not is_empty_or_null (self.sid))
+      {
+        self.vc_redirect (sprintf ('error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
+        return;
+      }
 
       if (self.account_role = 'expire')
       {

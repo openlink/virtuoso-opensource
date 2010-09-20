@@ -229,7 +229,9 @@
 
   <v:method name="viewImage" arglist="inout fValue any">
     <![CDATA[
-       if (self.abAction = 'view')
+      if (self.abAction <> 'view')
+        return;
+
          if (is_empty_or_null (fValue))
          {
            http ('&nbsp;');
@@ -241,7 +243,9 @@
 
   <v:method name="viewTags" arglist="inout fValue any">
     <![CDATA[
-      if (self.abAction = 'view')
+      if (self.abAction <> 'view')
+        return;
+
         if (is_empty_or_null (fValue))
         {
           http ('&nbsp;');
@@ -320,7 +324,9 @@
         {
           image := 'c.gif';
           image2 := 'folder_16.png';
-        } else if (AB.WA.vector_contains(self.abState, nodes[N+2])) {
+        }
+        else if (AB.WA.vector_contains(self.abState, nodes[N+2]))
+        {
           image := 'minus.gif';
           image2 := 'folder_open_16.png';
           alt := 'Close Node';
@@ -2517,7 +2523,7 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                   <th width="50px">Action</th>
                               </tr>
                             </thead>
@@ -2541,7 +2547,7 @@
                                 L := L + 1;
                                   if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                                   }
@@ -2554,7 +2560,7 @@
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                           </td>
                         </vm:if>
                       </tr>
@@ -2563,7 +2569,7 @@
               </div>
             </div>
             <div class="new-form-footer">
-                <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
+                <v:button name="ab_save" action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
                 <v:on-post>
                   <![CDATA[
                       declare N, tmp any;
