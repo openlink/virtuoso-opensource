@@ -346,7 +346,6 @@ bibo:shortTitle rdfs:subPropertyOf virtrdf:label .
 <http://s.opencalais.com/1/type/er/Company> rdfs:subClassOf gr:BusinessEntity .
 gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://dbpedia.org/ontology/Company> rdfs:subClassOf gr:BusinessEntity .
-<http://dbpedia.org/property/name> rdfs:subPropertyOf foaf:name .
 <http://www.w3.org/2002/12/cal/ical#summary> rdfs:subPropertyOf rdfs:label .
 <http://usefulinc.com/ns/doap#name> rdfs:subPropertyOf rdfs:label .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasModelName> rdfs:subPropertyOf virtrdf:label .
