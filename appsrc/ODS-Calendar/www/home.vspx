@@ -2580,7 +2580,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_0" value="" %s />', CAL.WA.checkedAttribute (self.v_repeat, '')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_0" value="--'No repeat'" />
                     </td>
                   </tr>
@@ -2592,7 +2592,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_1" value="D1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D1')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_1" value="--'Every'" />
                       <v:text name="e_repeat_param1_D1" null-value="''" value="--self.repeatParam (self.v_repeat, 'D1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_1\');'" xhtml_class="textbox" xhtml_size="1" /> day(s)
                     </td>
@@ -2602,7 +2602,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_2" value="D2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D2')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_2" value="--'Every weekday (Monday-Friday)'" />
                     </td>
                   </tr>
@@ -2614,7 +2614,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_3" value="W1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'W1')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_3" value="--'Every'" />
                       <v:text name="e_repeat_param1_W1" null-value="''" value="--self.repeatParam (self.v_repeat, 'W1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_3\');'" xhtml_class="textbox" xhtml_size="1" /> week(s) on
                       <?vsp
@@ -2636,7 +2636,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_4" value="M1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M1')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_4" value="--'Every'" />
                       <v:select-list name="e_repeat_param1_M1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_4\');'" >
                         <v:on-init>
@@ -2687,7 +2687,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M2')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_5" value="--'Every'" />
                       <v:select-list name="e_repeat_param1_M2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_5\');'">
                         <v:on-init>
@@ -2785,7 +2785,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_6" value="Y1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y1')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_6" value="--'Every'" />
                       <v:text name="e_repeat_param1_Y1" null-value="''" value="--self.repeatParam (self.v_repeat, 'Y1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_6\');'" xhtml_class="textbox" xhtml_size="1" /> year(s)
                       on
@@ -2849,7 +2849,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_7" value="Y2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y2')));
                       ?>
-                      <xsl:call-template name="nbsp"/>
+                                &nbsp;
                       <vm:label for="e_repeat_7" value="--'The'" />
                       <v:select-list name="e_repeat_param1_Y2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_7\');'">
                         <v:on-init>
@@ -2971,7 +2971,7 @@
                     S := 'checked="checked"';
                   http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_0" value="0" %s />', S));
                 ?>
-                <xsl:call-template name="nbsp"/>
+                                &nbsp;
                 <vm:label for="e_repeatUntilKind_0" value="--'No end date'" />
               </td>
             </tr>
@@ -2985,9 +2985,9 @@
                     S := 'checked="checked"';
                   http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_1" value="1" %s />', S));
                 ?>
-                <xsl:call-template name="nbsp"/>
+                                &nbsp;
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
-                <xsl:call-template name="nbsp"/>
+                                &nbsp;
                                 <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('datePopup(\'e_repeatUntil\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                                 <a href="#" id="e_repeatUntil_select" onclick="datePopup('e_repeatUntil', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
@@ -3006,7 +3006,7 @@
                     Notes
                   </th>
                   <td>
-                          <textarea id="e_notes" name="e_notes" style="width: 400; height: 170"><?vsp http (self.v_notes); ?></textarea>
+                          <textarea id="e_notes" name="e_notes" style="width: 400; height: 170"><?vsp http (coalesce (self.v_notes, '')); ?></textarea>
                       <![CDATA[
                             <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                             <script type="text/javascript">
@@ -3026,7 +3026,7 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                 <th width="50px">Action</th>
                               </tr>
                             </thead>
@@ -3050,7 +3050,7 @@
                                 L := L + 1;
                                   if (self.cAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
                                   } else {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
                                   }
@@ -3063,7 +3063,7 @@
                         </td>
                         <vm:if test="self.cAction <> 'view'">
                         <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                         </td>
                         </vm:if>
                       </tr>
@@ -3072,7 +3072,7 @@
           </div>
         </div>
         <div class="new-form-footer">
-                <v:button action="simple" name="e_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_class="form-button">
+                <v:button action="simple" name="e_create" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -3085,7 +3085,7 @@
               ]]>
             </v:on-post>
           </v:button>
-                <v:button action="simple" name="e_create_new" value="Create and New" enabled="--case when ((self.cScope = 'events') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
+                <v:button action="simple" name="e_create_new" value="Create and New" enabled="--case when ((self.cScope = 'events') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -3331,9 +3331,7 @@
           <div class="tabs">
                   &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="0" caption="Main" />
                   &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="1" caption="Notes" />
-                  <vm:if test="CAL.WA.domain_is_public (self.domain_id) = 2">
-                  &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="2" caption="Access" />
-                  </vm:if>
+                  &nbsp;<vm:tabCaption tab="t" tabsCount="3" tabNo="2" caption="Sharing" />
           </div>
           <div class="contents">
             <div id="t_content_0" class="tabContent" style="display: none;">
@@ -3536,7 +3534,7 @@
                     Notes
                   </th>
                   <td>
-                          <textarea id="t_notes" name="t_notes" style="width: 400; height: 170"><?vsp http (self.v_notes); ?></textarea>
+                          <textarea id="t_notes" name="t_notes" style="width: 400; height: 170"><?vsp http (coalesce (self.v_notes, '')); ?></textarea>
                     <![CDATA[
                             <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                             <script type="text/javascript">
@@ -3556,7 +3554,7 @@
                               <tr>
                                 <th width="15%">Type</th>
                                 <th>Value</th>
-                                <th width="80px" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                                 <th width="50px">Action</th>
                               </tr>
                             </thead>
@@ -3593,7 +3591,7 @@
                         </td>
                         <vm:if test="self.cAction <> 'view'">
                         <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
                         </td>
                         </vm:if>
                       </tr>
@@ -3801,7 +3799,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp" />
+                      &nbsp;
                   <b><vm:label for="icSource_0" value="--'File'" /></b>
                 </td>
               </tr>
@@ -3814,7 +3812,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp" />
+                      &nbsp;
                   <b><vm:label for="icSource_1" value="--'WebDAV'" /></b>
                 </td>
               </tr>
@@ -3827,7 +3825,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                  <xsl:call-template name="nbsp" />
+                      &nbsp;
                   <b><vm:label for="icSource_2" value="--'URL'" /></b>
               </td>
             </tr>
@@ -3853,7 +3851,7 @@
                       </span>
                     </td>
                 </tr>
-                  <tr id="imp_tr_31" style="display: <?V case when self.icSource < 1 then 'none' else 'run-in' end ?>;">
+                  <tr id="imp_tr_31" style="<?V case when self.icSource < 1 then 'display: none;' else '' end ?>;">
                     <th>
                       User
                   </th>
@@ -3861,7 +3859,7 @@
                       <v:text name="i_user" value="--self.icUser" xhtml_class="" />
                     </td>
                   </tr>
-                  <tr id="imp_tr_32" style="display: <?V case when self.icSource < 1 then 'none' else 'run-in' end ?>;">
+                  <tr id="imp_tr_32" style="<?V case when self.icSource < 1 then 'display: none;' else '' end ?>;">
                     <th>
                       Password
                     </th>
@@ -3897,7 +3895,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th />
+                    <th></th>
                     <td>
                       <label>
                         <v:check-box name="i_sync" is-boolean="1" true-value="1" false-value="0" value="--self.icSync" />
@@ -4035,7 +4033,7 @@
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      <xsl:call-template name="nbsp" />
+                      &nbsp;
                       <b><vm:label for="ex_destination_type_1" value="--'WebDAV'" /></b>
                     </td>
                   </tr>
@@ -4048,7 +4046,7 @@
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      <xsl:call-template name="nbsp" />
+                      &nbsp;
                       <b><vm:label for="ex_destination_type_2" value="--'URL'" /></b>
                     </td>
                   </tr>
@@ -4068,7 +4066,7 @@
                       </v:button>
                     </td>
                   </tr>
-                  <tr id="ex_tr_0" style="display: <?V case when self.exType < 1 then 'none' else 'run-in' end ?>;">
+                  <tr id="ex_tr_0" style="<?V case when self.exType < 1 then 'display: none;' else '' end ?>;">
                     <th>
                       User
                     </th>
@@ -4076,7 +4074,7 @@
                       <v:text name="ex_user" value="--self.exUser" xhtml_class="" />
                     </td>
                   </tr>
-                  <tr id="ex_tr_1" style="display: <?V case when self.exType < 1 then 'none' else 'run-in' end ?>;">
+                  <tr id="ex_tr_1" style="<?V case when self.exType < 1 then 'display: none;' else '' end ?>;">
                     <th>
                       Password
                     </th>
@@ -4090,7 +4088,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th />
+                    <th></th>
                     <td>
                       <label>
                         <v:check-box name="ex_events" is-boolean="1" true-value="1" false-value="0" value="--self.exEvents" />
@@ -4099,7 +4097,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th />
+                    <th></th>
                     <td>
                       <label>
                         <v:check-box name="ex_tasks" is-boolean="1" true-value="1" false-value="0" value="--self.exTasks" />
@@ -4768,7 +4766,7 @@
                     </tr>
                   </vm:if>
                         <tr>
-                          <th />
+                    <th></th>
                           <td>
                       <label>
                         <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', coalesce (self.ve_options, vector ()), 1)" />
@@ -4777,7 +4775,7 @@
                           </td>
                         </tr>
                         <tr>
-                          <th />
+                    <th></th>
                           <td>
                       <label>
                         <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', coalesce (self.ve_options, vector ()), 1)" />
@@ -5186,11 +5184,11 @@
                               <?vsp
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_0" value="0" %s />', CAL.WA.checkedAttribute (CAL.WA.settings_chars (self.settings), 0)));
                               ?>
-                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_0" value="--'show everything'" />
+                              &nbsp;<vm:label for="s_chars_0" value="--'show everything'" />
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <?vsp
                                 declare S varchar;
@@ -5200,9 +5198,9 @@
                                   S := 'checked="checked"';
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_1" value="1" %s />', S));
                               ?>
-                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp" />
+                              &nbsp;<vm:label for="s_chars_1" value="--'show no more than'" />&nbsp;
                               <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3" />
-                              <xsl:call-template name="nbsp" /><vm:label for="s_chars_1" value="--'characters'" /><xsl:call-template name="nbsp" />
+                              &nbsp;<vm:label for="s_chars_1" value="--'characters'" />&nbsp;
                             </td>
                           </tr>
                         <tr>
@@ -5230,14 +5228,14 @@
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_showTasks" xhtml_id="s_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
                               <vm:label for="s_showTasks" value="Show tasks in Calendar"/>
                             </td>
                         </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <label>
                                 <v:check-box name="s_attendees" xhtml_id="s_attendees" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('mailAttendees', self.settings, '1') as integer)" />
@@ -5259,14 +5257,14 @@
                           </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_e_column_1" xhtml_id="s_e_column_1" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('event_E_UPDATED', self.settings, '1') as integer)" />
                               <vm:label for="s_e_column_1" value="Updated"/>
                           </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_e_column_2" xhtml_id="s_e_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('event_E_CREATED', self.settings, '0') as integer)" />
                               <vm:label for="s_e_column_2" value="Created"/>
@@ -5282,42 +5280,42 @@
                           </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_5" xhtml_id="s_t_column_5" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('task_E_PRIORITY', self.settings, '1') as integer)" />
                               <vm:label for="s_t_column_5" value="Priority"/>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_6" xhtml_id="s_t_column_6" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_START', self.settings, '0') as integer)" />
                               <vm:label for="s_t_column_6" value="Start Date"/>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_7" xhtml_id="s_t_column_7" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_END', self.settings, '1') as integer)" />
                               <vm:label for="s_t_column_7" value="Due Date"/>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_2" xhtml_id="s_t_column_2" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_COMPLETED', self.settings, '0') as integer)" />
                               <vm:label for="s_t_column_2" value="Completed"/>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_3" xhtml_id="s_t_column_3" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_UPDATED', self.settings, '0') as integer)" />
                               <vm:label for="s_t_column_3" value="Updated"/>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <v:check-box name="s_t_column_4" xhtml_id="s_t_column_4" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('task_E_CREATED', self.settings, '0') as integer)" />
                               <vm:label for="s_t_column_4" value="Created"/>
@@ -5332,25 +5330,25 @@
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <?vsp self.showColorRef ('In Progress'); ?>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <?vsp self.showColorRef ('Completed'); ?>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <?vsp self.showColorRef ('Waiting'); ?>
                             </td>
                           </tr>
                           <tr>
-                            <th />
+                            <th></th>
                             <td>
                               <?vsp self.showColorRef ('Deferred'); ?>
                             </td>
@@ -6099,7 +6097,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th />
+                        <th></th>
                         <td>
                           <?vsp
                             http (sprintf ('<input type="checkbox" value="1" name="sg_enable" id="sg_enable" %s />', CAL.WA.checkedAttribute (self.vg_enable)));
@@ -6411,7 +6409,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th />
+                        <th></th>
                         <td>
                           <?vsp
                             http (sprintf ('<input type="checkbox" value="1" name="ss_visible" id="ss_visible" %s />', CAL.WA.checkedAttribute (self.vs_visible)));
