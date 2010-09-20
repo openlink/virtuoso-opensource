@@ -8325,3 +8325,32 @@ create procedure RM_GET_TZ (in tz varchar)
     'ZP6', -06*60+00
  ));
 }
+;
+
+-- scheduler task if needed to keep volume under certain limit
+create procedure CLEAN_SPONGE (in d int := 30, in n int := 2000)
+{
+  declare res, stat, msg varchar;
+  declare inx int;
+
+  declare exit handler for sqlstate '*'
+    {
+      log_enable (1);
+      resignal;
+    }
+  ;
+  log_enable (2);
+  inx := 0;
+  for select HS_LOCAL_IRI as graph from DB.DBA.SYS_HTTP_SPONGE where HS_EXPIRATION < dateadd ('day', -1*d, now ()) do
+    {
+       inx := inx + 1;
+       stat := '00000';
+       exec ('sparql clear graph <'||graph||'>', stat, msg);
+       if (inx > n)
+         goto endp;
+    }
+ endp:
+  log_enable (1);
+}
+;
+
