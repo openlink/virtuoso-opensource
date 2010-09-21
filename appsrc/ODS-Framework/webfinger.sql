@@ -78,8 +78,8 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
   http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0">\n');
   http (sprintf ('<Subject>%s</Subject>\n', "uri"));
   http (sprintf ('  <Alias>%s</Alias>\n', sioc..user_doc_iri (uname)));
-  http (sprintf ('  <Link rel="http://openid.net/signon/1.1/provider" href="http://%{WSHost}s/openid" />\n'));
-  http (sprintf ('  <Link rel="http://specs.openid.net/auth/2.0/provider" href="http://%{WSHost}s/openid" />\n'));
+  --http (sprintf ('  <Link rel="http://openid.net/signon/1.1/provider" href="http://%{WSHost}s/openid" />\n'));
+  http (sprintf ('  <Link rel="http://specs.openid.net/auth/2.0/provider" href="%s" />\n', sioc..user_doc_iri (uname)));
   http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/openid" href="%s"/>\n', sioc..user_doc_iri (uname)));
   http (sprintf ('  <Link rel="%s" href="%s" />\n', sioc..owl_iri ('sameAs'), sioc..person_iri (sioc..user_obj_iri (uname))));
   http (sprintf ('<Link rel="http://webfinger.net/rel/profile-page" type="text/html" href="%s" />\n', 
@@ -189,7 +189,7 @@ create procedure WF_PROFILE_GET (in acct varchar)
 
 create procedure FINGERPOINT_WEBID_GET (in cert varchar := null, in mail varchar := null)
 {
-  declare webid, domain, page, template, url, fp, links, head, xd, tmpcert, res, tmp, link, qr, xd, xp any;
+  declare webid, domain, page, template, url, fp, links, head, xd, tmpcert, res, tmp, link, qr, xp any;
 
   res := null;
   declare exit handler for sqlstate '*'

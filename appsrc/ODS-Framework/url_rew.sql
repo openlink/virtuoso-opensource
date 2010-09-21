@@ -247,6 +247,12 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
 -- ODS IRI rewrite rules
 -- IMPORTANT: all rules are processed and last matching will win
 --
+create procedure DB.DBA.ODS_URLREW_XRDS (in path varchar)
+{
+  return sprintf ('X-XRDS-Location: http://%{WSHost}s%s/yadis.xrds', path);
+}
+;
+
 
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
@@ -257,7 +263,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
     NULL,
     2,
     NULL,
-    'X-XRDS-Location: yadis.xrds\r\n');
+    '^{sql:DB.DBA.ODS_URLREW_XRDS}^');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_yadis', 1,
     '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,

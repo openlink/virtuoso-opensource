@@ -752,6 +752,8 @@ function lfCallback(oldIndex, newIndex) {
     $('lf_login').value = 'Facebook Login';
   if (newIndex == 3)
     $('lf_login').value = 'WebID Login';
+
+  pageFocus('lf_page_'+newIndex);
 }
 
 function rfCallback(oldIndex, newIndex) {
@@ -763,6 +765,8 @@ function rfCallback(oldIndex, newIndex) {
     $('rf_signup').value = 'Facebook Sign Up';
   if (newIndex == 3)
     $('rf_signup').value = 'WebID Sign Up';
+
+  pageFocus('rf_page_'+newIndex);
 }
 
 function myCancel(prefix)
