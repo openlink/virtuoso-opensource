@@ -193,6 +193,8 @@ function rfCallback(oldIndex, newIndex) {
     $('rf_signup').value = 'Facebook Sign Up';
   if (newIndex == 3)
     $('rf_signup').value = 'WebID Sign Up';
+
+  pageFocus('rf_page_'+newIndex);
 }
 
 function rfStart() {

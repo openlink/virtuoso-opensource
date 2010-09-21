@@ -130,6 +130,8 @@ function lfCallback(oldIndex, newIndex) {
     $('lf_login').value = 'Facebook Login';
   if (newIndex == 3)
     $('lf_login').value = 'WebID Login';
+
+  pageFocus('lf_page_'+newIndex);
 }
 
 function lfStart() {

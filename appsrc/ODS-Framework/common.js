@@ -529,6 +529,24 @@ function hiddenCreate(objName, objForm, objValue) {
   return obj;
 }
 
+function pageFocus(tab) {
+  var div = $(tab);
+  if (!div)
+    return;
+
+  var inputs = div.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++)
+  {
+    var ctrl = inputs[i];
+    if ((ctrl.type.indexOf ('text') != -1) || (ctrl.type == 'password')) {
+      try {
+        ctrl.focus();
+      } catch (e) {}
+      break;
+    }
+  }
+}
+
 // RDF Relations
 // ---------------------------------------------------------------------------
 var RDF = new Object();
