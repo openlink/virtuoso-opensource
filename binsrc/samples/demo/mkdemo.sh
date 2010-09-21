@@ -379,8 +379,8 @@ then
     [ -f ods_wiki_dav.vad ] && DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
 fi
 
-[ -f demo_dav.vad ] && DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
 [ -f tutorial_dav.vad ] && DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
+[ -f demo_dav.vad ] && DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
 
 DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 
