@@ -1783,7 +1783,7 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
   if (not DAV_AUTHENTICATE_SSL_CONDITION (id, what))
     goto _exit;
 
-  declare graph, foafIRI, foafGraph, loadIRI, localIRI any;
+  declare graph, baseGraph, foafIRI, foafGraph, loadIRI, localIRI any;
   declare S, V, info, st, msg, data, meta any;
 
   set_user_id ('dba');
@@ -1857,8 +1857,10 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
         lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
       declare resMode varchar;
+
       authenticated:
       graph := SIOC.DBA.dav_res_iri (path);
+      baseGraph := SIOC.DBA.get_graph ();
       --dbg_obj_print ('graph', graph);
       resMode := '';
       if (req[2] = ascii ('1'))
@@ -1874,29 +1876,41 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
         ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
         ' select * \n' ||
-        '   from <%s> \n' ||
         '  where { \n' ||
         '          { \n' ||
+        '            graph <%s> \n' ||
+        '            { \n' ||
         '            ?rule rdf:type acl:Authorization ; \n' ||
         '                  acl:accessTo <%s> ; \n' ||
         '                  acl:mode acl:%s ; \n' ||
         '                  acl:agent <%s>. \n' ||
         '          } \n' ||
+        '          } \n' ||
         '          union \n' ||
         '          { \n' ||
+        '            graph <%s> \n' ||
+        '            { \n' ||
         '            ?rule rdf:type acl:Authorization ; \n' ||
         '                  acl:accessTo <%s> ; \n' ||
         '                  acl:mode acl:%s ; \n' ||
         '                  acl:agentClass foaf:Agent. \n' ||
         '          } \n' ||
+        '          } \n' ||
         '          union \n' ||
         '          { \n' ||
+        '            graph <%s> \n' ||
+        '            { \n' ||
         '            ?rule rdf:type acl:Authorization ; \n' ||
         '                  acl:accessTo <%s> ; \n' ||
         '                  acl:mode acl:%s ; \n' ||
         '                  acl:agentClass ?group. \n' ||
+        '            } \n' ||
+        '            graph ?g \n' ||
+        '            { \n' ||
         '                  ?group rdf:type foaf:Group ; \n' ||
         '                  foaf:member <%s>. \n' ||
+        '              filter (?g like <%s/private/%%>). \n' ||
+        '            } \n' ||
         '          } \n' ||
         '        }\n',
         graph,
@@ -1904,10 +1918,13 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
         resMode,
         foafIRI,
         graph,
-        resMode,
         graph,
         resMode,
-        foafIRI);
+        graph,
+        graph,
+        resMode,
+        foafIRI,
+        baseGraph);
       commit work;
       exec (S, st, msg, vector (), 0, meta, data);
       if (st = '00000' and length (data))
