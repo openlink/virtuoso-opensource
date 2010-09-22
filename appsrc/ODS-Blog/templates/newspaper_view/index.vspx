@@ -22,8 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page style="/DAV/VAD/blog2/widgets/main.xsl"
-        name="home"
+<v:page style="/DAV/VAD/blog2/widgets/main.xsl" name="home"
         xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
         xmlns:v="http://www.openlinksw.com/vspx/"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -47,9 +46,9 @@
 		<vm:body xhtml_style="single single-post postid-643">
 			<div id="page" style="text-align: left;">
 				<div id="header">
-				        <div style="height: 80px; overflow: hidden;">
+          <div style="height: 80px; overflow: hidden; min-width:960px;">
 					<div style="font-family: Georgia; line-height: 1; font-size: 44px; white-space: nowrap;" class="paper-title">
-							<vm:blog-title/>
+              <vm:blog-title  url="index.vspx"/>
 					</div>
 				<div id="welcome">
 				<vm:blog-about/>
@@ -59,6 +58,13 @@
 						<div class="page_title_inner">
 							<vm:welcome-message show-once="no"/>
 						</div>
+			 <div>
+				<vm:blog-view-switch/>
+				| <vm:archive-url />
+				<vm:settings-link title="| Settings"/>
+				<vm:new-post-link title="| New Post" />
+				| <vm:advanced-search-link title="Search"/>
+            </div>
 					</div>
 				</div>
 				<div class="page-container2">
@@ -95,62 +101,64 @@
 									<vm:calendar vm:url="index.vspx" />
 									<vm:rss-feeds />
 									<vm:if test="ocs">
-									<h2><vm:ocs-div-title/></h2>
+                    <h2>
+                      <vm:ocs-div-title />
+                    </h2>
 									<div class="roll">
 									<vm:ocs/>
 									</div>
 									</vm:if>
 									<vm:if test="opml">
-									<h2><vm:opml-div-title/></h2>
+                    <h2>
+                      <vm:opml-div-title />
+                    </h2>
 									<div class="roll">
 									<vm:opml/>
 									</div>
 									</vm:if>
 								</div>
-								<div>
-								Search
-								</div>
+                <div>Search</div>
 								<div>
 								<vm:search />
 								</div>
 								<div>
-								Post Categories
+					Tag Cloud
+				  <vm:if test="tagid">
+					  <span>
+					  <a href="gems/rss_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>"  class="inlinelink"><img src="/weblog/public/images/rss-icon-16.gif" border="0" alt="RSS" title="RSS"/></a>
+					  <a href="gems/atom_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>"  class="inlinelink"><img src="/weblog/public/images/atom-icon-16.gif" border="0" alt="Atom" title="Atom"/></a>
+					  <a href="gems/rdf_tag_arch.xml?:tag=&lt;?V BLOG..blog_utf2wide (self.tagid) ?>&amp;amp;:bid=&lt;?V self.blogid ?>" class="inlinelink"><img src="/weblog/public/images/rdf-icon-16.gif" border="0" alt="RDF" title="RDF"/></a>
+					  </span>
+				  </vm:if>
+				  <vm:tags top="100"/>
 								</div>
+				
+                <div>Post Categories</div>
 								<div>
 								<vm:categories/>
 								</div>
-								<div>
-								Subscribe
-								</div>
+                <div>Subscribe</div>
 								<div>
 								<vm:subscribe/>
 								</div>
-								<div>
-								Recent Articles
-								</div>
+                <div>Recent Articles</div>
 								<div>
 								<vm:last-messages/>
 								</div>
 								<vm:if test="have_community">
-								<div>
-								Community Member Blogs
-								</div>
+                  <div>Community Member Blogs</div>
 								<div>
 								<vm:bloggers/>
 								</div>
 								</vm:if>
 								<vm:if test="browse_posts">
-								<div>
-								Sort options
-								</div>
+                  <div>Sort options</div>
 								<div>
 								<vm:sort-options />
 								</div>
 								</vm:if>
 								<vm:if test="fish">
-								<div>
-								Translate
-								</div>
+                  <div>Translate</div>
 								<div>
 								<vm:babel-fish/>
 								</div>
@@ -167,8 +175,12 @@
 								<div id="powered">
 								<vm:powered-by/>
 								</div>
-								<div id="copy"><vm:copyright/></div>
-								<div id="disclaimer"><vm:disclaimer/></div>
+                <div id="copy">
+                  <vm:copyright />
+                </div>
+                <div id="disclaimer">
+                  <vm:disclaimer />
+                </div>
 							</div>
 						</div>
 						<div id="error">

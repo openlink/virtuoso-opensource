@@ -58,6 +58,8 @@ min-height:100%;
 #header {
 background:url("images/bg_header.png") repeat-x scroll 0 0 #DADADA;
 z-index:1;
+padding:10px 0 30px;
+min-width:960px;
 }
 
 #header2 {
