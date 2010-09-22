@@ -132,6 +132,7 @@ loaded_xe_is_ready:
       memcpy (xlazye->xe_doc.xd, loaded_doc, sizeof (xper_doc_t));
       dk_free (loaded_doc, sizeof (xper_doc_t));
     }
+  xlazye->xe_doc.xd->xd_top_doc = xlazye->xe_doc.xd;
   loaded_xe->xe_doc.xd = xlazye->xe_doc.xd;
   while (NULL != all_lazy_entities)
     {
