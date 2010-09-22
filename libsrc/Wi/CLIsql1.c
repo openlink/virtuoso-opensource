@@ -727,10 +727,7 @@ ssl_get_password (char * name, char *tpass)
 }
 #endif
 
-
 #ifdef INPROCESS_CLIENT
-
-#include "sqlnode.h"
 
 static void *
 get_inprocess_client ()
@@ -1844,11 +1841,11 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 
       if (stmt->stmt_bookmarks)
 	stmt_free_bookmarks (stmt);
-
       if (stmt->stmt_future)
 	PrpcFutureFree (stmt->stmt_future);
-
+      IN_CON (stmt->stmt_connection);
       dk_set_delete (&stmt->stmt_connection->con_statements, (void *) stmt);
+      LEAVE_CON (stmt->stmt_connection);
       stmt_free_current_rows (stmt);
       dk_free_tree (stmt->stmt_prefetch_row);
       stmt->stmt_prefetch_row = NULL;
