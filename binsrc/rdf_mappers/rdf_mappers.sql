@@ -339,6 +339,10 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN =
 	'(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
+update DB.DBA.SYS_RDF_MAPPERS 
+	set RM_PATTERN = 'http://.*delicious.com/.*'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_DELICIOUS';
+
 -- migration from old servers
 create procedure DB.DBA.RM_MAPPERS_UPGRADE ()
 {
@@ -4656,21 +4660,21 @@ create procedure DB.DBA.RDF_LOAD_DELICIOUS (in graph_iri varchar, in new_origin_
 	  DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
 		return 0;
 	};
-	if (new_origin_uri like 'http://delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
+	if (new_origin_uri like 'http://%delicious.com/tags/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/tags/%')
 		what := 'tags';
-	else if (new_origin_uri like 'http://delicious.com/url/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/url/%')
+	else if (new_origin_uri like 'http://%delicious.com/url/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/url/%')
 	{
 		what := 'url';
 		return 1;
 	}
-	else if (new_origin_uri like 'http://delicious.com/%/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/%/%')
+	else if (new_origin_uri like 'http://%delicious.com/%/%' or new_origin_uri like 'http://feeds.delicious.com/v2/rss/%/%')
 		what := 'tag';
 	else
 		what := 'user';
-	if (new_origin_uri like 'http://delicious.com/%')
+	if (new_origin_uri like 'http://%delicious.com/%')
 	{
-		tmp := sprintf_inverse (new_origin_uri, 'http://delicious.com/%s', 0);
-		section_name := trim(tmp[0]);
+		tmp := sprintf_inverse (new_origin_uri, 'http://%sdelicious.com/%s', 0);
+		section_name := trim(tmp[1]);
 		section_name := trim(section_name, '/');
 		if (section_name is null)
 			return 0;
