@@ -8818,8 +8818,8 @@ create procedure OMAIL.WA.dt_BeginOfYear (
 
   if (isnull (dt))
     return dt;
-  CAL.WA.dt_dateDecode (dt, pYear, pMonth, pDay);
-  return CAL.WA.dt_dateEncode (pYear, 1, 1);
+  OMAIL.WA.dt_dateDecode (dt, pYear, pMonth, pDay);
+  return OMAIL.WA.dt_dateEncode (pYear, 1, 1);
 }
 ;
 
