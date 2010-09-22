@@ -84,6 +84,8 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 //]]>
     </script>
     <script type="text/javascript" src="oat/loader.js"></script>
+    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="login.js"></script>
     <script type="text/javascript" src="nav_framework.js"></script>
   </head>
   <body>
@@ -1105,71 +1107,96 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
       </div> <!-- .oat_anchor_footer -->
     </div> <!-- #a_tmpl_1 -->
 
-    <div id="login_page" style="display:none">
-      <span id="loginCloseBtn">X</span>
-      <h1 class="page_title"><!--balek.zonk.net--></h1>
-      <div id="id_col">
-	<div id="site_id">
-          <img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" />
-	</div>
-      </div> <!-- id_col -->
-      <div id="form_col">
-	<div id="login_form_ctr">
-          <h2>Please identify yourself</h2>
-          <div id="login_form" style="padding: 10px 0px 0px 0px;">
-            <ul class="tab_bar">
-              <li id="loginT1" class="tab_selected">
-		            Digest
-	      </li>
-              <li id="loginT2" style="display:none">
-		            OpenID
-	      </li>
-              <li id="loginT3" style="display:none">
-		            Facebook
-	            </li>
-              <li id="loginT4" style="display:none">
-		            WebID
-	            </li>
-            </ul>
-            <div class="tab_deck">
-              <div id="loginPCtr"></div>
-              <div id="loginP1" class="tab_page" style="min-height: 70px;">
-            		<label for="loginUserName">User ID</label>
-            		<input type="text" name="loginUserName" value="" id="loginUserName"/>
-            		<br />
-		<label for="loginUserPass">Password</label>
-            		<input type="password" name="loginUserPass" value="" id="loginUserPass" />
+    <div id="login_page" style="display: none;">
+      <span id="lf_close"><b>X</b></span>
      		        <br />
+      <table cellspacing="0">
+        <tr>
+          <td valign="top">
+            <img class="id_logo" src="/ods/images/odslogo_200.png" />
+          </td>
+          <td valign="top">
+            <div id="lf" class="form">
+              <div class="header">
+                Identify Yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
               </div>
-              <div id="loginP2" class="tab_page" style="display:none; min-height: 70px;">
-		<label for="loginOpenIdUrl">OpenID URL
-            		  <img alt="OpenID" src="images/login-bg.gif" style="vertical-align:bottom;margin-left:5px;"/>
-		</label>
-  		          <input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" />
-  		          <br />
+              <ul id="lf_tabs" class="tabs">
+                <li id="lf_tab_0" title="Digest">Digest</li>
+                <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
+                <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
+                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
+              </ul>
+              <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                <div id="lf_content">&nbsp;
               </div>
-              <div id="loginP3" class="tab_page" style="display:none; min-height: 70px; padding-left: 100px;">
-                <span id="loginFBData" style="min-height: 20px;"></span>
+                <div id="lf_page_0" class="tabContent" >
+                  <table class="form" cellspacing="5" style="inherit: none;">
+                    <tr>
+                      <th width="20%">
+                        <label for="lf_uid">User ID</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="text" name="lf_uid" value="" id="lf_uid" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <label for="lf_password">Password</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="password" name="lf_password" value="" id="lf_password" />
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <div id="lf_page_1" class="tabContent" style="display: none;">
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">
+                        <label for="lf_openId">OpenID URL</label>
+                      </th>
+                      <td nowrap="nowrap">
+                        <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40" />
+                      </td>
+                    </tr>
+                  </table>
+              </div>
+
+                <div id="lf_page_2" class="tabContent" style="display: none;">
+                  <table class="form" cellspacing="5">
+                    <tr>
+                      <th width="20%">&nbsp;</th>
+                      <td nowrap="nowrap">
+                        <span id="lf_facebookData" style="min-height: 20px;">&nbsp;</span>
                 <br />
                 <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                <fb:login-button autologoutlink="true"></fb:login-button>
+                        <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
+                      </td>
+                    </tr>
+                  </table>
               </div>
-              <div id="loginP4" class="tab_page" style="display:none; min-height: 70px; ">
+
+                <div id="lf_page_3" class="tabContent" style="display: none;">
+                  <table id="lf_table_3" class="form" cellspacing="5">
+                    <tr>
+                      <td>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
               </div>
-            </div> <!-- tab_deck -->
-            <div id="login_ctrls">
-              <input type="button" name="loginBtn" value="Login" id="loginBtn" />
-              <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
-              <span id="loginThrobber" style="display:none">Logging in ...
-		<img alt="Please wait..." src="images/oat/throbber.gif"/>
-	      </span>
-              <br/>
-              <a id="loginForgot" style="display:none">Forgot your password?</a>
+              <div id="lf_forget" class="footer" style="background-color: #FFF; display: none;">
+                <a href="pass_recovery.vspx">Forgot your password?</a>
+              </div>
+              <div class="footer">
+                <input type="button" name="lf_login" value="Login" id="lf_login" />
+                <input type="button" name="lf_register" value="Sign Up" id="lf_register" />
+              </div>
             </div>
-          </div> <!-- login_form -->
-	</div> <!-- login_form_ctr -->
-	<div id="loginErrDiv"></div>
-      </div> <!-- form_col -->
+          </td>
+        </tr>
+      </table>
     </div> <!-- login_page -->
   </body>
 </html>

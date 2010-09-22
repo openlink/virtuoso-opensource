@@ -49,7 +49,7 @@ var serviceList = [
   ["joost.jpg", "http://www.joost.com/", "Joost"],
   ["lastfm.jpg", "http://www.last.fm/user/", "Last.fm"],
   ["librarything.jpg", "http://www.librarything.com/", "LibraryThing"],
-  ["linkedin.jpg", "http://www.linkedin.com/", "LinkedIn"],
+  ["linkedin.jpg", "http://www.linkedin.com/in/", "LinkedIn"],
   ["livejournal.jpg", "http://www.livejournal.com/", "LiveJournal"],
   ["magnolia.jpg", "http://ma.gnolia.com/", "Ma.gnolia"],
   ["meneame.jpg", "http://meneame.net/", "meneame"],

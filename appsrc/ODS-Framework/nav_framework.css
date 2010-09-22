@@ -763,24 +763,6 @@ div.conn_info_bubble div.rt {
 div.conn_info_bubble ul.menu a {
   color: #0066CC;}
 
-div.login_dialog {
-  font-size: 9pt;
-  position: absolute;
-  background-color: #fff;
-  border: 1px solid #336;
-  text-align: left;
-  padding: 0;
-  margin: 0}
-
-div.login_dialog label {width: 100px;
-  float: left;
- text-align: left;
-  margin: 23px 5px 0px 0px;}
-
-#loginErrDiv {
- padding-left: 40px;
- height : 14px;}
-
 div.sect { 
   padding: 0px 10px 0px 10px;}
 
@@ -788,166 +770,13 @@ div.sect {
   float: left;
   clear: both;
   width: 850px;
-  height: 300px;
+  height: 280px;
   color: #5f6366;
   background-color: #d9e9f2;
   text-align: left;}
-#id_col { float: left; clear: left}
-#form_col { float: left; margin-bottom: 50px;}
-#login_form_ctr {
-  margin: 20px;
-  border: 2px solid #b6d4e3;
-  background-color: #e0f0f9;}
-
-#login_form {
-  margin: 10px;
-  width: 450px;}
 
 #login_page img.id_logo {
-  margin: 50px 50px 50px 40px}
-
-#login_page h1 {
-  margin-left: 50px;
-  margin-right: 6px;}
-
-#login_page h2 {
-  font-size: 10pt;
-  margin-left: 10px}
-#login_page label {
-  display: block;
-  width: 100px;
-  float: left;
-  margin: 4px 0 10px 4px}
-
-#login_page .tab_bar li a img {
-  margin: 0 3px 0 0;
-  padding: 0;
-  vertical-align: middle}
-
-#loginUserName {
-  display: block;
-  width: 170px;
-  float: left;
-  margin-bottom: 10px}
-
-#loginUserPass {
-  display: block;
-  width: 170px;
-  float: left;
-  margin-bottom: 10px}
-#loginOpenIdUrl {
-  display: block;
-  width: 170px;
-  float: left;
-  margin-bottom: 10px}
-#login_frm_cb_remember_me {
-  display: block;
-  float: left;
-  margin-top: 5px;
-  margin-bottom: 10px}
-#login_page br {
-  clear: left}
-#loginBtn  {
-  margin-left: 100px;
-  font-weight: normal;
-  font-size: 8pt;
-  border: 1px solid #555;
-  background-color: #ddf;
-  color: #333;
-  margin: 3px}
-
-#loginBtn:hover {
-  background-color: #eef;}
-
-#loginX509  {
-  margin-left: 100px;
-  font-weight: normal;
-  font-size: 8pt;
-  border: 1px solid #555;
-  background-color: #ddf;
-  color: #333;
-  margin: 3px}
-
-#loginX509:hover {
-  background-color: #eef;}
-
-#signupBtn {
-  margin-left: 100px;
-  font-weight: normal;
-  font-size: 8pt;
-  border: 1px solid #555;
-  background-color: #ddf;
-  color: #333;
-  margin: 3px}
-
-#signupBtn:hover {
-  background-color: #eef;}
-
-#loginCloseBtn  {
-float: right;
-cursor: pointer;
-color: #000;
-  padding: 3px 5px 0px 0px;}
-
-div.login_error_ctr {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  background-color: #fff}
-p.login_error {
-  padding: 0;
-  padding-top: 5px;
-  margin-top: 10px;
-  margin: 5px;
-  width: 100%}
-p.login_error img {
-  vertical-align: middle;
-  margin-right: 3px;}
-#login_form a.pwd_recovery_url {
-  font-size: 8pt;
-  display: block;
-  margin-left: 100px;
-  margin-top: 5px;
-  color: #255}
-
-#loginThrobber {
-padding: 0px 0px 4px 82px;
-  color:#999;}
-
-#loginThrobber img
-{
- width:16px;
- height:16px;
- vertical-align:middle;
-}
-#loginForgot {
-  font-size: 8pt;
-  margin-left: 3px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-#login_form div.login_frm_button_row {
-  margin-top: 6px;
-  margin-left: 100px;}
-
-h1.page_title img.openid_logo { margin-right: 6px; }
-
-#login_form_ctr p.login_frm_guide { margin: 6px; }
-
-p.login_frm_guide span.openid_client_name { font-weight: bold; }
-
-#cb_openid {
-  margin-left: 100px;
-  float: left;}
-
-#login_form label.cb {
-  clear: none;
-  float: left;}
-
-#login_form div.openid_selector {
-  float: left;
-  width: 100%;}
+  margin: 50px 25px 25px 30px}
 
 /* Error page */
 
@@ -1223,4 +1052,83 @@ div.map_user_data
 {
   width:200px;
   overflow:hidden;
+}
+
+div.form {
+  width: 550px;
+  background-color: #FFF;
+  margin: 5px;
+}
+
+div.header {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+div.footer {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+table.form {
+  width: 100%;
+}
+
+table.form th {
+  text-align: right;
+  padding-right: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+table.form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+
+.tabs {
+	margin-top: 24px;
+	list-style-type: none;
+	padding-bottom: 1px;
+	padding-left: 0.5em;
+}
+
+.tabs li {
+	display: inline;
+	padding: 1px 3px;
+	margin-left: 0.5em;
+	cursor: pointer;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
+	background-color: #EFEFEF;
+	z-index: 10;
+}
+
+.tabs li.tab_selected {
+	background-color: #FFF;
+}
+
+.tabs li.tab:hover {
+	background-color: #FFF;
+}
+
+#lf_close {
+  float: right;
+  cursor: pointer;
+  color: #000;
+  padding: 3px 5px 0px 0px;
 }
