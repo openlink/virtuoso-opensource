@@ -229,7 +229,9 @@ directory_init() {
   mkdir vad/data/blog2/templates/squeaky_clean
   mkdir vad/data/blog2/templates/columns_clean
   mkdir vad/data/blog2/templates/digital_bazaar
+  mkdir vad/data/blog2/templates/digital_bazaar/images
   mkdir vad/data/blog2/templates/newspaper_view
+  mkdir vad/data/blog2/templates/newspaper_view/images
   mkdir vad/data/blog2/widgets
   cp index.vspx vad/data/blog2
   cp *.sql vad/data/blog2
@@ -254,7 +256,9 @@ directory_init() {
   cp -f templates/squeaky_clean/* vad/data/blog2/templates/squeaky_clean 2>/dev/null
   cp -f templates/columns_clean/* vad/data/blog2/templates/columns_clean 2>/dev/null
   cp -f templates/digital_bazaar/* vad/data/blog2/templates/digital_bazaar 2>/dev/null
+  cp -f templates/digital_bazaar/images/* vad/data/blog2/templates/digital_bazaar/images 2>/dev/null
   cp -f templates/newspaper_view/* vad/data/blog2/templates/newspaper_view 2>/dev/null
+  cp -f templates/newspaper_view/images/* vad/data/blog2/templates/newspaper_view/images 2>/dev/null
 
   cp -f templates/main.vspx vad/data/blog2/templates/main.vspx
   cp -rf widgets/* vad/data/blog2/widgets

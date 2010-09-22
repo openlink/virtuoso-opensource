@@ -66,6 +66,8 @@ padding-top:25px;
 
 #header {
 margin-bottom:35px;
+padding:10px 0 20px;
+min-width:960px;
 }
 
 #header2 {
@@ -76,12 +78,13 @@ clear: both; background-color: rgb(0, 0, 0); height: 30px; padding: 0pt 10px; fo
 color: rgb(255, 255, 255); line-height: 30px; float: left;
 }
 
-.page_title_inner, .footer_widgets, .footer {
+.page_title_inner, .paper-title, .footer_widgets, .footer {
 min-width:960px;
 }
 
-.page_title {
+.page-title {
 background:url("../images/bg_page_title.png") repeat-x scroll 0 0 #005490;
+min-width:960px;
 }
 
 .wrap {
@@ -193,6 +196,7 @@ div.block div {
 
 div.block div#welcome {
 margin-top: 5px; margin-bottom: 10px; white-space: nowrap; font-size: 108%;
+min-width:960px;
 }
 
 
