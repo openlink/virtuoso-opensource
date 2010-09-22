@@ -1618,6 +1618,11 @@ create function IMC_TO_XML (in _src varchar)
   while (line_idx < lines_count)
     {
       line := lines [line_idx];
+      while ((line_idx+1 < lines_count) and (chr (lines [line_idx+1][0]) = ' ' or chr (lines [line_idx+1][0]) = '\t'))
+        {
+          line := line || subseq (lines [line_idx+1], 1);
+          line_idx := line_idx + 1;
+        }
       if (line = '')
         goto next_line;
       if (regexp_match ('^([A-Za-z0-9-]+[.])?((BEGIN)|(begin)):([A-Z]+)\044', line) is not null)
