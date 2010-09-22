@@ -321,6 +321,7 @@ void wsse_y_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_rsakeyvalue_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_modulus_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 void wsse_exponent_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
+void wsse_x509data_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx);
 
 
 static
@@ -346,6 +347,7 @@ wsse_callback_item_t wsse_dsig_callbacks [] =
   {"SignedInfo", wsse_signedinfo_callback},
   {"Transform", wsse_transform_callback},
   {"Transforms", wsse_transforms_callback},
+  {"X509Data", wsse_x509data_callback},
   {"XPath", wsse_xpath_callback},
   {"Y", wsse_p_callback}
 };
@@ -739,6 +741,13 @@ void wsse_keyname_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t *
 
 void wsse_keyvalue_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
 {
+}
+
+void wsse_x509data_callback (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)
+{
+  dsig_signature_t * dsig = ctx->wc_dsig;
+  WSSE_ASSERT (ctx->wc_dsig);
+  dsig->dss_key_value_type = XENC_T_X509_CERT;
 }
 
 void wsse_cipherdata_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * ctx)

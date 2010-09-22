@@ -429,6 +429,11 @@ typedef struct dsig_reference_s
   char *		dsr_text; /* result of reference */
 } dsig_reference_t;
 
+typedef enum {
+  XENC_T_DEFAULT = 0,
+  XENC_T_X509_CERT = 1
+} XENC_VALUE_TYPE_T;
+
 typedef struct dsig_signature_s
 {
   char *	dss_canon_method;
@@ -438,6 +443,7 @@ typedef struct dsig_signature_s
   char *	dss_signature_1;
 
   xenc_key_t *	dss_key;
+  XENC_VALUE_TYPE_T dss_key_value_type;
 } dsig_signature_t;
 
 typedef struct dsig_compare_s
@@ -617,6 +623,7 @@ void xenc_set_serialization_ctx (caddr_t try_ns_spec, wsse_ser_ctx_t * sctx);
 caddr_t bif_xmlenc_decrypt_soap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_dsig_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t xenc_get_option (caddr_t *options, const char * opt, char * def);
+caddr_t certificate_encode (BIO * b, const char * encoding_type);
 
 extern dk_mutex_t * xenc_keys_mtx;
 

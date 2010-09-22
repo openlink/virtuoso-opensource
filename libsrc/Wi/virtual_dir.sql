@@ -1585,9 +1585,10 @@ create procedure WS.WS.host_meta_del (in app varchar)
 create procedure WS.WS."host-meta" () __SOAP_HTTP 'application/xrd+xml'
 {
   declare ses any;
+  declare ret varchar;
   ses := string_output ();
   http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
-  http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0">\n', ses);
+  http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0" Id="host-meta">\n', ses);
   http (sprintf ('  <hm:Host>%{WSHost}s</hm:Host>\n'), ses);
   for select * from WS.WS.HTTP_HOST_META do
     {
@@ -1597,7 +1598,12 @@ create procedure WS.WS."host-meta" () __SOAP_HTTP 'application/xrd+xml'
       http ('\n', ses);
     }
   http ('</XRD>\n', ses);
-  return string_output_string (ses);
+  ret := string_output_string (ses);
+  if (xenc_key_exists ('id_rsa') and __proc_exists ('xml_sign', 2) is not null)
+    {
+      ret := xml_sign (ret, WS.WS.host_meta_dss (), 'http://docs.oasis-open.org/ns/xri/xrd-1.0:XRD');
+    }
+  return ret;
 }
 ;
 
@@ -1617,3 +1623,35 @@ create procedure WS.WS.host_meta_init ()
 WS.WS.host_meta_init ()
 ;
 
+create procedure WS.WS.host_meta_dss ()
+{
+  declare ses any;
+  ses := string_output ();
+  http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+  http ('<Signature \n', ses);
+  http ('    xmlns="http://www.w3.org/2000/09/xmldsig#" \n', ses);
+  http ('    xmlns:hm="http://host-meta.net/xrd/1.0"\n', ses);
+  http ('    xmlns:xr="http://docs.oasis-open.org/ns/xri/xrd-1.0"\n', ses);
+  http ('    >\n', ses);
+  http ('    <SignedInfo>\n', ses);
+  http ('	<CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />\n', ses);
+  http ('	<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />\n', ses);
+  http ('	<Reference URI="#host-meta">\n', ses);
+  http ('	    <Transforms>\n', ses);
+  http ('		<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />\n', ses);
+  http ('	    </Transforms>\n', ses);
+  http ('	    <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />\n', ses);
+  http ('	    <DigestValue></DigestValue>\n', ses);
+  http ('	</Reference>\n', ses);
+  http ('    </SignedInfo>\n', ses);
+  http ('    <SignatureValue></SignatureValue>\n', ses);
+  http ('    <KeyInfo>\n', ses);
+  http ('	<KeyName>id_rsa</KeyName>\n', ses);
+  http ('	<KeyValue>\n', ses);
+  http ('	    <X509Data></X509Data>\n', ses);
+  http ('	</KeyValue>\n', ses);
+  http ('    </KeyInfo>\n', ses);
+  http ('</Signature>\n', ses);
+  return string_output_string (ses);
+}
+;

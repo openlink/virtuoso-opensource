@@ -472,6 +472,8 @@ void xml_c_mark_as_busy (xml_c_stack exc_list, caddr_t * exc_ns, int inx)
   caddr_t * new_curr_ns;
   if (exc_ns == curr_ns) /* our namespace */
     {
+      if (exc_ns[inx] != XML_C_BUSY_NS)
+	dk_free_box (exc_ns[inx]);
       exc_ns[inx] = XML_C_BUSY_NS;
       return;
     }
@@ -678,6 +680,7 @@ id_hash_t * xml_c_nss_hash_create (caddr_t * select_tree, id_hash_t * nss,
       caddr_t * new_new_namespaces = 0;
       xml_c_fill_exc_list_up (&pexc_list, new_namespaces);
       new_new_namespaces = xml_c_namespaces_sort_2 (select_tree, &pexc_list, 0);
+      dk_free_box (new_namespaces);
       new_namespaces = new_new_namespaces;
       xml_c_namespaces_sort (new_namespaces); /* XXX: this needed as MS.WSE used sorted prefixes */
     }
@@ -876,6 +879,7 @@ int dsig_tr_enveloped_signature (query_instance_t * qi, dk_session_t * ses_in, l
 
  finish:
   dk_free_tree (err_ret);
+  dk_free_box ((box_t) xte);
   nss_free (nss);
   return ret;
 }
@@ -1026,6 +1030,7 @@ int dsig_tr_fake_uri (query_instance_t * qi, dk_session_t * ses_in, long len,
   dk_free_box (text);
   dk_free_tree (err_ret);
   dk_free_box (ret_text);
+  dk_free_box ((box_t) xte);
   if (xs)
     {
       dk_set_free (xs->xs_parent_link);

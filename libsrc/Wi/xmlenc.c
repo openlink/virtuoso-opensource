@@ -80,9 +80,7 @@ extern "C" {
 	name ? name : "temporary");
 
 
-
-
-
+static char WSSE_BASE64_ENCODING_TYPE[] = "wsse:Base64Binary";
 
 #define XENC_BUF_SZ 80
 
@@ -1374,7 +1372,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (type == CERT_TYPE_PEM_FORMAT) /* PEM format */
     {
-      x509 = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509,
+      x509 = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509,
 					PEM_STRING_X509,
 					b, NULL, NULL, NULL);
     }
@@ -1397,7 +1395,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (b_priv)
     {
-      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((char *(*)())d2i_PrivateKey,
+      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((d2i_of_void *)d2i_PrivateKey,
 					     PEM_STRING_EVP_PKEY,
 					     b_priv,
 					     NULL, pass_cb, (void *) private_key_passwd);
@@ -3423,6 +3421,162 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ret_text;
 }
 
+caddr_t
+bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_t * _nss = 0;
+  xml_tree_ent_t * doc = xenc_get_entity_arg ((query_instance_t*) qst, args, 0, "xml_sign", &_nss);
+  caddr_t text = bif_string_arg (qst, args, 0, "xml_sign");
+  caddr_t dsig_template_str = bif_string_arg (qst, args, 1, "xml_sign");
+  caddr_t top_elem = bif_string_arg (qst, args, 2, "xml_sign");
+  xml_doc_subst_t * xs;
+  caddr_t ret_text = 0;
+  query_instance_t * qi = (query_instance_t*) qst;
+  dsig_signature_t * dsig = 0;
+  xenc_try_block_t t;
+  xenc_err_code_t c;
+  char * c_err;
+  dk_session_t * doc_ses;
+  subst_item_t * subst_items = 0;
+  caddr_t *elem = 0, *signature = 0;
+  caddr_t signature_val = 0;
+  wsse_ctx_t * ctx;
+  char err_buf[1024];
+  int sign_err = 0;
+  wsse_ser_ctx_t sctx;
+  caddr_t * opts = NULL, top, curr_nss, elem_copy = box_copy (top_elem), local;
+
+  memset (&sctx, 0, sizeof (wsse_ser_ctx_t));
+
+  XENC_TRY (&t)
+    {
+      dsig = dsig_template_ ((query_instance_t*) qst, dsig_template_str, &t, opts);
+    }
+  XENC_CATCH
+    {
+      char buf [1024];
+      xenc_make_error (buf, sizeof (buf), t.xtb_err_code, t.xtb_err_buffer);
+      dk_free_box (t.xtb_err_buffer);
+      dk_free_box ((box_t) doc);
+      nss_free (_nss);
+      sqlr_new_error ("42000", "XENC18", "could not create XML signature from template : %s", buf);
+    }
+  XENC_TRY_END (&t);
+
+  dsig->dss_signature_1 = box_dv_short_string ("uninitialized");
+
+  doc_ses = strses_allocate();
+  SES_PRINT (doc_ses, text);
+  if (dsig_initialize (qi, doc_ses, strses_length (doc_ses), dsig, &c, &c_err))
+    {
+      char buf [1024];
+      dk_free_box ((box_t) doc);
+      nss_free (_nss);
+      doc_ses->dks_in_buffer = NULL;
+      strses_free (doc_ses);
+      dsig_free (dsig);
+      strncpy (buf, c_err, 1024);
+      sqlr_new_error ("42000", "XENC19", "could not sign XML signature, %s", buf);
+    }
+  strses_free (doc_ses);
+
+  signature = (caddr_t *) signature_serialize_1 (dsig, &sctx);
+  if (!signature)
+    {
+      dsig->dss_signature_1 = 0;
+      goto finish2;
+    }
+
+  top = doc->xte_current;
+  /* must be configurable */
+  local = strrchr (elem_copy, ':');
+  if (local)
+    {
+      *local = 0;
+      local++;
+      elem = xml_find_child (top, elem, elem_copy, 0, NULL);
+    }
+  if (elem)
+    {
+      int inx;
+      caddr_t * new_elem = (caddr_t *) dk_alloc_box (box_length (elem) + sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      memcpy (new_elem, elem, box_length (elem));
+      memcpy (new_elem + BOX_ELEMENTS (elem), &signature, sizeof (caddr_t));
+      curr_nss = xenc_get_namespaces (elem, _nss);
+      DO_BOX (caddr_t *, child, inx, top)
+	{
+	  if (child == elem)
+	    {
+	      dk_free_box (child);
+	      ((caddr_t**)top)[inx] = new_elem;
+	    }
+	}
+      END_DO_BOX;
+      xenc_set_namespaces (new_elem, box_copy_tree (curr_nss), _nss);
+    }
+  else
+    {
+      sqlr_new_error (".....", ".....", "Can not find tag to sign");
+    }
+
+  xenc_nss_add_namespace_prefix (_nss, signature, DSIG_URI, "ds");
+  xenc_nss_add_namespace_prefix (_nss, signature, XENC_URI, "xenc");
+
+  ctx = wsse_ctx_allocate ();
+  XENC_TRY (&ctx->wc_tb)
+    {
+      doc->xte_current = signature;
+      signature_val = dsig_sign_signature (dsig, doc, _nss, ctx);
+    }
+  XENC_CATCH
+    {
+      xenc_make_error (err_buf, sizeof (err_buf), ctx->wc_tb.xtb_err_code, ctx->wc_tb.xtb_err_buffer);
+      wsse_ctx_free (ctx);
+      sign_err = 1;
+      dsig->dss_signature_1 = 0;
+      goto finish2;
+    }
+  XENC_TRY_END (&ctx->wc_tb);
+  wsse_ctx_free (ctx);
+
+  doc->xte_current = doc->xe_doc.xtd->xtd_tree;
+
+  if (signature_val)
+    {
+      subst_items = (subst_item_t *) dk_alloc_box (sizeof (subst_item_t), DV_ARRAY_OF_POINTER);
+      subst_items[0].orig = (caddr_t *)dsig->dss_signature_1;
+      dsig->dss_signature_1 = 0;
+      subst_items[0].copy = (caddr_t *)signature_val;
+      subst_items[0].type = XENCTypeElementIdx;
+    }
+
+  xs = (xml_doc_subst_t *) dk_alloc (sizeof (xml_doc_subst_t));
+  memset (xs, 0, sizeof (xml_doc_subst_t));
+
+  xs->xs_doc = doc;
+  xs->xs_subst_items = subst_items;
+  xs->xs_soap_version = 0;
+  xs->xs_sign = 1;
+  xs->xs_namespaces = _nss;
+
+  ret_text = xml_doc_subst (xs);
+  dk_free_box ((box_t) subst_items);
+  xml_doc_subst_free(xs);
+  doc->xte_current = top;
+
+ finish2:
+
+  if (dsig)
+    dsig_free (dsig);
+  dk_free_box ((box_t) doc);
+  nss_free (_nss);
+  dk_free_box (signature_val);
+  dk_free_box (elem_copy);
+  if (sign_err)
+    sqlr_new_error ("42000", "XENC34", "could not sign XML signed info: %s", err_buf);
+  return ret_text;
+}
+
 typedef struct dsig_fullname_s
 {
   caddr_t	uri;
@@ -3849,17 +4003,36 @@ caddr_t ** xenc_generate_ext_info (xenc_key_t * key)
   return array;
 }
 
-caddr_t * xenc_generate_key_tag (xenc_key_t * key, int extended_ver, xenc_id_t * ids, int pref_KI,
-    wsse_ser_ctx_t * sctx)
+caddr_t *
+xenc_generate_key_tag (xenc_key_t * key, int extended_ver, xenc_id_t * ids, int pref_KI, wsse_ser_ctx_t * sctx, int x509sertype)
 {
   caddr_t * ret;
   xenc_tag_t * keyi = xenc_tag_create(DSIG_URI, ":KeyInfo");
 
-  if (key->xek_x509_ref || key->xek_x509_KI || (key->xek_type == DSIG_KEY_KERBEROS))
+  if (XENC_T_X509_CERT == x509sertype && key->xek_x509)
+    {
+      caddr_t encoded_cert = 0;
+      xenc_tag_t * data = (xenc_tag_t *) xenc_tag_create (DSIG_URI, ":X509Data");
+      xenc_tag_t * cert = (xenc_tag_t *) xenc_tag_create (DSIG_URI, ":X509Certificate");
+      X509 * x509 = key->xek_x509;
+      BIO * b = BIO_new (BIO_s_mem());
+
+      if (i2d_X509_bio(b,x509))
+	{
+	  encoded_cert = certificate_encode (b, WSSE_BASE64_ENCODING_TYPE);
+	}
+      BIO_free (b);
+
+      xenc_tag_add_child (cert, (caddr_t *) encoded_cert); /* b64 encoded certificate */
+      xenc_tag_add_child (data, xenc_tag_finalize (cert));
+      xenc_tag_add_child (keyi, xenc_tag_finalize (data));
+      xenc_tag_free (data);
+      xenc_tag_free (cert);
+    }
+  else if (key->xek_x509_ref || key->xek_x509_KI || (key->xek_type == DSIG_KEY_KERBEROS))
     {
       xenc_tag_t * stokenref = (xenc_tag_t *) xenc_tag_create (WSSE_URI(sctx), ":SecurityTokenReference");
       xenc_tag_t * ref;
-#if 1
       if (pref_KI && (key->xek_x509_KI || key->xek_kerb_KI))
 	{
 	  ref = (xenc_tag_t *) xenc_tag_create (WSSE_URI(sctx), ":KeyIdentifier");
@@ -3878,7 +4051,6 @@ caddr_t * xenc_generate_key_tag (xenc_key_t * key, int extended_ver, xenc_id_t *
 	    }
 	}
       else
-#endif
 	{
 	  char buf[255];
 	  ref =  xenc_tag_create (WSSE_URI(sctx), ":Reference");
@@ -4014,7 +4186,6 @@ void xenc_serialize_key (query_instance_t * qi, xenc_key_t * key, dk_session_t *
 }
 #endif
 
-static char WSSE_BASE64_ENCODING_TYPE[] = "wsse:Base64Binary";
 
 caddr_t certificate_encode (BIO * b, const char * encoding_type)
 {
@@ -4203,7 +4374,7 @@ caddr_t xenc_generate_encrypted_key_tag (query_instance_t * qi, xenc_key_inst_t 
 
   xenc_tag_add_att (em, "Algorithm", super->xek_enc_algo->xea_ns);
   xenc_tag_add_child (ek, xenc_tag_finalize (em));
-  xenc_tag_add_child (ek, xenc_generate_key_tag (super, DSIG_SER_REST_V, 0, 1 /* KI when possible */, sctx));
+  xenc_tag_add_child (ek, xenc_generate_key_tag (super, DSIG_SER_REST_V, 0, 1 /* KI when possible */, sctx, 0));
 
 
   ses = strses_allocate ();
@@ -4347,7 +4518,8 @@ void xenc_generate_key_taglist (query_instance_t * qi, xenc_key_inst_t * xki, dk
 }
 
 
-caddr_t * xenc_generate_security_tags (query_instance_t* qi, xpath_keyinst_t ** arr,
+caddr_t *
+xenc_generate_security_tags (query_instance_t* qi, xpath_keyinst_t ** arr,
 				       dsig_signature_t * dsig, int generate_ref_list, caddr_t * err_ret,
 				       wsse_ser_ctx_t * sctx)
 {
@@ -4622,6 +4794,8 @@ void xenc_build_ids_hash (caddr_t * curr, id_hash_t ** id_hash, int only_encrypt
   if (!only_encrypted_data || !strcmp ((((caddr_t **)(curr))[0][0]), XENC_URI ":EncryptedData"))
     {
       char * Id = xml_find_attribute (curr, "Id", 0);
+      if (!Id)
+	Id = xml_find_attribute (curr, "id", 0);
       if (Id)
 	{
 	  char idbuf[128];
@@ -4944,7 +5118,7 @@ caddr_t * signature_serialize_1 (dsig_signature_t * dsig, wsse_ser_ctx_t * sctx)
   xenc_tag_add_child (sign_tag, signinfo_tag);
   xenc_tag_add_child (sign_tag, signval_tag);
   if (dsig->dss_key)
-    xenc_tag_add_child (sign_tag, xenc_generate_key_tag (dsig->dss_key, DSIG_SER_EXT_V, 0, 0 /* no KI */, sctx));
+    xenc_tag_add_child (sign_tag, xenc_generate_key_tag (dsig->dss_key, DSIG_SER_EXT_V, 0, 0 /* no KI */, sctx, dsig->dss_key_value_type));
 
   ret_tag = xenc_tag_finalize (sign_tag);
   xenc_tag_free (sign_tag);
@@ -6500,6 +6674,7 @@ void bif_xmlenc_init ()
 
 
   bif_define ("xenc_encrypt", bif_xmlenc_encrypt);
+  bif_define ("xml_sign", bif_xml_sign);
 
   bif_define ("xenc_key_inst_create", bif_xenc_key_inst_create);
   bif_define ("xenc_decrypt_soap", bif_xmlenc_decrypt_soap); /* decrypts & validates encrypted & signed SOAP message */
