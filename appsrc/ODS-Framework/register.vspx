@@ -35,16 +35,19 @@
     <vm:pagewrapper>
       <vm:rawheader caption="Account Registration"/>
       <vm:body default-input="reguid">
-        <div class="splash">
-          <div class="box">
-            <table>
-              <tr>
-                <td id="RB" valign="top">
+        <div style="margin-left: 20px;">
+          <h1 class="page_title">
+            <?vsp
+              declare copy varchar;
+
+              copy := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
+              if (copy = '' or copy is null)
+                http(sys_stat ('st_host_name'));
+              else
+                http(copy);
+            ?>
+          </h1>
                   <vm:register-form/>
-                </td>
-              </tr>
-            </table>
-        </div>
         </div>
       </vm:body>
     </vm:pagewrapper>

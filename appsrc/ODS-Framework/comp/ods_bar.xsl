@@ -78,8 +78,9 @@
         redirect_url := self.odsbar_ods_gpath || 'sfront.vspx';
       http_rewrite ();
       http_request_status ('HTTP/1.1 302 Found');
-      http_header (concat (http_header_get (), 'Location: ', redirect_url, '\r\n'));
-      self.vc_redirect (redirect_url);
+          http_header (http_header_get () ||  'Location: ' || redirect_url || '\r\nSet-Cookie: sid=; path=/\r\n');
+          http_flush();
+          return;
         }
     </xsl:processing-instruction>
     <v:on-init>
