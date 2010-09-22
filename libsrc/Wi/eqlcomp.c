@@ -309,7 +309,7 @@ kpd_free (key_partition_def_t * kpd)
 void
 qr_free (query_t * qr)
 {
-  if (!qr || CL_RUN_LOCAL == cl_run_local_only)
+  if (!qr)
     return;
   qr_drop_dependencies (qr);
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
