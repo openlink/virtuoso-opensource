@@ -424,7 +424,7 @@ create method wa_dashboard () for wa_oDrive
                                                        self.wa_name as "application"
                                                       ),
                                        XMLELEMENT ( 'dash-data',
-                                                    XMLATTRIBUTES ( concat (N'<a href="', cast (_link as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+                                                    XMLATTRIBUTES ( concat (N'<a href="', cast (_link as nvarchar), N'">', ODRIVE.WA.utf2wide (_title), N'</a>') as "content",
 	                                                                  0 as "comments"
 	                                                                )
                                           	      )

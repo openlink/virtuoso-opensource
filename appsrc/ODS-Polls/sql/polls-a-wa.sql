@@ -65,19 +65,6 @@ create procedure POLLS.WA.exec_no_error(in expr varchar, in execType varchar := 
 --
 create procedure POLLS.WA.vhost()
 {
-  declare
-    iIsDav integer;
-  declare
-    sHost varchar;
-
-  -- Add a virtual directory for Polls - public www -------------------------
-  sHost := registry_get('_polls_path_');
-  if (cast(sHost as varchar) = '0')
-    sHost := '/apps/polls/';
-  iIsDav := 1;
-  if (isnull(strstr(sHost, '/DAV')))
-    iIsDav := 0;
-
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'ods_rule_polls',
     1,
@@ -218,9 +205,7 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_polls
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare iUserID, iWaiID integer;
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull(iUserID))
@@ -239,9 +224,9 @@ create method wa_new_inst (in login varchar) for wa_polls
   update WA_INSTANCE set WAI_INST = self where WAI_ID = iWaiID;
 
   -- Add a virtual directory for Polls - public www -------------------------
-  VHOST_REMOVE(lpath    => concat('/polls/', self.PollsID));
-  VHOST_DEFINE(lpath    => concat('/polls/', self.PollsID),
-               ppath    => concat(self.get_param('host'), 'www/'),
+  VHOST_REMOVE(lpath    => '/polls/' || self.PollsID);
+  VHOST_DEFINE(lpath    => '/polls/' || self.PollsID,
+               ppath    => self.get_param('host') || 'www/',
                ses_vars => 1,
                is_dav   => self.get_param('isDAV'),
                is_brws  => 0,
@@ -375,7 +360,7 @@ create method wa_dashboard () for wa_polls
                                                        self.wa_name as "application"
                                                       ),
                                        XMLELEMENT ( 'dash-data',
-	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..poll_post_iri (iWaiID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..poll_post_iri (iWaiID, _id) as nvarchar), N'">', POLLS.WA.utf2wide (_title), N'</a>') as "content",
 	                                                                  0 as "comments"
 	                                                                )
                                           	      )

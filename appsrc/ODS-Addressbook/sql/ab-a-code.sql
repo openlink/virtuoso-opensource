@@ -19,12 +19,12 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
 -------------------------------------------------------------------------------
 --
--- Session Functions
+-- ACL Functions
 --
 -------------------------------------------------------------------------------
---
 create procedure AB.WA.acl_condition (
   in domain_id integer,
   in id integer := null)
@@ -71,7 +71,6 @@ create procedure AB.WA.acl_check (
 -- Session Functions
 --
 -------------------------------------------------------------------------------
---
 create procedure AB.WA.session_domain (
   inout params any)
 {
@@ -106,60 +105,27 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
+  declare domain_id, user_id, user_name, user_role any;
 
-  sid := get_keyword ('sid', params, '');
-  realm := get_keyword ('realm', params, '');
   domain_id := AB.WA.session_domain (params);
   user_id := -1;
+  user_role := 'expire';
+  user_name := 'Expire session';
+
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = realm
-          and S.VS_SID   = sid
+        where S.VS_REALM = get_keyword ('realm', params, 'wa')
+          and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
     user_id   := U_ID;
     user_name := AB.WA.user_name(U_NAME, U_FULL_NAME);
-    user_role := AB.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) or (domain_id <= 0))
-  {
-    rc := '';
-    if (domain_id > 0)
-    {
-      rc := AB.WA.acl_check (domain_id);
-      if ((rc = '') and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-        goto _skip;
-    }
-    }
-    if (domain_id = -1)
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    }
-    else if (rc = 'R')
-    {
-      user_role := 'public';
-      user_name := 'Public User';
-    }
-    else if (rc = 'W')
-    {
-      user_role := 'author';
-      user_name := 'Author User';
-    }
-    else
-    {
-      user_role := 'guest';
-      user_name := 'Guest User';
-    }
-  }
-_skip:;
+  user_role := AB.WA.access_role (domain_id, user_id);
+
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -173,7 +139,8 @@ _skip:;
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure AB.WA.frozen_check(in domain_id integer)
+create procedure AB.WA.frozen_check (
+  in domain_id integer)
 {
   declare exit handler for not found { return 1; };
 
@@ -196,7 +163,8 @@ create procedure AB.WA.frozen_check(in domain_id integer)
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.frozen_page(in domain_id integer)
+create procedure AB.WA.frozen_page (
+  in domain_id integer)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_ID = domain_id);
 }
@@ -211,25 +179,23 @@ create procedure AB.WA.check_admin(
   in user_id integer) returns integer
 {
   declare group_id integer;
-  group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
 
-  if (user_id = 0)
+  if ((user_id = 0) or (user_id = http_dav_uid ()))
     return 1;
-  if (user_id = http_dav_uid ())
+
+  group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
+  if ((group_id = 0) or (group_id = http_dav_uid ()) or (group_id = http_dav_uid()+1))
     return 1;
-  if (group_id = 0)
-    return 1;
-  if (group_id = http_dav_uid ())
-    return 1;
-  if(group_id = http_dav_uid()+1)
-    return 1;
+
   return 0;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.check_grants (in role_name varchar, in page_name varchar)
+create procedure AB.WA.check_grants (
+  in role_name varchar,
+  in page_name varchar)
 {
   declare tree any;
 
@@ -246,6 +212,11 @@ create procedure AB.WA.access_role (
   in domain_id integer,
   in user_id integer)
 {
+  declare rc varchar;
+
+  if (domain_id <= 0)
+    return 'expire';
+
   if (AB.WA.check_admin (user_id))
     return 'admin';
 
@@ -281,18 +252,19 @@ create procedure AB.WA.access_role (
                 and C.WAI_ID = domain_id))
     return 'reader';
 
+  rc := AB.WA.acl_check (domain_id);
+  if (rc = 'R')
+    return 'public';
+
+  if (rc = 'W')
+    return 'author';
+
   if (exists(select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  {
-    if (exists (select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
-
   return 'public';
-}
+
   return 'expire';
 }
 ;

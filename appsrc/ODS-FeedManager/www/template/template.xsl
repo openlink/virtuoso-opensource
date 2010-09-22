@@ -208,7 +208,7 @@
                     else if (not self.nav_top and page_name <> '')
                     {
                       self.nav_pos_fixed := 0;
-                      self.nav_pos_fixed := ENEWS.WA.check_grants2 (self.account_role, page_name);
+                      self.nav_pos_fixed := ENEWS.WA.check_grants (self.account_role, page_name);
                       control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
                     }
                   ]]>
@@ -222,7 +222,7 @@
                           if ((control.vc_parent as vspx_tree_node).tn_open = 1)
                             control.ufl_active := 0;
                           else
-                            control.ufl_active := ENEWS.WA.check_grants2(self.account_role, ENEWS.WA.page_name ());
+                            control.ufl_active := ENEWS.WA.check_grants (self.account_role, ENEWS.WA.page_name ());
                         ]]>
                       </v:after-data-bind>
                       <v:before-render>

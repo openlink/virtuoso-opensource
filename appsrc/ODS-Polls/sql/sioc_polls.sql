@@ -273,6 +273,83 @@ create trigger POLLS_SIOC_D before delete on POLLS.WA.POLL referencing old as O
 
 -------------------------------------------------------------------------------
 --
+create procedure poll_acl_insert (
+  inout domain_id integer,
+  inout poll_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..poll_post_iri (domain_id, poll_id);
+  graph_iri := POLLS.WA.acl_graph (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure poll_acl_delete (
+  inout domain_id integer,
+  inout poll_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..poll_post_iri (domain_id, poll_id);
+  graph_iri := POLLS.WA.acl_graph (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_SIOC_ACL_I after insert on POLLS.WA.POLL order 100 referencing new as N
+{
+  if (coalesce (N.P_ACL, '') <> '')
+    poll_acl_insert (N.P_DOMAIN_ID,
+                     N.P_ID,
+                     N.P_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_SIOC_ACL_U after update on POLLS.WA.POLL order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+    poll_acl_delete (O.P_DOMAIN_ID,
+                     O.P_ID,
+                     O.P_ACL);
+  if ((coalesce (N.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+    poll_acl_insert (N.P_DOMAIN_ID,
+                     N.P_ID,
+                     N.P_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger POLL_SIOC_ACL_D before delete on POLLS.WA.POLL order 100 referencing old as O
+{
+  if (coalesce (O.P_ACL, '') <> '')
+    poll_acl_delete (O.P_DOMAIN_ID,
+                     O.P_ID,
+                     O.P_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure polls_comment_insert (
 	in graph_iri varchar,
 	in forum_iri varchar,

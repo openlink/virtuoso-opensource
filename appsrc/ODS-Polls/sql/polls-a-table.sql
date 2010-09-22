@@ -48,8 +48,6 @@ POLLS.WA.exec_no_error('
     P_DOMAIN_ID integer not null,
     P_NAME varchar,
     P_DESCRIPTION varchar,
-    P_CREATED datetime,
-    P_UPDATED datetime,
     P_DATE_START datetime,
     P_DATE_END datetime,
     P_MODE char (1) default \'S\',          -- S - single question; M - multiple questions
@@ -61,10 +59,17 @@ POLLS.WA.exec_no_error('
     P_TAGS varchar,
     P_VOTED datetime,
     P_VOTES integer default 0,
+    P_ACL long varchar,
+    P_CREATED datetime,
+    P_UPDATED datetime,
 
     primary key(P_ID)
   )
 ');
+
+POLLS.WA.exec_no_error (
+  'alter table POLLS.WA.POLL add P_ACL long varchar', 'C', 'POLLS.WA.POLL', 'P_ACL'
+);
 
 POLLS.WA.exec_no_error ('
   create trigger POLL_AI after insert on POLLS.WA.POLL referencing new as N

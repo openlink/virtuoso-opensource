@@ -22,7 +22,15 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="search"
+        decor="template/template.vspx"
+        style="template/template.xsl"
+        fast-render="1"
+        button-anchors="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
@@ -543,7 +551,7 @@
                     </v:select-list>
                   </td>
                 </tr>
-                <v:template type="simple" enabled="--case when (self.v_type = 'text') then 1 else 0 end;">
+                <vm:if test="self.v_type = 'text'">
                   <tr>
                     <th>
                       <v:label for="" value="Space delimited keyword list" />
@@ -552,7 +560,7 @@
                       <v:text name="a_keywords" value="--self.v_keywords" fmt-function="ENEWS.WA.utf2wide" xhtml_class="textbox" xhtml_size="70%"/>
                     </td>
                   </tr>
-                </v:template>
+                </vm:if>
                 <tr>
                   <th>
                     <v:label for="f_expression" value="--case when (self.v_type = 'text') then 'or expression' else case when (self.v_type = 'xpath') then 'XPath Expression' else 'XQuery Expression' end end;" />
@@ -594,7 +602,7 @@
                     <v:textarea name="f_expression" value="--self.v_expression" fmt-function="ENEWS.WA.utf2wide" xhtml_rows="2" xhtml_cols="70"/>
                   </td>
                 </tr>
-                <v:template type="simple" enabled="--case when ENEWS.WA.conversation_enable(self.domain_id) then 1 else 0 end">
+                <vm:if test="ENEWS.WA.conversation_enable(self.domain_id)">
                   <tr>
                     <tr>
                       <th width="30%">&nbsp;</th>
@@ -604,8 +612,8 @@
                       </td>
                     </tr>
                   </tr>
-                </v:template>
-                <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+                </vm:if>
+                <vm:if test="self.account_role in ('public', 'guest')">
                 <tr>
                   <th>
                       <v:label for="f_tags" value="Tags" />
@@ -638,7 +646,7 @@
                     </v:select-list>
                   </td>
                 </tr>
-                </v:template>
+                </vm:if>
                 <tr>
                   <th>
                     <v:label for="f_after" value="Date after"/>
@@ -716,7 +724,7 @@
           </div>
         </div>
         <div class="form-footer">
-          <v:button action="simple" value="Search" xhtml_class="form-button">
+          <v:button name="btn_search" action="simple" value="Search" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.do_search (e);
@@ -724,7 +732,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and not (self.account_role in ('public', 'guest'))) then 1 else 0 end" xhtml_class="form-button">
+          <v:button name="btn_save" action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and not (self.account_role in ('public', 'guest'))) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare tmp varchar;
@@ -735,7 +743,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button name="btn_cancel" action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('news.vspx');
@@ -744,7 +752,7 @@
           </v:button>
         </div>
       </v:template>
-      <v:template type="simple" enabled="--case when self.v_mode in ('simple', 'opensearch') then 1 else 0 end">
+      <vm:if test="self.v_mode in ('simple', 'opensearch')">
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
@@ -776,7 +784,7 @@
             </tr>
           </table>
         </div>
-      </v:template>
+      </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

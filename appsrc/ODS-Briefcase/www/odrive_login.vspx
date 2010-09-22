@@ -35,6 +35,12 @@
       if (page_name = 'error.vspx')
         return;
 
+      if ((self.account_role = 'expire') and not is_empty_or_null (self.sid))
+      {
+        self.vc_redirect (sprintf ('error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
+        return;
+      }
+
       params := self.vc_page.vc_event.ve_params;
         domain_id := ODRIVE.WA.session_domain (params);
       path := rtrim (case when (domain_id <> -1) then ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id)) else HTTP_REQUESTED_URL() end, '/');
