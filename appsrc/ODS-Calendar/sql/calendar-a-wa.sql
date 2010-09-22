@@ -408,7 +408,7 @@ create method wa_dashboard () for wa_Calendar
                                                        self.wa_name as "application"
                                                       ),
                                        XMLELEMENT ( 'dash-data',
-	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..calendar_event_iri (iWaiID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..calendar_event_iri (iWaiID, _id) as nvarchar), N'">', CAL.WA.utf2wide (_title), N'</a>') as "content",
 	                                                                  0 as "comments"
 	                                                                )
                                           	      )

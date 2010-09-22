@@ -84,7 +84,9 @@ create procedure CAL.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null(options))
+  {
     domain_id := get_keyword ('domain', options);
+  }
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
@@ -103,62 +105,27 @@ _end:;
 create procedure CAL.WA.session_restore (
   inout params any)
 {
-  declare rc, domain_id, user_id, user_name, user_role, sid, realm any;
-
-  sid := get_keyword ('sid', params, '');
-  realm := get_keyword ('realm', params, '');
+  declare domain_id, user_id, user_name, user_role any;
 
   domain_id := CAL.WA.session_domain (params);
-
   user_id := -1;
+  user_role := 'expire';
+  user_name := 'Expire session';
+
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = realm
-          and S.VS_SID   = sid
+        where S.VS_REALM = get_keyword ('realm', params, 'wa')
+          and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
     user_id   := U_ID;
     user_name := CAL.WA.user_name(U_NAME, U_FULL_NAME);
-    user_role := CAL.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) or (domain_id <= 0))
-  {
-    rc := '';
-    if (domain_id > 0)
-    {
-      rc := CAL.WA.acl_check (domain_id);
-      if ((rc = '') and (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-      {
-        user_role := 'expire';
-        user_name := 'Expire session';
-        goto _skip;
-      }
-    }
-    if (domain_id = -1)
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    }
-    else if (rc = 'R')
-    {
-      user_role := 'public';
-      user_name := 'Public User';
-    }
-    else if (rc = 'W')
-    {
-      user_role := 'author';
-      user_name := 'Author User';
-    }
-    else
-    {
-      user_role := 'guest';
-      user_name := 'Guest User';
-    }
-  }
-_skip:
+  user_role := CAL.WA.access_role (domain_id, user_id);
+
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
                 'user_name', user_name,
@@ -172,7 +139,8 @@ _skip:
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure CAL.WA.frozen_check(in domain_id integer)
+create procedure CAL.WA.frozen_check (
+  in domain_id integer)
 {
   declare exit handler for not found { return 1; };
 
@@ -195,7 +163,8 @@ create procedure CAL.WA.frozen_check(in domain_id integer)
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.frozen_page(in domain_id integer)
+create procedure CAL.WA.frozen_page (
+  in domain_id integer)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_ID = domain_id);
 }
@@ -207,21 +176,17 @@ create procedure CAL.WA.frozen_page(in domain_id integer)
 --
 -------------------------------------------------------------------------------
 create procedure CAL.WA.check_admin(
-  in user_id integer) returns integer
+  in user_id integer)
 {
   declare group_id integer;
-  group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
 
-  if (user_id = 0)
+  if ((user_id = 0) or (user_id = http_dav_uid ()))
     return 1;
-  if (user_id = http_dav_uid ())
+
+  group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
+  if ((group_id = 0) or (group_id = http_dav_uid ()) or (group_id = http_dav_uid()+1))
     return 1;
-  if (group_id = 0)
-    return 1;
-  if (group_id = http_dav_uid ())
-    return 1;
-  if(group_id = http_dav_uid()+1)
-    return 1;
+
   return 0;
 }
 ;
@@ -238,48 +203,71 @@ create procedure CAL.WA.check_grants (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.access_role(in domain_id integer, in user_id integer)
+create procedure CAL.WA.access_role (
+  in domain_id integer,
+  in user_id integer)
 {
+  declare rc varchar;
+
+  if (domain_id <= 0)
+    return 'expire';
+
   if (CAL.WA.check_admin (user_id))
     return 'admin';
 
-  for (select B.WAM_MEMBER_TYPE
+  if (exists (select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
               where A.U_ID = user_id
                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
-          and C.WAI_ID = domain_id) do
-  {
-    if (WAM_MEMBER_TYPE = 1)
+                 and C.WAI_ID = domain_id))
     return 'owner';
 
-    if (WAM_MEMBER_TYPE = 2)
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = user_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 2
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
     return 'author';
 
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = user_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
     return 'reader';
-  }
+
+  rc := CAL.WA.acl_check (domain_id);
+  if (rc = 'R')
+    return 'public';
+
+  if (rc = 'W')
+    return 'author';
 
   if (exists (select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  {
-    if (exists (select 1
-                  from SYS_USERS A
-                 where A.U_ID = user_id))
-    return 'guest';
-
   return 'public';
-}
+
   return 'expire';
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.access_is_write (in access_role varchar)
+create procedure CAL.WA.access_is_write (
+  in access_role varchar)
 {
   if (is_empty_or_null (access_role))
     return 0;

@@ -24,19 +24,6 @@ use sioc;
 
 -------------------------------------------------------------------------------
 --
--- the same as feeds_iri (wai_name)
-create procedure feed_mgr_iri (
-  inout domain_id integer)
-{
-  declare instance varchar;
-  declare exit handler for not found { return null; };
-  select WAI_NAME into instance from DB.DBA.WA_INSTANCE where WAI_ID = domain_id;
-  return feeds_iri (instance);
-}
-;
-
--------------------------------------------------------------------------------
---
 -- this represents a feed, not an instance
 create procedure feed_iri (
   inout feed_id integer)
@@ -274,7 +261,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
          order by EFD_ID do
   {
       iri := feed_iri (EF_ID);
-      m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
+      m_iri := ENEWS.WA.forum_iri (EFD_DOMAIN_ID);
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
@@ -352,7 +339,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
             where A_OBJECT_ID = EFI_ID) do
       {
         feeds_annotation_insert (graph_iri,
-                                 feed_mgr_iri (A_DOMAIN_ID),
+                                 ENEWS.WA.forum_iri (A_DOMAIN_ID),
                                  A_ID,
                                  A_DOMAIN_ID,
                                  A_OBJECT_ID,
@@ -384,9 +371,10 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
   graph_iri := get_graph ();
   iri := feed_iri (N.EFD_FEED_ID);
-  m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
+  m_iri := ENEWS.WA.forum_iri (N.EFD_DOMAIN_ID);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
@@ -403,9 +391,10 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
   graph_iri := get_graph ();
   iri := feed_iri (O.EFD_FEED_ID);
-  m_iri := feed_mgr_iri (O.EFD_DOMAIN_ID);
+  m_iri := ENEWS.WA.forum_iri (O.EFD_DOMAIN_ID);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_container'), m_iri);
@@ -923,8 +912,8 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
         sioc:link sioc:proxy_iri (EF_URI) ;
 	atom:link sioc:proxy_iri (EF_URI) ;
 	atom:title EF_TITLE ;
-	sioc:has_parent sioc:feed_mgr_iri (U_NAME, WAI_NAME) .
-	sioc:feed_mgr_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.U_NAME, DB.DBA.ODS_FEED_FEED_DOMAIN.WAI_NAME)
+	  sioc:has_parent sioc:feeds_iri (WAI_NAME) .
+	  sioc:feeds_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.WAI_NAME)
 	sioc:parent_of sioc:feed_iri (EF_ID) .
 
 	# Posts

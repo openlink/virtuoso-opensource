@@ -123,7 +123,7 @@
       {
         if (is_empty_or_null (fValue))
         {
-          http ('&nbsp;');
+          http ('-');
         } else {
           declare N integer;
           declare delimiter varchar;
@@ -1293,7 +1293,7 @@
               <table class="form-body" cellspacing="0">
             <tr>
               <th width="25%">
-                <v:label for="b_name" value="Name (*)"/>
+                    <v:label for="b_name" value="--case when self.v_form <> 'Bookmark/View' then 'Name (*)' else 'Name' end"/>
               </th>
               <td>
                 <vm:if test="self.v_form <> 'Bookmark/View'">
@@ -1304,7 +1304,7 @@
             </tr>
             <tr>
               <th>
-                <v:label for="b_uri" value="Link (*)"/>
+                    <v:label for="b_uri" value="--case when self.v_form <> 'Bookmark/View' then 'Link (*)' else 'Link' end"/>
               </th>
               <td>
                 <vm:if test="self.v_form <> 'Bookmark/View'">
@@ -1428,7 +1428,9 @@
           </div>
         </div>
         <div class="new-form-footer">
+          <vm:if test="self.v_form <> 'Bookmark/View'">
           <input type="button" title="Save" value="Save" onclick="javascript: if (validateInputs(this)) {BMK.formPost('<?V self.v_form ?>');}; return false;"/>
+          </vm:if>
           <input type="button" title="Cancel" value="Cancel" onclick="javascript: BMK.formClose(); return false;"/>
         </div>
       </v:template>

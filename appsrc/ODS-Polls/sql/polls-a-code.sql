@@ -19,6 +19,54 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+-------------------------------------------------------------------------------
+--
+-- ACL Functions
+--
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  if (exists (select 1 from POLLS.WA.POLL where P_ID = id and P_ACL is not null))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare graph_iri, groups_iri, acl_iris any;
+
+  rc := '';
+  if (POLLS.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (POLLS.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..poll_post_iri (domain_id, id), POLLS.WA.forum_iri (domain_id));
+
+    graph_iri := POLLS.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (POLLS.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Session Functions
@@ -36,14 +84,16 @@ create procedure POLLS.WA.session_domain (
   };
 
   options := http_map_get('options');
-  if (not is_empty_or_null (options))
+  if (not DB.DBA.is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
-  if (is_empty_or_null (domain_id)) 
+  }
+  if (DB.DBA.is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'Polls'))
     domain_id := -1;
 
 _end:;
@@ -56,57 +106,26 @@ _end:;
 create procedure POLLS.WA.session_restore(
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare domain_id, user_id, user_name, user_role any;
 
-  declare exit handler for sqlstate '*' {
-    domain_id := -2;
-    goto _end;
-  };
-
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-    domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id)) 
-  {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
-  domain_id := cast(domain_id as integer);
+  domain_id := POLLS.WA.session_domain (params);
   user_id := -1;
+  user_role := 'expire';
+  user_name := 'Expire session';
+
   for (select U.U_ID,
               U.U_NAME,
               U.U_FULL_NAME
          from DB.DBA.VSPX_SESSION S,
               WS.WS.SYS_DAV_USER U
-        where S.VS_REALM = realm
-          and S.VS_SID   = sid
+        where S.VS_REALM = get_keyword ('realm', params, 'wa')
+          and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
     user_id   := U_ID;
     user_name := POLLS.WA.user_name(U_NAME, U_FULL_NAME);
-    user_role := POLLS.WA.access_role(domain_id, U_ID);
-  }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
-    if (domain_id = -1) {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    } else if (domain_id = -2) {
-      user_role := 'public';
-      user_name := 'Public User';
-    } else {
-      user_role := 'guest';
-      user_name := 'Guest User';
     }
+  user_role := POLLS.WA.access_role (domain_id, user_id);
 
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
@@ -121,7 +140,8 @@ _end:
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure POLLS.WA.frozen_check(in domain_id integer)
+create procedure POLLS.WA.frozen_check (
+  in domain_id integer)
 {
   declare exit handler for not found { return 1; };
 
@@ -144,7 +164,8 @@ create procedure POLLS.WA.frozen_check(in domain_id integer)
 
 -------------------------------------------------------------------------------
 --
-create procedure POLLS.WA.frozen_page(in domain_id integer)
+create procedure POLLS.WA.frozen_page (
+  in domain_id integer)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_ID = domain_id);
 }
@@ -159,64 +180,21 @@ create procedure POLLS.WA.check_admin(
   in user_id integer) returns integer
 {
   declare group_id integer;
+
+  if ((user_id = 0) or (user_id = http_dav_uid ()))
+    return 1;
+
   group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
+  if ((group_id = 0) or (group_id = http_dav_uid ()) or (group_id = http_dav_uid()+1))
+      return 1;
 
-  if (user_id = 0)
-    return 1;
-  if (user_id = http_dav_uid ())
-    return 1;
-  if (group_id = 0)
-    return 1;
-  if (group_id = http_dav_uid ())
-    return 1;
-  if(group_id = http_dav_uid()+1)
-    return 1;
   return 0;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure POLLS.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
-{
-  whenever not found goto _end;
-
-  if (POLLS.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest') {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-  }
-  if (role_name = 'owner')
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-_end:
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure POLLS.WA.check_grants2(in role_name varchar, in page_name varchar)
+create procedure POLLS.WA.check_grants (in role_name varchar, in page_name varchar)
 {
   declare tree any;
 
@@ -229,9 +207,14 @@ create procedure POLLS.WA.check_grants2(in role_name varchar, in page_name varch
 
 -------------------------------------------------------------------------------
 --
-create procedure POLLS.WA.access_role(in domain_id integer, in user_id integer)
+create procedure POLLS.WA.access_role (
+  in domain_id integer,
+  in user_id integer)
 {
-  whenever not found goto _end;
+  declare rc varchar;
+
+  if (domain_id <= 0)
+    return 'expire';
 
   if (POLLS.WA.check_admin (user_id))
     return 'admin';
@@ -268,13 +251,20 @@ create procedure POLLS.WA.access_role(in domain_id integer, in user_id integer)
                 and C.WAI_ID = domain_id))
     return 'reader';
 
-  if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
+  rc := POLLS.WA.acl_check (domain_id);
+  if (rc = 'R')
+    return 'public';
 
-_end:
+  if (rc = 'W')
+    return 'author';
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
   return 'public';
+
+  return 'expire';
 }
 ;
 
@@ -824,6 +814,15 @@ create procedure POLLS.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..polls_iri (POLLS.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.acl_graph (
+  in domain_id integer)
+{
+  return SIOC..acl_graph ('Polls', POLLS.WA.domain_name (domain_id));
 }
 ;
 

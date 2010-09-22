@@ -33,7 +33,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := AB.WA.page_url (self.domain_id, 'settings.vspx');
+          self.F1.uf_action := POLLS.WA.page_url (self.domain_id, 'settings.vspx');
         ]]>
       </v:before-render>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>

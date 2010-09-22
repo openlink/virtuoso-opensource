@@ -398,7 +398,7 @@ create method wa_dashboard () for wa_eNews2
                                                        self.wa_name as "application"
                                                       ),
                                        XMLELEMENT ( 'dash-data',
-	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..feed_item_iri (_feed_id, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+	                                                  XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..feed_item_iri (_feed_id, _id) as nvarchar), N'">', ENEWS.WA.utf2wide (_title), N'</a>') as "content",
 	                                                                  0 as "comments"
 	                                                                )
                                           	      )

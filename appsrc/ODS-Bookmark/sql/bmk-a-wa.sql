@@ -401,7 +401,7 @@ create method wa_dashboard () for wa_bookmark
                                                    ),
                                      XMLELEMENT(
                                                 'dash-data',
-                                                XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..bmk_post_iri (iWaiID, _id) as nvarchar), N'">', OMAIL.WA.utf2wide (_title), N'</a>') as "content",
+                                                XMLATTRIBUTES ( concat (N'<a href="', cast (SIOC..bmk_post_iri (iWaiID, _id) as nvarchar), N'">', BMK.WA.utf2wide (_title), N'</a>') as "content",
 	                                                              0 "comments"
 	                                                            )
                                           	   )

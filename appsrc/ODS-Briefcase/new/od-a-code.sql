@@ -105,57 +105,24 @@ create procedure ODRIVE.WA.session_restore (
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, 'wa');
-
   domain_id := ODRIVE.WA.session_domain (params);
   user_id := -1;
-  if (domain_id <> -1)
-    for (select U_ID,
-                U_NAME,
-                U_FULL_NAME
-           from DB.DBA.VSPX_SESSION,
-                WS.WS.SYS_DAV_USER
-          where VS_REALM = realm
-            and VS_SID   = sid
-            and VS_UID   = U_NAME) do
-    {
-      user_id   := U_ID;
-      user_name := ODRIVE.WA.user_name (U_NAME, U_FULL_NAME);
-      user_role := ODRIVE.WA.access_role (domain_id, U_ID);
-    }
-
-  if ((user_id = -1) and (domain_id >= 0) and (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'oDrive' and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
-  {
-    if (domain_id = -1)
-    {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    } else {
-      user_id := coalesce((select A.U_ID
-                             from SYS_USERS A,
-                                  WA_MEMBER B,
-                                  WA_INSTANCE C
-                            where B.WAM_USER = A.U_ID
-                              and B.WAM_MEMBER_TYPE = 1
-                              and B.WAM_INST = C.WAI_NAME
-                              and C.WAI_ID = domain_id), -1);
-      if (user_id = -1)
-      {
         user_role := 'expire';
         user_name := 'Expire session';
-      } else {
-        user_role := 'public';
-        user_name := 'Public User';
-      }
-    }
-  }
-  else if (domain_id <> -1)
+
+  for (select U.U_ID,
+              U.U_NAME,
+              U.U_FULL_NAME
+         from DB.DBA.VSPX_SESSION S,
+              WS.WS.SYS_DAV_USER U
+        where S.VS_REALM = realm
+          and S.VS_SID   = sid
+          and S.VS_UID   = U.U_NAME) do
   {
-    if (ODRIVE.WA.domain_owner_id (domain_id) <> user_id)
-      user_role := 'public';
+    user_id   := U_ID;
+    user_name := ODRIVE.WA.user_name (U_NAME, U_FULL_NAME);
   }
+  user_role := ODRIVE.WA.access_role (domain_id, user_id);
 
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
@@ -203,22 +170,18 @@ create procedure ODRIVE.WA.frozen_page (
 create procedure ODRIVE.WA.check_admin(
   in usr any) returns integer
 {
+  declare grp integer;
+
   if (isstring(usr))
     usr := (select U_ID from SYS_USERS where U_NAME = usr);
 
-  declare grp integer;
-  grp := (select U_GROUP from SYS_USERS where U_ID = usr);
+  if ((usr = 0) or (usr = http_dav_uid ()))
+    return 1;
 
-  if (usr = 0)
+  grp := (select U_GROUP from SYS_USERS where U_ID = usr);
+  if ((grp = 0) or (grp = http_dav_uid ()) or (grp = http_dav_uid()+1))
     return 1;
-  if (usr = http_dav_uid ())
-    return 1;
-  if (grp = 0)
-    return 1;
-  if (grp = http_dav_uid ())
-    return 1;
-  if(grp = http_dav_uid()+1)
-    return 1;
+
   return 0;
 }
 ;
@@ -262,7 +225,8 @@ create procedure ODRIVE.WA.check_grants2 (in role_name varchar, in page_name var
 --
 create procedure ODRIVE.WA.access_role (in domain_id integer, in user_id integer)
 {
-  whenever not found goto _end;
+  if (domain_id <= 0)
+    return 'expire';
 
   if (ODRIVE.WA.check_admin (user_id))
     return 'admin';
@@ -295,13 +259,15 @@ create procedure ODRIVE.WA.access_role (in domain_id integer, in user_id integer
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
     return 'reader';
-  if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
 
-_end:
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+  {
   return 'public';
+}
+  return 'expire';
 }
 ;
 

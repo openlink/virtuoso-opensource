@@ -1124,11 +1124,15 @@
             </vm:if>
             <vm:if test="self.cAction = 'settings'">
               <div class="lc lc_close">
+                <vm:if test="self.access_role not in ('public', 'guest')">
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems gems2" style="color: black;">Settings</span>
+                </vm:if>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems gems2" style="color: black;">Bookmarklet</span>
+                <vm:if test="self.access_role not in ('public', 'guest')">
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Upstreams" class="gems gems2" style="color: black;">Upstreams</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems gems2" style="color: black;">Share My Calendar</span>
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems gems2" style="color: black;">Accepted Calendars</span>
+                </vm:if>
                 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
                 <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'back');" title="Back" class="gems gems2" style="color: black;">Back</span>
               </div>

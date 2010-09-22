@@ -19,6 +19,53 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+-------------------------------------------------------------------------------
+--
+-- ACL Functions
+--
+-------------------------------------------------------------------------------
+create procedure ENEWS.WA.acl_condition (
+  in domain_id integer,
+  in id integer := null)
+{
+  if (not is_https_ctx ())
+    return 0;
+
+  if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_ACL is not null))
+    return 1;
+
+  --if (exists (select 1 from ENEWS.WA.PERSONS where P_ID = id and P_ACL is not null))
+  --  return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.acl_check (
+  in domain_id integer,
+  in id integer := null)
+{
+  declare rc varchar;
+  declare graph_iri, groups_iri, acl_iris any;
+
+  rc := '';
+  if (ENEWS.WA.acl_condition (domain_id, id))
+  {
+    acl_iris := vector (ENEWS.WA.forum_iri (domain_id));
+    if (not isnull (id))
+      acl_iris := vector (SIOC..feed_iri (id), ENEWS.WA.forum_iri (domain_id));
+
+    graph_iri := ENEWS.WA.acl_graph (domain_id);
+    groups_iri := SIOC..acl_groups_graph (ENEWS.WA.domain_owner_id (domain_id));
+    rc := SIOC..acl_check (graph_iri, groups_iri, acl_iris);
+  }
+  return rc;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Session Functions
@@ -37,13 +84,15 @@ create procedure ENEWS.WA.session_domain (
 
   options := http_map_get('options');
   if (not is_empty_or_null (options))
+  {
     domain_id := get_keyword ('domain', options);
+  }
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'eNews2'))
     domain_id := -1;
 
 _end:;
@@ -56,56 +105,26 @@ _end:;
 create procedure ENEWS.WA.session_restore(
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare domain_id, user_id, user_name, user_role any;
 
-  declare exit handler for sqlstate '*', not found {
-    domain_id := -2;
-    goto _end;
-  };
-
-  sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, 'wa');
-
-  options := http_map_get('options');
-  if (not is_empty_or_null(options))
-    domain_id := get_keyword('domain', options);
-  if (is_empty_or_null (domain_id)) {
-    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-    domain_id := cast(aPath[1] as integer);
-  }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
-    domain_id := -1;
-
-_end:
-  domain_id := cast(domain_id as integer);
+  domain_id := ENEWS.WA.session_domain (params);
   user_id := -1;
-  for (select U_ID,
-              U_NAME,
-              U_FULL_NAME
-         from DB.DBA.VSPX_SESSION,
-              WS.WS.SYS_DAV_USER
-        where VS_REALM = realm
-          and VS_SID   = sid
-          and VS_UID   = U_NAME) do
+  user_role := 'expire';
+  user_name := 'Expire session';
+
+  for (select U.U_ID,
+              U.U_NAME,
+              U.U_FULL_NAME
+         from DB.DBA.VSPX_SESSION S,
+              WS.WS.SYS_DAV_USER U
+        where S.VS_REALM = get_keyword ('realm', params, 'wa')
+          and S.VS_SID   = get_keyword ('sid', params, '')
+          and S.VS_UID   = U.U_NAME) do
   {
     user_id   := U_ID;
     user_name := ENEWS.WA.user_name(U_NAME, U_FULL_NAME);
-    user_role := ENEWS.WA.access_role(domain_id, U_ID);
   }
-  if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
-    domain_id := -1;
-
-  if (user_id = -1)
-    if (domain_id = -1) {
-      user_role := 'expire';
-      user_name := 'Expire session';
-    } else if (domain_id = -2) {
-    user_role := 'public';
-    user_name := 'Public User';
-    } else {
-      user_role := 'guest';
-      user_name := 'Guest User';
-  }
+  user_role := ENEWS.WA.access_role (domain_id, user_id);
 
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
@@ -120,7 +139,8 @@ _end:
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure ENEWS.WA.frozen_check(in domain_id integer)
+create procedure ENEWS.WA.frozen_check (
+  in domain_id integer)
 {
   declare exit handler for not found { return 1; };
 
@@ -143,7 +163,8 @@ create procedure ENEWS.WA.frozen_check(in domain_id integer)
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.frozen_page(in domain_id integer)
+create procedure ENEWS.WA.frozen_page (
+  in domain_id integer)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_ID = domain_id);
 }
@@ -155,63 +176,17 @@ create procedure ENEWS.WA.frozen_page(in domain_id integer)
 --
 -------------------------------------------------------------------------------
 create procedure ENEWS.WA.check_admin(
-  in user_id integer) returns integer
+  in user_id integer)
 {
   declare group_id integer;
+
+  if ((user_id = 0) or (user_id = http_dav_uid ()))
+    return 1;
+
   group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
-
-  if (user_id = 0)
-    return 1;
-  if (user_id = http_dav_uid ())
-    return 1;
-  if (group_id = 0)
-    return 1;
-  if (group_id = http_dav_uid ())
-    return 1;
-  if(group_id = http_dav_uid()+1)
-    return 1;
-  return 0;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.check_grants (
-  in domain_id integer,
-  in user_id integer,
-  in role_name varchar)
-{
-  whenever not found goto _end;
-
-  if (ENEWS.WA.check_admin(user_id))
-    return 1;
-  if (role_name is null or role_name = '')
-    return 0;
-  if (role_name = 'admin')
-    return 0;
-  if (role_name = 'guest') {
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
+  if ((group_id = 0) or (group_id = http_dav_uid ()) or (group_id = http_dav_uid()+1))
       return 1;
-  }
-  if (role_name = 'owner')
-    if (exists(select 1
-                 from SYS_USERS A,
-                      WA_MEMBER B,
-                      WA_INSTANCE C
-                where A.U_ID = user_id
-                  and B.WAM_USER = A.U_ID
-                  and B.WAM_MEMBER_TYPE = 1
-                  and B.WAM_INST = C.WAI_NAME
-                  and C.WAI_ID = domain_id))
-      return 1;
-_end:
+
   return 0;
 }
 ;
@@ -234,7 +209,7 @@ create procedure ENEWS.WA.check_feeds_grants (
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.check_grants2 (
+create procedure ENEWS.WA.check_grants (
   in role_name varchar,
   in page_name varchar)
 {
@@ -253,7 +228,10 @@ create procedure ENEWS.WA.access_role (
   in domain_id integer,
   in user_id integer)
 {
-  whenever not found goto _end;
+  declare rc varchar;
+
+  if (domain_id <= 0)
+    return 'public';
 
   if (ENEWS.WA.check_admin(user_id))
     return 'admin';
@@ -286,13 +264,21 @@ create procedure ENEWS.WA.access_role (
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
     return 'reader';
-  if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
-    return 'guest';
 
-_end:
+  rc := ENEWS.WA.acl_check (domain_id);
+  if (rc = 'R')
   return 'public';
+
+  if (rc = 'W')
+    return 'author';
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+    return 'public';
+
+  return 'expire';
 }
 ;
 
@@ -732,7 +718,7 @@ create procedure ENEWS.WA.domain_url (
   } else {
     S := sprintf ('%s/dataspace/%U/subscriptions/%U', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.domain_name (domain_id));
   }
-  return ENEWS.WA.url_fix (S, sid, realm);
+  return ENEWS.WA.url_fix (ENEWS.WA.iri_fix (S), sid, realm);
 }
 ;
 
@@ -749,9 +735,9 @@ create procedure ENEWS.WA.domain_sioc_url (
   {
     S := sprintf ('http://%s/subscriptions', DB.DBA.wa_cname ());
   } else {
-  S := sprintf ('http://%s/dataspace/%U/subscriptions/%U', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.domain_name (domain_id));
+    S := ENEWS.WA.forum_iri (domain_id);
   }
-  return ENEWS.WA.url_fix (S, sid, realm);
+  return ENEWS.WA.url_fix (ENEWS.WA.iri_fix (S), sid, realm);
 }
 ;
 
@@ -761,6 +747,15 @@ create procedure ENEWS.WA.forum_iri (
   in domain_id integer)
 {
   return SIOC..feeds_iri (ENEWS.WA.domain_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.acl_graph (
+  in domain_id integer)
+{
+  return SIOC..acl_graph ('eNews2', ENEWS.WA.domain_name (domain_id));
 }
 ;
 
@@ -889,7 +884,7 @@ create procedure ENEWS.WA.account_sioc_url (
 {
   declare S varchar;
 
-  S := SIOC..person_iri (SIOC..user_iri (ENEWS.WA.domain_owner_id (domain_id), null));
+  S := ENEWS.WA.iri_fix (SIOC..person_iri (SIOC..user_iri (ENEWS.WA.domain_owner_id (domain_id), null)));
   return ENEWS.WA.url_fix (S, sid, realm);
 }
 ;
@@ -1947,7 +1942,6 @@ create procedure ENEWS.WA.channel_psh (
   declare psh, link varchar;
   declare parts any;
 
-  -- dbg_obj_print('', xt);
   psh := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" ] /rss/channel/atom:link[@rel="hub" and @title="PubSubHub"]/@href|/atom:feed/atom:link[@rel="hub" and @title="PubSubHub"]/@href', xt, 1) as varchar);
   if (isnull (psh))
   {
@@ -2156,7 +2150,6 @@ create procedure ENEWS.WA.channel_psh_subscribe (
                      http_method=>'GET',
                      http_headers=>pshReqHdr,
                      headers=>pshResHdr);
-    -- dbg_obj_print('', pshResHdr);
     if (pshResHdr[0] not like 'HTTP/1._ 20%')
       return null;
 
@@ -4692,7 +4685,7 @@ create procedure ENEWS.WA.url_fix (
 create procedure ENEWS.WA.iri_fix (
   in S varchar)
 {
-  if (is_https_ctx ())
+  if (not is_empty_or_null (S) and is_https_ctx ())
   {
     declare V any;
 
