@@ -711,7 +711,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 }
 
 
-#ifdef DEBUG
+#ifdef DK_ALLOC_BOX_DEBUG
 void
 dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
 {
@@ -723,12 +723,10 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-#endif
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -765,12 +763,10 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-#endif
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -809,12 +805,10 @@ dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known
   tag = box_tag (box);
   if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
     return;
-#ifndef NDEBUG
   if (TAG_FREE == tag)
     GPF_T1 ("Domain of connectivity contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Domain of connectivity contains a pointer to a box marked bad");
-#endif
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
