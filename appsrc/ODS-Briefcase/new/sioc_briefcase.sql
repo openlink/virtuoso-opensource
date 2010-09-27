@@ -158,6 +158,15 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
       WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
       WS.WS.WAC_INSERT (RES_FULL_PATH, PROP_VALUE, RES_OWNER, RES_GROUP, 1);
     }
+    for (select DB.DBA.DAV_SEARCH_PATH (COL_ID, PROP_TYPE) COL_FULL_PATH, COL_OWNER, COL_GROUP, PROP_VALUE
+           from WS.WS.SYS_DAV_COL
+                  join WS.WS.SYS_DAV_PROP ON PROP_PARENT_ID = COL_ID and PROP_TYPE = 'C'
+          where DB.DBA.DAV_SEARCH_PATH (COL_ID, PROP_TYPE) like ODRIVE.WA.dav_home(_U_NAME) || '%'
+            and PROP_NAME = 'virt:aci_meta_n3') do
+    {
+      WS.WS.WAC_DELETE (COL_FULL_PATH, 1);
+      WS.WS.WAC_INSERT (COL_FULL_PATH, PROP_VALUE, COL_OWNER, COL_GROUP, 1);
+    }
   }
   return;
 }

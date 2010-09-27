@@ -634,11 +634,8 @@
             }
 
             -- ACI (Web Access)
-            if (self.dav_type = 'R')
-            {
               dav_aci := ODRIVE.WA.aci_n3 (ODRIVE.WA.aci_params (params));
               ODRIVE.WA.DAV_PROP_SET (dav_fullPath, 'virt:aci_meta_n3', dav_aci);
-          }
           }
 
           -- Folder
@@ -663,6 +660,7 @@
                 itemList := DB.DBA.DAV_PROP_LIST_INT (DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), 'C', 'virt:%', 0);
                   foreach (any item in itemList) do
                   {
+                  if (item[0] <> 'virt:aci_meta_n3')
                   DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                   }
                 }
@@ -702,7 +700,6 @@
               {
                 retValue := ODRIVE.WA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
               } else {
-                --dbg_obj_print ('CatFilter_CONFIGURE');
               retValue := ODRIVE.WA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
               }
               if (ODRIVE.WA.DAV_ERROR(retValue))
@@ -1878,17 +1875,28 @@
                         		  <![CDATA[
                         		    <script type="text/javascript">
                         		    <?vsp
-                                declare M, N integer;
-                                declare aci_values any;
+                                declare M, N, L integer;
+                                declare aci_values, aci_parents any;
 
-                                M := 0;
+                                aci_parents := ODRIVE.WA.aci_parents (self.dav_path);
+                                for (L := 0; L < length (aci_parents); L := L + 1)
+                                {
+                                  aci_values := ODRIVE.WA.aci_load (aci_parents[L]);
+                                  for (N := 0; N < length (aci_values); N := N + 1)
+                                  {
+                                    M := M + 1;
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {value: "Inherited"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                  }
+                                }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
-                                for (N := 0; N < length (aci_values); N := N + 1) {
+                                for (N := 0; N < length (aci_values); N := N + 1)
+                                {
                                   M := M + 1;
-                                  if (self.dav_enable) {
+                                  if (self.dav_enable)
+                                  {
                                     http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', initcap (aci_values[N][2]), aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                                   }
                                   }
                         		    ?>
