@@ -85,13 +85,13 @@
  <br/>
   <div id="b" class="c1">
     <div class="tabs">
-      <v:url name="sec_url_0" value="Password Settings" url="--sprintf('uiedit.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="sec_url_3" value="Password recovery" url="--sprintf('uiedit.vspx?page=3&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="sec_url_1" value="OpenID" url="--sprintf('uiedit.vspx?page=3&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_0" value="Password Settings" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_3" value="Password recovery" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_1" value="OpenID" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
     <vm:if test="not isnull (self.fb)">
-	<v:url name="sec_url_2" value="Facebook" url="--sprintf('uiedit.vspx?page=3&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
+	<v:url name="sec_url_2" value="Facebook" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
     </vm:if>
-      <v:url name="sec_url_4" value="Limits" url="--sprintf('uiedit.vspx?page=3&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_4" value="Limits" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
   <?vsp 
        declare ua any;
        ua := http_request_header (http_request_header (), 'User-Agent');
@@ -116,14 +116,14 @@
 	 }
 	 else
 	 { ?>
-      <v:url name="sec_url_6" value="Certificate Generator" url="--sprintf('uiedit.vspx?page=3&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_6" value="Certificate Generator" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=6')" xhtml_class="--case when self.tabNo = 6 then 'tabX activeTabX' else 'tabX' end"/>
       <?vsp
           }
        ?>
-      <v:url name="sec_url_5" value="X.509 Certificates" url="--sprintf('uiedit.vspx?page=3&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="sec_url_5" value="X.509 Certificates" url="--sprintf('uiedit_sec.vspx?page=3&tabNo=5')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
     </div>
     <div class="contents">
-  <v:form name="usr_pwd" type="simple" method="POST" action="uiedit.vspx?page=3">
+  <v:form name="usr_pwd" type="simple" method="POST" action="uiedit_sec.vspx?page=3">
       <v:template name="sec_tmpl_0" type="simple" enabled="-- equ (self.tab_no, 0)">
 	  <input type="hidden" value="0" name="tabNo" /> 
     <fieldset>
@@ -249,7 +249,7 @@
 			    self.vc_error_message := err;
 			    return;
 			  }
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=1');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=1');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -321,7 +321,7 @@
                       return;
                     }
                     WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', self.fb._user);
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>
               </v:button>
@@ -332,7 +332,7 @@
                       return;
 
                     WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', null);
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=2');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=2');
                   ]]>
                 </v:on-post>
               </v:button>
@@ -394,7 +394,7 @@
 
                         WA_USER_EDIT (self.u_name, 'SEC_QUESTION', self.sec_question.ufl_value);
                         WA_USER_EDIT (self.u_name, 'SEC_ANSWER', self.sec_answer.ufl_value);
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=3');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=3');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -436,7 +436,7 @@
                     }
 
                     USER_SET_OPTION (self.u_name, 'SIOC_POSTS_QUERY_LIMIT', self.sioc_limit1.ufl_value);
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=4');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=4');
                       ]]>
                     </v:on-post>
 		</v:button>
@@ -467,8 +467,8 @@
 		      <td><?vsp http_value (UC_FINGERPRINT, 'b'); ?></td>
 		      <td><?V case when UC_LOGIN = 1 then 'Yes' else 'No' end ?></td>
 		      <td>
-			  <v:url name="ce1" value="Edit" url="--sprintf ('uiedit.vspx?page=3&tabNo=5&cert_edit=%d', UC_ID)" render-only="1"/>
-			  <v:url name="ce2" value="Delete" url="--sprintf ('uiedit.vspx?page=3&tabNo=5&cert_del=%d', UC_ID)" render-only="1"/>
+			  <v:url name="ce1" value="Edit" url="--sprintf ('uiedit_sec.vspx?page=3&tabNo=5&cert_edit=%d', UC_ID)" render-only="1"/>
+			  <v:url name="ce2" value="Delete" url="--sprintf ('uiedit_sec.vspx?page=3&tabNo=5&cert_del=%d', UC_ID)" render-only="1"/>
 		      </td>
 		  </tr>	    
 		  <?vsp 
@@ -524,7 +524,7 @@
           <span class="fm_ctl_btn">
               <v:button name="bt_cncl_6" value="Cancel" action="simple" >
 		  <v:on-post><![CDATA[
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=5');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=5');
 		    ]]></v:on-post>
             </v:button>
             <v:button name="bt_set2" value="Save Certificate" action="simple">
@@ -556,7 +556,7 @@
 			self.cert_edit := null;	
 		      }   
 		    commit work;  
-                    self.vc_redirect ('uiedit.vspx?page=3&tabNo=5');
+                    self.vc_redirect ('uiedit_sec.vspx?page=3&tabNo=5');
                 ]]>
               </v:on-post>
             </v:button>

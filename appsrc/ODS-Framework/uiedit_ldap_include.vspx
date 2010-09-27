@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="ldap-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:method name="render_select1" arglist="inout name any">
+    <![CDATA[
+  	  declare s1, s2, s3, s4 varchar;
+
+  	  s1 := either (equ (name, 'uid'), 'selected', '');
+  	  s2 := either (equ (name, 'cn'), 'selected', '');
+  	  s3 := either (equ (name, 'mail'), 'selected', '');
+  	  s4 := either (equ (name, 'title'), 'selected', '');
+
+  	  http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
+  	  http ('<option value="skip">--</option>');
+  	  http (sprintf ('<option value="nick" %s>Login Name</option>', s1));
+  	  http (sprintf ('<option value="name" %s>Name</option>', s2));
+  	  http (sprintf ('<option value="mbox" %s>E-Mail</option>', s3));
+  	  http (sprintf ('<option value="title" %s>Title</option>', s4));
+  	  http ('</select>');
+	  ]]>
+	</v:method>
+
+	<v:method name="render_select" arglist="inout name any">
+    <![CDATA[
+      declare N any;
+      declare S, T any;
+
+      T := '';
+      if (not isnull (self.v_maps))
+        for (N := 0; N < length (self.v_maps); N := N + 2)
+          if (self.v_maps[N] = name)
+            T := self.v_maps[N+1];
+
+      http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
+      http ('<option value="skip">--</option>');
+      for (N := 0; N < length (self.v_fields); N := N + 2)
+      {
+        S := '';
+        if (self.v_fields[N] = T)
+          S := ' selected="selected"';
+        http (sprintf ('<option value="%s"%s>%s</option>', self.v_fields[N], S, self.v_fields[N+1]));
+      }
+      http ('</select>');
+    ]]>
+  </v:method>
+
+
+  <v:method name="ldap_value" arglist="inout data any">
+    <![CDATA[
+      return case when isstring (data) then data else data[0] end;
+	  ]]>
+	</v:method>
+
+  <v:method name="ldap_pattern" arglist="in pattern any">
+    <![CDATA[
+      declare N integer;
+
+      for (N := 0; N < length (self.v_maps); N := N + 2)
+        if (self.v_maps [N+1] = pattern)
+          return self.v_maps [N];
+
+      return '';
+	  ]]>
+	</v:method>
+
+  <v:method name="ldap_data" arglist="inout data any, in pattern any">
+    <![CDATA[
+      declare M integer;
+
+      for (M := 0; M < length (data); M := M + 2)
+        if (data[M] = pattern)
+          return self.ldap_value (data[M+1]);
+
+      return '';
+	  ]]>
+	</v:method>
+
+  <v:variable name="v_mode" type="varchar" default="'LDAP/browse'"/>
+  <v:variable name="v_step" type="varchar" default="''"/>
+
+  <v:variable name="v_name" type="varchar" default="''"/>
+  <v:variable name="v_host" type="varchar" default="''"/>
+  <v:variable name="v_port" type="varchar" default="'389'"/>
+  <v:variable name="v_base_dn" type="varchar" default="''"/>
+  <v:variable name="v_bind_dn" type="varchar" default="''"/>
+  <v:variable name="v_password" type="varchar" default="''"/>
+  <v:variable name="v_default" type="integer" default="0"/>
+  <v:variable name="v_search" type="varchar" default="'(cn=*)'"/>
+  <v:variable persist="temp" name="v_fields" type="any" default="null"/>
+  <v:variable persist="0" name="v_maps" type="any" default="null"/>
+  <v:variable persist="0" name="v_data" type="any" default="null"/>
+
+  <h3>LDAP Servers Addministration</h3>
+  <vm:if test="self.v_mode = 'LDAP/browse'">
+    <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
+      <v:before-data-bind>
+        <![CDATA[
+          control.ds_sql := sprintf ('select * from LDAP..LDAP_SERVERS where LS_USER_ID = %d', self.u_id);
+        ]]>
+      </v:before-data-bind>
+    </v:data-source>
+    <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="lButton_1" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+              self.v_mode := 'LDAP/add';
+              self.v_step := '1';
+              self.v_name := '';
+              self.v_host := '';
+              self.v_port := '389';
+              self.v_base_dn := '';
+              self.v_bind_dn := '';
+              self.v_password := '';
+              self.v_maps := null;
+              self.v_data := null;
+              self.v_default := 1;
+              if (not isnull (LDAP..ldap_default (self.u_id)))
+                self.v_default := 0;
+
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+
+      <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+        <table id="ldap" class="listing ldap" cellspacing="0">
+          <tr class="listing_header_row">
+            <th>LDAP Name</th>
+            <th>LDAP Server Host</th>
+            <th>Is Default</th>
+		        <th width="50px">Action</th>
+          </tr>
+        </table>
+      </v:template>
+
+      <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+        <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+          <table>
+            <tr align="center">
+              <td colspan="3">No LDAP servers</td>
+            </tr>
+          </table>
+        </v:template>
+
+        <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+          <table>
+            <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+              <td nowrap="nowrap">
+                <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('LS_NAME')" format="%s"/>
+              </td>
+              <td nowrap="nowrap">
+                <v:label value="--sprintf ('%s:%s', (control.vc_parent as vspx_row_template).te_column_value('LS_HOST'), (control.vc_parent as vspx_row_template).te_column_value('LS_PORT'))" format="%s"/>
+              </td>
+              <td nowrap="nowrap">
+                <v:label value="--case when ((control.vc_parent as vspx_row_template).te_column_value('LS_DEFAULT') = 1) then 'Yes' else '' end" format="%s"/>
+              </td>
+              <td nowrap="nowrap">
+                <v:button name="lButton_2" action="simple" style="url" value="''" xhtml_class="img_button">
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/confg_16.png" border="0" alt="Edit LDAP Server" title="Edit LDAP Server"/> Edit';
+                    ]]>
+                  </v:before-render>
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_mode := 'LDAP/edit';
+                      self.v_step := '1';
+                      self.v_name := (control.vc_parent as vspx_row_template).te_column_value('LS_NAME');
+                      select LS_HOST,
+                             LS_PORT,
+                             LS_BASE_DN,
+                             LS_BIND_DN,
+                             LS_PASSWORD,
+                             LS_DEFAULT,
+                             deserialize (LS_MAPS)
+                        into self.v_host,
+                             self.v_port,
+                             self.v_base_dn,
+                             self.v_bind_dn,
+                             self.v_password,
+                             self.v_default,
+                             self.v_maps
+                        from LDAP..LDAP_SERVERS
+                       where LS_USER_ID = self.u_id
+                         and LS_NAME = self.v_name;
+
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="lButton_3" action="simple" style="url" value="''" xhtml_class="img_button">
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete LDAP Server" title="Delete LDAP Server"/> Delete';
+                    ]]>
+                  </v:before-render>
+                  <v:on-post>
+                    <![CDATA[
+                      delete from LDAP..LDAP_SERVERS where LS_USER_ID = self.u_id and LS_NAME = (control.vc_parent as vspx_row_template).te_column_value('LS_NAME');
+
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="lButton_4" action="simple" style="url" value="''" xhtml_class="img_button">
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_value := '<img src="images/icons/foaf.png" border="0" alt="Generate FOAF" title="Generate FOAF"/>';
+                    ]]>
+                  </v:before-render>
+                  <v:on-post>
+                    <![CDATA[
+                      self.v_name := (control.vc_parent as vspx_row_template).te_column_value('LS_NAME');
+                      self.v_mode := 'LDAP/foaf';
+
+                      declare host varchar;
+
+                      select LS_HOST,
+                             LS_PORT,
+                             LS_BASE_DN,
+                             LS_BIND_DN,
+                             LS_PASSWORD,
+                             LS_DEFAULT,
+                             deserialize (LS_MAPS)
+                        into self.v_host,
+                             self.v_port,
+                             self.v_base_dn,
+                             self.v_bind_dn,
+                             self.v_password,
+                             self.v_default,
+                             self.v_maps
+                        from LDAP..LDAP_SERVERS
+                       where LS_USER_ID = self.u_id
+                         and LS_NAME = self.v_name;
+
+                      connection_set ('LDAP_VERSION', 2);
+                     	host := 'ldap://' || self.v_host || ':' || self.v_port;
+                      self.v_search := '(cn=*)';
+                      self.v_data := ldap_search (host, 0, self.v_base_dn, self.v_search, self.v_bind_dn, self.v_password);
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+
+      </v:template>
+
+      <v:template type="simple" name-to-remove="table" set-to-remove="top">
+        <table>
+          <tr align="center">
+            <td colspan="4">
+              <vm:ds-navigation data-set="ds"/>
+            </td>
+          </tr>
+        </table>
+      </v:template>
+
+    </v:data-set>
+  </vm:if>
+  <v:template name="lTemplate" type="simple" enabled="--case when (self.v_mode = 'LDAP/foaf') then 1 else 0 end">
+    <div><v:label value="--'Export from LDAP Server ' || self.v_name || ' to FOAF'" /></div>
+    <div style="height: 400px; overflow: auto;">
+      <table id="lfoaf" class="listing" cellspacing="0">
+        <tr class="listing_header_row">
+          <th width="1%">
+            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+          </th>
+          <th>Login Name</th>
+          <th>Description</th>
+        </tr>
+        <?vsp
+          declare N, M integer;
+          declare data, loginPattern, loginData, namePattern any;
+
+          loginPattern := self.ldap_pattern ('P_NAME');
+          namePattern := self.ldap_pattern ('P_FULL_NAME');
+
+          for (N := 0; N < length (self.v_data); N := N + 2) {
+    	      if (self.v_data [N] = 'entry') {
+    	        data := self.v_data [N+1];
+    	        loginData := self.ldap_data (data, loginPattern);
+    	        if (loginData <> '') {
+    	  ?>
+    	  <tr>
+    	    <td width="1%">
+             <?vsp http (sprintf ('<input type="checkbox" name="cb_item" value="%d"', N+1)); ?>
+    		  </td>
+    		  <td>
+    		    <?V substring (loginData, 1, 50) ?>
+    		  </td>
+    		  <td>
+    		    <?V substring (self.ldap_data (data, namePattern), 1, 50) ?>
+    		  </td>
+        </tr>
+    	  <?vsp
+    	        }
+    	      }
+          }
+        ?>
+      </table>
+    </div>
+    <div class="new-form-footer">
+      <v:button name="lButton_5" action="simple" value="Generate FOAF" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            declare N, M, L, isFounded integer;
+            declare params, data, loginPattern, loginData, sStream, foafNames any;
+            declare foafName varchar;
+
+            loginPattern := self.ldap_pattern ('P_NAME');
+
+            sStream := string_output();
+            http ('<rdf:RDF xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n', sStream);
+
+            foafNames := LDAP..foaf_fields ();
+            params := e.ve_params;
+            for (N := 0; N < length (params); N := N + 4)
+            {
+              if (params[N] = 'cb_item')
+              {
+                isFounded := 0;
+                data := self.v_data [cast (params[N+1] as integer)];
+    	          loginData := self.ldap_data (data, loginPattern);
+    	          if (loginData <> '')
+    	          {
+                  http (sprintf ('  <foaf:Person rdf:about="%s">\n', loginData), sStream);
+                  for (M := 0; M < length (data); M := M + 2)
+                  {
+                    if (data[M] <> loginPattern)
+                    {
+                      for (L := 0; L < length (self.v_maps); L := L + 2)
+                      {
+                        if (self.v_maps [L] = data[M])
+                        {
+                          foafName := get_keyword (self.v_maps[L+1], foafNames);
+                          if (not isnull (foafName))
+                            http (sprintf ('    <foaf:%s>%V</foaf:%s>\n', foafName, self.ldap_value (data[M+1]), foafName), sStream);
+                          goto _exit3;
+                        }
+                      }
+                    }
+                  _exit3:;
+                  }
+                  http ('  </foaf:Person>\n', sStream);
+                }
+              }
+            }
+            http ('</rdf:RDF>', sStream);
+
+            http_rewrite ();
+            http_request_status ('HTTP/1.1 200 OK');
+            http_header ('Content-Type: application/x-download\r\n');
+            http_header ('Content-Disposition: inline; filename="ldap.foaf"\r\n');
+            http (string_output_string (sStream));
+            http_flush ();
+
+            self.v_maps := null;
+            self.v_data := null;
+            self.v_mode := 'LDAP/browse';
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button name="lButton_6" action="simple" value="Back" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            self.v_mode := 'LDAP/browse';
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+    </div>
+  </v:template>
+
+  <vm:if test="(self.v_mode in ('LDAP/add', 'LDAP/edit')) and (self.v_step = '1')">
+    <table class="ctl_grp" cellspacing="0">
+      <tr>
+        <td colspan="2" align="left">
+          <h3>LDAP Server</h3>
+        </td>
+      </tr>
+      <tr>
+        <th width="30%">
+          <vm:label for="ldap_name" value="LDAP server name"/>
+        </th>
+        <td>
+          <v:text name="ldap_name" null-value="--''" value="--self.v_name" xhtml_size="70"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <vm:label for="ldap_host" value="Host URL"/>
+        </th>
+        <td>
+          <v:text name="ldap_host" null-value="--''" value="--self.v_host" xhtml_size="70"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <vm:label for="ldap_port" value="Host port"/>
+        </th>
+        <td>
+          <v:text name="ldap_port" null-value="--''" value="--self.v_port" xhtml_size="10"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <v:label for="ldap_base_dn" value="Base DN"/>
+        </th>
+        <td>
+          <v:text name="ldap_base_dn" null-value="--''" value="--self.v_base_dn" xhtml_size="70"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <v:label for="ldap_bind_dn" value="Bind DN"/>
+        </th>
+        <td>
+          <v:text name="ldap_bind_dn" null-value="--''" value="--self.v_bind_dn" xhtml_size="70"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <v:label for="ldap_password" value="Password"/>
+        </th>
+        <td>
+          <v:text name="ldap_password" type="password" null-value="--''" value="--self.v_password" xhtml_size="30"/>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <v:label for="ldap_search" value="Search string"/>
+        </th>
+        <td>
+          <v:text name="ldap_search" null-value="--''" value="--self.v_search" xhtml_size="70"/>
+        </td>
+      </tr>
+      <vm:if test="(self.v_default <> 1)">
+        <tr>
+          <th/>
+          <td>
+            <v:check-box name="ldap_default" xhtml_id="ldap_default" is-boolean="1" true-value="1" false-value="0" value="0" />
+            <vm:label for="ldap_default" value="Set as default LDAP server"/>
+          </td>
+        </tr>
+      </vm:if>
+    </table>
+    <div class="new-form-footer">
+      <v:button name="lButton_7" action="simple" value="Next" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+          	declare host varchar;
+
+            self.v_name := trim (self.ldap_name.ufl_value);
+            self.v_host := trim (self.ldap_host.ufl_value);
+            self.v_port := trim (self.ldap_port.ufl_value);
+            self.v_base_dn := trim (self.ldap_base_dn.ufl_value);
+            self.v_bind_dn := trim (self.ldap_bind_dn.ufl_value);
+            self.v_password := trim (self.ldap_password.ufl_value);
+            self.v_search := trim (self.ldap_search.ufl_value);
+            if (self.v_default <> 1)
+              self.v_default := cast (self.ldap_default.ufl_value as integer);
+
+          	declare exit handler for sqlstate '*'
+          	{
+          	  self.vc_error_message := 'Unknown LDAP server. Please, check parameters!';
+          	  self.vc_is_valid := 0;
+          	  return;
+          	};
+            connection_set ('LDAP_VERSION', 2);
+          	host := 'ldap://' || self.v_host || ':' || self.v_port;
+            self.v_data := ldap_search (host, 0, self.v_base_dn, self.v_search, self.v_bind_dn, self.v_password);
+
+            self.v_step := '2';
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button name="lButton_8" action="simple" value="Cancel" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+    </div>
+  </vm:if>
+  <vm:if test="(self.v_mode in ('LDAP/add', 'LDAP/edit')) and (self.v_step = '2')">
+    <div style="height: 400px; overflow: auto;">
+      <table id="ldap" class="listing" cellspacing="0">
+        <tr class="listing_header_row">
+          <th>LDAP Property</th>
+          <th>User Property</th>
+          <th>Sample Data (based on first record)</th>
+        </tr>
+        <?vsp
+          declare N, M integer;
+          declare data any;
+
+          self.v_fields := LDAP..contact_fields ();
+          for (N := 0; N < length (self.v_data); N := N + 2)
+          {
+    	      if (self.v_data [N] = 'entry')
+    	      {
+    	        data := self.v_data [N+1];
+    	        for (M := 0; M < length (data); M := M + 2)
+    	        {
+    	  ?>
+    	  <tr>
+    	    <td>
+    		    <?V data[M] ?>
+    		  </td>
+    		  <td class="listing_col" nowrap="1">
+    		    <?vsp
+    		      self.render_select (data[M]);
+    		    ?>
+    		  </td>
+    		  <td>
+    		    <?V substring (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end, 1, 50) ?>
+    		  </td>
+        </tr>
+    	  <?vsp
+              }
+              goto _end;
+    	      }
+          }
+        _end:;
+        ?>
+      </table>
+    </div>
+    <div class="new-form-footer">
+      <v:button name="lButton_9" action="simple" value="Save" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            declare N integer;
+            declare params any;
+
+            params := e.ve_params;
+            self.v_maps := vector ();
+            for (N := 0; N < length (params); N := N + 2)
+              if (params[N] like 'sel_%')
+              {
+                if (params[N+1] <> 'skip')
+                {
+                  self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
+                } else {
+                  self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), ''));
+                }
+              }
+
+            insert replacing LDAP..LDAP_SERVERS (LS_USER_ID, LS_NAME, LS_HOST, LS_PORT, LS_BASE_DN, LS_BIND_DN, LS_PASSWORD, LS_DEFAULT, LS_MAPS)
+              values (self.u_id, self.v_name, self.v_host, self.v_port, self.v_base_dn, self.v_bind_dn, self.v_password, self.v_default, serialize (self.v_maps));
+
+            if (self.v_default = 1)
+              update LDAP..LDAP_SERVERS
+                 set LS_DEFAULT = 0
+               where LS_USER_ID = self.u_id
+                 and LS_NAME <> self.v_name;
+
+            self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button name="lButton_10" action="simple" value="Cancel" xhtml_class="form-button">
+        <v:on-post>
+          <![CDATA[
+            self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+    </div>
+  </vm:if>
+
+</v:page>

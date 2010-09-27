@@ -2295,6 +2295,41 @@ _exit:;
 }
 ;
 
+create procedure ODS.ODS_API."user.certificateUrl" () __soap_http 'application/json'
+{
+  declare uname, rc, ua, url, webId any;
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  rc := null;
+  ua := http_request_header (http_request_header (), 'User-Agent');
+  if (coalesce (strstr (ua, 'MSIE'), -1) > 0 or regexp_match ('Mozilla.*Windows.*Firefox.*\.NET CLR .*', ua) is not null)
+  {
+    declare svc_url varchar;
+
+    rc := '';
+    url := (select  top 1 WS_CERT_GEN_URL from DB.DBA.WA_SETTINGS);
+    if (length (url))
+    {
+      for (select U_NAME, U_FULL_NAME, U_E_MAIL, WAUI_BORG, WAUI_BCOUNTRY
+             from DB.DBA.SYS_USERS,
+                  DB.DBA.WA_USER_INFO
+     	      where U_NAME = uname and U_ID = WAUI_U_ID) do
+      {
+        webId := sioc..person_iri (sioc..user_obj_iri (U_NAME));
+        rc := sprintf ('%s?uri=%U&name=%U&email=%U&organization=%U', url, webId, coalesce (U_FULL_NAME, U_NAME), coalesce (U_E_MAIL, ''), coalesce (WAUI_BORG, ''));
+      }
+    }
+  }
+  return obj2json(rc, 10);
+}
+;
+
 create procedure ODS.ODS_API."user.search" (
   in pattern varchar) __soap_http 'text/xml'
 {
@@ -4780,6 +4815,7 @@ grant execute on ODS.ODS_API."user.disable" to ODS_API;
 grant execute on ODS.ODS_API."user.get" to ODS_API;
 grant execute on ODS.ODS_API."user.info" to ODS_API;
 grant execute on ODS.ODS_API."user.info.webID" to ODS_API;
+grant execute on ODS.ODS_API."user.certificateUrl" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;

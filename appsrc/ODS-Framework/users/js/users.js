@@ -732,11 +732,28 @@ function init() {
     OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2);});
     OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 3);});
     OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 4);});
+    var x = function (data) {
+      var url;
+      try {
+        var url = OAT.JSON.parse(data);
+      } catch (e) { url = null; }
+      if (url != null) {
+        if (url != '') {
+          var a = OAT.Dom.create('a');
+          a.href = url;
+          a.innerHTML = 'Certificate Generator';
+          a.style.cssText = 'color: #000; text-decoration: none;';
+          $("pf_tab_2_5").innerHTML = '';
+          $("pf_tab_2_5").appendChild(a);
+          OAT.Dom.show("pf_tab_2_5");
+        }
+      } else {
     OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 5);});
-    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 6);});
-    var regex = /Mozilla.*Windows.*Firefox.*\.NET CLR .*/;
-    if (!(OAT.Browser.isIE || regex.test(navigator.userAgent)))
       OAT.Dom.show("pf_tab_2_5");
+      }
+    }
+    OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
+    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 6);});
 
     pfTabInit('pf_tab_2_', $v('formSubtab'));
 	}

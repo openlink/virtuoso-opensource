@@ -33,10 +33,10 @@
     <br />
     <div id="b" class="c1">
       <div class="tabs">
-      <v:url name="b_url_0" value="Main" url="--sprintf('uiedit.vspx?page=2&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="b_url_1" value="Address" url="--sprintf('uiedit.vspx?page=2&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="b_url_2" value="Online Accounts" url="--sprintf('uiedit.vspx?page=2&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="b_url_3" value="Messaging Services" url="--sprintf('uiedit.vspx?page=2&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="b_url_0" value="Main" url="--sprintf('uiedit_bz.vspx?page=2&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="b_url_1" value="Address" url="--sprintf('uiedit_bz.vspx?page=2&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="b_url_2" value="Online Accounts" url="--sprintf('uiedit_bz.vspx?page=2&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="b_url_3" value="Messaging Services" url="--sprintf('uiedit_bz.vspx?page=2&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
       </div>
       <div class="contents">
       <v:template name="buss_template_0" type="simple" enabled="-- equ (self.tabNo, 0)">
