@@ -115,44 +115,77 @@ function dateParse(dateString, format) {
 	return result;
 }
 
-function datePopup(objName, format) {
-	if (!format) {
+function datePopup(objName, format, cb) {
+	if (!format)
 		format = 'yyyy-MM-dd';
-	}
+
 	var obj = $(objName);
 	var d = dateParse(obj.value, format);
-	var c = new OAT.Calendar( {
-		popup : true
-	});
+	var c = new OAT.Calendar({popup: true});
 	var coords = OAT.Dom.position(obj);
-	if (isNaN(coords[0])) {
+	if (isNaN(coords[0]))
 		coords = [ 0, 0 ];
-	}
+
 	var x = function(date) {
 		obj.value = dateFormat(date, format);
+		if (cb)
+		  cb();
 	}
 	c.show(coords[0], coords[1] + 30, x, d);
 }
 
-function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name,
-		f3Value) {
+function dateUpdate(srcField, dstFields, format) {
+  function dp(v, f) {
+    var dt = dateParse(v, f);
+    if (dt)
+      dt = new Date(dt[0], dt[1], dt[2]);
+
+    return dt;
+  }
+  var src = $(srcField);
+  if (!src) {return;}
+  var srcDate = dp(src.value, format);
+  if (!srcDate) {return;}
+
+  var srcSave = $(srcField+'_save');
+  if (!srcSave) {return;}
+  var srcSaveDate = dp(srcSave.value, format);
+  if (!srcSaveDate) {return;}
+
+  var delta = (srcDate.getTime() - srcSaveDate.getTime()) / (60 * 60 * 24 * 1000);
+	for (var i = 0; i < dstFields.length; i++) {
+    var dst = $(dstFields[i]);
+    if (!dst) {continue;}
+    var dstDate = dp(dst.value, format);
+    if (!dstDate) {continue;}
+
+    dstDate = new Date(dstDate.getFullYear(), dstDate.getMonth(), dstDate.getDate()+delta);
+    dst.value = dateFormat([dstDate.getFullYear(), dstDate.getMonth(), dstDate.getDate()], format);
+
+    var dstSave = $(dstFields[i]+'_save');
+    if (!dstSave) {continue;}
+    dstSave.value = dst.value;
+  }
+  srcSave.value = src.value;
+}
+
+function submitEnter(e, fForm, fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   var keyCode;
   
 	if (window.event) {
     keycode = window.event.keyCode;
   } else {
-		if (!e) {
+		if (!e)
 			return true;
-		}
+
       keycode = e.which;
   }
 	if (keycode == 13) {
 		if (fButton != '') {
       vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value);
       return false;
-    } else {
-      document.forms[fForm].submit();
     }
+		document.forms[fForm].submit();
   }
   return true;
 }
@@ -284,10 +317,8 @@ function coloriseTable(id) {
     var table = $(id);
 		if (table) {
       var rows = table.getElementsByTagName("tr");
-			for (i = 0; i < rows.length; i++) {
+			for (i = 0; i < rows.length; i++)
 				rows[i].className = rows[i].className + " tr_" + (i % 2);
-				;
-      }
     }
   }
 }
@@ -327,8 +358,7 @@ function sortSelect(box) {
 	});
 
   for (var i=0; i<o.length; i++)
-		box.options[i] = new Option(o[i].text, o[i].value,
-				o[i].defaultSelected, o[i].selected);
+		box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 }
 
 function showTab(tabs, tabsCount, tabNo) {
@@ -345,9 +375,9 @@ function showTab(tabs, tabsCount, tabNo) {
         OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-				if (c) {
+				if (c)
           OAT.Dom.hide(c);
-}
+
         OAT.Dom.removeClass(l, "activeTab");
   }
 }
@@ -367,20 +397,20 @@ function windowShow(sPage, width, height) {
 }
 
 function calendarsShow(sPage, width, height) {
-	if ($('ss_type_0').checked) {
+	if ($('ss_type_0').checked)
     sPage = sPage + '&mode=p'
-  }
+
   windowShow(sPage, width, height);
 }
 
 function calendarsHelp(mode) {
   var T = '';
-	if ($('ss_type_0').checked) {
+	if ($('ss_type_0').checked)
     T = 'Select Public';
-  }
-	if ($('ss_type_1').checked) {
+
+	if ($('ss_type_1').checked)
     T = 'Select Shared';
-  }
+
   $('ss_type_button').value = T;
   if (mode)
     $('ss_calendar').value = '';
@@ -728,11 +758,7 @@ function eAnnotea(event, id, domain_id, account_id) {
 	URL = 'annotea.vspx?sid=' + document.forms[0].sid.value + '&realm='
 			+ document.forms[0].realm.value + '&oid=' + id + '&did='
 			+ domain_id + '&aid=' + account_id;
-	window
-			.open(
-					URL,
-					'addressbook_anotea_window',
-					'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
+	window.open(URL, 'addressbook_anotea_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
   return false;
 }
 
@@ -755,8 +781,7 @@ function cExchange(command) {
 }
 
 function cCalendar(calendar_id) {
-	vspxPost('command', 'select', 'settings', 'mode', 'sharedUpdate', 'id',
-			calendar_id);
+	vspxPost('command', 'select', 'settings', 'mode', 'sharedUpdate', 'id', calendar_id);
 }
 
 function exchangeHTML() {
@@ -839,14 +864,7 @@ function dismissReminder(prefix, mode) {
         reminders = reminders + "," + o.value;
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders=" + reminders
-			+ urlParam("sid") + urlParam("realm"), function() {
-	}, {
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
+	OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders="+reminders+urlParam("sid")+urlParam("realm"), function(){}, {onstart : function(){}, onerror : function(){}});
 	reminderDialog.hide ();
 }
 
@@ -885,39 +903,36 @@ function destinationChange(obj, actions) {
     var a = actions.hide;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o) {
+			if (o)
 				OAT.Dom.hide(o);
 			}
     }
-  }
 	if (actions.show) {
     var a = actions.show;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o) {
+			if (o)
 				OAT.Dom.show(o);
     }
   }
-	}
 	if (actions.clear) {
     var a = actions.clear;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
-			if (o && o.value) {
+			if (o && o.value)
 				o.value = '';
 			}
     }
   }
-}
 
 var CAL = new Object();
 
 CAL.trim = function(sString, sChar) {
 
 	if (sString) {
-		if (sChar == null) {
+		if (sChar == null)
       sChar = ' ';
-    }
+
 		while (sString.substring(0, 1) == sChar) {
       sString = sString.substring(1, sString.length);
     }
@@ -940,9 +955,9 @@ CAL.colorRef = function(fldName) {
                         		
 CAL.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-	if (aboutDiv) {
+	if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
-	}
+
 	aboutDiv = OAT.Dom.create('div', {width: '430px', height: '150px'});
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS Calendar', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
@@ -957,11 +972,5 @@ CAL.aboutDialog = function() {
       }
     }
   }
-	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
-		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
-	});
+	OAT.AJAX.POST("ajax.vsp", "a=about", x, {type: OAT.AJAX.TYPE_TEXT, onstart: function(){}, onerror: function(){}});
 }

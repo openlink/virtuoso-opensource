@@ -2396,8 +2396,9 @@
                             From
                     </td>
                     <td>
-                                <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'e_eventStartDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                                <a href="#" id="e_eventStartDate_select" onclick="datePopup('e_eventStartDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                                <input type="hidden" name="e_eventStartDate_save" id="e_eventStartDate_save" value="<?V CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat) ?>" />
+                                <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'e_eventStartDate\', \'%s\', function(){dateUpdate(\'e_eventStartDate\', [\'e_eventEndDate\'], \'%s\');});', self.cDateFormat, self.cDateFormat)" xhtml_onchange="--sprintf ('dateUpdate(\'e_eventStartDate\', [\'e_eventEndDate\'], \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                                <a href="#" id="e_eventStartDate_select" onclick="datePopup('e_eventStartDate', '<?V self.cDateFormat ?>', function(){dateUpdate('e_eventStartDate', ['e_eventEndDate'], '<?V self.cDateFormat ?>');}); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                                 <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime">
@@ -3353,8 +3354,9 @@
                 <v:label for="t_eventEndDate" value="Start Date"/>
               </th>
               <td>
-                          <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventStartDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" id="t_eventStartDate_select" onclick="datePopup('t_eventStartDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                          <input type="hidden" name="t_eventStartDate_save" id="t_eventStartDate_save" value="<?V CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat) ?>" />
+                          <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventStartDate\', \'%s\', function(){dateUpdate(\'t_eventStartDate\', [\'t_eventEndDate\'], \'%s\');});', self.cDateFormat, self.cDateFormat)" xhtml_onchange="--sprintf ('dateUpdate(\'t_eventStartDate\', [\'t_eventEndDate\'], \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" id="t_eventStartDate_select" onclick="datePopup('t_eventStartDate', '<?V self.cDateFormat ?>', function(){dateUpdate('t_eventStartDate', ['t_eventEndDate'], '<?V self.cDateFormat ?>');}); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -3364,7 +3366,7 @@
                 <v:label for="t_eventEndDate" value="Due Date"/>
               </th>
               <td>
-                          <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventEndDate\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                          <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventEndDate\', \'%s\');', self.cDateFormat)" xhtml_onchange="dateUpdate(\'t_eventEndDate\', [\'t_eventStartDate\']);" xhtml_class="textbox" xhtml_size="10" />
                           <a href="#" id="t_eventEndDate_select" onclick="datePopup('t_eventEndDate', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
