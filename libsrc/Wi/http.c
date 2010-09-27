@@ -1619,6 +1619,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       client_connection_reset (ws->ws_cli);
       dk_free_box (ws->ws_client_ip);
       ws->ws_client_ip = NULL;
+      ws->ws_forward = 0;
       dk_free_box (ws->ws_req_line);
       ws->ws_req_line = NULL;
       dk_free_box (ws->ws_path_string);
@@ -3829,16 +3830,20 @@ http_client_ip (session_t * ses)
   return (box_dv_short_string (buf));
 }
 
+#define IS_GATEWAY_PROXY(ws) (ws->ws_forward || \
+    (http_proxy_address && (ws) && (ws)->ws_client_ip && !strcmp ((ws)->ws_client_ip, http_proxy_address)))
+
 void
 http_set_client_address (ws_connection_t * ws)
 {
   caddr_t xfwd;
-  if (!http_proxy_address || (ws && ws->ws_client_ip && strcmp (ws->ws_client_ip, http_proxy_address)))
+  if (!IS_GATEWAY_PROXY (ws))
     return;
   if (ws && ws->ws_lines && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
     {
       dk_free_box (ws->ws_client_ip);
       ws->ws_client_ip = xfwd;
+      ws->ws_forward = 1;
     }
 }
 
@@ -7629,10 +7634,12 @@ caddr_t * all_host_names = NULL;
 * if input is *sslini* copy https_port and return it
 ***********************************************************/
 caddr_t
-http_host_normalize_1 (caddr_t host, int to_ip, int def_port)
+http_host_normalize_1 (caddr_t host, int to_ip, int def_port, int physical_port)
 {
   char * sep;
   caddr_t host1, host2;
+  int port = 0;
+  char buf [6];
 
   if (!host)
     return NULL;
@@ -7646,28 +7653,39 @@ http_host_normalize_1 (caddr_t host, int to_ip, int def_port)
   if (!host2)
     return NULL;
 
+  host2 = box_string (host2);
   sep = strchr (host2, ':');
-  if (!sep && !alldigits (host2))
+  if (sep) /* host:port notation */
     {
-      char buf [6];
-      snprintf (buf, sizeof (buf), "%d", def_port);
-      host1 = dk_alloc_box (strlen (host2) + strlen (buf) + 2, DV_SHORT_STRING);
-      snprintf (host1, box_length (host1), "%s:%s", host2, buf);
+      *sep = 0;
+      sep ++;
+      port = atoi (sep);
     }
-  else if (!sep && alldigits (host2))
+  else if (alldigits (host2)) /* just port numer  */
     {
-      host1 = dk_alloc_box (strlen (host2) + 2, DV_SHORT_STRING);
-      snprintf (host1, box_length (host1), ":%s", host2);
+      port = atoi (host2);
+      host2[0] = 0;
     }
-  else
-    host1 = box_dv_short_string (host2);
+  /* else just host, default ports used, see next */
+
+  if (port <= 0 || port >= 0xffff) /* non-numeric, bad port number, or no port given, then rollback to default  */
+    port = def_port;
+
+  if (physical_port && port != physical_port)
+    port = physical_port;
+
+  snprintf (buf, sizeof (buf), "%d", port);
+  host1 = dk_alloc_box (strlen (host2) + strlen (buf) + 2, DV_SHORT_STRING);
+  snprintf (host1, box_length (host1), "%s:%s", host2, buf);
+
+  dk_free_box (host2);
   return host1;
 }
 
 caddr_t
 http_host_normalize (caddr_t host, int to_ip)
 {
-  return http_host_normalize_1 (host, to_ip, 80);
+  return http_host_normalize_1 (host, to_ip, 80, 0);
 }
 
 /*
@@ -8462,6 +8480,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
   SSL *ssl = NULL;
 #endif
   socklen_t len = sizeof (sa);
+  int port = 0;
 
   if (!ws)
     return;
@@ -8470,7 +8489,8 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
   if (!getsockname (s, (struct sockaddr *) &sa, &len))
     {
       unsigned char *addr = (unsigned char *) &sa.sin_addr;
-      snprintf (nif, sizeof (nif), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
+      port = ntohs (sa.sin_port);
+      snprintf (nif, sizeof (nif), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], port);
     }
   else
     nif[0] = 0;
@@ -8486,7 +8506,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
     host_hf = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
   if (NULL == host_hf)
     host_hf = box_dv_short_string (listen_host);
-  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80));
+  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80), IS_GATEWAY_PROXY (ws) ? port : 0);
   http_trace (("host hf: %s, host nfo:, %s nif: %s\n", host, listen_host, nif));
 
   if (!vsp_path)
@@ -8535,6 +8555,7 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath, int set_map)
   socklen_t len = sizeof (sa);
   ws_http_map_t * pmap = NULL;
   ws_http_map_t ** map = set_map ? &(ws->ws_map) : &pmap;
+  int port = 0;
 
   if (!ws)
     return NULL;
@@ -8543,16 +8564,21 @@ ws_get_http_map (ws_connection_t * ws, int dir, caddr_t lpath, int set_map)
   if (!getsockname (s, (struct sockaddr *) &sa, &len))
     {
       unsigned char *addr = (unsigned char *) &sa.sin_addr;
-      snprintf (nif, sizeof (nif), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], ntohs (sa.sin_port));
+      port = ntohs (sa.sin_port);
+      snprintf (nif, sizeof (nif), "%d.%d.%d.%d:%u", addr[0], addr[1], addr[2], addr[3], port);
     }
 
   tcpses_addr_info (ws->ws_session->dks_session, listen_host, sizeof (listen_host), 80, 1);
-  host_hf = ws_get_packed_hf (ws, "Host:", listen_host);
+  /* was : host_hf = ws_get_packed_hf (ws, "Host:", listen_host); */
+  if (NULL == (host_hf = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Host", NULL, 1)))
+    host_hf = ws_mime_header_field (ws->ws_lines, "Host", NULL, 1);
+  if (NULL == host_hf)
+    host_hf = box_dv_short_string (listen_host);
 #ifdef _SSL
   ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
   is_https = (NULL != ssl);
 #endif
-  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80));
+  host = http_host_normalize_1 (host_hf, 0, (is_https ? 443 : 80), IS_GATEWAY_PROXY (ws) ? port : 0);
 
   if (0 != nif[0])
     ppath = get_http_map (map, lpath, dir, host, nif); /* trying vhost & ip */
