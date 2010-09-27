@@ -1582,7 +1582,7 @@ extern long dbe_auto_sql_stats; /* from search.c */
 
 extern int in_crash_dump;
 
-#if defined (WITH_PTHREADS) && !defined (MTX_DEBUG) && !defined (MTX_METER)
+#if defined (WITH_PTHREADS) && !defined (MTX_DEBUG) && !defined (MTX_METER)  && !defined (IN_ODBC_CLIENT)
 #undef mutex_enter
 #undef mutex_leave
 #define mutex_enter(m)  pthread_mutex_lock (&((m)->mtx_mtx))

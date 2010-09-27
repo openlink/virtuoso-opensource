@@ -36,6 +36,7 @@
 
 /* #include <transact.h>
 #include "mts_client.h"*/
+#define IN_ODBC_CLIENT
 #include "wi.h"
 #include "msdtc.h"
 #include "2pc.h"

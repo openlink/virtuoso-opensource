@@ -31,7 +31,9 @@
 #include <wchar.h>
 #endif
 
+#define IN_ODBC_CLIENT
 #include "wi.h"
+
 
 caddr_t
 stmt_param_place_ptr (parm_binding_t * pb, int nth, cli_stmt_t * stmt,
@@ -1000,7 +1002,7 @@ con_make_current_ofs (cli_connection_t * con, cli_stmt_t * stmt)
 {
   dk_set_t res = NULL;
   caddr_t arr;
-
+  IN_CON (con);
   DO_SET (cli_stmt_t *, cr, &con->con_statements)
   {
     if (cr->stmt_compilation
@@ -1011,10 +1013,9 @@ con_make_current_ofs (cli_connection_t * con, cli_stmt_t * stmt)
       }
   }
   END_DO_SET ();
-
+  LEAVE_CON (con);
   arr = (caddr_t) dk_set_to_array (res);
   dk_set_free (res);
-
   return arr;
 }
 
