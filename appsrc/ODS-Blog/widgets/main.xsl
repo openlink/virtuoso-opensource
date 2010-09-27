@@ -2142,6 +2142,11 @@ window.onload = function (e)
 	  <xsl:apply-templates/>
       </a>
   </xsl:template>
+  <xsl:template match="vm:post-tweet-link">
+      <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" 
+	  data-url="<?V self.ur ?>?id=<?V t_post_id ?>">Tweet</a>
+      <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+  </xsl:template>
 
   <xsl:template match="vm:post-date">
       <xsl:call-template name="post-parts-check"/>
@@ -9260,15 +9265,16 @@ window.onload = function (e)
 							      xhtml_style="width:100%"
 							      name="templates_list"
 							      sql="select rtrim (WS.WS.COL_PATH (COL_ID), '/') as KEYVAL, COL_NAME as NAME FROM WS.WS.SYS_DAV_COL
-							      WHERE WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*' union all select self.phome || 'templates/custom' as KEYVAL, 'custom' as NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid"
+							      WHERE WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*' and 
+								  not WS..COL_PATH (COL_ID) like registry_get('_blog2_path_') || 'templates/_*/_*'
+								  union all select self.phome || 'templates/custom' as KEYVAL, 'custom' as NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid"
 							      key-column="KEYVAL"
 							      value-column="NAME"
 							      xhtml_size="10">
 							      <v:after-data-bind>
 								  control.ufl_value := self.current_template;
 								  if (control.ufl_value is null)
-								    control.ufl_value := registry_get('_blog2_path_')
-								  	|| 'templates/openlink/';
+								    control.ufl_value := registry_get('_blog2_path_') || 'templates/openlink/';
 								  control.vs_set_selected ();
 							      </v:after-data-bind>
 							  </v:data-list>
