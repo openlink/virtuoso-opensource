@@ -1538,7 +1538,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 
   if (a_uid < 0)
   {
-    if (DAV_AUTHENTICATE_SSL_CONDITION (id, what))
+    if (DAV_AUTHENTICATE_SSL_CONDITION ())
       goto _check_ssl;
 
     return a_uid;
@@ -1609,20 +1609,12 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
     -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
     return a_uid;
   }
-  if (DAV_AUTHENTICATE_SSL_CONDITION (id, what))
+  if (DAV_AUTHENTICATE_SSL_CONDITION ())
   {
   _check_ssl:
-    declare _perms, _res_full_path varchar;
-    declare a_gid, _res_id int;
+    declare _perms, a_gid any;
 
-    _res_id := id;
-    _res_full_path := DAV_SEARCH_PATH (_res_id, what);
-    if (isstring (_res_full_path) and _res_full_path like '%,acl')
-    {
-      _res_full_path := regexp_replace (_res_full_path, ',acl\x24', '');
-      _res_id := DAV_SEARCH_ID (_res_full_path, what);
-    }
-    if (DAV_AUTHENTICATE_SSL (_res_id, what, _res_full_path, req, a_uid, a_gid, _perms))
+    if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
       return a_uid;
   }
 
@@ -1692,22 +1684,9 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
       rc := WS.WS.GET_DAV_AUTH (a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms);
       if (rc < 0)
       {
-        declare _res_full_path varchar;
-        declare _res_id int;
-        -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', rc, ' (after WS.WS.GET_DAV_AUTH (', a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms, ')');
-        if (isstring (resPath) and resPath like '%,acl')
-        {
-          _res_full_path := regexp_replace (resPath, ',acl\x24', '');
-          _res_id := DAV_SEARCH_ID (_res_full_path, what);
-        }
-        else
-        {
-          _res_full_path := resPath;
-          _res_id := id;
-        }
-        if (DAV_AUTHENTICATE_SSL (_res_id, what, _res_full_path, req, a_uid, a_gid, _perms))
+        if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
           return a_uid;
-	if (rc < 0)
+
           return rc;	
       }
     }
@@ -1762,56 +1741,69 @@ nf_col_or_res:
 ;
 
 create function
-DAV_AUTHENTICATE_SSL_CONDITION (in id any, in what char(1)) returns integer
+DAV_AUTHENTICATE_SSL_ITEM (
+  inout id any,
+  inout what char(1),
+  inout path varchar) returns integer
 {
-  if (is_https_ctx () and what = 'R' and
-      __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is not null and
-      exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
+  declare pos integer;
+
+  if (isnull (path))
+    path := DAV_SEARCH_PATH (id, what);
+
+  if (isstring (path) and path like '%,acl')
   {
-    return 1;
+    path := regexp_replace (path, ',acl\x24', '');
+    pos := strrchr (path, '/');
+    if (not isnull (pos))
+      what := 'C';
+    id := DAV_SEARCH_ID (path, what);
   }
+}
+;
+
+create function
+DAV_AUTHENTICATE_SSL_CONDITION () returns integer
+{
+  if (is_https_ctx () and (__proc_exists ('SIOC.DBA.get_graph') is not null))
+    return 1;
+
   return 0;
 }
 ;
 
 create function
-DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
+DAV_AUTHENTICATE_SSL_WEBID ()
 {
-  declare rc integer;
-
-  rc := 0;
-  if (not DAV_AUTHENTICATE_SSL_CONDITION (id, what))
-    goto _exit;
-
+  declare retIRI varchar;
   declare graph, baseGraph, foafIRI, foafGraph, loadIRI, localIRI any;
   declare S, V, info, st, msg, data, meta any;
 
+  retIRI := null;
+
   set_user_id ('dba');
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
   foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
   V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
   V := split_and_decode (V, 0, '\0\0,:');
   if (V is null)
     V := vector ();
   foafIRI := get_keyword ('URI', V);
-      if (foafIRI is null)
+  if (isnull (foafIRI))
     {
       if (__proc_exists ('DB.DBA.FOAF_SSL_WEBFINGER') is not null)
 	{
-	  foafIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-	  if (foafIRI is not null)
-	    {
-      st := '00000';
-      goto authenticated;
-    }
+	    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
+	    if (not isnull (retIRI))
+	      goto _exit;
 	}
       if (__proc_exists ('ODS.DBA.FINGERPOINT_WEBID_GET') is not null)
 	{
-	  foafIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
-	}
-      if (foafIRI is null)
+	    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
+	    if (not isnull (retIRI))
 	goto _exit;
     }
+  } else {
+    foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
   localIRI := foafIRI;
   V := rfc1808_parse_uri (localIRI);
   if (is_https_ctx () and
@@ -1828,10 +1820,8 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
   S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
   st := '00000';
   exec (S, st, msg, vector (), 0);
-  if (st <> '00000')
-    goto _exit;
-
-  info := get_certificate_info (9);
+    if (st = '00000')
+    {
   S := sprintf (' sparql define input:storage "" ' ||
                 ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
                 ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
@@ -1848,99 +1838,168 @@ DAV_AUTHENTICATE_SSL (in id any, in what char(1), in path varchar, in req varcha
                 foafGraph,
                 localIRI);
   exec (S, st, msg, vector (), 0, meta, data);
-  if (st <> '00000' or length (data) = 0)
-    goto _exit;
-
+      if (st = '00000')
+      {
+        info := get_certificate_info (9);
   foreach (any _row in data) do
   {
     if (_row[0] = cast (info[1] as varchar) and
         lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
-      declare resMode varchar;
+            retIRI := foafIRI;
+            goto _break;
+          }
+        }
+      }
+    }
+  _break:;
+    exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  }
+_exit:
+  return retIRI;
+}
+;
 
-      authenticated:
-      graph := SIOC.DBA.dav_res_iri (path);
-      baseGraph := SIOC.DBA.get_graph ();
-      --dbg_obj_print ('graph', graph);
-      resMode := '';
-      if (req[2] = ascii ('1'))
-        resMode := 'Control';
-      else if (req[1] = ascii ('1'))
-        resMode := 'Write';
-      else if (req[0] = ascii ('1'))
-        resMode := 'Read';
+create function
+DAV_AUTHENTICATE_SSL (
+  in id any,
+  in what char(1),
+  in path varchar,
+  in req varchar,
+  inout a_uid integer,
+  inout a_gid integer,
+  inout _perms varchar) returns integer
+{
+  declare rc, M, N, L, I integer;
+  declare graph, grpGraph, foafIRI, reqMode, realMode, IRIs any;
+  declare tmp, T, V, S, st, msg, meta, row, rows any;
 
-      S := sprintf (' sparql \n' ||
-        ' define input:storage "" \n' ||
-        ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-        ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-        ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-        ' select * \n' ||
-        '  where { \n' ||
-        '          { \n' ||
-        '            graph <%s> \n' ||
-        '            { \n' ||
-        '            ?rule rdf:type acl:Authorization ; \n' ||
-        '                  acl:accessTo <%s> ; \n' ||
-        '                  acl:mode acl:%s ; \n' ||
-        '                  acl:agent <%s>. \n' ||
-        '          } \n' ||
-        '          } \n' ||
-        '          union \n' ||
-        '          { \n' ||
-        '            graph <%s> \n' ||
-        '            { \n' ||
-        '            ?rule rdf:type acl:Authorization ; \n' ||
-        '                  acl:accessTo <%s> ; \n' ||
-        '                  acl:mode acl:%s ; \n' ||
-        '                  acl:agentClass foaf:Agent. \n' ||
-        '          } \n' ||
-        '          } \n' ||
-        '          union \n' ||
-        '          { \n' ||
-        '            graph <%s> \n' ||
-        '            { \n' ||
-        '            ?rule rdf:type acl:Authorization ; \n' ||
-        '                  acl:accessTo <%s> ; \n' ||
-        '                  acl:mode acl:%s ; \n' ||
-        '                  acl:agentClass ?group. \n' ||
-        '            } \n' ||
-        '            graph ?g \n' ||
-        '            { \n' ||
-        '                  ?group rdf:type foaf:Group ; \n' ||
-        '                  foaf:member <%s>. \n' ||
-        '              filter (?g like <%s/private/%%>). \n' ||
-        '            } \n' ||
-        '          } \n' ||
-        '        }\n',
-        graph,
-        graph,
-        resMode,
-        foafIRI,
-        graph,
-        graph,
-        resMode,
-        graph,
-        graph,
-        resMode,
-        foafIRI,
-        baseGraph);
-      commit work;
-      exec (S, st, msg, vector (), 0, meta, data);
-      if (st = '00000' and length (data))
+  rc := 0;
+  req := replace (req, '_', '0');
+  reqMode := vector (req[0]-48, req[1]-48, req[2]-48);
+  realMode := vector (0, 0, 0);
+  IRIs := vector (vector(), vector(), vector());
+  DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+  if (not DAV_AUTHENTICATE_SSL_CONDITION ())
+    goto _exit;
+
+  set_user_id ('dba');
+  foafIRI := DAV_AUTHENTICATE_SSL_WEBID ();
+  if (isnull (foafIRI))
+    goto _exit;
+
+  tmp := '/';
+  V := vector ();
+  T := split_and_decode (trim (path, '/'), 0, '\0\0/');
+  for (N := 0; N < length (T)-1; N := N + 1)
+  {
+    tmp := tmp || T[N] || '/';
+    V := vector_concat (vector (tmp), V);
+  }
+  V := vector_concat (vector (path), V);
+  grpGraph := SIOC.DBA.get_graph () || '/private/%';
+  for (N := 0; N < length (V); N := N + 1)
+  {
+    if (N <> 0)
+    {
+      what := 'C';
+      id := DAV_SEARCH_ID (V[N], what);
+    }
+    if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
+    {
+      tmp := null;
+      graph := WS.WS.DAV_IRI (V[N]);
+      for (
+        sparql
+        define input:storage ""
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        prefix acl: <http://www.w3.org/ns/auth/acl#>
+        select ?p1 ?p2 ?p3 ?mode
+         where {
+                 {
+                   graph `iri(?:graph)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:graph)` ;
+                           acl:mode ?mode ;
+                           acl:agent `iri(?:foafIRI)` ;
+                           acl:agent ?p1 .
+                   }
+                 }
+                 union
+                 {
+                   graph `iri(?:graph)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:graph)` ;
+                           acl:mode ?mode ;
+                           acl:agentClass foaf:Agent ;
+                           acl:agentClass ?p2 .
+                   }
+                 }
+                 union
+                 {
+                   graph `iri(?:graph)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:graph)` ;
+                           acl:mode ?mode ;
+                           acl:agentClass ?p3 .
+                   }
+                   graph ?g
+                   {
+                     ?p3 rdf:type foaf:Group ;
+                         foaf:member `iri(?:foafIRI)` .
+                     filter (?g like (?:grpGraph)) .
+                   }
+                 }
+               }
+         order by ?p3 ?p2 ?p1 ?mode) do
+      {
+        if      (not isnull (p1))
+          I := 0;
+        else if (not isnull (p2))
+          I := 1;
+        else if (not isnull (p3))
+          I := 2;
+        else
+          goto _skip;
+
+        if (tmp <> coalesce (p1, coalesce (p2, p3)))
+        {
+          tmp := coalesce (p1, coalesce (p2, p3));
+          for (M := 0; M < length (IRIs[I]); M := M + 1)
+          {
+            if (tmp = IRIs[I][M])
+              goto _skip;
+          }
+        }
+
+        if      (mode like '%#Read')
+          realMode[0] := 1;
+        else if (mode like '%#Write')
+          realMode[1] := 1;
+        else if (mode like '%#Control')
+          realMode[2] := 1;
+
+        if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
         a_uid := http_nobody_uid ();
         a_gid := http_nogroup_gid ();
-        _perms := req || req || '--';
         rc := 1;
-        goto _break;
+          goto _exit;
+        }
+        IRIs[I] := vector_concat (IRIs[I], vector (tmp));
+
+      _skip:;
       }
     }
   }
-_break:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
 
 _exit:;
+  _perms := replace (sprintf ('%d%d%d', realMode[0], realMode[1], realMode[2]), '0', '_');
+  -- dbg_obj_print ('DAV_AUTHENTICATE_SSL:', rc, req, _perms);
   return rc;
 }
 ;
@@ -4257,6 +4316,44 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 
 -- Web Access Control
 --
+create trigger SYS_DAV_COL_WAC_U after update on WS.WS.SYS_DAV_COL order 100 referencing new as N, old as O
+{
+  declare aciContent, oldPath, newPath, update_acl any;
+
+  if (connection_get ('dav_acl_sync') = 1)
+    return;
+
+  if ((O.COL_NAME = N.COL_NAME) and (O.COL_PARENT = N.COL_PARENT))
+    return;
+
+  aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.COL_ID and PROP_TYPE = 'C' and PROP_NAME = 'virt:aci_meta_n3');
+  if (aciContent is null)
+    return;
+
+  oldPath := WS.WS.COL_PATH (O.COL_PARENT) || O.COL_NAME || '/';
+  newPath := WS.WS.COL_PATH (N.COL_PARENT) || N.COL_NAME || '/';
+  update_acl := 1;
+
+  WS.WS.WAC_DELETE (oldPath, update_acl);
+  WS.WS.WAC_INSERT (newPath, aciContent, N.COL_OWNER, N.COL_GROUP, update_acl);
+}
+;
+
+create trigger SYS_DAV_COL_WAC_D after delete on WS.WS.SYS_DAV_COL order 100 referencing old as O
+{
+  declare update_acl integer;
+  declare path varchar;
+
+  if (connection_get ('dav_acl_sync') = 1)
+    return;
+
+  path := WS.WS.COL_PATH (O.COL_ID);
+  update_acl := 1;
+
+  WS.WS.WAC_DELETE (path, update_acl);
+}
+;
+
 create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 referencing new as N, old as O
 {
   declare aciContent, oldPath, newPath, update_acl any;
@@ -4315,99 +4412,134 @@ create trigger SYS_DAV_RES_WAC_D after delete on WS.WS.SYS_DAV_RES order 100 ref
 
 create trigger SYS_DAV_PROP_WAC_I after insert on WS.WS.SYS_DAV_PROP order 100 referencing new as N
 {
-  if ((N.PROP_TYPE <> 'R') or (N.PROP_NAME <> 'virt:aci_meta_n3'))
+  if (N.PROP_NAME <> 'virt:aci_meta_n3')
     return;
 
-  declare resPath any;
-  for select RES_FULL_PATH, RES_OWNER, RES_GROUP from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID do
-    WS.WS.WAC_INSERT (RES_FULL_PATH, N.PROP_VALUE, RES_OWNER, RES_GROUP, 1);
+  declare _path, _owner, _group any;
+  declare exit handler for not found { return; };
+
+  if (N.PROP_TYPE = 'R')
+  {
+    select RES_FULL_PATH, RES_OWNER, RES_GROUP
+      into _path, _owner, _group
+      from WS.WS.SYS_DAV_RES
+     where RES_ID = N.PROP_PARENT_ID;
+  } else {
+    select DAV_SEARCH_PATH (COL_ID, N.PROP_TYPE), COL_OWNER, COL_GROUP
+      into _path, _owner, _group
+      from WS.WS.SYS_DAV_COL
+     where COL_ID = N.PROP_PARENT_ID;
+  }
+  WS.WS.WAC_INSERT (_path, N.PROP_VALUE, _owner, _group, 1);
 }
 ;
 
 create trigger SYS_DAV_PROP_WAC_U after update on WS.WS.SYS_DAV_PROP order 100 referencing new as N, old as O
 {
-  if ((N.PROP_TYPE <> 'R') or (N.PROP_NAME <> 'virt:aci_meta_n3'))
+  if (N.PROP_NAME <> 'virt:aci_meta_n3')
     return;
 
-  declare resPath any;
-  for select RES_FULL_PATH, RES_OWNER, RES_GROUP from WS.WS.SYS_DAV_RES where RES_ID = N.PROP_PARENT_ID do
+  declare _path, _owner, _group any;
+  declare exit handler for not found { return; };
+
+  if (N.PROP_TYPE = 'R')
     {
-      WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
-      WS.WS.WAC_INSERT (RES_FULL_PATH, N.PROP_VALUE, RES_OWNER, RES_GROUP, 1);
+    select RES_FULL_PATH, RES_OWNER, RES_GROUP
+      into _path, _owner, _group
+      from WS.WS.SYS_DAV_RES
+     where RES_ID = N.PROP_PARENT_ID;
+  } else {
+    select DAV_SEARCH_PATH (COL_ID, N.PROP_TYPE), COL_OWNER, COL_GROUP
+      into _path, _owner, _group
+      from WS.WS.SYS_DAV_COL
+     where COL_ID = N.PROP_PARENT_ID;
     }
+  WS.WS.WAC_DELETE (_path, 1);
+  WS.WS.WAC_INSERT (_path, N.PROP_VALUE, _owner, _group, 1);
 }
 ;
 
 create trigger SYS_DAV_PROP_WAC_D after delete on WS.WS.SYS_DAV_PROP order 100 referencing old as O
 {
-  if ((O.PROP_TYPE <> 'R') or (O.PROP_NAME <> 'virt:aci_meta_n3'))
+  if (O.PROP_NAME <> 'virt:aci_meta_n3')
     return;
 
-  declare resPath any;
-  for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_ID = O.PROP_PARENT_ID do
-    WS.WS.WAC_DELETE (RES_FULL_PATH, 1);
+  declare _path any;
+  declare exit handler for not found { return; };
+
+  if (O.PROP_TYPE = 'R')
+  {
+    select RES_FULL_PATH
+      into _path
+      from WS.WS.SYS_DAV_RES
+     where RES_ID = O.PROP_PARENT_ID;
+  } else {
+    select DAV_SEARCH_PATH (COL_ID, O.PROP_TYPE)
+      into _path
+      from WS.WS.SYS_DAV_COL
+     where COL_ID = O.PROP_PARENT_ID;
+  }
+  WS.WS.WAC_DELETE (_path, 1);
 }
 ;
 
-create procedure WS.WS.WAC_INSERT (in resPath varchar, in aciContent any, in uid int, in gid int, in update_acl int)
+create procedure WS.WS.WAC_INSERT (
+  in path varchar,
+  in aciContent any,
+  in uid integer,
+  in gid integer,
+  in update_acl integer)
 {
-  declare graph, waGraph varchar;
+  --dbg_obj_print ('WAC_INSERT', path);
+  declare graph varchar;
 
-  if (
-      length (aciContent) = 0 or
-      __proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null or
-      __proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is null
-     )
-    return;
-
-  graph := SIOC.DBA.dav_res_iri (resPath);
-  waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
-  {
-    declare continue handler for SQLSTATE '*'
-    {
-      -- dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
-      return;
-    };
+  graph := WS.WS.DAV_IRI (path);
     aciContent := cast (blob_to_string (aciContent) as varchar);
     if (update_acl)
     {
       connection_set ('dav_acl_sync', 1);
-      DAV_RES_UPLOAD_STRSES_INT (resPath || ',acl', aciContent, 'text/n3', '110100000RR', uid, gid, null, null, 0);
+    DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/n3', '110100000RR', uid, gid, null, null, 0);
       connection_set ('dav_acl_sync', null);
     }
     DB.DBA.TTLP (aciContent, graph, graph);
-    DB.DBA.RDF_GRAPH_GROUP_CREATE (waGraph, 1);
-    DB.DBA.RDF_GRAPH_GROUP_INS (waGraph, graph);
-  }
 }
 ;
 
-create procedure WS.WS.WAC_DELETE (in resPath varchar, in update_acl int)
+create procedure WS.WS.WAC_DELETE (
+  in path varchar,
+  in update_acl integer)
 {
-  declare graph, waGraph, st, msg varchar;
+  --dbg_obj_print ('WAC_DELETE', path);
+  declare graph, st, msg varchar;
 
-  if (__proc_exists (fix_identifier_case ('sioc.DBA.dav_res_iri')) is null or
-      __proc_exists (fix_identifier_case ('sioc.DBA.waGraph')) is null
-     )
-    return;
-
-  graph := SIOC.DBA.dav_res_iri (resPath);
-  waGraph := sprintf ('http://%s/webdav/webaccess', SIOC.DBA.get_cname ());
-  {
-    declare continue handler for SQLSTATE '*'
-    {
-      -- dbg_obj_print('', __SQL_STATE, __SQL_MESSAGE);
-      return;
-    };
+  graph := WS.WS.DAV_IRI (path);
     if (update_acl)
     {
       connection_set ('dav_acl_sync', 1);
-      DAV_DELETE_INT (resPath || ',acl', 1, null, null, 0, 0);
+    DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
       connection_set ('dav_acl_sync', null);
     }
-    exec (sprintf ('sparql clear graph <%S>', graph), st, msg);
-    DB.DBA.RDF_GRAPH_GROUP_DEL (waGraph, graph);
+  exec (sprintf ('sparql clear graph <%s>', graph), st, msg);
   }
+;
+
+create procedure WS.WS.DAV_IRI (
+  in path varchar)
+{
+  declare S, host any;
+
+  S := string_output ();
+  http_dav_url (path, null, S);
+  S := string_output_string (S);
+
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is null) {
+    host := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      host := host ||':'|| server_http_port ();
+  }
+
+  return sprintf ('http://%s%s', host, S);
 }
 ;
 
