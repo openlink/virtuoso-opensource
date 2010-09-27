@@ -2681,7 +2681,7 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
     }
   if (!IS_BOX_POINTER (m1))
     {
-      if ((SSG_VALMODE_SQLVAL == m1) && (m2->qmfOkForAnySqlvalue))
+      if ((SSG_VALMODE_SQLVAL == m1) && IS_BOX_POINTER (m2) && (m2->qmfOkForAnySqlvalue))
         return m2;
       if ((SSG_VALMODE_NUM == m1) && IS_BOX_POINTER (m2) && (m2->qmfIsSubformatOfLong || m2->qmfIsSubformatOfLongWhenEqToSql))
         return SSG_VALMODE_NUM;
