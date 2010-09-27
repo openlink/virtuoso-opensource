@@ -151,11 +151,11 @@
         </div>
 	<div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
           <a title="A list of other identifiers for the current entity."
-           href="<?V http_path () ?>?g=<?U _S ?>&tp=3<?V ses_parms ?>">Direct co-references</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&tp=3<?V ses_parms ?>">Direct coreferences</a>
         </div>
 	<div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
           <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
-           href="<?V http_path () ?>?g=<?U _S ?>&tp=4<?V ses_parms ?>">Indirect co-references</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&tp=4<?V ses_parms ?>">Indirect coreferences</a>
         </div>
       </div> <!-- TAB_ROW -->
 
