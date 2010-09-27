@@ -3768,7 +3768,7 @@ create procedure ODRIVE.WA.DAV_PROP_SET (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_GET (', path, propName, ')');
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_SET (', path, propName, ')');
   declare uname, gname varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
@@ -4456,6 +4456,26 @@ create procedure ODRIVE.WA.acl_send_mail (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.aci_parents (
+  in path varchar)
+{
+  declare N integer;
+  declare tmp, V, aPath any;
+
+  tmp := '/';
+  V := vector ();
+  aPath := split_and_decode (trim (path, '/'), 0, '\0\0/');
+  for (N := 0; N < length (aPath)-1; N := N + 1)
+  {
+    tmp := tmp || aPath[N] || '/';
+    V := vector_concat (V, vector (tmp));
+  }
+  return V;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.aci_load (
   in path varchar)
 {
@@ -4464,7 +4484,7 @@ create procedure ODRIVE.WA.aci_load (
 
   retValue := vector ();
 
-  graph := SIOC..dav_res_iri (path);
+  graph := WS.WS.DAV_IRI (path);
   S := sprintf (' sparql \n' ||
                 ' define input:storage "" \n' ||
                 ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
