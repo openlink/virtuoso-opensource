@@ -1105,7 +1105,7 @@ table.form td {
 .tabs li {
 	display: inline;
 	padding: 1px 3px;
-	margin-left: 0.5em;
+	margin-left: 0.1em;
 	cursor: pointer;
   border-top: 1px solid #aaa;
   border-left: 1px solid #aaa;

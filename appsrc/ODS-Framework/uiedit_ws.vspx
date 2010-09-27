@@ -25,8 +25,8 @@
 <v:page name="ui_profile"
         xmlns:vm="http://www.openlinksw.com/vspx/ods/"
         xmlns:v="http://www.openlinksw.com/vspx/"
-        style="index.xsl"
-	fast-render="1"
+	      style="index.xsl"
+	      fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -40,15 +40,17 @@
       return obj;
     ]]>
   </v:method>
+
   <v:method name="jsonObject" arglist="">
     <![CDATA[
       return subseq (soap_box_structure ('x', 1), 0, 2);
     ]]>
   </v:method>
+
   <v:method name="checkBox" arglist="in checkField varchar, inout properties any">
     <![CDATA[
       declare S varchar;
-      
+
       S := '';
       if (get_keyword (checkField, properties, '0') <> '0')
         S := 'checked="checked"';
@@ -79,55 +81,55 @@
         </v:before-data-bind>
         <script type="text/javascript">
           <![CDATA[
-function getFileName(form, from, to)
-{
-  var S = from.value;
-  var N;
-  var fname;
-  if (S.lastIndexOf('\\') > 0)
-    N = S.lastIndexOf('\\')+1;
-  else
-    N = S.lastIndexOf('/')+1;
-  fname = S.substr(N,S.length);
-  to.value = fname;
-}
-function swPersHide ()
-{
+            function getFileName(form, from, to)
+            {
+              var S = from.value;
+              var N;
+              var fname;
+              if (S.lastIndexOf('\\') > 0)
+                N = S.lastIndexOf('\\')+1;
+              else
+                N = S.lastIndexOf('/')+1;
+              fname = S.substr(N,S.length);
+              to.value = fname;
+            }
+            function swPersHide ()
+            {
               var lb = $('lb_1');
               if (lb)
-    lb.innerHTML = 'Organization Webpage';
-  for (i = 1; i <= 20; i++)
+                lb.innerHTML = 'Organization Webpage';
+              for (i = 1; i <= 20; i++)
                 OAT.Dom.hide('pers_'+i);
               OAT.Dom.hide('p_url_2');
-}
-function swPersShow ()
-{
+            }
+            function swPersShow ()
+            {
               var lb = $('lb_1');
               if (lb)
-    lb.innerHTML = 'Personal Webpage';
-  for (i = 1; i <= 20; i++)
+                lb.innerHTML = 'Personal Webpage';
+              for (i = 1; i <= 20; i++)
                 OAT.Dom.show('pers_'+i);
               OAT.Dom.show('p_url_2');
-}
-function swOrg (cb)
-{
+            }
+            function swOrg (cb)
+            {
               (cb.checked)? swPersHide(): swPersShow();
-}
-function checkRest (form, sel)
-{
-  var i;
-  if (sel.selectedIndex == 0)
-    return;
-  for (i = 0; i < form.elements.length; i++)
-    {
-      var contr = form.elements[i];
-      if (contr != null && contr != sel && contr.type == "select-one")
-	{
-	  if (contr.selectedIndex == sel.selectedIndex)
-            contr.selectedIndex = 0;
-	}
-    }
-}
+            }
+            function checkRest (form, sel)
+            {
+              var i;
+              if (sel.selectedIndex == 0)
+                return;
+              for (i = 0; i < form.elements.length; i++)
+              {
+                var contr = form.elements[i];
+                if (contr != null && contr != sel && contr.type == "select-one")
+                {
+                  if (contr.selectedIndex == sel.selectedIndex)
+                    contr.selectedIndex = 0;
+                }
+              }
+            }
             ODSInitArray.push ( function () {
               OAT.Loader.load(["json", "ws", "calendar", "combolist"], function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){(<?V self.is_org ?>)? swPersHide(): swPersShow();}); OAT.MSG.send(OAT, 'PAGE_LOADED');});
             });
@@ -140,28 +142,28 @@ function checkRest (form, sel)
           <input type="hidden" name="page" value="<?V self.pg ?>"/>
           <input type="hidden" name="tabNo" id="tabNo" value="<?V self.tabNo ?>"/>
         </div>
-    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-    <tr valign='top'>
-      <td>
-        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-          <tr>
-            <td class="tab_deck">
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                <tr>
+                  <td class="tab_deck">
                     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="navtab_tabs_ctr">
-                        <v:include url="uiedit_nav.vspx"/>
-                  </table>
-                 <table class="tab_page">
-                    <tr>
-                      <td valign="top" class="tab_page">
-                          <v:include url="uiedit_personal.vspx"/>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+                        <v:include name="nav" url="uiedit_nav.vspx"/>
+                    </table>
+                    <table class="tab_page">
+                      <tr>
+                        <td valign="top" class="tab_page">
+                            <v:include url="uiedit_svc.vspx"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </vm:body>
     </vm:pagewrapper>
   </vm:page>
