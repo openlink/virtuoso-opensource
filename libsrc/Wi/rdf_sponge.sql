@@ -1086,7 +1086,7 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest, cset varchar;
+  declare dest, groupdest, cset, base varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
@@ -1103,6 +1103,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
   groupdest := get_keyword_ucase ('get:group-destination', options);
+  base := get_keyword ('http-redirect-to', options, new_origin_uri);
   if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
     only_rdfa := 1;
   else
@@ -1119,9 +1120,9 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
-      DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
+      DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
       if (groupdest is not null)
-        DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
+        DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       --log_enable (saved_log_mode, 1);
@@ -1144,9 +1145,9 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri), 255);
+      DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
       if (groupdest is not null)
-        DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
+        DB.DBA.TTLP (ret_body, base, groupdest);
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
 	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       --log_enable (saved_log_mode, 1);
@@ -1158,9 +1159,9 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     {
       whenever sqlstate '*' goto load_grddl;
       --log_enable (2, 1);
-      DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, coalesce (dest, graph_iri), 2);
+      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri), 2);
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
-	DB.DBA.RDF_LOAD_RDFA (ret_body, new_origin_uri, groupdest, 2);
+	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest, 2);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
