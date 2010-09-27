@@ -2504,6 +2504,7 @@ eql_compile_eql (const char *string, client_connection_t * cli, caddr_t * err)
     eql_stmt_comp (&cc, (caddr_t) text, &head, &tail);
 
     qr->qr_head_node = head;
+    qr->qr_text = box_string (string);
 
     qr_add_current_of_output (qr);
     QR_POST_COMPILE (qr, (&cc));
