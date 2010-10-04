@@ -11975,7 +11975,6 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ptype = DV_TYPE_OF (params);
     }
 
-  PROC_SAVE_PARENT;
   if (n_args > 4)
     {
       dtp_t options_dtp;
@@ -12005,6 +12004,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             }
         }
     }
+  PROC_SAVE_PARENT;
   warnings = sql_warnings_save (NULL);
   if (n_args < 8 || !ssl_is_settable (args[7]))
     { /* no cursor for stored procedures */
