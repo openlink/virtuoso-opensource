@@ -24,19 +24,37 @@
 <!DOCTYPE xsl:stylesheet [
   <!ENTITY CalNS  "http://www.w3.org/2002/12/cal/icaltzd#">
   <!ENTITY XdtNS  "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 ]>
 <xsl:stylesheet
     xmlns:xsl ="http://www.w3.org/1999/XSL/Transform"
-    xmlns:rdf   ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:h   ="http://www.w3.org/1999/xhtml"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:rdf="&rdf;"
+    xmlns:foaf="&foaf;"
+    xmlns:bibo="&bibo;"
+    xmlns:dc="&dc;"
+    xmlns:sioc="&sioc;"
+    xmlns:dcterms="&dcterms;"
+    xmlns:gr="&gr;"
     xmlns:xml   ="xml"
     version="1.0"
     >
 
     <xsl:output indent="yes" method="xml" />
     <xsl:param name="baseUri" />
+<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
+<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
+<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+
     <xsl:param name="Source">
 	<xsl:choose>
 	    <xsl:when test='h:html/h:head/h:link[@rel="base"]'>
@@ -46,7 +64,7 @@
 		<xsl:value-of select='h:html/h:head/h:base/@href'/>
 	    </xsl:when>
 	    <xsl:otherwise>
-		<xsl:value-of select="$baseUri"/>
+		<xsl:value-of select="$resourceURL"/>
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:param>
@@ -56,7 +74,15 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:if test="//*[contains(concat(' ',normalize-space(@class),' '),' vevent ')] or //*[contains(concat(' ', normalize-space(@class), ' '),' vtodo ')]">
-		<c:Vcalendar rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{$docproxyIRI}">
+		<rdf:type rdf:resource="&bibo;Document"/>
+		<sioc:container_of rdf:resource="{$resourceURL}"/>
+		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+		<foaf:topic rdf:resource="{$resourceURL}"/>
+		<dcterms:subject rdf:resource="{$resourceURL}"/>
+	</rdf:Description>
+
+		<c:Vcalendar rdf:about="{$resourceURL}">
 		    <c:prodid>-//connolly.w3.org//palmagent 0.6 (BETA)//EN</c:prodid>
 		    <c:version>2.0</c:version>
 		    <xsl:apply-templates />
@@ -104,11 +130,17 @@
     </xsl:template>
 
     <xsl:template name="cal-props">
-	<xsl:if test="@id and $Source">
+	<xsl:if test="@id">
 	    <xsl:attribute name="rdf:about">
-		<xsl:value-of select='concat($Source, "#", @id)' />
+		<xsl:value-of select='vi:proxyIRI ($baseUri, "", ../@id)' />
 	    </xsl:attribute>
 	</xsl:if>
+
+	<!--xsl:if test="not @id and .//*[contains(concat(' ', @class, ' '), ' dtstart ')]/@title and .//*[contains(concat(' ', @class, ' '), ' summary ')]">
+	    <xsl:attribute name="rdf:about">
+		<xsl:value-of select='vi:proxyIRI ($baseUri, "#", concat(.//*[contains(concat(" ", @class, " "), " summary ")]/., .//*[contains(concat(" ", @class, " "), " dtstart ")]/@title))' />
+	    </xsl:attribute>
+	</xsl:if-->
 
 	<xsl:call-template name="textProp">
 	    <xsl:with-param name="class">uid</xsl:with-param>
@@ -181,7 +213,7 @@
 
 	<xsl:for-each select=".//*[contains(concat(' ', @class, ' '), concat(' ', $class, ' '))]">
 	    <xsl:element name="{$class}" namespace="&CalNS;">
-		<xsl:call-template name="lang" />
+		<!--xsl:call-template name="lang" /-->
 
 		<xsl:choose>
 		    <xsl:when test='local-name(.) = "ol" or local-name(.) = "ul"'>
