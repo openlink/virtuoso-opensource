@@ -89,6 +89,8 @@ static int32 shc_rnd_seed;
               old_data->shcompo_ref_count -= 1;
               if (0 == old_data->shcompo_ref_count)
 	        shcompo_release_int (old_data);
+	      else /* we must increase again as it may happen to be released prematurely by other thread waiting on same condition */
+		old_data->shcompo_ref_count += 1;
             }
           rnd++;
 	}
