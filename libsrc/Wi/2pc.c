@@ -1384,7 +1384,7 @@ virt_xa_set_client (void *xid, struct client_connection_s *cli)
 	  return rc;
 #else
 	  mutex_leave (global_xa_map->xm_mtx);
-	  return VXA_AGAIN;
+	  return VXA_ERROR;
 #endif
 	}
     }
