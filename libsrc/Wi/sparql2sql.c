@@ -1997,13 +1997,14 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
 }
 
 void
-sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent)
+sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent, SPART **ret_source_in_parent)
 {
   SPART *curr = NULL, *prev = NULL;
   int varname_ctr, ctr;
   int pos_of_prev_memb;
   int good_is_gp = 0;
   caddr_t good_varname = NULL;
+  SPART *good_prev = NULL;
   SPART *good_prev_var = NULL;
   sparp_equiv_t *good_parent_eq = NULL;
   sparp_equiv_t *good_prev_eq = NULL;
@@ -2013,6 +2014,7 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
 #endif
   ret_parent_eq[0] = NULL;
   ret_tree_in_parent[0] = NULL;
+  ret_source_in_parent[0] = NULL;
   if (0 == pos_of_curr_memb)
     return;
   curr = parent->_.gp.members[pos_of_curr_memb];
@@ -2030,6 +2032,7 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
               prev_eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, prev, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
               if (NULL == prev_eq)
                 continue;
+              good_prev = prev;
               good_varname = varname;
               good_parent_eq = parent_eq;
               good_prev_var = NULL;
@@ -2055,6 +2058,7 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
                     continue;
                   if (strcmp (prev_var->_.var.tabid, prev->_.triple.tabid))
                     continue;
+                  good_prev = prev;
                   good_varname = NULL;
                   good_parent_eq = parent_eq;
                   good_prev_var = prev_var;
@@ -2067,6 +2071,8 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
         }
     }
 good_found:
+  ret_parent_eq[0] = good_parent_eq;
+  ret_source_in_parent[0] = good_prev;
   if (good_is_gp)
     {
       SPART *var_rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
@@ -2077,12 +2083,10 @@ good_found:
       memcpy (&(var_rv->_.retval.rvr), &(good_prev_eq->e_rvr), sizeof (rdf_val_range_t));
       var_rv->_.retval.selid = prev->_.gp.selid;
       var_rv->_.retval.vname = good_varname;
-      ret_parent_eq[0] = good_parent_eq;
       ret_tree_in_parent[0] = var_rv;
     }
   else
     {
-      ret_parent_eq[0] = good_parent_eq;
       ret_tree_in_parent[0] = good_prev_var;
     }
 }
@@ -3466,11 +3470,63 @@ This may change semantics if an OPTIONAL contains a variable that is nullable in
             continue;
 /*!!! TBD: moving members from first_conflicting_predecessor_idx+1 to memb_ctr-1 inclusive into left part of memb if appropriate */
 #endif
-          continue;
         }
       continue;
 
 just_remove_braces:
+      if (0 != memb->_.gp.glued_filters_count)
+        {
+          int glued_last_idx = BOX_ELEMENTS (memb->_.gp.filters);
+          int glued_first_idx = glued_last_idx - memb->_.gp.glued_filters_count;
+          sparp_equiv_t *suspicious_filt_eq = NULL;
+          int glued_idx, memb_equiv_inx;
+          if (parent_gp->_.gp.glued_filters_count)
+            continue; /* Don't know how to safely mix two lists of glued filters, one already in parent and one from member, hence the sabotage */
+/* Consider a glued filter in memb that refers to ?x . ?x may present in memb or not, it may also present in parent_gp or not.
+?x in memb	| ?x in parent	| Can filter be moved?
+Yes & bound	| Yes & bound	| These two are equal due to join so filter can be moved
+Yes & bound	| Yes & !bound	| Empty join, filter does not matter, so it can be moved
+Yes & bound	| No		| Safe to move, the only occurence will define the value as it was
+Yes & !bound	| Yes & bound	| Empty join, filter does not matter, so it can be moved
+Yes & !bound	| Yes & !bound	| Empty join, filter does not matter, so it can be moved
+Yes & !bound	| No		| Safe to move, the only occurence will define the value as it was
+No		| Yes & bound	| !!! Can't move, not bound may become bound
+No		| Yes & !bound	| Safe to move, unbound anyway
+No		| No		| Safe to move, unbound anyway
+So the only unsafe case is a fixed filter on a variable that is missing where the filter resides but present at the parent.
+*/
+          SPARP_FOREACH_GP_EQUIV (sparp, memb, memb_equiv_inx, memb_eq)
+            {
+              int parent_conn_ctr;
+              if (SPART_VARR_NOT_NULL & memb_eq->e_rvr.rvrRestrictions)
+                continue;
+              DO_BOX_FAST (ptrlong, parent_equiv_idx, parent_conn_ctr, memb_eq->e_receiver_idxs)
+                {
+                  sparp_equiv_t *parent_equiv = SPARP_EQUIV (sparp, parent_equiv_idx);
+                  int glued_idx;
+                  for (glued_idx = glued_first_idx; glued_idx < glued_last_idx; glued_idx++)
+                    {
+                      SPART *glued_filt = memb->_.gp.filters[glued_idx];
+                      if (sparp_tree_uses_var_of_eq (sparp, glued_filt, parent_equiv))
+                        {
+                          suspicious_filt_eq = memb_eq;
+                          goto suspicious_filt_eq_found; /* see below */
+                        }
+                    }
+                }
+              END_DO_BOX_FAST;
+            }
+          END_SPARP_FOREACH_GP_EQUIV;
+suspicious_filt_eq_found:
+          if (NULL != suspicious_filt_eq)
+            continue;
+          for (glued_idx = glued_first_idx; glued_idx < glued_last_idx; glued_idx++)
+            {
+              SPART *filt = sparp_gp_detach_filter (sparp, memb, glued_first_idx, NULL);
+              sparp_gp_attach_filter (sparp, parent_gp, filt, BOX_ELEMENTS (parent_gp->_.gp.filters), NULL);
+            }
+          parent_gp->_.gp.glued_filters_count += (glued_last_idx - glued_first_idx);
+        }
       memb_filters = sparp_gp_detach_all_filters (sparp, memb, NULL);
       memb_filters_count = BOX_ELEMENTS_0 (memb_filters);
       for (sub_ctr = sub_count; sub_ctr--; /* no step */)

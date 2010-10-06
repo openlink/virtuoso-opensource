@@ -3606,7 +3606,7 @@ IN_op_fnt_found:
             if (IS_BOX_POINTER (arg1_native))
               {
                 ssg_puts (" __bft (");
-              tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
+                tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
                 ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
                 ssg_puts (", 1)");
                 return;
@@ -4030,6 +4030,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
     }
   else if (SSG_VALMODE_BOOL == needed)
     {
+      if (SSG_VALMODE_NUM	== native)	return " (^{tree}^)";
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_BOOL_OF_LONG (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return " (^{tree}^)";
     }
@@ -7654,11 +7655,12 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
             {
               sparp_equiv_t *memb_eq = NULL;
               SPART *left_tree = NULL;
+              SPART *left_gp_or_triple = NULL;
               if (!itm_eq->e_replaces_filter)
                 continue;
               if (SPARP_EQ_IS_ASSIGNED_LOCALLY (itm_eq))
                 continue;
-              sparp_find_best_join_eq_for_optional (ssg->ssg_sparp, member, itm_idx_ptr[0], itm_eq, &memb_eq, &left_tree);
+              sparp_find_best_join_eq_for_optional (ssg->ssg_sparp, member, itm_idx_ptr[0], itm_eq, &memb_eq, &left_tree, &left_gp_or_triple);
               if (NULL == left_tree)
                 {
                   if (itm_eq->e_replaces_filter & (SPART_VARR_FIXED | SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI |  SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL))
@@ -7674,9 +7676,13 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
                   tmp_rvr.rvrRestrictions = itm_eq->e_replaces_filter;
                   if (SPAR_IS_BLANK_OR_VAR (left_tree))
                     {
-                      SPART *left_triple = member->_.gp.members[itm_idx_ptr[0]-1];
+                      SPART *left_triple = left_gp_or_triple;
                       quad_map_t *left_qm = left_triple->_.triple.tc_list[0]->tc_qm;
                       qm_value_t *left_qmv = NULL;
+#if 0
+                      if (left_gp_or_triple != member->_.gp.members[itm_idx_ptr[0]-1])
+                        spar_internal_error (ssg->ssg_sparp, "Unusual left outer join");
+#endif
                       if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
                         left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
                       ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
