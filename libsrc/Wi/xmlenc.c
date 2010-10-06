@@ -1372,9 +1372,15 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (type == CERT_TYPE_PEM_FORMAT) /* PEM format */
     {
+#if OPENSSL_VERSION_NUMBER >= 0x00908000L
       x509 = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509,
 					PEM_STRING_X509,
 					b, NULL, NULL, NULL);
+#else
+      x509 = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509,
+					PEM_STRING_X509,
+					b, NULL, NULL, NULL);
+#endif
     }
   else if (type == CERT_TYPE_PKCS12_FORMAT) /* PKCS12 format */
     {
@@ -1395,10 +1401,17 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (b_priv)
     {
+#if OPENSSL_VERSION_NUMBER >= 0x00908000L
       private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((d2i_of_void *)d2i_PrivateKey,
 					     PEM_STRING_EVP_PKEY,
 					     b_priv,
 					     NULL, pass_cb, (void *) private_key_passwd);
+#else
+      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((char *(*)())d2i_PrivateKey,
+					     PEM_STRING_EVP_PKEY,
+					     b_priv,
+					     NULL, pass_cb, (void *) private_key_passwd);
+#endif
       if (!private_key)
 	goto finish;
     }
