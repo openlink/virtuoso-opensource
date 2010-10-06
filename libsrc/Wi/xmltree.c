@@ -695,6 +695,32 @@ xqi_raw_value (xp_instance_t * xqi, XT * tree)
   GPF_T; return NULL;
 }
 
+int
+xqi_truth_value_of_box (caddr_t val)
+{
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_STRING: case DV_UNAME: return (1 < box_length (val));
+    case DV_WIDE: return (sizeof (wchar_t) < box_length (val));
+    case DV_LONG_INT: return unbox (val);
+    case DV_DOUBLE_FLOAT: return (0 != unbox_double (val));
+    case DV_SINGLE_FLOAT: return (0 != unbox_float (val));
+    case DV_NUMERIC: return !num_is_zero ((numeric_t)val);
+    case DV_XML_ENTITY:
+      {
+        xml_entity_t *xe = (xml_entity_t *)val;
+        return xe->_->xe_string_value_is_nonempty (xe);
+      }
+    case DV_ARRAY_OF_XQVAL:
+      if (0 == box_length (val))
+        return 0;
+      return xqi_truth_value_of_box (((caddr_t *)val)[0]);
+    case DV_ARRAY_OF_POINTER:
+      return xte_string_value_of_tree_is_nonempty ((caddr_t *)val);
+    default: return 1;
+    }
+}
+
 
 int
 xqi_truth_value (xp_instance_t * xqi, XT * tree)
@@ -720,8 +746,13 @@ xqi_truth_value (xp_instance_t * xqi, XT * tree)
       val = xqi_raw_value (xqi, tree);
       return (NULL != val);
     default:
+#if 1
+      val = xqi_raw_value (xqi, tree);
+      return xqi_truth_value_of_box (val);
+#else
       val = xqi_value (xqi, tree, DV_SHORT_STRING);
       return val && (box_length (val) > 1);
+#endif
     }
 }
 
@@ -5633,6 +5664,34 @@ DBG_NAME(xte_string_value) (DBG_PARAMS xml_tree_ent_t * xte, caddr_t * ret, dtp_
   DBG_NAME(xte_string_value_from_tree) (DBG_ARGS xte->xte_current, ret, dtp);
 }
 
+int
+xte_string_value_of_tree_is_nonempty (caddr_t *current)
+{
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (current))
+    {
+      int inx, len = BOX_ELEMENTS (current);
+      for (inx = 1; inx < len; inx++)
+        {
+          caddr_t child = current[inx];
+          if (DV_STRINGP (child))
+            {
+              if (1 < box_length (child))
+                return 1;
+            }
+          else if (xte_string_value_of_tree_is_nonempty ((caddr_t *)child))
+            return 1;
+        }
+      return 0;
+    }
+  return (1 < box_length (current));
+}
+
+
+int
+xte_string_value_is_nonempty (xml_tree_ent_t * xte)
+{
+  return xte_string_value_of_tree_is_nonempty (xte->xte_current);
+}
 
 #define XTE_IS_XSLT_OUTPUT(xte) \
   ((xte) && \
@@ -9811,6 +9870,47 @@ xe_compare_content (xml_entity_t *xe1, xml_entity_t *xe2, int compare_uris_and_d
   return (xte_subtrees_are_equal ((caddr_t *)(xte1->xte_current), (caddr_t *)(xte2->xte_current)) ? DVC_MATCH : DVC_NOORDER);
 }
 
+int32
+xml_ent_hash (caddr_t box)
+{
+  xml_entity_t *xe = (xml_entity_t *)box;
+  int32 chld_hash = 0;
+  if (XE_IS_TREE (xe))
+    chld_hash = (int32)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+  else if (XE_IS_PERSISTENT (xe))
+    chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
+/* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */
+  return 17 * (ptrlong)(xe->_) +
+    13 * (ptrlong)(xe->xe_doc.xd) +
+    11 * (ptrlong)(xe->xe_nth_attr) +
+    9 * (ptrlong)(xe->xe_referer) +
+    chld_hash;
+}
+
+int
+xml_ent_hash_cmp (ccaddr_t a1, ccaddr_t a2)
+{
+  xml_entity_t *xe1 = (xml_entity_t *)a1;
+  xml_entity_t *xe2 = (xml_entity_t *)a2;
+  if (xe1->_ != xe2->_) return 0;
+  if (XE_IS_TREE (xe1))
+    {
+      if (((xml_tree_ent_t *)(xe1))->xte_stack_top->xteb_current != ((xml_tree_ent_t *)(xe2))->xte_stack_top->xteb_current)
+        return 0;
+    }
+  else if (XE_IS_PERSISTENT (xe1))
+    {
+      if (((xper_entity_t *)(xe1))->xper_pos != ((xper_entity_t *)(xe2))->xper_pos)
+        return 0;
+    }
+  if (xe1->xe_doc.xd != xe2->xe_doc.xd)
+    return 0;
+  if (xe1->xe_nth_attr != xe2->xe_nth_attr)
+    return 0;
+  if (xe1->xe_referer != xe2->xe_referer)
+    return 0;
+  return 1;
+}
 
 xml_ns_2dict_t *xml_global_ns_2dict = NULL;
 dk_mutex_t *xml_global_ns_2dict_mutex = NULL;
@@ -10119,7 +10219,7 @@ void
 xml_tree_init (void)
 {
   macro_char_func *rt;
-
+  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp);
 #ifdef MALLOC_DEBUG
   xec_tree_xe.dbg_xe_copy = dbg_xte_copy;
   xec_tree_xe.dbg_xe_cut = dbg_xte_cut;
@@ -10133,6 +10233,7 @@ xml_tree_init (void)
   xec_tree_xe.xe_attribute = xte_attribute;
   xec_tree_xe.xe_string_value = (void (*) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp)) xte_string_value;
 #endif
+  xec_tree_xe.xe_string_value_is_nonempty = (int (*) (xml_entity_t * xe)) xte_string_value_is_nonempty;
   xec_tree_xe.xe_first_child = xte_first_child;
   xec_tree_xe.xe_last_child = xte_last_child;
   xec_tree_xe.xe_get_child_count_any = xte_get_child_count_any;

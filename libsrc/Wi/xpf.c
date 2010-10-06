@@ -32,9 +32,11 @@
 #include "xpathp_impl.h"
 #include "xml_ecm.h"
 #include "bif_text.h"
+#include "rdf_core.h"
 #include "security.h" /* for sec_proc_check () */
 #include "sqltype.h" /* for XMLTYPE_TO_ENTITY */
 #include "srvstat.h"
+#include "shcompo.h"
 
 #include "xqf.h"
 
@@ -5126,6 +5128,193 @@ void xpf_filter (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   xpf_create_filter_sequence( xqi, tree, ctx_xe, (int) nodes_length);
 }
 
+void xpf_sql_column_select (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  sqlr_new_error_xqi_xdl ("XP001", "XPF14", xqi, "The special XQuery function sql_column_select() is used outside 'for ... in ...' statement.");
+}
+
+void xpf_sql_scalar_select (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  int query_is_sparql = 0;
+  caddr_t query_raw_text, query_text, query_final_text;
+  int proc_parent_is_saved = 0;
+  query_instance_t *qi = xqi->xqi_qi;
+  client_connection_t *cli = qi->qi_client;
+  shcompo_t *query_shc = NULL;
+  query_t *qr = NULL;
+  caddr_t err = NULL;
+  dk_set_t warnings = NULL;
+  caddr_t *params = NULL;
+  int param_ofs;
+  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  dk_set_t proc_resultset = NULL;
+  local_cursor_t *lc = NULL;
+  int cols_count;
+  PROC_SAVE_VARS;
+  query_raw_text = query_text = xpf_arg (xqi, tree, ctx_xe, DV_C_STRING, 0);
+  if (DV_STRING != DV_TYPE_OF (query_text))
+    {
+      if (DV_XML_ENTITY == DV_TYPE_OF (query_text))
+        {
+          xml_entity_t *xe = (xml_entity_t *)query_text;
+          caddr_t sval = NULL;
+          xe->_->xe_string_value (xe, &sval, DV_STRING);
+          query_text = sval;
+        }
+      else
+        sqlr_new_error_xqi_xdl ("XS370", "XPFXX", xqi, "sparql or sql query should be a string");
+    }
+  if (query_is_sparql)
+    {
+      caddr_t preamble = NULL;
+      caddr_t preamble_to_free = NULL;
+      xqi_binding_t *xb;
+      static caddr_t sparql_preamble_global_var_name = NULL;
+      if (NULL == sparql_preamble_global_var_name)
+        sparql_preamble_global_var_name = box_dv_uname_string ("__sparql_preamble");
+      for (xb = xqi->xqi_xp_globals; NULL != xb; xb = xb->xb_next)
+        {
+          if (!xb->xb_name)
+            break;
+          if (xb->xb_name == sparql_preamble_global_var_name)
+            preamble = xb->xb_value;
+        }
+      if (NULL == preamble)
+        {
+          dk_session_t *tmp_ses = strses_allocate ();
+          /*xml_ns_2dict_t *ns2d = &(xqi->xp->xp_sheet->xsh_ns_2dict);
+          int ns_ctr = ns2d->xn2_size;*/
+          SES_PRINT (tmp_ses, "sparql define output:valmode \"AUTO\" define sql:globals-mode \"XSLT\" ");
+          /*while (ns_ctr--)
+            {
+              SES_PRINT (tmp_ses, "prefix ");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_key);
+              SES_PRINT (tmp_ses, ": <");
+              SES_PRINT (tmp_ses, ns2d->xn2_prefix2uri[ns_ctr].xna_value);
+              SES_PRINT (tmp_ses, "> ");
+            }*/
+          preamble = preamble_to_free = strses_string (tmp_ses);
+          dk_free_box (tmp_ses);
+        }
+      query_final_text = box_dv_short_strconcat (preamble, query_text);
+      if (query_text != query_raw_text)
+        dk_free_box (query_text);
+      dk_free_tree (preamble_to_free);
+    }
+  else
+    query_final_text = (query_text != query_raw_text) ? query_text : box_copy (query_text);
+  PROC_SAVE_PARENT;
+  proc_parent_is_saved = 1;
+  warnings = sql_warnings_save (NULL);
+  cli->cli_resultset_max_rows = -1;
+  cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
+  cli->cli_resultset_data_ptr = &proc_resultset;
+  query_shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, query_final_text, qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+  if (NULL == err)
+    {
+      shcompo_recompile_if_needed (&query_shc);
+      if (NULL != query_shc->shcompo_error)
+        err = box_copy_tree (query_shc->shcompo_error);
+    }
+  if (NULL != err)
+    goto err_generated;
+  qr = (query_t *)(query_shc->shcompo_data);
+  params = (caddr_t *)dk_alloc_box_zero (dk_set_length (qr->qr_parms) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  XQI_SET (xqi, tree->_.xp_func.tmp, (caddr_t)params);
+  param_ofs = 0;
+  DO_SET (state_slot_t *, ssl, &qr->qr_parms)
+    {
+      char *name = ssl->ssl_name;
+      caddr_t val;
+      xqi_binding_t *xb;
+      if ((NULL == name) || (':' != name[0]) || alldigits (name+1))
+        {
+          err = sqlr_make_new_error_xqi_xdl ("XS370", "XP???", xqi, "%s parameter of the query can not be bound, only named parameters can be associated with XPATH/XSLT variables of the context", ((NULL!=name) ? name : "anonymous"));
+          goto err_generated; /* see below */
+        }
+      xb = xqi_find_binding (xqi, box_dv_uname_string (name+1));
+      if (NULL == xb)
+        {
+          err = sqlr_make_new_error_xqi_xdl ("XS370", "XP???", xqi, "%s%.100s parameter of the query can not be bound, there's no corresponding XSLT variable $%.100s",
+            query_is_sparql ? "$" : "", name, name+1 );
+          goto err_generated; /* see below */
+        }
+      params[param_ofs++] = box_copy (name);
+      val = xb->xb_value;
+      if (NULL == val)
+        val = NEW_DB_NULL;
+      else if (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (val))
+        {
+          if (0 == BOX_ELEMENTS (val))
+            val = NEW_DB_NULL;
+          else
+            val = box_copy_tree (((caddr_t **)val)[0]);
+        }
+      else
+        val = box_copy_tree (val);
+      params[param_ofs++] = val;
+    }
+  END_DO_SET ()
+  err = qr_exec (cli, qr, qi, NULL, NULL, &lc,
+      params, NULL, 1);
+  memset (params, 0, param_ofs * sizeof (caddr_t));
+  XQI_SET (xqi, tree->_.xp_func.tmp, NULL);
+  params = NULL;
+  if (err)
+    goto err_generated; /* see below */
+  if ((NULL == lc) || !(qr->qr_select_node))
+    {
+      err = sqlr_make_new_error_xqi_xdl ("XS370", "XP???", xqi, "An SQL statement did not produce any (even empty) result-set");
+      goto err_generated; /* see below */
+    }
+  PROC_RESTORE_SAVED;
+  proc_parent_is_saved = 0;
+  if (proc_comp)
+    {
+      dk_free_tree ((caddr_t) proc_comp);
+      proc_comp = NULL;
+    }
+  if (proc_resultset)
+    {
+      dk_free_tree (list_to_array (proc_resultset));
+      proc_resultset = NULL;
+    }
+  comp = qr_describe (qr, NULL);
+  cols_count = BOX_ELEMENTS (comp->sc_columns);
+  if (1 != cols_count)
+    {
+      err = sqlr_make_new_error_xqi_xdl ("XS370", "XP???", xqi, "A scalar SQL statement should produce a result-set with only one column");
+      goto err_generated; /* see below */
+    }
+  if (lc_next (lc))
+    {
+      caddr_t new_val = lc_nth_col (lc, 0);
+      rb_cast_to_xpath_safe (qi, new_val, XQI_ADDRESS(xqi, tree->_.xp_func.res));
+    }
+  else if (1 < tree->_.xp_func.argcount)
+    XQI_SET (xqi, tree->_.xp_func.res, box_copy_tree (xpf_arg (xqi, tree, ctx_xe, DV_UNKNOWN, 1)));
+  else
+    XQI_SET (xqi, tree->_.xp_func.res, NULL);
+  err = lc->lc_error;
+  lc->lc_error = NULL;
+  lc_free (lc);
+  if (err)
+    goto err_generated; /* see below */
+
+  dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+  return;
+err_generated:
+  if (lc)
+    lc_free (lc);
+  if (params)
+    XQI_SET (xqi, tree->_.xp_func.tmp, NULL);
+  if (NULL != query_shc)
+    shcompo_release (query_shc);
+  if (proc_parent_is_saved)
+    PROC_RESTORE_SAVED;
+  sqlr_resignal (err);
+
+}
 
 void xpf_xmlview (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
@@ -5669,6 +5858,8 @@ void xpf_init(void)
   xpf_define_builtin ("round-half-to-even"	, xpf_round_half_to_even	/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   xpf_define_builtin ("round-number"		, xpf_round_number		/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   xpf_define_alias   ("round" , NULL, "round-number", NULL);
+  xpf_define_builtin ("sql-column-select"	, xpf_sql_column_select		/* Virt 6.2 */	, XPDV_NODESET	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  xpf_define_builtin ("sql-scalar-select"	, xpf_sql_scalar_select		/* Virt 6.2 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("serialize"		, xpf_serialize			/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("shallow"			, xpf_shallow			/* XQuery 1.0 */ , XPDV_NODESET , 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
   xpf_define_builtin ("some"			, xpf_some			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));

@@ -5240,7 +5240,6 @@ fine:
 caddr_t
 sqlr_make_new_error_xdl_base (const char *code, const char *virt_code, xp_debug_location_t *xdl, const char *string, va_list vlst)
 {
-  du_thread_t *self;
   char temp[2000];
   int n;
   caddr_t err;
@@ -5282,6 +5281,16 @@ sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debug_location_t
   va_end (vlst);
 }
 
+caddr_t
+sqlr_make_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)
+{
+  caddr_t err;
+  va_list vlst;
+  va_start (vlst, string);
+  err = sqlr_make_new_error_xdl_base (code, virt_code, &(xqi->xqi_xqr->xqr_xdl), string, vlst);
+  va_end (vlst);
+  return err;
+}
 
 void
 sqlr_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)

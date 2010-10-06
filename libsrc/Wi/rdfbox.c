@@ -1290,6 +1290,49 @@ rdf_box_hash_cmp (ccaddr_t a1, ccaddr_t a2)
   return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
 }
 
+void
+rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr)
+{
+  switch (DV_TYPE_OF (new_val))
+    {
+    case DV_DB_NULL:
+      new_val = NULL;
+      goto xb_set_new_val; /* see below */
+    case DV_IRI_ID:
+      dk_free_tree (retval_ptr[0]);
+      retval_ptr[0] = NULL;
+      retval_ptr[0] = key_id_to_iri (qi, ((iri_id_t*)new_val)[0]);
+      return;
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)new_val;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+/*
+        if ((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
+          new_val = rb->rb_box;
+*/
+        break;
+      }
+    default:
+      if (NULL == new_val)
+        {
+          if ((DV_LONG_INT != DV_TYPE_OF (retval_ptr[0])) || (0 != unbox (retval_ptr[0])) || (NULL == retval_ptr[0]))
+            {
+              dk_free_tree (retval_ptr[0]);
+              retval_ptr[0] = box_num_nonull (0);
+              return;
+            }
+        }
+    }
+xb_set_new_val:
+   if (new_val != retval_ptr[0])
+     {
+       dk_free_tree (retval_ptr[0]);
+       retval_ptr[0] = box_copy_tree (new_val);
+     }
+}
+
 caddr_t
 bif_rdf_long_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1374,7 +1417,7 @@ caddr_t
 bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res, val = bif_arg (qst, args, 0, "__rdf_strsqlval");
-  int set_bf_iri = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "__rdf_strsqlval") : 1);
+  int set_bf_iri = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "__rdf_strsqlval") : 0x1);
   dtp_t val_dtp = DV_TYPE_OF (val);
   query_instance_t * qi = (query_instance_t *) qst;
   if (DV_RDF == val_dtp)
@@ -1411,7 +1454,9 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       case DV_STRING:
         res = box_copy (val);
-        if (!((box_flags (res) & BF_IRI) && set_bf_iri))
+        if ((set_bf_iri && (box_flags (res) & BF_IRI)) || (set_bf_iri & 0x2))
+          box_flags(res) = BF_IRI;
+        else
           box_flags(res) = BF_UTF8;
         return res;
       case DV_UNAME:
@@ -1422,7 +1467,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         return NEW_DB_NULL;
       default:
         res = box_cast_to_UTF8 (qst, val);
-        box_flags(res) = BF_UTF8;
+        box_flags (res) = ((set_bf_iri & 0x2) ? BF_IRI : BF_UTF8);
         return res;
     }
 }

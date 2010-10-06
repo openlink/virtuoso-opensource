@@ -660,6 +660,71 @@ xp_dyn_attr (xparse_ctx_t * xp, char * name, caddr_t val)
 }
 
 caddr_t
+xslt_try_to_eval_var_fast (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
+	    int mode, dtp_t dtp )
+{
+  XT * tree = xqr->xqr_tree;
+  caddr_t name = tree->_.var.name;
+  xqi_binding_t *xb;
+  caddr_t val;
+  dtp_t val_dtp;
+  for (xb = xp->xp_locals; (NULL != xb) && (NULL != xb->xb_name); xb = xb->xb_next)
+    {
+      if (!strcmp (name, xb->xb_name))
+        {
+          val = xb->xb_value;
+          goto xb_found; /* see below */
+        }
+    }
+  for (xb = xp->xp_globals; NULL != xb; xb = xb->xb_next)
+    {
+      if (!strcmp (name, xb->xb_name))
+        {
+          val = xb->xb_value;
+          goto xb_found; /* see below */
+        }
+    }
+  switch (mode)
+    {
+    case XQ_TRUTH_VALUE:
+      return NULL;
+    case XQ_VALUE:
+      return box_dv_short_string ("");
+      break;
+    case XQ_NODE_SET:
+      return list_to_array_of_xqval (0);
+    }
+xb_found:
+  switch (mode)
+    {
+    case XQ_TRUTH_VALUE:
+      return (caddr_t) (ptrlong) xqi_truth_value_of_box (val);
+    case XQ_VALUE:
+      val_dtp = DV_TYPE_OF (val);
+      if (DV_ARRAY_OF_XQVAL == val_dtp)
+        {
+          if (0 == BOX_ELEMENTS (val))
+            return box_dv_short_string ("");
+          val = ((caddr_t *)val)[0];
+        }
+      if (NULL == val)
+        return box_dv_short_string ("");
+      if ((DV_UNKNOWN == dtp) || (val_dtp == dtp))
+        return box_copy_tree (val);
+      return BADBEEF_BOX;
+    case XQ_NODE_SET:
+      if (DV_ARRAY_OF_XQVAL != DV_TYPE_OF (val))
+        {
+          caddr_t res = list (1, box_copy_tree (val));
+          box_tag_modify (res, DV_ARRAY_OF_XQVAL);
+          return res;
+        }
+      return box_copy_tree (val);
+    }
+  return BADBEEF_BOX;
+}
+
+caddr_t
 xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
 	    int mode, dtp_t dtp)
 {
@@ -667,7 +732,22 @@ xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
   int first;
   XT * tree = xqr->xqr_tree;
   caddr_t volatile val;
-  xp_instance_t * volatile xqi = xqr_instance (xqr, xp->xp_qi);
+#ifndef NDEBUG
+  caddr_t volatile var_val = BADBEEF_BOX;
+#endif
+  xp_instance_t * volatile xqi;
+  if (XP_VARIABLE == tree->type)
+    { /* Fast code for popular case of an expression that is just a variable and no complicated cast of the value */
+#ifdef NDEBUG
+      caddr_t var_val;
+#endif
+      var_val = xslt_try_to_eval_var_fast (xp, xqr, xe, mode, dtp);
+#ifdef NDEBUG
+      if (BADBEEF_BOX != var_val)
+        return var_val;
+#endif
+    }
+  xqi = xqr_instance (xqr, xp->xp_qi);
   xqi->xqi_doc_cache = xp->xp_doc_cache;
   xqi->xqi_xp_locals = xp->xp_locals;
   xqi->xqi_xp_globals = xp->xp_globals;
@@ -723,6 +803,18 @@ xslt_eval_1 (xparse_ctx_t * xp, xp_query_t * xqr, xml_entity_t * xe,
     }
   END_QR_RESET;
   xqi_free (xqi);
+#ifndef NDEBUG
+  if (BADBEEF_BOX != var_val)
+    {
+      if (DV_TYPE_OF (var_val) != DV_TYPE_OF (val))
+        GPF_T1 ("xslt_eval_1(): failed fast branch for var: wrong type");
+      if (box_hash (var_val) != box_hash (val))
+        {
+          GPF_T1 ("xslt_eval_1(): failed fast branch for var: diff hash");
+        }
+      dk_free_tree (var_val);
+    }
+#endif
   return val;
 }
 
@@ -1660,45 +1752,7 @@ xb_found:
       for (col_ctr = 0; col_ctr < cols_count; col_ctr++)
         {
           caddr_t new_val = lc_nth_col (lc, col_ctr);
-          switch (DV_TYPE_OF (new_val))
-            {
-            case DV_DB_NULL:
-              new_val = NULL;
-              goto xb_set_new_val; /* see below */
-            case DV_IRI_ID:
-              dk_free_tree (xb->xb_value);
-              xb->xb_value = NULL;
-              xb->xb_value = key_id_to_iri (qi, ((iri_id_t*)new_val)[0]);
-              goto xb_done; /* see below */
-            case DV_RDF:
-              {
-                rdf_box_t *rb = (rdf_box_t *)new_val;
-                if (!rb->rb_is_complete)
-                  rb_complete (rb, qi->qi_trx, qi);
-/*
-                if ((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
-                  new_val = rb->rb_box;
-*/
-                break;
-              }
-            default:
-              if (NULL == new_val)
-                {
-                  if ((DV_LONG_INT != DV_TYPE_OF (xb->xb_value)) || (0 != unbox (xb->xb_value)) || (NULL == xb->xb_value))
-                    {
-          dk_free_tree (xb->xb_value);
-                      xb->xb_value = box_num_nonull (0);
-                      goto xb_done; /* see below */
-                    }
-                }
-            }
-xb_set_new_val:
-          if (new_val != xb->xb_value)
-            {
-              dk_free_tree (xb->xb_value);
-              xb->xb_value = box_copy_tree (new_val);
-            }
-xb_done:
+          rb_cast_to_xpath_safe (qi, new_val, &(xb->xb_value));
           xb = xb->xb_next;
 	}
       xslt_instantiate_children (xp, xstree);

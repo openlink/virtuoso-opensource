@@ -3604,11 +3604,19 @@ IN_op_fnt_found:
           {
             const char *tmpl = NULL;
             if (IS_BOX_POINTER (arg1_native))
+              {
+                ssg_puts (" __bft (");
               tmpl = arg1_native->qmfStrsqlvalOfShortTmpl;
-            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
-              tmpl = " __rdf_strsqlval (^{tree}^)";
+                ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+                ssg_puts (", 1)");
+                return;
+              }
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native))
+              tmpl = " __rdf_strsqlval (^{tree}^, 2)"; /* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
+            else if (SSG_VALMODE_BOOL == arg1_native)
+              tmpl = " __bft (case (^{tree}^) when 0 then 'false' else 'true' end, 1)";
             else
-              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for IRI()");
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for STR()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
           }
         else if (SSG_VALMODE_LONG == needed)
@@ -3777,6 +3785,25 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name)
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
     return SSG_VALMODE_LONG;
+  if (!strncmp (name, "bif:", 4))
+    {
+      caddr_t iduqname = sqlp_box_id_upcase (name+4);
+      bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
+      if (NULL != bt)
+        {
+          switch (bt[0]->bt_dtp)
+            {
+              case DV_DOUBLE_FLOAT:
+              case DV_SINGLE_FLOAT:
+              case DV_NUMERIC:
+              case DV_LONG_INT:
+              case DV_DATE:
+              case DV_TIME:
+              case DV_DATETIME: return SSG_VALMODE_NUM;
+              default: return SSG_VALMODE_SQLVAL;
+            }
+        }
+    }
   return SSG_VALMODE_SQLVAL /* not "return res" */;
 }
 

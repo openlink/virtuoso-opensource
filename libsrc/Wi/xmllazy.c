@@ -211,6 +211,10 @@ DBG_NAME(xlazye_string_value) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_
 { xlazye_make_actual_load (xe); xe->_->DBG_NAME(xe_string_value)(DBG_ARGS xe, ret, dtp); }
 
 int
+xlazye_string_value_is_nonempty (xml_entity_t * xe)
+{ xlazye_make_actual_load (xe); return xe->_->xe_string_value_is_nonempty (xe); }
+
+int
 xlazye_up (xml_entity_t * xe, XT * node, int up_flags)
 { xlazye_make_actual_load (xe); return xe->_->xe_up (xe, node, up_flags); }
 
@@ -366,6 +370,7 @@ xml_lazy_init (void)
   xec_lazy_xe.xe_attribute = xlazye_attribute;
   xec_lazy_xe.xe_string_value = (void (*) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp)) xlazye_string_value;
 #endif
+  xec_lazy_xe.xe_string_value_is_nonempty = xlazye_string_value_is_nonempty;
   xec_lazy_xe.xe_first_child = xlazye_first_child;
   xec_lazy_xe.xe_last_child = xlazye_last_child;
   xec_lazy_xe.xe_get_child_count_any = xlazye_get_child_count_any;

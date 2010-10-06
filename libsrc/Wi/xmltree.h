@@ -112,6 +112,7 @@ according to section 5 'Data Model' of XML Path Language (XPath) Version 1.0 W3C
 according to section 5 'Data Model' of XML Path Language (XPath) Version 1.0 W3C Recommendation 16 November 1999 */
     void (* xe_string_value) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp);
 #endif
+    int (* xe_string_value_is_nonempty) (xml_entity_t * xe);
 /*! Tries to go up to parent and maybe through entity reference(s). */
     int (* xe_up) (xml_entity_t * xe, XT * node, int up_flags);
 /*! Tries to go down through entity reference(s). If down, tries to find first child of the root. If not down, tests given node. */
@@ -942,6 +943,7 @@ extern xml_entity_t * xte_copy (xml_entity_t * xe);
 extern void xslt_init (void);
 
 extern int xqi_truth_value (xp_instance_t * xqi, XT * tree);
+extern int xqi_truth_value_of_box (caddr_t val);
 extern int xqi_pred_truth_value (xp_instance_t * xqi, XT * tree);
 extern xp_instance_t *xqr_instance (xp_query_t * xqr, query_instance_t * qi);
 extern void xn_error (xp_node_t * xn, const char * msg);

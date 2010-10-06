@@ -3929,7 +3929,6 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
     }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     {
-      SES_PRINT (ses, "special: ");
       hint = 0;
     }
   if ((-1 == hint) && IS_BOX_POINTER(tree))
