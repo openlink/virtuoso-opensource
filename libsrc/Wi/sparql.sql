@@ -3654,6 +3654,27 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_CSV (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, status integer;
+  http ('"subject","predicate","object"\n', ses);
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_CSV:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  { whenever sqlstate '*' goto p_done; rowvector_subj_sort (triples, 1, 1); p_done: ; }
+  { whenever sqlstate '*' goto s_done; rowvector_subj_sort (triples, 0, 1); s_done: ; }
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][0]);
+      http (',', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][1]);
+      http (',', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][2]);
+      http ('\n', ses);
+    }
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses any)
 {
   declare env, prev_subj, nsdict, nslist any;
@@ -4474,6 +4495,78 @@ create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON (in colvalues any, in coln
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN
 ;
 
+
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (inout _env any, in val any)
+{
+  declare t integer;
+  t := __tag (val);
+  if (t = __tag of rdf_box)
+    {
+      val := rdf_box_data (val);
+      t := __tag (val);
+    }
+  if (t in (__tag of integer, __tag of numeric, __tag of double precision, __tag of float, __tag of date, __tag of time, __tag of datetime))
+    {
+      http_value (val, 0, _env);
+      return;
+    }
+  if (t = __tag of IRI_ID)
+    val := id_to_iri (val);
+  http ('"', _env);
+  http (replace (cast (val as varchar), '"', '"""'), _env);
+  http ('"', _env);
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare sol_id varchar;
+  declare col_ctr, col_count integer;
+  declare blank_ids any;
+  col_count := length (colnames);
+  if (185 <> __tag(_env))
+    {
+      _env := string_output ();
+      for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+        {
+          if (col_ctr > 0)
+            http(',', _env);
+          DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, colnames[col_ctr]);
+        }
+      http ('\n', _env);
+    }
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare val any;
+      val := colvalues[col_ctr];
+      if (col_ctr > 0)
+        http(',', _env);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, val);
+    }
+  http('\n', _env);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns long varchar
+{
+  if (185 <> __tag(_env))
+    return '';
+  return string_output_string (_env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
@@ -4530,6 +4623,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict 
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
   return ses;
 }
 ;
@@ -4679,6 +4787,27 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RE
  DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_NT_FIN
 ;
 
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_FIN
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_FIN (inout _env any) returns long varchar
+{
+  declare ans varchar;
+  if (isinteger (_env) and _env)
+    return '"bool"\n1\n';
+  else
+    return '"bool"\n0\n';
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV (inout one any) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_INIT
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_ACC,	-- Not DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_ACC
+ DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_FIN
+;
 
 -----
 -- Insert, delete, modify operations for lists of triples
@@ -11787,6 +11916,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_GRAPH_TO_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ODATA_JSON to SPARQL_SELECT',
@@ -11802,9 +11932,17 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',

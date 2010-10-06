@@ -1253,6 +1253,35 @@ end_of_val_print: ;
 }
 ;
 
+create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare varctr, varcount, resctr, rescount integer;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      if (varctr > 0)
+        http(',', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, metas[0][varctr][0]);
+    }
+  http ('\n', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val any;
+          val := rset[resctr][varctr];
+          if (varctr > 0)
+            http(',', ses);
+          if (val is not null)
+            DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
+        }
+      http('\n', ses);
+    }
+}
+;
+
+
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
 {
   declare singlefield varchar;
@@ -1296,6 +1325,10 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
           http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (length (rset)) when 0 then 'false' else 'true' end), ses);
         }
+      else if (ret_format = 'CSV')
+        {
+          http (sprintf ('"bool"\n%d\n', case (length (rset)) when 0 then 0 else 1 end), ses);
+        }
       else
         {
           ret_mime := 'text/html';
@@ -1332,6 +1365,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'CXML')
         DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, status);
+      else if (ret_format = 'CSV')
+        DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1464,7 +1499,13 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (ret_format = 'CXML')
     {
-      SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
+      goto body_complete;
+    }
+  if (ret_format = 'CSV')
+    {
+      ret_mime := 'text/csv';
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE (ses, metas, rset);
       goto body_complete;
     }
   ret_mime := 'application/sparql-results+xml';
@@ -1809,6 +1850,7 @@ http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
 http('    format.options[8] = new Option(\'CXML\',\'text/cxml\');\n');
+http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1825,6 +1867,7 @@ http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[9] = new Option(\'CXML\',\'text/cxml\');\n');
+http('    format.options[10] = new Option(\'CSV\',\'text/csv\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -1926,6 +1969,7 @@ http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
 http('			    <option value="text/plain">NTriples</option>\n');
 http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
+http('			    <option value="text/csv">CSV</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			  </select>\n');
 http('&nbsp;&nbsp;&nbsp;\n');
@@ -2497,6 +2541,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       when 'rdf' then 'application/rdf+xml'
       when 'n3' then 'text/rdf+n3'
       when 'cxml' then 'text/cxml'
+      when 'csv' then 'text/csv'
       else _format
       end);
     }
@@ -2514,6 +2559,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/soap+xml') is not null or
       strcasestr (accept, 'application/rdf+turtle') is not null
       strcasestr (accept, 'text/cxml') is not null
+      strcasestr (accept, 'text/csv') is not null
      )
     {
       http_request_status ('HTTP/1.1 303 See Other');

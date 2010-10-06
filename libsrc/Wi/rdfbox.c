@@ -1787,30 +1787,31 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (23*2,
-        "text/rdf+n3"				, "TTL"		,
-        "text/rdf+ttl"				, "TTL"		,
-        "text/rdf+turtle"			, "TTL"		,
-        "text/turtle"				, "TTL"		,
-        "text/n3"				, "TTL"		,
-        "application/turtle"			, "TTL"		,
-        "application/x-turtle"			, "TTL"		,
-        "application/sparql-results+json"	, "JSON;RES"	,
-        "application/json"			, "JSON"	,
-        "application/soap+xml"			, "SOAP"	,
-        "application/soap+xml;11"		, "SOAP"	,
-        "application/sparql-results+xml"	, "XML"		,
-        "text/html"				, "HTML"	,
-        "application/vnd.ms-excel"		, "HTML"	,
-        "application/javascript"		, "JS"		,
-        "application/rdf+json"			, "JSON;TALIS"	,
-        "application/x-rdf+json"		, "JSON;TALIS"	,
-        "application/rdf+xml"			, "RDFXML"	,
-        "application/atom+xml"			, "ATOM;XML"	,
-        "application/odata+json"		, "JSON;ODATA"	,
-        "text/rdf+nt"				, "NT"		,
-        "text/plain"				, "NT"		,
-        "text/cxml"				, "CXML"	/* Increase count in this list() call when add more MIME types! */ );
+      tmp = (caddr_t *)list (24*2,
+        "text/rdf+n3"				, "TTL"		, /*  0 */
+        "text/rdf+ttl"				, "TTL"		, /*  1 */
+        "text/rdf+turtle"			, "TTL"		, /*  2 */
+        "text/turtle"				, "TTL"		, /*  3 */
+        "text/n3"				, "TTL"		, /*  4 */
+        "application/turtle"			, "TTL"		, /*  5 */
+        "application/x-turtle"			, "TTL"		, /*  6 */
+        "application/sparql-results+json"	, "JSON;RES"	, /*  7 */
+        "application/json"			, "JSON"	, /*  8 */
+        "application/soap+xml"			, "SOAP"	, /*  9 */
+        "application/soap+xml;11"		, "SOAP"	, /* 10 */
+        "application/sparql-results+xml"	, "XML"		, /* 11 */
+        "text/html"				, "HTML"	, /* 12 */
+        "application/vnd.ms-excel"		, "HTML"	, /* 13 */
+        "application/javascript"		, "JS"		, /* 14 */
+        "application/rdf+json"			, "JSON;TALIS"	, /* 15 */
+        "application/x-rdf+json"		, "JSON;TALIS"	, /* 16 */
+        "application/rdf+xml"			, "RDFXML"	, /* 17 */
+        "application/atom+xml"			, "ATOM;XML"	, /* 18 */
+        "application/odata+json"		, "JSON;ODATA"	, /* 19 */
+        "text/rdf+nt"				, "NT"		, /* 20 */
+        "text/plain"				, "NT"		, /* 21 */
+        "text/cxml"				, "CXML"	, /* 22 */
+        "text/csv"				, "CSV" /* 23 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -1819,31 +1820,32 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (24*2,
-        "text/rdf+n3"				, "TTL"		,
-        "text/rdf+ttl"				, "TTL"		,
-        "text/rdf+turtle"			, "TTL"		,
-        "text/turtle"				, "TTL"		,
-        "text/n3"				, "TTL"		,
-        "application/turtle"			, "TTL"		,
-        "application/x-turtle"			, "TTL"		,
-        "application/json"			, "JSON"	,
-        "application/rdf+json"			, "JSON;TALIS"	,
-        "application/x-rdf+json"		, "JSON;TALIS"	,
-        "application/soap+xml"			, "SOAP"	,
-        "application/soap+xml;11"		, "SOAP"	,
-        "application/rdf+xml"			, "RDFXML"	,
-        "text/rdf+nt"				, "NT"		,
-        "application/xhtml+xml"			, "RDFA;XHTML"	,
-        "text/plain"				, "NT"		,
-        "application/sparql-results+json"	, "JSON;RES"	,
-        "text/html"				, "HTML"	,
-        "application/vnd.ms-excel"		, "HTML"	,
-        "application/javascript"		, "JS"		,
-        "application/atom+xml"			, "ATOM;XML"	,
-        "application/odata+json"		, "JSON;ODATA"	,
-        "application/sparql-results+xml"	, "XML"		,
-        "text/cxml"				, "CXML"	/* Increase count in this list() call when add more MIME types! */ );
+      tmp = (caddr_t *)list (25*2,
+        "text/rdf+n3"				, "TTL"		, /*  0 */
+        "text/rdf+ttl"				, "TTL"		, /*  1 */
+        "text/rdf+turtle"			, "TTL"		, /*  2 */
+        "text/turtle"				, "TTL"		, /*  3 */
+        "text/n3"				, "TTL"		, /*  4 */
+        "application/turtle"			, "TTL"		, /*  5 */
+        "application/x-turtle"			, "TTL"		, /*  6 */
+        "application/json"			, "JSON"	, /*  7 */
+        "application/rdf+json"			, "JSON;TALIS"	, /*  8 */
+        "application/x-rdf+json"		, "JSON;TALIS"	, /*  9 */
+        "application/soap+xml"			, "SOAP"	, /* 10 */
+        "application/soap+xml;11"		, "SOAP"	, /* 11 */
+        "application/rdf+xml"			, "RDFXML"	, /* 12 */
+        "text/rdf+nt"				, "NT"		, /* 13 */
+        "application/xhtml+xml"			, "RDFA;XHTML"	, /* 14 */
+        "text/plain"				, "NT"		, /* 15 */
+        "application/sparql-results+json"	, "JSON;RES"	, /* 16 */
+        "text/html"				, "HTML"	, /* 17 */
+        "application/vnd.ms-excel"		, "HTML"	, /* 18 */
+        "application/javascript"		, "JS"		, /* 19 */
+        "application/atom+xml"			, "ATOM;XML"	, /* 20 */
+        "application/odata+json"		, "JSON;ODATA"	, /* 21 */
+        "application/sparql-results+xml"	, "XML"		, /* 22 */
+        "text/cxml"				, "CXML"	, /* 23 */
+        "text/csv"				, "CSV" /* 24 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
