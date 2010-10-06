@@ -32,7 +32,7 @@ create procedure fct_init ()
       WS.WS.host_meta_add ('FCT.service', '<Link rel="http://openlinksw.com/virtuoso/fct/service" href="http://%{WSHost}s/fct/service"/>');
       WS.WS.host_meta_add ('FCT.browser', '<Link rel="http://openlinksw.com/virtuoso/fct/browser" href="http://%{WSHost}s/fct/"/>');
       WS.WS.host_meta_add ('FCT.describe', 
-      	'<Link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
+      	'<link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
     }
 }
 ;
@@ -46,8 +46,7 @@ create procedure fct_svc_log (in qr varchar, in lines varchar)
     return;
   ua := http_request_header (lines, 'User-Agent');
   fname := sprintf ('fctlogs/fct%02d%02d%04d.log', dayofmonth(now ()), month (now()), year (now ()));
-  string_to_file (fname, sprintf ('***\n* %s\n* %s\n* %s\n* %s\n', date_rfc1123 (now ()), http_client_ip (), qr, ua
-      ), -1);
+  string_to_file (fname, sprintf ('***\n* %s\n* %s\n* %s\n* %s\n', date_rfc1123 (now ()), http_client_ip (), qr, ua), -1);
 }
 ;
 

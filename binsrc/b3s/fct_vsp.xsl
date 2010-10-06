@@ -169,6 +169,15 @@ function init(){
         </xsl:for-each>
       </xsl:when>
       <xsl:otherwise>
+        <xsl:if test="/facets/result/@type=''">
+          <form>
+            <input type="hidden" name="cmd" value="value_range"/>
+            <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
+            Value range between <input name="lo" type="text"/>
+            and <input name="hi" type="text"/>
+            <input type="submit" value="set"/>
+          </form>                
+        </xsl:if>
         <xsl:for-each select="/facets/result">
 	  <xsl:call-template name="render-result">
 	    <xsl:with-param name="view-type"><xsl:value-of select="$type"/></xsl:with-param>
@@ -203,6 +212,16 @@ function init(){
   sparql_a.innerHTML = 'View query as SPARQL';
   OAT.Dom.append (['sparql_a_ctr',sparql_a]);
 </script>
+<xsl:if test="$type = 'default'">
+<script type="text/javascript">
+  if ($('pivot_a_ctr')) {
+	  var pivot_a = OAT.Dom.create('a',{}, 'pivot_a');
+	  pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
+	  pivot_a.innerHTML = 'Make Pivot collection';
+	  OAT.Dom.append (['pivot_a_ctr',pivot_a]);
+  }
+</script>
+</xsl:if>
 </xsl:template>
 
 <xsl:template name="render-pager">

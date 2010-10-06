@@ -34,6 +34,8 @@
 <xsl:param name="name"/>
 <xsl:param name="timeout"/>
 <xsl:param name="location-prop"/>
+<xsl:param name="lo"/>
+<xsl:param name="hi"/>
 
 <xsl:template match = "query | property |property-of">
 
@@ -132,6 +134,20 @@
         <xsl:value-of select="$iri"/>
       </value>
     </xsl:if>
+
+      <xsl:if test="$op = 'value-range' and
+	            $pos = count (./ancestor::*[name () = 'query' or
+		                                name () = 'property' or
+			                        name () = 'property-of']) +
+                           count (./preceding::*[name () = 'query' or
+			                         name () = 'property' or
+				                 name () = 'property-of'])">
+        <value-range xml:lang="{$lang}"
+	       datatype="{$datatype}"
+               hi="{$hi}"
+               lo="{$lo}">
+        </value-range>
+      </xsl:if>
 
   </xsl:copy>
 </xsl:if>
