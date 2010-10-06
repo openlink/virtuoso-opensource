@@ -86,6 +86,7 @@
 
    page_resource_uri := gr;
    page_resource_uri := replace (page_resource_uri, '%23', '#');
+  page_resource_uri := replace (page_resource_uri, ' ', '%20');
    
    _S := page_resource_uri; 
    proxy_iri := page_resource_uri;
