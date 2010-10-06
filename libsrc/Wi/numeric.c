@@ -62,13 +62,6 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
 #define NUM_SET_1(N)		memcpy (N, &_num_1, sizeof (_num_1))
 #define NUM_SET_10(N)		memcpy (N, &_num_10, sizeof (_num_10))
 
-#define num_is_zero(N)		((N)->n_len + (N)->n_scale == 0)
-#define num_is_invalid(N)	((N)->n_invalid)
-#define num_is_nan(N)		((N)->n_invalid & NDF_NAN)
-#define num_is_inf(N)		((N)->n_invalid & NDF_INF)
-#define num_is_plus_inf(N)	(num_is_inf (N) && (N)->n_neg == 0)
-#define num_is_minus_inf(N)	(num_is_inf (N) && (N)->n_neg == 1)
-
 #ifdef NUMERIC_DEBUG
 # define num_warn(X)	puts(X)
 #else
@@ -81,15 +74,6 @@ static struct numeric_s _num_10	= { 2, 0, 0, 0, { 1, 0	}};	/* 10 */
 #define NDV_FLAGS	2	/* flags, see below */
 #define NDV_L		3	/* #bytes encoding number before . */
 #define NDV_DATA	4	/* bcd */
-
-/* flags in marshalled number */
-#define NDF_INF		0x10	/* Inf */
-#define NDF_NAN		0x08	/* NaN */
-#define NDF_LEAD0	0x04	/* Leading 0 */
-#define NDF_TRAIL0	0x02	/* Trailing 0 */
-#define NDF_NEG		0x01	/* Negative */
-
-#define is_dv_negative(X)	((X)[NDV_FLAGS] & NDF_NEG)
 
 #ifndef TRUE
 # define TRUE		1
