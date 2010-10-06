@@ -107,7 +107,7 @@ create aggregate DB.DBA.SPARQL_DICT_XML_HTTP (inout colnames any, inout row any)
 
 
 --!AWK PUBLIC
-create procedure SPARQL_RSET_TTL_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RSET_TTL_WRITE_NS (inout ses any)
 {
   http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -641,7 +641,7 @@ create procedure "querySoap"  (in  "Command" varchar
 ;
 
 --!AWK PUBLIC
-create procedure SPARQL_WRITE_EXEC_STATUS (inout ses any, in line_format varchar, inout status any)
+create procedure DB.DBA.SPARQL_WRITE_EXEC_STATUS (inout ses any, in line_format varchar, inout status any)
 {
   declare lctr, lcount integer;
   declare lines any;
@@ -660,7 +660,7 @@ create procedure SPARQL_WRITE_EXEC_STATUS (inout ses any, in line_format varchar
 ;
 
 
-create procedure SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
+create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, col_count integer;
 
@@ -686,7 +686,7 @@ create procedure SPARQL_RESULTS_XML_WRITE_HEAD (inout ses any, in mdta any)
 }
 ;
 
-create procedure SPARQL_RESULTS_XML_WRITE_RES (inout ses any, in mdta any, inout dta any)
+create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_RES (inout ses any, in mdta any, inout dta any)
 {
   http ('\n <results distinct="false" ordered="true">', ses);
 
@@ -793,7 +793,7 @@ end_of_binding: ;
 }
 ;
 
-create procedure SPARQL_RESULTS_RDFXML_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_NS (inout ses any)
 {
   http ('<rdf:RDF xmlns:res="http://www.w3.org/2005/sparql-results#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:nodeID="rset">
@@ -801,7 +801,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_NS (inout ses any)
 }
 ;
 
-create procedure SPARQL_RESULTS_RDFXML_WRITE_HEAD (inout ses any, in mdta any)
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, col_count integer;
   mdta := mdta[0];
@@ -822,7 +822,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_HEAD (inout ses any, in mdta any)
 }
 ;
 
-create procedure SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta any, inout dta any)
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta any, inout dta any)
 {
   for (declare ctr integer, ctr := 0; ctr < length (dta); ctr := ctr + 1)
     {
@@ -833,7 +833,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta any, in
 }
 ;
 
-create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
+create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
 {
   mdta := mdta[0];
   for (declare x any, x := 0; x < length (mdta); x := x + 1)
@@ -919,7 +919,7 @@ end_of_binding: ;
 }
 ;
 
-create procedure SPARQL_RESULTS_TTL_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_NS (inout ses any)
 {
   http ('@prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -927,7 +927,7 @@ _:_ a res:ResultSet .\n', ses);
 }
 ;
 
-create procedure SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
+create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, col_count integer;
   mdta := mdta[0];
@@ -954,7 +954,7 @@ create procedure SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta any)
 }
 ;
 
-create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout dta any)
+create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout dta any)
 {
   declare colctr, colcount, rowctr, len, fake_agg_ctx integer;
   declare cols, colbuf, env any;
@@ -979,13 +979,13 @@ create procedure SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any, inout
 }
 ;
 
-create procedure SPARQL_RESULTS_NT_WRITE_NS (inout ses any)
+create procedure DB.DBA.SPARQL_RESULTS_NT_WRITE_NS (inout ses any)
 {
   http ('_:ResultSet2053 rdf:type <http://www.w3.org/1999/02/22-rdf-syntax-ns#res:ResultSet> .\n', ses);
 }
 ;
 
-create procedure SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
+create procedure DB.DBA.SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
 {
   declare i, col_count integer;
   mdta := mdta[0];
@@ -1008,7 +1008,7 @@ create procedure SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any)
 }
 ;
 
-create procedure SPARQL_RESULTS_NT_WRITE_RES (inout ses any, in mdta any, inout dta any)
+create procedure DB.DBA.SPARQL_RESULTS_NT_WRITE_RES (inout ses any, in mdta any, inout dta any)
 {
   declare colctr, colcount, rowctr, len, fake_agg_ctx integer;
   declare cols, colbuf, env any;
@@ -1033,7 +1033,7 @@ create procedure SPARQL_RESULTS_NT_WRITE_RES (inout ses any, in mdta any, inout 
 }
 ;
 
-create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1)
+create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1)
 {
   declare varctr, varcount, resctr, rescount integer;
   declare trnewline, newline varchar;
@@ -1116,7 +1116,7 @@ end_of_val_print: ;
 }
 ;
 
-create procedure SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
+create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
 {
   http(' "', ses);
   http_escape (colname, 11, ses, 0, 1);
@@ -1210,7 +1210,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname va
 }
 ;
 
-create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inout rset any)
 {
   declare varctr, varcount, resctr, rescount integer;
   varcount := length (metas[0]);
