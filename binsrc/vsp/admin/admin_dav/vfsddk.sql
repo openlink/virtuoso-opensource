@@ -85,6 +85,7 @@ create table WS.WS.VFS_SITE (
     VS_EXTRACT_FN  varchar,
     VS_STORE_FN  varchar,
     VS_DEPTH	int default null,
+    VS_CONVERT_HTML	int default 1,
     primary key (VS_HOST, VS_ROOT))
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
@@ -153,6 +154,9 @@ alter table WS.WS.VFS_SITE add VS_INST_ID  int
 --#ENDIF
 
 alter table WS.WS.VFS_SITE add VS_DEPTH int default null
+;
+
+alter table WS.WS.VFS_SITE add VS_CONVERT_HTML int default 1
 ;
 
 alter table WS.WS.VFS_QUEUE add VQ_LEVEL int default 0

@@ -87,8 +87,9 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   declare dt, redir_flag, store_flag, try_to_get_rdf integer;
   declare _since datetime;
   declare _udata, ext_hook, store_hook, _header_arr, _resps any;
-  declare n_urls int;
+  declare n_urls, conv_html int;
 
+  conv_html := 1;
   n_urls := position (0, _urls) - 1;
   if (n_urls < 0)
     n_urls := length (_urls);
@@ -96,10 +97,10 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0), 
-	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, '')
+	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''), VS_CONVERT_HTML
       into _since, _opts, _dav_method, _start_url, _d_imgs, _opage, 
       	 redir_flag, store_flag, try_to_get_rdf, 
-	 _udata, ext_hook, store_hook, _del, _other
+	 _udata, ext_hook, store_hook, _del, _other, conv_html
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
 nf_opt:
 
@@ -264,7 +265,7 @@ get_again:
 	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata, lev + 1);
       else 
 	{
-      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag);
+	      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
       if (try_to_get_rdf)
         WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp);
     }
@@ -497,7 +498,7 @@ create procedure ERR_MAIL_SEND (in _tgt varchar, in _urls varchar, in _root varc
 
 create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root varchar,
                               inout _content varchar, in _s_etag varchar, in _c_type varchar,
-			      in store_flag int := 1)
+			      in store_flag int := 1, in conv_html int := 1)
 {
   declare _name, _perms, _etag, _idx, _type, _e_etag, _sl, _opage varchar;
   declare _own, _col_id, _grp, _res_id integer;
@@ -561,7 +562,7 @@ not_res:
 	    {
 	      insert into SYS_DAV_RES (RES_ID, RES_NAME, RES_CONTENT, RES_TYPE,
 		  RES_PERMS, RES_OWNER, RES_GROUP, RES_CR_TIME, RES_MOD_TIME, RES_COL)
-		  values (getid ('R'), _name, WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type),
+		  values (getid ('R'), _name, WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type, conv_html),
 		      _type, _perms, _own, _grp, now (), now (), _col_id);
 	    }
 
@@ -582,7 +583,7 @@ no_chksum:
 		}
 	      else
 		{
-		  update SYS_DAV_RES set RES_CONTENT = WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type),
+		  update SYS_DAV_RES set RES_CONTENT = WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type, conv_html),
 			 RES_MOD_TIME = now () where RES_ID = _res_id;
 		}
 
@@ -925,12 +926,12 @@ end_step:
 
 
 create procedure WS.WS.REPLACE_HREF (in _host varchar, in _url varchar, in _root varchar,
-    in _content varchar, in _c_type varchar)
+    in _content varchar, in _c_type varchar, in conv_html int := 1)
 {
   declare _str, _tree, _tree_doc any;
   declare _tmp, _nhost, _nurl, _dav, _url_p varchar;
   declare _lp, _rp, _len, _tp, _break, _inx integer;
-  if (_c_type not like 'text/html%' or not isstring (_content))
+  if (_c_type not like 'text/html%' or not isstring (_content) or conv_html = 0)
     return _content;
 
   _str := string_output ();
