@@ -788,7 +788,7 @@
                           <label for="lf_uid">User ID</label>
                     </th>
                         <td>
-                      <input type="text" name="lf_uid" value="" id="lf_uid" />
+                          <input type="text" name="lf_uid" value="" id="lf_uid" style="width: 150px;" />
                     </td>
                   </tr>
                   <tr>
@@ -796,7 +796,7 @@
                       <label for="lf_password">Password</label>
                     </th>
                         <td>
-                      <input type="password" name="lf_password" value="" id="lf_password" />
+                          <input type="password" name="lf_password" value="" id="lf_password" style="width: 150px;" />
                     </td>
                   </tr>
                     </table>
@@ -808,7 +808,7 @@
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td>
-                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40"/>
+                          <input type="text" name="lf_openId" value="" id="lf_openId" style="width: 300px;" />
                         </td>
                   </tr>
                     </table>
@@ -856,15 +856,15 @@
                   <div id="rf_content"></div>
                   <div id="rf_page_0" class="tabContent" style="display: none">
                     <table id="rf_table_0" class="form" cellspacing="5">
-                      <tr id="rf_login_1">
+                      <tr>
                         <th width="30%">
                           <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_uid" value="" id="rf_uid" />
+                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
                         </td>
                       </tr>
-                      <tr id="rf_login_2">
+                      <tr>
                         <th>
                           <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
@@ -872,20 +872,20 @@
                           <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
                         </td>
                       </tr>
-                      <tr id="rf_login_3">
+                      <tr>
                         <th>
                           <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="password" name="rf_password" value="" id="rf_password" />
+                          <input type="password" name="rf_password" value="" id="rf_password" style="width: 150px;" />
                         </td>
                       </tr>
-                      <tr id="rf_login_4">
+                      <tr>
                         <th>
                           <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="password" name="rf_password2" value="" id="rf_password2" />
+                          <input type="password" name="rf_password2" value="" id="rf_password2" style="width: 150px;" />
                         </td>
                       </tr>
                     </table>

@@ -114,36 +114,36 @@
         </div>
               <div id="rf_page_0" class="tabContent">
                 <table id="rf_table_0" class="form" cellspacing="5">
-                  <tr id="rf_login_1">
-                    <th>
+                  <tr>
+                    <th width="20%">
                       <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="" id="rf_uid" />
+                      <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
                 </td>
               </tr>
-                  <tr id="rf_login_2">
+                  <tr>
                     <th>
                       <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                      <input type="text" name="rf_email" value="" id="rf_email" style="width: 300px;" />
                 </td>
               </tr>
-                  <tr id="rf_login_3">
+                  <tr>
                     <th>
                       <label for="rf_password">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="password" name="rf_password" value="" id="rf_password" />
+                      <input type="password" name="rf_password" value="" id="rf_password" style="width: 150px;" />
                 </td>
               </tr>
-                  <tr id="rf_login_4">
+                  <tr>
                     <th>
                       <label for="rf_password2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="password" name="rf_password2" value="" id="rf_password2" />
+                      <input type="password" name="rf_password2" value="" id="rf_password2" style="width: 150px;" />
                 </td>
               </tr>
                 </table>
@@ -155,7 +155,7 @@
                       <label for="rf_openId">OpenID</label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_openId" value="" id="rf_openId" size="40"/>
+                      <input type="text" name="rf_openId" value="" id="rf_openId" style="width: 300px;" />
                 </td>
               </tr>
             </table>

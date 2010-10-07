@@ -126,7 +126,7 @@ again:
       _inst := null;
       fetch cr into _host_id, _wai_id, nam, _inst, _title, _url, seq, _feed_url;
       commit work;
-      for select SH_URL, SH_PROTO, SH_METHOD from SVC_HOST where SH_ID = _host_id do
+      for select SH_URL, SH_PROTO, SH_METHOD, SH_NAME from SVC_HOST where SH_ID = _host_id do
 	  {
 
 	    if (isstring (SH_PROTO) and SH_PROTO <> '' and _inst is not null)
@@ -177,6 +177,14 @@ again:
 			{
 			  rc := DB.DBA.XMLRPC_CALL (SH_URL, 'weblogUpdates.extendedPing', vector (nam, url, url, _feed_url));
 			}
+		    }
+		  else if (SH_PROTO = 'REST' and lower (SH_NAME) = 'twitter')
+		    {
+		      declare sid any;
+		      sid := (select WUO_OAUTH_SID from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.WA_MEMBER 
+		      	where WAM_USER = WUO_U_ID and WAM_INST = _inst and WUO_NAME = 'Twitter');
+	              if (length (sid))
+ 		        ODS.ODS_API.twitter_status_update (_title, sid);	
 		    }
 		  else if (SH_PROTO = 'REST')
 		    {

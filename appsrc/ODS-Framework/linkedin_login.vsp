@@ -1,14 +1,12 @@
 <?vsp 
-  declare tok, sec, res, url, sid, oauth_tok, ret_url, profile_url, tmp any;
+  declare tok, res, url, sid, oauth_tok, ret_url, profile_url, tmp any;
 
   sid := {?'sid'};
   profile_url := null;
-  tok := 'd0ZF-sIjJ9otF9agnZWTjc4RTPSJq7-gBmkoOJoF76EiJ4-bcQPZjBU6Dn87_U_M';
-  sec := 'O8dMnCwdRD3dAPcwrKSQKCX-2m9dhciwi9sxr1wBMxbOyQCREfIynz9OjiNZ9Jyx';
+  tok := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
 
   if ({?'login'} is not null)
     {
-      insert soft OAUTH..APP_REG (a_name,a_key,a_secret,a_owner) values ('LinkedIn API', tok, sec, 0);
       sid := md5 (datestring (now ()));
       ret_url := sprintf ('http://%{WSHost}s%s?sid=%U', http_path(), sid);
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', ret_url), tok, null, 1); 

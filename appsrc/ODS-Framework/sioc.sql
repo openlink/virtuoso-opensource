@@ -79,8 +79,7 @@ create procedure get_graph_new (
     return sprintf ('http://%s/dataspace/protected/%s',arr[0],arr[1]);
   }
   return null;
-}
-;
+};
 
 create procedure get_ods_link ()
 {
@@ -3653,7 +3652,7 @@ create procedure SIOC..acl_delete (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri varchar;
+  declare acl_iri, clean_iri varchar;
   declare N, aclArray any;
   declare exit handler for sqlstate '*'
   {
@@ -3661,29 +3660,41 @@ create procedure SIOC..acl_delete (
     return;
   };
 
+  clean_iri := iri;
+  N := strchr (clean_iri, '#');
+	if (N >= 0)
+    clean_iri := subseq (clean_iri, 0, N);
+
   -- ACL Data
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
-    acl_iri := iri || sprintf('#acl%d', N);
+    acl_iri := clean_iri || sprintf('#acl%d', N);
     delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
   }
 }
 ;
 
-create procedure SIOC..acl_check (
-  in acl_graph_iri varchar,
-  in acl_groups_iri varchar,
-  in acl_iris any)
+create procedure SIOC..acl_webID ()
 {
-  declare N, M, rc varchar;
-  declare graph_iri, foafIRI, foafGraph, loadIRI, localIRI any;
-  declare S, sql, V, info, st, msg, data, meta any;
+  declare retIRI varchar;
+  declare foafIRI, foafGraph, loadIRI, localIRI any;
+  declare S, V, info, st, msg, data, meta any;
 
-  rc := '';
-  st := '00000';
+  if (not is_https_ctx ())
+  {
+    retIRI := null;
+    goto _exit;
+  }
 
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
+  retIRI := connection_get ('vspx_vebid');
+  if (not isnull (retIRI))
+  {
+    if (retIRI = '')
+      retIRI := null;
+    goto _exit;
+  }
+
   foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
   V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
   V := split_and_decode (V, 0, '\0\0,:');
@@ -3692,14 +3703,14 @@ create procedure SIOC..acl_check (
   foafIRI := get_keyword ('URI', V);
   if (isnull (foafIRI))
   {
-    foafIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-    if (foafIRI is not null)
-      goto _authenticated;
-    foafIRI := ODS..FINGERPOINT_WEBID_GET ();
-    if (foafIRI is null)
-      goto _exit;
+    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
+    if (not isnull (retIRI))
+      goto _set;
+    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
+    goto _set;
   }
 
+  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
   localIRI := foafIRI;
   V := rfc1808_parse_uri (localIRI);
   if (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
@@ -3713,11 +3724,10 @@ create procedure SIOC..acl_check (
   loadIRI := DB.DBA.vspx_uri_compose (V);
 
   S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
+  st := '00000';
   exec (S, st, msg, vector (), 0);
-  if (st <> '00000')
-    goto _exit;
-
-  info := get_certificate_info (9);
+  if (st = '00000')
+  {
   S := sprintf (' sparql define input:storage "" ' ||
                 ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
                 ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
@@ -3734,65 +3744,15 @@ create procedure SIOC..acl_check (
                 foafGraph,
                 localIRI);
   exec (S, st, msg, vector (), 0, meta, data);
-  if (st <> '00000' or length (data) = 0)
-    goto _exit;
-
+    if (st = '00000')
+    {
+      info := get_certificate_info (9);
   foreach (any _row in data) do
   {
     if (_row[0] = cast (info[1] as varchar) and lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
     {
-    _authenticated:
-      declare resMode varchar;
-
-      graph_iri := SIOC..get_graph ();
-      S := ' sparql \n' ||
-           ' define input:storage "" \n' ||
-           ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-           ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-           ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-           ' select ?aclMode \n' ||
-           '   from <%s> \n' ||
-           '   from <%s> \n' ||
-           '  where { \n' ||
-           '          { \n' ||
-           '            ?rule rdf:type acl:Authorization ; \n' ||
-           '                  acl:accessTo <%s> ; \n' ||
-           '                  acl:mode ?aclMode; \n' ||
-           '                  acl:agent <%s>. \n' ||
-           '          } \n' ||
-           '          union \n' ||
-           '          { \n' ||
-           '            ?rule rdf:type acl:Authorization ; \n' ||
-           '                  acl:accessTo <%s> ; \n' ||
-           '                  acl:mode ?aclMode; \n' ||
-           '                  acl:agentClass foaf:Agent. \n' ||
-           '          } \n' ||
-           '          union \n' ||
-           '          { \n' ||
-           '            ?rule rdf:type acl:Authorization ; \n' ||
-           '                  acl:accessTo <%s> ; \n' ||
-           '                  acl:mode ?aclMode; \n' ||
-           '                  acl:agentClass ?group. \n' ||
-           '                  ?group rdf:type foaf:Group ; \n' ||
-           '                  foaf:member <%s>. \n' ||
-           '          } \n' ||
-           '        }';
-      for (N := 0; N < length (acl_iris); N := N + 1)
-      {
-        commit work;
-        sql := sprintf (S, acl_graph_iri, acl_groups_iri, acl_iris[N], foafIRI, acl_iris[N], acl_iris[N], foafIRI);
-        exec (sql, st, msg, vector (), vector ('use_cache', 1), meta, data);
-        if ((st = '00000') and length (data))
-        {
-          rc := 'R';
-          for (M := 0; M < length (data); M := M + 1)
-          {
-            if (data[M][0] like '%Write')
-            {
-              rc := 'W';
-              goto _break;
-            }
-          }
+          retIRI := foafIRI;
+          goto _break;
         }
       }
     }
@@ -3800,8 +3760,172 @@ create procedure SIOC..acl_check (
 _break:;
   exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
 
+_set:;
+  connection_set ('vspx_vebid', coalesce (retIRI, ''));
+
+_exit:;
+  return retIRI;
+}
+;
+
+create procedure SIOC..acl_check (
+  in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
+  in acl_iris any)
+{
+  declare N, M, I integer;
+  declare tmp, rc, foafIRI, acl_iri varchar;
+  declare IRIs any;
+
+  rc := '';
+  foafIRI := SIOC..acl_webID ();
+  if (isnull (foafIRI))
+    goto _exit;
+
+  IRIs := vector (vector(), vector(), vector());
+      for (N := 0; N < length (acl_iris); N := N + 1)
+      {
+    tmp := '';
+    acl_iri := acl_iris[N];
+    for ( sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+          select ?p1 ?p2 ?p3 ?mode
+           where {
+                   {
+                     graph `iri(?:acl_graph_iri)`
+                     {
+                       ?rule rdf:type acl:Authorization ;
+                             acl:accessTo `iri(?:acl_iri)` ;
+                             acl:agent `iri(?:foafIRI)` ;
+                             acl:agent ?p1 .
+                       OPTIONAL {?rule acl:mode ?mode .} .
+                     }
+                   }
+                   union
+        {
+                     graph `iri(?:acl_graph_iri)`
+                     {
+                       ?rule rdf:type acl:Authorization ;
+                             acl:accessTo `iri(?:acl_iri)` ;
+                             acl:agentClass foaf:Agent ;
+                             acl:agentClass ?p2 .
+                       OPTIONAL {?rule acl:mode ?mode .} .
+                     }
+                   }
+                   union
+          {
+                     graph `iri(?:acl_graph_iri)`
+            {
+                       ?rule rdf:type acl:Authorization ;
+                             acl:accessTo `iri(?:acl_iri)` ;
+                             acl:agentClass ?p3 .
+                       OPTIONAL {?rule acl:mode ?mode .} .
+                     }
+                     graph `iri(?:acl_groups_iri)`
+                     {
+                       ?p3 rdf:type foaf:Group ;
+                           foaf:member `iri(?:foafIRI)` .
+                     }
+            }
+          }
+           order by ?p3 ?p2 ?p1 DESC(?mode)) do
+    {
+      if      (not isnull ("p1"))
+        I := 0;
+      else if (not isnull ("p2"))
+        I := 1;
+      else if (not isnull ("p3"))
+        I := 2;
+      else
+        goto _skip;
+
+      tmp := coalesce ("p1", coalesce ("p2", "p3"));
+      for (M := 0; M < length (IRIs[I]); M := M + 1)
+      {
+        if (tmp = IRIs[I][M])
+          goto _skip;
+        }
+      if ("mode" like '%#Write')
+      {
+        rc := 'W';
+        goto _exit;
+      }
+      if ("mode" like '%#Read')
+        rc := 'R';
+
+      IRIs[I] := vector_concat (IRIs[I], vector (tmp));
+
+    _skip:;
+    }
+  }
+
 _exit:;
   return rc;
+}
+;
+
+create procedure SIOC..acl_list (
+  in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
+  in acl_iri varchar)
+{
+  declare rc, foafIRI varchar;
+
+  result_names (rc);
+
+  foafIRI := SIOC..acl_webID ();
+  if (isnull (foafIRI))
+    return;
+
+  for ( sparql
+        define input:storage ""
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        prefix acl: <http://www.w3.org/ns/auth/acl#>
+        select distinct ?iri
+         where {
+                 {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo ?iri ;
+                           acl:agent `iri(?:foafIRI)` .
+                     filter (?iri != ?:acl_iri).
+                   }
+                 }
+                 union
+                 {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo ?iri ;
+                           acl:agentClass foaf:Agent .
+                     filter (?iri != ?:acl_iri).
+                   }
+                 }
+                 union
+                 {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo ?iri ;
+                           acl:agentClass ?group .
+                     filter (?iri != ?:acl_iri).
+                   }
+                   graph `iri(?:acl_groups_iri)`
+                   {
+                     ?group rdf:type foaf:Group ;
+                         foaf:member `iri(?:foafIRI)` .
+                   }
+                 }
+               }
+         order by ?iri) do
+  {
+    result ("iri");
+  }
 }
 ;
 

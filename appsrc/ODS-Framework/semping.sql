@@ -40,6 +40,9 @@ DB.DBA.EXEC_STMT (
 			PR_FLAG		int default 0,
 			primary key (PR_IRI)
     			)', 0);
+DB.DBA.EXEC_STMT ('create table PING_LOCK (ID int primary key)', 0);
+
+insert soft PING_LOCK values (0);
 
 create trigger PING_RULES_I after insert on PING_RULES referencing new as N
 {
@@ -168,43 +171,59 @@ create procedure "semping-rest" (in source varchar, in target varchar) returns v
 -- pingback server
 create procedure "pingback.ping" (in source varchar, in target varchar) 
 {
-  declare aq, hf any;
+  declare aq, hf, xx any;
   declare qr, src, tgt, srcgr, tgtgr, pred, mail varchar;
 
-  -- dbg_obj_print_vars (source, target);
 
   if (http_acl_get ('SemanticPingback', source, target) = 1)
     {
       signal ('42000', 'Access denied');
     }
 
-  hf := rfc1808_parse_uri (source); hf[5] := '';
-  src := WS.WS.VFS_URI_COMPOSE (hf);
-  hf := rfc1808_parse_uri (target); hf[5] := '';
-  tgt := WS.WS.VFS_URI_COMPOSE (hf);
-
+  -- dbg_obj_print ('------------------------------------');
+  -- dbg_obj_print_vars (source, target);
   set_user_id ('dba');
 
   srcgr := 'urn:temp.semping.src:' || uuid ();
   tgtgr := 'urn:temp.semping.tgt:' || uuid ();
+
+  set isolation = 'serializable';
+  select id into xx from PING_LOCK where ID = 0 for update;
+
+  hf := rfc1808_parse_uri (source); hf[5] := '';
+  src := WS.WS.VFS_URI_COMPOSE (hf);
   sparql load ?:src into graph ?:srcgr;
+  hf := rfc1808_parse_uri (target); hf[5] := '';
+  tgt := WS.WS.VFS_URI_COMPOSE (hf);
   sparql load ?:tgt into graph ?:tgtgr;
 
   pred := (sparql select ?p where { graph `iri(?:srcgr)` { `iri(?:source)` ?p `iri(?:target)` . }});
+  if (0 and pred is null)
+    {
+      declare src1 any;
+      src1 := (sparql prefix sioc: <http://rdfs.org/sioc/ns#> select ?s where { graph `iri(?:srcgr)` { `iri(?:source)` sioc:reply_of ?s . }});
+      if (src1 is not null)
+	{
+	  hf := rfc1808_parse_uri (src1); hf[5] := '';
+	  src := WS.WS.VFS_URI_COMPOSE (hf);
+	  sparql load ?:src into graph ?:srcgr;
+	  pred := (sparql prefix sioc: <http://rdfs.org/sioc/ns#> select ?p where { graph `iri(?:srcgr)` { `iri(?:src1)` ?p `iri(?:target)` . }});
+	}
+    }
   mail := (sparql prefix foaf: <http://xmlns.com/foaf/0.1/> select ?mbox where { graph `iri(?:tgtgr)` { `iri(?:target)` foaf:mbox ?mbox . }}); 
 
---  dbg_obj_print_vars (pred, mail);
-
-  sparql clear iri (?:srcgr);
-  sparql clear iri (?:tgtgr);
+  -- dbg_obj_print_vars (pred, mail);
+  sparql clear graph iri(?:srcgr);
+  sparql clear graph iri(?:tgtgr);
 
   if (mail like 'mailto:%')
     mail := subseq (mail, 7);
 
   if (pred is null)
-    signal ('22023', 'Source does not contains any rellation to target');
+    signal ('22023', 'Source does not contains any relation to target');
 
-  insert soft PINGBACKS (P_SOURCE, P_TARGET, P_PROP, P_MAIL, P_IP, P_STATE) 
+--  dbg_obj_print_vars (source, target, pred, mail);
+  insert replacing PINGBACKS (P_SOURCE, P_TARGET, P_PROP, P_MAIL, P_IP, P_STATE) 
       values (source, target, pred, mail, http_client_ip (), 0);
 
   if (0 = row_count ())
@@ -228,11 +247,11 @@ create procedure GET_TEMPLATE ()
       sprintf ('X-Mailer: OpenLink Virtuoso Mail Client (%s)\r\n', sys_stat('st_dbms_ver')) ||
       'Content-Type: text/plain\r\n' ||
       'Subject: Semantic Pingback Notification\r\n\r\n' ||
-      'The entity <s> is updated with relation <p> connecting to your WebID: <t>\r\n' ||
-      'You may wish add the reciprocal relation in your space.\r\n' ||
+      'The Data Space Entity: <s> has been updated with a new relation <p> that references <t> .\r\n'||
+      'You may also wish to make a reciprocal entry in your Data Space.' ||
       '\r\n' ||
-      'You are receiving this e-mail because you are enabled pingback notification for WebID <t>.\r\n' ||
-      'Please do not answer on this e-mail, it is automatically generated as semantic pingback notification.\r\n' 
+      'Note: you are receiving this mail because you enabled Semantic Pingback notification (with email as notice mechanism)\r\n'||
+      'for your Personal Profile Management Data Space for WebID: <t>. You do not need to respond to this automated email.'
       ;
 }
 ;

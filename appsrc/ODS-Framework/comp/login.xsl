@@ -80,7 +80,7 @@
                           <label for="lf_uid">User ID</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="lf_uid" value="" id="lf_uid" />
+                          <input type="text" name="lf_uid" value="" id="lf_uid" style="width: 150px;" />
                         </td>
                       </tr>
                       <tr>
@@ -88,7 +88,7 @@
                           <label for="lf_password">Password</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="password" name="lf_password" value="" id="lf_password" />
+                          <input type="password" name="lf_password" value="" id="lf_password" style="width: 150px;" />
                         </td>
                       </tr>
                     </table>
@@ -101,7 +101,7 @@
                           <label for="lf_openId">OpenID URL</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="lf_openId" value="" id="lf_openId" class="openId" size="40" />
+                          <input type="text" name="lf_openId" value="" id="lf_openId" style="width: 300px;" />
                         </td>
                       </tr>
                     </table>
