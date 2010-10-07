@@ -4434,7 +4434,7 @@ create trigger SYS_DAV_PROP_WAC_I after insert on WS.WS.SYS_DAV_PROP order 100 r
 }
 ;
 
-create trigger SYS_DAV_PROP_WAC_U after update on WS.WS.SYS_DAV_PROP order 100 referencing new as N, old as O
+create trigger SYS_DAV_PROP_WAC_U after update (PROP_NAME, PROP_VALUE) on WS.WS.SYS_DAV_PROP order 100 referencing new as N, old as O
 {
   if (N.PROP_NAME <> 'virt:aci_meta_n3')
     return;
@@ -4533,7 +4533,8 @@ create procedure WS.WS.DAV_IRI (
   S := string_output_string (S);
 
   host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (host is null) {
+  if (host is null)
+  {
     host := sys_stat ('st_host_name');
     if (server_http_port () <> '80')
       host := host ||':'|| server_http_port ();
@@ -4546,243 +4547,204 @@ create procedure WS.WS.DAV_IRI (
 -- ACL - WebDAV Collection
 create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 10 referencing new as NC
 {
-  declare
-    N,
-    colID,
-    parentID integer;
-  declare
-    aAcl,
-    aParentAcl any;
+  declare N, colID, parentID integer;
+  declare aAcl, aParentAcl any;
+
   -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_I (', NC.COL_ID, ')');
   aAcl := WS.WS.ACL_PARSE(NC.COL_ACL, '01', 0);
-  N := 0;
-  while (N < length(aAcl))
+  foreach (any acl in aAcl) do
   {
-    insert replacing
-      WS.WS.SYS_DAV_ACL_INVERSE(AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
-      values(either(equ(aAcl[N][1],0), 'R', 'G'), NC.COL_ID, 'C', aAcl[N][0]);
-
-    N := N + 1;
+    insert replacing WS.WS.SYS_DAV_ACL_INVERSE (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
+      values (either(equ(acl[1],0), 'R', 'G'), NC.COL_ID, 'C', acl[0]);
   }
 
-  colID := NC.COL_ID;
-  parentID := NC.COL_PARENT;
+  aParentAcl := (select WS.WS.ACL_PARSE (COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL c where c.COL_ID = NC.COL_PARENT);
+  if (isnull(aParentAcl))
+    return;
+
   aAcl := WS.WS.ACL_PARSE(NC.COL_ACL, '012', 0);
-  aParentAcl := (select WS.WS.ACL_PARSE(COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL c where c.COL_ID = parentID);
-  if (not isnull(aParentAcl))
-  {
     set triggers off;
-    update
-      WS.WS.SYS_DAV_COL c
-    set
-      COL_ACL = WS.WS.ACL_COMPOSE(vector_concat(aAcl, WS.WS.ACL_MAKE_INHERITED(aParentAcl)))
-    where
-      c.COL_ID = colID;
-  }
+  update WS.WS.SYS_DAV_COL
+     set COL_ACL = WS.WS.ACL_COMPOSE (vector_concat (aAcl, WS.WS.ACL_MAKE_INHERITED(aParentAcl)))
+   where COL_ID = NC.COL_ID;
   -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_I (', NC.COL_ID, ') done');
 }
 ;
 
-create function WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (inout acl any, in grantee integer, in flag char(1)) returns integer
+create function WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (inout aAcl any, in grantee integer, in flag char(1)) returns integer
 {
-  declare N integer;
-  N := length (acl);
-  while (N > 0)
+  foreach (any acl in aAcl) do
     {
-      N := N - 1;
-      if ((grantee = acl[N][0]) and (flag = either(equ(acl[N][1],0), 'R', 'G')))
+    if ((grantee = acl[0]) and (flag = either(equ(acl[1],0), 'R', 'G')))
         return 1;
     }
   return 0;
 }
 ;
 
-create trigger SYS_DAV_COL_ACL_U after update on WS.WS.SYS_DAV_COL order 10 referencing new as NC
+create trigger SYS_DAV_COL_ACL_U after update (COL_ACL) on WS.WS.SYS_DAV_COL order 10 referencing new as N, old as O
 {
-  declare
-    N,
-    aiGrantee integer;
-  declare
-    aiFlag varchar;
-  declare
-    aAcl any;
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_U (', NC.COL_ID, ')');
-  aAcl := WS.WS.ACL_PARSE(NC.COL_ACL, '01', 0);
+  declare aAcl, aLog any;
+  -- dbg_obj_princ (now(), 'trigger SYS_DAV_COL_ACL_U (', N.COL_ID, ')');
 
-  delete from WS.WS.SYS_DAV_ACL_INVERSE
-    where AI_PARENT_ID = NC.COL_ID
+  aAcl := WS.WS.ACL_PARSE (O.COL_ACL, '01', 0);
+  delete
+    from WS.WS.SYS_DAV_ACL_INVERSE
+   where AI_PARENT_ID = O.COL_ID
       and AI_PARENT_TYPE = 'C'
       and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
 
-  N := 0;
-  while (N < length(aAcl))
+  aAcl := WS.WS.ACL_PARSE (N.COL_ACL, '01', 0);
+  foreach (any acl in aAcl) do
   {
-    insert replacing
-      WS.WS.SYS_DAV_ACL_INVERSE(AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
-      values(either(equ(aAcl[N][1],0), 'R', 'G'), NC.COL_ID, 'C', aAcl[N][0]);
-    N := N + 1;
+    insert replacing WS.WS.SYS_DAV_ACL_INVERSE (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
+      values (either (equ (acl[1], 0), 'R', 'G'), N.COL_ID, 'C', acl[0]);
   }
 
+  declare exit handler for sqlstate '*'
+  {
+    log_enable (aLog, 1);
+    resignal;
+  };
+
   set triggers off;
-  WS.WS.ACL_UPDATE (COL_ID, WS.WS.ACL_PARSE(NC.COL_ACL, '123', 0));
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_U (', NC.COL_ID, ') done');
+
+  aLog := log_enable (0, 1);
+  WS.WS.ACL_UPDATE (N.COL_ID, WS.WS.ACL_PARSE (N.COL_ACL, '123', 0));
+  log_enable (aLog, 1);
+  log_text ('WS.WS.ACL_UPDATE (?, ?)', N.COL_ID, WS.WS.ACL_PARSE (N.COL_ACL, '123', 0));
 }
 ;
 
-create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 10
+create trigger SYS_DAV_COL_ACL_D after delete on WS.WS.SYS_DAV_COL order 10 referencing old as O
 {
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_D (', COL_ID, ')');
-  delete from WS.WS.SYS_DAV_ACL_INVERSE where AI_PARENT_TYPE = 'C' and AI_PARENT_ID = COL_ID;
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_D (', COL_ID, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_D (', O.COL_ID, ')');
+  delete
+    from WS.WS.SYS_DAV_ACL_INVERSE
+   where AI_PARENT_TYPE = 'C'
+     and AI_PARENT_ID = O.COL_ID;
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_D (', O.COL_ID, ') done');
 }
 ;
-
 
 -- ACL - WebDAV Resource
 --
-create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 10 referencing new as NR
+create trigger SYS_DAV_RES_ACL_I after insert on WS.WS.SYS_DAV_RES order 10 referencing new as N
 {
-  declare
-    N,
-    resID integer;
-  declare
-    aAcl any;
-  declare
-    aParentAcl varbinary;
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_I (', NR.RES_ID, ')');
+  declare aAcl any;
+  declare aParentAcl varbinary;
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_I (', N.RES_ID, ')');
 
-  aAcl := WS.WS.ACL_PARSE(NR.RES_ACL, '0', 0);
-  N := 0;
-  while (N < length(aAcl))
+  aAcl := WS.WS.ACL_PARSE (N.RES_ACL, '0', 0);
+  foreach (any acl in aAcl) do
   {
-    insert replacing
-      WS.WS.SYS_DAV_ACL_INVERSE(AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
-      values(either(equ(aAcl[N][1],0), 'R', 'G'), NR.RES_ID, 'R', aAcl[N][0]);
-
-    N := N + 1;
+    insert replacing WS.WS.SYS_DAV_ACL_INVERSE (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
+      values (either(equ(acl[1],0), 'R', 'G'), N.RES_ID, 'R', acl[0]);
   }
 
-  resID := NR.RES_ID;
-  aParentAcl := (select WS.WS.ACL_PARSE(COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL where COL_ID = NR.RES_COL);
+  aParentAcl := (select WS.WS.ACL_PARSE (COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL);
   if (not isnull(aParentAcl))
   {
     set triggers off;
-    update
-      WS.WS.SYS_DAV_RES
-    set
-      RES_ACL = WS.WS.ACL_COMPOSE(vector_concat(aAcl, WS.WS.ACL_MAKE_INHERITED(aParentAcl)))
-    where
-      RES_ID = resID;
+    update WS.WS.SYS_DAV_RES
+       set RES_ACL = WS.WS.ACL_COMPOSE (vector_concat(aAcl, WS.WS.ACL_MAKE_INHERITED(aParentAcl)))
+     where RES_ID = N.RES_ID;
   }
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_I (', NR.RES_ID, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_I (', N.RES_ID, ') done');
 }
 ;
 
-create trigger SYS_DAV_RES_ACL_U after update on WS.WS.SYS_DAV_RES order 10 referencing new as NR
+create trigger SYS_DAV_RES_ACL_U after update (RES_ACL) on WS.WS.SYS_DAV_RES order 10 referencing new as N, old as O
 {
-  declare
-    N,
-    aiGrantee integer;
-  declare
-    aiFlag varchar;
-  declare
-    aAcl any;
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_U (', NR.RES_ID, ')');
+  declare aAcl any;
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_U (', N.RES_ID, ')');
 
-  aAcl := WS.WS.ACL_PARSE(NR.RES_ACL, '0', 0);
-
-  delete from WS.WS.SYS_DAV_ACL_INVERSE
-    where
-      AI_PARENT_ID = NR.RES_ID
+  aAcl := WS.WS.ACL_PARSE (O.RES_ACL, '0', 0);
+  delete
+    from WS.WS.SYS_DAV_ACL_INVERSE
+   where AI_PARENT_ID = O.RES_ID
       and AI_PARENT_TYPE = 'R'
       and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
 
-  N := 0;
-  while (N < length(aAcl))
+  aAcl := WS.WS.ACL_PARSE (N.RES_ACL, '0', 0);
+  foreach (any acl in aAcl) do
   {
-    insert replacing
-      WS.WS.SYS_DAV_ACL_INVERSE(AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
-      values(either(equ(aAcl[N][1],0), 'R', 'G'), NR.RES_ID, 'R', aAcl[N][0]);
-
-    N := N + 1;
+    insert replacing WS.WS.SYS_DAV_ACL_INVERSE (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
+      values (either (equ (acl[1],0), 'R', 'G'), N.RES_ID, 'R', acl[0]);
   }
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_U (', NR.RES_ID, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_U (', N.RES_ID, ') done');
 }
 ;
 
-create trigger SYS_DAV_RES_ACL_D after delete on WS.WS.SYS_DAV_RES order 10
+create trigger SYS_DAV_RES_ACL_D after delete on WS.WS.SYS_DAV_RES order 10 referencing old as O
 {
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_D (', RES_ID, ')');
-  delete from WS.WS.SYS_DAV_ACL_INVERSE where AI_PARENT_TYPE = 'R' and AI_PARENT_ID = RES_ID;
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_D (', RES_ID, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_D (', O.RES_ID, ')');
+  delete
+    from WS.WS.SYS_DAV_ACL_INVERSE
+   where AI_PARENT_TYPE = 'R'
+     and AI_PARENT_ID = O.RES_ID;
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_ACL_D (', O.RES_ID, ') done');
 }
 ;
 
-create procedure WS.WS.ACL_UPDATE (in pId integer, in pParentAcl any)
+create procedure WS.WS.ACL_UPDATE (in id integer, in parentAcl any)
 {
-  declare
-    aNew any;
+  declare nAcl any;
+  -- dbg_obj_princ ('procedure WS.WS.ACL_UPDATE (', id, ')');
 
-  WS.WS.ACL_MAKE_INHERITED(pParentAcl);
-
-  for select RES_ID as iResID, WS.WS.ACL_PARSE(RES_ACL, '0', 0) as aAcl from WS.WS.SYS_DAV_RES where RES_COL = pId do
+  WS.WS.ACL_MAKE_INHERITED (parentAcl);
+  for select RES_ID as resID, RES_ACL as aAcl from WS.WS.SYS_DAV_RES where RES_COL = id do
   {
-    update
-      WS.WS.SYS_DAV_RES
-    set
-      RES_ACL = WS.WS.ACL_COMPOSE(vector_concat(aAcl, pParentAcl))
-    where
-      RES_ID = iResID;
+    nAcl := WS.WS.ACL_COMPOSE (vector_concat (WS.WS.ACL_PARSE (aAcl, '0', 0), parentAcl));
+    if (not ((nAcl = aAcl) or (isnull (nAcl) and isnull (aAcl))))
+    {
+      update WS.WS.SYS_DAV_RES
+         set RES_ACL = nAcl
+       where RES_ID = resID;
   }
-
-  for select COL_ID as iColID, WS.WS.ACL_COMPOSE(vector_concat(WS.WS.ACL_PARSE(COL_ACL, '012', 0), pParentAcl)) as aAcl from WS.WS.SYS_DAV_COL where COL_PARENT = pId do
+  }
+  for select COL_ID as colID, COL_ACL as aAcl from WS.WS.SYS_DAV_COL where COL_PARENT = id do
   {
-    update
-      WS.WS.SYS_DAV_COL
-    set
-      COL_ACL = aAcl
-    where
-      COL_ID = iColID;
-    WS.WS.ACL_UPDATE(iColID, WS.WS.ACL_PARSE(aAcl, '123', 0));
+    nAcl := WS.WS.ACL_COMPOSE (vector_concat (WS.WS.ACL_PARSE (aAcl, '012', 0), parentAcl));
+    if (not ((nAcl = aAcl) or (isnull (nAcl) and isnull (aAcl))))
+    {
+      update WS.WS.SYS_DAV_COL
+         set COL_ACL = nAcl
+       where COL_ID = colID;
+      WS.WS.ACL_UPDATE(colID, WS.WS.ACL_PARSE (nAcl, '123', 0));
+    }
   }
 }
 ;
 
-create procedure WS.WS.ACL_MAKE_INHERITED (inout pAcl any)
+create procedure WS.WS.ACL_MAKE_INHERITED (
+  inout aAcl any)
 {
-  declare
-    aTmp any;
-  declare
-    N integer;
+  declare tmp any;
+  declare N integer;
 
-  N := 0;
-  while (N < length(pAcl))
+  for (N := 0; N < length (aAcl); N := N + 1)
   {
-    aTmp := pAcl[N];
-    aset(aTmp, 2, 3);
-    aset(pAcl, N, aTmp);
-    N := N + 1;
+    tmp := aAcl[N];
+    aset (tmp, 2, 3);
+    aset (aAcl, N, tmp);
   }
-  return pAcl;
+  return aAcl;
 }
 ;
 
 
-create procedure WS.WS.ACL_DBG(in vb varbinary) returns varchar
+create procedure WS.WS.ACL_DBG (
+  in vb varbinary) returns varchar
 {
-  declare
-    N integer;
-  declare
-    aResult varchar;
+  declare N integer;
+  declare aResult varchar;
 
   aResult := '';
   vb := cast(vb as varchar);
-
-  N := 0;
-  while (N < length(vb))
+  for (N := 0; N < length (vb); N := N + 1)
   {
-    aResult := concat(aResult, cast(vb[N] as varchar), ', ');
-    N := N + 1;
+    aResult := aResult || cast (vb[N] as varchar) || ', ';
   }
   return aResult;
 }
@@ -4792,10 +4754,8 @@ create procedure WS.WS.ACL_DBG(in vb varbinary) returns varchar
 --
 create procedure WS.WS.ACL_SERIALIZE_INT(in I integer) returns varbinary
 {
-  declare
-    N integer;
-  declare
-    aResult varchar;
+  declare N integer;
+  declare aResult varchar;
 
   aResult:=repeat('\0',4);
 
@@ -4823,11 +4783,9 @@ create procedure WS.WS.ACL_SERIALIZE_INT(in I integer) returns varbinary
 --
 create procedure WS.WS.ACL_DESERIALIZE_INT(in vb varbinary) returns integer
 {
-  declare
-    vc varchar;
+  declare vc varchar;
 
   vc := cast(vb as varchar);
-
   return bit_or(bit_or(bit_or(bit_shift(aref(vc, 0), 24), bit_shift(aref(vc, 1), 16)), bit_shift(aref(vc, 2), 8)), aref(vc, 3));
 }
 ;
@@ -4867,9 +4825,7 @@ create procedure WS.WS.ACL_CREATE() returns varbinary
 -------------------------------------------------------------------------------
 create procedure WS.WS.ACL_IS_VALID (in acl varbinary) returns integer
 {
-  declare
-    iAclLength,
-    iAceSize integer;
+  declare iAclLength, iAceSize integer;
 
   -- dbg_obj_princ ('WS.WS.ACL_IS_VALID (', sprintf('%U', cast (acl as varchar)), ')');
   if (internal_type_name(internal_type(acl)) <> 'VARBINARY')
@@ -4904,17 +4860,13 @@ create procedure WS.WS.ACL_IS_VALID (in acl varbinary) returns integer
 -------------------------------------------------------------------------------
 create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bitmask integer, in is_grant integer, in inheritance integer := 0) returns varbinary
 {
-  declare
-    N,
-    bFound integer;
-  declare
-    aAcl any;
+  declare N, bFound integer;
+  declare aAcl any;
 
   aAcl := WS.WS.ACL_PARSE(acl);
 
   bFound := 0;
-  N := 0;
-  while (N < length(aAcl))
+  for (N := 0; N < length (aAcl); N := N + 1)
   {
     if ((aAcl[N][0] = uid) and (aAcl[N][2] = inheritance))
     {
@@ -4928,8 +4880,7 @@ create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bit
         aset(aAcl, N, vector(aAcl[N][0], aAcl[N][1], aAcl[N][2], bit_and(aAcl[N][3], bit_not(bitmask))));
       }
     }
-    N := N + 1;
-  };
+  }
 
   if (not bFound)
     aAcl := vector_concat(aAcl, vector(vector(uid, is_grant, inheritance, bitmask)));
@@ -4949,15 +4900,11 @@ create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bit
 -------------------------------------------------------------------------------
 create procedure WS.WS.ACL_REMOVE_ENTRY(inout acl varbinary, in uid integer, in bitmask integer, in inheritance integer := 0) returns varbinary
 {
-  declare
-    N integer;
-  declare
-    aAcl any;
+  declare N integer;
+  declare aAcl any;
 
   aAcl := WS.WS.ACL_PARSE(acl);
-
-  N := 0;
-  while (N < length(aAcl))
+  for (N := 0; N < length(aAcl); N := N + 1)
   {
     if ((aAcl[N][0] = uid) and (aAcl[N][2] = inheritance))
     {
@@ -4970,7 +4917,6 @@ create procedure WS.WS.ACL_REMOVE_ENTRY(inout acl varbinary, in uid integer, in 
         aset(aAcl, N, vector(aAcl[N][0], aAcl[N][1], aAcl[N][2], bit_and(aAcl[N][3], bitmask)));
       }
     }
-    N := N + 1;
   }
   acl := WS.WS.ACL_COMPOSE(aAcl);
 
@@ -4985,13 +4931,10 @@ create procedure WS.WS.ACL_REMOVE_ENTRY(inout acl varbinary, in uid integer, in 
 -------------------------------------------------------------------------------
 create procedure WS.WS.ACL_IS_GRANTED(in acl varbinary, in uid integer, in bitmask integer) returns integer
 {
-  declare
-    N, lenAcl integer;
-  declare
-    aAcl any;
+  declare N, lenAcl integer;
+  declare aAcl any;
   declare ids any;
-  declare
-    or_acc integer;
+  declare or_acc integer;
 
   if (isnull(acl))
     return 0;
@@ -5054,17 +4997,14 @@ create procedure WS.WS.ACL_OWNER(in acl varbinary) returns integer
 -- Returns an array with: (owner entry1, entry2,...) where each entry is (grantee is_grant bits).
 --
 -------------------------------------------------------------------------------
-create procedure WS.WS.ACL_PARSE(in acl varbinary, in inheritance varchar := '0123', in error integer := 1) returns any
+create procedure WS.WS.ACL_PARSE (
+  in acl varbinary,
+  in inheritance varchar := '0123',
+  in error integer := 1) returns any
 {
-  declare
-    sAcl varchar;
-  declare
-    N,
-    I,
-    T,
-    iAceSize integer;
-  declare
-    aAcl any;
+  declare sAcl varchar;
+  declare N, I, T, aclSize integer;
+  declare aAcl any;
 
   if (acl is null)
     return vector ();
@@ -5080,24 +5020,21 @@ create procedure WS.WS.ACL_PARSE(in acl varbinary, in inheritance varchar := '01
     return vector ();
   }
 
-  iAceSize := WS.WS.ACL_GET_ACESIZE(acl);
+  aclSize := WS.WS.ACL_GET_ACESIZE (acl);
   sAcl := cast(acl as varchar);
 
-  aAcl := vector ();
-  N := 1;
-  while (N <= iAceSize)
+  vectorbld_init (aAcl);
+  for (N := 1; N <= aclSize; N := N + 1)
   {
     T := WS.WS.ACL_DESERIALIZE_INT(cast (substring(sAcl, 8*N+5, 4) as varbinary));
     I := abs(bit_and(bit_shift(T, -29), 3));
     if (not isnull(strchr(inheritance, cast(I as varchar))))
-      aAcl := vector_concat(aAcl,
-                            vector(vector(WS.WS.ACL_DESERIALIZE_INT(cast (substring(sAcl, 8*N+1, 4) as varbinary)),
+      vectorbld_acc (aAcl, vector (WS.WS.ACL_DESERIALIZE_INT (cast (substring (sAcl, 8*N+1, 4) as varbinary)),
                                           abs(bit_shift(T, -31)),
                                           I,
-                                          abs(bit_and(T, 536870911)))));
-    N := N + 1;
+                                   abs (bit_and (T, 536870911))));
   }
-
+  vectorbld_final (aAcl);
   return aAcl;
 }
 ;
@@ -5107,31 +5044,26 @@ create procedure WS.WS.ACL_PARSE(in acl varbinary, in inheritance varchar := '01
 -- Returns an array with: (owner entry1, entry2,...) where each entry is (grantee is_grant bits).
 --
 -------------------------------------------------------------------------------
-create procedure WS.WS.ACL_COMPOSE(in aAcl vector) returns varbinary
+create procedure WS.WS.ACL_COMPOSE (
+  in aAcl vector) returns varbinary
 {
   declare sAcl varchar;
   declare bAcl varbinary;
   declare N, I, J integer;
 
   sAcl := '';
-  I := 1;
-  while (I < 4)
+  for (I := 1; I < 4; I := I + 1)
   {
-    J := 0;
-    while (J < 2)
+    for (J := 0; J < 2; J := J + 1)
     {
-      N := 0;
-      while (N < length(aAcl))
+      foreach (any acl in aAcl) do
       {
-        if ((aAcl[N][1]=J) and ((aAcl[N][2]=I) or ((aAcl[N][2]=0) and (I=1))) and aAcl[N][3])
+        if ((acl[1]=J) and ((acl[2]=I) or ((acl[2]=0) and (I=1))) and acl[3])
           sAcl := concat(sAcl,
-                         cast(WS.WS.ACL_SERIALIZE_INT(aAcl[N][0]) as varchar),
-                         cast(WS.WS.ACL_SERIALIZE_INT(bit_shift(aAcl[N][1],31)+bit_shift(aAcl[N][2],29)+aAcl[N][3]) as varchar));
-        N := N + 1;
+                         cast(WS.WS.ACL_SERIALIZE_INT(acl[0]) as varchar),
+                         cast(WS.WS.ACL_SERIALIZE_INT(bit_shift(acl[1],31)+bit_shift(acl[2],29)+acl[3]) as varchar));
       }
-      J := J + 1;
     }
-    I := I + 1;
   }
 
   bAcl := cast(concat(cast(WS.WS.ACL_SERIALIZE_INT(length(sAcl)+8) as varchar),
