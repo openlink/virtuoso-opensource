@@ -36,7 +36,7 @@
         self.v_id := atoi(self.abContact);
         if (self.v_id = -1)
         {
-          if (self.account_role not in ('public', 'guest'))
+          if (self.account_rights = 'W')
           {
             self.abAction := 'create';
             self.v_name := trim (get_keyword ('name', params, ''));
@@ -78,11 +78,11 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'create') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'create') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'import') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'import') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'export') and ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'export') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
       return 1;
     ]]>
@@ -396,7 +396,7 @@
       declare grants any;
 
       grants := '';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = U_ID and G_PERSON_ID = person_id) do
+      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = AB.WA.domain_owner_id (self.domain_id) and G_GRANTEE_ID = U_ID and G_PERSON_ID = person_id) do
         grants := grants || cast (U_NAME as varchar) || ',';
       return trim (grants, ',');
     ]]>
@@ -446,7 +446,7 @@
           http ('<td>');
             for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
             {
-              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+              http (sprintf ('<a href="#" onclick="javascript: return addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
             }
           http ('</td>');
         http ('</tr>');
@@ -462,8 +462,8 @@
 
   <v:method name="saveData" arglist="">
     <![CDATA[
-      declare N integer;
-      declare suffix, tmp, acl, params any;
+      declare N, M integer;
+      declare suffix, tmp, acl, acl_users, params any;
 
       params := self.vc_page.vc_event.ve_params;
 
@@ -474,6 +474,7 @@
       acl := vector ();
       self.v_interests := '';
       self.v_relationships := '';
+      self.v_grants := '';
       for (N := 0; N < length (params); N := N + 4)
       {
         if ((params [N] like 'a_fld_1_%') and (trim (params [N+1]) <> ''))
@@ -489,7 +490,17 @@
             self.v_relationships := self.v_relationships || trim (params [N+1]) || '\n';
           }
         }
+        else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          acl_users := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+          for (M := 0; M < length (acl_users); M := M + 1)
+          {
+            if (ODRIVE.WA.odrive_user_id (trim (acl_users[M])) <> -1)
+              self.v_grants := self.v_grants || ',' || acl_users[M];
       }
+        }
+      }
+      self.v_grants := trim (self.v_grants, ',');
       self.v_acl := serialize (DB.DBA.wa_acl_params (params));
     ]]>
   </v:method>
@@ -634,7 +645,7 @@
             self.abSubAction := '';
             self.abValue := '';
           }
-          if ((self.account_role in ('public', 'guest')) and (self.abAction = 'settings'))
+          if ((self.account_rights <> 'W') and (self.abAction = 'settings'))
             self.abAction := 'browse';
             
           self.mode_test();
@@ -872,7 +883,7 @@
       <br style="clear: both;" />
 
       <vm:if test="self.abAction <> 'settings'">
-      <div class="ab_main">
+        <div id="ab_main" class="ab_main">
         <?vsp
           if (0)
           {
@@ -1016,8 +1027,7 @@
                 declare _done, tMin, tMax integer;
                 declare tClass, tStyle varchar;
 
-                select max(T_COUNT),
-                       min(T_COUNT)
+                  select max(T_COUNT), min(T_COUNT)
                   into tMax, tMin
                   from AB.WA.TAGS
                  where T_DOMAIN_ID = self.domain_id
@@ -1118,7 +1128,7 @@
                         if (not is_empty_or_null (cast (self.abValue as integer)))
                           AB.WA.xml_set('category', data, self.abValue);
                       }
-                    control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
+                        control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
                     }
                     else if (self.abScope = 'MySharedContacts')
                     {
@@ -1174,7 +1184,7 @@
                 <table id="contacts" class="ab_grid" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
-                          <v:template name="t2" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                          <v:template name="t2" type="simple" enabled="--case when ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
                         <th class="checkbox" width="1%">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
@@ -1190,25 +1200,32 @@
               <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <?vsp
+                        declare id integer;
+                        declare permissions any;
+
+                        id := (control as vspx_row_template).te_column_value('P_ID');
+                        permissions := AB.WA.contact_rights (self.domain_id, id, self.account_rights);
+                      ?>
                   <table>
                     <tr>
-                          <v:template  name="t3" type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                          <vm:if test="(self.account_rights = 'W') and (self.abScope <> 'MySharedContacts')">
                         <td align="center" valign="top">
                           <?vsp
+                                if (permissions = 'W')
+                                {
                             declare S varchar;
 
-                            S := '';
-                            if (self.abContact = ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'))
-                              S := 'checked="checked"';
-
-                            http (sprintf ('<input type="checkbox" name="cb_item" value="%d" %s onclick="selectCheck(this, \'cb_item\')" />', ((control.vc_parent) as vspx_row_template).te_column_value('P_ID'), S));
+                                  S := case when (self.abContact = id) then 'checked="checked"' else '' end;
+                                  http (sprintf ('<input type="checkbox" name="cb_item" value="%d" %s onclick="selectCheck(this, \'cb_item\')" />', id, S));
+                                }
                           ?>
                         </td>
-                      </v:template>
+                          </vm:if>
                           <td class="vcard" valign="top">
                         <?vsp
-                          declare N, id, did integer;
-                              declare tmp, title, title2, permissions, actions, tags any;
+                              declare N integer;
+                              declare tmp, title, title2, actions, tags any;
 
                             if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
                             {
@@ -1216,11 +1233,8 @@
                             goto _skip;
                           }
 
-                          id := (control as vspx_row_template).te_column_value('P_ID');
-                          did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
-                              permissions := AB.WA.contact_permissions (id, self.domain_id, self.account_role);
                               title2 := self.prepareField (AB.WA.stringCut(title, self.abChars), 'nickname', null);
 
                               http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\'); return false;" title="View \'%s\'" class="app link">%s</a></div>', id, SIOC..addressbook_contact_iri (self.domain_id, id), id, title, title2));
@@ -1922,18 +1936,6 @@
                           </td>
                         </tr>
                       </vm:if>
-                    <vm:if test="self.abAction <> 'view'">
-                      <tr>
-                        <th>
-                          <v:label for="ab_grants" value="Share with" />
-                        </th>
-                        <td>
-                          <v:text name="ab_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=ab_grants:s1;',520)" class="button" />
-                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_grants'].value = ''" class="button" />
-                        </td>
-                      </tr>
-                    </vm:if>
                     <tr>
                         <th>
                           <v:label for="ab_category" value="Category" />
@@ -2515,6 +2517,52 @@
                     </table>
                   </div>
                   <div id="a_content_6" class="tabContent" style="display: none;">
+                    <fieldset>
+                      <legend><b>ODS users</b></legend>
+                      <table class="form-body" cellspacing="0">
+                        <tr>
+                          <td style="width: 90%; background-color: white;">
+                            <table id="f_tbl" width="100%" cellspacing="0">
+                              <thead class="sortHeader">
+                                <tr>
+                                  <th width="100%">Value</th>
+                                  <th width="50px">Action</th>
+                                </tr>
+                              </thead>
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                                <?vsp
+                                  declare N, L integer;
+                                  declare acl_values any;
+
+                                  L := 0;
+                                  acl_values := split_and_decode (self.v_grants, 0, '\0\0,');
+                                  for (N := 0; N < length (acl_values); N := N + 1)
+                                  {
+                                    L := 1;
+                                    if (self.abAction <> 'view')
+                                    {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                    } else {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
+                                    }
+                                  }
+                                ?>
+                        		    </script>
+                        		  ]]>
+                              <tr id="f_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 1 else 2 end ?>"><b>No Shares</b></td></tr>
+                        		</table>
+                        	</td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <td valign="top" nowrap="nowrap">
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                            </td>
+                          </vm:if>
+                        </tr>
+                      </table>
+                    </fieldset>
+                    <fieldset>
+                      <legend><b>WebID users</b></legend>
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
@@ -2565,6 +2613,7 @@
                         </vm:if>
                       </tr>
                     </table>
+                    </fieldset>
                   </div>
               </div>
             </div>
@@ -2819,7 +2868,6 @@
                     );
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_RELATIONSHIPS', self.v_relationships);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
-                    self.v_grants := trim (self.ab_grants.ufl_value);
                     self.shareNode (self.v_id, self.v_grants, 1);
 
                     self.abAction := 'browse';

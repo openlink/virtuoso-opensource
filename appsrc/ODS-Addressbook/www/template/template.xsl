@@ -191,7 +191,7 @@
             <?vsp http (AB.WA.utf2wide (AB.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-        <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+            <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
               <v:url url="--AB.WA.page_url (self.domain_id, 'home.vspx?action=settings', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
               |
         </v:template>
@@ -215,7 +215,11 @@
           </td>
         </tr>
       </table>
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
             <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />

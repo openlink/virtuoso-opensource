@@ -30,7 +30,7 @@
 
   aSession   := AB.WA.session_restore (params);
   domain_id  := cast (get_keyword('domain_id', aSession, '0') as integer);
-  account_id := cast (get_keyword('user_id', aSession, '0') as integer);
+  account_id := cast (get_keyword('account_id', aSession, '0') as integer);
 
   if (action = 'about')
   {

@@ -37,7 +37,7 @@
       self.v_tags := AB.WA.vector2tags (tmp);
 
       params := self.vc_page.vc_event.ve_params;
-      if (not (self.account_role in ('public', 'guest')) and not isnull (get_keyword ('f_tags', params)))
+      if (not (self.account_rights = 'public') and not isnull (get_keyword ('f_tags', params)))
         self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
       self.v_shared := self.f_shared.ufl_selected;
     ]]>
@@ -104,7 +104,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, data, self.v_max);
+      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
       sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
@@ -254,7 +254,6 @@
           self.v_category := cast (get_keyword ('f_category', params, get_keyword ('category', params, self.v_category)) as integer);
 
           -- options
-          if (not (self.account_role in ('public', 'guest')) and not isnull (get_keyword ('f_tags', params)))
             self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
           self.v_shared := self.f_shared.ufl_selected;
 
@@ -460,7 +459,6 @@
                     <v:text name="f_tags" value="--self.v_tags" fmt-function="AB.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
-                <vm:if test="not (self.account_role in ('public', 'shared'))">
                   <tr>
                     <th/>
                     <td>
@@ -478,7 +476,6 @@
                       <v:data-list name="f_category" xhtml_id="f_category" value="--self.v_category" sql="select -1 as C_ID, ' Select category ... ' as C_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select C_ID, C_NAME from AB.WA.CATEGORIES where C_DOMAIN_ID = self.domain_id order by C_NAME" key-column="C_ID" value-column="C_NAME" xhtml_class="select"/>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th/>
                   <td>
