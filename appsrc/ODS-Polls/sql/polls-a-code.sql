@@ -69,6 +69,20 @@ create procedure POLLS.WA.acl_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := POLLS.WA.forum_iri (domain_id);
+  graph_iri := POLLS.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (POLLS.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -106,12 +120,10 @@ _end:;
 create procedure POLLS.WA.session_restore(
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role any;
+  declare domain_id, account_id, account_rights any;
 
   domain_id := POLLS.WA.session_domain (params);
-  user_id := -1;
-  user_role := 'expire';
-  user_name := 'Expire session';
+  account_id := http_nobody_uid ();
 
   for (select U.U_ID,
               U.U_NAME,
@@ -122,15 +134,13 @@ create procedure POLLS.WA.session_restore(
           and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := POLLS.WA.user_name(U_NAME, U_FULL_NAME);
+    account_id := U_ID;
     }
-  user_role := POLLS.WA.access_role (domain_id, user_id);
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := POLLS.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -207,64 +217,67 @@ create procedure POLLS.WA.check_grants (in role_name varchar, in page_name varch
 
 -------------------------------------------------------------------------------
 --
-create procedure POLLS.WA.access_role (
+create procedure POLLS.WA.access_rights (
   in domain_id integer,
-  in user_id integer)
+  in account_id integer)
 {
   declare rc varchar;
 
   if (domain_id <= 0)
-    return 'expire';
+    return null;
 
-  if (POLLS.WA.check_admin (user_id))
-    return 'admin';
+  if (POLLS.WA.check_admin (account_id))
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 2
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := POLLS.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'reader';
-
-  rc := POLLS.WA.acl_check (domain_id);
-  if (rc = 'R')
-    return 'public';
-
-  if (rc = 'W')
-    return 'author';
+    return 'R';
 
   if (exists (select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  return 'public';
+    return 'R';
 
-  return 'expire';
+  if (is_https_ctx () and exists (select 1 from POLLS.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
+
+  return null;
 }
 ;
 
@@ -305,11 +318,11 @@ create procedure POLLS.WA.menu_tree ()
   S :=
 '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="home" url="polls.vspx"            id="1"   allowed="public guest reader author owner admin">
-    <node name="11" url="polls.vspx"            id="11"  allowed="public guest reader author owner admin"/>
-    <node name="12" url="search.vspx"          id="12"  allowed="public guest reader author owner admin"/>
-    <node name="13" url="error.vspx"           id="13"  allowed="public guest reader author owner admin"/>
-    <node name="14" url="settings.vspx"        id="14"  allowed="reader author owner admin"/>
+  <node name="home" url="polls.vspx"           id="1"   allowed="W R">
+    <node name="11" url="polls.vspx"           id="11"  allowed="W R"/>
+    <node name="12" url="search.vspx"          id="12"  allowed="W R"/>
+    <node name="13" url="error.vspx"           id="13"  allowed="W R"/>
+    <node name="14" url="settings.vspx"        id="14"  allowed="W"/>
   </node>
 </menu_tree>';
 
@@ -2489,6 +2502,18 @@ create procedure POLLS.WA.poll_update (
 }
 ;
 
+create procedure POLLS.WA.poll_acl (
+  in domain_id integer,
+  in id integer,
+  in acl any)
+{
+  update POLLS.WA.POLL
+     set P_ACL = acl
+   where P_DOMAIN_ID = domain_id
+     and P_ID = id;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_delete (
@@ -2569,6 +2594,26 @@ create procedure POLLS.WA.poll_description (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.poll_rights (
+  in domain_id integer,
+  in id integer,
+  in access_role varchar)
+{
+  declare retValue varchar;
+
+  retValue := '';
+  if (exists (select 1 from POLLS.WA.POLL where P_ID = id and P_DOMAIN_ID = domain_id))
+  {
+    retValue := POLLS.WA.acl_check (domain_id, id);
+    if (retValue = '')
+      retValue := access_role;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.poll_is_draft (
   in state any,
   in date_start any,
@@ -2643,15 +2688,15 @@ create procedure POLLS.WA.poll_is_voted (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_edit (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions = 'W')
+  {
+    for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     return POLLS.WA.poll_is_draft (P_STATE, P_DATE_START, now ());
-
+  }
   return 0;
 }
 ;
@@ -2659,13 +2704,11 @@ create procedure POLLS.WA.poll_enable_edit (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_delete (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  if (exists (select 1 from POLLS.WA.POLL where P_ID = poll_id))
+  if ((permissions = 'W') and exists (select 1 from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id))
     return 1;
 
   return 0;
@@ -2675,15 +2718,15 @@ create procedure POLLS.WA.poll_enable_delete (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_activate (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions = 'W')
+  {
+    for (select P_STATE, P_DATE_START from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     return POLLS.WA.poll_is_draft (P_STATE, P_DATE_START);
-
+  }
   return 0;
 }
 ;
@@ -2691,15 +2734,15 @@ create procedure POLLS.WA.poll_enable_activate (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_is_activated (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions <> '')
+  {
+    for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     return POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END);
-
+  }
   return 0;
 }
 ;
@@ -2707,15 +2750,15 @@ create procedure POLLS.WA.poll_is_activated (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_close (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions = 'W')
+  {
+    for (select P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     return POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END);
-
+  }
   return 0;
 }
 ;
@@ -2723,15 +2766,15 @@ create procedure POLLS.WA.poll_enable_close (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_is_closed (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_STATE, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions <> '')
+  {
+    for (select P_STATE, P_DATE_END from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     return POLLS.WA.poll_is_close (P_STATE, P_DATE_END);
-
+  }
   return 0;
 }
 ;
@@ -2739,16 +2782,16 @@ create procedure POLLS.WA.poll_is_closed (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_clear (
+  in domain_id integer,
   in poll_id integer,
-  in user_role varchar := 'owner')
+  in permissions varchar := 'W')
 {
-  if (user_role in ('public', 'guest'))
-    return 0;
-
-  for (select P_VOTES, P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_ID = poll_id) do
+  if (permissions = 'W')
+  {
+    for (select P_VOTES, P_STATE, P_DATE_START, P_DATE_END from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
     if ((P_VOTES > 0) and (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END)))
         return 1;
-
+  }
   return 0;
 }
 ;
@@ -2756,11 +2799,12 @@ create procedure POLLS.WA.poll_enable_clear (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.poll_enable_vote (
+  in domain_id integer,
   in poll_id integer)
 {
   declare client_id varchar;
 
-  for (select * from POLLS.WA.POLL where P_ID = poll_id) do
+  for (select * from POLLS.WA.POLL where P_DOMAIN_ID = domain_id and P_ID = poll_id) do
   {
     if (not (POLLS.WA.poll_is_active (P_STATE, P_DATE_START, P_DATE_END)))
       return 0;
@@ -2786,6 +2830,7 @@ create procedure POLLS.WA.poll_enable_vote (
 --
 -------------------------------------------------------------------------------
 create procedure POLLS.WA.poll_enable_result (
+  in domain_id integer,
   in poll_id integer)
 {
   declare client_id varchar;
@@ -2794,7 +2839,7 @@ create procedure POLLS.WA.poll_enable_result (
   for (select P.*, V.V_CLIENT_ID
          from POLLS.WA.POLL P
                 left join POLLS.WA.VOTE V on V.V_POLL_ID = P.P_ID and V.V_CLIENT_ID = client_id
-        where P.P_ID = poll_id) do {
+        where P.P_DOMAIN_ID = domain_id and P.P_ID = poll_id) do {
     if (P_VOTES = 0)
       return -5;
     if (POLLS.WA.poll_is_draft (P_STATE, P_DATE_START))
@@ -2907,7 +2952,8 @@ create procedure POLLS.WA.answer_insert (
 create procedure POLLS.WA.search_sql (
   inout domain_id integer,
   inout account_id integer,
-  inout data varchar,
+  in account_rights varchar,
+  in data varchar,
   in maxRows varchar := '')
 {
   declare S, T, tmp, where2, delimiter2 varchar;
@@ -2947,9 +2993,16 @@ create procedure POLLS.WA.search_sql (
          '  and p.P_DOMAIN_ID <> <DOMAIN_ID> \n' ||
          '  and POLLS.WA.poll_is_draft (P_STATE, P_DATE_START) <> 1 <TEXT> <TAGS> <WHERE> \n';
   }
-
   S := 'select <MAX> * from (' || S || ') x';
-
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || ' where SIOC..poll_post_iri (<DOMAIN_ID>, x.P_ID) in (select a.iri from POLLS.WA.acl_list (id)(iri varchar) a where a.id = <DOMAIN_ID>)';
+    } else {
+      S := S || ' where 1=0';
+    }
+  }
   T := '';
   tmp := POLLS.WA.xml_get('keywords', data);
   if (not is_empty_or_null(tmp)) {

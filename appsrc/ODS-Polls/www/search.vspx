@@ -35,7 +35,6 @@
       tmp := POLLS.WA.vector_unique(tmp);
       self.v_tags := POLLS.WA.vector2tags(tmp);
 
-      if (not (self.account_role in ('public', 'guest')))
         self.v_own := self.f_own.ufl_selected;
       self.v_public := self.f_public.ufl_selected;
     ]]>
@@ -101,7 +100,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+      sql := POLLS.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
       {
@@ -248,7 +247,6 @@
             self.v_tags := POLLS.WA.vector2tags(self.v_tags);
           }
           -- options
-          if (not (self.account_role in ('public', 'guest')))
             self.v_own := self.f_own.ufl_selected;
           self.v_public := self.f_public.ufl_selected;
 
@@ -449,7 +447,6 @@
                     <v:text name="f_tags" value="--self.v_tags" fmt-function="POLLS.WA.utf2wide" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                   <tr>
                     <th/>
                     <td>
@@ -457,7 +454,6 @@
                       <b><vm:label for="f_own" value="Search in my polls"/></b>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th/>
                   <td>

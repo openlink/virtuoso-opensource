@@ -35,30 +35,8 @@
     if (not _authorized)
     {
       _authorized := 1;
-      _authorizeVector := DB.DBA.vsp_auth_vec (http_request_header());
-      if (_authorizeVector = 0)
-      {
-        _authorized := 0;
-      } else {
-        if (get_keyword ('authtype', _authorizeVector) <> 'basic')
-        {
+      if (not ODS..ods_check_auth (_user, _domain_id, 'reader'))
           _authorized := 0;
-        } else {
-          _user := get_keyword ('username', _authorizeVector, '');
-          _password := get_keyword ('pass', _authorizeVector, '');
-          if (not DB.DBA.web_user_password_check (_user, _password))
-          {
-            _authorized := 0;
-          } else {
-            _user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
-            _role := POLLS.WA.access_role (_domain_id, _user_id);
-            if (_role not in ('admin', 'owner'))
-            {
-              _authorized := 0;
-            }
-          }
-        }
-      }
     }
     http_rewrite ();
     if (not _authorized)

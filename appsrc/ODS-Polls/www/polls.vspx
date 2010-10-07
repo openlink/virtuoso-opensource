@@ -36,15 +36,21 @@
       if (self.pPoll <> '')
       {
         self.v_id := cast (self.pPoll as integer);
-        if (POLLS.WA.poll_enable_edit (self.v_id, self.account_role))
+        if (POLLS.WA.poll_enable_edit (self.domain_id, self.v_id, POLLS.WA.poll_rights (self.domain_id, self.v_id, self.account_rights)))
         {
           self.v_step := '';
           self.pAction := 'edit';
-        } else if (POLLS.WA.poll_enable_vote (self.v_id)) {
+        }
+        else if (POLLS.WA.poll_enable_vote (self.domain_id, self.v_id))
+        {
           self.pAction := 'vote';
-        } else if (POLLS.WA.poll_enable_result (self.v_id) > 0) {
+        }
+        else if (POLLS.WA.poll_enable_result (self.domain_id, self.v_id) > 0)
+        {
           self.pAction := 'result';
-        } else {
+        }
+        else
+        {
           self.pAction := 'browse';
         }
       }
@@ -53,17 +59,13 @@
 
   <v:method name="toolbarLabel" arglist="in cmd varchar">
     <![CDATA[
-      if (self.pLabels = 0)
-        return '';
-      return sprintf ('<br /><span class="toolbarLabel">%s</span>', cmd);
+      return case when (self.pLabels = 0) then '' else sprintf ('<br /><span class="toolbarLabel">%s</span>', cmd) end;
     ]]>
   </v:method>
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'Poll/Create') and ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')))
-        return 0;
-      return 1;
+      return case when (cmd = 'Poll/Create') and ((self.account_rights <> 'W') or (self.pMode = 'PublicPolls')) then 0 else 1 end;
     ]]>
   </v:method>
 
@@ -274,6 +276,7 @@
       <v:variable name="v_date_start" type="any" default="null" />
       <v:variable name="v_date_end_mode" type="integer" default="0" />
       <v:variable name="v_date_end" type="any" default="null" />
+      <v:variable name="v_acl" type="varchar" default="null"/>
       <v:variable persist="0" name="v_number" type="integer" default="1" />
       <v:variable persist="0" name="v_questions" type="any" default="null" />
       <v:variable persist="0" name="v_deleted" type="any" default="null" />
@@ -388,8 +391,8 @@
           </span>
 
         </div>
-        <div style="clear: both;" />
-      <div class="polls_main">
+      <br style="clear: both;" />
+      <div id="pane_main" class="pane_main">
         <?vsp
           if (0)
           {
@@ -458,8 +461,7 @@
         <?vsp
           }
         ?>
-        <div class="polls_left">
-          <div class="polls_left_sub1">
+        <div class="pane_left">
             <?vsp
               declare tMin, tMax integer;
               declare tClass, tStyle varchar;
@@ -520,8 +522,7 @@
               }
             ?>
           </div>
-        </div>
-        <div class="polls_right">
+        <div class="pane_right">
           <v:template type="simple" enabled="--case when (self.pAction = 'browse') then 1 else 0 end">
             <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
@@ -541,7 +542,7 @@
 
                   control.ds_nrows := POLLS.WA.settings_rows (self.settings);
                   control.ds_parameters := vector ();
-                  control.ds_sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+                  control.ds_sql := POLLS.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
                 ]]>
               </v:before-data-bind>
               <v:after-data-bind>
@@ -555,7 +556,7 @@
                 <table id="polls" class="polls_grid" cellspacing="0">
                   <thead class="sortHeader">
                     <tr>
-                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')) then 0 else 1 end">
+                      <v:template type="simple" enabled="--case when ((self.account_rights <> 'W') or (self.pMode = 'PublicPolls')) then 0 else 1 end">
                         <th class="checkbox" width="1%">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
@@ -593,7 +594,7 @@
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr>
-                      <v:template type="simple" enabled="--case when ((self.account_role in ('public', 'guest')) or (self.pMode = 'PublicPolls')) then 0 else 1 end">
+                      <v:template type="simple" enabled="--case when ((self.account_rights <> 'W') or (self.pMode = 'PublicPolls')) then 0 else 1 end">
                         <td align="center" valign="top">
                           <?vsp
                             declare S varchar;
@@ -609,14 +610,15 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare title, actions, tags any;
+                          declare title, actions, tags, permissions any;
 
                           id := (control as vspx_row_template).te_column_value('P_ID');
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
+                          permissions := POLLS.WA.poll_rights (self.domain_id, id, self.account_rights);
 
-                          if (POLLS.WA.poll_enable_edit (id, self.account_role))
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, id, permissions))
                           {
                             http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\'); return false;" title="Edit %s" class="app link">%s</a></div>', id, SIOC..poll_post_iri (self.domain_id, id), id, title, POLLS.WA.stringCut(title, self.pChars)));
                           } else {
@@ -624,22 +626,22 @@
                           }
                             
                           actions := '';
-                          if (POLLS.WA.poll_enable_vote (id))
+                          if (POLLS.WA.poll_enable_vote (self.domain_id, id))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link">vote</span>', id, title);
 
-                          if (POLLS.WA.poll_enable_clear (id, self.account_role))
+                          if (POLLS.WA.poll_enable_clear (self.domain_id, id, permissions))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to clear all votes?\')) vspxPost (\'pt_browse\', \'pt_action\', \'clear\', \'pt_value\', \'%d\'); " title="Clear %s" class="link">clear</span>', id, title);
 
-                          if (POLLS.WA.poll_enable_result (id) > 0)
+                          if (POLLS.WA.poll_enable_result (self.domain_id, id) > 0)
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'result\', \'pt_value\', \'%d\');" title="Results of %s" class="link">result</span>', id, title);
 
-                          if (POLLS.WA.poll_enable_activate (id, self.account_role))
+                          if (POLLS.WA.poll_enable_activate (self.domain_id, id, permissions))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to activate this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'active\', \'pt_value\', \'%d\'); " title="Activate %s" class="link">activate</span>', id, title);
 
-                          if (POLLS.WA.poll_enable_close (id, self.account_role))
+                          if (POLLS.WA.poll_enable_close (self.domain_id, id, permissions))
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: if (confirm (\'Are you sure that you want to close this poll?\')) vspxPost (\'pt_browse\', \'pt_action\', \'close\', \'pt_value\', \'%d\'); " title="Close %s" class="link">close</span>', id, title);
 
-                          if (POLLS.WA.poll_enable_edit (id, self.account_role) = 1)
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, id, permissions) = 1)
                             actions := actions || either (equ (actions, ''), '', ' | ') || sprintf ('<span onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link">edit</span>', id, title);
 
                           if (POLLS.WA.discussion_check () and POLLS.WA.conversation_enable (self.domain_id))
@@ -696,7 +698,7 @@
           </v:template>
 
           <v:template type="simple" enabled="--case when (self.pAction = 'tag') then 1 else 0 end">
-            <div class="new-form-header">
+            <div class="form-header">
               <v:label format="%s" value="Tag poll(s)" />
             </div>
             <div class="new-form-body">
@@ -712,7 +714,7 @@
                 <?vsp self.myTags ('t_tag'); ?>
               </table>
             </div>
-            <div class="new-form-footer">
+            <div class="form-footer">
               <v:button action="simple" value="Tag" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
@@ -772,7 +774,8 @@
                          P_VOTE_RESULT_BEFORE,
                          P_VOTE_RESULT_OPENED,
                          POLLS.WA.dt_date (P_DATE_START),
-                         POLLS.WA.dt_date (P_DATE_END)
+                         POLLS.WA.dt_date (P_DATE_END),
+                         P_ACL
                     into self.v_name,
                          self.v_description,
                          self.v_tags,
@@ -781,7 +784,8 @@
                          self.v_vote_result_before,
                          self.v_vote_result_opened,
                          self.v_date_start,
-                         self.v_date_end
+                         self.v_date_end,
+                         self.v_acl
                     from POLLS.WA.POLL
                    where P_ID = self.v_id;
 
@@ -823,6 +827,7 @@
                   self.v_date_end := POLLS.WA.dt_date (dateadd ('day', 60, now ()));
                   self.v_questions := vector ();
                   self.v_deleted := vector ();
+                  self.v_acl := null;
                 }
 
                 self.v_name := get_keyword ('p_name', params, self.v_name);
@@ -837,11 +842,13 @@
                 self.v_date_end_mode := cast(get_keyword ('p_date_end_mode', params, self.v_date_end_mode) as integer);
                 self.v_date_end := get_keyword ('p_date_end', params, self.v_date_end);
 
-                if (not isnull(get_keyword ('text', params))) {
+                if (not isnull(get_keyword ('text', params)))
+                {
                   declare qParams any;
 
                   qParams := vector ();
-                  for (N := 0; N < length (params); N := N + 2) {
+                  for (N := 0; N < length (params); N := N + 2)
+                  {
                     if (params[N] like 'pq_%')
                       qParams := vector_concat (qParams, vector(replace (params[N], 'rq_', ''), params[N+1]));
                   }
@@ -851,7 +858,7 @@
             </v:before-data-bind>
 
             <v:template type="simple" enabled="-- case when (self.v_step = '0') then 1 else 0 end">
-              <div class="new-form-header">
+              <div class="form-header">
                 <v:label format="%s" value="--'Create Poll - Step 1: Select poll type'" />
               </div>
               <div class="new-form-body">
@@ -884,7 +891,7 @@
                   </tr>
                 </table>
               </div>
-              <div class="new-form-footer">
+              <div class="form-footer">
                 <v:button action="simple" value="Next" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
@@ -907,11 +914,17 @@
 
 
             <v:template type="simple" enabled="-- case when (self.v_step = '1') then 1 else 0 end">
-              <div class="new-form-header">
+              <div class="form-header">
                 <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Step 2: Parameters' else 'Update Poll - Step 1: Parameters' end" />
               </div>
-              <div class="new-form-body">
-                <table cellspacing="0">
+              <div id="p" class="c1">
+                <div class="tabs">
+                  &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Sharing" />
+                </div>
+                <div class="contents">
+                  <div id="p_content_0" class="tabContent">
+                    <table class="form-body" cellspacing="0">
                   <tr>
                     <th>
                       <v:label for="p_name" value="-- case when (self.v_mode = 'S') then 'Question (*)' else 'Poll Name (*)' end" />
@@ -1035,7 +1048,61 @@
                   </tr>
                 </table>
               </div>
-              <div class="new-form-footer">
+                  <div id="p_content_1" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+                      <tr>
+                        <td style="width: 90%; background-color: white;">
+                          <table id="s_tbl" width="100%" cellspacing="0">
+                            <thead class="sortHeader">
+                              <tr>
+                                <th width="15%">Type</th>
+                                <th>Value</th>
+                                <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                <th width="50px">Action</th>
+                              </tr>
+                            </thead>
+                      		  <![CDATA[
+                      		    <script type="text/javascript">
+                              <?vsp
+                                declare N, L integer;
+                                declare acl, aType, aAccess any;
+
+                                L := 0;
+                                acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                                acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                                for (N := 0; N < length (acl); N := N + 1)
+                                {
+                                  L := L + 1;
+                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                }
+                                acl := deserialize (self.v_acl);
+                                for (N := 0; N < length (acl); N := N + 1)
+                                {
+                                  L := L + 1;
+                                  if (self.v_mode <> 'view')
+                                  {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                                  } else {
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                                  }
+                                }
+                              ?>
+                      		    </script>
+                      		  ]]>
+                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_mode='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                      		</table>
+                      	</td>
+                        <vm:if test="self.v_mode <> 'view'">
+                          <td valign="top" nowrap="nowrap">
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                          </td>
+                        </vm:if>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="form-footer">
                 <v:button action="simple" value="Back" enabled="-- case when (self.pAction = 'create') then 1 else 0 end" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
@@ -1090,7 +1157,7 @@
                         POLLS.WA.set_keyword ('$text', qParams, self.v_name);
                         self.qSet (qParams);
                       }
-
+                      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
                       self.v_step := '2';
                       self.vc_data_bind(e);
                     ]]>
@@ -1108,7 +1175,7 @@
             </v:template>
 
             <v:template type="simple" enabled="-- case when (self.v_step = '2') then 1 else 0 end">
-              <div class="new-form-header">
+              <div class="form-header">
                 <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Step 3: Questions' else 'Update Poll - Step 2: Questions' end" />
               </div>
               <div class="new-form-body">
@@ -1370,7 +1437,7 @@
                   </tr>
                 </table>
               </div>
-              <div class="new-form-footer">
+              <div class="form-footer">
                 <v:button action="simple" value="Back" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
@@ -1440,6 +1507,7 @@
                                                          self.v_date_end,
                                                          self.v_mode
                                                         );
+                      POLLS.WA.poll_acl (self.domain_id, self.v_id, self.v_acl);
 
                       for (N := 0; N < length (self.v_questions); N := N + 1)
                       {
@@ -1487,7 +1555,7 @@
             </v:template>
 
             <v:template type="simple" enabled="-- case when (self.v_step = '3') then 1 else 0 end">
-              <div class="new-form-header">
+              <div class="form-header">
                 <v:label format="%s" value="--case when (self.pAction = 'create') then 'Create Poll - Preview' else 'Update Poll - Preview' end" />
               </div>
               <div class="new-form-body">
@@ -1555,7 +1623,7 @@
                   }
                 ?>
               </div>
-              <div class="new-form-footer">
+              <div class="form-footer">
                 <v:button action="simple" value="Back" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
@@ -1570,7 +1638,7 @@
           </v:template>
 
           <v:template type="simple" enabled="--case when (self.pAction = 'vote') then 1 else 0 end">
-            <div class="new-form-header">
+            <div class="form-header">
               <v:label format="%s" value="Poll vote" />
             </div>
             <div class="new-form-body">
@@ -1632,7 +1700,7 @@
                 }
               ?>
             </div>
-            <div class="new-form-footer">
+            <div class="form-footer">
               <v:button action="simple" value="Vote" xhtml_onclick="javascript: return checkVote(this);" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
@@ -1688,7 +1756,7 @@
           </v:template>
 
           <v:template type="simple" enabled="--case when (self.pAction = 'result') then 1 else 0 end">
-            <div class="new-form-header">
+            <div class="form-header">
               Vote results
             </div>
             <div class="new-form-body">
@@ -1697,7 +1765,7 @@
                 declare tmp, Q, S, answers, vt, aValue, aCount any;
                 declare rChart, rLegends, rPercents, rFlag any;
 
-                tmp := POLLS.WA.poll_enable_result (self.v_id);
+                tmp := POLLS.WA.poll_enable_result (self.domain_id, self.v_id);
                 if (tmp = -1)
                 {
                   http ('<p class="vote-poll">Poll is not activated and results can not be shown</p>');
@@ -1825,7 +1893,7 @@
               _end:;
               ?>
             </div>
-            <div class="new-form-footer">
+            <div class="form-footer">
               <v:button action="simple" name="r_back" value="Back" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
