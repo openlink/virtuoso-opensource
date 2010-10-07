@@ -24,7 +24,7 @@
 <refentry id="fn_vad_uninstall">
   <refmeta> 
     <refentrytitle>VAD_UNINSTALL</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_UNINSTALL</refname> 

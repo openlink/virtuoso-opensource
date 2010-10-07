@@ -292,6 +292,21 @@ we will discuss in the Virtual hosting and Multihosting section of this document
 -->
 
 </sect3>
+<sect3 id="virtmetahost"><title>Managing Host Metadata</title>
+<para>To add metadata in /.well-known/host-meta, execute:</para>
+<programlisting><![CDATA[
+WS.WS.host_meta_add ([app-name], [xrd-xml-fragment])	
+]]></programlisting>
+<para>For example:</para>
+<programlisting><![CDATA[
+WS.WS.host_meta_add 
+  ( 
+    'dbpedia.page-descriptor', 
+    '<Link rel="http://dbpedia.org/resource-descriptor" template="http://dbpedia.org/page/{uri}"/>'
+  )
+  ;	
+]]></programlisting>
+</sect3>
 
 <sect3 id="virtproxy"><title>Virtuoso As A Proxy</title>
 
@@ -1193,7 +1208,7 @@ No-Operation.</para>
     <para>
 	In some situations  Virtuoso services like WebDAV, JSP, PHP etc.
         may need to be accessed via an Apache Web Server. All this can be done
-        through  apache’s mod_proxy to Virtuoso HTTP server and the Virtuoso HTTP
+        through  apache's mod_proxy to Virtuoso HTTP server and the Virtuoso HTTP
         server can be configured to take requests coming only from localhost.
     </para>
     <para>

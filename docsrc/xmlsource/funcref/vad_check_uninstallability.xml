@@ -24,7 +24,7 @@
 <refentry id="fn_vad_check_uninstallability">
   <refmeta> 
     <refentrytitle>VAD_CHECK_UNINSTALLABILITY</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_CHECK_UNINSTALLABILITY</refname> 

@@ -21,14 +21,19 @@
  -  
  -  
 -->
-<sect2 id="VAD"><title>VAD - Virtuoso Application Distribution</title>
-
-<para>VAD provides a package distribution framework for installation, management, 
-dependency checking and un-installation of Virtuoso applications.  A VAD package 
-contains all required Virtuoso components, which would constitute an application or 
+<chapter label="vad.xml" id="vad">
+	<title>VAD - Virtuoso Application Distribution</title>
+	<abstract>
+<para>This chapter describes how to use VAD implementation for 
+distribution framework for installation, management,
+dependency checking and un-installation of Virtuoso applications.</para>
+<para>
+A VAD package contains all required Virtuoso components, which would constitute an application or
 hosted solution, within a single distributable file.  A VAD package cannot contain any 
 system parts independent of Virtuoso thus excluding operating system executables, 
-shared objects, installers or settings.  </para>
+shared objects, installers or settings.
+</para>
+</abstract>
 <para>Virtuoso and VAD provide the following abilities:  </para>
 <simplelist>
   <member>List all installed VAD packages.</member>
@@ -41,7 +46,7 @@ shared objects, installers or settings.  </para>
   <member>Uninstall a VAD package.</member>
 </simplelist>
 
-<sect3 id="vadsummary">
+<sect1 id="vadsummary">
 <title>Summary of VAD Operations</title>
 <para>
 The following is what the dba needs to know about VAD packages.</para>
@@ -50,7 +55,9 @@ The following is what the dba needs to know about VAD packages.</para>
 function.  The first argument is the file path, which must be in a
 location that the server process can open, i.e. it is in the DirsAllowed list in the virtuoso.ini file.  The second argument is 0, meaning that we are installing from a file.</para>
 
-<para>SQL> vad_install ('conductor_dav.vad', 0);</para>
+<programlisting><![CDATA[
+SQL> vad_install ('conductor_dav.vad', 0);
+]]></programlisting>
 
 <para>is an example.  If the package installation fails, the server exits
 and will have to be restarted.  No effects of a failed installation
@@ -59,7 +66,9 @@ VAD package for further instructions.</para>
 
 <para>To know what is installed, do:</para>
 
-<para>SQL> vad_list_packages ();</para>
+<programlisting><![CDATA[
+SQL> vad_list_packages ();
+]]></programlisting>
 
 <para>VAD package installations are not recorded in the transaction log.
 Thus, if there is a backup followed by archived transaction logs
@@ -70,10 +79,10 @@ place in the replay sequence.  In practice it is simplest to make an incremental
 
 <para>For any further information, including how to make VAD packages, see the rest of this chapter.
 </para>
-</sect3>
+</sect1>
 
 
-<sect3 id="vadpackcomposition"><title>VAD Package Composition</title>
+<sect1 id="vadpackcomposition"><title>VAD Package Composition</title>
 
 <para>A VAD package has no developer tie-ins; it is built in a development environment 
 from source code that can be managed and versioned in the developers system of preference. </para>
@@ -121,9 +130,9 @@ of the following: </para>
   </listitem>
 </itemizedlist>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadpackversion"><title>Package Versioning</title>
+<sect1 id="vadpackversion"><title>Package Versioning</title>
 
 <para>All required packages should be listed in the VAD sticker.  Known conflict 
 may be listed in either of the conflicting VAD packages stickers, hence VAD stickers 
@@ -143,9 +152,9 @@ various localizations of the package, or divide it into kernel package for any
 language-independent parts and set of language-specific packages, with some 
 dependency between them.  </para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadprocessres"><title>Processing of Resources</title>
+<sect1 id="vadprocessres"><title>Processing of Resources</title>
 
 <para>During creation of a VAD package, the "location" mentioned above may be 
 name of a file in file system or URI or DAV path.  Upon package-time, URIs will be
@@ -155,9 +164,9 @@ itself, and the target location. </para>
 <para>All SQL files have a specific order of loading.  Tables, views etc. must be 
 defined before being referenced.  </para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadunsupportfeat"><title>Unsupported Features of VAD</title>
+<sect1 id="vadunsupportfeat"><title>Unsupported Features of VAD</title>
 
 <para>The VAD specification explicitly does not define the following: </para>
 
@@ -207,53 +216,47 @@ package on a single server</title>
   cluster manager about this event. </para>
   </formalpara>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadsecurity"><title>Security</title>
+<sect1 id="vadsecurity"><title>Security</title>
 
 <para>Since VAD packages are run by an administrator as the database DBA user, 
 care must be taken to ensure the package comes from a safe source.  Any new package 
 installed may violate the security regulations of the target database and may even 
 inflict damage to files under the web-root of the Virtuoso Server or in directories 
-specified in the “DirsAllowed” parameter of the virtuoso.ini.  If the 
-virtuoso.ini parameter “AllowOsCalls” is enabled then the installation procedures 
+specified in the "DirsAllowed" parameter of the virtuoso.ini. If the
+virtuoso.ini parameter "AllowOsCalls" is enabled then the installation procedures
 of the package may call operating executables.  It is the responsibility of the 
-database administrator to control this via the “AllowOsCalls”, "SafeExecutables" 
+database administrator to control this via the "AllowOsCalls", "SafeExecutables"
 and "DbaExecutables" parameters of the virtuoso.ini.</para>
 <para>VAD packages do not offer any automatic protection against unauthorized 
 modifications.  Although ever VAD package contains a checksum, its purpose 
 is to guard against data transfer errors, it may not be sufficient to detect 
 unwanted modification.</para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadbuildingvadpacks"><title>Building VAD Packages</title>
+<sect1 id="vadbuildingvadpacks"><title>Building VAD Packages</title>
 
 <para>Initially, the VAD sticker and resources may reside in the file system, 
 DAV directory and or other locations available through the 
 <function>DB.DBA.HTTP_URI_GET()</function> function.  </para>
-<para>The VAD creation operation parses the VAD sticker’s XML description 
-and constructs the VAD file. </para>
-
-<para><function>DB.DBA.VAD_PACK 
-  <paramdef>in <parameter>sticker_uri</parameter> varchar</paramdef>
-  <paramdef>in <parameter>base_uri_of_resources</parameter> varchar</paramdef>
-  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef> returns varchar</function></para>
-
+<para>The VAD creation operation parses the VAD sticker's XML description
+and constructs the VAD file by calling <link linkend="fn_vad_pack"><function>DB.DBA.VAD_PACK</function></link>.</para>
 <para>This function reads the VAD sticker identified by the <parameter>sticker_uri</parameter> which 
 contains the <computeroutput>vad:package</computeroutput> root element.  
 Then the resources identified in the 
 sticker are retrieved.  All resource URIs are interpreted in the context of the 
 <parameter>base_uri_of_resources</parameter> and are parsed and checked 
 to be syntactically correct.  Resources are appended to generated package that will 
-be stored at the <parameter>package_uri</parameter>.  <function>Vad_pack()</function> 
+be stored at the <parameter>package_uri</parameter>. <link linkend="fn_vad_pack"><function>DB.DBA.VAD_PACK</function></link>
 returns a human readable log of error and warning messages, it will signal 
 errors if any resource or database objects are unavailable at build time.</para>
-<para>By convention, VAD package files have the extension <computeroutput>'.vad'</computeroutput>. </para>
+<para>By convention, VAD package files have the extension '.vad'.</para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadutils"><title>VAD Utilities</title>
+<sect1 id="vadutils"><title>VAD Utilities</title>
 
 <para>An optional VAD package named VADutils provides various tools for capturing 
 changes made in the database after some point in time.  The result of a capture consists of:</para>
@@ -283,9 +286,9 @@ the underlying VAD package is updated the local customizations will be overwritt
 Being saved in a VAD package, customizations can be reapplied over the 
 updated base package. </para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadadminrspnslts"><title>VAD Administrator Responsibilities</title>
+<sect1 id="vadadminrspnslts"><title>VAD Administrator Responsibilities</title>
 
 <para>VAD package installation, upgrade and uninstallation requires a 
 temporary break of service.  The package checks may be performed on the 
@@ -301,11 +304,7 @@ functions that can ignore error signals, and provide an interactive editor for
 the VAD Registry etc. </para>
 <para>All operations described below require DBA access to the database.</para>
 
-<para>Check if a VAD package may be installed</para>
-<para><function>DB.DBA.VAD_CHECK_INSTALLABILITY
-  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
-  <paramdef>in <parameter>is_dav</parameter> integer</paramdef>
-  returns varchar</function></para>
+<para>Check if a VAD package may be installed by calling <link linkend="fn_vad_check_installability"><function>DB.DBA.VAD_CHECK_INSTALLABILITY</function></link>.</para>
 
 <para>Checks the presence and correct versions of required packages and of the 
 Virtuoso platform. It does not executes any pre-install Virtuoso/PL code from the 
@@ -313,11 +312,7 @@ package, so there's no guarantee that installation will be successful if the
 check found no error. If <parameter>package_uri</parameter> is DAV 
 path, <parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</para>
 
-<para>VAD Package Installation</para>
-
-<para><function>DB.DBA.VAD_INSTALL 
-  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
-  <paramdef>in <parameter>is_dav</parameter> integer</paramdef> returns varchar</function></para>
+<para>Perform VAD Package Installation by calling <link linkend="fn_vad_install"><function>DB.DBA.VAD_INSTALL</function></link>.</para>
 
 <para>If <parameter>package_uri</parameter> is DAV path, 
 <parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</para>
@@ -333,7 +328,7 @@ path, <parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</pa
     <listitem>Make a database checkpoint.</listitem>
     <listitem>Run the pre-install SQL script. </listitem>
     <listitem>Load SQL code in the VAD package, in the order specified by the developer.</listitem>
-    <listitem>Copy web resources (VSP, VSPX, XSLT, etc…) into their designated places in WebDAV or file system Web root.</listitem>
+    <listitem>Copy web resources (VSP, VSPX, XSLT, etc.) into their designated places in WebDAV or file system Web root.</listitem>
     <listitem>Run any post-install SQL code.</listitem></itemizedlist>
 	</listitem>
   <listitem>If the installation was successful, the server will come back on-line. </listitem>
@@ -345,7 +340,7 @@ path, <parameter>is_dav=1</parameter>, else <parameter>is_dav=0</parameter>.</pa
   transaction log file (.trx).  Upon Virtuoso restart, the server will continue from 
   the last checkpoint, made prior to install, as if the installation never took place.</listitem>
 </itemizedlist>
-<para>The return value of the <function>VAD_INSTALL()</function> function is 
+<para>The return value of the <link linkend="fn_vad_install"><function>DB.DBA.VAD_INSTALL()</function></link> function is
 usually a sum of messages from pre- and post-installation procedures of the 
 package.  It should normally contain at least the following:</para>
 
@@ -366,22 +361,14 @@ The completeness of the source archive of the application and its independence
 from any ad hoc SQL objects is important, this is the only way the package can 
 be reliably versioned, tracked or uninstalled. </para>
 
-<para>Check if a VAD package may be uninstalled</para>
-
-<para><function>DB.DBA.VAD_CHECK_UNINSTALLABILITY 
-  <paramdef>in <parameter>package_name</parameter> varchar</paramdef>
-  returns varchar</function></para>
+<para>Check if a VAD package may be uninstalled by calling <link linkend="fn_vad_check_uninstallability"><function>DB.DBA.VAD_CHECK_UNINSTALLABILITY</function></link></para>
 
 <para>Performs a preliminary read-only checks to see whether the package given can 
 be uninstalled.  This does not execute any pre-uninstall Virtuoso/PL code from within the 
 package at this stage.  Hence, the success of this function does not guarantee 
 that uninstallation will be successful.  </para>
 
-<para>VAD Package Uninstallation </para>
-
-<para><function>DB.DBA.VAD_UNINSTALL 
-  <paramdef>in <parameter>package_name</parameter> varchar</paramdef>
-  returns varchar</function></para>
+<para>Perform VAD Package Uninstallation by calling <link linkend="fn_vad_uninstall"><function>DB.DBA.VAD_UNINSTALL</function></link>.</para>
 
 <para>The administrator will perform the following operations for the uninstallation process: </para>
 
@@ -412,11 +399,7 @@ that uninstallation will be successful.  </para>
   administrator should consult the log file for clues to the failure. </listitem>
 </itemizedlist>
 
-<para>Check the state of VAD package installation</para>
-
-<para><function>DB.DBA.VAD_CHECK 
-  <paramdef>in <parameter>package_uri</parameter> varchar</paramdef>
- returns varchar</function></para>
+<para>Check the state of VAD package installation by calling <link linkend="fn_vad_check"><function>DB.DBA.VAD_CHECK</function></link>.</para>
 
 <para>This checks to see if the elements of the package are as they are defined 
 in the original distribution. A list of differing elements is returned.  Differences 
@@ -432,9 +415,9 @@ elements may not be part of some other package, hence no package uninstall
 would be available leading the DBA to drop them with the appropriate 
 SQL commands.</para>
 
-</sect3>
+</sect1>
 
-<sect3 id="vadpackageoverlap"><title>Package Overlap</title>
+<sect1 id="vadpackageoverlap"><title>Package Overlap</title>
 
 <para>Each package contains full definitions of all tables and indices.  
 Upon installing the following outcomes can occur: </para>
@@ -465,15 +448,15 @@ columns by another package installed later.  These elements will only be
 dropped when the owner package is dropped.  Tables created ad-hoc from 
 interactive SQL do not have any owner package.  </para>
 
-</sect3>
-<sect3 id="vadsticker"><title>VAD Sticker</title>
+</sect1>
+<sect1 id="vadsticker"><title>VAD Sticker</title>
 
 <para>The VAD Sticker contains meta-data and descriptions of resources contained, 
 or to be contained, within a VAD package.  Like any XML documents, the target 
 VAD package sticker can be sourced from more than one source file, which can 
 aid maintenance and development.</para>
 
-<sect4 id="vadstickerdtd"><title>VAD Sticker DTD</title>
+<sect2 id="vadstickerdtd"><title>VAD Sticker DTD</title>
 
 <para>The namespace vad, used below, represents the URI 
 <computeroutput>http://www.openlinksw.com/urn/vad</computeroutput>. </para>
@@ -798,6 +781,7 @@ from 1.00 to 2.17, inclusive -->
 </sticker>
 ]]></programlisting>
 </example>
-</sect4>
-</sect3>
 </sect2>
+</sect1>
+
+</chapter>

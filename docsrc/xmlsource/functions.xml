@@ -77,6 +77,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="xml">XML</keyword>
     <keyword id="XPATH">XPATH &amp; XQUERY</keyword>
     <keyword id="misc">Miscellaneous</keyword>
+    <keyword id="vad">VAD</keyword>
   </keywordset>
 </docinfo>
 

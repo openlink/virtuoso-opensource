@@ -864,6 +864,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xenc_SPKI_read			SYSTEM	"funcref/xenc_SPKI_read.xml">
 <!ENTITY xenc_bn2dec			SYSTEM	"funcref/xenc_bn2dec.xml">
 
+  <!ENTITY vacuum SYSTEM	"funcref/vacuum.xml">
+
 <!-- include the document chapters/sections -->
 <!ENTITY xmltableview 				SYSTEM "xmltableview.xml">
 <!ENTITY overview 				SYSTEM "overview.xml">
@@ -879,7 +881,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY isql 					SYSTEM "isql.xml">
 <!ENTITY perfdiag               		SYSTEM "perfdiag.xml">
 <!ENTITY ptune 					SYSTEM "ptune.xml">
-<!ENTITY fault 	                SYSTEM "fault.xml">
+<!ENTITY fault 	                		SYSTEM "fault.xml">
 <!ENTITY sqlreference 				SYSTEM "sqlreference.xml">
 <!ENTITY functions 				SYSTEM "functions.xml">
 <!ENTITY sqlprocedures 				SYSTEM "sqlprocedures.xml">
@@ -887,7 +889,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY odbcimplementation 			SYSTEM "odbcimplementation.xml">
 <!ENTITY oledbimplementation 			SYSTEM "oledbimplementation.xml">
 <!ENTITY repl 					SYSTEM "repl.xml">
-<!ENTITY vad 					SYSTEM "vad.xml">
+<!ENTITY vaddistr 				SYSTEM "vaddistr.xml">
 <!ENTITY dbpump 				SYSTEM "dbpump.xml">
 <!ENTITY webserver 				SYSTEM "webserver.xml">
 <!ENTITY uddi	 				SYSTEM "uddi.xml">
@@ -981,7 +983,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY xsql       				SYSTEM "xsql.xml">
 <!ENTITY blogger       				SYSTEM "blogger.xml">
 <!ENTITY rdfandsparql       			SYSTEM "rdfandsparql.xml">
-<!ENTITY vacuum 				SYSTEM "funcref/vacuum.xml">
+  <!ENTITY rdfviewssamples       SYSTEM "rdfviewssamples.xml">
 ]>
 <book id="virtdocs">
 	<title>OpenLink Virtuoso Universal Server: Documentation</title>

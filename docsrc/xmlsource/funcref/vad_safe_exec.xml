@@ -24,7 +24,7 @@
 <refentry id="fn_vad_safe_exec">
   <refmeta> 
     <refentrytitle>VAD_SAFE_EXEC</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_SAFE_EXEC</refname> 

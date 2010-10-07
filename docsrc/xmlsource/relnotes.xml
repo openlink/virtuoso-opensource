@@ -65,7 +65,7 @@
 <listitem><para><emphasis>Bug 3919</emphasis> There is no way to format columns data in editing controls.</para></listitem>
 <listitem><para><emphasis>Bug 3920</emphasis> v:button @style=url or @style=image not working properly.</para></listitem>
 <listitem><para><emphasis>Bug 3921</emphasis> Logical validators error in Data-Set.</para></listitem>
-<listitem><para><emphasis>Bug 3923</emphasis> xslt_format_number doesn’t work properly with value 0.</para></listitem> 
+<listitem><para><emphasis>Bug 3923</emphasis> xslt_format_number doesn't work properly with value 0.</para></listitem> 
 <listitem><para><emphasis>Bug 3924</emphasis> "Cancel" failed after Edit mode in Data-Set.</para></listitem>
 <listitem><para><emphasis>Bug 3925</emphasis> v:column is not more needed in v:data-set.</para></listitem>
 <listitem><para><emphasis>Bug 3926</emphasis> v:update-field obsoleted.</para></listitem>

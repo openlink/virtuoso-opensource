@@ -24,7 +24,7 @@
 <refentry id="fn_vad_pack">
   <refmeta> 
     <refentrytitle>VAD_PACK</refentrytitle> 
-    <refmiscinfo>VAD</refmiscinfo>
+    <refmiscinfo>vad</refmiscinfo>
   </refmeta> 
   <refnamediv> 
     <refname>VAD_PACK</refname> 
