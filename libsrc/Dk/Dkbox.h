@@ -652,13 +652,17 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 #define dk_alloc_list(n) 		((caddr_t *)dk_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 
 #ifdef MALLOC_DEBUG
+#define DK_ALLOC_BOX_DEBUG
+#endif
+
+#ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
 #else
 #define dk_alloc_box_assert(box)	;
 #endif
 
 EXE_EXPORT (int, dk_free_box, (box_t box));
-#ifdef DEBUG
+#ifdef DK_ALLOC_BOX_DEBUG
 extern void dk_check_tree (box_t box);
 extern void dk_check_tree_heads (box_t box, int count_of_sample_children);
 extern void dk_check_domain_of_connectivity (box_t box);
