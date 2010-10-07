@@ -128,7 +128,7 @@
                   		      xhtml_id="a_name" error-glyph="*">
 				  </v:data-list><br />
 				  <label for="mail">E-mail address for notification</label> 
-				  <v:text name="mail" xhtml_size="50" />
+				  <v:text name="mail" xhtml_size="50" default_value="--(select U_E_MAIL from SYS_USERS where U_ID = self.u_id)"/>
 				  <br />
 				  <v:check-box name="flag" xhtml_id="flag" value="1" />
 				  <label for="flag">Add Relations Automatically</label> 

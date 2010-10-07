@@ -3641,6 +3641,7 @@ wa_exec_no_error_log(
       WUO_URL varchar,
       WUO_URI varchar,
       WUO_PUBLIC integer default 0,
+      WUO_OAUTH_SID varchar default null,
       primary key (WUO_U_ID, WUO_ID)
       )'
 )
@@ -3648,6 +3649,7 @@ wa_exec_no_error_log(
 
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_TYPE', 'varchar');
 wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_URI', 'varchar');
+wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_OAUTH_SID', 'varchar');
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {

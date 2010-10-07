@@ -301,13 +301,17 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
 
 TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  if (document.forms[0].elements['sid']) {
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.create('img');
   img.src = '/ods/images/select.gif';
   img.className = "pointer";
-  img.onclick = function (){windowShow('users_select.vspx?dst=m&params='+fldName+':s1;',520)};
+    var F = (fldOptions.form)? '&form='+fldOptions.form: '';
+    var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: '';
+    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=m&params='+fldName+':s1;'+F+M)};
 
   td.appendChild(img);
+  }
   return fld;
 }
 
@@ -699,6 +703,7 @@ TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  if (document.forms[0].elements['sid']) {
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.image('/ods/images/select.gif');
   img.id = fldName+'_img';
@@ -708,6 +713,7 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
     img.style.cssText = fldOptions.imgCssText;
 
   td.appendChild(img);
+  }
   return fld;
 }
 
@@ -878,6 +884,75 @@ TBL.createButton43 = function (td, prefix, fldName, No, fldOptions)
   return fld;
 }
 
+TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
+{
+  var enabled = fldOptions["enabled"];
+
+  if (enabled == "0")
+    return;
+
+  var fld = OAT.Dom.create('span');
+  fld.id = fldName;
+  OAT.Dom.addClass(fld, 'button pointer');
+
+  var img = OAT.Dom.create('img');
+  var txt;
+  if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
+    {
+      img.src = '/ods/images/icons/link_16.png';
+      img.alt = 'Link';
+      img.title = fld.alt;
+      txt = OAT.Dom.text(' Link');
+    }
+  else
+    {
+      img.src = '/ods/images/icons/disconnect_16.png';
+      img.alt = 'Unlink';
+      img.title = fld.alt;
+      txt = OAT.Dom.text(' Unlink');
+    }
+  OAT.Dom.addClass(img, 'button');
+  fld.appendChild(img);
+  fld.appendChild(txt);
+
+  td.appendChild(fld);
+  fld.onclick = function() 
+    { 
+      var url, x;
+      if (!fldOptions["oauth_sid"] || !fldOptions["oauth_sid"].length)
+	{
+	  url = '/ods/api/oauth_connect?uri=' + encodeURIComponent(fldOptions["profile_url"]) + 
+	      '&login=1&oauth_sid=' + encodeURIComponent(fldOptions["oauth_sid"]);
+	  x = function (data)
+	    {
+	      if (data.length)
+		{
+		  var win = window.open (
+		      data, 
+		      null, 
+		      "width=700,height=420,top=100,left=100,status=no,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+		  win.window.focus();
+		}
+	      else
+		{
+		  alert ("This service cannot be linked.");
+		}
+	    }
+	}
+      else
+	{
+	  if (!confirm('Please confirm removal of associated session'))
+	    return;
+	  url = '/ods/api/oauth_disconnect?uri=' + encodeURIComponent(fldOptions["profile_url"]);
+	  x = function (data) 
+	    {
+	      window.location.reload ();
+	    };
+	}
+      OAT.AJAX.GET(url, '', x);
+    };
+}
+
 TBL.webidShow = function(obj, frmName)
 {
   var S = 'p';
@@ -897,7 +972,10 @@ TBL.windowShow = function(sPage, width, height)
     width = 700;
   if (!height)
     height = 420;
-  sPage += '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  if (document.forms[0].elements['sid'])
+    sPage += '&sid=' + document.forms[0].elements['sid'].value;
+  if (document.forms[0].elements['realm'])
+    sPage += '&realm=' + document.forms[0].elements['realm'].value;
   win = window.open(sPage, null, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
