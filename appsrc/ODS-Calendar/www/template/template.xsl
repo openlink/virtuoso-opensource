@@ -176,7 +176,7 @@
             <?vsp http (CAL.WA.utf2wide (CAL.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
+            <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
               <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Preferences" about="Preferences" class="link">Preferences</span>
               |
         </v:template>
@@ -186,7 +186,11 @@
         </div>
       <v:include url="calendar_login.vspx"/>
               <xsl:apply-templates select="vm:pagebody" />
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
             <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
@@ -248,12 +252,13 @@
             eventDays := vector ();
             for (select rs.e_start,
                         rs.e_end
-                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
+                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4, rs5)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
                     and rs3 = self.cPrivacy
-                    and rs4 = self.cShowTasks) do
+                    and rs4 = self.cShowTasks
+                    and rs5 = self.account_rights) do
             {
               L := datediff ('day', e_start, e_end);
               for (N := 0; N <= L; N := N + 1)
@@ -346,11 +351,11 @@
         <?vsp
           for (select * from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id) do
           {
-            if (self.access_role not in ('public', 'guest'))
+            if (self.account_rights = 'W')
             {
-              http (sprintf ('<span onclick="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</span>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
-            } else {
               http (sprintf ('<div class="gems" style="background-color: %s;">%s</div>', S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+            } else {
+              http (sprintf ('<span onclick="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</span>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
             }
           }
         ?>
@@ -360,7 +365,7 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:exchange">
-    <vm:if test="self.access_role not in ('public', 'guest')">
+    <vm:if test="self.account_rights = 'W'">
     <div class="lc lc_head" onclick="shCell('exchange')">
         <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&amp;nbsp;Import/Export
     </div>

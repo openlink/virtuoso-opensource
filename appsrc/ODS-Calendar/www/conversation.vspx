@@ -67,10 +67,10 @@
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="user_name" id="user_name" value="%s" />', CAL.WA.account_name (self.account_id))); ?>
-      <div class="new-form-header">
+      <div class="form-header">
         Discussion
       </div>
-      <div class="new-form-body">
+      <div class="form-body">
         <table cellspacing="0">
           <tr>
             <td>
