@@ -1020,7 +1020,7 @@ td.calendar_selected {
 {
   background-color: white;
   width: 100%;
-  height: 380px;
+  min-height: 350px;
   overflow: auto;
 }
 

@@ -37,7 +37,7 @@
 
       if ((self.account_role = 'expire') and not is_empty_or_null (self.sid))
       {
-        self.vc_redirect (sprintf ('error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
+        self.vc_redirect (sprintf ('/ods/error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
         return;
       }
 
