@@ -3522,7 +3522,7 @@ create procedure BLOG.DBA.CONTENT_ANNOTATE (in ap_uid any, in source_UTF8 varcha
 	    {
 	      arr := m_app[this_apa_id];
 	      dta := arr [3];
-	      http (sprintf ('<a href="%V">', dta), res_out);
+	      http (sprintf ('<a class="auto-href" href="%V">', dta), res_out);
 	      --http ('[', res_out);
 	    }
 
@@ -3594,7 +3594,6 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
     auto_href := 0;
 
   RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
-  BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
   xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
   xml_tree_doc_set_output (xt, 'xhtml');
@@ -3611,6 +3610,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   ss := string_output_string (ss);
   if (auto_href)
   ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
+  BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xml_tree_doc (xml_tree (ss, 2, '', 'UTF-8')));
 
   title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
   enc_type := null;
@@ -3702,7 +3702,6 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       graph_iri := sioc..get_graph ();
       sioc.DBA.delete_quad_s_or_o (graph_iri, post_iri, post_iri);
       RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
-      BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
       xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
       xml_tree_doc_set_output (xt, 'xhtml');
@@ -3718,6 +3717,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
       ss := string_output_string (ss);
       if (auto_href)
       ss := BLOG.DBA.CONTENT_ANNOTATE (N.B_USER_ID, ss);
+      BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xml_tree_doc (xml_tree (ss, 2, '', 'UTF-8')));
 
       title := BLOG_GET_TITLE (N.B_META, N.B_CONTENT);
       enc_type := null;

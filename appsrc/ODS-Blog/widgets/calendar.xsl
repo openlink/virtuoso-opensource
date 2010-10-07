@@ -1281,7 +1281,7 @@
      oi_handle := get_keyword ('assoc_handle', cnt, null);
      oi_key := get_keyword ('mac_key', cnt, '');
 
-     insert into OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+     insert soft OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
      	values (oi_handle, oi_key, 'RAW', dateadd ('hour', 1, now()));
      self.openid_key := oi_key;
 
@@ -1348,6 +1348,10 @@
 			</v:before-render>
 		    </v:check-box> <label for="notify_me">Notify me on future updates</label>
 		</div>
+                <div>
+		    <v:check-box name="semping1" value="on" initial-checked="0" xhtml_id="semping1"/>
+		    	<label for="semping1">Issue Semantic Pingback</label>
+                </div>
 		<div><v:check-box name="comment1_disable_html" enabled="--equ(length (self.sid), 0)" initial-checked="--equ(isnull(self.comm_ref), 0)" /><v:label value=" Contains Markup" name="comment1_disable_html_l1" enabled="--equ(length (self.sid), 0)"/> </div>
               </td>
             </tr>
@@ -1459,7 +1463,30 @@
                 self.warn1.vc_enabled := 1;
              }
 
+	  if (self.semping1.ufl_selected)
+	    {
+	      declare blog_iri, src_iri varchar; 
+              src_iri := sioc..blog_comment_iri (self.blogid, self.postid, comm_id);
+	      if (not length (src_iri))
+	        {
+                  rollback work;
+		  self.vc_error_message := 'You must specify valid WebID in order to issue Semantic Pingback';
+                  self.vc_is_valid := 0;
+		  return; 
+		}
+              for select BI_WAI_NAME from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = self.blogid do
+	        {
+		  blog_iri := sioc..blog_iri (BI_WAI_NAME);
+		  SEMPING..CLI_PING (src_iri, blog_iri);
+		}
+	      for select CL_LINK from BLOG..BLOG_COMMENT_LINKS 
+		where CL_BLOG_ID = self.blogid and CL_POST_ID = self.postid and CL_CID = comm_id and CL_PING = 1 do
+                {
+		  SEMPING..CLI_PING (src_iri, CL_LINK);
+                }		
+	    }
                        self.comment2 := '';
+
 	  if (self.cook1.ufl_selected and self.blog_access <> 1)
                        {
                         if (self.vid is not null)
