@@ -67,7 +67,7 @@
                   self.tbLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
           
                   self.bNodeAction := '';
-                  if ((get_keyword ('URI', params, '') <> '') and (not self.account_role in ('public', 'guest')))
+                  if ((get_keyword ('URI', params, '') <> '') and (self.account_rights = 'W'))
                             {
                     self.bNodeAction := 'Bookmark/Create';
                     self.bNodeParams := sprintf('&URI=%U&TITLE=%U', get_keyword ('URI', params, ''), get_keyword ('TITLE', params, ''));
@@ -97,7 +97,7 @@
                             {
                       self.bNode := BMK.WA.make_node ('b', get_keyword ('id', params));
                       self.bNodeAction := 'Bookmark/Edit';
-                      if ((self.account_role in ('public', 'guest')) or (grant_id >= 0))
+                      if ((self.account_rights <> 'W') or (grant_id >= 0))
                         self.bNodeAction := 'Bookmark/View';
                     }
                   }
@@ -113,7 +113,7 @@
                       self.bNodePath := BMK.WA.bmk_path2 (BMK.WA.make_node ('f', BD_FOLDER_ID));
                     }
                   }
-                  else if ((get_keyword ('action', params, '') = 'Smart Folder/Create')  and (not self.account_role in ('public', 'guest')))
+                  else if ((get_keyword ('action', params, '') = 'Smart Folder/Create') and (self.account_rights = 'W'))
                             {
                     self.bNodeAction := 'Smart Folder/Create';
                     for (N := 0; N < length (params); N := N + 1)
@@ -137,7 +137,7 @@
                 http (sprintf ('<input type="hidden" id="nodeParams" name="nodeParams" value="%V" />', self.bNodeParams));
         ?>
               <!-- Toolbar -->
-              <vm:if test="self.account_role not in ('public', 'guest')">
+              <vm:if test="self.domain_id > 0">
                 <?vsp
                   declare toolbarWidth varchar;
 
@@ -145,6 +145,7 @@
                   toolbarWidth := '';
                 ?>
                 <div>
+                  <vm:if test="self.account_rights = 'W'">
                   <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('import');" alt="Import">
                     <img src="image/impt_32.png" border="0" alt="Import" /><?vsp http(self.toolbarLabel('Import'));?>
                   </span>
@@ -165,6 +166,7 @@
                   </span>
 
           <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
+                  </vm:if>
 
                   <span id="tbTag" class="toolbar" style="display: none; cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('tags');" alt="Tags">
                     <img src="image/tag_32.png" border="0" alt="Tags" /><?vsp http(self.toolbarLabel('Tag'));?>
@@ -204,12 +206,10 @@
               <div style="clear: both;">
             </div>
 
-              <vm:if test="(self.account_role not in ('public', 'shared'))">
                     <div class="tabs">
                   <div id="tree_button" class="tab <?V case when self.bTab = 'tree' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tree');">Tree</div>
                   <div id="tags_button" class="tab <?V case when self.bTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: BMK.toggleLeftPane('tags');">Tags</div>
                     </div>
-              </vm:if>
 
               <div id="pane_main" class="pane_main">
                 <div id="pane_left">

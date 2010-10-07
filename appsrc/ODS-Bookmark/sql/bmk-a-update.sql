@@ -63,7 +63,9 @@ create procedure BMK.WA.tmp_update ()
     return;
   registry_set ('bmk_acl_update', '1');
 
-  update BMK.WA.BOOKMARK_DOMAIN set BD_ACL = null;
+  set triggers off;
+  update BMK.WA.BOOKMARK_DOMAIN set BD_ACL = null where BD_ACL is not null;
+  set triggers on;
 }
 ;
 

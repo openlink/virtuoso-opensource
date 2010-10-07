@@ -20,10 +20,12 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-function myA(obj) {
-  if (obj.href) {
-    document.location = obj.href + '?' + urlParam('sid') + urlParam('realm');
-    return false;
+function setFooter() {
+  if ($('pane_main')) {
+    var wDims = OAT.Dom.getViewport()
+    var hDims = OAT.Dom.getWH('FT')
+    var cPos = OAT.Dom.position('pane_main')
+    $('pane_main').style.height = (wDims[1] - hDims[1] - cPos[1] - 20) + 'px';
   }
 }
 
@@ -233,20 +235,6 @@ function enableElement (id, id_gray, flag, doc)
     o.style.display = mode;
 }
 
-function showCell (cell)
-{
-  var c = getObject (cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = "";
-}
-
-function hideCell(cell)
-{
-  var c = getObject(cell);
-  if ((c) && (c.style.display != "none"))
-    c.style.display = "none";
-}
-
 function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
@@ -305,16 +293,14 @@ function updateGrants(objName)
 }
 
 function coloriseTable(id) {
-  if (document.getElementsByTagName) {
-    var table = document.getElementById(id);
-    if (table != null) {
+  var table = $(id);
+  if (table) {
       var rows = table.getElementsByTagName("tr");
       for (i = 0; i < rows.length; i++) {
         rows[i].className = rows[i].className + " tr_" + (i % 2);;
       }
     }
   }
-}
 
 function coloriseRow(obj, checked) {
   obj.className = (obj.className).replace('tr_select', '');
@@ -346,70 +332,9 @@ function clickNode2(obj) {
   }
 }
 
-function addOption (form, text_name, box_name) {
-  var box = form.elements[box_name];
-  if (box) {
-    var text = form.elements[text_name];
-    if (text) {
-      text.value = BMK.trim(text.value);
-      if (text.value == '')
-        return;
-    	for (var i=0; i<box.options.length; i++)
-		    if (text.value == box.options[i].value)
-		      return;
-	    box.options[box.options.length] = new Option(text.value, text.value, false, true);
-	    sortSelect(box);
-	    text.value = '';
-	  }
-	}
-}
-
-function deleteOption (form, box_name) {
-  var box = form.elements[box_name];
-  if (box)
-	  box.options[box.selectedIndex] = null;
-}
-
-function composeOptions (form, box_name, text_name) {
-  var box = form.elements[box_name];
-  if (box) {
-    var text = form.elements[text_name];
-    if (text) {
-		  text.value = '';
-    	for (var i=0; i<box.options.length; i++)
-    	  if (text.value == '')
-		      text.value = box.options[i].value;
-		    else
-		      text.value = text.value + '\n' + box.options[i].value;
-	  }
-	}
-}
-
 function showTag(tag) {
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
-}
-
-// sortSelect(select_object)
-//   Pass this function a SELECT object and the options will be sorted
-//   by their text (display) values
-function sortSelect(box) {
-	var o = new Array();
-	for (var i=0; i<box.options.length; i++)
-		o[o.length] = new Option( box.options[i].text, box.options[i].value, box.options[i].defaultSelected, box.options[i].selected) ;
-
-	if (o.length==0)
-	  return;
-
-	o = o.sort(function(a,b) {
-                      			if ((a.text+"") < (b.text+"")) { return -1; }
-                      			if ((a.text+"") > (b.text+"")) { return 1; }
-                      			return 0;
-			                     }
-		        );
-
-	for (var i=0; i<o.length; i++)
-		box.options[i] = new Option(o[i].text, o[i].value, o[i].defaultSelected, o[i].selected);
 }
 
 function showTab(tabs, tabsCount, tabNo)
@@ -522,15 +447,14 @@ function rowSelectValue(dstField, srcField, singleMode)
 }
 
 // Hiddens functions
-function createHidden(frm_name, fld_name, fld_value) {
-  var hidden;
-
-  createHidden2(document, frm_name, fld_name, fld_value);
+function createHidden(frm_name, fld_name, fld_value)
+{
+  return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
-function createHidden2(doc, frm_name, fld_name, fld_value) {
+function createHidden2(doc, frm_name, fld_name, fld_value)
+{
   var hidden;
-
   if (doc.forms[frm_name]) {
     hidden = doc.forms[frm_name].elements[fld_name];
     if (hidden == null) {
@@ -542,6 +466,7 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
     }
     hidden.value = fld_value;
   }
+  return hidden;
 }
 
 function changeExportName(fld_name, from, to) {
@@ -554,71 +479,70 @@ function updateChecked (obj, objName)
 {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = BMK.trim(objForm.s1.value);
-  objForm.s1.value = BMK.trim(objForm.s1.value, ',');
-  objForm.s1.value = BMK.trim(objForm.s1.value);
-  objForm.s1.value = objForm.s1.value + ',';
-  for (var i = 0; i < objForm.elements.length; i = i + 1)
-  {
+
+  var s1Value = objForm.s1.value;
+  s1Value = BMK.trim(s1Value);
+  s1Value = BMK.trim(s1Value, ',');
+  s1Value = BMK.trim(s1Value);
+  s1Value = s1Value + ',';
+  for (var i = 0; i < objForm.elements.length; i = i + 1) {
     var obj = objForm.elements[i];
-    if (obj != null && obj.type == "checkbox" && obj.name == objName)
-    {
+    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
       if (obj.checked)
       {
-        if (objForm.s1.value.indexOf(obj.value+',') == -1)
-          objForm.s1.value = objForm.s1.value + obj.value+',';
+        if (s1Value.indexOf(obj.value+',') == -1)
+          s1Value = s1Value + obj.value+',';
       } else {
-        objForm.s1.value = (objForm.s1.value).replace(obj.value+',', '');
+        s1Value = (s1Value).replace(obj.value+',', '');
       }
     }
   }
-  objForm.s1.value = BMK.trim(objForm.s1.value, ',');
+  objForm.s1.value = BMK.trim(s1Value, ',');
 }
 
 function addChecked (form, txt, selectionMsq)
 {
+  var openerForm = eval('window.opener.document.F1');
+  if (!openerForm)
+    return false;
+
   if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return;
+    return false;
 
   var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
+  if (form.elements['src'] && (form.elements['src'].value.indexOf('s') != -1))
       submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
+
   var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
+  if (form.elements['dst'] && (form.elements['dst'].value.indexOf('s') == -1))
       singleMode = false;
 
   var s1 = 's1';
   var s2 = 's2';
 
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = form.elements['params'].value;
   var myArray;
   while(true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
     if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+      if (openerForm.elements[myArray[1]]) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+          if (openerForm.elements[myArray[1]])
+            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+          if (openerForm.elements[myArray[1]])
+            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
   if (submitMode)
-    window.opener.document.F1.submit();
+    openerForm.submit();
+
   window.close();
 }
 
@@ -703,126 +627,56 @@ function urlParam (fldName)
   return '';
 }
 
-function showObject(id)
-{
-  var o = document.getElementById(id);
-  if (o)
-  {
-    o.style.display="";
-    o.visible = true;
-  }
-}
-
-function hideObject(id)
-{
-  var o = document.getElementById(id);
-  if (o != null)
-  {
-    o.style.display="none";
-    o.visible = false;
-  }
-}
-
-function initRequest ()
-{
-  var xmlhttp = null;
-  try {
-    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
-  } catch (e) { }
-
-  if (xmlhttp == null) {
-    try {
-      xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    } catch (e) { }
-  }
-
-  // Gecko / Mozilla / Firefox
-  if (xmlhttp == null)
-    xmlhttp = new XMLHttpRequest();
-
-  return xmlhttp;
-}
-
-var timer = null;
+var progressTimer = null;
 var progressID = null;
 var progressMax = null;
-var progressStop = null;
-
-function resetState()
-{
-  var xmlhttp = initRequest();
-  var URL = 'ajax.vsp?a=import&sa=reset';
-  xmlhttp.open("POST", URL + urlParam("sid") + urlParam("realm"), false);
-  xmlhttp.setRequestHeader("Pragma", "no-cache");
-  xmlhttp.send(null);
-  try {
-    progressID = xmlhttp.responseXML.getElementsByTagName("id")[0].firstChild.nodeValue;
-  } catch (e) { }
-}
+var progressSize = 40;
+var progressInc = 100 / progressSize;
 
 function stopState()
 {
-  timer = null;
-
-  var xmlhttp = initRequest();
-  var URL = 'ajax.vsp?a=import&sa=stop';
-  xmlhttp.open("POST", URL+"&id="+progressID+urlParam("sid")+urlParam("realm"), false);
-  xmlhttp.setRequestHeader("Pragma", "no-cache");
-  xmlhttp.send(null);
+  progressTimer = null;
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=stop&id="+progressID+urlParam("sid")+urlParam("realm"), x, {async: false});
 }
 
 function initState ()
 {
-  // reset state first
-  resetState();
-
-  // init state
-  var xmlhttp = initRequest();
-  var URL = 'ajax.vsp';
-  xmlhttp.open("POST", URL, false);
-  xmlhttp.setRequestHeader("Pragma", "no-cache");
-  xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-  xmlhttp.send("a=import&sa=init&id="+progressID+urlParam("sid")+urlParam("realm")+urlParam("folder_id")+urlParam("folder_name")+urlParam("tags"));
+  progressTimer = null;
+  var x = function (data) {
+    try {
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressID = OAT.Xml.textValue(xml.getElementsByTagName('id')[0]);
+    } catch (e) {}
 
   createProgressBar();
-  timer = setTimeout("checkState()", 1000);
+    progressTimer = setTimeout("checkState()", 500);
 
   document.forms['F1'].action = 'bookmarks.vspx';
+}
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=init"+urlParam("sid")+urlParam("realm")+urlParam("folder_id")+urlParam("folder_name")+urlParam("tags"), x, {async: false});
 }
 
 function checkState()
 {
-  var xmlhttp = initRequest();
-  var URL = 'ajax.vsp?a=import&sa=state';
-  xmlhttp.open("POST", URL+"&id="+progressID+urlParam("sid")+urlParam("realm"), true);
-  xmlhttp.onreadystatechange = function() {
-    if (xmlhttp.readyState == 4) {
+  var x = function (data) {
       var progressIndex;
-
-      // progressIndex
       try {
-        progressIndex = xmlhttp.responseXML.getElementsByTagName("index")[0].firstChild.nodeValue;
+      var xml = OAT.Xml.createXmlDoc(data);
+      progressIndex = OAT.Xml.textValue(xml.getElementsByTagName('index')[0]);
       } catch (e) { }
 
-      if (timer != null)
         showProgress (progressIndex);
-      if ((progressIndex != null) && (progressIndex != progressMax) && (timer != null))
-      {
+
+    if ((progressIndex != null) && (progressIndex != progressMax)) {
         setTimeout("checkState()", 500);
       } else {
-        timer = null;
+      progressTimer = null;
         $('btn_Stop').click();
       }
     }
-  }
-  xmlhttp.setRequestHeader("Pragma", "no-cache");
-  xmlhttp.send("");
+  OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
 }
 
-var size = 40;
-var increment = 100 / size;
-
-// create the progress bar
 function createProgressBar()
 {
   progressMax = getObject('progressMax').innerHTML;
@@ -830,12 +684,12 @@ function createProgressBar()
   var centerCellName;
   var tableText = "";
   var tdText = "";
-  for (x = 0; x < size; x++) {
+  for (x = 0; x < progressSize; x++) {
     if (progressMax != null) {
-	    if (x == (size/2))
+      if (x == (progressSize/2))
 	      centerCellName = "progress_" + x;
 	  }
-    tableText += "<td id=\"progress_" + x + "\" width=\"" + increment + "%\" height=\"20\" bgcolor=\"blue\" />";
+    tableText += "<td id=\"progress_" + x + "\" width=\"" + progressInc + "%\" height=\"20\" bgcolor=\"blue\" />";
   }
   var idiv = window.document.getElementById("progressText");
   if (idiv)
@@ -846,7 +700,6 @@ function createProgressBar()
   centerCell = window.document.getElementById(centerCellName);
 }
 
-// show the current percentage
 function showProgress (progressIndex)
 {
   if (!progressMax)
@@ -869,10 +722,10 @@ function showProgress (progressIndex)
     percentageText = percentage;
   }
   centerCell.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
-  for (x = 0; x < size; x++)
+  for (x = 0; x < progressSize; x++)
   {
     var cell = window.document.getElementById("progress_" + x);
-    if ((cell) && (percentage/x < increment))
+    if ((cell) && (percentage/x < progressInc))
     {
       cell.style.backgroundColor = "blue";
     } else {
@@ -894,9 +747,7 @@ function readBookmark (id)
 
 function davBrowse (fld)
 {
-  var options = { mode: 'browser',
-                  onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
-                };
+  var options = {mode: 'browser', onConfirmClick: function(path, fname) {$(fld).value = path + fname;}};
   OAT.WebDav.open(options);
 }
 
@@ -936,12 +787,9 @@ function destinationChange(obj, actions)
 }
 
 var BMK = new Object();
-
 BMK.trim = function (sString, sChar)
 {
-
-  if (sString)
-  {
+  if (sString) {
     if (sChar == null)
     {
       sChar = ' ';
@@ -1438,8 +1286,7 @@ BMK.loadItems = function(nodeID, nodePath)
   pane.innerHTML = '';
   var URL = 'forms.vspx?sa=browse&node='+encodeURIComponent(nodeID)+'&path='+encodeURIComponent(nodePath)+BMK.sessionParams();
   var v = $('nodeItem');
-  if (v && (v.value != ''))
-  {
+  if (v && (v.value != '')) {
     URL += '&item=' + v.value;
     v.value = '';
   }
@@ -1467,20 +1314,16 @@ BMK.formParams = function (doc)
   if (!doc) {doc = document;}
   var S = '';
   var o = doc.forms[0].elements;
-  for (var i = 0; i < o.length; i++)
-  {
-    if (o[i])
-    {
-      if ((o[i].type == "checkbox" && o[i].checked) || (o[i].type != "checkbox"))
-      {
+  for (var i = 0; i < o.length; i++) {
+    if (!o[i] || !o[i].name)
+      continue;
+
+    if ((o[i].type == "checkbox" && o[i].checked) || (o[i].type != "checkbox")) {
         var n = o[i].name;
         if ((n != '') && (n.indexOf('page_') != 0) && (n.indexOf('__') != 0))
-        {
           S += '&' + n + '=' + encodeURIComponent(o[i].value);
         }
       }
-    }
-  }
   return S;
 }
 

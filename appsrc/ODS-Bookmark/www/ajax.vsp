@@ -21,7 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-  declare N, id, _domain_id, _account_id integer;
+  declare N, M, id, _domain_id, _account_id integer;
   declare sid, realm, action, subAction, node, nodePath varchar;
   declare nodes, parts, sessionData, returnData any;
 
@@ -34,74 +34,49 @@
 
   sessionData := BMK.WA.session_restore (params);
   _domain_id  := cast (get_keyword ('domain_id', sessionData, '0') as integer);
-  _account_id := cast (get_keyword ('user_id', sessionData, '0') as integer);
+  _account_id := BMK.WA.domain_owner_id (_domain_id);
 
   if (action = 'visited')
   {
     BMK.WA.bookmark_visited_set (_domain_id, id, now ());
   }
-  else if (action = 'import')
+  else if (action = 'load')
   {
-    declare progressID, progressIndex, progressMax any;
+    declare progressID, progressIndex any;
 
-	  progressID := get_keyword('id', params, '');
-	  progressIndex := registry_get ('bookmark_index_' || progressID);
-	  progressMax := registry_get ('bookmark_max_' || progressID);
-
-	  declare exit handler for sqlstate '*'
-	  {
-	    registry_remove ('bookmark_max_'    || progressID);
-	    registry_remove ('bookmark_index_'  || progressID);
-	    registry_remove ('bookmark_action_' || progressID);
-	    return;
-	  };
-
-	  if (subAction = 'reset')
-	  {
-	    registry_remove ('bookmark_max_'    || progressID);
-	    registry_remove ('bookmark_index_'  || progressID);
-	    registry_remove ('bookmark_action_' || progressID);
-
-  	  progressID := cast (msec_time() as varchar);
-	    http_rewrite ();
-	    http_header ('Content-Type: text/xml\r\n');
-	    http('<root>');
-	    http(sprintf('<id>%s</id>', cast (progressID as varchar)));
-	    http('</root>');
-
-	    connection_set('stop_execution', '1');
-	    return (0);
-	  }
-	  else if (subAction = 'stop')
+    progressID := cast (get_keyword ('id', params, msec_time()) as varchar);
+    progressIndex := registry_get ('feed_' || progressID || '_index');
+	  if (subAction = 'stop')
 	  {
 	    registry_set ('bookmark_action_' || progressID, 'stop');
-
-	    connection_set('stop_execution', '1');
-	    return (0);
 	  }
 	  else if (subAction = 'state')
 	  {
-      http_rewrite ();
-      http_header ('Content-Type: text/xml\r\n');
-      http('<root>');
-      if (not isinteger (progressIndex))
-        http(sprintf('<index>%s</index>', progressIndex));
-      http('</root>');
-
-	    connection_set('stop_execution','1');
-	    return (0);
+      if (not (isinteger(progressIndex) and (progressIndex = 0)))
+	  {
+	    http_rewrite ();
+	    http_header ('Content-Type: text/xml\r\n');
+	    http('<root>');
+        http(sprintf('<index>%s</index>', cast (progressIndex as varchar)));
+	    http('</root>');
+	  }
 	  }
 	  else if (subAction = 'init')
 	  {
+	    registry_set ('bookmark_index_' || progressID, '0');
+
+      http_rewrite ();
+      http_header ('Content-Type: text/xml\r\n');
+      http('<root>');
+	    http (sprintf ('<id>%s</id>', cast (progressID as varchar)));
+      http('</root>');
+	    http_flush ();
+
       declare folder_id, folder_name, tags, R, S, T any;
 
-	    registry_set ('bookmark_index_' || progressID, '0');
       R := DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/Bookmarks/Import/' || sid, 'R'), S, T, 0, 0);
       S := blob_to_string (S);
       DB.DBA.DAV_DELETE_INT ('/DAV/VAD/Bookmarks/Import/' || sid, 1, null, null, 0);
-
-	    -- flush and continue
-	    http_flush ();
 
       -- check / create folder
       folder_id := cast (get_keyword ('folder_id', params, '0') as integer);
@@ -119,12 +94,8 @@
       }
 	  _end:;
 
-	    registry_remove ('bookmark_max_'    || progressID);
 	    registry_remove ('bookmark_index_'  || progressID);
 	    registry_remove ('bookmark_action_' || progressID);
-
-	    connection_set('stop_execution', '1');
-	    return (0);
 	  }
   }
   else if (action = 'tree')
@@ -149,7 +120,8 @@
         parts := split_and_decode (nodePath, 0, '\0\0/');
         node := case when length (parts) then parts[length (parts)-1] else '' end;
       }
-      nodes := BMK.WA.bmk_tree2 (_domain_id, _account_id, node, nodePath);
+      _account_id := cast (get_keyword ('account_id', sessionData, '-1') as integer);
+      nodes := BMK.WA.bmk_tree (_domain_id, _account_id, node, nodePath);
       for (N := 0; N < length (nodes); N := N + 3)
       {
         nodeID := BMK.WA.node_id (nodes [N+1]);
@@ -213,7 +185,7 @@
     };
 
     returnData := '';
-    if (subAction in ('Bookmark/Create', 'Bookmark/Edit', 'Bookmark/View'))
+    if (subAction in ('Bookmark/Create', 'Bookmark/Edit'))
 	  {
 	    declare tmp, id, name, uri, description, folder_id, folder_name, tags, grants, acl, suffix any;
 
@@ -224,8 +196,20 @@
       folder_id := cast (get_keyword ('b_folder_id', params) as integer);
       folder_name := trim (get_keyword ('b_folder_name', params, ''));
       tags := trim (get_keyword ('b_tags', params, ''));
-      grants := trim (get_keyword ('b_grants', params, ''));
-
+      grants := '';
+      for (N := 0; N < length (params); N := N + 2)
+      {
+        if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          tmp := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+          for (M := 0; M < length (tmp); M := M + 1)
+          {
+            if (ODRIVE.WA.odrive_user_id (trim (tmp[M])) <> -1)
+              grants := grants || ',' || tmp[M];
+          }
+        }
+      }
+      grants := trim (grants, ',');
       BMK.WA.test (name, vector ('name', 'Bookmark Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
       BMK.WA.test (uri, vector('name', 'Bookmark Link', 'class', 'uri', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
       if ((folder_name <> '') and (not BMK.WA.folder_check_name (folder_name, 1)))

@@ -90,16 +90,20 @@
         <tr>
           <td id="LC">
             <div class="lc lc_close">
+              <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', '');" title="Settings" class="gems2">Settings</span>
+              </vm:if>
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'bookmarklet');" title="Bookmarklet" class="gems2">Bookmarklet</span>
+              <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'publishBrowse');" title="Publications" class="gems2">Publications</span>
               <span onclick="javascript: vspxPost('command', 'action', 'settings', 'mode', 'subscribeBrowse');" title="Subscriptions" class="gems2">Subscriptions</span>
+              </vm:if>
               <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
               <span onclick="javascript: vspxPost('command', 'action', 'back');" title="Back" class="gems2">Back</span>
             </div>
           </td>
           <td id="RC">
-      <div class="new-form-header" style="margin-top: 6px;">
+            <div class="form-header" style="margin-top: 6px;">
               <?vsp
                 declare S, T varchar;
 
@@ -360,7 +364,7 @@
           </div>
         </div>
       </div>
-      <div class="new-form-footer">
+              <div class="form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
@@ -874,7 +878,7 @@
                   </vm:if>
                 </table>
               </div>
-              <div class="new-form-footer">
+              <div class="form-footer">
                 <v:button action="simple" value="--case when self.bSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[

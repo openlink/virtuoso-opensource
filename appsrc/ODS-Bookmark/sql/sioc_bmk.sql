@@ -106,15 +106,23 @@ create procedure fill_ods_bookmark_sioc2 (
   declare domain_id, bookmark_id integer;
   declare graph_iri, forum_iri, creator_iri, bookmark_iri, iri varchar;
  {
-    for (select WAI_TYPE_NAME,
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
            from DB.DBA.WA_INSTANCE
-          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'Bookmark') do
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
       SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select BD_DOMAIN_ID, BD_ID, BD_ACL
+             from BMK..BOOKMARK_DOMAIN
+            where BD_DOMAIN_ID = WAI_ID and BD_ACL is not null) do
+      {
+        bookmark_acl_insert (BD_DOMAIN_ID, BD_ID, BD_ACL);
+      }
     }
 
     id := -1;
@@ -169,8 +177,6 @@ create procedure fill_ods_bookmark_sioc2 (
                               BD_CREATED,
                               BD_UPDATED
                              );
-      bookmark_acl_insert (BD_DOMAIN_ID, BD_ID, BD_ACL);
-
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
       {

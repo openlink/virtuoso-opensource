@@ -81,11 +81,8 @@
       self.v_updatedAfter := trim (self.v_updatedAfter);
       self.v_updatedBefore := trim (self.v_updatedBefore);
 
-      if (not (self.account_role in ('public', 'guest')))
-      {
       self.v_own := self.f_own.ufl_selected;
       self.v_shared := self.f_shared.ufl_selected;
-      }
     ]]>
   </v:method>
 
@@ -156,12 +153,12 @@
       declare sql, sqlParams, state, msg, meta, result, maxRows any;
 
       state := '00000';
-      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3, rs4)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
         sql := replace(sql, '<MAX>', maxRows);
-      sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
+      sqlParams := vector (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
@@ -350,12 +347,10 @@
           self.v_folder_id := cast (get_keyword ('f_folder', params, get_keyword ('folder', params, self.v_folder_id)) as integer);
 
           -- options
-          if (not (self.account_role in ('public', 'guest')))
-          {
           self.v_own := self.f_own.ufl_selected;
           self.v_shared := self.f_shared.ufl_selected;
             self.v_grants := trim (get_keyword ('f_grants', params, get_keyword ('grants', params, self.v_grants)));
-          }
+
           self.v_max := trim (get_keyword ('f_max', params, self.v_max));
           self.v_order := trim (get_keyword ('f_order', params, self.v_order));
           self.v_direction := trim (get_keyword ('f_direction', params, self.v_direction));
@@ -623,7 +618,6 @@
                     </a>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                   <tr>
                     <th/>
                     <td>
@@ -631,7 +625,6 @@
                       <b><vm:label for="f_own" value="Search in my own bookmarks"/></b>
                     </td>
                   </tr>
-                </vm:if>
                 <tr>
                   <th>
                     <vm:label for="f_folder" value="Search in folder"/>
@@ -640,7 +633,6 @@
                     <v:data-list name="f_folder" xhtml_id="f_folder" value="--self.v_folder_id" sql="select -1 as F_ID, 'Select folder ...' as F_PATH2, '' as F_PATH from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select F_ID, BMK.WA.folder_path2(F_PATH) as F_PATH2, F_PATH from BMK.WA.FOLDER where F_DOMAIN_ID = self.domain_id order by F_PATH" key-column="F_ID" value-column="F_PATH2" xhtml_class="select"/>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
                 <tr>
                   <th/>
                   <td>
@@ -657,7 +649,6 @@
                       <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=m&amp;params=f_grants:s1;',520)" class="button" />
                   </td>
                 </tr>
-                </vm:if>
               </table>
             </div>
             <div id="s_content_1" class="tabContent" style="display: none;">
@@ -713,7 +704,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Save" enabled="-- case when self.account_role in ('public', 'guest') then 0 else 1 end" xhtml_class="form-button">
+          <v:button action="simple" value="Save" enabled="-- case when self.account_rights = 'W' then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.update_params();
