@@ -104,8 +104,12 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
        {
 	 cm_iri := blog_comment_iri (B_BLOG_ID, B_POST_ID, BM_ID);
 	 foaf_maker (graph_iri, BM_HOME_PAGE, BM_NAME, BM_E_MAIL);
+	 links :=
+	 (select DB.DBA.VECTOR_AGG (vector (CL_TITLE,CL_LINK)) from BLOG..BLOG_COMMENT_LINKS
+	  where CL_BLOG_ID = B_BLOG_ID and CL_POST_ID = B_POST_ID and CL_CID = BM_ID);
+
 	 ods_sioc_post (graph_iri, cm_iri, blog_iri, null, BM_TITLE, BM_TS, BM_TS, BI_HOME ||'?id='||B_POST_ID, BM_COMMENT,
-	     null, null, BM_HOME_PAGE);
+	     null, links, BM_HOME_PAGE);
 	 DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_reply'), cm_iri);
 	 DB.DBA.ODS_QUAD_URI (graph_iri, cm_iri, sioc_iri ('reply_of'), iri);
        }
@@ -305,7 +309,7 @@ create trigger SYS_BLOGS_SIOC_U after update on BLOG..SYS_BLOGS order 10 referen
 
 create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referencing new as N
 {
-  declare iri, graph_iri, cr_iri, blog_iri, home, post_iri, _wai_name varchar;
+  declare iri, graph_iri, cr_iri, blog_iri, home, post_iri, _wai_name, links varchar;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
@@ -324,8 +328,11 @@ create trigger BLOG_COMMENTS_SIOC_I after insert on BLOG..BLOG_COMMENTS referenc
     return;
 
   foaf_maker (graph_iri, N.BM_HOME_PAGE, N.BM_NAME, N.BM_E_MAIL);
+  links :=
+	 (select DB.DBA.VECTOR_AGG (vector (CL_TITLE,CL_LINK)) from BLOG..BLOG_COMMENT_LINKS
+	  where CL_BLOG_ID = N.BM_BLOG_ID and CL_POST_ID = N.BM_POST_ID and CL_CID = N.BM_ID);
   ods_sioc_post (graph_iri, iri, blog_iri, null, N.BM_TITLE, N.BM_TS, N.BM_TS, home ||'?id='||N.BM_POST_ID, N.BM_COMMENT,
-      null, null, N.BM_HOME_PAGE);
+      null, links, N.BM_HOME_PAGE);
   post_iri := blog_post_iri (N.BM_BLOG_ID, N.BM_POST_ID);
   DB.DBA.ODS_QUAD_URI (graph_iri, post_iri, sioc_iri ('has_reply'), iri);
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), post_iri);

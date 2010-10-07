@@ -2145,7 +2145,7 @@ window.onload = function (e)
   <xsl:template match="vm:post-tweet-link">
       <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" 
 	  data-url="<?V self.ur ?>?id=<?V t_post_id ?>">Tweet</a>
-      <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+      <![CDATA[<script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>]]>
   </xsl:template>
 
   <xsl:template match="vm:post-date">
@@ -2453,7 +2453,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:posts">
       <v:data-set name="posts" scrollable="1" edit="1" data-source="self.dss" nrows="10" enabled="--isnull (self.post_to_remove)">
-        <v:template name="template1" type="simple" condition="self.sel_cat is not null">
+        <!--v:template name="template1" type="simple" condition="self.sel_cat is not null">
           <div class="posts-title">
             <?vsp
 	    if (self.page <> 'archive')
@@ -2473,7 +2473,7 @@ window.onload = function (e)
 	      }
 	    ?>
           </div>
-        </v:template>
+        </v:template-->
         <v:template name="template2" type="repeat">
           <v:template name="template7" type="if-not-exists">
             <div class="widget-title">
@@ -4443,25 +4443,12 @@ window.onload = function (e)
                   };
       commit work;
 
+                  declare mess, elm, __uid any;
                   pop3s := get_keyword ('POP3Server', self.opts);
                   nam :=   get_keyword ('POP3Account', self.opts);
                   pwd1 :=  get_keyword ('POP3Passwd', self.opts);
-
-      res := pop3_get(pop3s, nam, pwd1, 999999999);
-
-                  declare inx, len int;
-                  declare mess, elm, __uid any;
-                  inx := 0;
-                  len := length(res);
                   __uid := (select VS_UID from VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm);
-                  while (inx < len)
-                  {
-                    mess := aref(aref(res, inx), 1);
-                    elm := mail_header(mess, 'Message-Id');
-                    if (not exists(select 1 from MAIL_MESSAGE where MM_MSG_ID = elm and MM_OWN = __uid))
-                      NEW_MAIL(__uid, mess);
-                    inx := inx + 1;
-                  }
+                  BLOG..BLOG_GET_MAIL_VIA_POP3 (pop3s, nam, pwd1, __uid);
                   self.moblog_ds.vc_data_bind(e);
                 ]]>
               </v:on-post>
