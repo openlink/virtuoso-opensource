@@ -611,8 +611,8 @@ int xenc_algorithms_create (const char * ns0, const char * name,
 			    xenc_encryptor_f enc,
 			    xenc_decryptor_f dect,
 			    DSIG_KEY_TYPE key_type);
-caddr_t * xml_find_signedinfo (caddr_t * root);
-caddr_t * xml_find_signature (caddr_t * root);
+caddr_t * xml_find_signedinfo (caddr_t * root, int is_wsse);
+caddr_t * xml_find_signature (caddr_t * root, int is_wsse);
 wsse_ctx_t * wsse_ctx_allocate (void);
 void wsse_ctx_free (wsse_ctx_t * ctx);
 caddr_t dsig_sign_signature (dsig_signature_t * dsig, xml_tree_ent_t * xte, id_hash_t * nss, wsse_ctx_t * ctx);
@@ -624,6 +624,7 @@ caddr_t bif_xmlenc_decrypt_soap (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 caddr_t bif_dsig_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t xenc_get_option (caddr_t *options, const char * opt, char * def);
 caddr_t certificate_encode (BIO * b, const char * encoding_type);
+caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * uri);
 
 extern dk_mutex_t * xenc_keys_mtx;
 

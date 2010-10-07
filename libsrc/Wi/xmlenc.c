@@ -4225,8 +4225,11 @@ caddr_t certificate_encode (BIO * b, const char * encoding_type)
     return 0;
 }
 
-caddr_t decode_box (caddr_t encoded_cert, const char * encoding_type)
+caddr_t
+decode_box (caddr_t encoded_cert, const char * encoding_type)
 {
+  if (!encoded_cert)
+    return 0;
   if (!strcmp (encoding_type, WSSE_BASE64_ENCODING_TYPE)
       || !strcmp (encoding_type, WSSE_OASIS_BASE64_ENCODING_TYPE))
     {
