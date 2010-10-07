@@ -84,12 +84,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-          {
-            if ($('app_area'))
-            {
             generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
-            }
-          }
             
       		// init tabs
           showTab('p', 2, 0);
@@ -99,49 +94,12 @@
           Feeds.initLeftPane();
 
           setFooter();
+          window.onresize = function() {setFooter();}
+
           OAT.MSG.send(OAT, 'PAGE_LOADED');
-        }
-        function getWindowHeight() {
-          var windowHeight = 0;
-          if (typeof(window.innerHeight) == 'number')
-              {
-            windowHeight = window.innerHeight;
-          }
-          else
-                {
-            if (document.documentElement && document.documentElement.clientHeight)
-                  {
-              windowHeight = document.documentElement.clientHeight;
-                  }
-            else
-            {
-              if (document.body && document.body.clientHeight)
-                  {
-                windowHeight = document.body.clientHeight;
-              }
-            }
-                  }
-          return windowHeight;
-                }
-        function setFooter() {
-          if (document.getElementById)
-          {
-            var windowHeight = getWindowHeight();
-            if (windowHeight > 0)
-            {
-              var footerElement = $('FT');
-              if (footerElement)
-              {
-                var footerHeight = footerElement.offsetHeight;
-                if ($('pane_main'))
-                  document.getElementById('pane_main').style.height = (windowHeight - footerHeight - 250) + 'px';
-              }
-          }
-        }
         }
         OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
         window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
-        window.onresize = function() {setFooter();}
       </script>
     ]]>
     <title></title>
@@ -150,10 +108,7 @@
     <v:page name="template" xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
-      <v:variable persist="0" name="owner_id" type="integer" default="null" />
-      <v:variable persist="0" name="ownerName" type="varchar" default="null" />
+      <v:variable persist="0" name="account_rights" type="varchar" default="''"/>
         <v:variable persist="0" name="settings" type="any" />
       <v:on-init>
         <![CDATA[
@@ -164,12 +119,9 @@
           declare aSessInfo any;
 
           aSessInfo := ENEWS.WA.session_restore (params);
-          self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
-          self.owner_id := ENEWS.WA.domain_owner_id (self.domain_id);
-          self.ownerName := ENEWS.WA.domain_owner_name (self.domain_id);
+          self.domain_id := cast (get_keyword ('domain_id', aSessInfo) as integer);
+          self.account_id := cast (get_keyword ('account_id', aSessInfo) as integer);
+          self.account_rights := get_keyword ('account_rights', aSessInfo);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ENEWS.WA.settings (self.domain_id, self.account_id));
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');

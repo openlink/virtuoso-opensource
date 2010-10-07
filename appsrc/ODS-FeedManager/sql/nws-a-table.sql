@@ -383,7 +383,7 @@ ENEWS.WA.exec_no_error('
     EFD_TITLE varchar,
     EFD_TAGS varchar,
   	EFD_FOLDER_ID integer,
-    EFD_FAVOURITE integer,
+    EFD_ACL long varchar,
 
     constraint FK_FEED_DOMAIN_01 FOREIGN KEY (EFD_FEED_ID) references ENEWS.WA.FEED (EF_ID),
     constraint FK_FEED_DOMAIN_02 FOREIGN KEY (EFD_DOMAIN_ID, EFD_FOLDER_ID) references ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_ID) on delete set null,
@@ -395,6 +395,10 @@ ENEWS.WA.exec_no_error('
 
 ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED_DOMAIN add EFD_FAVOURITE integer', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_FAVOURITE'
+);
+
+AB.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_DOMAIN add EFD_ACL long varchar', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_ACL'
 );
 
 ENEWS.WA.exec_no_error('

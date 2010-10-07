@@ -68,6 +68,20 @@ create procedure ENEWS.WA.acl_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := ENEWS.WA.forum_iri (domain_id);
+  graph_iri := ENEWS.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (ENEWS.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -75,10 +89,9 @@ create procedure ENEWS.WA.session_domain (
   inout params any)
 {
   declare aPath, domain_id, options any;
-
   declare exit handler for sqlstate '*'
   {
-    domain_id := -1;
+    domain_id := -2;
     goto _end;
   };
 
@@ -90,10 +103,15 @@ create procedure ENEWS.WA.session_domain (
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    if ((length (aPath) = 1) or ((length (aPath) = 2) and (aPath[1] like '%.vsp%')))
+    {
+      domain_id := -1;
+      goto _end;
+    }
     domain_id := cast(aPath[1] as integer);
   }
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'eNews2'))
-    domain_id := -1;
+    domain_id := -2;
 
 _end:;
   return cast (domain_id as integer);
@@ -105,12 +123,10 @@ _end:;
 create procedure ENEWS.WA.session_restore(
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role any;
+  declare domain_id, account_id, account_rights any;
 
   domain_id := ENEWS.WA.session_domain (params);
-  user_id := -1;
-  user_role := 'expire';
-  user_name := 'Expire session';
+  account_id := http_nobody_uid ();
 
   for (select U.U_ID,
               U.U_NAME,
@@ -121,15 +137,13 @@ create procedure ENEWS.WA.session_restore(
           and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := ENEWS.WA.user_name(U_NAME, U_FULL_NAME);
+    account_id := U_ID;
   }
-  user_role := ENEWS.WA.access_role (domain_id, user_id);
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := ENEWS.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -210,13 +224,13 @@ create procedure ENEWS.WA.check_feeds_grants (
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.check_grants (
-  in role_name varchar,
+  in access_rights varchar,
   in page_name varchar)
 {
   declare tree any;
 
   tree := xml_tree_doc (ENEWS.WA.menu_tree());
-  if (isnull(xpath_eval (sprintf ('/menu_tree/node[.//*[(@url = "%s") and contains(@allowed, "%s")]]', page_name, role_name), tree, 1)))
+  if (isnull (xpath_eval (sprintf ('/menu_tree/node[.//*[(@url = "%s") and contains(@allowed, "%s")]]', page_name, access_rights), tree, 1)))
     return 0;
   return 1;
 }
@@ -224,61 +238,70 @@ create procedure ENEWS.WA.check_grants (
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.access_role (
+create procedure ENEWS.WA.access_rights (
   in domain_id integer,
-  in user_id integer)
+  in account_id integer)
 {
   declare rc varchar;
 
-  if (domain_id <= 0)
-    return 'public';
+  if (domain_id = -1)
+    return 'R';
 
-  if (ENEWS.WA.check_admin(user_id))
-    return 'admin';
+  if (domain_id = -2)
+    return null;
+
+  if (BMK.WA.check_admin (account_id))
+    return 'W';
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 2
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := ENEWS.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'reader';
-
-  rc := ENEWS.WA.acl_check (domain_id);
-  if (rc = 'R')
-  return 'public';
-
-  if (rc = 'W')
-    return 'author';
+    return 'R';
 
   if (exists (select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-    return 'public';
+    return 'R';
 
-  return 'expire';
+  if (is_https_ctx () and exists (select 1 from ENEWS.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
+
+  return null;
 }
 ;
 
@@ -320,39 +343,36 @@ create procedure ENEWS.WA.page_name ()
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.menu_tree (
-  in access_role varchar := null)
+  in access_rights varchar := null)
 {
-  declare S, T varchar;
+  declare S varchar;
 
-  S :=
-'<?xml version="1.0" ?>
+  S := '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="Read"            url="news.vspx"            id="1"                allowed="public guest reader author owner admin">
-    <node name="11" url="news.vspx" id="11" place="link" allowed="public guest reader author owner admin"/>
-    <node name="12" url="search.vspx" id="12" place="link" allowed="public guest reader author owner admin"/>
-    <node name="15" url="bookmark.vspx" id="15" place="link" allowed="reader author owner admin"/>
-    <node name="16" url="settings.vspx" id="16" place="link" allowed="reader author owner admin"/>
+            <node name="Read"            url="news.vspx"            id="1"                allowed="A W R">
+              <node name="11"            url="news.vspx"            id="11"  place="link" allowed="A W R" />
+              <node name="12"            url="search.vspx"          id="12"  place="link" allowed="A W R" />
+              <node name="13"            url="bookmark.vspx"        id="13"  place="link" allowed="A W R" />
+              <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="A W"/>
   </node>
-  <node name="Administration"  url="channels.vspx"        id="2"                allowed="author owner admin">
-    <node name="Feeds" url="channels.vspx" id="21" allowed="author owner admin">
-      <node name="211" url="channels_create.vspx" id="211" place="link" allowed="author owner admin"/>
-      <node name="212" url="channels_update.vspx" id="212" place="link" allowed="author owner admin"/>
-      <node name="213" url="export.vspx" id="213" place="link" allowed="reader author owner admin"/>
+            <node name="Administration"  url="channels.vspx"        id="2"                allowed="A W">
+              <node name="Feeds"         url="channels.vspx"        id="21"               allowed="A W">
+                <node name="211"         url="channels_create.vspx" id="211" place="link" allowed="A W" />
+                <node name="213"         url="export.vspx"          id="213" place="link" allowed="A W R" />
     </node>
-    <node name="Folders"       url="folders.vspx" id="22"                       allowed="author owner admin"/>
-    <node name="Smart Folders" url="sfolders.vspx" id="23"                      allowed="author owner admin">
-      <node name="231"         url="sfolders_update.vspx" id="231" place="link" allowed="author owner admin"/>
-  </node>
-    <node name="Weblogs"       url="weblog.vspx"          id="24"               allowed="author owner admin"/>
-    <Directories/>
-  </node>
-</menu_tree>';
+              <node name="Folders"       url="folders.vspx"         id="22"               allowed="A W" />
+              <node name="Smart Folders" url="sfolders.vspx"        id="23"               allowed="A W" />
+              <node name="Weblogs"       url="weblog.vspx"          id="24"               allowed="A W" />
+       ';
 
-  T := '';
-  if (isnull(access_role) or (access_role = 'admin'))
-    T := '<node name="Directories"   url="directories.vspx"     id="25"               allowed="admin"/>';
+  if (isnull (access_rights) or (access_rights = 'A'))
+    S := S ||'<node name="Directories"   url="directories.vspx"     id="25"               allowed="A W" />';
 
-  return replace(S, '<Directories/>', T);
+  S := S ||
+       '    </node>
+          </menu_tree>';
+
+  return S;
 }
 ;
 
@@ -361,15 +381,13 @@ create procedure ENEWS.WA.menu_tree (
 create procedure ENEWS.WA.navigation_root (
   in path varchar)
 {
-  declare access_role varchar;
   declare V any;
 
   V := split_and_decode(path,0,'\0\0/');
   if (length (V) = 0)
     return vector();
-  access_role := V[0];
-  return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', access_role), xml_tree_doc (ENEWS.WA.menu_tree (access_role)), 0);
 
+  return xpath_eval (sprintf('/menu_tree/*[contains(@allowed, "%s")]', V[0]), xml_tree_doc (ENEWS.WA.menu_tree (V[0])), 0);
 }
 ;
 
@@ -379,8 +397,7 @@ create procedure ENEWS.WA.navigation_child (
   in path varchar,
   in node any)
 {
-  path := concat (path, '[not @place]');
-  return xpath_eval (path, node, 0);
+  return xpath_eval (path || '[not @place]', node, 0);
 }
 ;
 
@@ -1329,9 +1346,9 @@ create procedure ENEWS.WA.process_rss_item(
 
   comment_api := cast (xpath_eval ('[ xmlns:wfw="http://wellformedweb.org/CommentAPI/" ] /item/wfw:comment', xt, 1) as varchar);
   comment_rss := cast (xpath_eval ('[ xmlns:wfw="http://wellformedweb.org/CommentAPI/" ] /item/wfw:commentRss', xt, 1) as varchar);
-  author := cast (xpath_eval ('[ xmlns:dc="http://purl.org/dc/elements/1.1/" ] /item/dc:creator', xt, 1) as varchar);
-  if (isnull(author))
-    author := cast (xpath_eval ('/item/author', xt, 1) as varchar);
+  author := serialize_to_UTF8_xml (xpath_eval ('[ xmlns:dc="http://purl.org/dc/elements/1.1/" ] string(/item/dc:creator)', xt, 1));
+  if (is_empty_or_null (author))
+    author := serialize_to_UTF8_xml (xpath_eval ('string(/item/author)', xt, 1));
 
   ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, xt);
 }
@@ -1382,7 +1399,7 @@ create procedure ENEWS.WA.process_atom_item(
   comment_api := null;
   comment_rss := null;
   pubDate := now ();
-  author := cast (xpath_eval ('/entry/author/name', xt, 1) as varchar);
+  author := serialize_to_UTF8_xml (xpath_eval ('string (/entry/author/name)', xt, 1));
 
   ENEWS.WA.process_insert(feed_id, title, description, link, guid, pubDate, comment_api, comment_rss, author, xt);
 }
@@ -2278,6 +2295,18 @@ create procedure ENEWS.WA.channel_domain(
      where EFD_ID = id;
   }
   return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.channel_acl (
+  in id integer,
+  in acl any)
+{
+  update ENEWS.WA.FEED_DOMAIN
+     set EFD_ACL = acl
+   where EFD_ID = id;
 }
 ;
 
@@ -3378,6 +3407,7 @@ create procedure ENEWS.WA.blog_change_flag (
 create procedure ENEWS.WA.sfolder_sql(
   inout domain_id integer,
   inout account_id integer,
+  in account_rights varchar,
   inout data varchar,
   in mode varchar := 'text',
   in maxRows varchar := '')
@@ -3544,15 +3574,24 @@ create procedure ENEWS.WA.sfolder_sql(
   tmp := ENEWS.WA.xml_get('read', data);
   if (tmp = 'r+')
     ENEWS.WA.sfolder_sql_where(where2, delimiter2, 'coalesce(fida.EFID_READ_FLAG, 0) = 1');
-  if (tmp = 'r-')
+  else if (tmp = 'r-')
     ENEWS.WA.sfolder_sql_where(where2, delimiter2, 'coalesce(fida.EFID_READ_FLAG, 0) = 0');
 
   tmp := ENEWS.WA.xml_get('flag', data);
   if (tmp = 'f+')
     ENEWS.WA.sfolder_sql_where(where2, delimiter2, 'coalesce(fida.EFID_KEEP_FLAG, 0) = 1');
-  if (tmp = 'f-')
+  else if (tmp = 'f-')
     ENEWS.WA.sfolder_sql_where(where2, delimiter2, 'coalesce(fida.EFID_KEEP_FLAG, 0) = 0');
 
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || '   and SIOC..feed_iri (z.EF_ID) in (select s.iri from ENEWS.WA.acl_list (id)(iri varchar) s where s.id = <DOMAIN_ID>)';
+    } else {
+      S := S || '   and 1=0';
+    }
+  }
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
   S := replace(S, '<MAX>', maxRows);
@@ -4387,10 +4426,15 @@ create procedure ENEWS.WA.dashboard_rs (
     {
       id    := xpath_eval ('@id', xp[N]);
       title := serialize_to_UTF8_xml (xpath_eval ('string(./title)', xp[N]));
+      declare continue handler for sqlstate '*' {
+        dt := now ();
+        goto _skip;
+      };
       dt    := stringdate (xpath_eval ('string(./dt)', xp[N]));
+    _skip:;
       autor := serialize_to_UTF8_xml (xpath_eval ('string(./from)', xp[N]));
       mail  := serialize_to_UTF8_xml (xpath_eval ('string(./email)', xp[N]));
-      result (EF_ID, cast (id as integer), title, coalesce (dt, now()), autor, mail);
+      result (EF_ID, cast (id as integer), title, dt, autor, mail);
       }
     }
 }
@@ -4411,7 +4455,7 @@ create procedure ENEWS.WA.dashboard_get (
          from ENEWS.WA.dashboard_rs(p0)(_feed_id integer, _id integer, _name varchar, _time datetime, _autor varchar, _mail varchar) x
         where p0 = domain_id order by x._time desc) do
   {
-    http (sprintf ('<post id="%d"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><uid>%V</uid><email>%V</email></post>', _id, ENEWS.WA.utf2wide (_name), ENEWS.WA.dt_iso8601 (_time), SIOC..feed_item_iri (_feed_id, _id), domain_id, _autor, account_name, _mail), aStream);
+    http (sprintf ('<post id="%d"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><uid>%V</uid><email>%V</email></post>', _id, ENEWS.WA.utf2wide (_name), ENEWS.WA.dt_iso8601 (_time), SIOC..feed_item_iri (_feed_id, _id), domain_id, ENEWS.WA.utf2wide (_autor), account_name, _mail), aStream);
   }
   http ('</feed-db>', aStream);
   return string_output_string (aStream);
@@ -5504,7 +5548,8 @@ create procedure ENEWS.WA.set_keyword(
 
   L := length(params);
   for (N := 0; N < L; N := N + 2)
-    if (params[N] = name) {
+    if (params[N] = name)
+    {
       aset(params, N + 1, value);
       goto _end;
     }
@@ -5518,7 +5563,7 @@ _end:
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.enews_path2_int(
+create procedure ENEWS.WA.enews_path_int (
   in domain_id integer,
   in node varchar,
   inout path varchar)
@@ -5531,13 +5576,13 @@ create procedure ENEWS.WA.enews_path2_int(
   if ((node_type = 'f') and (node_id <> -1) and (domain_id > 0))
     for (select EFO_PARENT_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and coalesce(EFO_ID, -1) = node_id) do {
       path := sprintf('%s/%s', ENEWS.WA.make_node('f', coalesce(EFO_PARENT_ID, -1)), path);
-      ENEWS.WA.enews_path2_int(domain_id, ENEWS.WA.make_node('f', coalesce(EFO_PARENT_ID, -1)), path);
+      ENEWS.WA.enews_path_int (domain_id, ENEWS.WA.make_node('f', coalesce(EFO_PARENT_ID, -1)), path);
   }
 
   if ((node_type = 'c') and (domain_id > 0))
     for (select EFD_FOLDER_ID from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_ID = node_id) do {
       path := sprintf('%s/%s', ENEWS.WA.make_node('f', coalesce(EFD_FOLDER_ID, -1)), path);
-      ENEWS.WA.enews_path2_int(domain_id, ENEWS.WA.make_node('f', coalesce(EFD_FOLDER_ID, -1)), path);
+      ENEWS.WA.enews_path_int (domain_id, ENEWS.WA.make_node('f', coalesce(EFD_FOLDER_ID, -1)), path);
 }
 
   if ((node_type = 'c') and (domain_id < 0))
@@ -5556,108 +5601,87 @@ create procedure ENEWS.WA.enews_path2_int(
     for (select EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EB_ID = node_id and EW_DOMAIN_ID = domain_id and EB_WEBLOG_ID = EW_ID) do
     {
       path := sprintf('%s/%s', ENEWS.WA.make_node('w', EW_ID), path);
-      ENEWS.WA.enews_path2_int(domain_id, ENEWS.WA.make_node('w', EW_ID), path);
+      ENEWS.WA.enews_path_int (domain_id, ENEWS.WA.make_node('w', EW_ID), path);
   }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.enews_path2(
+create procedure ENEWS.WA.enews_path (
   in domain_id integer,
   in node varchar)
 {
   declare path any;
 
   path := node;
-  ENEWS.WA.enews_path2_int(domain_id, node, path);
+  ENEWS.WA.enews_path_int (domain_id, node, path);
   return '/' || path;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure ENEWS.WA.enews_tree2(
+create procedure ENEWS.WA.enews_tree (
   in domain_id integer,
+  in account_rights varchar,
   in node varchar,
   in path varchar)
 {
+  declare retValue any;
   declare node_type, node_id any;
 
   node_id := ENEWS.WA.node_id(node);
   node_type := ENEWS.WA.node_type(node);
-  if (node_type = 'r') {
-    if (node_id = 0)
+  if ((node_type = 'r') and (node_id = 0))
       return vector('Feeds', ENEWS.WA.make_node('f', -1), ENEWS.WA.make_path('', 'f', -1));
 
-    if (node_id = 1)
+  if ((node_type = 'r') and (node_id = 1))
       return vector('Feeds', ENEWS.WA.make_node('f', -1), ENEWS.WA.make_path(path, 'f', -1), 'Smart Folders', ENEWS.WA.make_node('s', -1), ENEWS.WA.make_path(path, 's', -1), 'Weblogs', ENEWS.WA.make_node('w', -1), ENEWS.WA.make_path(path, 'w', -1));
-  }
 
-  declare retValue any;
   retValue := vector ();
   if ((node_type = 'f') and (domain_id < 0))
+  {
     for (select distinct top 10 EF_ID, EF_TITLE from ENEWS.WA.FEED, ENEWS.WA.FEED_ITEM where EFI_FEED_ID = EF_ID order by EFI_LAST_UPDATE desc) do
       retValue := vector_concat (retValue, vector(EF_TITLE, ENEWS.WA.make_node ('c', EF_ID), ENEWS.WA.make_path (path, 'c', EF_ID)));
+  }
 
-  if ((node_type = 'f') and (domain_id > 0)) {
+  if ((node_type = 'f') and (domain_id > 0))
+  {
     for (select EFO_ID, EFO_NAME from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and coalesce(EFO_PARENT_ID, -1) = node_id order by 2) do
       retValue := vector_concat(retValue, vector(EFO_NAME, ENEWS.WA.make_node ('f', EFO_ID), ENEWS.WA.make_path (path, 'f', EFO_ID)));
-    for (select EFD_ID, coalesce(EFD_TITLE, EF_TITLE) EFD_TITLE from ENEWS.WA.FEED join ENEWS.WA.FEED_DOMAIN on EF_ID = EFD_FEED_ID where EFD_DOMAIN_ID = domain_id and coalesce(EFD_FOLDER_ID, -1) = node_id order by 2) do
+
+    for (select EFD_ID, coalesce(EFD_TITLE, EF_TITLE) EFD_TITLE, EFD_FEED_ID
+           from ENEWS.WA.FEED
+                  join ENEWS.WA.FEED_DOMAIN on EF_ID = EFD_FEED_ID
+          where EFD_DOMAIN_ID = domain_id
+            and coalesce(EFD_FOLDER_ID, -1) = node_id
+            and (
+                 (account_rights <> '') or
+                 (SIOC..feed_iri (EFD_FEED_ID) in (select a.iri from ENEWS.WA.acl_list (id)(iri varchar) a where a.id = domain_id))
+                )
+          order by 2) do
       retValue := vector_concat (retValue, vector(EFD_TITLE, ENEWS.WA.make_node ('c', EFD_ID), ENEWS.WA.make_path (path, 'c', EFD_ID)));
   }
 
   if ((node_type = 's') and (node_id = -1))
+  {
     for (select ESFO_ID, ESFO_NAME from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = domain_id order by 2) do
       retValue := vector_concat (retValue, vector(ESFO_NAME, ENEWS.WA.make_node ('s', ESFO_ID), ENEWS.WA.make_path (path, 's', ESFO_ID)));
-
-  if ((node_type = 'w') and (node_id = -1))
-    for (select EW_ID, EW_NAME from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id order by 2) do
-      retValue := vector_concat (retValue, vector(EW_NAME, ENEWS.WA.make_node ('w', EW_ID), ENEWS.WA.make_path (path, 'w', EW_ID)));
-
-  if ((node_type = 'w') and (node_id <> -1))
-    for (select EB_ID, EB_NAME from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EW_ID = node_id and EB_WEBLOG_ID = EW_ID order by 2) do
-      retValue := vector_concat (retValue, vector(EB_NAME, ENEWS.WA.make_node ('b', EB_ID), ENEWS.WA.make_path (path, 'b', EB_ID)));
-
-  return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.enews_node_has_childs (
-  in domain_id integer,
-  in node varchar)
-{
-  declare node_type, node_id any;
-
-  node_id := ENEWS.WA.node_id(node);
-  node_type := ENEWS.WA.node_type(node);
-
-  if ((node_type = 'f') and (domain_id < 0))
-    if (exists (select 1 from ENEWS.WA.FEED, ENEWS.WA.FEED_ITEM where EFI_FEED_ID = EF_ID))
-      return 1;
-
-  if ((node_type = 'f') and (domain_id > 0)) {
-    if (exists (select 1 from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and coalesce(EFO_PARENT_ID, -1) = coalesce(node_id, -1)))
-      return 1;
-    if (exists (select 1 from ENEWS.WA.FEED join ENEWS.WA.FEED_DOMAIN on EF_ID = EFD_FEED_ID where EFD_DOMAIN_ID = domain_id and coalesce(EFD_FOLDER_ID, -1) = node_id))
-      return 1;
   }
 
-  if ((node_type = 's') and (node_id = -1))
-    if (exists (select 1 from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = domain_id))
-      return 1;
-
   if ((node_type = 'w') and (node_id = -1))
-    if (exists (select 1 from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id))
-      return 1;
+  {
+    for (select EW_ID, EW_NAME from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id order by 2) do
+      retValue := vector_concat (retValue, vector(EW_NAME, ENEWS.WA.make_node ('w', EW_ID), ENEWS.WA.make_path (path, 'w', EW_ID)));
+  }
 
   if ((node_type = 'w') and (node_id <> -1))
-    if (exists (select 1 from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EW_ID = node_id and EB_WEBLOG_ID = EW_ID))
-      return 1;
-
-  return 0;
+  {
+    for (select EB_ID, EB_NAME from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id and EW_ID = node_id and EB_WEBLOG_ID = EW_ID order by 2) do
+      retValue := vector_concat (retValue, vector(EB_NAME, ENEWS.WA.make_node ('b', EB_ID), ENEWS.WA.make_path (path, 'b', EB_ID)));
+  }
+  return retValue;
 }
 ;
 
@@ -5687,9 +5711,9 @@ create procedure ENEWS.WA.make_path (
 create procedure ENEWS.WA.node_type(
   in code varchar)
 {
-  if (length(code) > 1)
-    if (substring(code,2,1) = '#')
+  if ((length (code) > 1) and (substring(code,2,1) = '#'))
       return left(code, 1);
+
   return '';
 }
 ;
@@ -5699,9 +5723,9 @@ create procedure ENEWS.WA.node_type(
 create procedure ENEWS.WA.node_prefix(
   in code varchar)
 {
-  if (length(code) > 1)
-    if (substring(code,2,1) = '#')
+  if ((length (code) > 1) and (substring(code,2,1) = '#'))
       return left(code, 2);
+
   return '';
 }
 ;
@@ -5713,9 +5737,9 @@ create procedure ENEWS.WA.node_id(
 {
   declare exit handler for sqlstate '*' { return 0; };
 
-  if (length(code) > 2)
-    if (substring(code,2,1) = '#')
+  if ((length (code) > 2) and (substring(code,2,1) = '#'))
       return cast(subseq(code, 2) as integer);
+
   return 0;
 }
 ;
@@ -5725,9 +5749,9 @@ create procedure ENEWS.WA.node_id(
 create procedure ENEWS.WA.node_suffix(
   in code varchar)
 {
-  if (length(code) > 2)
-    if (substring(code,2,1) = '#')
+  if ((length (code) > 2) and (substring(code,2,1) = '#'))
       return subseq(code, 2);
+
   return '';
 }
 ;

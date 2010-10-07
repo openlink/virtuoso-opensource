@@ -33,7 +33,7 @@
           <v:variable persist="0" name="step" type="integer" default="0" />
         </vm:variables>
     <vm:pagebody>
-          <div class="new-form-header">
+      <div class="form-header">
             <v:label format="%s" value="--concat(initcap(self.v_mode), ' this')" />
           </div>
           <div class="new-form-body">
@@ -129,7 +129,7 @@
               </v:template>
             </table>
           </div>
-          <div class="new-form-footer">
+      <div class="form-footer">
         <v:button action="simple" value="--either(equ(self.v_mode, 'blog'), 'Post', 'Comment')" enabled="--case when (self.step = 0) then 1 else 0 end" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[

@@ -24,12 +24,13 @@
   set http_charset = 'utf-8';
 
   declare N, _domain_id, _account_id integer;
-  declare action, subAction, node, nodePath varchar;
+  declare action, subAction, node, nodePath, _account_rights varchar;
   declare nodes, parts, sessionData, returnData any;
 
   sessionData   := ENEWS.WA.session_restore (params);
-  _domain_id  := cast (get_keyword ('domain_id', sessionData, '0') as integer);
-  _account_id := cast (get_keyword ('user_id', sessionData, '0') as integer);
+  _domain_id  := cast (get_keyword ('domain_id', sessionData) as integer);
+  _account_id := cast (get_keyword ('account_id', sessionData) as integer);
+  _account_rights := get_keyword ('account_rights', sessionData);
 
   returnData := vector();
   action := get_keyword ('a', params, '');
@@ -56,7 +57,7 @@
         parts := split_and_decode (nodePath, 0, '\0\0/');
         node := case when length (parts) then parts[length (parts)-1] else '' end;
       }
-      nodes := ENEWS.WA.enews_tree2 (_domain_id, node, nodePath);
+      nodes := ENEWS.WA.enews_tree (_domain_id, _account_rights, node, nodePath);
       returnData := vector ();
       for (N := 0; N < length (nodes); N := N + 3)
       {
@@ -99,9 +100,8 @@
         }
         itemDraggable := 0;
         if ((nodeType = 'c') or (nodeType = 'b'))
-        {
           itemDraggable := 1;
-        }
+
         returnData := vector_concat (returnData, vector (vector (itemID, itemType, itemLabel, itemPath, itemImage, itemSelected, itemDraggable)));
       }
     }
@@ -151,17 +151,121 @@
       for (select EFD_ID, EFD_TITLE from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = _domain_id and EFD_FAVOURITE > 0 order by EFD_TITLE) do
       {
         node := ENEWS.WA.make_node ('c', EFD_ID);
-        nodePath := ENEWS.WA.enews_path2 (_domain_id, node);
+        nodePath := ENEWS.WA.enews_path (_domain_id, node);
         http (sprintf('<span id="pt_favourite_%s"><a class="remove" href="javascript: Feeds.removeFavourite(\'%s\');" alt="Remove" title="Remove">[X]</a> <a href="#" class="nolink3" onclick="javascript: Feeds.selectFavourite(\'%s\'); return false" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', node, node, nodePath, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_icon (EFD_ID, 'image/docs_16.gif'), EFD_TITLE));
         http ( ' <br />' );
       }
       for (select EB_ID, EB_NAME from ENEWS.WA.WEBLOG join ENEWS.WA.BLOG on EB_WEBLOG_ID = EW_ID where EW_DOMAIN_ID = _domain_id and EB_FAVOURITE > 0 order by EB_NAME) do
       {
         node := ENEWS.WA.make_node ('b', EB_ID);
-        nodePath := ENEWS.WA.enews_path2 (_domain_id, node);
+        nodePath := ENEWS.WA.enews_path (_domain_id, node);
         http (sprintf('<span id="pt_favourite_%s"><a class="remove" href="javascript: Feeds.removeFavourite(\'%s\');" alt="Remove" title="Remove">[X]</a> <a href="#" class="nolink3" onclick="javascript:  Feeds.selectFavourite(\'%s\'); return false" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', node, node, nodePath, EB_NAME, EB_NAME, 'image/ods_weblog_16.png', EB_NAME));
         http ( ' <br />' );
       }
+    }
+  }
+  else if (action = 'load')
+  {
+    declare progressID, progressIndex any;
+
+    progressID := cast (get_keyword ('id', params, msec_time()) as varchar);
+    progressIndex := registry_get ('feed_' || progressID || '_index');
+    if (subAction = 'stop')
+    {
+      registry_set ('feed_' || progressID || '_action', 'stop');
+    }
+    else if (subAction = 'state')
+    {
+      if (not (isinteger(progressIndex) and (progressIndex = 0)))
+      {
+        http_rewrite ();
+        http_header ('Content-Type: text/xml\r\n');
+        http('<root>');
+        http(sprintf('<index>%s</index>', cast (progressIndex as varchar)));
+        http('</root>');
+      }
+    }
+    else if (subAction = 'init')
+    {
+      registry_set ('feed_' || progressID || '_index', '0');
+
+      http_rewrite ();
+      http_header ('Content-Type: text/xml\r\n');
+      http('<root>');
+      http(sprintf('<id>%s</id>', cast (progressID as varchar)));
+      http('</root>');
+
+      -- flush and continue
+      http_flush ();
+
+      declare I, J, N integer;
+      declare dataLength, folder_id, mfolder_id integer;
+      declare feed_id, folder_name, mfolder_name varchar;
+      declare data, rss, title, retrieve, V any;
+
+      retrieve := cast (get_keyword('$_retrieve', params, '1') as integer);
+      mfolder_id := cast (get_keyword('$_mfolder_id', params) as integer);
+      mfolder_name := trim (get_keyword('$_mfolder_name', params));
+
+      -- test folder names & count subscriptions
+      j := length(params);
+      vectorbld_init(V);
+      for (i := 0; i < j; i := i + 2)
+      {
+        if (params[i] like 'cb_item%')
+          vectorbld_acc(V, params[i+1]);
+      }
+      vectorbld_final(V);
+      dataLength := length(V);
+
+      -- dbg_obj_print('start: ', dataLength, now());
+      -- exec subscriptions
+      for (i := 0; i < dataLength; i := i + 1)
+      {
+        if  (cast(registry_get ('feed_' || progressID || '_action') as varchar) = 'stop')
+          goto _stop;
+
+        commit work;
+        registry_set('feed_' || progressID || '_index', cast (i as varchar));
+
+        N := V[i];
+        data := deserialize (decode_base64 (get_keyword ('$_data_'||N, params)));
+        rss := get_keyword ('rss', data, '');
+        if (rss <> '')
+        {
+          for (j := 0; j < length (data); j := j + 1)
+            data[j] := ENEWS.WA.wide2utf(data[j]);
+          title := get_keyword ('title', data);
+
+          feed_id := ENEWS.WA.channel_create (data);
+          if (is_empty_or_null (mfolder_name) and is_empty_or_null (mfolder_id))
+          {
+            folder_name := trim (get_keyword ('$_fname_' || N, params, get_keyword ('folder', data, '')));
+            folder_id := cast (trim (get_keyword ('$_fid_'|| N, params, '')) as integer);
+          } else {
+            folder_name := mfolder_name;
+            folder_id := mfolder_id;
+          }
+          ENEWS.WA.channel_domain (-1, _domain_id, feed_id, ENEWS.WA.wide2utf(title), null, folder_name, folder_id);
+          if ((ENEWS.WA.channel_feeds(feed_id) = 0) or retrieve)
+          {
+            declare continue handler for sqlstate '*'
+            {
+              goto _next;
+            };
+            ENEWS.WA.feed_refresh (feed_id);
+          }
+       }
+      _next:;
+      }
+      registry_set('feed_' || progressID || '_index', cast (dataLength as varchar));
+    _stop:;
+
+      -- update tags
+      ENEWS.WA.tags_refresh(_domain_id, _account_id, 0);
+
+      registry_remove ('feed_' || progressID || '_index');
+      registry_remove ('feed_' || progressID || '_action');
     }
   }
   else if (action = 'about')

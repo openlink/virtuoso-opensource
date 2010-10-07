@@ -162,7 +162,7 @@
             ?>
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="q" value="" fmt-function="ENEWS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
-              <xsl:call-template name="nbsp"/>
+              &amp;nbsp;
               <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
             |
               <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
@@ -174,13 +174,13 @@
             <?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-          <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+            <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
               <v:url url="--ENEWS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
               |
       	  </v:template>
             <a href="<?V ENEWS.WA.page_url (self.domain_id, 'about.vsp') ?>" onclick="javascript: Feeds.aboutDialog(); return false;" title="About">About</a>
       </div>
-          <p style="clear: both; line-height: 0.1em" />
+          <br style="clear: both; line-height: 0.1em" />
         </div>  
       <v:include url="enews_login.vspx"/>
       <table id="MTB">
@@ -188,14 +188,14 @@
           <!-- Navigation left column -->
           <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
             <td id="LC">
-                <v:template type="simple" enabled="--case when (self.account_role in ('guest')) then 0 else 1 end">
+                <v:template type="simple" enabled="--case when (self.account_rights <> '') then 1 else 0 end">
               <xsl:call-template name="vm:others"/>
                 </v:template>
               <xsl:call-template name="vm:formats"/>
             </td>
       	  </v:template>
           <td id="RC">
-              <v:tree show-root="0" multi-branch="0" orientation="horizontal" start-path="--self.account_role" root="ENEWS.WA.navigation_root" child-function="ENEWS.WA.navigation_child">
+              <v:tree show-root="0" multi-branch="0" orientation="horizontal" start-path="--case when ENEWS.WA.check_admin (self.account_id) then 'A' else self.account_rights end" root="ENEWS.WA.navigation_root" child-function="ENEWS.WA.navigation_child">
                 <v:before-data-bind>
                   <![CDATA[
                     declare page_name any;
@@ -207,8 +207,7 @@
                     }
                     else if (not self.nav_top and page_name <> '')
                     {
-                      self.nav_pos_fixed := 0;
-                      self.nav_pos_fixed := ENEWS.WA.check_grants (self.account_role, page_name);
+                      self.nav_pos_fixed := ENEWS.WA.check_grants (self.account_rights, page_name);
                       control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
                     }
                   ]]>
@@ -222,7 +221,7 @@
                           if ((control.vc_parent as vspx_tree_node).tn_open = 1)
                             control.ufl_active := 0;
                           else
-                            control.ufl_active := ENEWS.WA.check_grants (self.account_role, ENEWS.WA.page_name ());
+                            control.ufl_active := ENEWS.WA.check_grants (self.account_rights, ENEWS.WA.page_name ());
                         ]]>
                       </v:after-data-bind>
                       <v:before-render>
@@ -287,7 +286,11 @@
               	</td>
               </tr>
             </table>
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
               <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
@@ -556,17 +559,6 @@
       <xsl:attribute name="onclick">javascript: showTab('<xsl:value-of select="@tab" />', <xsl:value-of select="@tabsCount" />, <xsl:value-of select="@tabNo" />);</xsl:attribute>
       <xsl:value-of select="@caption"/>
     </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="nbsp">
-    <xsl:param name="count" select="1"/>
-    <xsl:if test="$count != 0">
-      <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      <xsl:call-template name="nbsp">
-        <xsl:with-param name="count" select="$count - 1"/>
-      </xsl:call-template>
-    </xsl:if>
   </xsl:template>
 
 </xsl:stylesheet>

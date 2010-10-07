@@ -60,7 +60,7 @@
         } else {
               self.fNode := 'c#' || cast (coalesce ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = tmp), '') as varchar);
         }
-            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodePath := ENEWS.WA.enews_path (self.domain_id, self.fNode);
             self.fNodeItem := cast (tmp as varchar);
             goto _validate;
       }
@@ -69,14 +69,14 @@
       {
         self.fTab := 'feed';
             self.fNode := 'c#' || cast (tmp as varchar);
-            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodePath := ENEWS.WA.enews_path (self.domain_id, self.fNode);
             goto _validate;
       }
           tmp := get_keyword('node', params, '');
           if (tmp <> '')
       {
             self.fNode := tmp;
-            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodePath := ENEWS.WA.enews_path (self.domain_id, self.fNode);
             goto _validate;
   	  }
           goto _exit;
@@ -109,7 +109,7 @@
           for (select TOP 1 EFD_ID, EFD_TITLE, ENEWS.WA.folder_path (EFD_DOMAIN_ID, EFD_FOLDER_ID) EFD_PATH from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = self.domain_id order by EFD_PATH, EFD_TITLE) do
       {
         self.fNode := ENEWS.WA.make_node ('c', EFD_ID);
-            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodePath := ENEWS.WA.enews_path (self.domain_id, self.fNode);
             self.fNodeItem := '';
             goto _exit;
       }
@@ -117,7 +117,7 @@
           for (select TOP 1 EB_ID, EW_ID from ENEWS.WA.BLOG, ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id and EB_WEBLOG_ID = EW_ID order by EW_NAME, EB_NAME) do
       {
         self.fNode := ENEWS.WA.make_node ('b', EB_ID);
-            self.fNodePath := ENEWS.WA.enews_path2 (self.domain_id, self.fNode);
+            self.fNodePath := ENEWS.WA.enews_path (self.domain_id, self.fNode);
             self.fNodeItem := '';
             goto _exit;
       }
@@ -136,27 +136,22 @@
         http (sprintf ('<input type="hidden" id="nodePath" name="nodePath" value="%V" />', self.fNodePath));
         http (sprintf ('<input type="hidden" id="nodeItem" name="nodeItem" value="%V" />', self.fNodeItem));
       ?>
-      <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
+      <vm:if test="self.domain_id > 0">
         <div class="tabs">
           <div style="float: left;">
             <div id="feeds_button" class="tab <?V case when self.fTab = 'feeds' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('feeds');">Feeds</div>
             <div id="tags_button" class="tab <?V case when self.fTab = 'tags' then 'activeTab2' else 'tab2' end ?>" onclick="javascript: Feeds.toggleLeftPane('tags');">Tags</div>
         </div>
-        <?vsp
-          if (ENEWS.WA.settings_favourites (self.settings))
-          {
-        ?>
+          <vm:if test="ENEWS.WA.settings_favourites (self.settings)">
           <div style="float: right;">
             <div>
               <span class="tab">Favourites</span>
             </div>
           </div>
-        <?vsp
-          }
-        ?>
+          </vm:if>
           <br style="clear: both;"/>
         </div>
-      </v:template>
+      </vm:if>
 
       <div id="pane_main" class="pane_main">
         <div id="pane_left" style="<?V case when ENEWS.WA.settings_favourites(self.settings) then 'width: 20.3%;' else '' end ?>">
@@ -169,12 +164,10 @@
           <div id="pane_right_bottom">
           </div>
         </div>
-        <?vsp
-          if (ENEWS.WA.settings_favourites (self.settings))
-          {
-            http ('<div id="pane_right2"></div>');
-          }
-        ?>
+        <vm:if test="ENEWS.WA.settings_favourites (self.settings)">
+          <div id="pane_right2">
+          </div>
+        </vm:if>
       </div>
     </vm:pagebody>
   </vm:pagewrapper>
