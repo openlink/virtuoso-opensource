@@ -3374,13 +3374,13 @@ create procedure ODRIVE.WA.DAV_SET (
   declare tmp varchar;
 
   if (property = 'permissions')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtpermissions', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtpermissions', value, auth_name, auth_pwd, 0);
   if (property = 'groupID')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtownergid', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtownergid', value, auth_name, auth_pwd, 0);
   if (property = 'ownerID')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtowneruid', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtowneruid', value, auth_name, auth_pwd, 0);
   if (property = 'mimeType')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':getcontenttype', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':getcontenttype', value, auth_name, auth_pwd, 0);
   if (property = 'name')
   {
     tmp := concat(left(path, strrchr(rtrim(path, '/'), '/')), '/', value, either(equ(right(path, 1), '/'), '/', ''));
@@ -3389,11 +3389,11 @@ create procedure ODRIVE.WA.DAV_SET (
   if (property = 'detType')
     return DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
   if (property = 'acl')
-    return ODRIVE.WA.DAV_PROP_SET(path, ':virtacl', value);
+    return ODRIVE.WA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
   if (property = 'privatetags')
-    return ODRIVE.WA.DAV_PROP_TAGS_SET(path, ':virtprivatetags', value);
+    return ODRIVE.WA.DAV_PROP_TAGS_SET (path, ':virtprivatetags', value, auth_name, auth_pwd);
   if (property = 'publictags')
-    return ODRIVE.WA.DAV_PROP_TAGS_SET(path, ':virtpublictags', value);
+    return ODRIVE.WA.DAV_PROP_TAGS_SET (path, ':virtpublictags', value, auth_name, auth_pwd);
   if (property = 'autoversion')
     return ODRIVE.WA.DAV_SET_AUTOVERSION (path, value);
   if (property = 'permissions-inheritance')
@@ -3766,12 +3766,14 @@ create procedure ODRIVE.WA.DAV_PROP_SET (
   in propName varchar,
   in propValue any,
   in auth_name varchar := null,
-  in auth_pwd varchar := null)
+  in auth_pwd varchar := null,
+  in removeBefore integer := 1)
 {
   -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_SET (', path, propName, ')');
   declare uname, gname varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
+  if (removeBefore)
   DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
   return DB.DBA.DAV_PROP_SET(path, propname, propvalue, auth_name, auth_pwd);
 }
@@ -3838,6 +3840,7 @@ create procedure ODRIVE.WA.DAV_PROP_REMOVE (
 {
   declare uname, gname varchar;
 
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_REMOVE (', path, propName, ')');
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   return DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
 }

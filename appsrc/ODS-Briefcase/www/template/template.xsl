@@ -273,7 +273,11 @@
       	</td>
       </tr>
     </table>
-      <div id="FT">
+        <?vsp
+          declare C any;
+          C := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+        ?>
+        <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
             <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
