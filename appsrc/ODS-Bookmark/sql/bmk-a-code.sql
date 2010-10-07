@@ -69,6 +69,20 @@ create procedure BMK.WA.acl_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := BMK.WA.forum_iri (domain_id);
+  graph_iri := BMK.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (BMK.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -76,10 +90,9 @@ create procedure BMK.WA.session_domain (
   inout params any)
 {
   declare aPath, domain_id, options any;
-
   declare exit handler for sqlstate '*'
   {
-    domain_id := -1;
+    domain_id := -2;
     goto _end;
   };
 
@@ -91,10 +104,15 @@ create procedure BMK.WA.session_domain (
   if (is_empty_or_null (domain_id))
   {
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    if ((length (aPath) = 1) or ((length (aPath) = 2) and (aPath[1] like '%.vsp%')))
+    {
+      domain_id := -1;
+      goto _end;
+    }
     domain_id := cast(aPath[1] as integer);
   }
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_TYPE_NAME = 'Bookmark'))
-    domain_id := -1;
+    domain_id := -2;
 
 _end:;
   return cast (domain_id as integer);
@@ -106,12 +124,10 @@ _end:;
 create procedure BMK.WA.session_restore(
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role any;
+  declare domain_id, account_id, account_rights any;
 
   domain_id := BMK.WA.session_domain (params);
-  user_id := -1;
-  user_role := 'expire';
-  user_name := 'Expire session';
+  account_id := http_nobody_uid ();
 
   for (select U.U_ID,
               U.U_NAME,
@@ -122,15 +138,13 @@ create procedure BMK.WA.session_restore(
           and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := BMK.WA.user_name(U_NAME, U_FULL_NAME);
+    account_id := U_ID;
     }
-  user_role := BMK.WA.access_role (domain_id, user_id);
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := BMK.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -205,62 +219,70 @@ create procedure BMK.WA.check_grants (in role_name varchar, in page_name varchar
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.access_role (
+create procedure BMK.WA.access_rights (
   in domain_id integer,
-  in user_id integer)
+  in account_id integer)
 {
   declare rc varchar;
 
-  if (domain_id <= 0)
-    return 'expire';
+  if (domain_id = -1)
+    return 'R';
 
-  if (BMK.WA.check_admin(user_id))
-    return 'admin';
+  if (domain_id = -2)
+    return null;
+
+  if (BMK.WA.check_admin (account_id))
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 2
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := BMK.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
+
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'reader';
-
-  rc := BMK.WA.acl_check (domain_id);
-  if (rc = 'R')
-    return 'public';
-
-  if (rc = 'W')
-    return 'author';
+    return 'R';
 
   if (exists (select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  return 'public';
+    return 'R';
 
-  return 'expire';
+  if (is_https_ctx () and exists (select 1 from BMK.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
+
+  return null;
 }
 ;
 
@@ -304,21 +326,17 @@ create procedure BMK.WA.page_name ()
 create procedure BMK.WA.menu_tree (
   in access_role varchar := null)
 {
-  declare S, T varchar;
-
-  S :=
+  return
 '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="Bookmarks"       url="bookmarks.vspx"       id="1"                allowed="public guest reader author owner admin">
-    <node name="11"            url="bookmarks.vspx"       id="11"  place="link" allowed="public guest reader author owner admin"/>
-    <node name="12"            url="search.vspx"          id="12"  place="link" allowed="public guest reader author owner admin"/>
-    <node name="13"            url="error.vspx"           id="13"  place="link" allowed="public guest reader author owner admin"/>
-    <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="reader author owner admin"/>
-    <node name="15"            url="bookmark.vspx"        id="15"  place="link" allowed="public guest reader author owner admin"/>
+  <node name="Bookmarks"       url="bookmarks.vspx"       id="1"                allowed="W R">
+    <node name="11"            url="bookmarks.vspx"       id="11"  place="link" allowed="W R"/>
+    <node name="12"            url="search.vspx"          id="12"  place="link" allowed="W R"/>
+    <node name="13"            url="error.vspx"           id="13"  place="link" allowed="W R"/>
+    <node name="14"            url="settings.vspx"        id="14"  place="link" allowed="W"/>
+    <node name="15"            url="bookmark.vspx"        id="15"  place="link" allowed="W R"/>
   </node>
 </menu_tree>';
-
-  return S;
 }
 ;
 
@@ -735,9 +753,7 @@ create procedure BMK.WA.account_delete(
      and WAM_USER = account_id;
 
   if (iCount = 0)
-  {
     delete from BMK.WA.GRANTS where G_GRANTER_ID = account_id or G_GRANTEE_ID = account_id;
-  }
 
   return 1;
 }
@@ -1197,6 +1213,26 @@ create procedure BMK.WA.bookmark_export_tmp (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.bookmark_rights (
+  in domain_id integer,
+  in id integer,
+  in access_role varchar)
+{
+  declare retValue varchar;
+
+  retValue := '';
+  if (exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id and BD_DOMAIN_ID = domain_id))
+  {
+    retValue := BMK.WA.acl_check (domain_id, id);
+    if (retValue = '')
+      retValue := access_role;
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Tags
 --
 -------------------------------------------------------------------------------
@@ -1417,12 +1453,15 @@ create procedure BMK.WA.folder_path3(
   declare parent_id integer;
   declare path any;
 
-  if (grant_id = -1) {
+  if (grant_id = -1)
+  {
     path := coalesce(BMK.WA.folder_path (folder_id), '');
   } else {
-    for (select G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do {
+    for (select G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do
+    {
       path := '';
-      if (G_OBJECT_TYPE = 'F') {
+      if (G_OBJECT_TYPE = 'F')
+      {
         parent_id := (select F_PARENT_ID from BMK.WA.FOLDER where F_ID = G_OBJECT_ID);
         path := replace(coalesce(BMK.WA.folder_path (folder_id), ''), coalesce(BMK.WA.folder_path (parent_id), ''), '');
       }
@@ -1443,13 +1482,13 @@ create procedure BMK.WA.folder_path4 (
   declare parent_id integer;
   declare name any;
 
-  if (grant_id = -1) {
+  if (grant_id = -1)
+  {
     name := coalesce(folder_name, '');
   } else {
-    for (select G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do {
-      name := '';
-      if (G_OBJECT_TYPE = 'F')
-        name := coalesce(folder_name, '');
+    for (select G_OBJECT_TYPE, G_OBJECT_ID from BMK.WA.GRANTS where G_ID = grant_id) do
+    {
+      name := case when G_OBJECT_TYPE = 'F' then coalesce(folder_name, '') else '' end;
     }
   }
   if (name <> '')
@@ -1464,7 +1503,8 @@ create procedure BMK.WA.folder_check_name(
   in folder_name varchar,
   in is_path integer := 0)
 {
-  if (is_path) {
+  if (is_path)
+  {
     declare i integer;
     declare aPath any;
 
@@ -1473,9 +1513,8 @@ create procedure BMK.WA.folder_check_name(
       if (not BMK.WA.validate('folder', aPath[i]))
         return 0;
     return 1;
-  } else {
-    return BMK.WA.validate('folder', folder_name);
   }
+  return BMK.WA.validate('folder', folder_name);
 }
 ;
 
@@ -1534,6 +1573,7 @@ create procedure BMK.WA.folder_check_parent(
 create procedure BMK.WA.sfolder_sql(
   inout domain_id integer,
   inout account_id integer,
+  inout account_rights varchar,
   in data varchar,
   in maxRows varchar := '',
   in nodeType varchar := 'b')
@@ -1573,7 +1613,8 @@ create procedure BMK.WA.sfolder_sql(
   }
 
   tmp := BMK.WA.xml_get('tags', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     if (T = '') {
       T := BMK.WA.tags2search (tmp);
     } else {
@@ -1584,29 +1625,49 @@ create procedure BMK.WA.sfolder_sql(
     S := replace(S, '<TEXT>', sprintf('and contains (a.BD_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', T));
 
   tmp := BMK.WA.xml_get('folder', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     tmp := cast(tmp as integer);
     if (tmp > 0)
       BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf('d.F_PATH like \'%s%s\'', BMK.WA.folder_path (tmp), '%'));
   }
 
+  tmp := BMK.WA.xml_get('folderID', data);
+  if (not is_empty_or_null(tmp))
+  {
+    tmp := cast (tmp as integer);
+    BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf ('coalesce(a.BD_FOLDER_ID, -1) = %d', tmp));
+  }
+
   tmp := BMK.WA.xml_get('bookmark', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     tmp := cast(tmp as integer);
     if (tmp > 0)
       BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf('a.BD_ID = %d', tmp));
   }
 
   tmp := BMK.WA.xml_get('updatedAfter', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf ('a.BD_UPDATED >= \'%s\'', tmp));
   }
 
   tmp := BMK.WA.xml_get('updatedBefore', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     BMK.WA.sfolder_sql_where (where2, delimiter2, sprintf ('a.BD_UPDATED <= \'%s\'', tmp));
   }
 
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || '   and SIOC..bmk_post_iri (a.BD_DOMAIN_ID, a.BD_ID) in (select s.iri from BMK.WA.acl_list (id)(iri varchar) s where s.id = a.BD_DOMAIN_ID)';
+    } else {
+      S := S || '   and 1=0';
+    }
+  }
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
   S := replace(S, '<MAX>', maxRows);
@@ -1626,6 +1687,7 @@ create procedure BMK.WA.sfolder_sql(
 create procedure BMK.WA.shared_sql(
   inout domain_id integer,
   inout account_id integer,
+  inout account_rights varchar,
   in data any,
   in maxRows varchar := '')
 {
@@ -1651,9 +1713,10 @@ create procedure BMK.WA.shared_sql(
   shared := cast (BMK.WA.xml_get ('mySharedBookmarks', data, '0') as integer);
 
   -- search in my own
-  if (own = 1) {
+  if (own = 1)
+  {
     state := '00000';
-    sql := BMK.WA.sfolder_sql(domain_id, account_id, data, maxRows);
+    sql := BMK.WA.sfolder_sql (domain_id, account_id, account_rights, data, maxRows);
     exec(sql, state, msg, vector(), 0, meta, rows);
     if (state = '00000')
       foreach (any row in rows) do
@@ -1663,10 +1726,12 @@ create procedure BMK.WA.shared_sql(
   }
 
   -- search in my shared
-  if (shared = 1) {
+  if (shared = 1)
+  {
     grants := BMK.WA.xml_get ('grants', data);
     grants := split_and_decode(trim(grants, ','), 0, '\0\0,');
-    for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = account_id and G_GRANTER_ID = U_ID order by G_GRANTER_ID) do {
+    for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = account_id and G_GRANTER_ID = U_ID order by G_GRANTER_ID) do
+    {
       if (length(grants) and not BMK.WA.vector_contains(grants, U_NAME))
         goto _skip;
 
@@ -1675,7 +1740,8 @@ create procedure BMK.WA.shared_sql(
     aid := G_GRANTER_ID;
       fid := -1;
     bid := 0;
-    if (G_OBJECT_TYPE = 'F') {
+      if (G_OBJECT_TYPE = 'F')
+      {
       fid := G_OBJECT_ID;
       did := (select F_DOMAIN_ID from BMK.WA.FOLDER where F_ID = fid);
     } else {
@@ -1686,10 +1752,11 @@ create procedure BMK.WA.shared_sql(
     BMK.WA.xml_set('bookmark', newData, bid);
 
     state := '00000';
-      sql := BMK.WA.sfolder_sql (did, aid, newData, maxRows, 'B');
+      sql := BMK.WA.sfolder_sql (did, aid, account_rights, newData, maxRows, 'B');
     exec(sql, state, msg, vector(), 0, meta, rows);
     if (state = '00000')
-      foreach (any row in rows) do {
+        foreach (any row in rows) do
+        {
           fid := row[8];
         if (bid <> 0)
             fid := -1;
@@ -1747,7 +1814,8 @@ create procedure BMK.WA.sfolder_sql_where(
   inout delimiter varchar,
   in criteria varchar)
 {
-  if (criteria <> '') {
+  if (criteria <> '')
+  {
     if (where2 = '')
       where2 := 'where ';
     where2 := concat(where2, delimiter, criteria);
@@ -1765,7 +1833,8 @@ create procedure BMK.WA.sfolder_create(
   declare id varchar;
 
   id := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_NAME = name), -1);
-  if (id = -1) {
+  if (id = -1)
+  {
     insert into BMK.WA.SFOLDER (SF_DOMAIN_ID, SF_NAME, SF_DATA)
       values(domain_id, name, data);
   } else {
@@ -1817,7 +1886,8 @@ create procedure BMK.WA.sfolder_name (
 create procedure BMK.WA.tag_prepare(
   inout tag varchar)
 {
-  if (not is_empty_or_null(tag)) {
+  if (not is_empty_or_null(tag))
+  {
     tag := trim(tag);
     tag := replace(tag, '  ', ' ');
   }
@@ -1929,7 +1999,8 @@ create procedure BMK.WA.tags2unique(
   declare N, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
     for (M := 0; M < length(aResult); M := M + 1)
       if (trim(lcase(aResult[M])) = trim(lcase(aVector[N])))
         goto _next;
@@ -2272,8 +2343,8 @@ create procedure BMK.WA.dav_content (
 {
   declare content varchar;
   declare hp any;
-
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     return null;
   };
@@ -3388,7 +3459,7 @@ _end:
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.bmk_tree2(
+create procedure BMK.WA.bmk_tree (
   in domain_id integer,
   in user_id integer,
   in node varchar,
