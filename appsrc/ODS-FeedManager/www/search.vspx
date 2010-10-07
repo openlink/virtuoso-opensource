@@ -66,7 +66,7 @@
 
   <v:method name="linkClass" arglist="inout flag any">
     <![CDATA[
-      if (self.account_role in ('public', 'guest'))
+      if (self.account_rights <> 'W')
         return 'unread';
       return either(equ(flag, 1), 'read', 'unread');
     ]]>
@@ -175,7 +175,7 @@
 
       declare sql, state, msg, meta, result any;
 
-  	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
+      sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, self.account_rights, data, self.v_type, self.v_max);
       if (self.v_group = 0)
       {
         sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
@@ -341,7 +341,7 @@
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
       <v:template name="st1" type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
-        <div class="new-form-header">
+        <div class="form-header">
           <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> feed(s) in last search</i>
         </div>
       </v:template>
@@ -613,7 +613,7 @@
                     </tr>
                   </tr>
                 </vm:if>
-                <vm:if test="self.account_role in ('public', 'guest')">
+                <vm:if test="self.account_rights <> 'W'">
                 <tr>
                   <th>
                       <v:label for="f_tags" value="Tags" />
@@ -732,13 +732,13 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button name="btn_save" action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and not (self.account_role in ('public', 'guest'))) then 1 else 0 end" xhtml_class="form-button">
+          <v:button name="btn_save" action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and (self.account_rights = 'W')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare tmp varchar;
 
                 self.update_params();
-                tmp := 'sfolders_update.vspx?return=yes' || self.do_url('save', 'f_');;
+                tmp := ENEWS.WA.page_url (self.domain_id, 'sfolders.vspx') || '?mode=create&return=yes' || self.do_url('save', 'f_');;
                 self.vc_redirect(tmp);
               ]]>
             </v:on-post>
@@ -746,7 +746,7 @@
           <v:button name="btn_cancel" action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect('news.vspx');
+                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
               ]]>
             </v:on-post>
           </v:button>
@@ -776,7 +776,7 @@
                 <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect('news.vspx');
+                      self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
                     ]]>
                   </v:on-post>
                 </v:button>

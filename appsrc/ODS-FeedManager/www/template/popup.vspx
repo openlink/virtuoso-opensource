@@ -55,18 +55,12 @@
           OAT.Anchor.zIndex = 1001;
 
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-          {
-            if ($('app_area'))
-            {
               generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
-            }
-          }
 
           // init tabs
           showTab('a', 2, 0);
         }
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
-        window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
+        OAT.MSG.attach(OAT, 'OAT_LOADED', myInit);
       </script>
     ]]>
     <title></title>
@@ -76,8 +70,7 @@
       <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+        <v:variable persist="0" name="account_rights" type="varchar" default="''"/>
         <v:variable persist="0" name="settings" type="any" />
       </vm:variables>
       <v:on-init>
@@ -90,9 +83,8 @@
 
           aSessInfo := ENEWS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
+          self.account_rights := get_keyword ('account_rights', aSessInfo, '');
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ENEWS.WA.settings (self.domain_id, self.account_id));
         ]]>
       </v:on-init>

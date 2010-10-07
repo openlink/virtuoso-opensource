@@ -90,6 +90,7 @@
       <v:variable name="v_directory_id" type="varchar" default="'0'"/>
       <v:variable name="v_psh" type="varchar" default="null"/>
       <v:variable name="v_psh_enabled" type="integer" default="1"/>
+      <v:variable name="v_acl" type="varchar" default="null"/>
     </vm:variables>
     <vm:pagebody>
       <v:before-render>
@@ -256,9 +257,12 @@
                         <![CDATA[
                           declare i integer;
 
-                          for (i := 0; i < length(e.ve_params); i := i + 2) {
-                            if (e.ve_params[i] = 'cb_item') {
-                              declare exit handler for sqlstate '*' {
+                          for (i := 0; i < length(e.ve_params); i := i + 2)
+                          {
+                            if (e.ve_params[i] = 'cb_item')
+                            {
+                              declare exit handler for sqlstate '*'
+                              {
                                 rollback work;
                                 goto _next;
                               };
@@ -289,7 +293,8 @@
                                  from ENEWS.WA.FEED
                                    join ENEWS.WA.FEED_DOMAIN EC on EFD_FEED_ID = EF_ID
                                 where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*' {
+                            declare exit handler for sqlstate '*'
+                            {
                               rollback work;
                               goto _next;
                             };
@@ -310,7 +315,8 @@
                                  from ENEWS.WA.FEED ECD
                                    join ENEWS.WA.FEED_DOMAIN on EFD_FEED_ID = EF_ID
                                 where EFD_DOMAIN_ID = self.domain_id) do {
-                            declare exit handler for sqlstate '*' {
+                            declare exit handler for sqlstate '*'
+                            {
                               rollback work;
                               goto _next;
                             };
@@ -361,7 +367,8 @@
                       a.EFD_TITLE,
                       a.EFD_TAGS,
                       a.EFD_FOLDER_ID,
-                      c.EFD_DIRECTORY_ID
+                      c.EFD_DIRECTORY_ID,
+                      a.EFD_ACL
                  into self.v_feed_id,
                       self.v_feed_uri,
                       self.v_home,
@@ -373,7 +380,8 @@
                       self.v_title,
                       self.v_tags,
                       self.v_folder_id,
-                      self.v_directory_id
+                      self.v_directory_id,
+                      self.v_acl
                 from ENEWS.WA.FEED_DOMAIN a
                        join ENEWS.WA.FEED b on b.EF_ID = a.EFD_FEED_ID
                           left join ENEWS.WA.FEED_DIRECTORY c on c.EFD_FEED_ID = a.EFD_FEED_ID
@@ -394,13 +402,20 @@
             self.v_folder_name := get_keyword('f_folder_name', params, '');
             self.v_directory_id := get_keyword('f_directory_id', params, '');
             self.v_directory_name := get_keyword('f_directory_name', params, '');
+            self.v_acl := null;
           ]]>
         </v:before-data-bind>
-        <div class="new-form-header">
+        <div class="form-header">
           Feed
         </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
+        <div id="p" class="c1">
+          <div class="tabs">
+            &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
+            &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Sharing" />
+          </div>
+          <div class="contents">
+            <div id="p_content_0" class="tabContent">
+              <table class="form-body" cellspacing="0">
             <tr>
               <th>
                 <v:label value="Feed URL"/>
@@ -521,6 +536,60 @@
             </v:template>
           </table>
         </div>
+            <div id="p_content_1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <td style="width: 90%; background-color: white;">
+                    <table id="s_tbl" width="100%" cellspacing="0">
+                      <thead class="sortHeader">
+                        <tr>
+                          <th width="15%">Type</th>
+                          <th>Value</th>
+                          <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                          <th width="50px">Action</th>
+                        </tr>
+                      </thead>
+                		  <![CDATA[
+                		    <script type="text/javascript">
+                        <?vsp
+                          declare N, L integer;
+                          declare acl, aType, aAccess any;
+
+                          L := 0;
+                          acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
+                          acl := case when isnull (acl) then vector () else deserialize (acl) end;
+                          for (N := 0; N < length (acl); N := N + 1)
+                          {
+                            L := L + 1;
+                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                          }
+                          acl := deserialize (self.v_acl);
+                          for (N := 0; N < length (acl); N := N + 1)
+                          {
+                            L := L + 1;
+                            if (self.v_mode <> 'view')
+                            {
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
+                            } else {
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
+                            }
+                          }
+                        ?>
+                		    </script>
+                		  ]]>
+                      <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_mode='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                		</table>
+                	</td>
+                  <vm:if test="self.v_mode <> 'view'">
+                    <td valign="top" nowrap="nowrap">
+                      <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; white-space: nowrap; text-align: center;'}});" />
+                    </td>
+                  </vm:if>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
         <div class="form-footer">
           <v:button name="btn_save" action="simple" value="Save" xhtml_alt="Save feed data" xhtml_class="form-button">
             <v:on-post>
@@ -604,6 +673,8 @@
 
                 -- domain
                 ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
+                self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+                ENEWS.WA.channel_acl (self.v_id, self.v_acl);
 
                 -- directory
                 if (isAdmin)

@@ -89,7 +89,7 @@
         if (length(xpath_eval('//entry', data, 0)) = 0)
           goto _error;
 
-    	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
+    	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, 'R', data, self.v_type, self.v_max);
         sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
 
         state := '00000';

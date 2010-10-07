@@ -35,8 +35,14 @@
       if (page_name = 'error.vspx')
         return;
 
-      if (ENEWS.WA.check_grants (self.account_role, page_name))
+      if (ENEWS.WA.check_grants (self.account_rights, page_name))
         return;
+
+      if (isnull (self.account_rights) and not is_empty_or_null (self.sid))
+      {
+         self.vc_redirect (sprintf ('/ods/error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
+         return;
+      }
 
       declare vh, lh, hf, ods_path any;
 
@@ -54,7 +60,7 @@
         self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, concat(HTTP_REQUESTED_URL(), '?URL=', get_keyword('URL', params, ''))));
         return;
       }
-      if (self.account_role = 'expire')
+      if (isnull (self.account_rights))
       {
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;

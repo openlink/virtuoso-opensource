@@ -60,7 +60,7 @@
       <v:variable name="sf_order" persist="1" type="varchar" default="'ESFO_NAME'" />
       <v:variable name="sf_direction" persist="1" type="varchar" default="'asc'" />
 
-      <v:variable name="v_mode" type="varchar" default="''"/>
+      <v:variable name="v_mode" type="varchar" param-name="mode" default="''"/>
 
       <v:variable name="v_id" param-name="id" persist="0" type="varchar" default="''"/>
       <v:variable name="v_return" param-name="return" persist="0" type="varchar" default="''"/>
@@ -245,9 +245,11 @@
       <v:template type="simple" enabled="--either(equ(self.v_mode, ''), 0, 1)">
         <v:before-data-bind>
           <![CDATA[
+            declare params any;
      		    declare exit handler for not found goto _end;
 
-            if (isnull (get_keyword('f_name', self.vc_page.vc_event.ve_params)))
+            params := self.vc_page.vc_event.ve_params;
+            if (isnull (get_keyword('f_name', params)) and (self.v_mode = 'update'))
             {
               declare data, keywords varchar;
 
@@ -267,20 +269,19 @@
               self.v_flag := ENEWS.WA.xml_get('flag', data);
               self.v_after := ENEWS.WA.xml_get('afterDate', data);
               self.v_before := ENEWS.WA.xml_get('beforeDate', data);
-        			self.v_mode := 'update';
     	    		return;
     		    }
 
   		    _end:
-            self.v_name := get_keyword('f_name', self.vc_page.vc_event.ve_params, '');
-            self.v_keywords := trim (get_keyword('f_keywords', self.vc_page.vc_event.ve_params, ''));
-            self.v_expression := trim (get_keyword('f_expression', self.vc_page.vc_event.ve_params, ''));
-            self.v_tags := trim (get_keyword('f_tags', self.vc_page.vc_event.ve_params, ''));
-            self.v_read := trim (get_keyword('f_read', self.vc_page.vc_event.ve_params, ''));
-            self.v_flag := trim (get_keyword('f_flag', self.vc_page.vc_event.ve_params, ''));
-            self.v_after := trim (get_keyword('f_after', self.vc_page.vc_event.ve_params, ''));
-            self.v_before := trim (get_keyword('f_before', self.vc_page.vc_event.ve_params, ''));
-      			self.v_mode := get_keyword('f_mode', self.vc_page.vc_event.ve_params, 'create');
+            self.v_name := get_keyword('f_name', params, '');
+            self.v_keywords := trim (get_keyword('f_keywords', params, ''));
+            self.v_expression := trim (get_keyword('f_expression', params, ''));
+            self.v_tags := trim (get_keyword('f_tags', params, ''));
+            self.v_read := trim (get_keyword('f_read', params, ''));
+            self.v_flag := trim (get_keyword('f_flag', params, ''));
+            self.v_after := trim (get_keyword('f_after', params, ''));
+            self.v_before := trim (get_keyword('f_before', params, ''));
+      			self.v_mode := get_keyword('f_mode', params, 'create');
       			if (self.v_return = 'yes')
       			{
               self.v_return := 'search.vspx?mode=advanced';
@@ -300,8 +301,8 @@
           ]]>
         </v:before-data-bind>
         <v:text name="f_mode" type="hidden" value="--self.v_mode"/>
-        <div class="new-form-header">
-          <v:label format="%s" value="--concat(initcap(self.v_mode), ' Smart folder')" />
+        <div class="form-header">
+          <?V concat(initcap(self.v_mode), ' Smart folder') ?>
         </div>
         <div class="new-form-body">
           <table cellspacing="0">
@@ -385,7 +386,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Save" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[

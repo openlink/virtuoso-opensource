@@ -237,6 +237,24 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
   declare id, deadl, cnt any;
 
  {
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'eNews2') do
+    {
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select EFD_DOMAIN_ID, EFD_FEED_ID, EFD_ACL
+             from ENEWS.WA.FEED_DOMAIN
+            where EFD_DOMAIN_ID = WAI_ID and EFD_ACL is not null) do
+      {
+        feedDomain_acl_insert (EFD_DOMAIN_ID, EFD_FEED_ID, EFD_ACL);
+      }
+    }
 
     id := -1;
     deadl := 3;
@@ -251,8 +269,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     l0:
 
   for select EFD_ID, EFD_DOMAIN_ID, EFD_FEED_ID, EFD_TITLE, EF_ID, EF_URI, EF_HOME_URI, EF_SOURCE_URI, EF_TITLE, EF_DESCRIPTION
-        from ENEWS..FEED_DOMAIN,
-             ENEWS..FEED,
+          from ENEWS.WA.FEED_DOMAIN,
+               ENEWS.WA.FEED,
              DB.DBA.WA_INSTANCE
          where EFD_ID > id
          and EFD_FEED_ID = EF_ID
@@ -399,6 +417,83 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_container'), m_iri);
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('container_of'), iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feedDomain_acl_insert (
+  inout domain_id integer,
+  inout feed_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..feed_iri (feed_id);
+  graph_iri := ENEWS.WA.acl_graph (domain_id);
+
+  SIOC..acl_insert (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feedDomain_acl_delete (
+  inout domain_id integer,
+  inout feed_id integer,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  iri := SIOC..feed_iri (feed_id);
+  graph_iri := ENEWS.WA.acl_graph (domain_id);
+
+  SIOC..acl_delete (graph_iri, iri, acl);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_I after insert on ENEWS.WA.FEED_DOMAIN order 100 referencing new as N
+{
+  if (coalesce (N.EFD_ACL, '') <> '')
+    feedDomain_acl_insert (N.EFD_DOMAIN_ID,
+                           N.EFD_FEED_ID,
+                           N.EFD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_U after update on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O, new as N
+{
+  if ((coalesce (O.EFD_ACL, '') <> '') and (coalesce (O.EFD_ACL, '') <> coalesce (N.EFD_ACL, '')))
+    feedDomain_acl_delete (O.EFD_DOMAIN_ID,
+                           O.EFD_FEED_ID,
+                           O.EFD_ACL);
+  if ((coalesce (N.EFD_ACL, '') <> '') and (coalesce (O.EFD_ACL, '') <> coalesce (N.EFD_ACL, '')))
+    feedDomain_acl_insert (N.EFD_DOMAIN_ID,
+                           N.EFD_FEED_ID,
+                           N.EFD_ACL);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger FEED_DOMAIN_SIOC_ACL_D before delete on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O
+{
+  if (coalesce (O.EFD_ACL, '') <> '')
+    feedDomain_acl_delete (O.EFD_DOMAIN_ID,
+                           O.EFD_FEED_ID,
+                           O.EFD_ACL);
 }
 ;
 

@@ -63,7 +63,7 @@
 
   <v:method name="linkClass" arglist="inout flag any">
     <![CDATA[
-      if (self.account_role in ('public', 'guest'))
+      if (self.account_rights <> 'W')
         return 'unread';
       return either( equ (flag, 1), 'read', 'unread');
     ]]>
@@ -139,7 +139,7 @@
       <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
-            declare read_flag, keep_flag varchar;
+            declare sql, flag, read_flag, keep_flag varchar;
             declare data, node_type, node_id any;
 
             node_id := ENEWS.WA.node_id (self.fNode);
@@ -152,7 +152,7 @@
 
             if ((node_type = 'c') and (self.domain_id < 0))
             {
-              control.ds_sql := 'select top 10
+              sql := 'select top 10
                                         EFI_ID,
                                         EFI_TITLE,
                                         ENEWS.WA.show_author(EFI_AUTHOR) EFI_AUTHOR,
@@ -165,12 +165,11 @@
                                             left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_DOMAIN_ID is null and EFID_ACCOUNT_ID is null
                                   where EF_ID = %d
                                     and coalesce(EFI_DELETE_FLAG, 0) <> 1';
-              control.ds_sql := sprintf (control.ds_sql, node_id);
-
+              sql := sprintf (sql, node_id);
             }
             else if ((node_type = 'c') and (self.domain_id > 0))
             {
-              control.ds_sql := 'select EFI_ID,
+              sql := 'select EFI_ID,
                                         EFI_TITLE,
                                         ENEWS.WA.show_author(EFI_AUTHOR) EFI_AUTHOR,
                                         EFI_PUBLISH_DATE,
@@ -182,24 +181,24 @@
                                             left join ENEWS.WA.FEED_ITEM_DATA on EFID_ITEM_ID = EFI_ID and EFID_ACCOUNT_ID = %d
                                   where EFD_ID = %d
                                     and coalesce(EFI_DELETE_FLAG, 0) <> 1';
-              control.ds_sql := sprintf (control.ds_sql, self.account_id, node_id);
+              sql := sprintf (sql, self.account_id, node_id);
             }
             else if (node_type = 'f')
             {
               if (node_id <> -1)
                 ENEWS.WA.xml_set('folder', data, node_id);
-              control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
+              sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, self.account_rights, data);
             }
             else if ((node_type = 's') and (node_id <> -1))
             {
               data := (select ESFO_DATA from ENEWS.WA.SFOLDER where ESFO_DOMAIN_ID = self.domain_id and ESFO_ID = node_id);
-              control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
+              sql := ENEWS.WA.sfolder_sql (self.domain_id, self.account_id, self.account_rights, data);
             }
             else if (node_type = 'b')
             {
               read_flag := 'EBPD_READ_FLAG';
               keep_flag := 'EBPD_KEEP_FLAG';
-              control.ds_sql := 'select EBP_ID EFI_ID,
+              sql := 'select EBP_ID EFI_ID,
                                         (EBP_META as BLOG..MWeblogPost).title EFI_TITLE,
                                         ENEWS.WA.show_author((EBP_META as BLOG..MWeblogPost).author) EFI_AUTHOR,
                                         coalesce((EBP_META as BLOG..MWeblogPost).dateCreated, now()) EFI_PUBLISH_DATE,
@@ -212,12 +211,12 @@
                                               left join ENEWS.WA.BLOG_POST_DATA on EBPD_POST_ID = EBP_ID
                                   where EW_DOMAIN_ID = %d
                                     and EB_ID = %d';
-              control.ds_sql := sprintf (control.ds_sql, self.domain_id, node_id);
+              sql := sprintf (sql, self.domain_id, node_id);
             }
             else if ((node_type = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode)))
             {
               ENEWS.WA.xml_set('tags', data, ENEWS.WA.node_suffix(self.fNode));
-              control.ds_sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data);
+              sql := ENEWS.WA.sfolder_sql (self.domain_id, self.account_id, self.account_rights, data);
 
             }
             else
@@ -225,21 +224,18 @@
               control.ds_sql := 'select * from ENEWS.WA.BLOG where 1=0';
               goto _end;
             }
-
-            declare flag varchar;
-
             flag := get_keyword('show', params, '');
             if (flag = 'r1')
-              control.ds_sql := concat(control.ds_sql, sprintf (' and coalesce(%s, 0) = 1', read_flag));
+              sql := concat(sql, sprintf (' and coalesce(%s, 0) = 1', read_flag));
             else if (flag = 'r0')
-              control.ds_sql := concat(control.ds_sql, sprintf (' and coalesce(%s, 0) = 0', read_flag));
+              sql := concat(sql, sprintf (' and coalesce(%s, 0) = 0', read_flag));
             else if (flag = 'f1')
-              control.ds_sql := concat(control.ds_sql, sprintf (' and coalesce(%s, 0) = 1', keep_flag));
+              sql := concat(sql, sprintf (' and coalesce(%s, 0) = 1', keep_flag));
             else if (flag = 'f0')
-              control.ds_sql := concat(control.ds_sql, sprintf (' and coalesce(%s, 0) = 0', keep_flag));
+              sql := concat(sql, sprintf (' and coalesce(%s, 0) = 0', keep_flag));
 
             self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
-            control.ds_sql := concat(control.ds_sql, ' order by ', self.n_order, ' ', self.n_direction, ', EFI_ID');
+            control.ds_sql := concat(sql, ' order by ', self.n_order, ' ', self.n_direction, ', EFI_ID');
           _end:;
           ]]>
         </v:before-data-bind>
@@ -257,9 +253,9 @@
             node_id := ENEWS.WA.node_id (self.fNode);
             node_type := ENEWS.WA.node_type (self.fNode);
 
-            mt := sprintf ('<b>Selected as</b> <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select>');
-            if (self.account_role in ('public', 'guest'))
               mt := '';
+            if (self.account_rights = 'W')
+              mt := sprintf ('<b>Selected as</b> <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select>');
 
             st := sprintf ('<b>View</b> <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option value="r1">read</option><option value="r0">unread</option><option value="f1">flagged</option><option value="f0">unflagged</option></select> <b>posts</b>');
             sv := get_keyword('show', self.vc_page.vc_event.ve_params, '');
@@ -366,7 +362,7 @@
           <table id="feed" style="clear: left; float: left; width: 100%;" cellspacing="0">
             <thead class="sortHeader">
               <tr>
-                <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+                <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
                   <th width="1%" class="checkbox">
                     <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_item')"/>
                   </th>
@@ -401,16 +397,16 @@
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
               <tr id="<?V ENEWS.WA.node_type(self.fNode) || '#' || cast (control.te_column_value('EFI_ID') as varchar) ?>">
-                <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+                <vm:if test="self.account_rights = 'W'">
                   <td align="center">
                     <?vsp
-                      http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%d" />', (control as vspx_row_template).te_column_value('EFI_ID')));
                     ?>
                   </td>
                   <td align="center">
                     <?vsp
-                      http (sprintf ('<span id="image_%d">', ((control.vc_parent) as vspx_row_template).te_column_value('EFI_ID')));
-                      if (((control.vc_parent) as vspx_row_template).te_column_value('EFID_KEEP_FLAG') = 1)
+                      http (sprintf ('<span id="image_%d">', (control as vspx_row_template).te_column_value('EFI_ID')));
+                      if ((control as vspx_row_template).te_column_value('EFID_KEEP_FLAG') = 1)
                       {
                         http ('<img src="image/flag.gif" border="0"/>');
                       } else {
@@ -419,7 +415,7 @@
                       http ('</span>');
                     ?>
                   </td>
-                </v:template>
+                </vm:if>
                 <td>
                   <img src="image/html.png" border="0" alt="folder" width="16"/>
                 </td>
@@ -438,13 +434,13 @@
                     http (sprintf ('<a id="feed_%d" href="%s" onclick="%s" title="%s" class="%s %s" %s>%s</a>', id, href, onclick, title, 'app', linkClass, appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
                   ?>
                 </td>
-                <v:template type="simple" enabled="--case when (ENEWS.WA.node_type (self.fNode) = 'f') then 1 else 0 end">
+                <vm:if test="ENEWS.WA.node_type (self.fNode) = 'f'">
                   <td>
-                    <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('EFD_TITLE')" format="%s"/>
+                    <?V ENEWS.WA.utf2wide ((control as vspx_row_template).te_column_value('EFD_TITLE')) ?>
                   </td>
-                </v:template>
+                </vm:if>
                 <td>
-                  <v:label value="--ENEWS.WA.rdfa_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_AUTHOR'), 'dc:creator')" format="%s"/>
+                  <?vsp http (ENEWS.WA.rdfa_value ((control as vspx_row_template).te_column_value('EFI_AUTHOR'), 'dc:creator')); ?>
                 </td>
                 <td align="right" nowrap="nowrap">
                   <i><v:label value="--ENEWS.WA.rdfa_value (ENEWS.WA.dt_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_PUBLISH_DATE')), 'dct:modified')" format="%s"/></i>
@@ -486,16 +482,13 @@
           coloriseTable('feed');
 
           var T = $('ds_navigation');
-          if (T)
-          {
+          if (T) {
             S = $('navigation')
-            if (S)
-            {
+            if (S) {
               var R = T.innerHTML;
               if (S.previousSibling)
-              {
                 R = ' | ' + R;
-              }
+
               S.innerHTML = R;
             }
             T.innerHTML = '';

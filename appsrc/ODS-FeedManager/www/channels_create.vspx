@@ -59,7 +59,8 @@
     _error:
 
       if (retValue = '')
-      if (is_empty_or_null(self.v_data)) {
+        if (is_empty_or_null(self.v_data))
+        {
         retValue := sprintf('Unknown %s.', msg);
       } else if (length(self.v_data) <= 1) {
         retValue := 'Feed(s) source is bad or empty.';
@@ -107,7 +108,8 @@
       declare retValue any;
 
       retValue := vector();
-      while (not is_empty_or_null(id)) {
+      while (not is_empty_or_null(id))
+      {
         name := (select ED_NAME from ENEWS.WA.DIRECTORY where ED_ID = id);
         retValue := vector_concat(vector(vector(concat(name, ' /'), id)), retValue);
         id := (select ED_PARENT_ID from ENEWS.WA.DIRECTORY where ED_ID = id);
@@ -178,11 +180,8 @@
         ]]>
       </v:before-data-bind>
 
-      <script language="JavaScript" type="text/javascript">
-        var URL = '<?V replace(http_path(), 'channels_create.vspx', 'channels_load.vsp') ?>';
-      </script>
       <v:template type="simple" enabled="-- case when (self.v_step = '0') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Select feed source
         </div>
         <div class="new-form-body">
@@ -207,7 +206,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Next0" value="Next" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -238,7 +237,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source <> 3)) then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           <v:label format="%s" value="--'Subscribe feed(s)'" />
         </div>
         <div class="new-form-body">
@@ -433,7 +432,7 @@
             </v:template>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Back1" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -525,7 +524,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when ((self.v_step = '1') and (self.v_source = 3)) then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Directory of known (popular) feeds
         </div>
         <input type="hidden" name="directory" value="-1"/>
@@ -631,7 +630,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" name="Back2" value="Back" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -701,7 +700,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step = '2') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Autodiscovered Feeds
         </div>
         <div class="new-form-body">
@@ -757,7 +756,7 @@
               http('</div>');
           ?>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button"/>
           <v:button action="simple" value="Check" xhtml_class="form-button">
             <v:on-post>
@@ -806,7 +805,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step = '3') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           Feed
         </div>
         <div class="new-form-body">
@@ -867,7 +866,7 @@
             </v:template>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" value="Subscribe" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -927,7 +926,7 @@
       </v:template>
 
       <v:template type="simple" enabled="-- case when (self.v_step like '3.%') then 1 else 0 end">
-        <div class="new-form-header">
+        <div class="form-header">
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>
         <div class="new-form-body">
@@ -1006,7 +1005,7 @@
               http('</div>');
           ?>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" xhtml_id="btn_Back" value="Back" xhtml_onclick="javascript:history.back();return false;" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -1055,7 +1054,7 @@
           }
         ?>
         </div>
-        <div class="new-form-header">
+        <div class="form-header">
           <?vsp http(self.v_data[0]); ?> Feeds
         </div>
         <div class="new-form-body">
@@ -1073,7 +1072,7 @@
             </tr>
           </table>
         </div>
-        <div class="new-form-footer">
+        <div class="form-footer">
           <v:button action="simple" xhtml_id="btn_Background" value="Background" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -1085,7 +1084,7 @@
         </div>
         <script type="text/javascript">
           <![CDATA[
-            initState();
+            OAT.MSG.attach(OAT, "PAGE_LOADED", initState);
           ]]>
         </script>
       </v:template>
