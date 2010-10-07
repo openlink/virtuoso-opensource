@@ -37,7 +37,7 @@
         ]]>
       </v:before-render>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
-      <div class="new-form-header">
+      <div class="form-header">
         Preferences
       </div>
       <div id="p" class="c1">
@@ -160,7 +160,7 @@
           </div>
         </div>
       </div>
-      <div class="new-form-footer">
+      <div class="form-footer">
         <v:button action="simple" value="Save" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[

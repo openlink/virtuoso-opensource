@@ -64,6 +64,25 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
   declare c_iri, creator_iri varchar;
 
   {
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
+                WAI_NAME,
+                WAI_ACL
+           from DB.DBA.WA_INSTANCE
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'Polls') do
+    {
+      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select P_DOMAIN_ID, P_ID, P_ACL
+             from POLLS.WA.POLL
+            where P_DOMAIN_ID = WAI_ID and P_ACL is not null) do
+      {
+        poll_acl_insert (P_DOMAIN_ID, P_ID, P_ACL);
+      }
+    }
+
     id := -1;
     deadl := 3;
     cnt := 0;

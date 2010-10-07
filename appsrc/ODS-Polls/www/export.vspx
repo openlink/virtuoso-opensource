@@ -86,7 +86,7 @@
 
         state := '00000';
         sqlParams := vector();
-        sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
+        sql := POLLS.WA.search_sql (self.domain_id, self.account_id, self.account_rights, 'R', data);
         exec(sql, state, msg, sqlParams, 0, meta, rows);
         if (state <> '00000')
           goto _error;
