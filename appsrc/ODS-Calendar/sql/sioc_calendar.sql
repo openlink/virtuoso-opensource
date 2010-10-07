@@ -109,15 +109,23 @@ create procedure fill_ods_calendar_sioc (
   declare c_iri, creator_iri, iri varchar;
 
   {
-    for (select WAI_TYPE_NAME,
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
            from DB.DBA.WA_INSTANCE
-          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'Calendar') do
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
       SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select E_DOMAIN_ID, E_ID, E_ACL
+             from CAL.WA.EVENTS
+            where E_DOMAIN_ID = WAI_ID and E_ACL is not null) do
+      {
+        event_acl_insert (E_DOMAIN_ID, E_ID, E_ACL);
+      }
     }
 
     id := -1;
@@ -190,8 +198,6 @@ create procedure fill_ods_calendar_sioc (
                     E_UPDATED,
                     E_TAGS,
                     E_NOTES);
-      event_acl_insert (E_DOMAIN_ID, E_ID, E_ACL);
-
 	    for (select EC_ID,
                   EC_DOMAIN_ID,
                   EC_EVENT_ID,
@@ -291,7 +297,6 @@ create procedure ods_calendar_services (
 {
   declare svc_iri varchar;
   
-  -- dbg_obj_print (now (), 'ods_calendar_services');
   svc_iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', get_cname(), get_base_path (), CAL.WA.domain_owner_name (wai_id), wai_name);
   ods_sioc_service (graph_iri, svc_iri, forum_iri, null, null, null, svc_iri, 'Atom');
 }

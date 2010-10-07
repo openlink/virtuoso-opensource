@@ -68,6 +68,20 @@ create procedure CAL.WA.acl_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := CAL.WA.forum_iri (domain_id);
+  graph_iri := CAL.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (CAL.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -105,12 +119,10 @@ _end:;
 create procedure CAL.WA.session_restore (
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role any;
+  declare domain_id, account_id, account_rights any;
 
   domain_id := CAL.WA.session_domain (params);
-  user_id := -1;
-  user_role := 'expire';
-  user_name := 'Expire session';
+  account_id := -1;
 
   for (select U.U_ID,
               U.U_NAME,
@@ -121,15 +133,13 @@ create procedure CAL.WA.session_restore (
           and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := CAL.WA.user_name(U_NAME, U_FULL_NAME);
+    account_id := U_ID;
   }
-  user_role := CAL.WA.access_role (domain_id, user_id);
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := CAL.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -197,70 +207,73 @@ create procedure CAL.WA.check_grants (
   in role_name varchar,
   in page_name varchar)
 {
-  return case when (role_name = 'expire') then 0 else 1 end;
+  return case when isnull (role_name) then 0 else 1 end;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.access_role (
+create procedure CAL.WA.access_rights (
   in domain_id integer,
-  in user_id integer)
+  in account_id integer)
 {
   declare rc varchar;
 
   if (domain_id <= 0)
-    return 'expire';
+    return null;
 
-  if (CAL.WA.check_admin (user_id))
-    return 'admin';
+  if (CAL.WA.check_admin (account_id))
+    return 'W';
 
   if (exists (select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                  and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                  and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
 
   if (exists (select 1
                 from SYS_USERS A,
                      WA_MEMBER B,
                      WA_INSTANCE C
-               where A.U_ID = user_id
+               where A.U_ID = account_id
                  and B.WAM_USER = A.U_ID
                  and B.WAM_MEMBER_TYPE = 2
                  and B.WAM_INST = C.WAI_NAME
                  and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := CAL.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
 
   if (exists (select 1
                 from SYS_USERS A,
                      WA_MEMBER B,
                      WA_INSTANCE C
-               where A.U_ID = user_id
+               where A.U_ID = account_id
                  and B.WAM_USER = A.U_ID
                  and B.WAM_INST = C.WAI_NAME
                  and C.WAI_ID = domain_id))
-    return 'reader';
-
-  rc := CAL.WA.acl_check (domain_id);
-  if (rc = 'R')
-    return 'public';
-
-  if (rc = 'W')
-    return 'author';
+    return 'R';
 
   if (exists (select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  return 'public';
+    return 'R';
 
-  return 'expire';
+  if (is_https_ctx () and exists (select 1 from CAL.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
+
+  return null;
 }
 ;
 
@@ -269,13 +282,10 @@ create procedure CAL.WA.access_role (
 create procedure CAL.WA.access_is_write (
   in access_role varchar)
 {
-  if (is_empty_or_null (access_role))
-    return 0;
-  if (access_role = 'guest')
-    return 0;
-  if (access_role = 'public')
-    return 0;
+  if (access_role = 'W')
   return 1;
+
+  return 0;
 }
 ;
 
@@ -4089,29 +4099,26 @@ create procedure CAL.WA.event_update_acl (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.event_permissions (
-  in id integer,
+create procedure CAL.WA.event_rights (
   in domain_id integer,
+  in id integer,
   in access_role varchar)
 {
   declare event_domain_id integer;
   declare retValue varchar;
 
+  retValue := '';
   event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
-  if (isnull (event_domain_id))
-    return '';
-  if (event_domain_id = domain_id)
+  if (not isnull (event_domain_id))
   {
-    if (CAL.WA.access_is_write (access_role))
+    if (event_domain_id = domain_id)
     {
-      retValue := 'W';
-    } else {
       retValue := CAL.WA.acl_check (domain_id, id);
-      if (retValue <> 'W')
-        retValue := 'R';
-    }
-    return retValue;
+      if (retValue = '')
+        retValue := access_role;
   }
+    else
+    {
   for (select a.WAI_IS_PUBLIC,
               b.*,
               c.G_ENABLE,
@@ -4127,17 +4134,21 @@ create procedure CAL.WA.event_permissions (
     if (isnull (S_GRANT_ID))
     {
       if (WAI_IS_PUBLIC = 1)
-        return 'R';
-    } else {
-      if (G_ENABLE)
+            retValue := 'R';
+        }
+        else if (G_ENABLE)
       {
         if (CAL.WA.access_is_write (access_role))
-        return G_MODE;
-        return 'R';
+          {
+            retValue := G_MODE;
+          } else {
+            retValue := access_role;
+          }
       }
     }
   }
-  return '';
+  }
+  return retValue;
 }
 ;
 
@@ -4600,7 +4611,8 @@ create procedure CAL.WA.events_forPeriod (
   in pDateStart date,
   in pDateEnd date,
   in pPrivacy integer := 0,
-  in pTaskMode integer := 0)
+  in pTaskMode integer := 0,
+  in pRights varchar := '')
 {
   declare dt_offset, dtTimezone integer;
   declare dtWeekStarts varchar;
@@ -4635,7 +4647,12 @@ create procedure CAL.WA.events_forPeriod (
             and a.E_PRIVACY >= b.CALENDAR_PRIVACY
             and a.E_KIND = 1
             and a.E_EVENT_START <  dtEnd
-            and a.E_EVENT_END   >  dtStart) do
+            and a.E_EVENT_END   > dtStart
+            and ((pRights <> '') or
+                 (is_https_ctx () and
+                  (SIOC..calendar_event_iri (pDomainID, a.E_ID) in (select x.iri from CAL.WA.acl_list (id)(iri varchar) x where x.id = pDomainID))
+                  )
+                )) do
     {
       result (E_ID,
               E_EVENT,
@@ -4667,7 +4684,12 @@ create procedure CAL.WA.events_forPeriod (
           and a.E_KIND = 0
           and (a.E_REPEAT = '' or a.E_REPEAT is null)
           and a.E_EVENT_START < dtEnd
-          and a.E_EVENT_END   > dtStart) do
+          and a.E_EVENT_END   > dtStart
+          and ((pRights <> '') or
+               (is_https_ctx () and
+                (SIOC..calendar_event_iri (pDomainID, a.E_ID) in (select x.iri from CAL.WA.acl_list (id)(iri varchar) x where x.id = pDomainID))
+               )
+              )) do
   {
     result (E_ID,
             E_EVENT,
@@ -4703,7 +4725,12 @@ create procedure CAL.WA.events_forPeriod (
           and a.E_KIND = 0
           and a.E_REPEAT <> ''
           and a.E_EVENT_START < dtEnd
-          and ((a.E_REPEAT_UNTIL is null) or (a.E_REPEAT_UNTIL >= dtStart))) do
+          and ((a.E_REPEAT_UNTIL is null) or (a.E_REPEAT_UNTIL >= dtStart))
+          and ((pRights <> '') or
+               (is_https_ctx () and
+                (SIOC..calendar_event_iri (pDomainID, a.E_ID) in (select x.iri from CAL.WA.acl_list (id)(iri varchar) x where x.id = pDomainID))
+               )
+              )) do
   {
       tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone);
       tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, dtTimezone);
@@ -5174,9 +5201,10 @@ create procedure CAL.WA.send_mail (
 --
 -------------------------------------------------------------------------------
 create procedure CAL.WA.search_sql (
-  inout domain_id integer,
-  inout privacy integer,
-  inout data varchar)
+  in domain_id integer,
+  in privacy integer,
+  in data varchar,
+  in account_rights varchar := '')
 {
   declare S, tmp, where2, delimiter2 varchar;
 
@@ -5206,6 +5234,17 @@ create procedure CAL.WA.search_sql (
        '   and a.E_DOMAIN_ID = b.CALENDAR_ID \n' ||
        '   and a.E_PRIVACY >= b.CALENDAR_PRIVACY <TEXT> <TAGS> <WHERE> \n';
 
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || ' and SIOC..calendar_event_iri (<DOMAIN_ID>, a.E_ID) in (select x.iri from CAL.WA.acl_list (id)(iri varchar) x where x.id = <DOMAIN_ID>)';
+    } else {
+      S := S || ' and 1=0';
+    }
+  }
+  if (not isnull (data))
+  {
   tmp := CAL.WA.xml_get ('keywords', data);
   if (not is_empty_or_null (tmp))
   {
@@ -5222,7 +5261,7 @@ create procedure CAL.WA.search_sql (
     tmp := CAL.WA.tags2search (tmp);
     S := replace (S, '<TAGS>', sprintf ('and contains (a.E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
   }
-
+  }
   S := replace (S, '<DOMAIN_ID>', cast (domain_id as varchar));
   S := replace (S, '<PRIVACY>', cast (privacy as varchar));;
   S := replace (S, '<TAGS>', '');

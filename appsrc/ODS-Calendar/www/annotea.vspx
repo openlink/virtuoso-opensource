@@ -53,7 +53,7 @@
     <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s" />', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s" />', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
-      <div class="new-form-header">
+      <div class="form-header">
         Free Text Annotation: '<?V CAL.WA.utf2wide ((select coalesce(E_SUBJECT, '~ no title ~') from CAL.WA.EVENTS where E_ID = self.v_oid)) ?>'
       </div>
 
@@ -240,7 +240,7 @@
               </div>
             </div>
           </div>
-          <div class="new-form-footer">
+          <div class="form-footer">
             <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
