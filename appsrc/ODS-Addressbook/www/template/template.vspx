@@ -91,53 +91,53 @@
           showTab('a', 7);
           showTab('s', 2, 0);
 
+          setFooter();
+
         	/* panelbar_content */
-          if ($('panelbar'))
-          {
-            var pcHeight = 497;
-            var pcSelect = "";
-            if ($("abSubAction"))
-              pcSelect = $v("abSubAction");
+          if ($('panelbar')) {
+            var dims = OAT.Dom.getWH('ab_main')
+            var pcHeight = dims[1];
+         	  $('panelbar').style.height = pcHeight + "px";
+            var pcSelect = $v("abSubAction");
             var pcIndex = -1;
             var pcSelectIndex = -1;
-          	var pb = new OAT.Panelbar("panelbar", 0, 500, true);
+          	var pb = new OAT.Panelbar("panelbar", 0, pcHeight+3, true);
           	var pc_1 = $('pc_1');
+          	var pc_2 = $('pc_2');
+          	var pc_3 = $('pc_3');
+            pcHeight -= 3;
             if (pc_1)
-            {
-          	  pb.addPanel("pb_1","pc_1");
           	  pcHeight -= 22;
+            if (pc_2)
+          	  pcHeight -= 22;
+            if (pc_3)
+          	  pcHeight -= 22;
+            if (pc_1) {
+          	  pc_1.style.height = pcHeight + "px";
+          	  pb.addPanel("pb_1","pc_1");
               pcIndex += 1;
               if (pcSelect == "gems")
                 pcSelectIndex = pcIndex;
           	}
-          	var pc_2 = $('pc_2');
-            if (pc_2)
-            {
+            if (pc_2) {
+          	  pc_2.style.height = pcHeight + "px";
             	pb.addPanel("pb_2","pc_2");
-          	  pcHeight -= 22;
               pcIndex += 1;
               if (pcSelect == "category")
                 pcSelectIndex = pcIndex;
           	}
-          	var pc_3 = $('pc_3');
-            if (pc_3)
-            {
+            if (pc_3) {
+          	  pc_3.style.height = pcHeight + "px";
             	pb.addPanel("pb_3","pc_3");
-          	  pcHeight -= 22;
               pcIndex += 1;
               if (pcSelect == "tags")
                 pcSelectIndex = pcIndex;
           	}
-            if (pc_1)
-          	  pc_1.style.height = pcHeight + "px";
-            if (pc_2)
-          	  pc_2.style.height = pcHeight + "px";
-            if (pc_3)
-          	  pc_3.style.height = pcHeight + "px";
             if (pcSelectIndex == -1)
               pcSelectIndex = pcIndex;
           	pb.go(pcSelectIndex);
           }
+          window.onresize = function() {setFooter();}
           OAT.MSG.send(OAT, 'PAGE_LOADED');
         }
         OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
@@ -150,10 +150,7 @@
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'" />
-        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'" />
-      <v:variable persist="0" name="owner_id" type="integer" default="null" />
-      <v:variable persist="0" name="ownerName" type="varchar" default="null" />
+      <v:variable persist="0" name="account_rights" type="varchar" default="''" />
         <v:variable persist="0" name="settings" type="any" />
       <v:on-init>
         <![CDATA[
@@ -165,11 +162,8 @@
 
           aSessInfo := AB.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
-          self.accountName := get_keyword('user_name', aSessInfo, '');
-          self.owner_id := AB.WA.domain_owner_id (self.domain_id);
-          self.ownerName := AB.WA.domain_owner_name (self.domain_id);
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
+          self.account_rights := get_keyword ('account_rights', aSessInfo);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), AB.WA.settings (self.domain_id));
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');

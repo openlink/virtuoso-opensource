@@ -79,7 +79,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
+        sql := AB.WA.search_sql (self.domain_id, self.account_id, 'R', data);
       exec(sql, state, msg, sqlParams, 0, meta, rows);
       if (state <> '00000')
         goto _error;

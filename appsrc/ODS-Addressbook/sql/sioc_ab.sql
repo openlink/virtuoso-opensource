@@ -117,15 +117,23 @@ create procedure fill_ods_addressbook_sioc2 (
   declare graph_iri, addressbook_iri, socialnetwork_iri, contact_iri, creator_iri, role_iri, iri varchar;
 
   {
-    for (select WAI_TYPE_NAME,
+    for (select WAI_ID,
+                WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
            from DB.DBA.WA_INSTANCE
-          where (_wai_name is null) or (WAI_NAME = _wai_name)) do
+          where ((_wai_name is null) or (WAI_NAME = _wai_name))
+            and WAI_TYPE_NAME = 'AddressBook') do
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
       SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      for (select P_DOMAIN_ID, P_ID, P_ACL
+             from AB.WA.PERSONS
+            where P_DOMAIN_ID = WAI_ID and P_ACL is not null) do
+      {
+        contact_acl_insert (P_DOMAIN_ID, P_ID, P_ACL);
+      }
     }
 
     id := -1;
@@ -264,8 +272,6 @@ create procedure fill_ods_addressbook_sioc2 (
 											P_TAGS,
 		                  P_FOAF,
 				  P_IRI);
-
-      contact_acl_insert (P_DOMAIN_ID, P_ID, P_ACL);
 
       cnt := cnt + 1;
 		   if (mod (cnt, 500) = 0)

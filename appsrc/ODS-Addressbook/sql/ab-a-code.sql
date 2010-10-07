@@ -68,6 +68,20 @@ create procedure AB.WA.acl_check (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.acl_list (
+  in domain_id integer)
+{
+  declare graph_iri, groups_iri, iri any;
+
+  iri := AB.WA.forum_iri (domain_id);
+  graph_iri := AB.WA.acl_graph (domain_id);
+  groups_iri := SIOC..acl_groups_graph (AB.WA.domain_owner_id (domain_id));
+  return SIOC..acl_list (graph_iri, groups_iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Session Functions
 --
 -------------------------------------------------------------------------------
@@ -105,12 +119,10 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare domain_id, user_id, user_name, user_role any;
+  declare domain_id, account_id, account_rights any;
 
   domain_id := AB.WA.session_domain (params);
-  user_id := -1;
-  user_role := 'expire';
-  user_name := 'Expire session';
+  account_id := -1;
 
   for (select U.U_ID,
               U.U_NAME,
@@ -121,15 +133,13 @@ create procedure AB.WA.session_restore(
           and S.VS_SID   = get_keyword ('sid', params, '')
           and S.VS_UID   = U.U_NAME) do
   {
-    user_id   := U_ID;
-    user_name := AB.WA.user_name(U_NAME, U_FULL_NAME);
+    account_id := U_ID;
   }
-  user_role := AB.WA.access_role (domain_id, user_id);
-
-  return vector('domain_id', domain_id,
-                'user_id',   user_id,
-                'user_name', user_name,
-                'user_role', user_role
+  account_rights := AB.WA.access_rights (domain_id, account_id);
+  return vector (
+                 'domain_id', domain_id,
+                 'account_id',   account_id,
+                 'account_rights', account_rights
                );
 }
 ;
@@ -208,79 +218,67 @@ create procedure AB.WA.check_grants (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.access_role (
+create procedure AB.WA.access_rights (
   in domain_id integer,
-  in user_id integer)
+  in account_id integer)
 {
   declare rc varchar;
 
   if (domain_id <= 0)
-    return 'expire';
+    return null;
 
-  if (AB.WA.check_admin (user_id))
-    return 'admin';
+  if (AB.WA.check_admin (account_id))
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'owner';
+    return 'W';
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_MEMBER_TYPE = 2
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'author';
+    return 'W';
+
+  if (is_https_ctx ())
+  {
+    rc := AB.WA.acl_check (domain_id);
+    if (rc <> '')
+      return rc;
+  }
 
   if (exists(select 1
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
-              where A.U_ID = user_id
+               where A.U_ID = account_id
                 and B.WAM_USER = A.U_ID
                 and B.WAM_INST = C.WAI_NAME
                 and C.WAI_ID = domain_id))
-    return 'reader';
-
-  rc := AB.WA.acl_check (domain_id);
-  if (rc = 'R')
-    return 'public';
-
-  if (rc = 'W')
-    return 'author';
+    return 'R';
 
   if (exists(select 1
                 from DB.DBA.WA_INSTANCE
                where WAI_ID = domain_id
                  and WAI_IS_PUBLIC = 1))
-  return 'public';
+    return 'R';
 
-  return 'expire';
-}
-;
+  if (is_https_ctx () and exists (select 1 from AB.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
+    return '';
 
--------------------------------------------------------------------------------
---
-create procedure AB.WA.access_is_write (
-  in access_role varchar)
-{
-  if (is_empty_or_null (access_role))
-    return 0;
-  if (access_role = 'guest')
-    return 0;
-  if (access_role = 'public')
-    return 0;
-  return 1;
+  return null;
 }
 ;
 
@@ -321,11 +319,11 @@ create procedure AB.WA.menu_tree ()
   S :=
 '<?xml version="1.0" ?>
 <menu_tree>
-  <node name="home" url="home.vspx"            id="1"   allowed="public guest reader author owner admin">
-    <node name="11" url="home.vspx"            id="11"  allowed="public guest reader author owner admin"/>
-    <node name="12" url="search.vspx"          id="12"  allowed="public guest reader author owner admin"/>
-    <node name="13" url="error.vspx"           id="13"  allowed="public guest reader author owner admin"/>
-    <node name="14" url="settings.vspx"        id="14"  allowed="reader author owner admin"/>
+  <node name="home" url="home.vspx"            id="1"   allowed="W R">
+    <node name="11" url="home.vspx"            id="11"  allowed="W R"/>
+    <node name="12" url="search.vspx"          id="12"  allowed="W R"/>
+    <node name="13" url="error.vspx"           id="13"  allowed="W R"/>
+    <node name="14" url="settings.vspx"        id="14"  allowed="W"/>
   </node>
 </menu_tree>';
 
@@ -3446,26 +3444,21 @@ create procedure AB.WA.contact_validation (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.contact_permissions (
-  in id integer,
+create procedure AB.WA.contact_rights (
   in domain_id integer,
+  in id integer,
   in access_role varchar)
 {
-  declare person_domain_id integer;
   declare retValue varchar;
 
-  person_domain_id := (select P_DOMAIN_ID from AB.WA.PERSONS where P_ID = id);
-  if (isnull (person_domain_id) or (person_domain_id <> domain_id))
-    return '';
-
-    if (AB.WA.access_is_write (access_role))
-      return 'W';
-
+  retValue := '';
+  if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id))
+  {
   retValue := AB.WA.acl_check (domain_id, id);
-  if (retValue <> '')
+    if (retValue = '')
+      retValue := access_role;
+  }
     return retValue;
-
-    return 'R';
   }
 ;
 
@@ -5247,8 +5240,9 @@ create procedure AB.WA.syncml2entry_internal (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.search_sql (
-  inout domain_id integer,
-  inout account_id integer,
+  in domain_id integer,
+  in account_id integer,
+  in account_rights varchar,
   inout data varchar,
   in maxRows varchar := '')
 {
@@ -5289,8 +5283,16 @@ create procedure AB.WA.search_sql (
          'where p.P_ID = g.G_PERSON_ID   \n' ||
          '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
   }
-
   S := 'select <MAX> * from (' || S || ') x';
+  if (account_rights = '')
+  {
+    if (is_https_ctx ())
+    {
+      S := S || ' where SIOC..addressbook_contact_iri (<DOMAIN_ID>, x.P_ID) in (select a.iri from AB.WA.acl_list (id)(iri varchar) a where a.id = <DOMAIN_ID>)';
+    } else {
+      S := S || ' where 1=0';
+    }
+  }
 
   T := '';
   tmp := AB.WA.xml_get('keywords', data);

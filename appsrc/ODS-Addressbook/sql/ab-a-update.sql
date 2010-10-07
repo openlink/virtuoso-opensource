@@ -105,7 +105,9 @@ create procedure AB.WA.tmp_update ()
     return;
   registry_set ('ab_acl_update', '1');
 
-  update AB.WA.PERSONS set P_ACL = null;
+  set triggers off;
+  update AB.WA.PERSONS set P_ACL = null where P_ACL is not null;
+  set triggers on;
 }
 ;
 

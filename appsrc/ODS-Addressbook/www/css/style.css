@@ -1049,6 +1049,7 @@ td.calendar_selected {
 .panelbar
 {
   width: 100%;
+  height: 100%;
 	border: 1px solid #7f94a5;
 }
 
@@ -1066,21 +1067,18 @@ div.panelbar_option:hover
 	background-color: #bce;
 }
 
-.panelbar_option_upper {
+.panelbar_option_upper
+{
 	border-bottom: 1px solid #7f94a5;
 }
 
-.panelbar_option_lower {
+.panelbar_option_lower
+{
 	border-top: 1px solid #7f94a5;
 }
 
-.panelbar_option_selected
+.panelbar_content
 {
-	font-weight: bold;
-}
-
-.panelbar_content {
-	height: 430px;
 	background-color: #fff;
   overflow: auto;
 }
