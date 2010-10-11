@@ -1893,7 +1893,7 @@ txa_open (char *file_name)
   int fd;
   file_set_rw (file_name);
   fd = fd_open (file_name, OPEN_FLAGS);
-  if (fd > 0)
+  if (fd >= 0)
     {
       txi.txi_trx_file = box_string (file_name);
       txi.txi_fd = fd;
@@ -1912,7 +1912,7 @@ txa_write ()
   dk_free_tree ((box_t) txi.txi_info);
   txi.txi_info = txa_serialize (txi.txi_parsed_info);
   fd = fd_open (txi.txi_trx_file, OPEN_FLAGS);
-  if (fd > 0)
+  if (fd >= 0)
     {
       FTRUNCATE (fd, 0);
       txa_write_info (fd, txi.txi_info);
