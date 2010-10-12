@@ -4037,6 +4037,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
   else if (SSG_VALMODE_NUM == needed)
     {
       if (SSG_VALMODE_SQLVAL	== native)	return " (^{tree}^)";
+      if (SSG_VALMODE_LONG	== native)	return " (^{tree}^)";
       return ((native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql) ? " ^{tree}^" : native->qmfLongOfShortTmpl);
     }
   spar_internal_error (NULL, "ssg_tmpl_X_of_Y(): bad mode needed");
