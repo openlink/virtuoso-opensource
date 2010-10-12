@@ -38,13 +38,111 @@
 #ifdef OLD_TIDY
 #include "html.h"
 #else
-#include "tidy.h"
+#include <tidy/tidy.h>
+#include <tidy/buffio.h>
 #endif
 #ifndef WIN32
 #undef __USE_MISC
 #endif
 
 static dk_mutex_t *tidy_mtx;
+
+#ifndef OLD_TIDY
+static void *
+tidy_malloc (size_t len)
+{
+  return dk_alloc_box (len, DV_CUSTOM);
+}
+
+static void *
+tidy_realloc (void * buf, size_t len)
+{
+  int buf_size = IS_BOX_POINTER (buf) ? box_length (buf) : 0;
+  int copy_size = buf_size > len ? len : buf_size;
+  void *new = dk_alloc_box (len, DV_CUSTOM);
+  if (buf && copy_size)
+    memcpy (new, buf, copy_size);
+  if (buf)
+    dk_free_box (buf);
+  return new;
+}
+
+static void
+tidy_free (void * buf)
+{
+  dk_free_box ((caddr_t) buf);
+}
+
+static void
+tidy_panic (const char * err)
+{
+  log_error ("Tidy panic: %s", err);
+  GPF_T;
+}
+
+#define READING_NAME 1
+#define READING_VALUE 2
+
+static int
+tidy_parse_config (TidyDoc doc, caddr_t config_str)
+{
+  dk_session_t * ses;
+  volatile int rc = -1, i = 0;
+  char name[64] = {0}, value[8192] = {0}, stat = READING_NAME;
+
+  ses = strses_allocate ();
+  ses->dks_in_buffer = config_str;
+  ses->dks_in_fill = box_length (config_str) - 1;
+
+  CATCH_READ_FAIL (ses)
+    {
+      char c;
+      for (;;)
+	{
+	  c = session_buffered_read_char (ses);
+	  if (READING_VALUE == stat && (c == '\r' || c == '\n'))
+	    {
+	      value[i] = 0;
+	      rc = tidyOptParseValue (doc, name, value);
+	      i = 0;
+	      stat = READING_NAME;
+	      continue;
+	    }
+	  if (isspace (c))
+	    continue;
+	  if (READING_NAME == stat && c == ':') /* delimiter */
+	    {
+	      name[i] = 0;
+	      i = 0;
+	      stat = READING_VALUE;
+	      continue;
+	    }
+	  if (READING_NAME == stat)
+	    name[i++] = c;
+	  if (READING_VALUE == stat)
+	    value[i++] = c;
+	  /* check for overflow */
+	  if (READING_NAME == stat && i >= sizeof (name))
+	    break;
+	  if (READING_VALUE == stat && i >= sizeof (value))
+	    break;
+	}
+    }
+  FAILED
+    {
+      if (READING_VALUE == stat)
+	{
+	  value[i] = 0;
+	  rc = tidyOptParseValue (doc, name, value);
+	}
+    }
+  END_READ_FAIL (ses);
+
+  ses->dks_in_buffer = NULL;
+  dk_free_box (ses);
+  return 0;
+}
+#endif
 
 caddr_t
 bif_tidy_html (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -71,30 +169,32 @@ bif_tidy_html (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("42000", "HT076", "HTML Tidy failed, try tidy_list_errors(...) to get more information");
     }
 #else
-  TidyBuffer output = {0};
-  TidyBuffer errbuf = {0};
-  tidyDoc doc = tidyCreate();
+  TidyBuffer output;
+  TidyBuffer errbuf;
+  TidyDoc doc = tidyCreate();
+  tidyBufInit (&output);
+  tidyBufInit (&errbuf);
   tidySetErrorBuffer (doc, &errbuf);
-  res = tidyLoadConfig (doc, config_input);
-  if (res >= 0)
-    res = tidyParseString (doc, input);
+  /* cannot load cfg file here, must parse the config string */
+  tidy_parse_config (doc, config_input);
+  res = tidyParseString (doc, html_input);
   if (res >= 0)
     res = tidyCleanAndRepair (doc);
   if (res >= 0)
     res = tidyRunDiagnostics (doc);
   if (res > 1)
-    res = ( tidyOptSetBool(tdoc, TidyForceOutput, yes) ? res : -1 );
+    res = (tidyOptSetBool(doc, TidyForceOutput, yes) ? res : -1);
   if (res >= 0)
     res = tidySaveBuffer(doc, &output);
   if (res >= 0)
-  html_output = box_dv_short_string (output.bp);
+    html_output = box_dv_short_string ((char *) output.bp);
   tidyBufFree( &output );
   tidyBufFree( &errbuf );
-  tidyRelease( tdoc );
+  tidyRelease (doc);
   if (res < 0)
     {
       dk_free_box (html_output);
-      sqlr_error ("XTID2", "HTML Tidy failed with a severe error (%d), try tidy_list_errors(...) to get more information", res);
+      sqlr_new_error ("42000", "HT076", "HTML Tidy failed, try tidy_list_errors(...) to get more information");
     }
 #endif
   return html_output;
@@ -105,7 +205,7 @@ bif_tidy_list_errors (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t html_input = bif_string_arg (qst, args, 0, "tidy_list_errors");
   caddr_t config_input = bif_string_arg (qst, args, 1, "tidy_list_errors");
-  caddr_t errlist;
+  caddr_t errlist = NULL;
 #ifdef OLD_TIDY
   tidy_io_t tidy_errout;
   tidy_errout.tio_data.lm_memblock = NULL;
@@ -124,27 +224,26 @@ bif_tidy_list_errors (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free (tidy_errout.tio_data.lm_memblock, -1);
     }
 #else
-  TidyBuffer errbuf = {0};
-  tidyDoc doc = tidyCreate();
+  int res = -1;
+  TidyBuffer errbuf;
+  TidyDoc doc = tidyCreate();
+  tidyBufInit (&errbuf);
   tidySetErrorBuffer (doc, &errbuf);
-  res = tidyLoadConfig (doc, config_input);
-  if (res >= 0)
-    res = tidyParseString (doc, input);
+  /* cannot load cfg file here, must parse the config string */
+   tidy_parse_config (doc, config_input);
+   res = tidyParseString (doc, html_input);
   if (res >= 0)
     res = tidyCleanAndRepair (doc);
   if (res >= 0)
     res = tidyRunDiagnostics (doc);
   if (res > 1)
-    res = ( tidyOptSetBool(tdoc, TidyForceOutput, yes) ? res : -1 );
+    res = (tidyOptSetBool(doc, TidyForceOutput, yes) ? res : -1);
   if (res >= 0)
-  errlist = box_dv_short_string (errbuf.bp);
+    errlist = box_dv_short_string ((char *) errbuf.bp);
+  else
+    errlist = box_dv_short_string("");
   tidyBufFree( &errbuf );
-  tidyRelease( tdoc );
-  if (res < 0)
-    {
-      dk_free_box (html_output);
-      sqlr_error ("XTID2", "HTML Tidy failed with a severe error (%d), try tidy_list_errors(...) to get more information", res);
-    }
+  tidyRelease (doc);
 #endif
   return errlist;
 }
@@ -154,5 +253,11 @@ int bif_tidy_init(void)
   tidy_mtx = mutex_allocate ();
   bif_define ("tidy_html", bif_tidy_html);
   bif_define ("tidy_list_errors", bif_tidy_list_errors);
+#ifndef OLD_TIDY
+  tidySetMallocCall (tidy_malloc);
+  tidySetReallocCall (tidy_realloc);
+  tidySetFreeCall (tidy_free);
+  tidySetPanicCall (tidy_panic);
+#endif
   return 0;
 }
