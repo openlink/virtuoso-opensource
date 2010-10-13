@@ -4699,8 +4699,6 @@ ODS.Nav = function(navOptions) {
 			} else
 		OAT.Dom.hide (links[3].parentNode);
 
-			var winType = OAT.Browser.isIE ? OAT.WinData.TYPE_RECT
-					: OAT.WinData.TYPE_ROUND
 	    var obj = {
 		title         : connObj.fullName,
 		content       : connContent,
@@ -4708,10 +4706,8 @@ ODS.Nav = function(navOptions) {
 		result_control: false,
 		activation    : "click",
 		enabledButtons: "c",
-		visibleButtons: "c",
-		type          :winType
+				visibleButtons : "c"
 	    };
-
 	    OAT.Anchor.assign (elm, obj);
 	}
 

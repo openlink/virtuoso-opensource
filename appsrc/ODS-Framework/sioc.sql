@@ -3929,6 +3929,53 @@ create procedure SIOC..acl_list (
 }
 ;
 
+create procedure SIOC..acl_ping (
+  in instance_id integer,
+  in iri varchar,
+  in oldAcl any,
+  in newAcl any)
+{
+  declare N, M, user_id integer;
+  declare graph, newAclArray, oldAclArray any;
+
+  user_id := (select WAM_USER
+                from DB.DBA.WA_MEMBER,
+                     DB.DBA.WA_INSTANCE
+               where WAM_MEMBER_TYPE = 1
+                 and WAM_INST = WAI_NAME
+                 and WAI_ID = instance_id);
+
+  if (not DB.DBA.WA_USER_SPB_ENABLE (user_id))
+    return;
+
+  if (isnull (newAclArray))
+    return;
+
+  graph := SIOC..get_graph ();
+  newAclArray := deserialize (newAcl);
+  oldAclArray := deserialize (oldAcl);
+  for (N := 0; N < length (newAclArray); N := N + 1)
+  {
+    if (newAclArray[N][2] = 'person')
+    {
+      if (not isnull (oldAclArray))
+      {
+        for (M := 0; M < length (oldAclArray); M := M + 1)
+        {
+          if ((oldAclArray[M][2] = 'person') and (oldAclArray[M][1] = newAclArray[N][1]))
+          {
+            goto _skip;
+          }
+        }
+      }
+      if (newAclArray[N][1] not like graph || '%')
+        SEMPING.DBA.CLI_PING (iri, newAclArray[N][1]);
+    }
+  _skip:;
+  }
+}
+;
+
 create procedure SIOC..wa_instance_acl_insert (
   inout type_name varchar,
   inout name varchar,

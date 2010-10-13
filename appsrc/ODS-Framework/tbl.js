@@ -308,7 +308,7 @@ TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
   img.className = "pointer";
     var F = (fldOptions.form)? '&form='+fldOptions.form: '';
     var M = (fldOptions.formMode)? '&mode='+fldOptions.formMode: '';
-    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=m&params='+fldName+':s1;'+F+M)};
+    img.onclick = function (){TBL.windowShow('/ods/users_select.vspx?dst=mc&params='+fldName+':s1;'+F+M)};
 
   td.appendChild(img);
   }

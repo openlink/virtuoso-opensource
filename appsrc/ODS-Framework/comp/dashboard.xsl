@@ -579,7 +579,7 @@
   </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook' or insttype_from_xsl='Calendar' or insttype_from_xsl='Discussions')
+            if (insttype_from_xsl in ('WEBLOG2', 'eNews2', 'oWiki', 'Bookmark', 'oGallery', 'Polls', 'AddressBook', 'Calendar', 'Discussions'))
             {
        ?>
 
@@ -599,7 +599,7 @@
             }
        ?>
         <td nowrap="nowrap">
-          <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;"><?V coalesce (title, '*no title*') ?></a>
+          <a href="&lt;?vsp http (wa_utf8_to_wide (wa_expand_url (url, self.login_pars))); ?&gt;"><?V coalesce (title, '*no title*') ?></a>
         </td>
         <td nowrap="nowrap">
         <?vsp
@@ -2594,7 +2594,7 @@
 
     </xsl:processing-instruction>
     <li>
-      <a href="&lt;?V wa_expand_url (url, self.login_pars) ?&gt;">
+      <a href="&lt;?vsp http (wa_utf8_to_wide (wa_expand_url (url, self.login_pars))); ?&gt;">
         <?V substring (coalesce (title, '*no title*'), 1, 55) ?></a>
 <!--
                  <a href="&lt;?V aurl ?&gt;" onclick="&lt;?V clk ?&gt;">&lt;?V wa_utf8_to_wide (coalesce (author, '~unknown~')) ?></a>

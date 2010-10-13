@@ -3294,6 +3294,7 @@ wa_exec_no_error_log(
     WAUI_FACEBOOK_ID integer,
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
+    WAUI_SPB_ENABLE	int default 0,
     WAUI_NICK		varchar,
     WAUI_BICQ VARCHAR,                  -- 50
     WAUI_BSKYPE VARCHAR,                -- 51
@@ -3373,11 +3374,15 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INTEGER');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SPB_ENABLE', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_NICK', 'varchar');
 
 update DB.DBA.WA_USER_INFO set WAUI_IS_ORG = 0 where WAUI_IS_ORG is null;
 alter table DB.DBA.WA_USER_INFO modify column WAUI_APP_ENABLE integer default 0;
 update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null;
+
+alter table DB.DBA.WA_USER_INFO modify column WAUI_SPB_ENABLE integer default 0;
+update DB.DBA.WA_USER_INFO set WAUI_SPB_ENABLE = 0 where WAUI_SPB_ENABLE is null;
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 wa_exec_no_error('create index WA_USER_INFO_NICK on DB.DBA.WA_USER_INFO (WAUI_NICK)');
@@ -4189,6 +4194,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_APP_ENABLE')
     UPDATE WA_USER_INFO SET WAUI_APP_ENABLE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_SPB_ENABLE')
+    UPDATE WA_USER_INFO SET WAUI_SPB_ENABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT_LOGIN')
     UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT')
@@ -4491,6 +4498,12 @@ create procedure WA_USER_INTERESTS (in txt any)
 create procedure WA_USER_APP_ENABLE (in user_id integer)
 {
   return coalesce ((select WAUI_APP_ENABLE from WA_USER_INFO WHERE WAUI_U_ID = user_id), 0);
+}
+;
+
+create procedure WA_USER_SPB_ENABLE (in user_id integer)
+{
+  return coalesce ((select WAUI_SPB_ENABLE from WA_USER_INFO WHERE WAUI_U_ID = user_id), 0);
 }
 ;
 

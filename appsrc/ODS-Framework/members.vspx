@@ -515,7 +515,7 @@
                 <vm:variable name="str_alreadymembers" type="varchar" default="''" persist="0" />
                 <div style="padding: 0 0 0.5em 0;">
                   <v:text name="member_name" type="hidden" value="--''" format="%s"/>
-                  <input type="button" value="Add member(s) to invite list" onClick="javascript:windowShow('users_select.vspx?mode=u&dst=m&src=s&params=member_name:s1;', 600)" class="button"/>
+                      <input type="button" value="Add member(s) to invite list" onClick="javascript:windowShow('users_select.vspx?mode=u&dst=mc&src=s&params=member_name:s1;', 600)" class="button"/>
                 </div>
                 <?vsp
                   if(length(self.d_added)>0)
