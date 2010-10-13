@@ -250,7 +250,7 @@ create procedure ENEWS.WA.access_rights (
   if (domain_id = -2)
     return null;
 
-  if (BMK.WA.check_admin (account_id))
+  if (ENEWS.WA.check_admin (account_id))
     return 'W';
 
   if (exists(select 1

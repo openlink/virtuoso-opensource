@@ -397,7 +397,7 @@ ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED_DOMAIN add EFD_FAVOURITE integer', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_FAVOURITE'
 );
 
-AB.WA.exec_no_error (
+ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED_DOMAIN add EFD_ACL long varchar', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_ACL'
 );
 

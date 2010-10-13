@@ -95,7 +95,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'channels.vspx');
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels.vspx'));
         ]]>
       </v:before-render>
       <v:template name="t1" type="simple" enabled="--either(equ(self.v_mode, ''), 1, 0)">
@@ -103,7 +103,7 @@
           <v:button name="btn_subscribe" action="simple" value="subscribe" xhtml_class="button2" xhtml_alt="Subscribe feed">
               <v:on-post>
                 <![CDATA[
-                self.vc_redirect (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx'));
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'channels_create.vspx')));
                 ]]>
               </v:on-post>
             </v:button>

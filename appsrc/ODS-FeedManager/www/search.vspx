@@ -735,18 +735,15 @@
           <v:button name="btn_save" action="simple" value="Save" enabled="--case when ((self.v_type = 'text') and (self.account_rights = 'W')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare tmp varchar;
-
                 self.update_params();
-                tmp := ENEWS.WA.page_url (self.domain_id, 'sfolders.vspx') || '?mode=create&return=yes' || self.do_url('save', 'f_');;
-                self.vc_redirect(tmp);
+                self.vc_redirect(ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'sfolders.vspx') || '?mode=create&return=yes' || self.do_url('save', 'f_')));
               ]]>
             </v:on-post>
           </v:button>
           <v:button name="btn_cancel" action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
+                self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
               ]]>
             </v:on-post>
           </v:button>
@@ -776,7 +773,7 @@
                 <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
-                      self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
+                      self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
                     ]]>
                   </v:on-post>
                 </v:button>

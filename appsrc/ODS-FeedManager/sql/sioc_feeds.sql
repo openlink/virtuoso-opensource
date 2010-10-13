@@ -465,24 +465,37 @@ create procedure feedDomain_acl_delete (
 create trigger FEED_DOMAIN_SIOC_ACL_I after insert on ENEWS.WA.FEED_DOMAIN order 100 referencing new as N
 {
   if (coalesce (N.EFD_ACL, '') <> '')
+  {
     feedDomain_acl_insert (N.EFD_DOMAIN_ID,
                            N.EFD_FEED_ID,
                            N.EFD_ACL);
+
+    SIOC..acl_ping (N.EFD_DOMAIN_ID,
+                    SIOC..feed_iri (N.EFD_FEED_ID),
+                    null,
+                    N.EFD_ACL);
+  }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create trigger FEED_DOMAIN_SIOC_ACL_U after update on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O, new as N
+create trigger FEED_DOMAIN_SIOC_ACL_U after update (EFD_ACL) on ENEWS.WA.FEED_DOMAIN order 100 referencing old as O, new as N
 {
-  if ((coalesce (O.EFD_ACL, '') <> '') and (coalesce (O.EFD_ACL, '') <> coalesce (N.EFD_ACL, '')))
+  if (coalesce (O.EFD_ACL, '') <> '')
     feedDomain_acl_delete (O.EFD_DOMAIN_ID,
                            O.EFD_FEED_ID,
                            O.EFD_ACL);
-  if ((coalesce (N.EFD_ACL, '') <> '') and (coalesce (O.EFD_ACL, '') <> coalesce (N.EFD_ACL, '')))
+
+  if (coalesce (N.EFD_ACL, '') <> '')
     feedDomain_acl_insert (N.EFD_DOMAIN_ID,
                            N.EFD_FEED_ID,
                            N.EFD_ACL);
+
+  SIOC..acl_ping (N.EFD_DOMAIN_ID,
+                  SIOC..feed_iri (N.EFD_FEED_ID),
+                  O.EFD_ACL,
+                  N.EFD_ACL);
 }
 ;
 
