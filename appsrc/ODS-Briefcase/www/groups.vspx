@@ -38,7 +38,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'groups.vspx');
+          self.F1.uf_action := ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'groups.vspx'));
         ]]>
       </v:before-render>
       <v:template type="simple" enabled="-- case when self.v_mode = 'browse' then 1 else 0 end">
@@ -241,7 +241,7 @@
                           for (N := 0; N < length (self.v_members); N := N + 1)
                           {
                             if (length (self.v_members[N]))
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 1, value: "%s"}});});', self.v_members[N]));
+                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', self.v_members[N]));
                   }
                 ?>
                 		    </script>
@@ -250,7 +250,7 @@
                     </table>
                   </td>
                   <td valign="top" nowrap="nowrap">
-                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 1}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
+                    <span class="button3 pointer" onclick="javascript: TBL.createRow('x', null, {fld_1: {mode: 1, form: 'F1'}});"><img src="image/add_16.png" border="0" alt="Add Security" title="Add Security" /> Add</span>
                   </td>
                 </tr>
               </table>

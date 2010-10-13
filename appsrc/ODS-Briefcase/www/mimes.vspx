@@ -56,7 +56,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'mimes.vspx');
+          self.F1.uf_action := ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'mimes.vspx'));
         ]]>
       </v:before-render>
         <v:before-data-bind>

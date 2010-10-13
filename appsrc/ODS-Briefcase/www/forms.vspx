@@ -37,7 +37,7 @@
       declare i integer;
       declare item any;
 
-      http ('<div id="dav_list" style="height: 200px;">');
+      http ('<div id="dav_list" style="max-height: 200px; min-height: 200px;">');
       http ('  <table class="OD_grid colorise no-border" cellspacing="0">');
       http ('    <thead class="sortHeader nocolor">');
       http ('      <tr>');
@@ -441,9 +441,9 @@
                           ]]>
                         </v:after-data-bind>
                       </v:text>
-                      <v:template name="tf5" type="simple" enabled="-- equ(ODRIVE.WA.check_admin (self.account_id), 1)">
-                        <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=prop_owner:s1;')" class="button" />
-                      </v:template>
+                      <vm:if test="ODRIVE.WA.check_admin (self.account_id)">
+                        <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=u&amp;params=prop_owner:s1;')" class="button" />
+                      </vm:if>
                     </td>
                   </tr>
                   <tr>
@@ -452,7 +452,7 @@
                     </th>
                     <td>
                       <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
-                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=g&amp;params=prop_group:s1;')" class="button" />
                     </td>
                   </tr>
                   <tr>
@@ -769,6 +769,11 @@
                   <td>
                     <input name="f_folder" id="f_folder" value="<?V self.v_source ?>" class="field-short" />
                     <input type="button" class="button" onclick="javascript: ODRIVE.davFolderSelect ('f_folder');" value="Select" />
+              		  <![CDATA[
+              		    <script type="text/javascript">
+                        OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+              		    </script>
+              		  ]]>
                   </td>
                 </v:template>
                 <v:template type="simple" condition="(self.v_step = 'overwrite')">
