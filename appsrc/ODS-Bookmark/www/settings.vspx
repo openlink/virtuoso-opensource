@@ -77,7 +77,7 @@
                 }
                 else if (action = 'back')
                 {
-                  self.vc_redirect (BMK.WA.page_url (self.domain_id));
+                  self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
                 }
                 self.vc_data_bind(e);
                ]]>
@@ -553,8 +553,26 @@
                 </v:template>
                 <v:template name="ds_exchanges_repeat" type="repeat">
 
-                  <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                  <v:template name="ds_exchanges_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                     <table>
+                      <tr align="center">
+                        <td colspan="5">
+                          <?vsp
+                            if (self.bSubAction = 'publishBrowse')
+                            {
+                              http ('No publications');
+                            }
+                            else if (self.bSubAction = 'subscribeBrowse')
+                            {
+                              http ('No subscriptions');
+                            }
+                            else
+                            {
+                              http ('No SyncMLs');
+                            }
+                          ?>
+                        </td>
+                      </tr>
                     </table>
                   </v:template>
 
@@ -798,13 +816,12 @@
                     </th>
                     <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
-                      <v:button action="browse" value="Browse..." name="exc_options_name_button" xhtml_id="exc_options_name_button">
-                        <v:after-data-bind>
+                      <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" />
                           <![CDATA[
-                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
+                		    <script type="text/javascript">
+                          OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                		    </script>
                           ]]>
-                        </v:after-data-bind>
-                      </v:button>
                     </td>
                   </tr>
                   <script type="text/javascript">

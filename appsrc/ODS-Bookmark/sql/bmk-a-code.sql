@@ -3749,7 +3749,7 @@ create procedure BMK.WA.dashboard_get(
     http ('<bookmark>', aStream);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (_time)), aStream);
     http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
-    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..bmk_post_iri (domain_id, _id)), aStream);
+    http (sprintf ('<link>%V</link>', SIOC..bmk_post_iri (domain_id, _id)), aStream);
     http (sprintf ('<from><![CDATA[%s]]></from>', BMK.WA.account_fullName (account_id)), aStream);
     http (sprintf ('<uid>%s</uid>', BMK.WA.account_name (account_id)), aStream);
     http ('</bookmark>', aStream);

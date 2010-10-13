@@ -28,26 +28,34 @@
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
-
-        var featureList=["combolist", "dav"];
-      </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
+          OAT.Preferences.showAjax = false;
+
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V BMK.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V BMK.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V BMK.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+
+        	/* load stylesheets */
+        	OAT.Style.include("grid.css");
+        	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["combolist"];
+        OAT.Loader.load(featureList);
+      </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="js/bookmark.js"></script>
       <script type="text/javascript">
         function myInit()
         {
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-          OAT.Preferences.showAjax = false;
-
-        	/* load stylesheets */
-        	OAT.Style.include("grid.css");
-        	OAT.Style.include("webdav.css");
-
           // init tabs
           showTab('a', 2, 0);
         }
@@ -75,7 +83,7 @@
 
           aSessInfo := BMK.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
           self.account_rights := get_keyword ('account_rights', aSessInfo, '');
           self.settings := BMK.WA.settings (self.domain_id);
         ]]>

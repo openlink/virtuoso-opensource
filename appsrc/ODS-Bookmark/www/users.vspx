@@ -28,13 +28,18 @@
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
 
-      if (self.v_order = columnName and self.v_direction = 'desc') {
+      if (self.v_order = columnName and self.v_direction = 'desc')
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
-      } else if (self.v_order = columnName and self.v_direction = 'asc') {
+      }
+      else if (self.v_order = columnName and self.v_direction = 'asc')
+      {
         directionStr := 'Descending';
         imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
-      } else {
+      }
+      else
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;&nbsp;';
       }
@@ -45,36 +50,29 @@
 
   <v:method name="sortChange" arglist="in columnName varchar">
     <![CDATA[
-      if (columnName = '')
-        return;
+      if (columnName <> '')
+      {
       self.ds.vc_reset();
-      if (self.v_order = columnName) {
+        if (self.v_order = columnName)
+        {
         self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
       } else {
         self.v_direction := 'asc';
-      }
       self.v_order := columnName;
+        }
+      }
     ]]>
   </v:method>
 
   <v:method name="isMultiple" arglist="in dst any">
     <![CDATA[
-      declare pos integer;
-
-      pos := strstr(self.v_dst, 'm');
-      if (not isnull(pos))
-        return 1;
-      return 0;
+      return case when isnull (strstr (self.v_dst, 'm')) then 0 else 1 end;
     ]]>
   </v:method>
 
     <v:before-data-bind>
       <![CDATA[
-      if (self.v_mode = 'g') {
-          self.v_filter := 'g';
-      } else {
-          self.v_filter := 'u';
-      }
+      self.v_filter := case when (self.v_mode = 'g') then 'g' else 'u' end;
       ]]>
     </v:before-data-bind>
 
@@ -120,7 +118,7 @@
         <v:button action="simple" value="Filter" xhtml_class="button">
           <v:on-post>
             <![CDATA[
-              self.v_filter := get_keyword('filter', self.vc_page.vc_event.ve_params, self.v_filter);
+              self.v_filter := get_keyword ('filter', e.ve_params, self.v_filter);
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
               self.vc_data_bind (e);
@@ -152,12 +150,14 @@
             self.v_mask := replace(self.v_mask, '%%', '%');
 
             group_sql := '';
-            if (self.v_mode = 's') {
+            if (self.v_mode = 's')
+            {
               user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where (U_ACCOUNT_DISABLED=0) and upper(U_NAME) like upper(\'%s\') and G_GRANTEE_ID = %d and G_GRANTER_ID = U_ID', self.v_mask, self.account_id);
             } else {
               user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (U_ACCOUNT_DISABLED=0) and (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6) and (U_ID<>%d))', self.v_mask, self.account_id);
             }
-            if (user_sql = '') {
+            if (user_sql = '')
+            {
               control.ds_sql := group_sql;
             } else if (group_sql = '') {
               control.ds_sql := user_sql;
@@ -178,29 +178,24 @@
           <table id="users" class="BMK_grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
-                <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+                <vm:if test="self.isMultiple(self.v_dst)">
                   <th class="checkbox" width="1%">
                     <?vsp
                       http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this, ''cb_item''); "/>');
                     ?>
                   </th>
-                </v:template>
-                <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+                </vm:if>
+                <vm:if test="self.v_mode = ''">
                   <th>
-                    <v:label value="Type" format="%s"/>
+                    Type
                   </th>
-                </v:template>
+                </vm:if>
                 <th>
                   <?vsp self.sortColumn('Name', 'U_NAME'); ?>
                 </th>
                 <th>
                   <?vsp self.sortColumn('Description', 'U_FULL_NAME'); ?>
                 </th>
-                <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                  <th width="1%">
-                    Action
-                  </th>
-                </v:template>
               </tr>
             </thead>
           </table>
@@ -211,47 +206,40 @@
           <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table>
               <tr align="center">
-                <?vsp http(sprintf('<td colspan="%d">No records</td>', either(equ(self.v_mode,''),4,3))); ?>
+                <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
+                  No records
+                </td>
               </tr>
             </table>
           </v:template>
 
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
-              <tr>
-                <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+              <tr onclick="rowSelected(this);" class="pointer">
+                <vm:if test="self.isMultiple(self.v_dst)">
                   <td  align="center">
                     <?vsp
-                      declare pos integer;
                       declare S, name any;
 
-                      name := (control.vc_parent as vspx_row_template).te_column_value('U_NAME');
-                      S := '';
-                      pos := strstr(self.v_s1, concat(name, ','));
-                      if (not isnull(pos))
-                        S := 'checked="checked"';
-                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item''); " />', name, S));
+                      name := (control as vspx_row_template).te_column_value('U_NAME');
+                      S := case when isnull (strstr(self.v_s1, concat(name, ','))) then '' else 'checked="checked"' end;
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="updateChecked(this, ''cb_item'', event); " />', name, S));
                     ?>
                   </td>
-                </v:template>
-                <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+                </vm:if>
+                <vm:if test="self.v_mode = ''">
                   <td nowrap="nowrap">
-                    <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_TYPE')" format="%s"/>
+                    <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_TYPE')" format="%s"/>
                   </td>
-                </v:template>
+                </vm:if>
                 <td nowrap="nowrap">
+                  <input name="s1_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('U_NAME') ?>" />
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" format="%s"/>
                 </td>
                 <td nowrap="nowrap">
+                  <input name="s2_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('U_FULL_NAME') ?>" />
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')" format="%s"/>
                 </td>
-                <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                  <td nowrap="nowrap">
-                    <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_NAME')"/>
-                    <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('U_FULL_NAME')"/>
-                    <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
-                  </td>
-                </v:template>
               </tr>
             </table>
           </v:template>
@@ -261,20 +249,20 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="top">
           <table>
             <tr align="center">
-              <?vsp http(sprintf('<td colspan="%d">', either(equ(self.v_mode,''),4,3))); ?>
+              <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
                 <vm:ds-navigation data-set="ds"/>
-              <?vsp http('</td>'); ?>
+              </td>
             </tr>
           </table>
         </v:template>
 
       </v:data-set>
-      <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+      <vm:if test="self.isMultiple(self.v_dst)">
         <div style="padding: 0 0 0.5em 0;">
           <hr />
           <a href="#" onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
         </div>
-      </v:template>
+      </vm:if>
       <script>
         <![CDATA[
           coloriseTable('users');

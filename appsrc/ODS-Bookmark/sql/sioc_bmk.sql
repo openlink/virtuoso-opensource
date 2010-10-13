@@ -441,24 +441,37 @@ create procedure bookmark_acl_delete (
 create trigger BOOKMARK_DOMAIN_SIOC_ACL_I after insert on BMK.WA.BOOKMARK_DOMAIN order 100 referencing new as N
 {
   if (coalesce (N.BD_ACL, '') <> '')
+  {
     bookmark_acl_insert (N.BD_DOMAIN_ID,
                          N.BD_ID,
                          N.BD_ACL);
+
+    SIOC..acl_ping (N.BD_DOMAIN_ID,
+                    SIOC..bmk_post_iri (N.BD_DOMAIN_ID, N.BD_ID),
+                    null,
+                    N.BD_ACL);
+  }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create trigger BOOKMARK_DOMAIN_SIOC_ACL_U after update on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O, new as N
+create trigger BOOKMARK_DOMAIN_SIOC_ACL_U after update (BD_ACL) on BMK.WA.BOOKMARK_DOMAIN order 100 referencing old as O, new as N
 {
-  if ((coalesce (O.BD_ACL, '') <> '') and (coalesce (O.BD_ACL, '') <> coalesce (N.BD_ACL, '')))
+  if (coalesce (O.BD_ACL, '') <> '')
     bookmark_acl_delete (O.BD_DOMAIN_ID,
                          O.BD_ID,
                          O.BD_ACL);
-  if ((coalesce (N.BD_ACL, '') <> '') and (coalesce (O.BD_ACL, '') <> coalesce (N.BD_ACL, '')))
+
+  if (coalesce (N.BD_ACL, '') <> '')
     bookmark_acl_insert (N.BD_DOMAIN_ID,
                          N.BD_ID,
                          N.BD_ACL);
+
+  SIOC..acl_ping (N.BD_DOMAIN_ID,
+                  SIOC..bmk_post_iri (N.BD_DOMAIN_ID, N.BD_ID),
+                  O.BD_ACL,
+                  N.BD_ACL);
 }
 ;
 
