@@ -365,82 +365,135 @@ function showTab(tabs, tabsCount, tabNo)
 
 function windowShow(sPage, width, height)
 {
-  if (width == null)
-    width = 500;
-  if (height == null)
+  if (!width)
+    width = 520;
+  if (!height)
     height = 420;
-  sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  sPage += urlParam("sid")+urlParam("realm");
   win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
   win.window.focus();
 }
 
-function rowSelect(obj)
+function rowSelected(tr)
 {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
+  var cbInput;
+  var s1Input;
+  var s2Input;
+  var inputs = tr.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++) {
+    if (inputs[i].name == 'cb_item')
+      cbInput = inputs[i];
+    if (inputs[i].name == 's1_item')
+      s1Input = inputs[i];
+    if (inputs[i].name == 's2_item')
+      s2Input = inputs[i];
+  }
+  if (cbInput) {
+    cbInput.checked = !cbInput.checked;
+    updateChecked(cbInput, cbInput.name);
+  }
+  else if (s1Input)
+{
+    commitChecked(s1Input.value);
+  }
+}
 
-  var s2 = (obj.name).replace('b1', 's2');
-  var s1 = (obj.name).replace('b1', 's1');
+function commitChecked(s1Value, s2Value)
+{
+  var srcForm = window.document.F1;
+  var dstForm = window.opener.document.F1;
+
+  var submitMode = false;
+  if (srcForm.elements['src'] && (srcForm.elements['src'].value.indexOf('s') != -1)) {
+      submitMode = true;
+    if (dstForm && dstForm.elements['submitting'])
+        return false;
+  }
+  var closeMode = true;
+  var singleMode = true;
+  if (srcForm.elements['dst']) {
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
+      closeMode = false;
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+  }
 
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.elements['params'].value;
   var myArray;
+  if (dstForm) {
   while(true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+      if (myArray.length > 2) {
+        var fld = dstForm.elements[myArray[1]];
+        if (fld) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
+            rowSelectValue(fld, s1Value, singleMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-              rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
+            rowSelectValue(fld, s2Value, singleMode);
+        }
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
+  }
   if (submitMode) {
     window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    dstForm.submit();
   }
   if (closeMode)
     window.close();
 }
 
-function rowSelectValue(dstField, srcField, singleMode)
+function updateChecked (obj, objName, event)
 {
-  if (singleMode)
+  if (event)
+	  event.cancelBubble = true;
+  var objForm = obj.form;
+  coloriseRow(getParent(obj, 'tr'), obj.checked);
+
+  var s1Value = objForm.s1.value;
+  s1Value = BMK.trim(s1Value);
+  s1Value = BMK.trim(s1Value, ',');
+  s1Value = BMK.trim(s1Value);
+  s1Value = s1Value + ',';
+  for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    var obj = objForm.elements[i];
+    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
+      if (obj.checked) {
+        if (s1Value.indexOf(obj.value+',') == -1)
+          s1Value = s1Value + obj.value + ',';
+      } else {
+        s1Value = (s1Value).replace(obj.value+',', '');
+      }
+    }
+  }
+  objForm.s1.value = BMK.trim(s1Value, ',');
+}
+
+function addChecked(srcForm, checkboxName, selectionMsq)
   {
-    dstField.value = srcField.value;
+  if (!anySelected (srcForm, checkboxName, selectionMsq, 'confirm'))
+    return false;
+
+  return commitChecked(srcForm.s1.value, srcForm.s2.value);
+}
+
+function rowSelectValue(dstField, srcValue, singleMode) {
+	if (singleMode) {
+		dstField.value = srcValue;
   } else {
     dstField.value = BMK.trim(dstField.value);
     dstField.value = BMK.trim(dstField.value, ',');
     dstField.value = BMK.trim(dstField.value);
-    if (dstField.value.indexOf(srcField.value) == -1)
-    {
-      if (dstField.value == '')
-      {
-        dstField.value = srcField.value;
+		if (dstField.value.indexOf(srcValue) == -1) {
+			if (dstField.value == '') {
+				dstField.value = srcValue;
       } else {
-        dstField.value = dstField.value + ', ' + srcField.value;
+				dstField.value = dstField.value + ',' + srcValue;
       }
     }
   }
@@ -473,77 +526,6 @@ function changeExportName(fld_name, from, to) {
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
     obj.value = (obj.value).replace(from, to);
-}
-
-function updateChecked (obj, objName)
-{
-  var objForm = obj.form;
-  coloriseRow(getParent(obj, 'tr'), obj.checked);
-
-  var s1Value = objForm.s1.value;
-  s1Value = BMK.trim(s1Value);
-  s1Value = BMK.trim(s1Value, ',');
-  s1Value = BMK.trim(s1Value);
-  s1Value = s1Value + ',';
-  for (var i = 0; i < objForm.elements.length; i = i + 1) {
-    var obj = objForm.elements[i];
-    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
-      if (obj.checked)
-      {
-        if (s1Value.indexOf(obj.value+',') == -1)
-          s1Value = s1Value + obj.value+',';
-      } else {
-        s1Value = (s1Value).replace(obj.value+',', '');
-      }
-    }
-  }
-  objForm.s1.value = BMK.trim(s1Value, ',');
-}
-
-function addChecked (form, txt, selectionMsq)
-{
-  var openerForm = eval('window.opener.document.F1');
-  if (!openerForm)
-    return false;
-
-  if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return false;
-
-  var submitMode = false;
-  if (form.elements['src'] && (form.elements['src'].value.indexOf('s') != -1))
-      submitMode = true;
-
-  var singleMode = true;
-  if (form.elements['dst'] && (form.elements['dst'].value.indexOf('s') == -1))
-      singleMode = false;
-
-  var s1 = 's1';
-  var s2 = 's2';
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = form.elements['params'].value;
-  var myArray;
-  while(true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (openerForm.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-          if (openerForm.elements[myArray[1]])
-            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s1], singleMode, submitMode);
-          if (myArray[2] == 's2')
-          if (openerForm.elements[myArray[1]])
-            rowSelectValue(openerForm.elements[myArray[1]], form.elements[s2], singleMode, submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode)
-    openerForm.submit();
-
-  window.close();
 }
 
 function addTag(tag, objName)

@@ -266,7 +266,7 @@
       <v:variable name="chars" type="integer" default="60" />
 
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
-      <v:variable name="v_mode" type="varchar" default="'simple'"/>
+      <v:variable name="v_mode" param-name="mode" type="varchar" default="'simple'" />
       <v:variable name="v_step" param-name="step" type="integer" default="0"/>
 
       <v:variable name="v_keywords" type="varchar" default="''" param-name="q" />
@@ -304,7 +304,7 @@
                 action := get_keyword ('action', params, '');
                 if (action = 'search')
                 {
-                  self.vc_redirect (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple'))));
+                  self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?q=%s&mode=%s&step=1', get_keyword ('keywords', params, ''), get_keyword ('mode', params, 'simple')))));
                   return;
                 }
 
@@ -646,7 +646,7 @@
                     </th>
                   <td>
                       <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                      <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=m&amp;params=f_grants:s1;',520)" class="button" />
+                    <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=mc&amp;params=f_grants:s1;',520)" class="button" />
                   </td>
                 </tr>
               </table>
@@ -708,14 +708,14 @@
             <v:on-post>
               <![CDATA[
                 self.update_params();
-                self.vc_redirect (BMK.WA.page_url (self.domain_id, sprintf ('?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_'))));
+                self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, sprintf ('?action=%U%s', 'Smart Folder/Create', self.do_url('save', 's_')))));
               ]]>
             </v:on-post>
           </v:button>
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                self.vc_redirect (BMK.WA.page_url (self.domain_id));
+                self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
               ]]>
             </v:on-post>
           </v:button>
@@ -735,9 +735,21 @@
                 <b><v:label for="" value="Search" /></b>
                 <v:text name="s_keywords" value="--self.v_keywords" fmt-function="BMK.WA.utf2wide" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60" />
                 |
-                <v:url url="--BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" value="Advanced" xhtml_title="Advanced Search" />
+                <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced')));
+                    ]]>
+                  </v:on-post>
+                </v:button>
                 |
-                <v:url url="--BMK.WA.page_url (self.domain_id, null, self.sid, self.realm)" value="Cancel" xhtml_title="Cancel" />
+                <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id)));
+                    ]]>
+                  </v:on-post>
+                </v:button>
               </td>
             </tr>
           </table>

@@ -108,9 +108,8 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:if test="not @clean or @clean = 'no'">
-      <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
+      <div style="padding: 0.4em;">
+        <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
       </div>
     </xsl:if>
     <div id="app_area">
@@ -160,7 +159,7 @@
                       params := e.ve_params;
                       q := trim (get_keyword ('q', params, ''));
                       S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
-                      self.vc_redirect (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('mode', params, 'advanced'), S)));
+                      self.vc_redirect (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('mode', params, 'advanced'), S))));
                       self.vc_data_bind(e);
                      ]]>
                    </v:on-post>
@@ -170,10 +169,10 @@
             ?>
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <input name="q" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('searchHead', 'action', 'search', 'mode', 'simple'); return false;" />
-            <xsl:call-template name="nbsp"/>
-              <v:url url="--BMK.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'action\', \'search\', \'mode\', \'simple\'); return false;" value="Search" xhtml_title="simple Search"/>
+              &amp;nbsp;
+              <a href="<?vsp http (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'mode', 'simple'); return false;" title="Simple Search">Search</a>
             |
-              <v:url url="--BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'action\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>
+              <a href="<?vsp http (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'mode', 'advanced'); return false;" title="Advanced">Advanced</a>
           </div>
       	</v:template>
       </div>
@@ -182,11 +181,11 @@
             <?vsp http (BMK.WA.utf2wide (BMK.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when self.account_rights = 'W' then 1 else 0 end">
-              <v:url url="--BMK.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
+            <vm:if test="self.account_rights = 'W'">
+              <a href="<?vsp http (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
-      	  </v:template>
-            <a href="<?V sprintf('%s/about.vsp', BMK.WA.domain_sioc_url (self.domain_id)) ?>" onclick="javascript: BMK.aboutDialog(); return false;" title="About">About</a>
+            </vm:if>
+            <a href="<?vsp http (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'about.vsp'))); ?>" onclick="javascript: BMK.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>
@@ -232,7 +231,7 @@
         if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
           http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', BMK.WA.bookmarks_url (self.domain_id)));
 
-        S := BMK.WA.gems_url (self.domain_id);
+        S := BMK.WA.utf2wide (BMK.WA.gems_url (self.domain_id));
         http (sprintf('<a href="%sBookmark.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sBookmark.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sBookmark.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
@@ -434,16 +433,5 @@
     </div>
   </xsl:template>
 
-  <!--=========================================================================-->
-  <xsl:template name="nbsp">
-    <xsl:param name="count" select="1"/>
-    <xsl:if test="$count != 0">
-      <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      <xsl:call-template name="nbsp">
-        <xsl:with-param name="count" select="$count - 1"/>
-      </xsl:call-template>
-    </xsl:if>
-  </xsl:template>
-  <!--=========================================================================-->
-
 </xsl:stylesheet>
+
