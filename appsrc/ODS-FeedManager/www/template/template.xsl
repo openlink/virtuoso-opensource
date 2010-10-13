@@ -152,7 +152,7 @@
                       params := e.ve_params;
                       q := trim (get_keyword ('q', params, ''));
                       S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
-                      self.vc_redirect (ENEWS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S)));
+                      self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S))));
                       self.vc_data_bind(e);
                      ]]>
             	</v:on-post>
@@ -163,9 +163,9 @@
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="q" value="" fmt-function="ENEWS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
               &amp;nbsp;
-              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+              <a href="<?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'simple'); return false;" title="Simple Search">Search</a>
             |
-              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+              <a href="<?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'advanced'); return false;" title="Advanced">Advanced</a>
           </div>
         </v:template>
       </div>
@@ -174,11 +174,11 @@
             <?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
-              <v:url url="--ENEWS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
+            <vm:if test="self.account_rights = 'W'">
+              <a href="<?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
-      	  </v:template>
-            <a href="<?V ENEWS.WA.page_url (self.domain_id, 'about.vsp') ?>" onclick="javascript: Feeds.aboutDialog(); return false;" title="About">About</a>
+            </vm:if>
+            <a href="<?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'about.vsp'))); ?>" onclick="javascript: Feeds.aboutDialog(); return false;" title="About">About</a>
       </div>
           <br style="clear: both; line-height: 0.1em" />
         </div>  
@@ -227,7 +227,7 @@
                       <v:before-render>
                         <![CDATA[
                           control.bt_anchor := 0;
-                          control.bt_url := replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id));
+                          control.bt_url := ENEWS.WA.utf2wide (replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id)));
                         ]]>
                       </v:before-render>
                       <v:on-post>
@@ -251,7 +251,7 @@
                       <v:before-render>
                         <![CDATA[
                           control.bt_anchor := 0;
-                          control.bt_url := replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id));
+                          control.bt_url := ENEWS.WA.utf2wide (replace (control.bt_url, sprintf ('/enews2/%d', self.domain_id), ENEWS.WA.page_url (self.domain_id)));
                         ]]>
                       </v:before-render>
                     </v:button>
@@ -311,7 +311,7 @@
   <!--=========================================================================-->
   <xsl:template name="vm:others">
     <div class="left_container">
-      <v:url value='<img src="image/bmklet_32.png" height="16" width="16" border="0" /> Bookmarklet ' format="%s" url="--ENEWS.WA.page_url (self.domain_id, 'bookmark.vspx', self.sid, self.realm)"/>
+      <a href="<?vsp http (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'bookmark.vspx', self.sid, self.realm))); ?>" title="Bookmarklet"><img src="image/bmklet_32.png" height="16" width="16" border="0" /> Bookmarklet</a>
     </div>
   </xsl:template>
 
@@ -330,7 +330,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
       }
 
-        S := ENEWS.WA.gems_url (self.domain_id);
+        S := ENEWS.WA.utf2wide (ENEWS.WA.gems_url (self.domain_id));
         http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));

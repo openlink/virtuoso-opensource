@@ -208,14 +208,14 @@
          				if (f_conv and f_conv_init)
   					    ENEWS.WA.nntp_fill (self.domain_id);
     					}
-              self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
       	    ]]>
       	  </v:on-post>
         </v:button>
         <v:button action="simple" value="Cancel" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
-              self.vc_redirect(ENEWS.WA.page_url (self.domain_id, 'news.vspx'));
+              self.vc_redirect (ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'news.vspx')));
       	    ]]>
       	  </v:on-post>
         </v:button>

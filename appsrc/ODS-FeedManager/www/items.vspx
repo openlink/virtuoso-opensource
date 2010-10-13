@@ -458,7 +458,7 @@
                   } else {
                     id := cast (control.te_column_value('EFI_ID') as varchar);
                   }
-                  self.r_load := sprintf ('parent.loadIFrame(%s, ''%s'');', id, ENEWS.WA.node_type (self.fNode));
+                  self.r_load := sprintf ('loadIFrame(%s, \'%s\');', id, ENEWS.WA.node_type (self.fNode));
                 }
               ?>
             </table>

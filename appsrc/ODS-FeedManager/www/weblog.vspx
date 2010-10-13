@@ -82,7 +82,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := ENEWS.WA.page_url (self.domain_id, 'weblog.vspx');
+          self.F1.uf_action := ENEWS.WA.utf2wide (ENEWS.WA.page_url (self.domain_id, 'weblog.vspx'));
         ]]>
       </v:before-render>
     	<v:on-post>
