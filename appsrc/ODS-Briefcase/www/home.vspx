@@ -1593,9 +1593,9 @@
                         ]]>
                       </v:after-data-bind>
                     </v:text>
-                    <v:template name="tform_14" type="simple" enabled="-- case when (ODRIVE.WA.check_admin (self.account_id) and (self.dav_enable = 1)) then 1 else 0 end;">
-                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
-                    </v:template>
+                    <vm:if test="ODRIVE.WA.check_admin (self.account_id) and self.dav_enable">
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=u&amp;params=dav_owner:s1;')" disabled="disabled" class="button" />
+                    </vm:if>
                   </td>
                 </tr>
                 <tr id="davRow_group">
@@ -1604,9 +1604,9 @@
                   </th>
                   <td>
                     <v:text name="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
-                    <v:template name="tform_15" type="simple" enabled="--self.dav_enable">
-                      <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
-                    </v:template>
+                    <vm:if test="self.dav_enable">
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=g&amp;params=dav_group:s1;')" disabled="disabled" class="button" />
+                    </vm:if>
                   </td>
                 </tr>
                 <tr id="davRow_perms">

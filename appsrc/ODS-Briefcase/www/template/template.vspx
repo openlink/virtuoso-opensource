@@ -38,13 +38,29 @@
     <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <![CDATA[
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var imagePath="/ods/images/oat/";
-        
-        var featureList=["ajax", "json", "anchor", "dialog", "dav", "combolist", "calendar"];
-      </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+        
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V ODRIVE.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V ODRIVE.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V ODRIVE.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "combolist", "calendar"];
+        OAT.Loader.load(featureList);
+      </script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="/ods/validate.js"></script>
@@ -56,25 +72,6 @@
             setTimeout(myInit, 50);
             return;
           }
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-          OAT.Preferences.showAjax = false;
-
-        	/* load stylesheets */
-        	OAT.Style.include("grid.css");
-        	OAT.Style.include("webdav.css");
-
-          // WebDAV
-          var options = { imagePath: OAT.Preferences.imagePath,
-                          pathHome: '/home/',
-                          foldersOnly: true,
-													height:330,
-                          path: '<?V ODRIVE.WA.dav_logical_home (self.account_id) ?>',
-                          user: '<?V ODRIVE.WA.account_name (self.account_id) ?>',
-                          connectionHeaders: {Authorization: '<?V ODRIVE.WA.account_basicAuthorization (self.account_id) ?>'}
-                        };
-          OAT.WebDav.init(options);
-
           // <a>++
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;

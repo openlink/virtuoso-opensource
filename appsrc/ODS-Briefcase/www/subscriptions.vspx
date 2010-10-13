@@ -65,7 +65,7 @@
     <vm:pagebody>
       <v:before-render>
         <![CDATA[
-          self.F1.uf_action := ODRIVE.WA.page_url (self.domain_id, 'subscriptions.vspx');
+          self.F1.uf_action := ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id, 'subscriptions.vspx'));
         ]]>
       </v:before-render>
       <vm:if test="self.v_mode in ('targetBrowse', 'queueBrowse', 'retrievedBrowse', 'retrievedEdit')">
@@ -346,9 +346,9 @@
                     ]]>
                   </v:after-data-bind>
                 </v:text>
-                <v:template name="subscriptions_t1" type="simple" enabled="-- case when ODRIVE.WA.check_admin (self.account_id) then 1 else 0 end;">
-                  <input type="button" value="Select" onclick="javascript: windowShow('users_select.vspx?mode=u&amp;params=owner:s1;')" class="button" />
-                </v:template>
+                <vm:if test="ODRIVE.WA.check_admin (self.account_id)">
+                  <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=u&amp;params=owner:s1;')" class="button" />
+                </vm:if>
               </td>
             </tr>
             <tr>
