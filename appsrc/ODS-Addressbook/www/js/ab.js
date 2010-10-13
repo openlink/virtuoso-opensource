@@ -30,9 +30,10 @@ function setFooter() {
 
 function urlParam(fldName)
 {
-  var O = document.forms[0].elements[fldName];
-  if (O && O.value != '')
-    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  var obj = document.forms[0].elements[fldName];
+  if (obj && obj.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(obj.value);
+
   return '';
 }
 
@@ -164,12 +165,6 @@ function submitEnter(myForm, myButton, e) {
   return true;
 }
 
-function getObject(id) {
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
-}
-
 function getParent(obj, tag) {
   var obj = obj.parentNode;
   if (obj.tagName.toLowerCase() == tag)
@@ -201,41 +196,22 @@ function enableToolbars(objForm, prefix) {
   enableElement('tbDelete', 'tbDelete_gray', oCount>0);
 }
 
-function enableElement(id, id_gray, idFlag) {
-  var mode = 'block';
-	var element = $(id);
-	if (!element) {
-    if (idFlag) {
-      element.style.display = 'block';
-      mode = 'none';
+function enableElement(id, id_gray, showFlag) {
+  if (showFlag) {
+    OAT.Dom.show(id);
+    if ($(id))
+      OAT.Dom.hide(id_gray);
     } else {
-      element.style.display = 'none';
-      mode = 'block';
-    }
-  }
-	element = $(id_gray);
-	if (!element)
-    element.style.display = mode;
+    OAT.Dom.hide(id);
+    OAT.Dom.show(id_gray);
 }
-
-function showCell(cell) {
-  var c = getObject (cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = "";
-}
-
-function hideCell(cell) {
-  var c = getObject(cell);
-  if ((c) && (c.style.display != "none"))
-    c.style.display = "none";
 }
 
 function selectAllCheckboxes (obj, prefix) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
-		if (o != null && o.type == "checkbox" && !o.disabled
-				&& o.name.indexOf(prefix) != -1) {
+		if (o && o.type == "checkbox" && !o.disabled && o.name.indexOf(prefix) != -1) {
       if (obj.value == 'Select All')
         o.checked = true;
       else
@@ -255,8 +231,7 @@ function anySelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
       var obj = form.elements[i];
-			if (obj != null && obj.type == "checkbox"
-					&& obj.name.indexOf(txt) != -1 && obj.checked)
+			if (obj && obj.type == "checkbox" && obj.name.indexOf(txt) != -1 && obj.checked)
         return true;
     }
     if (selectionMsq != null)
@@ -290,35 +265,6 @@ function showTag(tag) {
   parent.document.forms['F1'].submit();
 }
 
-//
-// sortSelect(select_object)
-//   Pass this function a SELECT object and the options will be sorted
-//   by their text (display) values
-//
-function sortSelect(box) {
-  var o = new Array();
-  for (var i=0; i<box.options.length; i++)
-		o[o.length] = new Option(box.options[i].text, box.options[i].value,
-				box.options[i].defaultSelected, box.options[i].selected);
-
-  if (o.length==0)
-    return;
-
-  o = o.sort(function(a,b) {
-		if ((a.text + "") < (b.text + "")) {
-			return -1;
-		}
-		if ((a.text + "") > (b.text + "")) {
-			return 1;
-                           }
-		return 0;
-	});
-
-  for (var i=0; i<o.length; i++)
-		box.options[i] = new Option(o[i].text, o[i].value,
-				o[i].defaultSelected, o[i].selected);
-}
-
 function showTab(tabs, tabsCount, tabNo) {
 	if (tabNo == null) { tabNo = $v('tabNo'); }
 	if (tabNo == null) { tabNo = 0; }
@@ -343,94 +289,17 @@ function showTab(tabs, tabsCount, tabNo) {
 }
 
 function windowShow(sPage, width, height) {
-  if (width == null)
-    width = 500;
-  if (height == null)
+	if (!width)
+		width = 520;
+	if (!height)
     height = 420;
-	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value
-			+ '&realm=' + document.forms[0].elements['realm'].value;
-	win = window.open(sPage, null, "width=" + width + ",height=" + height
-			+ ", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+	sPage += urlParam('sid') + urlParam('realm');
+	win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
   win.window.focus();
 }
 
-function rowSelect(obj) {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
-  var s2 = (obj.name).replace('b1', 's2');
-  var s1 = (obj.name).replace('b1', 's1');
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
-  var myArray;
-  while(true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
-          if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode) {
-    window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
-  }
-  if (closeMode)
-    window.close();
-}
-
-function rowSelectValue(dstField, srcField, singleMode) {
-	if (singleMode) {
-    dstField.value = srcField.value;
-  } else {
-    dstField.value = AB.trim(dstField.value);
-    dstField.value = AB.trim(dstField.value, ',');
-    dstField.value = AB.trim(dstField.value);
-		if (dstField.value.indexOf(srcField.value) == -1) {
-			if (dstField.value == '') {
-        dstField.value = srcField.value;
-      } else {
-        dstField.value = dstField.value + ',' + srcField.value;
-      }
-    }
-  }
-}
-
 function createHidden(frm_name, fld_name, fld_value) {
-  var hidden;
-
-  createHidden2(document, frm_name, fld_name, fld_value);
+	return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 function createHidden2(doc, frm_name, fld_name, fld_value) {
@@ -447,6 +316,7 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
     }
     hidden.value = fld_value;
   }
+	return hidden;
 }
 
 function changeExportName(fld_name, from, to) {
@@ -476,58 +346,6 @@ function updateChecked(obj, objName) {
     }
   }
   objForm.s1.value = AB.trim(objForm.s1.value, ',');
-}
-
-function addChecked(form, txt, selectionMsq) {
-  if (!anySelected (form, txt, selectionMsq, 'confirm'))
-    return;
-
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
-
-  var s1 = 's1';
-  var s2 = 's2';
-
-  var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
-  var myArray;
-  while(true) {
-    myArray = myRe.exec(params);
-    if (myArray == undefined)
-      break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
-          if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
-          if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
-        }
-    if (myArray.length < 4)
-      break;
-    params = '' + myArray[3];
-  }
-  if (submitMode)
-    window.opener.document.F1.submit();
-  window.close();
 }
 
 function addTag(tag, objName) {
@@ -695,16 +513,11 @@ function updateGeodata(mode) {
   		}
   	}
 	}
-	OAT.AJAX.GET(S, '', function(arg) {
-		cb(arg, mode);
-	}, {});
+	OAT.AJAX.GET(S, '', function(arg) {cb(arg, mode);});
 }
 
 function davBrowse(fld) {
-	var options = {
-		mode : 'browser',
-		onConfirmClick : function(path, fname) {$(fld).value = path + fname;}
-                };
+	var options = {mode: 'browser', onConfirmClick: function(path, fname) {$(fld).value = path + fname;}};
   OAT.WebDav.open(options);
 }
 
@@ -767,13 +580,11 @@ function destinationChange(obj, actions) {
 }
 
 var AB = new Object();
-
 AB.trim = function(sString, sChar) {
-
 	if (sString) {
-		if (sChar == null) {
+		if (!sChar)
       sChar = ' ';
-    }
+
 		while (sString.substring(0, 1) == sChar) {
       sString = sString.substring(1, sString.length);
     }
@@ -902,10 +713,8 @@ AB.aboutDialog = function() {
   }
 	OAT.AJAX.POST("ajax.vsp", "a=about", x, {
 		type : OAT.AJAX.TYPE_TEXT,
-		onstart : function() {
-		},
-		onerror : function() {
-		}
+		onstart : function() {},
+		onerror : function() {}
 	});
 }
 

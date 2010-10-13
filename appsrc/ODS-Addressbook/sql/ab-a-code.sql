@@ -2801,7 +2801,7 @@ create procedure AB.WA.dashboard_get(
     http ('<ab>', aStream);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (coalesce (_time, now ()))), aStream);
     http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
-    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..addressbook_contact_iri (domain_id, _id)), aStream);
+    http (sprintf ('<link>%V</link>', SIOC..addressbook_contact_iri (domain_id, _id)), aStream);
     http (sprintf ('<from><![CDATA[%s]]></from>', AB.WA.account_fullName (account_id)), aStream);
     http (sprintf ('<uid>%s</uid>', AB.WA.account_name (account_id)), aStream);
     http ('</ab>', aStream);
