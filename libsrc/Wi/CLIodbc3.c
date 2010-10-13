@@ -717,12 +717,10 @@ virtodbc__SQLGetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr)
 {
-  SQLINTEGER dummy;
+  SQLLEN dummy = 0;
   STMT (stmt, statementHandle);
-
   if (!stmt)
     return (SQL_INVALID_HANDLE);
-
   if (!ValuePtr)
     ValuePtr = &dummy;
 
