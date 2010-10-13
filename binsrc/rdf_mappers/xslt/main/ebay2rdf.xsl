@@ -247,12 +247,12 @@
 
     <xsl:template match="ebay:Item/ebay:Title">
 	<rdfs:comment><xsl:value-of select="."/></rdfs:comment>
-	<dc:title><xsl:value-of select="."/></dc:title>
+	<gr:name><xsl:value-of select="."/></gr:name>
     <rdfs:label><xsl:value-of select="."/></rdfs:label>
     </xsl:template>
     <xsl:template match="ebay:Item/ebay:Description">
 	<!--oplebay:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplebay:description-->
-	<oplebay:longDescription rdf:datatype="&xsd;string"><xsl:value-of select="."/></oplebay:longDescription>
+	<gr:description rdf:datatype="&xsd;string"><xsl:value-of select="."/></gr:description>
     </xsl:template>
     <xsl:template match="ebay:Item/ebay:ItemId">
 	<oplebay:productId><xsl:value-of select="."/></oplebay:productId>

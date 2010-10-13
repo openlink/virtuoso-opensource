@@ -157,7 +157,7 @@
 			</xsl:when>
 		</xsl:choose>
     	<bibo:shortTitle><xsl:value-of select="$title"/></bibo:shortTitle>
-    	<dc:title><xsl:value-of select="concat($title, ' - ', $subtitle)"/></dc:title>
+    	<gr:name><xsl:value-of select="concat($title, ' - ', $subtitle)"/></gr:name>
 		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
 		<xsl:apply-templates select="meta" />
   		<xsl:apply-templates select="//div[@id='short-description']/div" />
@@ -307,9 +307,9 @@
 	</xsl:template>
 
   	<xsl:template match="//div[@id='fulldesc']/div">
-		<dc:description>
+		<gr:description>
 			<xsl:value-of select="." />
-		</dc:description>
+		</gr:description>
 	</xsl:template>
 
   	<xsl:template match="*[@typeof='foaf:Person']">

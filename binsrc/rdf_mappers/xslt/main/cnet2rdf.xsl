@@ -334,7 +334,7 @@
     </xsl:template>
 
     <xsl:template match="cnet:Description">
-	<dc:description><xsl:value-of select="string(.)"/></dc:description>
+	<gr:description><xsl:value-of select="string(.)"/></gr:description>
 	<oplcn:description><xsl:value-of select="string(.)"/></oplcn:description>
     </xsl:template>
 
