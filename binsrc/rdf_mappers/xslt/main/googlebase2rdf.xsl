@@ -140,9 +140,9 @@
 				<xsl:otherwise>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			<gr:amountOfThisGood>1</gr:amountOfThisGood>
-          <dc:title>
+          <gr:name>
             <xsl:value-of select="a:title"/>
-          </dc:title>
+          </gr:name>
           <rdfs:label>
             <xsl:value-of select="a:title"/>
           </rdfs:label>
@@ -185,9 +185,9 @@
         </rdfs:label>
 			</xsl:when>
 			<xsl:otherwise>
-        <dc:description>
+        <gr:description>
           <xsl:value-of select="."/>
-        </dc:description>
+        </gr:description>
 			</xsl:otherwise>
 		</xsl:choose>
     </xsl:template>

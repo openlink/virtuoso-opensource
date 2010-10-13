@@ -121,9 +121,9 @@
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
-		<dc:title>
+		<gr:name>
 			<xsl:value-of select="."/>
-		</dc:title>
+		</gr:name>
     </xsl:template>
     
     <xsl:template match="url">
@@ -179,9 +179,9 @@
     </xsl:template>
 
     <xsl:template match="description">
-		<dc:description>
+		<gr:description>
 			<xsl:value-of select="."/>
-		</dc:description>
+		</gr:description>
     </xsl:template>
     
     <xsl:template match="bio">

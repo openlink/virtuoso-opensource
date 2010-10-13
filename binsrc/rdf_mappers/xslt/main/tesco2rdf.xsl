@@ -115,9 +115,9 @@
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
-		<dc:title>
+		<gr:name>
 			<xsl:value-of select="."/>
-		</dc:title>
+		</gr:name>
     </xsl:template>
 
     <xsl:template match="manufacturer">
