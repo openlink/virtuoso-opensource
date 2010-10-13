@@ -3320,6 +3320,8 @@ create procedure DB.DBA.RDF_LOAD_SLIDESHARE (in graph_iri varchar, in new_origin
 	{
 		tmp := sprintf_inverse (new_origin_uri, 'http://www.slideshare.net/%s/%s', 0);
 		username := trim(tmp[0], '/');
+		if (username = 'event')
+			return 0;
 		itemname := trim(tmp[1], '/');
 		if (strchr(itemname, '?') is not null)
 			itemname := left(new_origin_uri, strchr(new_origin_uri, '?'));
@@ -5627,17 +5629,30 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
-  declare pos, is_sku integer;
+	declare pos, is_sku, is_store integer;
 
   asin := null;
   is_sku := 0;
+	is_store := 0;
   declare exit handler for sqlstate '*'
     {
       DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE);
       return 0;
     };
-  if (new_origin_uri like 'http://%.bestbuy.com/site/olspage.jsp?%' or
-      new_origin_uri like 'http://%.bestbuy.com/%/%?%')
+	if (new_origin_uri like 'http://stores.bestbuy.com/%')
+	{
+		declare arr any;
+		arr := sprintf_inverse (new_origin_uri, 'http://stores.bestbuy.com/%s', 0);
+		asin := arr[0];
+		pos := strchr(asin, '/');
+		if (pos is not null)
+			asin := left(asin, pos);
+		pos := strchr(asin, '?');
+		if (pos is not null)
+			asin := left(asin, pos);
+		is_store := 1;
+	}
+	else if (new_origin_uri like 'http://%.bestbuy.com/site/olspage.jsp?%' or new_origin_uri like 'http://%.bestbuy.com/%/%?%')
     {
       declare arr any;
       arr := WS.WS.PARSE_URI (new_origin_uri);
@@ -5650,6 +5665,8 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
       if (asin not like '[0-9]+')
 	{
           asin := get_keyword ('skuId', arr);
+			if (asin not like '[0-9]+')
+				return 0;
 	  is_sku := 1;
 	}
     }
@@ -5673,16 +5690,17 @@ create procedure DB.DBA.RDF_LOAD_BESTBUY (in graph_iri varchar, in new_origin_ur
   if (asin is null or not isstring (api_key))
     return 0;
   if (is_sku)
-    -- url := sprintf ('http://api.remix.bestbuy.com/v1/products(sku=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
     url := sprintf ('http://api.remix.bestbuy.com/v1/products/%s.xml?apiKey=%s', asin, api_key);
   else
     url := sprintf ('http://api.remix.bestbuy.com/v1/products(productId=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
+	if (is_store)
+		url := sprintf ('http://api.remix.bestbuy.com/v1/stores(storeId=%s)?apiKey=%s&format=xml&show=all', asin, api_key);
   tmp := http_client_ext (url, headers=>hdr, proxy=>get_keyword_ucase ('get:proxy', opts));
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/bestbuy2rdf.xsl', xd,
-    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar)));
+		vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'currentDateTime', cast(date_iso8601(now()) as varchar), 'is_store', cast(is_store as varchar)));
   xd := serialize_to_UTF8_xml (xt);
   delete from DB.DBA.RDF_QUAD where g =  iri_to_id(new_origin_uri); 
   DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
