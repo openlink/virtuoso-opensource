@@ -620,7 +620,7 @@
 
                           if (POLLS.WA.poll_enable_edit (self.domain_id, id, permissions))
                           {
-                            http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\'); return false;" title="Edit %s" class="app link">%s</a></div>', id, SIOC..poll_post_iri (self.domain_id, id), id, title, POLLS.WA.stringCut(title, self.pChars)));
+                            http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\'); return false;" title="Edit %s" class="app link">%s</a></div>', id, POLLS.WA.utf2wide (SIOC..poll_post_iri (self.domain_id, id)), id, title, POLLS.WA.stringCut(title, self.pChars)));
                           } else {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));
                           }

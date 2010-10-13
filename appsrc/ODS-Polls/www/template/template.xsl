@@ -147,7 +147,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" action="--POLLS.WA.page_url (self.domain_id)" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Polls'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -169,7 +169,7 @@
                       params := e.ve_params;
                       q := trim (get_keyword ('q', params, ''));
                       S := case when q <> ''then sprintf ('&q=%s&step=1', q) else '' end;
-                      self.vc_redirect (POLLS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S)));
+                      self.vc_redirect (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, sprintf ('search.vspx?mode=%s%s', get_keyword ('select', params, 'advanced'), S))));
                       self.vc_data_bind(e);
                      ]]>
               </v:on-post>
@@ -179,10 +179,10 @@
             ?>
             <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="q" value="" fmt-function="POLLS.WA.utf2wide" xhtml_onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost(\'searchHead\', \'select\', \'simple\'); return false;"/>
-              <xsl:call-template name="nbsp"/>
-              <v:url url="--POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'simple\'); return false;" value="Search" xhtml_title="simple Search" />
+              &amp;nbsp;
+              <a href="<?vsp http (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=simple', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'simple'); return false;" title="Simple Search">Search</a>
             |
-              <v:url url="--POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm)" xhtml_onclick="javascript: vspxPost(\'searchHead\', \'select\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search" />
+              <a href="<?vsp http (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'search.vspx?mode=advanced', self.sid, self.realm))); ?>" onclick="vspxPost('searchHead', 'select', 'advanced'); return false;" title="Advanced">Advanced</a>
           </div>
         </v:template>
       </div>
@@ -191,11 +191,11 @@
             <?vsp http (POLLS.WA.utf2wide (POLLS.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when (self.account_rights in ('public', 'guest')) then 0 else 1 end">
-              <v:url url="--POLLS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm)" value="Preferences" xhtml_title="Preferences"/>
+            <vm:if test="self.account_rights = 'W'">
+              <a href="<?vsp http (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
-        </v:template>
-            <a href="--POLLS.WA.page_url (self.domain_id, 'about.vsp')" onclick="javascript: POLLS.aboutDialog(); return false;" title="About">About</a>
+            </vm:if>
+            <a href="<?vsp http (POLLS.WA.utf2wide (POLLS.WA.page_url (self.domain_id, 'about.vsp'))); ?>" onclick="javascript: POLLS.aboutDialog(); return false;" title="About">About</a>
       </div>
           <p style="clear: both; line-height: 0.1em" />
         </div>  
@@ -258,7 +258,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
 
-        S := POLLS.WA.gems_url (self.domain_id);
+        S := POLLS.WA.utf2wide (POLLS.WA.gems_url (self.domain_id));
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sPolls.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
@@ -455,17 +455,5 @@
       <xsl:value-of select="@caption"/>
     </div>
   </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="nbsp">
-    <xsl:param name="count" select="1"/>
-    <xsl:if test="$count != 0">
-      <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      <xsl:call-template name="nbsp">
-        <xsl:with-param name="count" select="$count - 1"/>
-      </xsl:call-template>
-    </xsl:if>
-  </xsl:template>
-  <!--=========================================================================-->
 
 </xsl:stylesheet>

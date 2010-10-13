@@ -3080,7 +3080,7 @@ create procedure POLLS.WA.dashboard_get(
     http ('<poll>', aStream);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (_time)), aStream);
     http (sprintf ('<title><![CDATA[%s]]></title>', _name), aStream);
-    http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..poll_post_iri (domain_id, _id)), aStream);
+    http (sprintf ('<link>%V</link>', SIOC..poll_post_iri (domain_id, _id)), aStream);
     http (sprintf ('<from><![CDATA[%s]]></from>', POLLS.WA.account_fullName (account_id)), aStream);
     http (sprintf ('<uid>%s</uid>', POLLS.WA.account_name (account_id)), aStream);
     http ('</poll>', aStream);
