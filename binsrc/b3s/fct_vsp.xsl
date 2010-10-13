@@ -176,6 +176,7 @@ function init(){
             Value range between <input name="lo" type="text"/>
             and <input name="hi" type="text"/>
             <input type="submit" value="set"/>
+            <span class="info">Plain integer, or RDF datatype (Ex: "1988-01-01"^^xsd:date, "Neubauten"@de)</span>
           </form>                
         </xsl:if>
         <xsl:for-each select="/facets/result">
@@ -216,9 +217,12 @@ function init(){
 <script type="text/javascript">
   if ($('pivot_a_ctr')) {
 	  var pivot_a = OAT.Dom.create('a',{}, 'pivot_a');
-	  pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
+      pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=100&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
 	  pivot_a.innerHTML = 'Make Pivot collection';
-	  OAT.Dom.append (['pivot_a_ctr',pivot_a]);
+      pivot_a.id = 'pivot_a_mpc';
+      var pivot_pg = OAT.Dom.create('span', {}, 'pivot_pg');
+      pivot_pg.innerHTML = '&nbsp;&nbsp;(&nbsp;<a  href="#" title="Sets the maximum number of entities displayed in a PivotViewer page. Entities on other pages are accessible via Related Collections links. A value of 0 disables paging, displaying all entities in a single PivotViewer page. Range: 0..1000">Page size</a>&nbsp;<input type="text" onblur="fct_set_pivot_page_size()" id="pivot_pg_size" size="4" maxlength="4" value="100" />&nbsp;&nbsp;)';
+      OAT.Dom.append (['pivot_a_ctr',pivot_a,pivot_pg]);
   }
 </script>
 </xsl:if>

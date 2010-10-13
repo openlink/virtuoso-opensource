@@ -353,3 +353,20 @@ function fct_sel_neg (cb)
   else
     a.href = a.href + '&exclude=yes';
 }
+
+function fct_set_pivot_page_size()
+{
+  var pg_size = $('pivot_pg_size').value;
+  pg_size = parseInt(pg_size);
+  if (isNaN(pg_size) || pg_size < 0)
+    pg_size = 0;
+  else if (pg_size > 1000)
+    pg_size = 1000;
+
+  $('pivot_pg_size').value = pg_size.toString();
+
+  var a = $('pivot_a_mpc');
+  var href = a.href;
+  href = href.replace(/limit=\d+/, 'limit='+pg_size);
+  a.setAttribute("href", href);
+}

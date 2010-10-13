@@ -512,3 +512,6 @@ div#dbg_output {
   font-size: 8pt;
 }
 
+span.pivot_pg a { text-decoration: none; }
+span.pivot_pg a:hover { text-decoration: underline; }
+

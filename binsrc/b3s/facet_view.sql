@@ -1333,6 +1333,172 @@ fct_select_value (in tree any,
 ;
 
 create procedure 
+fct_validate_xsd_float (in str varchar) {
+  declare ret varchar;
+
+  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)$', str); -- simple case
+
+  if (ret is not null) 
+  {
+    return ret;
+  }
+  ret := regexp_match ('^"([^\\\D"]|\\.|[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)?|INF|-INF|NaN)"\\^\\^(xsd\\:double|xsd\\:float)',str);
+  return ret;
+
+}
+;
+
+create procedure 
+fct_validate_xsd_decimal (in str varchar) { 
+  return regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)?)"\\^\\^xsd\\:decimal',str);
+}
+;
+
+create procedure
+fct_validate_xsd_int (in str varchar) 
+{
+  declare ret varchar;
+
+  ret := regexp_match ('^[-+]?[0-9]+$', str); -- simple integers
+  if (ret is not null) 
+  {
+    return ret;
+  }
+  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)$', str);
+  return ret;
+
+}
+;
+
+create procedure 
+fct_validate_xsd_date (in str varchar) {
+  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:date$', str);
+}
+;
+
+create procedure
+fct_validate_xsd_datetime (in str varchar) 
+{
+  declare retval varchar;
+
+  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTime$', str);
+  return retval;
+}
+;
+
+create procedure 
+fct_validate_xsd_str (in str varchar) {
+  declare retval varchar;
+
+  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*$', str);
+
+--  if (retval is null) {
+--    retval := sprintf ('''%s''', regexp_replace (str,'["'']','', 1, null));
+--  }
+  return retval;
+}
+;
+
+create procedure 
+fct_validate_cond_input (in str varchar) 
+{
+  declare retval varchar;
+
+  retval := coalesce (fct_validate_xsd_int(str), 
+                      fct_validate_xsd_float (str),
+                      fct_validate_xsd_decimal(str),
+                      fct_validate_xsd_datetime(str),
+                      fct_validate_xsd_date(str),
+                      fct_validate_xsd_str (str));
+
+  return retval;
+}
+;
+
+create procedure 
+fct_validate_xsd_float (in str varchar) {
+  declare ret varchar;
+
+  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)$', str); -- simple case
+
+  if (ret is not null) 
+  {
+    return ret;
+  }
+  ret := regexp_match ('^"([^\\\D"]|\\.|[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)?|INF|-INF|NaN)"\\^\\^(xsd\\:double|xsd\\:float)',str);
+  return ret;
+
+}
+;
+
+create procedure 
+fct_validate_xsd_decimal (in str varchar) { 
+  return regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)?)"\\^\\^xsd\\:decimal',str);
+}
+;
+
+create procedure
+fct_validate_xsd_int (in str varchar) 
+{
+  declare ret varchar;
+
+  ret := regexp_match ('^[-+]?[0-9]+$', str); -- simple integers
+  if (ret is not null) 
+  {
+    return ret;
+  }
+  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)$', str);
+  return ret;
+
+}
+;
+
+create procedure 
+fct_validate_xsd_date (in str varchar) {
+  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:date$', str);
+}
+;
+
+create procedure
+fct_validate_xsd_datetime (in str varchar) 
+{
+  declare retval varchar;
+
+  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTime$', str);
+  return retval;
+}
+;
+
+create procedure 
+fct_validate_xsd_str (in str varchar) {
+  declare retval varchar;
+
+  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*$', str);
+
+--  if (retval is null) {
+--    retval := sprintf ('''%s''', regexp_replace (str,'["'']','', 1, null));
+--  }
+  return retval;
+}
+;
+
+create procedure 
+fct_validate_cond_input (in str varchar) 
+{
+  declare retval varchar;
+
+  retval := coalesce (fct_validate_xsd_int(str), 
+                      fct_validate_xsd_float (str),
+                      fct_validate_xsd_decimal(str),
+                      fct_validate_xsd_datetime(str),
+                      fct_validate_xsd_date(str),
+                      fct_validate_xsd_str (str));
+
+  return retval;
+}
+;
+
+create procedure 
 fct_value_range (in tree any, 
                  in sid int, 
                  in lang varchar, 
@@ -1344,7 +1510,16 @@ fct_value_range (in tree any,
 
   pos := fct_view_pos (tree);
 
+  lo := fct_validate_cond_input (lo);
+  hi := fct_validate_cond_input (hi);
 
+  if (lo is null and hi is null) 
+  {
+    fct_web (tree);
+    return;
+  }
+  else
+  {
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos, 'op', 'value-range', 'hi', hi, 'lo', lo, 'lang', lang, 'datatype', dtp));
@@ -1356,6 +1531,8 @@ fct_value_range (in tree any,
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
+  } 
+
   fct_web (tree);
 }
 ;
@@ -1556,7 +1733,8 @@ create procedure fct_virt_info ()
 }
 ;
 
--- /* page header */
+--  page header
+
 create procedure fct_page_head ()
 {
   http ('<div id="hd_l">
