@@ -7264,7 +7264,7 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
             }
           /* No appropriate triple pattern found to the left from sinv gp, let's try to find a subgroup */
           sparp_equiv_sort_subvalue_idxs_by_child_order (sparp, parent_eq);
-          first_sibling_eq = SPARP_EQUIV (sparp, local_eq->e_subvalue_idxs[0]);
+          first_sibling_eq = SPARP_EQUIV (sparp, parent_eq->e_subvalue_idxs[0]);
           if (first_sibling_eq->e_gp != gp)
             {
               ssg_print_equiv_retval_expn (ssg, first_sibling_eq->e_gp, first_sibling_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
