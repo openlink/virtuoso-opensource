@@ -3623,7 +3623,11 @@ box_read_long_ref (dk_session_t *session, dtp_t dtp)
 caddr_t
 udt_mp_copy (mem_pool_t * mp, caddr_t box)
 {
-  caddr_t cp = xe_make_copy (box);
+  caddr_t cp = NULL;
+  if (UDT_I_CLASS (box) == XMLTYPE_CLASS)
+    cp = xe_make_copy (box);
+  else
+    cp = box_copy (box);
   dk_set_push (&mp->mp_trash, (void*)cp);
   return cp;
 }
