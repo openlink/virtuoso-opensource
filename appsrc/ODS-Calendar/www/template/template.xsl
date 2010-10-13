@@ -152,7 +152,7 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <xsl:apply-templates select="vm:init"/>
-    <v:form name="F1" method="POST" type="simple" action="--CAL.WA.iri_fix(CAL.WA.forum_iri(self.domain_id))" xhtml_enctype="multipart/form-data">
+    <v:form name="F1" method="POST" type="simple" action="--CAL.WA.iri_fix (CAL.WA.utf2wide (CAL.WA.forum_iri(self.domain_id)))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Calendar'/>
       <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
@@ -164,7 +164,7 @@
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
               <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" fmt-function="CAL.WA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\', \'command\', \'select\', \'search\', \'mode\', \'simple\');" />
-            <xsl:call-template name="nbsp"/>
+              &amp;nbsp;
               <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'simple');" title="Simple Search" about="Simple Search" class="link">Search</span>
             |
               <span onclick="javascript: vspxPost('command', 'select', 'search', 'mode', 'advanced');" title="Advanced Search" about="Advanced Search" class="link">Advanced</span>
@@ -176,10 +176,10 @@
             <?vsp http (CAL.WA.utf2wide (CAL.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <v:template type="simple" enabled="--case when (self.account_rights = 'W') then 1 else 0 end">
+            <vm:if test="self.account_rights = 'W'">
               <span onclick="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Preferences" about="Preferences" class="link">Preferences</span>
               |
-        </v:template>
+            </vm:if>
             <span onclick="javascript: CAL.aboutDialog(); return false;" title="About" class="link">About</span>
       </div>
           <p style="clear: both; line-height: 0.1em">&nbsp;</p>
@@ -407,7 +407,7 @@
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
 
-        S := CAL.WA.gems_url (self.domain_id);
+        S := CAL.WA.utf2wide (CAL.WA.gems_url (self.domain_id));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));
@@ -594,17 +594,5 @@
       <xsl:value-of select="@caption"/>
     </div>
   </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="nbsp">
-    <xsl:param name="count" select="1"/>
-    <xsl:if test="$count != 0">
-      <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      <xsl:call-template name="nbsp">
-        <xsl:with-param name="count" select="$count - 1"/>
-      </xsl:call-template>
-    </xsl:if>
-  </xsl:template>
-  <!--=========================================================================-->
 
 </xsl:stylesheet>
