@@ -12116,36 +12116,6 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       exec ('revoke "SPARQL_UPDATE" from "SPARQL"', stat, msg);
       return;
     }
-  if (not isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2')))
-    {
-      __atomic (1);
-      {
-      set isolation='uncommitted';
-        declare exit handler for sqlstate '*'
-          {
-            log_message ('Error during upgrade of RDF_OBJ:');
-            log_message (__SQL_STATE || ': ' || "LEFT" (__SQL_MESSAGE, 1000));
-            goto describe_recovery;
-          };
-        declare rolong_cur cursor for select RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_LONG is not null and length (RO_VAL) = 6 for update;
-        whenever not found goto rolong_cur_end;
-        open rolong_cur;
-        while (1)
-          {
-            declare rl any;
-            declare old_rv, new_rv varchar;
-            fetch rolong_cur into old_rv, rl;
-            new_rv := tridgell32 (blob_to_string (rl));
-            if (new_rv <> old_rv)
-            update DB.DBA.RDF_OBJ set RO_VAL = new_rv where current of rolong_cur;
-          }
-rolong_cur_end: ;
-        registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2', '1');
-      }
-      __atomic (0);
-      exec ('checkpoint');
-    }
-tridgell_ok:
   --exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
   if (exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ_RO_FLAGS_WORDS')
@@ -12162,125 +12132,6 @@ tridgell_ok:
     0, 0, vector (), 1, ''*ini*'', ''UTF-8-QR'')', stat, msg);
   __vt_index ('DB.DBA.RDF_QUAD', 'RDF_QUAD_OP', 'O', 'O', 'DB.DBA.RDF_OBJ_RO_FLAGS_WORDS');
   exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);
-  if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
-    goto final_qm_reload;
-  __atomic (1);
-  {
-  declare exit handler for sqlstate '*'
-    {
-      log_message ('Error during upgrade of free-text index of RDF_QUAD:');
-      log_message (__SQL_STATE || ': ' || "LEFT" (__SQL_MESSAGE, 1000));
-      goto describe_recovery;
-    };
---  checkpoint;
-  log_enable (0);
-  if (exists (select top 1 1 from DB.DBA.RDF_QUAD))
-    log_message ('Upgrading RDF indices.  Can be up to an hour per GB of RDF data.');
-  registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE', '1');
-  if (exists (select top 1 1 from DB.DBA.SYS_COLS
-    where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
-    and "COLUMN" = fix_identifier_case ('RO_DIGEST')
-    and COL_DTP = __tag of varchar ))
-    {
-      exec ('drop index RO_DIGEST', stat, msg);
-      exec ('alter table DB.DBA.RDF_OBJ drop RO_DIGEST', stat, msg);
---      exec ('alter table DB.DBA.RDF_OBJ add RO_DIGEST any', stat, msg);
-      exec ('alter table DB.DBA.RDF_OBJ add RO_FLAGS smallint not null default 0', stat, msg);
-      exec ('alter table DB.DBA.RDF_OBJ add RO_DT_AND_LANG integer not null default 16843009', stat, msg);
---      exec ('create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)', stat, msg);
-      commit work;
-    }
-  set isolation='uncommitted';
-  {
-    declare longtyped_cur cursor for select G,S,P,O
-    from DB.DBA.RDF_QUAD
-    where isstring (O) and length (O) = 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    declare val_len, o_id integeR;
-    declare o_new any;
-    whenever not found goto longtyped_cur_end;
-    open longtyped_cur;
-    while (1)
-      {
-        declare o_long any;
-        declare o_strval varchar;
-        fetch longtyped_cur into g_old, s_old, p_old, o_old;
-        -- dbg_obj_princ ('o_old (longtyped) = ', o_old);
-        if (o_old [22] <> 0)
-          {
-            log_message ('The function DB.DBA.RDF_QUAD_FT_UPGRADE() has found ill formed object literal in DB.DBA.RDF_QUAD');
-            log_message ('This means that this version of Virtuoso server can not process RDF data stored in the database.');
-            log_message ('To fix the problem, remove the transaction log and start previous version of Virtuoso.');
-            log_message (sprintf ('The example of ill literal is |%U|, if escaped like URL', o_old));
-            goto describe_recovery;
-          }
-        o_long := jso_parse_digest (o_old);
-        o_strval := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = o_long[3]);
-        o_new := DB.DBA.RDF_OBJ_ADD (o_long[0], o_strval, o_long[2]);
-        insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new);
-      }
-longtyped_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) = 29;
---  checkpoint;
-  {
-    declare shortobj_cur cursor for select G,S,P,O from DB.DBA.RDF_QUAD where isstring (O) and length (O) < 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    declare val_len, o_id integeR;
-    declare o_new any;
-    whenever not found goto shortobj_cur_end;
-    open shortobj_cur;
-    while (1)
-      {
-        declare o_dt, o_lang integeR;
-        fetch shortobj_cur into g_old, s_old, p_old, o_old;
-        val_len := length (o_old) - 5;
-        if (o_old [val_len+2] <> 0)
-          {
-            log_message ('The function DB.DBA.RDF_QUAD_FT_UPGRADE() has found ill formed object literal in DB.DBA.RDF_QUAD');
-            log_message ('This means that this version of Virtuoso server can not process RDF data stored in the database.');
-            log_message ('To fix the problem, remove the transaction log and start previous version of Virtuoso.');
-            log_message (sprintf ('The example of ill literal is |%U|, if escaped like URL', o_old));
-            goto describe_recovery;
-          }
-        o_dt := o_old[0] + o_old[1]*256;
-        o_lang := o_old[val_len+3] + o_old[val_len+4]*256;
-        o_new := DB.DBA.RDF_OBJ_ADD (o_dt, subseq (o_old, 2, val_len+2), o_lang);
-        if (isstring (o_new))
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new || '012345678901234567890123456789');
-        else
-          insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new);
-        commit work;
-      }
-shortobj_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) < 29;
---  checkpoint;
-  {
-    declare tmpval_cur cursor for select G,S,P,O
-    from DB.DBA.RDF_QUAD
-    where isstring (O) and length (O) > 29;
-    declare g_old, s_old, p_old any;
-    declare o_old varchar;
-    whenever not found goto tmpval_cur_end;
-    open tmpval_cur;
-    while (1)
-      {
-        fetch tmpval_cur into g_old, s_old, p_old, o_old;
-        -- dbg_obj_princ ('o_old (tmp) = ', o_old);
-        insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, subseq (o_old, 0, length (o_old) - 30));
-      }
-tmpval_cur_end: ;
-  }
-  delete from DB.DBA.RDF_QUAD where isstring (O) and length (O) > 29;
---  checkpoint;
-  commit work;
-  log_enable (1);
-  }
-  __atomic (0);
-  exec ('checkpoint');
 
 final_qm_reload:
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
@@ -12288,16 +12139,6 @@ final_qm_reload:
     (iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#Geometry'), 256, 'http://www.openlinksw.com/schemas/virtrdf#Geometry');
 
   return;
-
-describe_recovery:
-  log_message ('Remove the transaction log and start previous version of Virtuoso.');
-  log_message ('You may use the database with new version of Virtuoso server for');
-  log_message ('diagnostics and error recovery; to make it possible, add parameter');
-  log_message ('"RecoveryMode=1" to the [SPARQL] section of ' || virtuoso_ini_path ());
-  log_message ('and restart the server; remove the parameter and restart as soon as possible');
-  log_message ('This error is critical. The server will now exit. Sorry.');
-  -- __atomic (0);
-  raw_exit ();
 }
 ;
 
