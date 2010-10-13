@@ -241,16 +241,13 @@
         http (arr[2], ses);
         return;
       }
-      else if (not isarray (arr))
-      {
+      if (not isarray (arr))
         return;
-      }
 
       foreach (any elm in arr) do
       {
         self.gdata_cat_str (elm, ses);
       }
-      return;
     ]]>
   </v:method>
 
@@ -1375,8 +1372,8 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
       <v:template name="rdf_search_tmpl2" type="simple" condition="self.page = 5">
 	<!-- RDF search -->
 	<script type="text/javascript">
-	  var featureList = ["rdfbrowser","dimmer","ajax","dialog","grid","graphsvg","map","timeline",
-	  "menu","dialog","xml","tagcloud","fresnel"];
+	  var featureList = ["rdfbrowser","rdfstore","rdftabs","tab","dimmer","ajax","dialog","grid","graphsvg","map","timeline","menu","xml","tagcloud","fresnel"];
+    OAT.Preferences.imagePath = '/ods/images/oat/';
 	  OAT.Loader.load(featureList, RDFBInit);
 	</script>
 	<div id="throbber">

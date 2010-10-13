@@ -256,6 +256,7 @@
       WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
+      WA_USER_EDIT (self.u_name, 'WAUI_SPB_ENABLE', self.spb_enable.ufl_selected);
       -- change user_text data
       WA_USER_TEXT_SET (self.u_id, WA_GET_USER_INFO (0, self.u_id, WA_USER_VISIBILITY (self.u_name), 0, 1));
     ]]>
@@ -277,11 +278,12 @@
   <v:variable persist="0" name="photo" type="varchar" default="''"/>
   <v:variable persist="0" name="audio" type="varchar" default="''"/>
 
-  <v:variable persist="0" name="issearch" type="int" default="1"/>
+  <v:variable persist="0" name="inSearch" type="int" default="1"/>
   <v:variable persist="0" name="showactive" type="int" default="1"/>
   <v:variable persist="0" name="interests" type="varchar" default="''"/>
   <v:variable persist="0" name="interestTopics" type="varchar" default="''"/>
   <v:variable persist="0" name="appEnable" type="integer" default="0"/>
+  <v:variable persist="0" name="spbEnable" type="integer" default="0"/>
 
   <v:variable name="sav0" type="varchar" default="'1'" />
   <v:variable name="sav1" type="varchar" default="'1'" />
@@ -324,6 +326,7 @@
              WAUI_INTERESTS,
              WAUI_INTEREST_TOPICS,
              WAUI_APP_ENABLE,
+             WAUI_SPB_ENABLE,
              WAUI_NICK,
              U_E_MAIL
         INTO self.utitle,
@@ -338,11 +341,12 @@
              self.summ,
              self.photo,
              self.audio,
-             self.issearch,
+             self.inSearch,
              self.showactive,
              self.interests,
              self.interestTopics,
              self.appEnable,
+             self.spbEnable,
              self.nick,
              self.email
         FROM WA_USER_INFO,
@@ -802,10 +806,24 @@
            <td> </td>
            <td>
              <label>
+           	   <v:check-box name="spb_enable" value="1" xhtml_id="spb_enable">
+                 <v:after-data-bind>
+                   if (not e.ve_is_post)
+                     control.ufl_selected := self.spbEnable;
+                 </v:after-data-bind>
+               </v:check-box>
+               <b>Enable Semantic Pingback for ACLs</b>
+             </label>
+           </td>
+         </tr>
+         <tr>
+           <td> </td>
+           <td>
+             <label>
                <v:check-box name="in_search" value="1" xhtml_id="in_search" >
                  <v:after-data-bind>
                    if (not e.ve_is_post)
-                     control.ufl_selected := self.issearch;
+                     control.ufl_selected := self.inSearch;
                  </v:after-data-bind>
                </v:check-box>
                <b>Include my profile in search results</b>

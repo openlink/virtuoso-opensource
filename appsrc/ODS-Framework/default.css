@@ -950,7 +950,6 @@ a.tabX {
 
 a.activeTabX {
   background-color: #EFEFEF;
-  border-color: #7f94a5;
 }
 
 a.tabX:visited
@@ -988,6 +987,7 @@ div.contents {
   background-color: #EFEFEF;
   border: 1px solid #7F94A5;
   padding: 0.5em;
+  margin-top: -1px;
 }
 
 /* ComboList */

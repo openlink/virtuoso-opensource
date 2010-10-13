@@ -281,20 +281,13 @@
 		<?vsp
 		    }
 		?>
-                            <v:url name="ddd" value="--''" format="%s" url="#">
-                               <v:after-data-bind>
-                      <![CDATA[
-                                  control.vu_url := SIOC..forum_iri ((control.vc_parent as vspx_row_template).te_rowset[6], (control.vc_parent as vspx_row_template).te_rowset[2]) || sprintf ('?sid=%s&realm=%s', self.sid, self.realm);
-                                  control.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
-                      ]]>
-                               </v:after-data-bind>
-                            </v:url>
+                            <a href="<?vsp http (wa_utf8_to_wide (SIOC..forum_iri ((control as vspx_row_template).te_rowset[6], (control as vspx_row_template).te_rowset[2]) || sprintf ('?sid=%s&realm=%s', self.sid, self.realm))); ?>"><?V wa_utf8_to_wide((control as vspx_row_template).te_rowset[2]) ?></a>
               </td>
               <td>
-                <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[8]" format="%s"/>
+                            <?V (control as vspx_row_template).te_rowset[8] ?>
               </td>
               <td>
-                <v:label value="--coalesce((control.vc_parent as vspx_row_template).te_rowset[1], 'owner')" format="%s"/>
+                            <?V coalesce ((control as vspx_row_template).te_rowset[1], 'owner') ?>
               </td>
               <td>
                 <vm:label value="" format="(%s)">

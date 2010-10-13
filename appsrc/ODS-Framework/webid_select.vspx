@@ -87,41 +87,38 @@
 
         if (self.v_order = columnName and self.v_direction = 'desc') {
           directionStr := 'Ascending';
-          imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+          imageStr := '&nbsp;<img src="images/icons/orderdown_16.png" border="0" alt="Down"/>';
         } else if (self.v_order = columnName and self.v_direction = 'asc') {
           directionStr := 'Descending';
-          imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+          imageStr := '&nbsp;<img src="images/icons/orderup_16.png" border="0" alt="Up"/>';
         } else {
           directionStr := 'Ascending';
           imageStr := '&nbsp;&nbsp;';
         }
         altStr := sprintf('Sort Rows on %s in %s Order', titleName, directionStr);
-        http(sprintf('<a href="#" onClick="javascript: myPost(''F1'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
+        http(sprintf('<a href="#" onClick="javascript: myPost(''page_form'', ''sortColumn'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', columnName, altStr, altStr, titleName, imageStr));
       ]]>
     </v:method>
 
     <v:method name="sortChange" arglist="in columnName varchar">
       <![CDATA[
-        if (columnName = '')
-          return;
+        if (columnName <> '')
+        {
         self.ds.vc_reset();
-        if (self.v_order = columnName) {
+          if (self.v_order = columnName)
+          {
           self.v_direction := either(equ(self.v_direction, 'asc'), 'desc', 'asc');
         } else {
           self.v_direction := 'asc';
-        }
         self.v_order := columnName;
+          }
+        }
       ]]>
     </v:method>
 
     <v:method name="isMultiple" arglist="in dst any">
       <![CDATA[
-        declare pos integer;
-
-        pos := strstr(self.v_dst, 'm');
-        if (not isnull(pos))
-          return 1;
-        return 0;
+        return case when isnull (strstr (self.v_dst, 'm')) then 0 else 1 end;
       ]]>
     </v:method>
 
@@ -159,14 +156,16 @@
           <div style="padding: 0 0 0.5em 0;">
             <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
           </div>
+          <vm:if test="self.v_mode = ''">
           <div class="boxHeader">
             Show
-            <v:select-list name="filter" value="--self.v_filter" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+              <v:select-list name="filter" value="--self.v_filter">
               <v:item name="Persons & Groups" value="" />
               <v:item name="Persons" value="p" />
               <v:item name="Groups" value="g" />
             </v:select-list>
           </div>
+          </vm:if>
           <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
             <v:before-data-bind>
               <![CDATA[
@@ -209,31 +208,24 @@
           </v:data-source>
           <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table id="users" class="listing" cellspacing="0">
+              <table id="webids" class="listing" cellspacing="0">
                 <tr class="listing_header_row">
-                  <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+                  <vm:if test="self.isMultiple(self.v_dst)">
                     <th class="checkbox" width="1%">
-                      <?vsp
-                        http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this.form, ''cb_item''); "/>');
-                      ?>
+                      <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item'); updateChecked(this, 'cb_item'); "/>
                     </th>
-                  </v:template>
-                  <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+                  </vm:if>
+                  <vm:if test="self.v_mode = ''">
                     <th>
-                      <v:label value="Type" format="%s"/>
+                      Type
                     </th>
-                  </v:template>
+                  </vm:if>
                   <th>
                     <?vsp self.sortColumn('WebID', 'F2'); ?>
                   </th>
                   <th>
                     <?vsp self.sortColumn('Description', 'F3'); ?>
                   </th>
-                  <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                    <th width="1%">
-                      Action
-                    </th>
-                  </v:template>
                 </tr>
               </table>
             </v:template>
@@ -242,48 +234,39 @@
 
               <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                 <table>
-                  <tr align="center">
-                    <?vsp http(sprintf('<td colspan="%d">No records</td>', either(equ(self.v_mode,''),4,3))); ?>
-                  </tr>
+                  <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
+                    No records
+                  </td>
                 </table>
               </v:template>
 
               <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table>
-                  <tr>
-                    <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+                  <tr onclick="rowSelected(this);" class="pointer <?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+                    <vm:if test="self.isMultiple(self.v_dst)">
                       <td  align="center">
                         <?vsp
-                          declare pos integer;
                           declare S, name any;
 
-                          name := (control.vc_parent as vspx_row_template).te_column_value('F2');
-                          S := '';
-                          pos := strstr(self.v_s1, concat(name, ','));
-                          if (not isnull(pos))
-                            S := 'checked="checked"';
-                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this.form, ''cb_item''); " />', name, S));
+                          name := (control as vspx_row_template).te_column_value('U_NAME');
+                          S := case when isnull (strstr(self.v_s1, concat(name, ','))) then '' else 'checked="checked"' end;
+                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item'', event); " />', name, S));
                         ?>
                       </td>
-                    </v:template>
-                    <v:template type="simple" enabled="-- case when (self.v_mode = '') then 1 else 0 end">
+                    </vm:if>
+                    <vm:if test="self.v_mode = ''">
                       <td nowrap="nowrap">
                         <v:label value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('F1')" format="%s"/>
                       </td>
-                    </v:template>
+                    </vm:if>
                     <td nowrap="nowrap">
+                      <input name="s1_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('F2') ?>" />
                       <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('F2')" format="%s"/>
                     </td>
                     <td nowrap="nowrap">
+                      <input name="s2_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('F3') ?>" />
                       <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('F3')" format="%s"/>
                     </td>
-                    <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
-                      <td nowrap="nowrap">
-                        <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('F2')"/>
-                        <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('F3')"/>
-                        <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
-                      </td>
-                    </v:template>
                   </tr>
                 </table>
               </v:template>
@@ -293,20 +276,20 @@
             <v:template type="simple" name-to-remove="table" set-to-remove="top">
               <table>
                 <tr align="center">
-                  <?vsp http(sprintf('<td colspan="%d">', either(equ(self.v_mode,''),4,3))); ?>
+                  <td colspan="<?V either(equ(self.v_mode,''),3,2)+self.isMultiple(self.v_dst) ?>">
                     <vm:ds-navigation data-set="ds"/>
-                  <?vsp http('</td>'); ?>
+                  </td>
                 </tr>
               </table>
             </v:template>
 
           </v:data-set>
-          <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+          <vm:if test="self.isMultiple(self.v_dst)">
             <div style="padding: 0 0 0.5em 0;">
               <hr />
               <a href="#" onclick="javascript: addChecked(document.forms['page_form'], 'cb_item', 'No users were selected for addition. No groups were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
             </div>
-          </v:template>
+          </vm:if>
         </div>
       </vm:body>
     </vm:pagewrapper>
