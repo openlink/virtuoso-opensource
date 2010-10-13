@@ -868,24 +868,37 @@ create procedure contact_acl_delete (
 create trigger PERSONS_SIOC_ACL_I after insert on AB.WA.PERSONS order 100 referencing new as N
 {
   if (coalesce (N.P_ACL, '') <> '')
+  {
     contact_acl_insert (N.P_DOMAIN_ID,
                         N.P_ID,
                         N.P_ACL);
+
+    SIOC..acl_ping (N.P_DOMAIN_ID,
+                    SIOC..addressbook_contact_iri (N.P_DOMAIN_ID, N.P_ID),
+                    null,
+                    N.P_ACL);
+  }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create trigger PERSONS_SIOC_ACL_U after update on AB.WA.PERSONS order 100 referencing old as O, new as N
+create trigger PERSONS_SIOC_ACL_U after update (P_ACL) on AB.WA.PERSONS order 100 referencing old as O, new as N
 {
-  if ((coalesce (O.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+  if (coalesce (O.P_ACL, '') <> '')
     contact_acl_delete (O.P_DOMAIN_ID,
                         O.P_ID,
                         O.P_ACL);
-  if ((coalesce (N.P_ACL, '') <> '') and (coalesce (O.P_ACL, '') <> coalesce (N.P_ACL, '')))
+
+  if (coalesce (N.P_ACL, '') <> '')
     contact_acl_insert (N.P_DOMAIN_ID,
                         N.P_ID,
                         N.P_ACL);
+
+  SIOC..acl_ping (N.P_DOMAIN_ID,
+                  SIOC..addressbook_contact_iri (N.P_DOMAIN_ID, N.P_ID),
+                  O.P_ACL,
+                  N.P_ACL);
 }
 ;
 
