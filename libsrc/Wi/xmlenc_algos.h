@@ -53,6 +53,8 @@ int dsig_dh_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
 int dsig_dh_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest);
 
 #ifdef SHA256_ENABLE
+int dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
+int dsig_rsa_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest);
 int dsig_sha256_digest (dk_session_t * ses_in, long len, caddr_t * digest_out);
 int dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
 int dsig_dh_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);

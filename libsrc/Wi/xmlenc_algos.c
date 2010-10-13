@@ -1483,6 +1483,105 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   return i;
 }
 
+#ifdef SHA256_ENABLE
+int
+dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out)
+{
+  SHA256_CTX ctx;
+  unsigned char md[SHA256_DIGEST_LENGTH + 1];
+  unsigned char buf[1];
+  unsigned char sig[256 + 1];
+  unsigned int siglen;
+  int i;
+
+  if (NULL == key)
+    return 0;
+
+  if (key->xek_type != DSIG_KEY_RSA)
+    return 0;
+
+  if (!key->xek_private_rsa)
+    return 0;
+
+  memset (md, 0, sizeof (md));
+  SHA256_Init(&ctx);
+
+  CATCH_READ_FAIL (ses_in)
+    {
+      for (;;)
+	{
+          i = session_buffered_read (ses_in, (char *)buf, 1);
+	  if (i <= 0) break;
+	  SHA256_Update(&ctx,buf,(unsigned long)i);
+	}
+    }
+  FAILED
+    {
+    }
+  END_READ_FAIL (ses_in);
+
+  SHA256_Final(&(md[0]),&ctx);
+
+  RSA_sign (NID_sha256, md, SHA256_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
+  sig[siglen] = 0;
+
+  if (sign_out)
+    {
+      caddr_t encoded_out = dk_alloc_box_zero (siglen * 2 + 1, DV_STRING);
+      len = xenc_encode_base64 ((char *)sig, encoded_out, siglen);
+      sign_out[0] = dk_alloc_box_zero (len + 1, DV_STRING);
+      memcpy (sign_out[0], encoded_out, len);
+      dk_free_box (encoded_out);
+    }
+  return len;
+}
+
+int
+dsig_rsa_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest_base64)
+{
+  SHA256_CTX ctx;
+  unsigned char md[SHA256_DIGEST_LENGTH + 1];
+  unsigned char buf[1];
+  int i;
+  unsigned char * sig;
+  unsigned int siglen;
+
+  if (NULL == key)
+    return 0;
+
+
+  siglen = box_length (digest_base64);
+  sig = (unsigned char *) dk_alloc_box_zero (siglen, DV_BIN);
+  memcpy (sig, digest_base64, siglen);
+  siglen = xenc_decode_base64 ((char *)sig, (char *)(sig + siglen));
+
+  memset (md, 0, sizeof (md));
+  SHA256_Init(&ctx);
+
+  CATCH_READ_FAIL (ses_in)
+    {
+      for (;;)
+	{
+          i = session_buffered_read (ses_in, (char *)buf, 1);
+	  if (i <= 0) break;
+	  SHA256_Update(&ctx,buf,(unsigned long)i);
+	}
+    }
+  FAILED
+    {
+    }
+  END_READ_FAIL (ses_in);
+
+  SHA256_Final(&(md[0]),&ctx);
+
+  i = RSA_verify (NID_sha256, md, SHA256_DIGEST_LENGTH, sig, siglen, key->xek_rsa);
+
+  dk_free_box ((box_t) sig);
+
+  return i;
+}
+#endif
+
 int
 dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out)
 {
@@ -2945,6 +3044,8 @@ void dsig_sec_init ()
   dsig_verify_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_verify);
 
 #ifdef SHA256_ENABLE
+  dsig_sign_algo_create (DSIG_RSA_SHA256_ALGO, dsig_rsa_sha256_digest);
+  dsig_verify_algo_create (DSIG_RSA_SHA256_ALGO, dsig_rsa_sha256_verify);
   dsig_digest_algo_create (DSIG_SHA256_ALGO, dsig_sha256_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_digest);
   dsig_verify_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_verify);

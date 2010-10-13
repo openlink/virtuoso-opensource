@@ -141,6 +141,7 @@ typedef enum {
 #define DSIG_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#sha256"
 
 #define DSIG_RSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+#define DSIG_RSA_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha256"
 #define DSIG_DSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dsa-sha1"
 #define DSIG_DH_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha1"
 #define DSIG_DH_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha256"
