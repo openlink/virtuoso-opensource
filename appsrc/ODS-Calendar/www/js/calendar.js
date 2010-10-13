@@ -418,57 +418,54 @@ function calendarsHelp(mode) {
     $('ss_calendar').value = '';
 }
 
-function rowSelect(obj) {
-  var submitMode = false;
-  if (window.document.F1.elements['src'])
-    if (window.document.F1.elements['src'].value.indexOf('s') != -1)
-      submitMode = true;
-  if (submitMode)
-    if (window.opener.document.F1)
-      if (window.opener.document.F1.elements['submitting'])
-        return false;
-  var closeMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('c') == -1)
-      closeMode = false;
-  var singleMode = true;
-  if (window.document.F1.elements['dst'])
-    if (window.document.F1.elements['dst'].value.indexOf('s') == -1)
-      singleMode = false;
+function rowSelect(obj)
+{
+  var srcForm = window.document.F1;
+  var dstForm = window.opener.document.F1;
 
   var s2 = (obj.name).replace('b1', 's2');
   var s1 = (obj.name).replace('b1', 's1');
 
+  var submitMode = false;
+  if (srcForm.elements['src'] && (srcForm.elements['src'].value.indexOf('s') != -1)) {
+      submitMode = true;
+    if (dstForm && dstForm.elements['submitting'])
+        return false;
+  }
+  var closeMode = true;
+  var singleMode = true;
+  if (srcForm.elements['dst']) {
+    if (srcForm.elements['dst'].value.indexOf('c') == -1)
+      closeMode = false;
+    if (srcForm.elements['dst'].value.indexOf('s') == -1)
+      singleMode = false;
+  }
+
   var myRe = /^(\w+):(\w+);(.*)?/;
-  var params = window.document.forms['F1'].elements['params'].value;
+  var params = srcForm.elements['params'].value;
   var myArray;
+  if (dstForm) {
 	while (true) {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
-    if (myArray.length > 2)
-      if (window.opener.document.F1)
-				if (window.opener.document.F1.elements[myArray[1]]) {
+      if (myArray.length > 2) {
+        var fld = dstForm.elements[myArray[1]];
+        if (fld) {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s1],
-									singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s1], singleMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
-							rowSelectValue(
-									window.opener.document.F1.elements[myArray[1]],
-									window.document.F1.elements[s2],
-									singleMode, submitMode);
+            rowSelectValue(fld, srcForm.elements[s2], singleMode);
+        }
         }
     if (myArray.length < 4)
       break;
     params = '' + myArray[3];
   }
+  }
 	if (submitMode) {
     window.opener.createHidden('F1', 'submitting', 'yes');
-    window.opener.document.F1.submit();
+    dstForm.submit();
   }
   if (closeMode)
     window.close();

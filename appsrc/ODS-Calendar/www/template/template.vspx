@@ -47,14 +47,29 @@
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <![CDATA[
-      <script type="text/javascript">
-        // OAT
-        var toolkitPath="/ods/oat";
-        var imagePath = "/ods/images/oat/";
-        
-        var featureList=["ajax", "json", "anchor", "dialog", "dav", "color", "calendar"];
-    </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Preferences.stylePath = '/ods/oat/styles/';
+        OAT.Preferences.showAjax = false;
+
+        // DAV
+        var davOptions = {
+          imagePath: OAT.Preferences.imagePath,
+          pathHome: '/home/',
+          path: '<?V CAL.WA.dav_logical_home (self.account_id) ?>',
+          user: '<?V CAL.WA.account_name (self.account_id) ?>',
+          connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
+        };
+        
+      	/* load stylesheets */
+      	OAT.Style.include("grid.css");
+      	OAT.Style.include("webdav.css");
+      	OAT.Style.include("winms.css");
+
+        var featureList=["ajax", "json", "anchor", "dialog", "color", "calendar"];
+        OAT.Loader.load(featureList);
+    </script>
       <script type="text/javascript" src="/ods/tbl.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript" src="/ods/validate.js"></script>
@@ -72,22 +87,6 @@
           }
           CAL.weekStartDay = '<?V self.cWeekStarts ?>';
           CAL.dateFormat = '<?V self.cDateFormat ?>';
-
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-
-        	/* load stylesheets */
-        	OAT.Style.include("grid.css");
-        	OAT.Style.include("webdav.css");
-
-          // WebDAV
-          var options = { imagePath: OAT.Preferences.imagePath,
-                          pathHome: '/home/',
-                          path: '<?V CAL.WA.dav_logical_home (self.account_id) ?>',
-                          user: '<?V CAL.WA.account_name (self.account_id) ?>',
-                          connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
-                        };
-          OAT.WebDav.init(options);
 
           // <a>++
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;

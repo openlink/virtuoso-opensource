@@ -562,24 +562,37 @@ create procedure event_acl_delete (
 create trigger EVENTS_SIOC_ACL_I after insert on CAL.WA.EVENTS order 100 referencing new as N
 {
   if (coalesce (N.E_ACL, '') <> '')
+  {
     event_acl_insert (N.E_DOMAIN_ID,
                         N.E_ID,
                         N.E_ACL);
+
+    SIOC..acl_ping (N.E_DOMAIN_ID,
+                    SIOC..calendar_event_iri (N.E_DOMAIN_ID, N.E_ID),
+                    null,
+                    N.E_ACL);
+  }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create trigger EVENTS_SIOC_ACL_U after update on CAL.WA.EVENTS order 100 referencing old as O, new as N
+create trigger EVENTS_SIOC_ACL_U after update (E_ACL) on CAL.WA.EVENTS order 100 referencing old as O, new as N
 {
-  if ((coalesce (O.E_ACL, '') <> '') and (coalesce (O.E_ACL, '') <> coalesce (N.E_ACL, '')))
+  if (coalesce (O.E_ACL, '') <> '')
     event_acl_delete (O.E_DOMAIN_ID,
                       O.E_ID,
                       O.E_ACL);
-  if ((coalesce (N.E_ACL, '') <> '') and (coalesce (O.E_ACL, '') <> coalesce (N.E_ACL, '')))
+
+  if (coalesce (N.E_ACL, '') <> '')
     event_acl_insert (N.E_DOMAIN_ID,
                       N.E_ID,
                       N.E_ACL);
+
+  SIOC..acl_ping (N.E_DOMAIN_ID,
+                  SIOC..calendar_event_iri (N.E_DOMAIN_ID, N.E_ID),
+                  O.E_ACL,
+                  N.E_ACL);
 }
 ;
 

@@ -331,7 +331,7 @@
       onclick := '';
       if (not DB.DBA.is_empty_or_null (self.sid))
         onclick := sprintf ('onclick="javascript: eView(\'e_%d\'); return false;"', _id);
-      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, SIOC..calendar_event_iri(domain_id, _id), onclick, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
+      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), onclick, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
     ]]>
   </v:method>
 
@@ -3783,13 +3783,13 @@
                       <input type="file" name="f_file" size="60" />
                       </span>
                       <span id="imp_td_1" style="display: <?V case when self.icSource = 1 then '' else 'none' end ?>;">
-                        <v:text name="f_dav" xhtml_id="f_dav" value="--get_keyword ('f_dav', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" /><v:button action="browse" name="browse" value="Browse...">
-                   	  <v:after-data-bind>
+                        <v:text name="f_dav" xhtml_id="f_dav" value="--get_keyword ('f_dav', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" />
+                        <input type="button" value="Browse..." onclick="davBrowse ('f_dav');" />
                    		  <![CDATA[
-                                control.vc_add_attribute ('onclick', 'javascript: davBrowse (\'f_dav\');');
+                  		    <script type="text/javascript">
+                            OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                  		    </script>
               			    ]]>
-              			  </v:after-data-bind>
-              		  </v:button>
                       </span>
                       <span id="imp_td_2" style="display: <?V case when self.icSource = 2 then '' else 'none' end ?>;">
                         <v:text name="f_uri" value="--get_keyword ('f_uri', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" />
@@ -4001,14 +4001,12 @@
                     </th>
                     <td>
                       <v:text name="ex_destination" xhtml_id="ex_destination" value="--self.exName" xhtml_size="60" />
-                      <v:button action="browse" name="ex_destination_button" value="Browse..." xhtml_id="ex_destination_button">
-                        <v:after-data-bind>
+                      <input type="button" id="ex_destination_button" value="Browse..." onclick="davBrowse ('ex_destination');" style="display: none;" />
                           <![CDATA[
-                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''ex_destination'');');
-                            control.vc_add_attribute ('style', 'display: none;');
+                		    <script type="text/javascript">
+                          OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                		    </script>
                           ]]>
-                        </v:after-data-bind>
-                      </v:button>
                     </td>
                   </tr>
                   <tr id="ex_tr_0" style="<?V case when self.exType < 1 then 'display: none;' else '' end ?>;">
@@ -4639,15 +4637,12 @@
                           <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
                       <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
-                        <v:button action="browse" name="exc_options_name_button" value="Browse..." xhtml_id="exc_options_name_button">
-                        <v:after-data-bind>
+                        <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>;" />
                           <![CDATA[
-                            control.vc_add_attribute ('onclick', 'javascript: davBrowse (''exc_options_name'');');
-                              if (get_keyword ('type', self.ve_options, 1) <> 1)
-                                control.vc_add_attribute ('style', 'display: none');
+                  		    <script type="text/javascript">
+                            OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
+                  		    </script>
                           ]]>
-                        </v:after-data-bind>
-                      </v:button>
                       </vm:if>
                           </td>
                         </tr>
