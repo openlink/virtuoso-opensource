@@ -28,6 +28,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -37,6 +38,7 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:vcard="&vcard;"	
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -48,12 +50,14 @@
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
+    xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"	
     xmlns:oplbb="&oplbb;">
 
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
     <xsl:param name="currentDateTime"/>
+    <xsl:param name="is_store"/>
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -62,6 +66,53 @@
 
     <xsl:template match="/">
 		<rdf:RDF>
+			<xsl:choose>
+				<xsl:when test="$is_store = '1'">
+					<rdf:Description rdf:about="{$docproxyIRI}">
+						<rdf:type rdf:resource="&bibo;Document"/>
+						<sioc:container_of rdf:resource="{$resourceURL}"/>
+						<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
+						<dcterms:subject rdf:resource="{$resourceURL}"/>
+					</rdf:Description>
+					<gr:LocationOfSalesOrServiceProvisioning rdf:about="{$resourceURL}">
+						<gr:hasOpeningHoursSpecification>
+							<gr:OpeningHoursSpecification rdf:about="{vi:proxyIRI ($baseUri, '', 'OpenHoursSpecification')}">
+								<gr:opens><xsl:value-of select="/stores/store/hours"/></gr:opens>
+							</gr:OpeningHoursSpecification>
+						</gr:hasOpeningHoursSpecification>
+						<rdfs:label><xsl:value-of select="/stores/store/longName"/></rdfs:label>
+						<gr:name><xsl:value-of select="/stores/store/name"/></gr:name>
+						<gr:legalName><xsl:value-of select="/stores/store/longName"/></gr:legalName> 
+						<geo:lat rdf:datatype="&xsd;float">
+							<xsl:value-of select="/stores/store/lat"/>
+						</geo:lat>
+						<geo:long rdf:datatype="&xsd;float">
+							<xsl:value-of select="/stores/store/lng"/>
+						</geo:long>
+						<foaf:phone rdf:resource="tel:{/stores/store/phone}"/>
+						<vcard:ADR>
+							<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Address')}">
+								<rdf:type rdf:resource="&vcard;ADR"/>
+								<vcard:Locality>
+									<xsl:value-of select="/stores/store/city" />
+								</vcard:Locality>
+								<vcard:Region>
+									<xsl:value-of select="/stores/store/region"/>
+								</vcard:Region>
+								<vcard:Country>
+									<xsl:value-of select="/stores/store/country"/>
+								</vcard:Country>
+								<vcard:Pcode>
+									<xsl:value-of select="/stores/store/postalCode"/>
+								</vcard:Pcode>
+								<vcard:Extadd>
+									<xsl:value-of select="/stores/store/address"/>
+								</vcard:Extadd>
+							</rdf:Description>
+						</vcard:ADR>
+					</gr:LocationOfSalesOrServiceProvisioning>
+				</xsl:when>
+				<xsl:otherwise>
 			<rdf:Description rdf:about="{$docproxyIRI}">
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
@@ -121,7 +172,8 @@
 
 			   <xsl:apply-templates select="//product" />
 			</rdf:Description>
-
+				</xsl:otherwise>
+			</xsl:choose>
 		</rdf:RDF>
     </xsl:template>
 
@@ -184,9 +236,9 @@
 		<rdfs:label>
 			<xsl:value-of select="."/>
 		</rdfs:label>
-		<dc:title>
+		<gr:name>
 			<xsl:value-of select="."/>
-		</dc:title>
+		</gr:name>
     </xsl:template>
 
     <xsl:template match="product/dollarSavings" mode="offering">
