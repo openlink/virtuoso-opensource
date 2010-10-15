@@ -396,7 +396,8 @@ create procedure b3s_label_get (inout data any, in langs any)
      }
    if (not isstring (label))
      label := cast (label as varchar);
-   label := regexp_replace (label, '<[^>]+>', '', 1, null);  
+   --label := regexp_replace (label, '<[^>]+>', '', 1, null);  
+   label := cast (xtree_doc (label, 2) as varchar);
    return label;
 }
 ;

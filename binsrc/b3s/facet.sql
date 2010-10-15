@@ -154,7 +154,7 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
   best_l := 0;
-  for select o, p from rdf_quad  where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
+  for select o, p from rdf_quad table option (index primary key) where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o) or isstring (o))
 	{
