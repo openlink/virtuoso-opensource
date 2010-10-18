@@ -161,8 +161,9 @@ caddr_t bif_strict_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int n
 caddr_t bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 void bif_result_inside_bif (int n, ...);
 
-
-caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#ifndef srv_make_new_error
+extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#endif
 void sqlr_error (const char *code, const char *msg,...);
 void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...);
 void sqlr_resignal (caddr_t err);
@@ -623,12 +624,16 @@ struct s_node_s
    s_node_t *          next;
 };
 
-
+EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
 #ifdef MALLOC_DEBUG
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 caddr_t dbg_list_to_array (char *file, int line, dk_set_t l);
 #define strses_string(S) dbg_strses_string (__FILE__, __LINE__, (S))
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define list_to_array(S)	dbg_list_to_array (__FILE__, __LINE__, (S))
+#endif
+#endif
 #else
 caddr_t strses_string (dk_session_t * ses);
 caddr_t list_to_array (dk_set_t l);

@@ -35,7 +35,6 @@ caddr_t not_impl (char * text);
 
 int ammsc_to_code (char * op);
 
-caddr_t list (long n, ...);
 void list_extend (caddr_t *list_ptr, long n, ...);
 void list_nappend (caddr_t *list_ptr, caddr_t cont);
 caddr_t sc_list (long n, ...);
