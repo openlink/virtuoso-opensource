@@ -193,9 +193,25 @@ buffer_desc_t * page_fault (it_cursor_t * it, dp_addr_t dp);
 buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_inside);
 #define PF_STAY_ATOMIC 1
 
-int page_wait_access (it_cursor_t * itc, dp_addr_t dp_to,
+#if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
+#define PAGE_DEBUG
+#endif
+
+#ifdef PAGE_DEBUG
+#define DBGP_NAME(nm) 		dbg_##nm
+#define DBGP_PARAMS 		const char *file, int line,
+#define page_wait_access(itc,dp_to,buf_from,buf_ret,mode,max_change) \
+	dbg_page_wait_access (__FILE__,__LINE__,itc,dp_to,buf_from,buf_ret,mode,max_change)
+#define page_leave_inner(buf) \
+        dbg_page_leave_inner (__FILE__,__LINE__,buf)
+#else
+#define DBGP_NAME(nm) 		nm
+#define DBGP_PARAMS
+#endif
+int DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp_to,
 		  buffer_desc_t * buf_from,
 		  buffer_desc_t ** buf_ret, int mode, int max_change);
+void DBGP_NAME (page_leave_inner) (DBGP_PARAMS buffer_desc_t * buf);
 void page_release_read (buffer_desc_t * buf);
 void page_read_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
 void page_write_queue_add (buffer_desc_t * buf, it_cursor_t * itc);
@@ -205,7 +221,6 @@ buffer_desc_t * page_try_transit (it_cursor_t * it, buffer_desc_t * from,
 				  dp_addr_t dp, int mode);
 void it_wait_no_io_pending (void);
 
-void page_leave_inner (buffer_desc_t * buf);
 void page_leave_as_deleted (buffer_desc_t * buf);
 
 /* void itc_page_leave (it_cursor_t *, buffer_desc_t * buf); */

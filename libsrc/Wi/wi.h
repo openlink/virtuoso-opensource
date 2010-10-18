@@ -1084,7 +1084,7 @@ struct buffer_desc_s
   io_queue_t *	 bd_iq; /* iq, if buffer in queue for read(write */
   buffer_desc_t *	bd_iq_prev; /* next and prev in double linked list of io queue */
   buffer_desc_t *	bd_iq_next;
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
   char * 		bd_enter_file;
   long 			bd_enter_line;
@@ -1103,6 +1103,28 @@ struct buffer_desc_s
 };
 
 #define BUF_ROW(buf, pos) ((buf)->bd_buffer + (buf)->bd_content_map->pm_entries[pos])
+
+#ifdef PAGE_DEBUG
+#define BUF_DBG_ENTER(buf) \
+    do { \
+      if (buf) { \
+	(buf)->bd_enter_file = file; \
+	(buf)->bd_enter_line = line; \
+	(buf)->bd_el_flag = 1; \
+      } \
+    } while (0)
+#define BUF_DBG_LEAVE(buf) \
+    do { \
+      if (buf) { \
+	(buf)->bd_leave_file = file; \
+	(buf)->bd_leave_line = line; \
+	(buf)->bd_el_flag = 2; \
+      } \
+    } while (0)
+#else
+#define BUF_DBG_ENTER(buf)
+#define BUF_DBG_LEAVE(buf)
+#endif
 
 #define bd_registered bn.registered
 #define bd_next bn.next
@@ -1128,6 +1150,8 @@ struct buffer_desc_s
 { \
   (bd)->bd_is_write = f;			    \
   (bd)->bd_writer = f ? THREAD_CURRENT_THREAD : NULL;	\
+  (bd)->bd_set_wr_file = __FILE__; \
+  (bd)->bd_set_wr_line = __LINE__; \
 }
 #else
 #define BD_SET_IS_WRITE(bd, f) \

@@ -100,9 +100,13 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 #define ADAPTIVE_READ_INC(itc, dest_buf) \
   itc_adaptive_read_inc (itc, dest_buf)
 
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
 #define AL_WAIT_SET_WRITER(buf) \
-  { if ((buf) && (buf)->bd_is_write) (buf)->bd_writer = THREAD_CURRENT_THREAD;}
+  { \
+    if ((buf) && (buf)->bd_is_write) \
+      (buf)->bd_writer = THREAD_CURRENT_THREAD; \
+    BUF_DBG_ENTER (buf); \
+  }
 #else
 #define AL_WAIT_SET_WRITER(buf)
 #endif
@@ -118,13 +122,15 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 buffer_desc_t * bounds_check_buf;
 
 int
-page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, buffer_desc_t ** buf_ret, int mode, int max_change)
+DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from,
+    buffer_desc_t ** buf_ret, int mode, int max_change)
 {
   buffer_desc_t decoy;
   buffer_desc_t *buf;
   dp_addr_t phys_dp;
   itc->itc_to_reset = RWG_NO_WAIT;
   itc->itc_max_transit_change = max_change;
+  itc->itc_must_kill_trx = 0;
   if (!dp)
     GPF_T1 ("Zero DP in page_fault_map_sem");
 
@@ -155,6 +161,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  else
 	    {
 	      *buf_ret = PF_OF_DELETED;
+	      itc->itc_must_kill_trx = 1;
 	      itc->itc_to_reset = RWG_WAIT_ANY;
 	      ITC_LEAVE_MAPS (itc);
 	      return RWG_WAIT_ANY;
@@ -214,6 +221,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       BUF_BOUNDS_CHECK (buf);
       buf_ext_check (buf);
       *buf_ret = buf;
+      BUF_DBG_ENTER (buf);
       return itc->itc_to_reset;
     }
   if (buf->bd_being_read)
@@ -264,6 +272,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  BUF_BOUNDS_CHECK (buf);
 	  *buf_ret = buf;
 	  BUF_TOUCH (buf);
+	  BUF_DBG_ENTER (buf);
 	  return  itc->itc_to_reset;
 	}
       else
@@ -287,6 +296,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  itc->itc_pl = buf->bd_pl;
 	  *buf_ret = buf;
 	  BUF_TOUCH (buf);
+	  BUF_DBG_ENTER (buf);
 	  return itc->itc_to_reset;
 	}
       else
@@ -414,13 +424,14 @@ page_release_writes (buffer_desc_t * buf)
 
 
 void
-page_leave_inner (buffer_desc_t * buf)
+DBGP_NAME (page_leave_inner) (DBGP_PARAMS buffer_desc_t * buf)
 {
 #ifdef MTX_DEBUG
   if (!is_crash_dump && buf->bd_tree)
     ASSERT_IN_MAP (buf->bd_tree, buf->bd_page);
 #endif
   BUF_BOUNDS_CHECK(buf);
+  BUF_DBG_LEAVE (buf);
   if (buf->bd_readers)
     {
       buf->bd_readers--;
@@ -662,6 +673,12 @@ retry:
   if (ctl_itc->itc_to_reset > RWG_WAIT_KEY)
     {
       TC (tc_reentry_split);
+      if (ctl_itc->itc_must_kill_trx) /* reference to free remap, kill trx */
+	{
+	  ctl_itc->itc_must_kill_trx = 0;
+	  if (!wi_inst.wi_checkpoint_atomic && ctl_itc->itc_ltrx)
+	    itc_bust_this_trx (ctl_itc, NULL, ITC_BUST_THROW);
+	}
       goto retry;
     }
   if (PF_OF_DELETED == buf)
