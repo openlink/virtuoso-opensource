@@ -1702,12 +1702,14 @@ setp_print_input (setp_node_t * setp, caddr_t * qst)
 void
 setp_group_row (setp_node_t * setp, caddr_t * qst)
 {
+  dtp_t row_image[MAX_ROW_BYTES];
   hash_area_t * ha = setp->setp_ha;
   itc_ha_feed_ret_t ihfr;
   int rc = itc_ha_feed (&ihfr, ha, qst, 0);
   index_tree_t * tree;
   hash_index_t * hi;
   LOCAL_RF (rf, 0, 0, ha->ha_key);
+  rf.rf_large_row = &row_image[0];
   /*setp_print_input (setp, qst);*/
   if (DVC_MATCH == rc)
     goto runX_begin; /* see below */

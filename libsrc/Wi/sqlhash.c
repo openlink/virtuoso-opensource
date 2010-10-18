@@ -188,6 +188,22 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
   ha->ha_slots = (state_slot_t **)
     list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
 				dk_set_copy (setp->setp_dependent)));
+  if (ha->ha_memcache_only && setp->setp_gb_ops && setp->setp_gb_ops->data)
+    {
+      int op = ((gb_op_t *)setp->setp_gb_ops->data)->go_op;
+      switch (op)
+	{
+	  case AMMSC_COUNT:
+	  case AMMSC_COUNTSUM:
+	  case AMMSC_SUM:
+	  case AMMSC_MIN:
+	  case AMMSC_MAX:
+	      ha->ha_memcache_only = 0;
+	      break;
+          default:
+	      break;
+	}
+    }
   ha->ha_allow_nulls = 1;
   ha->ha_op = HA_DISTINCT;
   if (setp->setp_any_user_aggregate_gos)
