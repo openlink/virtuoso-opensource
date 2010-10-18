@@ -794,6 +794,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             SPART *lim = tree->_.req_top.limit;
             SPART *ofs = tree->_.req_top.offset;
+            int has_lim = ((NULL != lim) && ((DV_LONG_INT != DV_TYPE_OF (lim)) || (SPARP_MAXLIMIT != unbox ((caddr_t)(lim)))));
+            int has_ofs = ((NULL != ofs) && ((DV_LONG_INT != DV_TYPE_OF (ofs)) || (0 != unbox ((caddr_t)(ofs)))));
             if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
               {
                 ssg_newline (0);
@@ -806,13 +808,13 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_puts ("HAVING ");
                 ssg_sdprint_tree (ssg, tree->_.req_top.having);
               }
-            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order) && ((SELECT_L == tree->_.req_top.subtype) || has_lim || has_ofs))
               {
                 ssg_newline (0);
                 ssg_puts ("ORDER BY ");
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.order, ' ');
               }
-            if ((NULL != lim) && ((DV_LONG_INT != DV_TYPE_OF (lim)) || (SPARP_MAXLIMIT != unbox ((caddr_t)(lim)))))
+            if (has_lim)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (lim)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
                   spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
@@ -820,7 +822,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_puts ("LIMIT ");
                 ssg_sdprint_tree (ssg, lim);
               }
-            if ((NULL != ofs) && ((DV_LONG_INT != DV_TYPE_OF (ofs)) || (0 != unbox ((caddr_t)(ofs)))))
+            if (has_ofs)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (ofs)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
                   spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);

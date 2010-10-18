@@ -704,6 +704,7 @@ extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
+#define SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp) ((ptrlong)((sparp)->sparp_env->spare_context_gp_subtypes->data))
 extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);

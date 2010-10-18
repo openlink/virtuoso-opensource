@@ -1125,8 +1125,8 @@ void spar_gp_init (sparp_t *sparp, ptrlong subtype)
   t_set_push (&(env->spare_acc_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
-  if (WHERE_L != subtype)
-    t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL); /* For WHERE_L it's done at beginning of the result-set. */
+  if ((WHERE_L != subtype) && (CONSTRUCT_L != subtype))
+    t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL); /* For WHERE_L and CONSTRUCT_L it's done at beginning of the result-set. */
 }
 
 void spar_gp_replace_selid (sparp_t *sparp, dk_set_t membs, caddr_t old_selid, caddr_t new_selid)
@@ -1160,14 +1160,17 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t orig_selid = env->spare_selids->data;
-  dk_set_t propvars = (dk_set_t) t_set_pop (&(env->spare_propvar_sets));
   dk_set_t membs;
   int all_ctr, opt_ctr;
   dk_set_t filts;
   ptrlong subtype;
   SPART *res;
   spar_dbg_printf (("spar_gp_finalize (..., %ld)\n", (long)subtype));
+  subtype = (ptrlong)(env->spare_context_gp_subtypes->data);
+  if (CONSTRUCT_L != subtype) /* CONSTRUCT_L did not push to spare_propvar_sets, using one that will be used in WHERE_L */
+    {
 /* Create triple patterns for distinct '+>' propvars and OPTIONAL triple patterns for distinct '*>' propvars */
+      dk_set_t propvars = (dk_set_t) t_set_pop (&(env->spare_propvar_sets));
   DO_SET (spar_propvariable_t *, pv, &propvars)
     {
       if (_STAR_GT == pv->sparpv_op)
@@ -1185,11 +1188,12 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
         }
     }
   END_DO_SET();
+    }
 /* Pop the rest of the environment and adjust graph varnames */
   membs = (dk_set_t) t_set_pop (&(env->spare_acc_triples));
   membs = dk_set_nreverse (membs);
   filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
-  subtype = (ptrlong)((void *)t_set_pop (&(env->spare_context_gp_subtypes)));
+  t_set_pop (&(env->spare_context_gp_subtypes));
   env->spare_good_graph_bmk = t_set_pop (&(env->spare_good_graph_varname_sets));
 /* The following 'if' does not mention UNIONs because UNIONs are handled right in .y file
    For OPTIONAL GP we roll back spare_good_graph_vars at bookmarked level
@@ -1765,6 +1769,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
   SPART *triple;
   int s_ctr;
   spar_selid_push_reused (sparp, uname__ref);
+  t_set_push (&(sparp->sparp_env->spare_context_gp_subtypes), (ptrlong)WHERE_L);
   triple = spar_make_plain_triple (sparp,
     spar_make_fake_blank_node (sparp),
     NULL,
@@ -1772,6 +1777,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
     spar_make_fake_blank_node (sparp),
     (caddr_t)(_STAR), NULL );
   spar_selid_pop (sparp);
+  t_set_pop (&(sparp->sparp_env->spare_context_gp_subtypes));
   DO_BOX_FAST (SPART *, s, s_ctr, retvals)
     {
       triple_case_t **cases;
@@ -2367,6 +2373,11 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     predicate = (SPART *)t_box_copy_tree (env->spare_context_predicates->data);
   if (NULL == object)
     object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
+  if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp))
+    {
+      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
+      goto plain_triple_in_ctor; /* see below */
+    }
 #if 1
   if (NULL == qm_iri_or_pair)
     {
@@ -2534,6 +2545,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
       spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
       break;
     }
+plain_triple_in_ctor:
   if (SPAR_IS_BLANK_OR_VAR (graph))
     graph->_.var.selid = env->spare_selids->data;
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options);
@@ -2558,6 +2570,8 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,
     options, (ptrlong)0, (ptrlong)((sparp->sparp_unictr)++) );
+  if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp))
+    return triple;
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
       SPART *fld = triple->_.triple.tr_fields[fctr];
@@ -4031,6 +4045,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
         storage_name = t_box_dv_uname_string (storage_name);
       sparp.sparp_storage = sparp_find_storage_by_name (storage_name);
       t_set_push (&(spare.spare_selids), t_box_dv_short_string (fname));
+      t_set_push (&(spare.spare_context_gp_subtypes), (ptrlong)WHERE_L);
       triple = spar_make_plain_triple (&sparp,
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, (int)(flags & 1)),
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_SUBJECT_IDX]	, (int)(flags & 1)),

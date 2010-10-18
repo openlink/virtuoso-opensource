@@ -1109,7 +1109,10 @@ spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
 
 spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
 	: /* empty */	{ $$ = NULL; }
-	| OPTION_L _LPAR { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_OPTION, "OPTION () triple matching configuration"); }
+	| OPTION_L _LPAR {
+		if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp_arg))
+		  sparyyerror ("Triple options are not allowed in contructor template");
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_OPTION, "OPTION () triple matching configuration"); }
 	    spar_triple_option_commalist _RPAR { $$ = (SPART **)t_revlist_to_array ($4); }
 	;
 
