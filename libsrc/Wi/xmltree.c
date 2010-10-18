@@ -69,7 +69,7 @@ struct xe_class_s xec_tree_xe;
 static void xte_destroy (xml_entity_t * xe);
 char * xte_output_method (xml_tree_ent_t * xte);
 int xte_ent_name_test (xml_entity_t * xe, XT * node);
-
+int xte_string_value_of_tree_is_nonempty (caddr_t *current);
 
 dk_mutex_t * xqr_mtx;
 

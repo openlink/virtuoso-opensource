@@ -292,7 +292,7 @@ char * ws_usr_qual (ws_connection_t * ws, int is_soap);
 extern void dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_carset, wcharset_t *src_charset, int dks_esc_mode);
 extern void http_value_esc (caddr_t *qst, dk_session_t *out, caddr_t val, char *tag, int dks_esc_mode);
 #if 0
-#define http_trace(a) printf a
+#define http_trace(a) do { printf ("HTTP trace: "); printf a; } while (0)
 #else
 #define http_trace(a)
 #endif
