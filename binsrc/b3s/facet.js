@@ -122,8 +122,25 @@ function ac_hide_thr ()
 var lbl_ac; // XXX Global var ugly as sin OAT.AJAX really needs a way of passing arbitrary obj to callback
 var uri_ac;
 
+// an ugly resize handler overriding CSS size for result
+//
+
+function resize_handler ()
+{
+    var wp_width = OAT.Dom.getViewport ()[0];
+
+    if ($('res')) 
+      {
+        var _w = (wp_width-230)+'px';
+        $('res').style.width = _w;
+      }
+}
+
 function init()
 {
+    resize_handler ();
+    OAT.Event.attach (window, 'resize', resize_handler);
+
     if ($('main_srch')) {
     uri_ac = new OAT.Autocomplete('new_uri_txt',
 			          'new_uri_val',

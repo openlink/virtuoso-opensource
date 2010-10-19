@@ -5,7 +5,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title>Precision Search &amp; Find</title>
-<link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+
+<link id="ss" rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
 
 <?vsp
   fct_gen_opensearch_link();
