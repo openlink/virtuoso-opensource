@@ -628,6 +628,7 @@ typedef struct xp_node_s
   caddr_t *	xn_attrs;
   dk_set_t	 xn_children;
   caddr_t *	xn_namespaces;
+  long 		xn_n_children;
   struct xparse_ctx_s * xn_xp;
 } xp_node_t;
 
@@ -890,6 +891,7 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
     caddr_t text = strses_string ((xp)->xp_strses); \
     strses_flush ((xp)->xp_strses); \
     dk_set_push (&((xp)->xp_current->xn_children), (void*) text); \
+    (xp)->xp_current->xn_n_children++; \
   }
 
 #define XP_STRSES_FLUSH(xp) \
@@ -900,6 +902,8 @@ extern void xp_comment (vxml_parser_t * parser, const char *text);
         if (xp_strses_length & ~0xffffff) \
           sqlr_new_error ("42000", "SR596", "Unable to place abnormally long string into XML tree, %ld bytes is above 16Mb limit", (long)xp_strses_length); \
         XP_STRSES_FLUSH_NOCHECK(xp); \
+	if ((xp)->xp_current->xn_n_children >= MAX_BOX_ELEMENTS) \
+          sqlr_new_error ("42000", "SR596", "Unable to place abnormally long XML tree, %ld elements are above %ld limit", (long)(xp)->xp_current->xn_n_children, MAX_BOX_ELEMENTS); \
       } \
     } while (0)
 

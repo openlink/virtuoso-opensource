@@ -390,6 +390,9 @@ xp_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
+  parent->xn_n_children++;
+  if (parent->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (current, "The number of children elements is over the limits");
   xp->xp_current = parent;
   current->xn_parent = xp->xp_free_list;
   xp->xp_free_list = current;
@@ -403,12 +406,12 @@ xp_xslt_element (void *userdata,  char * name, vxml_parser_attrdata_t *attrdata)
 /* copy from xp_element - start */
   caddr_t boxed_name;
   xp_node_t *xn = xp->xp_free_list;
+  XP_STRSES_FLUSH (xp);
   if (NULL == xn)
     xn = dk_alloc (sizeof (xp_node_t));
   else
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
-  XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
@@ -485,6 +488,9 @@ xp_xslt_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
+  parent->xn_n_children++;
+  if (parent->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (current, "The number of children elements is over the limits");
   xp->xp_current = parent;
   if (current->xn_namespaces && xp->xp_namespaces)
     {
@@ -576,6 +582,9 @@ xp_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam
 	box_dv_short_nchars (refname, reflen) )
       );
   dk_set_push (&xp->xp_current->xn_children, (void*)list (1, head));
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 void
@@ -592,6 +601,9 @@ xp_pi (vxml_parser_t * parser, const char *target, const char *data)
       (NULL != data) ?
       list (2, head, box_dv_short_string (data)) :
       list (1, head) ) );
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 void
@@ -607,6 +619,9 @@ xp_comment (vxml_parser_t * parser, const char *text)
   else
     dk_set_push (&xp->xp_current->xn_children, (void*)
       list (1, list (1, uname__comment)) );
+  xp->xp_current->xn_n_children++;
+  if (xp->xp_current->xn_n_children >= MAX_BOX_ELEMENTS)
+    xn_error (xp->xp_current, "The number of children elements is over the limits");
 }
 
 
