@@ -2239,7 +2239,7 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
     ose->ose_sctr = sctr;
     for (qn = qn_next ((data_source_t*)sctr); qn != (data_source_t*)ose && qn; qn = qn_next (qn))
       dk_set_push (&sctr->sctr_continuable, (void*)qn);
-    if (dp = (data_source_t*)gethash ((void*)org_first, sc->sc_qn_to_dpipe))
+    if (sc->sc_qn_to_dpipe && (dp = (data_source_t*)gethash ((void*)org_first, sc->sc_qn_to_dpipe)))
       {
 	remhash ((void*)org_first, sc->sc_qn_to_dpipe);
 	sethash ((void*)sctr, sc->sc_qn_to_dpipe, (void*)dp);
