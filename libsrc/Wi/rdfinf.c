@@ -2205,6 +2205,8 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
   outer_seq_end_node_t * ose;
   dk_hash_t * res = hash_table_allocate (11);
   data_source_t * first1 = qn_next (first);
+  data_source_t * org_first = first1;
+  void * dp;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, res);
   sc->sc_any_clb = 1;
   while (first1)
@@ -2237,6 +2239,11 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
     ose->ose_sctr = sctr;
     for (qn = qn_next ((data_source_t*)sctr); qn != (data_source_t*)ose && qn; qn = qn_next (qn))
       dk_set_push (&sctr->sctr_continuable, (void*)qn);
+    if (dp = (data_source_t*)gethash ((void*)org_first, sc->sc_qn_to_dpipe))
+      {
+	remhash ((void*)org_first, sc->sc_qn_to_dpipe);
+	sethash ((void*)sctr, sc->sc_qn_to_dpipe, (void*)dp);
+      }
   }
   return ose;
 }
