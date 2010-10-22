@@ -604,6 +604,7 @@ struct it_cursor_s
     bitf_t		itc_cl_set_done:1;
     bitf_t		itc_cl_from_temp:1; /* last search param is the id of the qf with the setp and the temp data */
     bitf_t		itc_cl_qf_any_passed:1; /* in cluster query frag output itc, used to know if nulls hould be sent in oj */
+    bitf_t		itc_must_kill_trx:1;
     unsigned char	itc_search_par_fill;
     unsigned char	itc_owned_search_par_fill;
     unsigned char	itc_pars_from_end; /* no of places in search params used for temp cast search pars */
