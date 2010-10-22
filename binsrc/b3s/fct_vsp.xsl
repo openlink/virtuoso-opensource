@@ -167,9 +167,9 @@ function init(){
 	    </xsl:with-param>
 	  </xsl:call-template>
         </xsl:for-each>
-      </xsl:when>
+      </xsl:when> <!-- multiple results -->
       <xsl:otherwise>
-        <xsl:if test="/facets/result/@type=''">
+        <xsl:if test="/facets/result/@type='propval-list'">
           <form>
             <input type="hidden" name="cmd" value="value_range"/>
             <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>

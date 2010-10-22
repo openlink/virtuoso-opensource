@@ -34,7 +34,7 @@
    declare inf_parm varchar;
   declare ses_parms varchar;
   declare all_langs, dset any;
-  declare iri_type, iri_uri, _F, _from varchar;
+  declare c_iri, iri_type, iri_uri, _F, _from varchar;
 
    dbg_enable := get_keyword ('dbg', params);
    if (dbg_enable = '1') 
@@ -114,7 +114,7 @@
 
    label := b3s_label_get (data, langs);
    true_label := label;
-  iri_type := b3s_type (_S, _F, iri_uri);
+  iri_type := b3s_type (_S, _F, iri_uri, c_iri);
 
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
 --    dbg_obj_print (qry_str);
@@ -228,14 +228,45 @@
       <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>"><?vsp http (sprintf ('%s', label)); ?></a></h2>
       <div class="ds_inf_info"> 
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
-	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a>
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
+<?vsp 
+  declare _ciri varchar;
+
+  if (c_iri = 'http://www.w3.org/2000/01/rdf-schema#Class') {
+    _ciri := gr;
+  }
+  else {
+    _ciri := c_iri;
+  }
+
+  if (sid) { 
+?>
+
+  <a class="fct_sel_as_type" 
+     title="Use as class in facets" 
+     href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?/ _ciri ?>">Constrain facet on this type</a>
+
+<?vsp 
+  } else { ?>
+  <a class="fct_sel_as_type" 
+     title="Start new facet session with type" 
+     href="/fct/facet.vsp?cmd=new_with_class&iri=<?/ _ciri ?>">Start faceted browsing from this Type</a>
+<?vsp
+  } 
+?>
       </div>
         </div>
-          <?vsp if (_subject <> '') { ?>
+<?vsp 
+if (_subject <> '') { 
+?>
             <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
-  <?vsp } else { ?>
+<?vsp 
+} else { 
+?>
   <p class="subj_delim"></p>
-          <?vsp } ?>
+<?vsp 
+} 
+?>
 <!--                <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=set_class&iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
                 <li><a href="">Choose <?V ''?> as Value (o)</a></li> -->
@@ -332,5 +363,11 @@
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
     </div> <!-- #PG -->
+<!--    <div id="fct_selector_tpl" style="display:none">
+      <h3></h3>
+      <p class="fct_sel_expln"></p>
+      <div class="form_row"><label for=""></label><input type="text" class="prop_val_lo"/></div><br/>
+      <div class="form_row"><label for=""></label><input type="text" class="prop_val_hi"/></div>
+    </div -->
  </body>
 </html>

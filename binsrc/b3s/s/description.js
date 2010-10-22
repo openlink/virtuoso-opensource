@@ -126,3 +126,13 @@ function sas_cb ()
     else parms['sas'] = 'no';
     window.location = href+uri_parms_string(parms);
 }
+
+function sponge_cb ()
+{
+    var loc = window.location;
+    var href = loc.protocol+'//'+loc.host+loc.pathname;
+    var parms = OAT.Dom.uriParams();
+
+    parms['should-sponge'] = $v('should-sponge');
+    window.location = href+uri_parms_string(parms);
+}

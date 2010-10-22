@@ -176,6 +176,10 @@ function init()
                                 function () { window.external.AddSearchProvider(location.protocol+'//'+location.host+'/fct/opensearchdescription.vsp'); });
           }
     }
+    if ($('fct_ft')) {
+        var ct = $('fct_ft_fm');
+	OAT.Anchor.assign ('fct_ft', {content: ct});
+    }
 }
 
 // opts = { loader: function  - function gets called when user hits tab or stops entering text

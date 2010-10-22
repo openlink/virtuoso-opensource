@@ -23,7 +23,8 @@
 --set ignore_params=on;
 -- Facets web page
 
-registry_set ('_fct_xslt_', case when registry_get('_fct_url_') = 0 then 'file://fct/' else registry_get('_fct_url_') end);
+registry_set ('_fct_xslt_', 
+              case when registry_get('_fct_url_') = 0 then 'file://fct/' else registry_get('_fct_url_') end);
 
 create procedure
 fct_view_pos (in tree any)
@@ -63,6 +64,10 @@ fct_view_info (in tree any, in ctx int, in txt any)
     {
       http ('Displaying List of Distinct Entity Names ordered by Count', txt);
     }
+  if ('entities-list' = mode)
+    {
+      http ('Displaying matching entities', txt);
+    }
   if ('geo' = mode)
     {
       http ('Displaying Places associated with Entities', txt);
@@ -90,10 +95,12 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('text' = mode or 'text-d' = mode)
     {
-      http ('Displaying Ranked Enitity Names and Text summaries', txt);
+      http ('Displaying Ranked Entity Names and Text summaries', txt);
     }
 --  if (offs)
 --    http (sprintf ('  values %d - %d', 1 + offs, lim), txt);
+  
+
   http (' where:</h3>', txt);
 }
 ;
@@ -234,19 +241,21 @@ fct_query_info (in tree any,
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
 
       if (prop is not null)
-        http (sprintf (' %s has <span class="iri"><a href="/fct/facet.vsp?sid=%d&cmd=drop_text_prop">%s</a></span> containing text <span class="value">"%s"</span>. ', 
+        http (sprintf (' %s has <span class="iri"><a href="#"/fct/facet.vsp?sid=%d&cmd=drop_text_prop">%s</a></span> containing text <span class="value">"%s"</span>. ', 
                      fct_var_tag (this_s, ctx),
                        connection_get ('sid'),
                        fct_short_form (prop),
                        charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
       else
-        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span>. ', 
+        http(sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
                       fct_var_tag (this_s, ctx), 
                       connection_get('sid'), 
                       cno,
 		      fct_p_term (),
 		      fct_o_term (),
-		      charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')), txt);
+		      charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+                      connection_get('sid')), 
+             txt);
 
     }
   else if ('property' = n)
@@ -307,7 +316,9 @@ fct_query_info (in tree any,
       lo := xpath_eval ('./@lo', tree);
 
       if (hi <> '' and lo <> '') {
-	http (sprintf (' %s is between %s and %s . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+--	http (sprintf (' %s is between <a class="edit_lo" href="#">%s</a> and <a href="edit_hi" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+
+	http (sprintf (' %s is between <a class="edit_lo" href="#">%s</a> and <a href="edit_hi" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (lo as varchar),
                        cast (hi as varchar),
@@ -316,7 +327,7 @@ fct_query_info (in tree any,
               txt);
       }
       else if (hi <> '') {
-       	http (sprintf (' %s <= %s . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+       	http (sprintf (' %s <= <a class="edit_lo" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (hi as varchar),
 		       connection_get ('sid'),
@@ -325,7 +336,7 @@ fct_query_info (in tree any,
 	
       }
       else if (lo <> '') {
-       	http (sprintf (' %s >= %s . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
+       	http (sprintf (' %s >= <a class="edit_lo" href="#">%s</a> . <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>', 
                        fct_var_tag (this_s, ctx), 
                        cast (lo as varchar),
 		       connection_get ('sid'),
@@ -377,6 +388,15 @@ fct_view_link (in tp varchar, in msg varchar, in txt any, in tip any := null)
 ;
 
 create procedure
+fct_ft_a (in txt any)
+{
+  http(sprintf ('<li><form><label for="ft_q">Text</label><input type="hidden" name="cmd" value="text"/><input type="hidden" name="sid" value="%d"/><input type="text" name="q"/><input type="submit" value="Set"/></li>', 
+                 connection_get('sid')), 
+                 txt);
+}
+;
+
+create procedure
 fct_set_conn_tlogy (in tree any)
 {
   declare c_term, s_term varchar;
@@ -408,6 +428,11 @@ fct_nav (in tree any,
     {
       fct_view_link ('text', 'Return to text match list', txt);
       return;
+    }
+
+  if (xpath_eval ('//query/text', tree) is null)
+    {
+      fct_ft_a (txt);
     }
 
   if ('classes' <> tp)
@@ -443,6 +468,11 @@ fct_nav (in tree any,
 	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
 	else
 	fct_view_link ('list', 'Show Matching Values', txt, 'Displaying Ranked Enitity Names and Text summaries');
+    }
+
+  if ('full-text' <> tp and not xpath_eval ('//query/text', tree)) 
+    {
+      fct_view_link ('full-text', 'Text', txt,'Add full-text constraint');
     }
 
   if ('geo' <> tp)
@@ -483,7 +513,7 @@ fct_nav (in tree any,
 create procedure
 fct_view_type (in vt varchar)
 {
-  if (vt in ('properties', 'classes', 'properties-in', 'text-properties', 'list', 'list-count'))
+  if (vt in ('properties', 'classes', 'properties-in', 'text-properties', 'list', 'list-count', 'propval-list'))
     return vt;
 -- return 'properties';
   if (vt = 'geo')
@@ -508,12 +538,27 @@ fct_view_cmd (in tp varchar)
   if ('classes' = tp)
     return 'set_class';
 
+  if ('full-text' = tp)
+    return 'set_text';
+
   return 'select_value';
 }
 ;
 
 cl_exec ('registry_set (''fct_timeout'', ''0'')');
 cl_exec ('registry_set (''fct_timeout_max'', ''20000'')');
+
+create procedure
+fct_set_default_qry (inout tree any)
+{
+--  dbg_printf ('fct_set_default_qry:');
+
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_default.xsl',
+                tree,
+		vector ('pos', 1, 'op', 'class', 'iri', 'http://www.w3.org/2000/01/rdf-schema#Class'));
+--  dbg_obj_print (tree);
+}
+;
 
 create procedure
 fct_web (in tree any)
@@ -528,7 +573,19 @@ fct_web (in tree any)
   if (not isinteger(timeout)) 
     timeout := atoi(timeout);
 
+--
+-- Empty query - get classes as default qry
+--
+
+  if (xpath_eval('/query/*[not(name()=''view'')]', tree) is null)
+    { 
+      if (xpath_eval('/query/view[@type=''classes'']', tree) is null)
+	fct_set_default_qry (tree);
+    }
+
   reply := fct_exec (tree, timeout);
+
+--  dbg_obj_print (reply);
 
   txt := string_output ();
 
@@ -654,9 +711,23 @@ fct_drop_cond (in tree any, in sid int, in cno int)
 ;
 
 create procedure
+fct_drop_text (in tree any, in sid int)
+{
+  declare txt varchar;
+  txt := xpath_eval ('//text', tree);
+  
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_drop_text.xsl', tree, vector ('text', txt, 'prop', 'none'));
+
+  update fct_state set fct_state = tree where fct_sid = sid;
+  commit work;
+
+  fct_web (tree);
+}
+;
+
+create procedure
 fct_drop_text_prop (in tree any, in sid int)
 {
-
   declare txt varchar;
   txt := xpath_eval ('//text', tree);
   
@@ -677,6 +748,8 @@ fct_set_view (in tree     any,
               in offs     int, 
               in loc_prop varchar := null)
 {
+--  dbg_printf ('fct_set_view: tp: %s', tp);
+
   declare pos int;
   pos := fct_view_pos (tree);
 
@@ -752,18 +825,22 @@ fct_open_property  (in tree any,
 		        'op', 'prop',
 			'name', name,
 			'iri', iri,
-			'type', 'list',
+			'type', 'propval-list',
 			'limit', 20,
 			'offset', 0,
 			'exclude', exclude));
 
   if (xpath_eval ('//view', tree) is null)
+    {
+--      dbg_printf('fct_open_property: No view - setting properties as default');
+
     tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl', tree, 
                   vector ('pos', pos, 
                   'op', 'view', 
                   'type', 'properties', 
                   'limit', 20, 
                   'offset', 0));
+    }
 
   update fct_state
     set fct_state = tree
@@ -1012,17 +1089,34 @@ fct_load (in from_stored int)
 ;
 
 create procedure 
+fct_create_ses () 
+{
+  declare sid int;
+  declare new_tree any;
+
+  sid := sequence_next ('fct_seq');
+  new_tree := xtree_doc('<query inference="" same-as="" view3="" s-term="" c-term=""/>');
+
+  insert into fct_state (fct_sid, fct_state)
+         values (sid, new_tree);
+
+  return vector (sid, new_tree);
+}
+;
+
+create procedure 
 fct_new ()
 {
   declare sid int;
+  declare r_v any;
+
   sid := http_param ('sid');
 
   if (0 = sid)
     {
       no_ses:
-      sid := sequence_next ('fct_seq');
-      insert into fct_state (fct_sid, fct_state)
-        values (sid, '<query inference="" same-as="" view3="" s-term="" c-term=""/>');
+      r_v := fct_create_ses (); 
+      sid := r_v[0];
     }
   else
     {
@@ -1594,15 +1688,22 @@ fct_vsp ()
   goto exec;
 
   no_ses:
-  if (s_for is not null) {
-    sid := sequence_next ('fct_seq');
-      tree := xtree_doc ('<query inference="" same-as="" view3="" s-term="" c-term=""/>');
+  declare r_v any;
 
-
-    insert into fct_state (fct_sid, fct_state)
-      values (sid, tree);
+  if (s_for is not null) 
+    {
+      r_v := fct_create_ses();
+      sid := r_v[0];
+      tree := r_v[1];
 
     cmd := 'text';
+    }
+  else if ('new_with_class' = cmd) 
+    {
+      r_v := fct_create_ses();
+      sid := r_v[0];
+      tree := r_v[1];
+      cmd := 'set_class';
     }
   else
     goto do_new_ses;
@@ -1662,6 +1763,8 @@ exec:;
     fct_drop_cond (tree, sid, atoi (http_param ('cno')));
   else if ('drop_text_prop' = cmd) 
     fct_drop_text_prop (tree, sid);
+  else if ('drop_text' = cmd)
+    fct_drop_text (tree, sid);
   else if ('set_class' = cmd)
     fct_set_class (tree, sid, http_param ('iri'), http_param ('exclude'));
   else if ('open' = cmd)

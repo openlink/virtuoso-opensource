@@ -50,8 +50,8 @@
             <select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select><br/>
           </li>
         </ul>
-      </div> <!-- settings-popup -->
-    </li-->
+      </div> 
+    </li--><!--settings-popup-->
   </ul>
 </div><!-- #HD -->
 <div id="MD">
@@ -166,6 +166,10 @@ footer:;
   <div id="FT_R"></div>
 </div>
 </div> <!-- #PG -->
+<div id="fct_ft_fm" style="display:none">
+  <input type="text" name="txt"/>
+  <button>Set</button>
+</div>
     <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>
     <script type="text/javascript">
 	var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

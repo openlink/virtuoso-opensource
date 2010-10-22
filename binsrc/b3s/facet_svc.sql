@@ -64,6 +64,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
   sqls := '00000';
   ret := '';
   qr := fct_query (xpath_eval ('//query', tree, 1));
+--  dbg_obj_print(qr);
   if (xmlout)
     qr2 := fct_xml_wrap (tree, qr);
   else

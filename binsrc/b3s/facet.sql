@@ -245,7 +245,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   declare q, best_q, str_lang, lng_pref any;
 
   if (not isiri_id (x))
-    return vector (null, 1);
+    return null;
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
@@ -470,7 +470,8 @@ fct_lang (in x any)
 }
 ;
 
-create procedure fct_get_mode (in tree any, in xp any)
+create procedure 
+fct_get_mode (in tree any, in xp any)
 {
   declare view_type varchar;
   view_type := cast (xpath_eval (xp, tree, 1) as varchar);
@@ -492,8 +493,11 @@ fct_xml_wrap (in tree any, in txt any)
   declare n_cols int;
   n_cols := fct_n_cols(tree);
 
+--  dbg_printf ('fct_xml_wrap: view_type: %s', view_type);
 --  dbg_printf ('n_cols: %d', n_cols);
 
+--  dbg_obj_print (xpath_eval ('//query/text', tree, 1));
+ 
   if (n_cols = 2)
     {
       if (view_type = 'text')
@@ -528,6 +532,19 @@ fct_xml_wrap (in tree any, in txt any)
 				     "res") 
 				     from (sparql ', ntxt);
 	}
+      else if (view_type = 'entities-list' or view_type = 'list' or view_type = 'propval-list')
+        {
+	  http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
+                          xmlagg (xmlelement ("row",
+                                              xmlelement ("column",
+                                                          xmlattributes (fct_lang ("c1") as "xml:lang",
+                                                                         fct_dtp ("c1") as "datatype",
+                                                                         fct_short_form(__ro2sq("c1")) as "shortform"),
+                                                          __ro2sq ("c1")),
+                                              xmlelement ("column",
+                                                          fct_label ("c1", 0, ''facets'' )))))
+              from (sparql define output:valmode "LONG" ', view_type), ntxt);
+        }
       else
 	{
 	  http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
@@ -546,7 +563,7 @@ fct_xml_wrap (in tree any, in txt any)
 	}
      }
   if (n_cols = 1)
-    http ('select xmlelement ("result", xmlattributes ('''' as "type"),
+    http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
     			xmlagg (xmlelement ("row",
 				xmlelement ("column",
 						xmlattributes (fct_lang ("c1") as "xml:lang",
@@ -555,7 +572,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                fct_sparql_ser ("c1") as "sparql_ser"),
 							       __ro2sq ("c1")),
 				xmlelement ("column", fct_label ("c1", 0, ''facets'' )))))
-	     from (sparql define output:valmode "LONG"', ntxt);
+	     from (sparql define output:valmode "LONG"', view_type), ntxt);
   if (n_cols = 3)
     http ('select xmlelement ("result", xmlattributes ('''' as "type"),
                               xmlagg (xmlelement ("row",
@@ -643,7 +660,9 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
 
   mode := fct_get_mode (tree, './@type');
 
-  if ('list' = mode)
+--  dbg_printf('fct_view: view mode: %s', mode);
+
+  if ('list' = mode or 'propval-list' = mode)
     {
       http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
       http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
@@ -654,7 +673,11 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any)
       http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 ', this_s), pre);
       http (sprintf (' group by ?s%d order by desc 2', this_s), post);
     }
-
+  if ('entities-list' = mode)
+    {
+      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
+      http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
+    }
   if ('properties' = mode)
     {
       if (length (fct_inf_clause (tree)) > 0)
@@ -878,6 +901,10 @@ fct_text (in tree any,
 
   n := cast (xpath_eval ('name ()', tree, 1) as varchar);
 
+--  dbg_printf('fct_text pre: %s, post: %s', string_output_string(pre), string_output_string(post));
+--  dbg_printf('           n: %s', n);
+--  dbg_obj_print (tree);
+
   if ('class' = n)
     {
       declare ciri varchar;
@@ -886,6 +913,10 @@ fct_text (in tree any,
 	{
 	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
 	}
+      else if (ciri is null) 
+        {
+	  http (sprintf ('?s%d a ?s%d .', this_s, this_s+1), txt); 
+        }
       else
 	{
 	  http (sprintf ('?s%d a <%s> .', this_s, ciri), txt);
@@ -1057,8 +1088,6 @@ fct_exec (in tree any,
   offs := xpath_eval ('//view/@offset', tree);
   lim := xpath_eval ('//view/@limit', tree);
 
-  -- db_activity ();
-
   results := vector (null, null, null);
   more := vector ();
 
@@ -1087,8 +1116,6 @@ fct_exec (in tree any,
     results[0] := xtree_doc ('<result/>');
   else
     results[0] := res[0][0];
-
--- dbg_obj_print (results);
 
   inx := 1;
 
@@ -1125,9 +1152,8 @@ fct_exec (in tree any,
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit")),
                                results[0], results[1], results[2]);
 
-  --string_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
+  --String_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
 
---  dbg_obj_print (res);
   return res;
 }
 ;

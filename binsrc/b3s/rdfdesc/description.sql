@@ -148,7 +148,12 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 }
 ;
 
-create procedure b3s_type (in subj varchar, in _from varchar, out url varchar)
+-- XXX should probably find the most specific if more than one class and inference rule is set
+
+create procedure b3s_type (in subj varchar, 
+                           in _from varchar, 
+                           out url varchar, 
+                           out c_iri varchar)
 {
   declare meta, data, ll any;
   ll := 'unknown';
@@ -164,6 +169,7 @@ create procedure b3s_type (in subj varchar, in _from varchar, out url varchar)
 	  else  
 	    ll := b3s_uri_local_part (data[0][1]);
 	  url := b3s_http_url (data[0][1]);
+          c_iri := data[0][1];
 	}
     }
   return ll;
@@ -736,3 +742,9 @@ create procedure fct_links_mup (in subj any, in desc_link any)
 }
 ;
 
+create procedure
+fct_make_selector (in subj any, in sid integer) 
+{
+  return null;
+}	
+;
