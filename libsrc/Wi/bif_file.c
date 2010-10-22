@@ -3016,8 +3016,6 @@ get_mime_part (int *rfc822, caddr_t szMessage, long message_size, long offset,
       DV_ARRAY_OF_POINTER);
   *_result = result;
 
-  memset (result, 3 * sizeof (caddr_t), 0);
-
   /* skip the empty lines if in RFC822 header */
   if (*rfc822)
     while ((iswhite (szMessage + newOffset)
