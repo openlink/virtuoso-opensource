@@ -1273,11 +1273,8 @@ rdf_box_hash (caddr_t box)
   rdf_box_audit (rb);
   if (0 != rb->rb_ro_id)
     return rb->rb_ro_id + (rb->rb_ro_id << 16);
-  if (rb->rb_is_complete && rb->rb_type >= RDF_BOX_DEFAULT_TYPE)
-    {
-      if ((RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
+  if (rb->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb->rb_type))
         return box_hash (rb->rb_box);
-    }
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +
     (rb->rb_chksum_tail ?
       (box_hash (((rdf_bigbox_t *)rb)->rbb_chksum) + 113) :
@@ -1287,7 +1284,38 @@ rdf_box_hash (caddr_t box)
 int
 rdf_box_hash_cmp (ccaddr_t a1, ccaddr_t a2)
 {
-  return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
+  rdf_box_t * rb1 = (rdf_box_t *) a1;
+  rdf_box_t * rb2 = (rdf_box_t *) a2;
+  rdf_box_t tmp_rb2;
+  dtp_t dtp1 = DV_TYPE_OF (rb1), dtp2 = DV_TYPE_OF (rb2);
+  dtp_t data_dtp1, data_dtp2;
+  int len1, len2, cmp_len, cmp_headlen, mcmp;
+  caddr_t data1 = NULL, data2 = NULL;
+  /* arrange so that if both are not rdf boxes, the one that is a box is first */
+  if (DV_RDF != dtp1)
+    {
+      if (DV_RDF != dtp2)
+        GPF_T1 ("misused rdf_box_hash_cmp()");
+      return rdf_box_hash_cmp (a2, a1);
+    }
+  if (DV_RDF == dtp2)
+    {
+      if ((0 != rb1->rb_ro_id) && (0 != rb2->rb_ro_id))
+        return (rb1->rb_ro_id == rb2->rb_ro_id) ? 1 : 0;
+      else if ((0 != rb1->rb_ro_id) || (0 != rb2->rb_ro_id))
+        return 0;
+      if ((rb1->rb_lang != rb2->rb_lang) || (rb1->rb_type != rb2->rb_type) || (rb1->rb_is_complete != rb2->rb_is_complete) || (rb1->rb_chksum_tail != rb2->rb_chksum_tail))
+        return 0;
+      if (rb1->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb1->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb1->rb_type)
+        && rb2->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb2->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb2->rb_type) )
+        return box_equal (rb1->rb_box, rb2->rb_box);
+      if (rb1->rb_chksum_tail)
+        return box_equal (((rdf_bigbox_t *)rb1)->rbb_chksum, ((rdf_bigbox_t *)rb2)->rbb_chksum);
+      return box_equal (rb1->rb_box, rb2->rb_box);
+    }
+  if ((0 == rb1->rb_ro_id) && rb1->rb_is_complete && (RDF_BOX_DEFAULT_LANG == rb1->rb_lang) && (RDF_BOX_DEFAULT_TYPE == rb1->rb_type))
+    return box_equal (rb1->rb_box, a2);
+  return 0;
 }
 
 void

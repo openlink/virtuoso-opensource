@@ -12204,7 +12204,9 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
   declare v any;
   declare inx int;
   declare from_text varchar;
+  declare rules_count integer;
   from_text := '';
+  res := 0;
   if (gn is null)
     {
       for (select rs_uri from sys_rdf_schema where rs_name=ri_name) do
@@ -12235,9 +12237,13 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
 	{
 	  rdf_inf_dir (ri_name, s, o, 2);
 	  rdf_inf_dir (ri_name, s, o, 3);
+              rules_count := rules_count + 2;
 	}
       else
+            {
             rdf_inf_dir (ri_name, o, s, idx);
+              rules_count := rules_count + 1;
+            }
         }
     }
   exec_close (cc);
@@ -12281,6 +12287,7 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
       -- dbg_obj_princ ('known ifps are: '); foreach (IRI_ID i in v) do -- dbg_obj_princ (id_to_iri(i));
       gvector_digit_sort (v, 1, 0, 1);
       rdf_inf_set_ifp_list (ri_name, v); --- Note that this should be after all super/sub relations in order to fill ric_iid_to_rel_ifp
+      rules_count := rules_count + length (v);
       txt := sprintf ('
         select vector_agg (sub."o") from
           (sparql define output:valmode "LONG" define input:storage ""
@@ -12323,6 +12330,7 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
     {
       gvector_sort (v, 2, 0, 1);
       rdf_inf_set_inverses (ri_name, v);
+      rules_count := rules_count + length (v);
     }
 -- Loading bitmask properties of functions
   txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", 1)) from
@@ -12335,8 +12343,10 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
     {
       gvector_sort (v, 2, 0, 1);
       rdf_inf_set_prop_props (ri_name, v);
+      rules_count := rules_count + length (v);
     }
-  return 1;
+  jso_mark_affected (ri_name);
+  return rules_count + 1;
 }
 ;
 
@@ -12353,12 +12363,13 @@ rdf_schema_ld ()
 ;
 
 
-create procedure CL_RDF_INF_CHANGED_SRV (in name varchar)
+create function CL_RDF_INF_CHANGED_SRV (in name varchar) returns integer
 {
+  declare res integer;
   set isolation = 'committed';
   rdf_inf_clear (name);
   return case (rdfs_load_schema (name)) when 0 then 1 else 0 end;
-  jso_mark_affected (name);
+  return res;
 }
 ;
 
@@ -12373,7 +12384,7 @@ create procedure CL_RDF_INF_CHANGED (in name varchar)
 }
 ;
 
-create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0)
+create function rdfs_rule_set (in name varchar, in gn varchar, in remove int := 0) returns integer
 {
     delete from sys_rdf_schema where rs_name = name and rs_uri = gn;
   if (not remove)
@@ -12382,12 +12393,17 @@ create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int :=
     }
   commit work;
   if (0 = sys_stat ('cl_run_local_only'))
+    {
     DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.CL_RDF_INF_CHANGED (?)', vector (name));
+      return 1;
+    }
   else
     {
+      declare res integer;
       rdf_inf_clear (name);
-      rdfs_load_schema (name);
+      res := rdfs_load_schema (name);
       log_text ('db.dba.rdfs_load_schema (?)', name);
+      return res;
     }
 }
 ;

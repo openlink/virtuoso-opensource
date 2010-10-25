@@ -2584,7 +2584,9 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_REXEC_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_REXEC_WITH_META to SPARQL_SELECT',
     'grant execute on WS.WS."/!sparql/" to "SPARQL"',
-    'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE' );
+    'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
+    'grant select on DB.DBA.SPARQL_SINV to SPARQL_SPONGE' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

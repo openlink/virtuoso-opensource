@@ -916,7 +916,30 @@ bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (this_is_strg_const)
       printf ("%s", val);
     else
+      {
       dbg_print_box (val, stdout);
+        if (DV_IRI_ID == DV_TYPE_OF (val))
+          {
+            iri_id_t iid = unbox_iri_id (val);
+            if (0L == iid)
+              goto done_iid; /* see below */
+            if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+              {
+                caddr_t iri = BNODE_IID_TO_LABEL (iid);
+                printf ("=%s", iri);
+                dk_free_box (iri);
+              }
+            else
+              {
+                caddr_t iri = key_id_to_iri (qst, iid);
+                if (!iri)
+                  goto done_iid; /* see below */
+                printf ("=<%s>", iri);
+                dk_free_box (iri);
+              }
+done_iid: ;
+          }
+      }
     prev_is_strg_const = this_is_strg_const;
   }
   END_DO_BOX;
@@ -14091,7 +14114,7 @@ sql_bif_init (void)
 /* For debugging */
   bif_define_typed ("dbg_printf", bif_dbg_printf, &bt_varchar);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
-  bif_define ("dbg_obj_princ", bif_dbg_obj_princ);
+  bif_define ("dbg_obj_princ", bif_dbg_obj_princ); bif_set_uses_index (bif_dbg_obj_princ);
   bif_define ("dbg_obj_prin1", bif_dbg_obj_princ);
   bif_define ("dbg_obj_print_vars", bif_dbg_obj_print_vars);
   bif_define ("__cache_check", bif_cache_check);

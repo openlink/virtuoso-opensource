@@ -741,7 +741,7 @@ bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int crea
   caddr_t ctx_name = bif_string_arg (qst, args, nth, name);
   rdf_inf_ctx_t ** place = (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name), * ctx;
   if (!place && !create)
-    sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s'", ctx_name);
+    sqlr_new_error ("42000", "RDFI.", "No RDF inference rule set '%.200s' specified as argument #%d of %.200s()", ctx_name, nth, name);
   if (!place)
     {
       caddr_t n2 = box_copy (ctx_name);
@@ -773,7 +773,7 @@ bif_rdf_super_sub_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t iri = bif_arg (qst, args, 1, "rdf_super_sub_list");
   int mode = bif_long_arg (qst, args, 2, "rdf_super_sub_list");
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "", 0);
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_super_sub_list", 0);
   rdf_sub_t * sub;
   if (mode < RI_SUBCLASS || mode > RI_SUPERPROPERTY)
     sqlr_new_error ("42000", "RDF..", "RDF inference type must be between 1 and 4");
@@ -800,7 +800,7 @@ bif_rdf_is_sub (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t sub_iri = bif_arg (qst, args, 1, "rdf_is_sub");
   caddr_t iri = bif_arg (qst, args, 2, "rdf_is_sub");
   int mode = bif_long_arg (qst, args, 3, "rdf_is_sub");
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "", 0);
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_is_sub", 0);
   rdf_sub_t * sub;
   if (mode != RI_SUBCLASS && mode != RI_SUBPROPERTY)
     sqlr_new_error ("42000", "RDF..", "RDF inference type for rdf_is_sub() must be 1 for subclass  or 3 for subproperty");
@@ -1103,7 +1103,7 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 caddr_t
 bif_rdf_inf_ifp_exclude_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_exclude_list", 1);
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_exclude_list", 0);
   iri_id_t ifp = bif_iri_id_arg (qst, args, 1, "rdf_inf_ifp_exclude_list");
   caddr_t box = box_iri_id (ifp);
   caddr_t *place = (caddr_t *)id_hash_get (ctx->ric_ifp_exclude, (void *)(&box));
@@ -1152,7 +1152,7 @@ caddr_t
 bif_rdf_inf_set_inverses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_inverses");
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_inverses", 0);
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_inverses", 1);
   dk_free_tree (ctx->ric_inverse_prop_pair_sortedalist);
   ctx->ric_inverse_prop_pair_sortedalist = box_copy_tree (lst);
   return NULL;
@@ -1162,7 +1162,7 @@ caddr_t
 bif_rdf_inf_set_prop_props (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_prop_props");
-  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_props", 0);
+  rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_props", 1);
   dk_free_tree (ctx->ric_prop_props);
   ctx->ric_prop_props = box_copy_tree (lst);
   return NULL;
