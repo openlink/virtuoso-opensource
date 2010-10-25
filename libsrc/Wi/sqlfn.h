@@ -1018,23 +1018,23 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
     } \
   QR_RESET_CODE  \
     { \
-      caddr_t err = NULL, err_2 = NULL; \
+      caddr_t _err_1 = NULL, _err_2 = NULL; \
       POP_QR_RESET; \
-      vdb_leave_1 (_qi2, &err); \
-      err_2 = subq_handle_reset (_qi2, reset_code); \
-      if (err && err_2) \
+      vdb_leave_1 (_qi2, &_err_1); \
+      _err_2 = subq_handle_reset (_qi2, reset_code); \
+      if (_err_1 && _err_2) \
        	{ \
-	  dk_free_tree (err); \
-          err = err_2; \
+	  dk_free_tree (_err_1); \
+          _err_1 = _err_2; \
 	} \
-      else if (err_2) \
-	err = err_2; \
-      if (err) \
+      else if (_err_2) \
+	_err_1 = _err_2; \
+      if (_err_1) \
 	{ \
 	  if (err_ret) \
-	    *err_ret = err; \
+	    *err_ret = _err_1; \
 	  else \
-	    sqlr_resignal (err); \
+	    sqlr_resignal (_err_1); \
 	} \
     } \
   END_QR_RESET; \
