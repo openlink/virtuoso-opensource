@@ -4668,8 +4668,6 @@ caddr_t
 bif_rdf_rng_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   /* 10 first chars if over 10 */
-  int len;
-  caddr_t res;
   caddr_t str_in = bif_arg_unrdf (qst, args, 0, "__like_min");
   if (!DV_STRINGP (str_in)
       || box_length (str_in) - 1 < 10)
