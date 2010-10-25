@@ -70,6 +70,7 @@ og:latitude rdfs:subPropertyOf geo:lat .
 og:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
+<http://www.ontosearch.com/2008/02/ontosminer-ns/domain/common/english#Person> rdfs:subClassOf foaf:Person .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
