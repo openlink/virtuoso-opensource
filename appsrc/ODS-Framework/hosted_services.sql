@@ -3306,6 +3306,8 @@ wa_exec_no_error_log(
     WAUI_CERT_LOGIN integer default 0,  -- XXX: obsolete, see WA_USER_CERTS
     WAUI_CERT_FINGERPRINT varchar,	-- same as above
     WAUI_CERT long varbinary,		-- same as above
+    WAUI_ACL LONG VARCHAR,
+    WAUI_SALMON_KEY varchar, 
 
     primary key (WAUI_U_ID)
   )'
@@ -3355,6 +3357,9 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'long varbinary');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BPHONE_EXT', 'varchar(5)');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_ACL', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SALMON_KEY', 'VARCHAR');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
@@ -4200,6 +4205,9 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT')
     UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
+
+  else if (_key = 'WAUI_ACL')
+    UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
 
   return row_count ();
 
@@ -7888,6 +7896,22 @@ create procedure ods_uri_curie (in uri varchar)
   _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
 
   return _s;
+}
+;
+
+create procedure ods_user_keys (in username varchar)
+{
+  declare xenc_name, xenc_type varchar;
+  declare arr any;
+  result_names (xenc_name, xenc_type);
+  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+    return;
+  arr := USER_GET_OPTION (username, 'KEYS');
+  for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
+    {
+      if (length (arr[i]))
+        result (arr[i], arr[i+1][0]);
+    }
 }
 ;
 

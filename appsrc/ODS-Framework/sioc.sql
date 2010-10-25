@@ -3035,6 +3035,72 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
   return;
 };
 
+create procedure wa_user_acl_insert (
+  inout user_iri varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..acl_clean_iri (user_iri) || '/webaccess';
+  SIOC..acl_insert (graph_iri, SIOC..person_iri (user_iri), acl);
+}
+;
+
+create procedure wa_user_acl_delete (
+  inout user_iri varchar,
+  inout acl any)
+{
+  declare graph_iri, iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := SIOC..acl_clean_iri (user_iri) || '/webaccess';
+  SIOC..acl_delete (graph_iri, SIOC..person_iri (user_iri), acl);
+}
+;
+
+create trigger WA_USER_INFO_SIOC_ACL_I after insert on DB.DBA.WA_USER_INFO order 100 referencing new as N
+{
+  if (coalesce (N.WAUI_ACL, '') <> '')
+  {
+    contact_acl_insert (person_iri (user_iri (N.WAUI_U_ID)), N.WAUI_ACL);
+
+    SIOC..acl_ping2 (N.WAUI_U_ID,
+                     person_iri (user_iri (N.WAUI_U_ID)),
+                     null,
+                     N.WAUI_ACL);
+  }
+}
+;
+
+create trigger WA_USER_INFO_SIOC_ACL_U after update (WAUI_ACL) on DB.DBA.WA_USER_INFO order 100 referencing old as O, new as N
+{
+  if (coalesce (O.WAUI_ACL, '') <> '')
+    wa_user_acl_delete (person_iri (user_iri (O.WAUI_U_ID)), O.WAUI_ACL);
+
+  if (coalesce (N.WAUI_ACL, '') <> '')
+    wa_user_acl_insert (person_iri (user_iri (N.WAUI_U_ID)), N.WAUI_ACL);
+
+    SIOC..acl_ping2 (N.WAUI_U_ID,
+                     person_iri (user_iri (N.WAUI_U_ID)),
+                     null,
+                     N.WAUI_ACL);
+}
+;
+
+create trigger WA_USER_INFO_SIOC_ACL_D before delete on DB.DBA.WA_USER_INFO order 100 referencing old as O
+{
+  if (coalesce (O.WAUI_ACL, '') <> '')
+    wa_user_acl_delete (person_iri (user_iri (O.WAUI_U_ID)), O.WAUI_ACL);
+}
+;
+
 create trigger WA_USER_PROJECT_SIOC_I after insert on DB.DBA.WA_USER_PROJECTS referencing new as N
 {
   declare graph_iri, iri any;
@@ -3577,6 +3643,21 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
 --
 -- ACL
 --
+create procedure SIOC..acl_clean_iri (
+  inout iri varchar)
+{
+  declare clean_iri varchar;
+  declare N any;
+
+  clean_iri := iri;
+  N := strchr (clean_iri, '#');
+	if (N >= 0)
+    clean_iri := subseq (clean_iri, 0, N);
+
+  return clean_iri;
+}
+;
+
 create procedure SIOC..acl_groups_graph (
   in user_id integer)
 {
@@ -3613,11 +3694,7 @@ create procedure SIOC..acl_insert (
     return;
   };
 
-  clean_iri := iri;
-  N := strchr (clean_iri, '#');
-	if (N >= 0)
-    clean_iri := subseq (clean_iri, 0, N);
-
+  clean_iri := SIOC..acl_clean_iri (iri);
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
@@ -3660,12 +3737,7 @@ create procedure SIOC..acl_delete (
     return;
   };
 
-  clean_iri := iri;
-  N := strchr (clean_iri, '#');
-	if (N >= 0)
-    clean_iri := subseq (clean_iri, 0, N);
-
-  -- ACL Data
+  clean_iri := SIOC..acl_clean_iri (iri);
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
@@ -3935,8 +4007,7 @@ create procedure SIOC..acl_ping (
   in oldAcl any,
   in newAcl any)
 {
-  declare N, M, user_id integer;
-  declare graph, newAclArray, oldAclArray any;
+  declare user_id integer;
 
   user_id := (select WAM_USER
                 from DB.DBA.WA_MEMBER,
@@ -3944,6 +4015,18 @@ create procedure SIOC..acl_ping (
                where WAM_MEMBER_TYPE = 1
                  and WAM_INST = WAI_NAME
                  and WAI_ID = instance_id);
+  SIOC..acl_ping2 (user_id, iri, oldAcl, newAcl);
+}
+;
+
+create procedure SIOC..acl_ping2 (
+  in user_id integer,
+  in iri varchar,
+  in oldAcl any,
+  in newAcl any)
+{
+  declare N, M integer;
+  declare graph, newAclArray, oldAclArray any;
 
   if (not DB.DBA.WA_USER_SPB_ENABLE (user_id))
     return;
@@ -4689,6 +4772,7 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   declare stat, msg, meta, data, info, qr, hf, gr any;
   declare agent varchar;
   declare rc int;
+  declare groups_iri, arr any;
 
   graph := null;
   rc := 0;
@@ -4708,7 +4792,17 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   if (not isarray (info) or agent is null)
     return 0;
 
-  if (iri is not null and not foaf_check_friend (iri, agent))
+  -- old check
+  -- if (iri is not null and not foaf_check_friend (iri, agent))
+  --  return 0;
+
+  -- ACL check
+  arr := sprintf_inverse (iri, 'http://%s/dataspace/person/%s#this', 1);
+  if (length (arr) <> 2)
+    return 0;
+
+  groups_iri := sprintf ('http://%s/dataspace/private/%s', arr[0], arr[1]);
+  if (SIOC..acl_check (SIOC..acl_clean_iri (iri) || '/webaccess', groups_iri, vector (iri)) = '')
     return 0;
 
   -- agent := fix_uri (agent);

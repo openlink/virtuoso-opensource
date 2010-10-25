@@ -3075,7 +3075,7 @@ if (i > 0)
 <xsl:template match="vm:u-prop-select">
   <v:select-list name="{@name}">
     <v:item name="public"  value="1" />
-    <v:item name="friends" value="2" />
+    <v:item name="acl" value="2" />
     <v:item name="private" value="3" />
     <v:before-data-bind>
       control.ufl_value := <xsl:value-of select="@value"/>;

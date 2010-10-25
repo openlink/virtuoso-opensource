@@ -1621,7 +1621,7 @@ create procedure ENEWS.WA.channel_add(
       link := xpath_eval ('/link', xtree_doc (link));
     L := length(channels);
     for (N := 1; N < L; N := N + 1)
-      if (get_keyword('rss', channels[N]) = xpath_eval ('@href', link))
+      if (isvector (channels[N]) and get_keyword ('rss', channels[N]) = xpath_eval ('@href', link))
         goto _next;
     vectorbld_acc (channels, vector ('title', xpath_eval ('@title', link), 'rss',  WS.WS.EXPAND_URL (uri, xpath_eval ('@href', link)), 'format', format));
   _next:;
@@ -1862,7 +1862,7 @@ create procedure ENEWS.WA.channel_get (
   inout xt any,
   in header varchar := null) returns any
 {
-  declare title, home, format, version, lang, css, psh, data, tmp, channel any;
+  declare title, home, format, version, lang, css, psh, data, tmp, channel, salmon any;
 
   channel := vector ();
   data := null;
@@ -1905,6 +1905,7 @@ create procedure ENEWS.WA.channel_get (
     -- Atom feed
     css := ENEWS.WA.channel_css(xt);
     psh := ENEWS.WA.channel_psh(xt, header);
+    salmon := ENEWS.WA.channel_salmon(xt, header);
     xt := xml_cut (xpath_eval ('/feed[1]', xt, 1));
     title := serialize_to_UTF8_xml(xpath_eval ('string(/feed/title/text()|/feed/author/name/text())', xt, 1));
     home := cast (xpath_eval ('/feed/link[@rel="service.post" and @type="application/atom+xml"]/@href', xt) as varchar);
@@ -1918,7 +1919,7 @@ create procedure ENEWS.WA.channel_get (
       format := 'http://purl.org/atom/ns#';
     }
     lang := cast (xpath_eval ('/feed/@lang', xt, 1) as varchar);
-    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'psh', psh, 'data', data);
+    channel := vector ('type', 'long', 'title', title, 'home', home, 'rss', uri, 'format', format, 'lang', lang, 'css', css, 'psh', psh, 'data', data, 'salmon', salmon);
 
     tmp := cast (xpath_eval ('/Channel/image/url/text()', xt, 1) as varchar);
     if (not isnull(tmp))
@@ -1971,6 +1972,28 @@ create procedure ENEWS.WA.channel_psh (
     }
   }
   return psh;
+}
+;
+
+create procedure ENEWS.WA.channel_salmon (
+  inout xt any,
+  inout header varchar) returns any
+{
+  declare spep, link varchar;
+  declare parts any;
+
+  spep := cast (xpath_eval ('[ xmlns:atom="http://www.w3.org/2005/Atom" ] /atom:feed/atom:link[@rel="salmon"]/@href', xt, 1) as varchar);
+  if (isnull (spep))
+  {
+    link := http_request_header (header, 'Link');
+    if (isstring (link))
+    {
+      parts := split_and_decode (link, 0, '\0\0;=');
+      if ((trim (get_keyword ('rel', parts), '"') = 'salmon'))
+        spep := rtrim (ltrim (parts[0], '<'), '>');
+    }
+  }
+  return spep;
 }
 ;
 
@@ -2044,7 +2067,8 @@ create procedure ENEWS.WA.channel_create(
             EF_LANG,
             EF_UPDATE_PERIOD,
             EF_UPDATE_FREQ,
-            EF_IMAGE_URI
+       EF_IMAGE_URI,
+       EF_SALMON_SERVER
            )
     values
       (
@@ -2059,7 +2083,8 @@ create procedure ENEWS.WA.channel_create(
             get_keyword('lang', channel, 'us-en'),
             get_keyword('updatePeriod', channel, 'daily'),
             get_keyword('updateFrequency', channel, 4),
-            imageUri
+       imageUri,
+       get_keyword ('salmon', channel, null)
            );
   }
   if (isnull (id))
@@ -2198,7 +2223,8 @@ create procedure ENEWS.WA.channel_select(
               EF_LANG,
               EF_IMAGE_URI,
               EF_PSH_ENABLED,
-              EF_PSH_SERVER
+              EF_PSH_SERVER,
+	      EF_SALMON_SERVER
          from ENEWS.WA.FEED
         where EF_URI = feed_uri) do
     return vector (
@@ -2217,7 +2243,8 @@ create procedure ENEWS.WA.channel_select(
                    'updateFrequency', EF_UPDATE_FREQ,
                    'imageUrl', EF_IMAGE_URI,
                    'psh', EF_PSH_SERVER,
-                   'psh_enabled', EF_PSH_ENABLED
+                   'psh_enabled', EF_PSH_ENABLED,
+		   'salmon', EF_SALMON_SERVER
                   );
   return vector();
 }

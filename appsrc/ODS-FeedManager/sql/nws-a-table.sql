@@ -43,6 +43,7 @@ ENEWS.WA.exec_no_error('
     EF_PSH_SERVER varchar,
     EF_PSH_ENABLED integer default 0,
     EF_PSH_TOKEN varchar,
+    EF_SALMON_SERVER varchar,
     EF_TAG varchar,
     EF_LAST_UPDATE datetime,
     EF_QUEUE_FLAG integer,
@@ -83,6 +84,10 @@ ENEWS.WA.exec_no_error (
 
 ENEWS.WA.exec_no_error (
   'alter table ENEWS.WA.FEED add EF_PSH_TOKEN varchar', 'C', 'ENEWS.WA.FEED', 'EF_PSH_TOKEN'
+);
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED add EF_SALMON_SERVER varchar', 'C', 'ENEWS.WA.FEED', 'EF_SALMON_SERVER'
 );
 
 

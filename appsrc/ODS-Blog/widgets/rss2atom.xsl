@@ -59,6 +59,7 @@
     <xsl:if test="parent::channel">
 	<link href="{$httpUrl}" type="application/atom+xml" rel="self"/>
 	<xsl:copy-of select="parent::channel/atom:link[@rel='hub' and @href]"/>
+	<xsl:copy-of select="parent::channel/atom:link[@rel='salmon' and @href]"/>
     </xsl:if>
     <xsl:if test="parent::item and not ($isRegularFeed)">
 	<xsl:choose>

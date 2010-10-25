@@ -70,6 +70,13 @@
          url="--sprintf('uiedit_grp.vspx?page=8')"
          xhtml_class="tab"/>
 </td>
+<td class="<?V case when self.pg = 9 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+  <v:url name="b_url8"
+         value="ACL Sharing"
+         format="%s"
+         url="--sprintf('uiedit_acl.vspx?page=9')"
+         xhtml_class="tab"/>
+</td>
 <td class="page_tab_empty" align="center" width="100%">
    <table cellpadding="0" cellspacing="0">
       <tr>
