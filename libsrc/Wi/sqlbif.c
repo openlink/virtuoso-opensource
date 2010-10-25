@@ -9830,7 +9830,7 @@ set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual)
   user_t * user;
   user = sec_name_to_user (name);
 
-  if (!user || !user->usr_is_sql || user->usr_is_role)
+  if (!user || /* !user->usr_is_sql || */ user->usr_is_role)
     return 0;
 
   cli->cli_user = user;
@@ -9869,7 +9869,7 @@ bif_set_user_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t pass = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 2, "__set_user_id") : NULL;
   user_t * user = sec_name_to_user (uname);
 
-  if (!user || !user->usr_is_sql || user->usr_is_role)
+  if (!user /*|| !user->usr_is_sql*/ || user->usr_is_role)
     sqlr_new_error ("22023", "HT042", "Not valid user id \"%s\"", uname);
 
   if (pass && (0 != strcmp (pass, user->usr_pass) || user->usr_disabled))

@@ -190,6 +190,7 @@ nf:
 
 create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
 {
+  set_user_id ('dba');
   cl_exec (txt, args);
   cl_exec ('log_text_array (?, ?)', vector (txt, args), 1);
 }
@@ -276,15 +277,15 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 		 _pwd_mode, _pwd_mode_data, _get_pwd, _login_qual,
 		 _u_home, _u_perms);
 
-  if (_sql_enable)
+  if (not _sql_enable) /* pure web accounts must be disabled for odbc/sql login */
     {
+      _disabled := 1;
+    }
       DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?,?)', vector (
 	  _name, passwd, _u_id, _prim_group_id, concat ('Q ', _login_qual), 0, _u_sys_name, _u_sys_pass ) );
       if (_disabled = 1)
         {
-          DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (
-            _name, 0 ) );
-        }
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (_name, 0));
     }
 
   return _u_id;
@@ -308,9 +309,7 @@ USER_ROLE_CREATE (in _name varchar, in is_dav integer := 0)
   if (is_dav)
     _sql_enable := 0;
   insert into SYS_USERS (U_ID, U_NAME, U_GROUP, U_IS_ROLE, U_DAV_ENABLE, U_SQL_ENABLE) values (_g_id, _name, _g_id, 1, is_dav, _sql_enable);
-  if (_sql_enable)
-    DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?)',
-	  vector (_name, '', _g_id, _g_id, NULL, 1) );
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?)', vector (_name, '', _g_id, _g_id, NULL, 1) );
   return _g_id;
 }
 ;
@@ -646,25 +645,15 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
       U_ACCOUNT_DISABLED = _disabled
       where U_NAME = _name;
 
-  if (_sql_enable)
+  if (not _sql_enable) /* pure web accounts must be disabled for odbc/sql login */
     {
+      _disabled := 1;
+    }
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into passwd from SYS_USERS where U_NAME = _name;
       DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?)',
-        vector (
-	  _name, passwd, _u_id, _u_group_id,
-	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end ) );
-      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)',
-        vector (_name, case when _disabled = 0 then 1 else 0 end) );
-    }
-  else
-    {
-      declare exit handler for sqlstate '28000'
-	{
-	  goto done;
-	};
-      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
-      done:;
-    }
+      vector (_name, passwd, _u_id, _u_group_id,
+	case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (_name, case when _disabled = 0 then 1 else 0 end));
 }
 ;
 
