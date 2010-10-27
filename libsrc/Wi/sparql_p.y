@@ -910,7 +910,8 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		$$ = spar_gp_finalize (sparp_arg, $3);
 		sparp_validate_options_of_tree (sparp_arg, $$, $$->_.gp.options); }
 	| spar_select_query_mode {
-		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "subquery");
+		if (NULL == sparp_env()->spare_context_sinvs) { /* There's an exception related to codegen-time optimization SERVICE { SELECT {x}} like it is SERVICE {x}, so no error right here. */
+		    SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "subquery"); }
 		spar_env_push (sparp_arg);
 		spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);

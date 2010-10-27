@@ -531,16 +531,11 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         int argcount = BOX_ELEMENTS (tree->_.funcall.argtrees);
         ssg_putchar (' ');
         ssg_sdprin_qname (ssg, (SPART *)(tree->_.funcall.qname));
-        if (0 != argcount)
-          {
             ssg_putchar ('(');
             ssg->ssg_indent++;
             ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
             ssg_putchar (')');
             ssg->ssg_indent--;
-          }
-        else
-          ssg_puts (" NIL");
         return;
       }
     case SPAR_GP:

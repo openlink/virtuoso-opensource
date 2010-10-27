@@ -50,6 +50,7 @@ create function DB.DBA.SPARQL_RSET_XML_HTTP_PRE (in colnames any, in accept varc
 {
   declare ses integer;
   ses := 0;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RSET_XML_HTTP_PRE (', colnames, accept, ')');
   if (strchr (accept, ' ') is not null)
     accept := subseq (accept, strchr (accept, ' ')+1);
   http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
@@ -88,6 +89,7 @@ create aggregate DB.DBA.SPARQL_RSET_XML_HTTP (inout colnames any, inout row any)
 create function DB.DBA.SPARQL_DICT_XML_HTTP_PRE (in colnames any, in accept varchar)
 {
   declare ses integer;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_DICT_XML_HTTP_PRE (', colnames, accept, ')');
   http_header ('Content-Type: ' || accept || '; charset=UTF-8\r\n');
   http_flush (1);
   ses := 0;
@@ -237,11 +239,13 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   inout req_hdr any,
   in maxrows integer,
   inout metas any,
-  inout bnode_dict any
+  inout bnode_dict any,
+  in expected_var_list any := null
   )
 {
   declare req_uri, req_method, req_body, local_req_hdr, ret_body, ret_hdr any;
   declare ret_content_type, ret_known_content_type, ret_format varchar;
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT (', res_mode, res_make_obj, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict, ')');
   req_body := string_output();
   http ('query=', req_body);
   http_url (query, 0, req_body);
@@ -283,25 +287,23 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
   ret_known_content_type := http_sys_find_best_sparql_accept (ret_content_type, 0, ret_format);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT ret_content_type=', ret_content_type, ' ret_known_content_type=', ret_known_content_type, ' ret_format=', ret_format);
   if (ret_format is null or not (ret_format in ('XML', 'RDFXML', 'TTL')))
     {
       declare ret_begin, ret_html any;
       ret_begin := "LEFT" (ret_body, 1024);
       ret_html := xtree_doc (ret_begin, 2);
+      -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT ret_html=', ret_html);
       if (xpath_eval ('/html|/xhtml', ret_html) is not null)
-        ret_content_type := 'text/html';
+        ret_format := 'HTML';
       else if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
             or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
-        ret_content_type := 'application/sparql-results+xml';
+        ret_format := 'XML';
       else if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:rdf', ret_html) is not null)
-        ret_content_type := 'application/rdf+xml';
+        ret_format := 'RDFXML';
       else if (strstr (ret_begin, '<html>') is not null or
         strstr (ret_begin, '<xhtml>') is not null )
-        ret_content_type := 'text/html';
-      else
-        {
-          ret_content_type := 'text/plain';
-        }
+        ret_format := 'HTML';
     }
   if (ret_format = 'XML')
     {
@@ -312,7 +314,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
        -- dbg_obj_princ ('application/sparql-results+xml ret_body=', ret_body);
       ret_xml := xtree_doc (ret_body, 0);
       var_list := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
-                               /rset:sparql/rset:head/rset:variable | /rset2:sparql/rset2:head/rset2:variable', ret_xml, 0);
+                               /rset:sparql/rset:head/rset:variable/@name | /rset2:sparql/rset2:head/rset2:variable/@name', ret_xml, 0);
       if (0 = length (var_list))
         {
 	  declare bool_ret any;
@@ -349,12 +351,26 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
 	    service ) );
 	}
       var_count := length (var_list);
+      if (expected_var_list is not null)
+        {
+          for (var_ctr := var_count - 1; var_ctr >= 0; var_ctr := var_ctr - 1)
+            {
+              declare var_name varchar;
+              var_name := cast (var_list[var_ctr] as varchar);
+              if (0 >= position (var_name, expected_var_list))
+                signal ('RDFZZ', sprintf (
+                  'DB.DBA.SPARQL_REXEC(''%.300s'', ...) has received result with unexpected variable name ''%.300s''',
+                  service, var_name ) );
+            }
+          var_list := expected_var_list;
+          var_count := length (var_list);
+        }
       var_metas := make_array (var_count, 'any');
       out_nulls := make_array (var_count, 'any');
       for (var_ctr := var_count - 1; var_ctr >= 0; var_ctr := var_ctr - 1)
         {
           declare var_name varchar;
-          var_name := cast (xpath_eval ('@name', var_list[var_ctr]) as varchar);
+          var_name := cast (var_list[var_ctr] as varchar);
           var_list [var_ctr] := var_name;
           var_metas [var_ctr] := vector (var_name, 242, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0);
           out_nulls [var_ctr] := null;
@@ -520,11 +536,12 @@ create function DB.DBA.SPARQL_REXEC_TO_ARRAY (
   in named_graphs any,
   in req_hdr any,
   in maxrows integer,
-  in bnode_dict any
+  in bnode_dict any,
+  in expected_var_list any := null
   ) returns any
 {
   declare metas any;
-  return DB.DBA.SPARQL_REXEC_INT (1, 0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
+  return DB.DBA.SPARQL_REXEC_INT (1, 0, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict, expected_var_list);
 }
 ;
 
@@ -535,11 +552,12 @@ create function DB.DBA.SPARQL_REXEC_TO_ARRAY_OF_OBJ (
   in named_graphs any,
   in req_hdr any,
   in maxrows integer,
-  in bnode_dict any
+  in bnode_dict any,
+  in expected_var_list any := null
   ) returns any
 {
   declare metas any;
-  return DB.DBA.SPARQL_REXEC_INT (1, 1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict);
+  return DB.DBA.SPARQL_REXEC_INT (1, 1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict, expected_var_list);
 }
 ;
 
@@ -561,11 +579,11 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
 ;
 
 
-create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params any, in qtext_template varchar, in qtext_posmap nvarchar, in param_row any)
+create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params any, in qtext_template varchar, in qtext_posmap nvarchar, in param_row any, in expected_vars any)
 {
   declare RSET, retarray any;
   result_names (RSET);
-  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_var_list, ')');
   if (N'' <> qtext_posmap)
     {
       declare qtext_ses any;
@@ -591,8 +609,8 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
     NULL, --in named_graphs any,
     NULL, -- in req_hdr any,
     10000000,
-    NULL --  in bnode_dict any
-  );
+    NULL, --  in bnode_dict any
+    expected_vars );
   foreach (any retrow in retarray) do
     {
       -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP returns ', retrow);
@@ -601,7 +619,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
 }
 ;
 
-create procedure view DB.DBA.SPARQL_SINV as DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row)(RSET any)
+create procedure view DB.DBA.SPARQL_SINV_2 as DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars)(RSET any)
 ;
 
 -----
@@ -710,6 +728,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
       _val := dta[x];
       if (_val is null)
         goto end_of_binding;
+      -- dbg_obj_princ ('_name=', _name, ',val=', _val, __tag(_val), __box_flags (_val));
       if (isiri_id (_val))
         {
           if (_val >= min_bnode_iri_id ())
@@ -2586,7 +2605,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on WS.WS."/!sparql/" to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
-    'grant select on DB.DBA.SPARQL_SINV to SPARQL_SPONGE' );
+    'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

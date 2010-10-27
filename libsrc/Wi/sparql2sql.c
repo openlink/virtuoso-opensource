@@ -5873,7 +5873,7 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
 name_from_eq_is_found_in_params: ;
         }
       END_SPARP_FOREACH_GP_EQUIV;
-      sinv->_.sinv.rset_varnames = t_revlist_to_array (rset_varnames);
+      sinv->_.sinv.rset_varnames = t_list_to_array (rset_varnames);
     }
   END_DO_SET()
 }

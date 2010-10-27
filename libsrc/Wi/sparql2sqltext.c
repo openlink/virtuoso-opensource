@@ -7103,6 +7103,49 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
         }
       END_DO_BOX_FAST;
     }
+/* There exists a special case of SERVICE that consists of solely one SELECT that is used as a wrapper for aggregates, limits etc. */
+  if ((0 == BOX_ELEMENTS (gp->_.gp.filters))
+    && (1 == BOX_ELEMENTS (gp->_.gp.members))
+    && (SPAR_GP == gp->_.gp.members[0]->type)
+    && (SELECT_L == gp->_.gp.members[0]->_.gp.subtype) )
+    {
+      SPART *single_subq = gp->_.gp.members[0]->_.gp.subquery;
+      caddr_t *rset_varnames = sinv->_.sinv.rset_varnames;
+      SPART **rvals = single_subq->_.req_top.retvals;
+      int rset_len = BOX_ELEMENTS (rset_varnames);
+      int rvals_len = BOX_ELEMENTS (rvals);
+      int vname_ctr, expn_ctr;
+      if (rset_len != rvals_len)
+        goto failed_single_subq_optimization; /* see below */
+      for (vname_ctr = rset_len; vname_ctr--; /* no step */)
+        {
+          caddr_t rset_varname = rset_varnames[vname_ctr];
+#ifndef NDEBUG
+          int vname_ctr2;
+          for (vname_ctr2 = vname_ctr; vname_ctr2--; /* no step */)
+            if (!strcmp (rset_varname, rset_varnames[vname_ctr2]))
+              GPF_T;
+#endif
+          for (expn_ctr = rvals_len; expn_ctr--; /* no step */)
+            {
+              SPART *val = rvals [expn_ctr];
+              caddr_t rval_name;
+              switch (SPART_TYPE (val))
+                {
+                case SPAR_ALIAS: rval_name = val->_.alias.aname; break;
+                case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: rval_name = val->_.var.vname; break;
+                default: goto failed_single_subq_optimization; /* see below */
+                }
+              if (!strcmp (rval_name, rset_varname))
+                break;
+            }
+          if (0 > expn_ctr)
+            goto failed_single_subq_optimization; /* see below */
+        }
+      ssg_sdprint_tree (ssg, single_subq);
+      goto query_text_is_composed; /* see below */
+failed_single_subq_optimization: ;
+    }
   ssg_puts (" SELECT");
   DO_BOX_FAST (caddr_t, retname, retctr, sinv->_.sinv.rset_varnames)
     {
@@ -7114,7 +7157,8 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   gp->_.gp.subtype = WHERE_L;
   ssg_sdprint_tree (ssg, gp);
   gp->_.gp.subtype = SERVICE_L;
-  /* Query text composing ends here */
+
+query_text_is_composed:
   qtext_template_ret[0] = t_strses_string (ssg->ssg_out);
   posmap_itm_ctr = dk_set_length (ssg->ssg_param_pos_set);
   qtext_posmap = (wchar_t *)t_alloc_box (sizeof (wchar_t) * (posmap_itm_ctr + 1), DV_WIDE);
@@ -7162,9 +7206,9 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
   if (SSG_TABLE_SELECT_PASS == pass)
     {
 #if 0
-      ssg_puts (" DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row)(rset any) ");
+      ssg_puts (" DB.DBA.SPARQL_SINV_IMP (ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_var_list)(rset any) ");
 #else
-      ssg_puts (" DB.DBA.SPARQL_SINV ");
+      ssg_puts (" DB.DBA.SPARQL_SINV_2 ");
 #endif
       ssg_prin_id (ssg, gp->_.gp.selid);
       return;
@@ -7188,6 +7232,16 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
+      ssg_putchar (')');
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".expected_vars = vector (");
+      DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.rset_varnames)
+        {
+          if (ctr)
+            ssg_putchar (',');
+          ssg_print_box_as_sql_atom (ssg, varname, SQL_ATOM_ASCII_ONLY);
+        }
+      END_DO_BOX_FAST;
       ssg_putchar (')');
       sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
       ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap);
