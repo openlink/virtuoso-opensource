@@ -191,19 +191,38 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
 #if 0
   if (ha->ha_memcache_only && setp->setp_gb_ops && setp->setp_gb_ops->data)
     {
-      int op = ((gb_op_t *)setp->setp_gb_ops->data)->go_op;
-      switch (op)
+      inx = n_keys;
+      DO_SET (gb_op_t *, op, &(setp->setp_gb_ops))
+	{
+	  state_slot_t * ssl = ha->ha_slots[inx];
+	  switch (op->go_op)
 	{
 	  case AMMSC_COUNT:
 	  case AMMSC_COUNTSUM:
 	  case AMMSC_SUM:
+	      case AMMSC_AVG:
+		  ha->ha_memcache_only = 0;
+		  break;
 	  case AMMSC_MIN:
 	  case AMMSC_MAX:
+		    {
+		      /* check dep part to be numeric type */
+		      if (IS_NUM_DTP (ssl->ssl_dtp))
 	      ha->ha_memcache_only = 0;
+		      else
+			{
+			  ha->ha_memcache_only = 1;
+			  goto check_done;
+			}
 	      break;
+		    }
           default:
 	      break;
 	}
+	  inx++;
+	}
+      END_DO_SET ();
+check_done:;
     }
 #endif
   ha->ha_allow_nulls = 1;
