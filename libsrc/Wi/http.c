@@ -1845,6 +1845,73 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   return check_only ? NULL : code;
 }
 
+#define WS_CORS_STAR (caddr_t*)-1
+
+static caddr_t *
+ws_split_cors (caddr_t str)
+{
+  char *tok_s = NULL, *tok;
+  dk_set_t acl_set_ptr = NULL;
+  caddr_t acl_string = str ? box_dv_short_string (str) : NULL;
+  if (NULL != acl_string)
+    {
+      tok_s = NULL;
+      tok = strtok_r (acl_string, " ", &tok_s);
+      while (tok)
+	{
+	  if (tok && strlen (tok) > 0)
+	    {
+	      if (!strcmp (tok, "*"))
+		{
+		  dk_free_tree (list_to_array (dk_set_nreverse (acl_set_ptr)));
+		  dk_free_box (acl_string);
+		  return WS_CORS_STAR;
+		}
+	      dk_set_push (&acl_set_ptr, box_dv_short_string (tok));
+	    }
+	  tok = strtok_r (NULL, " ", &tok_s);
+	}
+      dk_free_box (acl_string);
+    }
+  return (caddr_t *) list_to_array (dk_set_nreverse (acl_set_ptr));
+}
+
+static int
+ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
+{
+#ifdef VIRTUAL_DIR
+  caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
+  int rc = 0;
+  if (origin && ws->ws_status_code < 400 && ws->ws_map && ws->ws_map->hm_cors)
+    {
+      caddr_t * orgs = ws_split_cors (origin), * place = NULL;
+      int inx;
+      if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
+	rc = 1;
+      else if (orgs != WS_CORS_STAR)
+	{
+	  DO_BOX (caddr_t, org, inx, orgs)
+	    {
+	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
+		{
+		  rc = 1;
+		  break;
+		}
+	    }
+	  END_DO_BOX;
+	}
+      if (orgs != WS_CORS_STAR)
+	dk_free_tree (orgs);
+      if (rc)
+	snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n", place ? *place : "*");
+    }
+  dk_free_tree (origin);
+  if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
+    return 0;
+#endif
+  return 1;
+}
+
 void
 ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 {
@@ -2040,6 +2107,18 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  SES_PRINT (ws->ws_session, "Date: ");
 	  SES_PRINT (ws->ws_session, last_modify);
 	  SES_PRINT (ws->ws_session, "\r\n");
+	}
+
+      if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Origin:"))
+	{
+	  tmp[0] = 0;
+	  if (0 == ws_cors_check (ws, tmp, sizeof (tmp)))
+	    {
+	      strses_flush (ws->ws_strses);
+	      len = strses_length (ws->ws_strses);
+	    }
+	  if (tmp[0] != 0)
+	    SES_PRINT (ws->ws_session, tmp);
 	}
 
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
@@ -7879,6 +7958,30 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite_keep_lpath"))
 		map->hm_url_rewrite_keep_lpath = unbox (opts[i+1]);
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"cors_restricted"))
+		map->hm_cors_restricted = unbox (opts[i+1]);
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"cors"))
+		{
+		  caddr_t * orgs = ws_split_cors (opts[i+1]);
+		  id_hash_t * ht = NULL;
+		  if (orgs)
+		    {
+		      if (orgs != WS_CORS_STAR)
+			{
+			  int inx;
+			  ptrlong one = 1;
+			  ht = id_str_hash_create (7);
+			  DO_BOX (caddr_t, org, inx, orgs)
+			    {
+			      id_hash_set (ht, (caddr_t) & org, (caddr_t) & one);
+			    }
+			  END_DO_BOX;
+			}
+		      else
+			ht = (id_hash_t *) orgs;
+		    }
+		  map->hm_cors = ht;
+		}
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -9889,13 +9992,12 @@ bif_http_methods_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("42000", "HT012", "http_methods_set function is allowed only inside HTTP request");
   ws = qi->qi_client->cli_ws;
   http_set_default_options (ws);
-  DO_BOX (state_slot_t *, arg, inx, args)
+  for (inx = 0; inx < BOX_ELEMENTS (args); inx ++)
     {
       caddr_t v = bif_string_or_null_arg (qst, args, inx, "http_methods_set");
       m = http_method_id (v);
       ws->ws_options [m] = '\x1';
     }
-  END_DO_BOX;
   return NULL;
 }
 
