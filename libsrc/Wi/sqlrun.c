@@ -1556,6 +1556,11 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  || code_vec_run (ts->src_gen.src_after_test, state))
 	{
 	  any_passed = 1;
+#ifndef NDEBUG
+	  /* if in state itc must be registered */
+	  if (SRC_IN_STATE (ts, inst) != NULL && !order_itc->itc_is_registered)
+	    GPF_T;
+#endif
 	  qn_ts_send_output ((data_source_t *) ts, state, ts->ts_after_join_test);
 	}
       state = NULL;
