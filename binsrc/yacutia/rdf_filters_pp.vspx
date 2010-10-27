@@ -62,7 +62,7 @@
                     </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url1" value="Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Meta Cartridges
