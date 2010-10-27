@@ -114,7 +114,7 @@ caddr_t bif_date_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 int bif_is_relocatable (bif_t bif);
 double bif_double_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int * isnull);
-caddr_t * bif_array_of_pointer_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
+EXE_EXPORT (caddr_t *, bif_array_of_pointer_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 
 
 extern bif_type_t bt_varchar;

@@ -4045,6 +4045,21 @@ bif_dict_iter_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (res);
 }
 
+caddr_t
+bif_dict_key_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key = bif_arg (qst, args, 0, "dict_key_hash");
+  return box_num (treehash ((char *)&key));
+}
+
+caddr_t
+bif_dict_key_eq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key1 = bif_arg (qst, args, 0, "dict_key_eq");
+  caddr_t key2 = bif_arg (qst, args, 1, "dict_key_eq");
+  return box_num (treehashcmp ((char *)(&key1), (char *)(&key2)));
+}
+
 int
 gvector_sort_cmp (caddr_t * e1, caddr_t * e2, vector_sort_t * specs)
 {
@@ -4807,6 +4822,8 @@ xslt_init (void)
   bif_define ("dict_zap", bif_dict_zap);
   bif_define ("dict_iter_rewind", bif_dict_iter_rewind);
   bif_define ("dict_iter_next", bif_dict_iter_next);
+  bif_define ("dict_key_hash", bif_dict_key_hash);
+  bif_define ("dict_key_eq", bif_dict_key_eq);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
