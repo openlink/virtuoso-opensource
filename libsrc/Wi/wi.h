@@ -1146,7 +1146,7 @@ struct buffer_desc_s
 #define BUF_NONE_WAITING(buf) \
 (!buf->bd_write_waiting && !buf->bd_read_waiting && !buf->bd_being_read)
 
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
 #define BD_SET_IS_WRITE(bd, f) \
 { \
   (bd)->bd_is_write = f;			    \

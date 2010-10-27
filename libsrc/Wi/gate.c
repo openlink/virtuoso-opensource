@@ -910,11 +910,19 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
   if ((*buf_ret)->bd_readers <= 0 && !(*buf_ret)->bd_is_write)
     GPF_T1 ("dive transit ends in bd_readers <= 0 or is_write > 0");
 #endif
+  if ((*buf_ret)->bd_is_dirty && (*buf_ret)->bd_physical_page != (*buf_ret)->bd_page)
+    {
+      it_map_t * itm = IT_DP_MAP (tree, to);
+      mutex_enter (&itm->itm_mtx);
+      if (!gethash ((void*)(void*)(ptrlong)to, &itm->itm_remap))
+	GPF_T;
+      mutex_leave (&itm->itm_mtx);
+    }
 }
 
 
 void
-itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
+DBGP_NAME (itc_landed_down_transit) (DBGP_PARAMS it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 {
   buffer_desc_t *old_buf = *buf_ret;
   int waited = 0;
@@ -928,7 +936,7 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
   if (!old_buf->bd_is_write) GPF_T1 ("landed transit got no write");
 #endif
   itc->itc_is_on_row = 1;
-  page_wait_access (itc, to, *buf_ret, buf_ret, PA_WRITE, RWG_NO_WAIT);
+  DBGP_NAME (page_wait_access) (DBGP_ARGS itc, to, *buf_ret, buf_ret, PA_WRITE, RWG_NO_WAIT);
   if (itc->itc_to_reset > RWG_NO_WAIT)
     {
       /* there was a wait and the itc was registered.  To unregister, reenter the page and go back to itc_search to see where to goo. The leaf could have been deld or split */
@@ -971,10 +979,10 @@ itc_landed_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t 
 }
 
 void
-itc_down_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
+DBGP_NAME (itc_down_transit) (DBGP_PARAMS it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 {
   if (itc->itc_landed)
-    itc_landed_down_transit (itc, buf_ret, to);
+    DBGP_NAME (itc_landed_down_transit) (DBGP_ARGS itc, buf_ret, to);
   else
     itc_dive_transit (itc, buf_ret, to);
 }

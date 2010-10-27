@@ -84,9 +84,6 @@ int pg_skip_gap (db_buf_t page, int pos);
 void itc_skip_entry (it_cursor_t * it, buffer_desc_t * buf);
 void itc_prev_entry (it_cursor_t * it, buffer_desc_t * buf);
 
-void itc_down_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
-void itc_landed_down_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
-void itc_dive_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
 
 #define PS_LOCKS 0
 #define PS_NO_LOCKS 1
@@ -200,14 +197,23 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #ifdef PAGE_DEBUG
 #define DBGP_NAME(nm) 		dbg_##nm
 #define DBGP_PARAMS 		const char *file, int line,
+#define DBGP_ARGS 		file, line,
+#define DBGP_ARGS_0 		file, line
 #define page_wait_access(itc,dp_to,buf_from,buf_ret,mode,max_change) \
 	dbg_page_wait_access (__FILE__,__LINE__,itc,dp_to,buf_from,buf_ret,mode,max_change)
 #define page_leave_inner(buf) \
         dbg_page_leave_inner (__FILE__,__LINE__,buf)
+#define itc_down_transit(it,buf,to) dbg_itc_down_transit (__FILE__,__LINE__,it, buf, to)
+#define itc_landed_down_transit(it,buf,to) dbg_itc_landed_down_transit (__FILE__,__LINE__,it, buf, to)
 #else
 #define DBGP_NAME(nm) 		nm
 #define DBGP_PARAMS
+#define DBGP_ARGS
+#define DBGP_ARGS_0
 #endif
+void DBGP_NAME (itc_down_transit) (DBGP_PARAMS it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
+void DBGP_NAME (itc_landed_down_transit) (DBGP_PARAMS it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
+void itc_dive_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
 int DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp_to,
 		  buffer_desc_t * buf_from,
 		  buffer_desc_t ** buf_ret, int mode, int max_change);
