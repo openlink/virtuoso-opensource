@@ -46,7 +46,7 @@ int dtp_is_var (dtp_t dtp);
 
 
 void
-key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast)
+key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, gb_op_t *gb_op)
 {
   NEW_VARZ (dbe_column_t, col);
   col->col_name = box_dv_short_string (SSL_HAS_NAME (ssl) ? ssl->ssl_name : "const");
@@ -67,6 +67,25 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast)
   if (col->col_sqt.sqt_dtp == DV_LONG_STRING ||
       col->col_sqt.sqt_dtp == DV_ANY)
     col->col_sqt.sqt_precision = 0;
+  if (gb_op && col->col_sqt.sqt_dtp == DV_ANY)
+    {
+      switch (gb_op->go_op)
+	{
+	  case AMMSC_COUNT:
+	      col->col_sqt.sqt_dtp = DV_INT64;
+	      col->col_sqt.sqt_precision = DV_LONG_INT_PREC;
+	      break;
+	  case AMMSC_COUNTSUM:
+	  case AMMSC_SUM:
+	  case AMMSC_AVG:
+	      col->col_sqt.sqt_dtp = DV_NUMERIC;
+	      col->col_sqt.sqt_precision = NUMERIC_MAX_PRECISION;
+	      col->col_sqt.sqt_precision = NUMERIC_MAX_SCALE;
+	      break;
+	  default:
+	      break;
+	}
+    }
   col->col_id = dk_set_length (key->key_parts) + 1;
 
   col->col_options = (caddr_t *) box_copy_tree ((box_t) ssl->ssl_sqt.sqt_tree);
@@ -99,6 +118,7 @@ sqt_row_data_length (sql_type_t *sqt)
 dbe_key_t *
 setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast)
 {
+  int inx = 0;
   NEW_VARZ (dbe_key_t, key);
 
   key->key_n_significant = dk_set_length (setp->setp_keys);
@@ -110,14 +130,16 @@ setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast)
     {
       if (row_len_ptr)
 	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl, quietcast);
+      key_col_from_ssl (key, ssl, quietcast, NULL);
     }
   END_DO_SET();
   DO_SET (state_slot_t *, ssl, &setp->setp_dependent)
     {
+      gb_op_t *gb_op = dk_set_nth (setp->setp_gb_ops, inx);
       if (row_len_ptr)
 	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl, quietcast);
+      key_col_from_ssl (key, ssl, quietcast, gb_op);
+      inx ++;
     }
   END_DO_SET();
 
@@ -188,7 +210,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
   ha->ha_slots = (state_slot_t **)
     list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
 				dk_set_copy (setp->setp_dependent)));
-#if 0
+#if 1
   if (ha->ha_memcache_only && setp->setp_gb_ops && setp->setp_gb_ops->data)
     {
       inx = n_keys;
