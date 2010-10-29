@@ -1091,6 +1091,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
 	{ /* source & line are from qr_module */
 	  qr->qr_line_counts = hash_table_allocate (100);
 	  qr->qr_call_counts = id_str_hash_create (101);
+	  qr->qr_stats_mtx = mutex_allocate ();
 	}
 #endif
 

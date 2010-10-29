@@ -318,6 +318,7 @@ struct query_s
     id_hash_t 		*qr_call_counts;  /* test coverage caller stats */
     long		qr_time_cumulative; /* test coverage cumulative time for execution */
     long 		qr_self_time;
+    dk_mutex_t		*qr_stats_mtx;	  /* for protection on stats hash tables see above */
 #endif
     caddr_t		*qr_udt_mtd_info; /* not null if CREATE METHOD */
     long 		qr_obsolete_msec;

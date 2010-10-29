@@ -1545,6 +1545,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  {
 	    qr->qr_line_counts = hash_table_allocate (100);
 	    qr->qr_call_counts = id_str_hash_create (101);
+	    qr->qr_stats_mtx = mutex_allocate ();
 	  }
 #endif
       }

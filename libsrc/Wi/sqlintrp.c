@@ -1040,6 +1040,7 @@ do_pl_stats (query_instance_t *qi, int32 lineno)
       qr_caller = caller->qi_query;
       caller_name = caller->qi_query->qr_proc_name;
     }
+  mutex_enter (qr->qr_stats_mtx);
   thisct = (int32) (ptrlong) gethash ((void *) (ptrlong) lineno, qr->qr_line_counts);
   sethash ((void *) (ptrlong) lineno,  qr->qr_line_counts, (void *) (ptrlong) (++thisct));
   if (!caller_name)
@@ -1057,6 +1058,7 @@ do_pl_stats (query_instance_t *qi, int32 lineno)
 	}
       qr->qr_calls++;
     }
+  mutex_leave (qr->qr_stats_mtx);
 }
 
 void pldbg_make_answer (client_connection_t * cli);
