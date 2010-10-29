@@ -428,10 +428,10 @@ itc_bm_insert_single (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, 
     ITC_OWNS_PARAM (itc, upd_rd.rd_values[key->key_bit_cl->cl_nth]);
     upd_rd.rd_values[key->key_bm_cl->cl_nth] = box_dv_short_nchars ((char *)bmstr, 4);
     ITC_OWNS_PARAM (itc, upd_rd.rd_values[key->key_bm_cl->cl_nth]);
+  }
 #endif
       itc_page_leave  (itc, buf);
       itc->itc_search_mode = SM_INSERT;
-  }
   itc->itc_key_spec = itc->itc_insert_key->key_insert_spec; /* have insert specs, there can be other specs from prev seek */
   upd_rd.rd_itc = itc;
   rc = itc_insert_unq_ck (itc, &upd_rd, NULL);
