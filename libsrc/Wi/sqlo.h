@@ -793,6 +793,7 @@ int dfe_is_eq_pred (df_elt_t * pred);
 float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
 data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe);
 int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
+int sqlo_has_col_ref (ST * tree);
 
 
 #endif /* _SQLO_H */

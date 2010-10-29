@@ -1353,6 +1353,19 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_
     }
 }
 
+/* check after sqlo_dt_inlineable if right side selection list has expressions containing no columns of the table */
+static int
+sqlo_selection_all_cols (sqlo_t * so, caddr_t * tree, op_table_t * ot)
+{
+  int inx;
+  DO_BOX (ST *, s, inx, (ST**)tree)
+    {
+      if (!sqlo_has_col_ref (s))
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
 
 int
 sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
@@ -1371,7 +1384,8 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
       else if (ST_P (exp->_.join.left, TABLE_REF) && ST_P (exp->_.join.left->_.table_ref.table, JOINED_TABLE))
 	any += sqlo_inline_jt (so, tree, exp->_.join.left->_.table_ref.table, ot);
       if (OJ_LEFT == exp->_.join.type
-	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1))
+	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1)
+	  && sqlo_selection_all_cols (so, exp->_.join.right->_.table_ref.table->_.select_stmt.selection, ot))
 	{
 	  /* left oj with single table dt to the right. */
 	  ST * texp = exp->_.join.right->_.table_ref.table->_.select_stmt.table_exp;
