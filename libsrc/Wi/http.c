@@ -10100,6 +10100,7 @@ http_init_part_one ()
   bif_define ("http_rewrite", bif_http_rewrite);
   bif_define ("http_enable_gz", bif_http_enable_gz);
   bif_define ("http_header", bif_http_header);
+  bif_define ("http_response_header", bif_http_header);
   bif_define ("http_host", bif_http_host);
   bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
   bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
