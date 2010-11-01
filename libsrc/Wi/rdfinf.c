@@ -1412,7 +1412,7 @@ cl_rdf_inf_init_1 (caddr_t * qst)
 void
 cl_rdf_bif_check_init (bif_t bif)
 {
-  if (cl_rdf_inf_inited)
+  if (1 == cl_rdf_inf_inited)
     return;
   if  (bif_rdf_inf_ifp_list == bif || bif_rdf_inf_ifp_is_excluded == bif
        || bif_rdf_is_sub == bif || bif_rdf_super_sub_list == bif)
