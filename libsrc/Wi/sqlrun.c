@@ -282,6 +282,8 @@ sel_out_free (state_slot_t ** out_slots, caddr_t * qst)
   DO_BOX (state_slot_t *, sl, inx, out_slots)
   {
     char sl_type = sl->ssl_type;
+    if (sl->ssl_is_alias)
+      goto next;
     if ((sl_type == SSL_PLACEHOLDER || sl_type == SSL_ITC))
       {
 	placeholder_t *pl = (placeholder_t *) qst[inx];
@@ -289,10 +291,6 @@ sel_out_free (state_slot_t ** out_slots, caddr_t * qst)
 	  plh_free (pl);
 	continue;
       }
-    if (sl->ssl_is_alias)
-      goto next;
-
-
     dt = qst[inx];
     if (dt)
       {
@@ -1489,6 +1487,12 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	{
 	  if (order_buf)
 	    GPF_T;		/* TS loops back and order buf is set */
+	  if (!order_itc->itc_is_registered)
+	    {
+	      log_error ("cursor not continuable as it is unregistered");
+	      SRC_IN_STATE (ts, inst) = NULL;
+	      return;
+	    }
 	  ITC_FAIL (order_itc)
 	  {
 	    order_buf = page_reenter_excl (order_itc);
@@ -2347,7 +2351,7 @@ select_node_input (select_node_t * sel, caddr_t * inst, caddr_t * state)
 	    cli_send_row_count (qi->qi_client, 0, NULL, THREAD_CURRENT_THREAD);
 	}
     }
-  if (!sel->sel_set_no && !sel_top_count (sel, inst))
+  if (!sel_top_count (sel, inst))
     return;
   if (qi->qi_caller == CALLER_CLIENT)
     {
@@ -2389,8 +2393,6 @@ select_node_input (select_node_t * sel, caddr_t * inst, caddr_t * state)
 	}
       box[fill++] = out_copy;
       inst[sel->sel_out_fill] = (caddr_t) (ptrlong) fill;
-      if (sel->sel_set_no)
-	sel_top_count (sel, inst);
     }
   else
     {
@@ -2403,8 +2405,6 @@ select_node_input (select_node_t * sel, caddr_t * inst, caddr_t * state)
 	}
       box[fill++] = out_copy;
       inst[sel->sel_out_fill] = (caddr_t) (ptrlong) fill;
-      if (sel->sel_set_no)
-	sel_top_count (sel, inst);
     }
 
   if (quota != PREFETCH_ALL
