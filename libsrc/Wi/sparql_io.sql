@@ -1749,6 +1749,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
+  declare save_mode, save_dir, fname varchar;
   -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
@@ -1786,6 +1787,18 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
+  save_mode := get_keyword ('save', params, null);
+  if (save_mode is not null and save_mode = 'display')
+    save_mode := null;
+  else
+    {
+      save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
+      if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
+        save_dir := null;
+    }
+  fname := trim (get_keyword ('fname', params, ''));
+  if (fname = '')
+    fname := null;
   get_user := '';
   soap_ver := 0;
   soap_action := http_request_header (lines, 'SOAPAction', null, null);
@@ -1968,8 +1981,8 @@ http('<br />\n');
 http('6. Click the button "Update"\n');
 http('<br />\n');
 http('7. Access again the sparql endpoint in order to be able to retrieve remote data.\n');
-http('<br /><br />\n');
   }
+http('<br /><br />\n');
 http('			  <label for="query">Query text</label>\n');
 http('			  <br />\n');
 http('			  <textarea rows="10" cols="80" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">'|| def_qry ||'</textarea>\n');
@@ -1978,7 +1991,13 @@ http('			  <br /><br />\n');
 --http('			  <input type="text" name="maxrows" id="maxrows"\n');
 --http(sprintf('				  	value="%d"/>',maxrows));
 --http('			  <br />\n');
-http('			  <label for="format" class="n">Display Results As:</label>\n');
+http('<label for="debug" class="n"><nobr>Rigorous check of the query:</nobr></label>');
+http('&nbsp;<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>');
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+http('<label for="timeout" class="n"><nobr>Execution timeout, in milliseconds, values less than 1000 are ignored:</nobr></label>');
+http('&nbsp;<input name="timeout" type="text"' || case (isnull (timeout)) when 0 then cast (timeout as varchar) else '' end || '/>');
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+http('			  <label for="format" class="n">Format Results As:</label>\n');
 http('			  <select name="format">\n');
 http('			    <option value="auto">Auto</option>\n');
 http('			    <option value="text/html" selected="selected">HTML</option>\n');
@@ -1991,13 +2010,19 @@ http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
 http('			    <option value="text/csv">CSV</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
 http('			  </select>\n');
-http('&nbsp;&nbsp;&nbsp;\n');
-http('<input name="debug" type="checkbox"' || case (debug) when '' then '' else ' checked' end || '/>');
-http('&nbsp;<label for="debug" class="n"><nobr>Rigorous check of the query</nobr></label>\n');
-http('&nbsp;&nbsp;&nbsp;\n');
-http('<input name="timeout" type="text"' || case (isnull (timeout)) when 0 then cast (timeout as varchar) else '' end || '/>');
-http('&nbsp;<label for="timeout" class="n"><nobr>Execution timeout, in milliseconds, values less than 1000 are ignored</nobr></label>\n');
-http('&nbsp;&nbsp;&nbsp;\n');
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+if (save_dir is not null)
+{
+--http('			  <label for="save" class="n">Save Results As:</label>\n');
+http('			  <select name="save">\n');
+http('			    <option value="display" selected="selected">Display the result and not save</option>\n');
+http('			    <option value="tmpstatic">Save the result to the DAV as a temporary document with the specified name:</option>\n');
+http('			    <option value="dynamic">Save the result to the DAV and refresh it periodically with the specified name:</option>\n');
+http('			  </select>');
+http('&nbsp;<input name="fname" type="text" />');
+http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
+}
+http('<br /><br />\n');
 http('			  <input type="submit" value="Run Query"/>');
 http('&nbsp;<input type="reset" value="Reset"/>\n');
 http('			</fieldset>\n');
@@ -2307,7 +2332,8 @@ host_found:
   state := '00000';
   metas := null;
   rset := null;
-
+  if (save_mode is not null and save_mode <> 'display')
+    client_supports_partial_res := 0; -- because result is not sent at all in this case
   if (not client_supports_partial_res) -- partial results do not work with chunked encoding
     {
     -- No need to choose accurately if there are no variants.
@@ -2357,6 +2383,7 @@ host_found:
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
+  -- dbg_obj_princ ('save_mode = ', save_mode, ' save_dir = ', save_dir);
   commit work;
   if (client_supports_partial_res and (timeout > 0))
     {
@@ -2368,7 +2395,7 @@ host_found:
     {
       set TRANSACTION_TIMEOUT=hard_timeout;
     }
-  set_user_id (user_id);
+  set_user_id (user_id, 1);
   start_time := msec_time();
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
@@ -2401,18 +2428,119 @@ host_found:
       return;
     }
 write_results:
+  if (save_mode is null)
+    {
+      declare status any;
+      if ((1 = length (metas[0])) and ('aggret-0' = metas[0][0][0]))
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '500', 'SPARQL Request Failed',
+            full_query, '00000', 'The result of the query can not be saved to a DAV resource', format);
+          return;
+        }
+    }
   if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
     {
       declare status any;
+      declare save_dir_id any;
       if (isinteger (msg))
         status := NULL;
       else
         status := vector (state, msg, exec_time, exec_db_activity);
+      if (save_mode is not null)
+        {
+          if (save_dir is null)
+            {
+              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '500', 'SPARQL Request Failed',
+                full_query, '00000', sprintf ('The web service is using database account "%.100s" that has no appropriate DAV home directory, can not save the result there', user_id), format);
+              return;
+            }
+          save_dir := save_dir || 'saved-sparql-results/';
+          save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
+          if (DAV_HIDE_ERROR (save_dir_id) is null)
+            {
+              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '500', 'SPARQL Request Failed',
+                full_query, '00000', sprintf ('Error accessing DAV directory "%.200s": %.1000s', save_dir, DAV_PERROR (save_dir_id)), format);
+              return;
+            }
+          if ((not isinteger (save_dir_id)) or not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = save_dir_id and COL_DET='DynaRes'))
+            {
+              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '500', 'SPARQL Request Failed',
+                full_query, '00000', sprintf ('To keep saved SPARQL results, the DAV directory "%.200s" should be of DAV extension type "DynaRes"', save_dir), format);
+              return;
+            }
+          if (fname is not null)
+            {
+              if (strchr (fname, '/') is not null)
+                {
+                  DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                    '500', 'SPARQL Request Failed',
+                    full_query, '00000', sprintf ('The specified resource name "%.200s" contains illegal characters', fname), format);
+                  return;
+                }
+            }
+          ses := string_output ();
+          add_http_headers := 0;
+        }
       if (isstring (jsonp_callback))
-        http (jsonp_callback || '(\n');
+        http (jsonp_callback || '(\n', ses);
       DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers, status);
       if (isstring (jsonp_callback))
-        http (')');
+        http (')', ses);
+      if (save_mode is not null)
+        {
+          declare sparql_uid integer;
+          declare refresh_sec, ttl_sec integer;
+          declare full_uri varchar;
+          sparql_uid := (SELECT U_ID from DB.DBA.SYS_USERS where U_NAME = user_id);
+          if (fname is null)
+            {
+              if (save_mode = 'tmpstatic')
+                fname := sprintf ('%.100s - SPARQL result - made by %.100s', cast (now() as varchar), user_id);
+              else
+                fname := sprintf ('%.100s - cached and renewable SPARQL result - made by %.100s', cast (now() as varchar), user_id);
+            }
+          refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (hard_timeout, 1000)/100) end;
+          ttl_sec := 172800;
+          full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
+          "DynaRes_INSERT_RESOURCE" (detcol_id => save_dir_id, fname => fname,
+            owner_uid => sparql_uid,
+            refresh_seconds => refresh_sec,
+            ttl_seconds => ttl_sec,
+            mime => accept,
+            exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
+            exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+            exec_uname => user_id, content => ses );
+          http ('<html><head><title>The SPARQL result is successfully saved</title></head><body>');
+          http ('<h3>Done!</h3>');
+          http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
+          http_value (full_uri);
+          http ('">');
+          http_value (full_uri);
+          http ('</a></p>');
+          if (refresh_sec is null)
+            http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
+          if (ttl_sec is null)
+            http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
+          if (accept <> 'text/html')
+            http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
+If the browser is unable to open the link itself it can prompt for action like lauching an additional program.
+The program may let you to edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
+          http ('</body></html>');
+        }
+    }
+  else
+    {
+      if (save_mode is not null)
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '500', 'SPARQL Request Failed',
+            full_query, '00000', 'The result of the query can not be saved to a DAV resource', format);
+          return;
+        }
     }
 }
 ;
@@ -2420,7 +2548,33 @@ write_results:
 registry_set ('/!sparql/', 'no_vsp_recompile')
 ;
 
-
+create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in hard_timeout integer, in jsonp_callback any)
+{
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, hard_timeout, ')');
+  declare state, msg varchar;
+  declare metas, rset any;
+  declare RES any;
+  declare ses any;
+  result_names (RES);
+  set_user_id (user_id, 1);
+  if (hard_timeout >= 1000)
+    set TRANSACTION_TIMEOUT = hard_timeout;
+  set_user_id (user_id);
+  state := '00000';
+  exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
+  commit work;
+  -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
+  if (state <> '00000')
+    signal (state, msg);
+  ses := string_output ();
+  if (isstring (jsonp_callback))
+    http (jsonp_callback || '(\n', ses);
+  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0, null);
+  if (isstring (jsonp_callback))
+    http (')', ses);
+  result (ses);
+}
+;
 
 -- SPARUL manipulation by remote resources.
 
@@ -2576,8 +2730,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
       strcasestr (accept, 'application/soap+xml') is not null or
-      strcasestr (accept, 'application/rdf+turtle') is not null
-      strcasestr (accept, 'text/cxml') is not null
+      strcasestr (accept, 'application/rdf+turtle') is not null or
+      strcasestr (accept, 'text/cxml') is not null or
       strcasestr (accept, 'text/csv') is not null
      )
     {
@@ -2603,6 +2757,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_REXEC_TO_ARRAY to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_REXEC_WITH_META to SPARQL_SELECT',
     'grant execute on WS.WS."/!sparql/" to "SPARQL"',
+    'grant execute on DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
     'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE' );
