@@ -5,6 +5,7 @@ iSPARQL.Defaults = {
     endpoints: [ "/sparql",
 		 "http://uriburner.com/sparql",
 		 "http://dbpedia.org/sparql",
+                 "http://loc.openlinksw.com/sparql",
 		 "http://lod.openlinksw.com/sparql",
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
@@ -41,6 +42,7 @@ iSPARQL.Defaults = {
     tab:          0,
     maxrows:      50,
     endpoint:     '/sparql',
+    pivotInstalled: false,
 
  /* See maps.js indexed by OAT.Map.TYPE_* */
     mapProviderNames: [

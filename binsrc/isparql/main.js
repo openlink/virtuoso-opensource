@@ -751,7 +751,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	var opts = $(select).options;
 	for (var i=0;i<opts.length;i++) {
 	    var opt = opts[i];
-	    if (opt.value == p[1][0].replace (/"/g,'')) { //"
+	    if (opt.value == p[1][0].replace (/"/g,'')) { //
 		$(select).options.selectedIndex = i;
 		break;
 	    }

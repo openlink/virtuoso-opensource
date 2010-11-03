@@ -69,6 +69,11 @@
   api_key := registry_get ('iSPARQL_API_KEY');
   if (0 = api_key) api_key := '';
   
+  declare pivot_installed varchar;
+  pivot_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
+      pivot_installed := 'true';
 ?>
 {  graph: '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>',
    query: '<?vsp http(replace(def_qry,'\'','\\\'')); ?>',
@@ -85,5 +90,6 @@
 ?>
    map_type: '<?= map_type ?>',
    api_key: '<?=api_key ?>',
+   pivotInstalled: <?= pivot_installed ?>,
    setup_done: <?= setup_done ?>
 }
