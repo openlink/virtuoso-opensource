@@ -1743,7 +1743,7 @@ pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf)
       if (pl->pl_n_row_locks)
 	GPF_T1 ("can't free pl with row locks");
       if (pl->pl_owner)
-	GPF_T1 (";lock should not have an owner when it is gettingf freed");
+	GPF_T1 ("lock should not have an owner when it is getting freed");
       mutex_enter (&itm->itm_mtx);
       if (DP_DELETED != pl->pl_page && PL_FINISHING != pl->pl_page)
 	{
