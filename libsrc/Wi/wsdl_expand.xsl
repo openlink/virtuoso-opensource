@@ -118,10 +118,10 @@
 		<xsl:variable name="sch" select="document(@schemaLocation)"/>
 		<xsl:apply-templates select="$sch/*" mode="xsd"/>
 	    </xsl:when>
-	    <xsl:otherwise>
+	    <!--xsl:otherwise>
 		<xsl:variable name="lns" select="@namespace"/>
 		<xsl:apply-templates select="//xsd:schema[@targetNamespace = $lns]" mode="xsd"/>
-	    </xsl:otherwise>
+	    </xsl:otherwise-->
 	</xsl:choose>
     </xsl:for-each>
     <xsl:copy>
