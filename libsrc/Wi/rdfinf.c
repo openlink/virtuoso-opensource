@@ -1343,6 +1343,7 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
   /* called from compiler when an inf ctx is found in the parse tree. Must complete before the compilation can proceed.  For cluster only */
   int lt_threads = cli->cli_trx->lt_threads;
   static query_t * qr;
+  caddr_t err = NULL;
   IN_TXN;
   if (1 == cl_rdf_inf_inited)
     {
@@ -1358,7 +1359,7 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
       semaphore_enter (self->thr_sem);
       vdb_leave_lt (cli->cli_trx, err_ret);
       if (1 != cl_rdf_inf_inited)
-	*err_ret = srv_make_new_error ("42000", "CL...", "Rdf inf init failed while waiting for other thread to do the rdf inf init");
+	*err_ret = srv_make_new_error ("42000", "CLRI1", "Rdf inf init failed while waiting for other thread to do the rdf inf init");
       return;
     }
   cl_rdf_inf_init_user = cli->cli_user;
@@ -1377,7 +1378,7 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
       rc = lt_enter (cli->cli_trx);
       if (LTE_OK != rc)
 	{
-	  *err_ret = srv_make_new_error ("42000", "CL...", "Cluster rrdf inf init failed because bad transaction state.  Rollback and retry.");
+	  *err_ret = srv_make_new_error ("42000", "CLRI2", "Cluster rdf inf init failed because bad transaction state.  Rollback and retry.");
 	  goto init_error;
 	}
     }
@@ -1394,6 +1395,8 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
   cl_rdf_inf_init_done (cli, 1);
   return;
  init_error:
+  err = *err_ret;
+  log_error ("Error executing a cluster RDF inf init: %s: %s", ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
   cl_rdf_inf_init_done (cli, 0);
 }
 
