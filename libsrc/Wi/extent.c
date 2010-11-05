@@ -305,19 +305,22 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       if (n_allocated)
 	dbs_page_allocated (dbs, ext_first);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
-      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
+      if (!last->bd_page) GPF_T1 ("0 dp for page set page");
+      EM_DEC_FREE (em, EXT_INDEX);
 
       last = page_set_extend (dbs, &dbs->dbs_incbackup_set, 0, DPF_INCBACKUP_SET);
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
-      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
+      if (!last->bd_page) GPF_T1 ("0 dp for page set page");
+      EM_DEC_FREE (em, EXT_INDEX);
       dbs->dbs_n_pages_in_sets += BITS_ON_PAGE;
     }
   if (dbs->dbs_n_pages > dbs->dbs_n_pages_in_extent_set)
     {
       buffer_desc_t * last = page_set_extend (dbs, &dbs->dbs_extent_set, 0, DPF_EXTENT_SET);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
-      if (last->bd_page) EM_DEC_FREE (em, EXT_INDEX);
+      if (!last->bd_page) GPF_T1 ("0 dp for extents alloc page");
+      EM_DEC_FREE (em, EXT_INDEX);
       LONG_SET (last->bd_buffer + DP_DATA, 1); /* the newly made ext is the 1st of this page of the ext set, so set the bm 1st bit to 1 */
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       dbs->dbs_n_pages_in_extent_set += EXTENT_SZ * BITS_ON_PAGE;
