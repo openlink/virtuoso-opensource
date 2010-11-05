@@ -1741,7 +1741,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge, start_time integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge, can_cxml, start_time integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
@@ -1750,6 +1750,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
   declare save_mode, save_dir, fname varchar;
+  declare save_dir_id any;
+  declare help_topic varchar;
   -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
@@ -1781,12 +1783,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   hard_timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
   timeout := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout'), '0')) * 1000;
   client_supports_partial_res := 0;
+  user_id := connection_get ('SPARQLUserId', 'SPARQL');
+  help_topic := get_keyword ('help', params, null);
+  if (help_topic is not null)
+    goto brief_help;
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
-  user_id := connection_get ('SPARQLUserId', 'SPARQL');
   save_mode := get_keyword ('save', params, null);
   if (save_mode is not null and save_mode = 'display')
     save_mode := null;
@@ -1795,6 +1800,13 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
       if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
         save_dir := null;
+      else
+        {
+          save_dir := save_dir || 'saved-sparql-results/';
+          save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
+          if (DAV_HIDE_ERROR (save_dir_id) is null)
+            save_dir := null;
+        }
     }
   fname := trim (get_keyword ('fname', params, ''));
   if (fname = '')
@@ -1810,11 +1822,6 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     soap_ver := 11;
 
   content := null;
-  can_sponge := coalesce ((select top 1 1
-      from DB.DBA.SYS_USERS as sup
-        join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
-        join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
-      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
   declare exit handler for sqlstate '*' {
     DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
       '500', 'SPARQL Request Failed',
@@ -1836,7 +1843,12 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       DB.DBA.SPARQL_WSDL11 (lines);
       return;
     }
-
+  can_sponge := coalesce ((select top 1 1
+      from DB.DBA.SYS_USERS as sup
+        join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
+        join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
+      where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
+  can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
   paramcount := length (params);
   if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and soap_ver = 0)
     {
@@ -1881,8 +1893,9 @@ http('    format.options[4] = new Option(\'NTriples\',\'text/plain\');\n');
 http('    format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
 http('    format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
 http('    format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-http('    format.options[8] = new Option(\'CXML\',\'text/cxml\');\n');
-http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
+http('    format.options[8] = new Option(\'CSV\',\'text/csv\');\n');
+if (can_cxml)
+  http('    format.options[9] = new Option(\'CXML\',\'text/cxml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 2;\n');
 http('  }\n');
@@ -1898,8 +1911,9 @@ http('    format.options[5] = new Option(\'Javascript\',\'application/javascript
 http('    format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
 http('    format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
 http('    format.options[8] = new Option(\'NTriples\',\'text/plain\');\n');
-http('    format.options[9] = new Option(\'CXML\',\'text/cxml\');\n');
-http('    format.options[10] = new Option(\'CSV\',\'text/csv\');\n');
+http('    format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
+if (can_cxml)
+  http('    format.options[10] = new Option(\'CXML\',\'text/cxml\');\n');
 http('    format.selectedIndex = 1;\n');
 http('    last_format = 1;\n');
 http('  }\n');
@@ -1952,35 +1966,8 @@ http('			  <br />\n');
   }
 else
   {
-declare host_ur varchar;
-      host_ur := registry_get ('URIQADefaultHost');
-
-http('			  <i>Security restrictions of this server do not allow you to retrieve remote RDF data.
-DBA may wish to grant "SPARQL_SPONGE" privilege to "SPARQL" account to remove the restriction.\n');
-http('In order to do this, please perform the following steps:</i>\n');
-http('<br />\n');
-http('1. Go to the Virtuoso Administration Conductor i.e. \n');
-if (not isstring (host_ur))
-  {
-    http('http://host:port/conductor\n');
-  }
-else
-  {
-    http(sprintf('http://%s/conductor\n',host_ur));
-  };
-
-http('<br />\n');
-http('2. Login as dba user\n');
-http('<br />\n');
-http('3. Go to System Admin->User Accounts->Roles\n');
-http('<br />\n');
-http('4. Click the link "Edit" for "SPARQL_SPONGE"\n');
-http('<br />\n');
-http('5. Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n');
-http('<br />\n');
-http('6. Click the button "Update"\n');
-http('<br />\n');
-http('7. Access again the sparql endpoint in order to be able to retrieve remote data.\n');
+    http('			  <font size="-1"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data.
+    Database administrator can change them, accodring to these <a href="/sparql?help=enable_sponge">instructions</a>.)</i></font>\n');
   }
 http('<br /><br />\n');
 http('			  <label for="query">Query text</label>\n');
@@ -2006,10 +1993,13 @@ http('			    <option value="application/sparql-results+xml">XML</option>\n');
 http('			    <option value="application/sparql-results+json">JSON</option>\n');
 http('			    <option value="application/javascript">Javascript</option>\n');
 http('			    <option value="text/plain">NTriples</option>\n');
-http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
-http('			    <option value="text/csv">CSV</option>\n');
 http('			    <option value="application/rdf+xml">RDF/XML</option>\n');
+http('			    <option value="text/csv">CSV</option>\n');
+if (can_cxml)
+  http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
 http('			  </select>\n');
+if (not can_cxml)
+  http('&nbsp;<font size="-1"><i>(The&nbsp;CXML&nbsp;output&nbsp;is&nbsp;disabled,&nbsp;see&nbsp;<a href="/sparql?help=enable_cxml">details</a>)</i></font>\n');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 if (save_dir is not null)
 {
@@ -2022,6 +2012,8 @@ http('			  </select>');
 http('&nbsp;<input name="fname" type="text" />');
 http('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n');
 }
+else
+  http('&nbsp;<font size="-1"><i>(The&nbsp;result&nbsp;can&nbsp;only&nbsp;be&nbsp;sent&nbsp;back&nbsp;to&nbsp;browser,&nbsp;but&nbsp;not&nbsp;saved&nbsp;on&nbsp;the&nbsp;server,&nbsp;see&nbsp;<a href="/sparql?help=enable_det">details</a>)</i></font>\n');
 http('<br /><br />\n');
 http('			  <input type="submit" value="Run Query"/>');
 http('&nbsp;<input type="reset" value="Reset"/>\n');
@@ -2442,29 +2434,12 @@ write_results:
   if ((1 <> length (metas[0])) or ('aggret-0' <> metas[0][0][0]))
     {
       declare status any;
-      declare save_dir_id any;
       if (isinteger (msg))
         status := NULL;
       else
         status := vector (state, msg, exec_time, exec_db_activity);
       if (save_mode is not null)
         {
-          if (save_dir is null)
-            {
-              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-                '500', 'SPARQL Request Failed',
-                full_query, '00000', sprintf ('The web service is using database account "%.100s" that has no appropriate DAV home directory, can not save the result there', user_id), format);
-              return;
-            }
-          save_dir := save_dir || 'saved-sparql-results/';
-          save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
-          if (DAV_HIDE_ERROR (save_dir_id) is null)
-            {
-              DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-                '500', 'SPARQL Request Failed',
-                full_query, '00000', sprintf ('Error accessing DAV directory "%.200s": %.1000s', save_dir, DAV_PERROR (save_dir_id)), format);
-              return;
-            }
           if ((not isinteger (save_dir_id)) or not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = save_dir_id and COL_DET='DynaRes'))
             {
               DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
@@ -2521,9 +2496,9 @@ write_results:
           http ('">');
           http_value (full_uri);
           http ('</a></p>');
-          if (refresh_sec is null)
+          if (refresh_sec is not null)
             http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
-          if (ttl_sec is null)
+          if (ttl_sec is not null)
             http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
           if (accept <> 'text/html')
             http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
@@ -2542,6 +2517,65 @@ The program may let you to edit the loaded resource, in this case save the chang
           return;
         }
     }
+return;
+
+brief_help:
+  http ('<html><head><title>SPARQL Web Service Endpoint | Quick Help</title></head><body>');
+  if (help_topic='enable_sponge')
+    {
+      declare host_ur varchar; host_ur := registry_get ('URIQADefaultHost');
+      http('<h3>How To Enable Sponge?</h3>
+      <p>When a new Virtuoso server is installed, default security restrictions do not allow SPARQL endpoint users to retrieve remote RDF data.
+      To remove the restriction, DBA should grant "SPARQL_SPONGE" privilege to "SPARQL" account.
+      If you are the administrator, you can perform the following steps:</p>\n');
+      http('<ol>\n');
+      http('<li>Go to the Virtuoso Administration Conductor i.e. \n');
+      if (not isstring (host_ur))
+          http('http://host:port/conductor .');
+      else
+          http( sprintf('<a href="http://%s/conductor">http://%s/conductor</a>.', host_ur, host_ur));
+      http('</li>\n<li>Login as dba user.');
+      http('</li>\n<li>Go to System Admin->User Accounts->Roles\n');
+      http('</li>\n<li>Click the link "Edit" for "SPARQL_SPONGE"\n');
+      http('</li>\n<li>Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n');
+      http('</li>\n<li>Click the button "Update"\n');
+      http('</li>\n<li>Access again the sparql endpoint in order to be able to retrieve remote data.\n');
+      http('</li></ol>\n');
+    }
+  else if (help_topic='enable_cxml')
+    {
+      http('<h3>How To Enable CXML Support</h3>');
+      http('<p>CXML is data exchange format for so-called "faceted view". It can be displayed by programs like Microsoft Pivot.
+For best results, the result of the query should contain links to images associated with described data and follow some rules, described in the User&apos;s Guide.</p>
+<p>This feature is supported by combination of three components:</p>\n');
+      http('<ol>\n');
+      http('<li>Virtuoso Universal Server (Virtuoso Open Source does not contain some required functions)\n');
+      http('</li>\n<li>ImageMagick plugin of version 0.6 or newer\n');
+      http('</li>\n<li>sparql_cxml VAD package (it will in turn require &quot;RDF mappers&quot; package)\n');
+      http('</li></ol>\n');
+      http('<p>As soon as all components are installed, SPARQL web service endpoint will contain &quot;CXML&quot; option to the list of available formats.</p>\n');
+    }
+  else if (help_topic='enable_det')
+    {
+      declare host_ur varchar; host_ur := registry_get ('URIQADefaultHost');
+      http('<h3>How To Let the SPARQL Endpoint Save Results In DAV?</h3>
+<p>By default, SPARQL endpoint can only sent the result back to the client. That can be inconvenient if the result should be accessible for programs like file managers and archivers.</p>
+<p>The solution is to let the endpoint create &quot;dynamic&quot;resources in DAV storage of the Virtuoso server. A DAV client, e.g., the boilt-in client of Windows Explorer, can connect to that storage and access these resources as if they are plain local files.</p>
+<p>If you are the administrator and want to enable this feature, you can perform the following steps:</p>\n');
+      http('<ol>\n');
+      http( sprintf('<li>This web service endpoint runs under &quot;%.100s&quot; account. This user should have an access to DAV (U_DAV_ENABLE=1 in DB.DBA.SYS_USERS)\n', user_id));
+      http( sprintf('</li>\n<li>The DAV home directory (e.g., <a href="/DAV/home/%.100s/">/DAV/home/%.100s/</a>) should be created and the path to it should be remembered in DB.DBA.SYS_USERS (U_HOME field; do not forget the leading and the trailing slash chars).\n', user_id, user_id));
+      http( sprintf('</li>\n<li>The home directory should contain a subdirectory named &quot;saved-sparql-results&quot;, and the subdirectory should be of &quot;DynaRes&quot; DAV Extension Type.'));
+      http('</li></ol>\n');
+      http('<p>As soon as the appropriated directory exists, SPARQL web service endpoint will show additional controls to choose how to save results.</p>\n');
+    }
+  else if (help_topic='enable_det')
+    {
+      DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+        '500', 'Request Failed',
+        'Invalid help topic', format);
+    }
+  http('<p><font size="-1">To close this help, press the &quot;back&quot; button of the browser.</font></p>\n');
 }
 ;
 
