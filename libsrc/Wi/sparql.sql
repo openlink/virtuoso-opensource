@@ -4567,6 +4567,62 @@ create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV (in colvalues any, in colna
 from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN
 ;
 
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare agg, colvalues_copy any;
+  colvalues_copy := colvalues;
+  if (isinteger (_env))
+    {
+      vectorbld_init (agg);
+      _env := vector (0, colnames);
+    }
+  else
+    {
+      agg := aref_set_0 (_env, 0);
+    }
+  vectorbld_acc (agg, colvalues_copy);
+  aset_zap_arg (_env, 0, agg);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN (inout _env any) returns long varchar
+{
+  declare ses, metas, rset any;
+  declare accept varchar;
+  declare add_http_headers integer;
+  ses := string_output ();
+  if (isinteger (_env))
+    {
+      metas := vector (vector (vector ('s')), 1);
+      rset := vector ();
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE (ses, metas, rset, accept, add_http_headers);
+    }
+  else
+    {
+      declare cols any;
+      declare colctr, colcount integer;
+      rset := aref_set_0 (_env, 0);
+      vectorbld_final (rset);
+      cols := aref_set_0 (_env, 1);
+      colcount := length (cols);
+      for (colctr := 0; colctr < colcount; colctr := colctr + 1) cols[colctr] := vector (cols[colctr]);
+      metas := vector (cols, vector ());
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE (ses, metas, rset, accept, add_http_headers);
+    }
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
@@ -4653,6 +4709,24 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML (inout triples_dict 
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  declare accept varchar;
+  declare add_http_headers integer;
+  add_http_headers := 0;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers);
   return ses;
 }
 ;
@@ -11935,6 +12009,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL to SPARQL_SELECT',
@@ -11943,6 +12020,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_INSERT_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
