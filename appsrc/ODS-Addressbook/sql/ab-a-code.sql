@@ -364,7 +364,7 @@ create procedure AB.WA.iri_fix (
   {
     declare V any;
 
-    V := rfc1808_parse_uri (S);
+    V := rfc1808_parse_uri (cast (S as varchar));
     V [0] := 'https';
     V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
     S := DB.DBA.vspx_uri_compose (V);
@@ -3243,6 +3243,8 @@ create procedure AB.WA.contact_update2 (
     update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
   if (pName = 'P_ACL')
     update AB.WA.PERSONS set P_ACL = pValue where P_ID = id;
+  if (pName = 'P_CERTIFICATE')
+    update AB.WA.PERSONS set P_CERTIFICATE = pValue where P_ID = id;
 
   update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
 
