@@ -73,7 +73,7 @@
     XPathFactory factory = XPathFactory.newInstance();
     XPath xpath = factory.newXPath();
     Document $_acl = null;
-    String[] $_ACL = {"public", "1", "friends", "2", "private", "3"};
+    String[] $_ACL = {"public", "1", "acl", "2", "private", "3"};
 
     Document createDocument (String S)
     {
@@ -265,6 +265,16 @@
         return req.getParameter(param);
       }
       return null;
+    }
+
+    String getParameterDefault(List items, HttpServletRequest req, String param, String defaultValue)
+      throws IOException, FileUploadException
+    {
+      String value = getParameter(items, req, param);
+      if (value == null)
+        value = defaultValue;
+
+      return value;
     }
 
     public String convertStreamToString(InputStream in)
@@ -580,6 +590,9 @@
                        httpParam ("&", "mailSignature"         , getParameter(items, request, "pf_mailSignature")) +
                        httpParam ("&", "summary"               , getParameter(items, request, "pf_summary")) +
                        httpParam ("&", "appSetting"            , getParameter(items, request, "pf_appSetting")) +
+                       httpParam ("&", "spbEnable"             , getParameterDefault(items, request, "pf_spbEnable", "0")) +
+                       httpParam ("&", "inSearch"              , getParameterDefault(items, request, "pf_inSearch", "0")) +
+                       httpParam ("&", "showActive"            , getParameterDefault(items, request, "pf_showActive", "0")) +
                        httpParam ("&", "photo"                 , getParameter(items, request, "pf_photo")) +
                        httpParam ("&", "photoContent"          , getParameter(items, request, "pf_photoContent")) +
                        httpParam ("&", "audio"                 , getParameter(items, request, "pf_audio")) +
@@ -1125,131 +1138,12 @@
                 <div class="header">
                   User profile
                 </div>
-
                 <div id="uf_div_new" style="clear: both;">
                 </div>
-                <div id="uf_div" style="clear: both; display: none;">
-              	  <div id="u_profile_l">
-              	    <div id="user_info_w" class="widget user_info_w">
-              	      <div class="w_title" id="userProfilePhotoName">
-              	        <h3></h3>
-              	      </div>
-              	      <div class="w_content">
-                        <div class="user_img_ctr">
-                          <a href="javascript:void(0)">
-                       		  <img alt="Profile image" id="userProfilePhotoImg" rel="foaf:depiction" class="prof_photo" src="/ods/images/profile.png"/>
-                          </a>
-                        </div> <!-- user_img_ctr -->
-                        <div class="gems_ctr">
-                          <div class="prof_user_gems" id="profileUserGems">
-                            <div class="gem">
-                              <a href="javascript:void(0)" id="uf_foaf_gem" target="_blank"><img src="/ods/images/icons/foaf.png" alt="FOAF"/></a>
-                            </div>
-                            <div class="gem">
-                              <a href="javascript:void(0)" id="uf_sioc_gem" target="_blank"><img src="/ods/images/icons/sioc_button.png" alt="SIOC"/></a>
-                            </div>
-                            <div class="gem">
-                              <a href="javascript:void(0)" id="uf_vcard_gem" target="_blank"><img src="/ods/images/icons/vcard.png" alt="VCARD"/></a>
-                            </div>
-                          </div> <!-- prof_user_gems -->
-                        </div> <!-- gems_ctr -->
-                      </div> <!-- w_content -->
-          	        </div> <!-- .widget -->
-
-            	      <div id="ds_w" class="widget ds_w">
-            	        <div class="w_title">
-                        <h3>Data Space</h3>
-          		          <div class="w_title_bar_btns">
-                    		  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
-                    		</div> <!-- w_title_bar_btns -->
-          	          </div> <!-- w_title -->
-            	        <div class="w_content">
-                        <ul class="ds_list" id="ds_list">
-                        </ul> <!-- ds_list -->
-                        <div class="cmd_ctr">&nbsp;</div>
-                      </div> <!-- w_content -->
-                    </div> <!-- .widget -->
-
-              	    <div id="connections_w" class="widget connections_w">
-              	      <div class="w_title">
-                        <h3 id="connPTitleTxt">Connections</h3>
-                        <div class="w_title_bar_btns">
-                          <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
-                        </div> <!-- w_title_bar_btns -->
-              	      </div> <!-- w_title -->
-            	        <div class="w_content" id="connP1" style="height: 200px;">
-                      </div> <!-- w_content -->
-            	      </div> <!-- .widget -->
-
-                    <div id="groups_w" class="widget groups_w" style="display: none;">
-            	        <div class="w_title">
-            	          <h3 id="discussionsTitleTxt">Discussion Groups ()</h3>
-            	        </div>
-            	        <div class="w_content" id="discussionsCtr">
-                      </div> <!-- w_content -->
-            	      </div> <!-- .widget -->
-          	      </div>
-
-              	  <div id="u_profile_r" style="width: 100%;">
-                    <div class="widget w_contact" about="#THIS" instanceof="foaf:Person">
-                      <div class="w_title">
-                        <h3>Contact Information</h3>
-                        <div class="w_title_bar_btns">
-                    		  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
-                    		</div>
-                      </div>
-                      <div class="w_content">
-                <ul id="uf_tabs" class="tabs">
-                  <li id="uf_tab_0" title="Personal">Personal</li>
-                  <li id="uf_tab_1" title="Messaging Services">Messaging Services</li>
-                  <li id="uf_tab_2" title="Home">Home</li>
-                  <li id="uf_tab_3" title="Business">Business</li>
-                  <li id="uf_tab_4" title="Data Explorer">Data Explorer</li>
-                </ul>
-                <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                  <div id="uf_content"></div>
-                  <div id="uf_page_0" class="tabContent" >
-                    <table id="uf_table_0" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                          <div id="uf_page_1" class="tabContent" style="display: none">
-                    <table id="uf_table_1" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                          <div id="uf_page_2" class="tabContent" style="display: none">
-                    <table id="uf_table_2" class="form" cellspacing="5">
-                    </table>
-                  </div>
-                          <div id="uf_page_3" class="tabContent" style="display: none">
-                    <table id="uf_table_3" class="form" cellspacing="5">
-                </table>
-                  </div>
-                          <div id="uf_page_4" class="tabContent" style="display: none">
-                    <div id="uf_rdf_content">
-                      &nbsp;
-                    </div>
-                  </div>
                   <script type="text/javascript">
                     OAT.MSG.attach(OAT, "PAGE_LOADED", function (){selectProfile();});
-                    OAT.MSG.attach(OAT, "PAGE_LOADED", function (){cRDF.open("<% out.print(xpathEvaluate($_document, "/user/iri")); %>");});
                   </script>
                 </div>
-                      </div>
-                    </div>
-
-                    <div id="notify" class="notify_w widget">
-                      <div class="w_title">
-                        <h3>Activities</h3>
-                        <div class="w_title_bar_btns">
-                      	  <img src="/ods/images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/>
-                      	</div> <!-- w_title_bar_btns -->
-                      </div>
-                      <div class="w_content" id="notify_content">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <%
               }
               if ($_form.equals("profile"))
@@ -1663,6 +1557,39 @@
                             </td>
                           </tr>
                           <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                              <label>
+                                <%
+                                  out.print("<input type=\"checkbox\" id=\"pf_spbEnable\" name=\"pf_spbEnable\" value=\"1\" " + ("1".equals(xpathEvaluate($_document, "/user/spbEnable")) ? ("checked=\"checked\"") : ("")) + ">");
+                                %>
+                                <b>Enable Semantic Pingback for ACLs</b>
+                              </label>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                             <label>
+                                <%
+                                  out.print("<input type=\"checkbox\" id=\"pf_inSearch\" name=\"pf_inSearch\" value=\"1\" " + ("1".equals(xpathEvaluate($_document, "/user/inSearch")) ? ("checked=\"checked\"") : ("")) + ">");
+                                %>
+                               <b>Include my profile in search results</b>
+                             </label>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>&nbsp;</td>
+                            <td>
+                             <label>
+                                <%
+                                  out.print("<input type=\"checkbox\" id=\"pf_showActive\" name=\"pf_showActive\" value=\"1\" " + ("1".equals(xpathEvaluate($_document, "/user/showActive")) ? ("checked=\"checked\"") : ("")) + ">");
+                                %>
+                               <b>Include in User active information</b>
+                             </label>
+                            </td>
+                          </tr>
+                          <tr>
                             <th>
                               <label for="pf_set_0_1">Set access for all fields as </label>
                             </th>
@@ -1670,7 +1597,7 @@
                               <select name="pf_set_0_1" id="pf_set_0_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                             </td>
@@ -1842,7 +1769,7 @@
                               <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                         </td>
@@ -1965,7 +1892,7 @@
                               <select name="pf_set_0_4" id="pf_set_0_4" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                             </td>
@@ -2572,7 +2499,7 @@
                               <select name="pf_set_1_0" id="pf_set_1_0" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                         </td>
@@ -2744,7 +2671,7 @@
                               <select name="pf_set_1_1" id="pf_set_1_1" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                             </td>
@@ -2865,7 +2792,7 @@
                               <select name="pf_set_1_3" id="pf_set_1_3" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
                                 <option value="1">public</option>
-                                <option value="2">friends</option>
+                                <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
                             </td>

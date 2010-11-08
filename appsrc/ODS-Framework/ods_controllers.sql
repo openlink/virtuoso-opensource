@@ -1414,6 +1414,9 @@ create procedure ODS.ODS_API."user.update.fields" (
   in mailSignature varchar := null,
   in sumary varchar := null,
   in appSetting varchar := null,
+  in spbEnable varchar := null,
+  in inSearch varchar := null,
+  in showActive varchar := null,
   in webIDs varchar := null,
   in interests varchar := null,
   in topicInterests varchar := null,
@@ -1520,7 +1523,12 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_WEBPAGE', homepage);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_MSIGNATURE', mailSignature);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_SUMMARY', sumary);
+
   ODS.ODS_API."user.update.field" (uname, 'WAUI_APP_ENABLE', atoi(appSetting));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SPB_ENABLE', atoi(spbEnable));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SEARCHABLE', atoi(inSearch));
+  ODS.ODS_API."user.update.field" (uname, 'WAUI_SHOWACTIVE', atoi(showActive));
+
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FOAF', webIDs);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTERESTS', interests);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTEREST_TOPICS', topicInterests);
@@ -1983,7 +1991,7 @@ create procedure ODS.ODS_API."user.get" (
 
 create procedure ODS.ODS_API."user.info" (
   in name varchar := null,
-  in "short" varchar := null) __soap_http 'text/xml'
+  in "short" varchar := '0') __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc, tmp, userPassword, noPassword integer;
@@ -2023,7 +2031,7 @@ create procedure ODS.ODS_API."user.info" (
     ods_xml_item ('fullName',  WAUI_FULL_NAME);
     ods_xml_item ('homepage',  WAUI_WEBPAGE);
 
-    if (not isnull ("short"))
+    if ("short" = '0')
     {
       -- Personal
       ods_xml_item ('gender',                 WAUI_GENDER);
@@ -2109,6 +2117,9 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('securitySiocLimit',      DB.DBA.USER_GET_OPTION (U_NAME, 'SIOC_POSTS_QUERY_LIMIT'));
 
       ods_xml_item ('appSetting',             cast (WAUI_APP_ENABLE as varchar));
+      ods_xml_item ('spbEnable',              cast (WAUI_SPB_ENABLE as varchar));
+      ods_xml_item ('inSearch',               cast (WAUI_SEARCHABLE as varchar));
+      ods_xml_item ('showActive',             cast (WAUI_SHOWACTIVE as varchar));
 
       ods_xml_item ('photo',                  WAUI_PHOTO_URL);
       ods_xml_item ('audio',                  WAUI_AUDIO_CLIP);

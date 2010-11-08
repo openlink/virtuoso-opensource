@@ -1455,7 +1455,7 @@ function fieldACLUpdate(acl, aclName, tName) {
   		var o = obj.options;
   		if (o.length == 0) {
 			 o[0] = new Option('public', '1');
-			 o[1] = new Option('friends', '2');
+       o[1] = new Option('acl', '2');
 			 o[2] = new Option('private', '3');
   		}
   		for ( var i = 0; i < o.length; i++) {
@@ -2010,6 +2010,9 @@ function ufProfileCallback(data) {
 			fieldUpdate(user, 'audio', 'pf_audio', aclData);
 			fieldUpdate(user, 'audioContent', 'pf_audioContent');
 			fieldUpdate(user, 'appSetting', 'pf_appSetting');
+      fieldUpdate(user, 'spbEnable', 'pf_spbEnable');
+      fieldUpdate(user, 'inSearch', 'pf_inSearch');
+      fieldUpdate(user, 'showActive', 'pf_showActive');
       pfShowRows("x2", tagValue(user, "interests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_interests');
       pfShowRows("x3", tagValue(user, "topicInterests"), ["\n", ";"], function(prefix, val1, val2){TBL.createRow(prefix, null, {fld_1: {value: val1, className: '_validate_ _url_ _canEmpty_'}, fld_2: {value: val2}});}, aclData, 'pf_acl_topicInterests');
 
@@ -2421,6 +2424,9 @@ function pfUpdateSubmit(No) {
         + '&mailSignature=' + encodeURIComponent($v('pf_mailSignature'))
           + '&summary=' + encodeURIComponent($v('pf_summary'))
         + '&appSetting=' + encodeURIComponent($v('pf_appSetting'))
+          + '&spbEnable=' + encodeURIComponent($('pf_spbEnable').checked? '1': '0')
+          + '&inSearch=' + encodeURIComponent($('pf_inSearch').checked? '1': '0')
+          + '&showActive=' + encodeURIComponent($('pf_showActive').checked? '1': '0')
         + '&webIDs=' + encodeTableData("x1", ["\n"])
         + '&interests=' + encodeTableData("x2", ["\n", ";"])
         + '&topicInterests=' + encodeTableData("x3", ["\n", ";"]);

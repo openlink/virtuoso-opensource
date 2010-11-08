@@ -41,6 +41,7 @@
   <v:variable persist="0" name="fbLoginID" type="varchar" default="''"/>
   <v:variable persist="0" name="tab_no" type="int" default="0" param-name="tabNo"/>
   <v:variable persist="temp" name="cert_del"  type="int" default="0" param-name="cert_del"/>
+  <v:variable persist="temp" name="key_del"  type="varchar" default="null" param-name="key_del"/>
   <v:variable persist="0" name="cert_edit" type="int" default="null" param-name="cert_edit"/>
     <v:before-data-bind>
       <![CDATA[
@@ -586,6 +587,13 @@
 	      </tr>
 		  <?vsp
 		  declare key_no, sk int;
+		  if (self.key_del is not null)
+		    {
+		      USER_KEY_DELETE (self.u_name, self.key_del);
+                      set_user_id (self.u_name);
+		      xenc_key_remove (self.key_del);
+		      set_user_id ('dba');
+		    }
 		  key_no := 0;
 		  sk := (select WAUI_SALMON_KEY from WA_USER_INFO where WAUI_U_ID = self.u_id);
 		  for select xenc_key, xenc_type from ods_user_keys (username) (xenc_key varchar, xenc_type varchar) x where username = self.u_name do {
@@ -640,7 +648,6 @@
 	      </td>
 	      <td align="left">
 		  <v:text name="kn" value="">
-		      <v:validator name="kn_lv" test="length" min="1" max="1024" message="You must specify key name" empty-allowed="0"/>
 		  </v:text>
   	      </td>
         </tr>
@@ -730,6 +737,12 @@
 		       self.vc_is_valid := 0;
 		       return;
 		    };
+		    if (not length (self.kn.ufl_value))
+                      {
+		        self.vc_error_message := 'You must specify key name';
+			self.vc_is_valid := 0;
+			return;
+		      }  
 		    declare kl int;
                     
 		    kl := atoi (self.kl.ufl_value);
