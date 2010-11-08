@@ -537,6 +537,8 @@
           </table>
         </div>
             <div id="p_content_1" class="tabContent" style="display: none;">
+              <fieldset>
+                <legend><b>WebID users</b></legend>
               <table class="form-body" cellspacing="0">
                 <tr>
                   <td style="width: 90%; background-color: white;">
@@ -587,6 +589,7 @@
                   </vm:if>
                 </tr>
               </table>
+              </fieldset>
             </div>
           </div>
         </div>
