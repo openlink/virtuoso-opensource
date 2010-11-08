@@ -1161,6 +1161,18 @@ table.page_cmd_row
    width: 100%;
 }
 
+#pki_form label
+{
+  width: 100px;
+  font-weight: bold;
+  clear:left;
+  float:left;
+  font-weight:bold;
+  padding-top:4px;
+  width:10em;
+}
+
+
 /* XXX: Deprecated tab anchor markup - see above */
 
 a.uddi
