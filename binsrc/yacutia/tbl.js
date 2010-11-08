@@ -246,82 +246,7 @@ TBL.createCell41 = function (td, prefix, fldName, No, fldOptions) {
   return fld;
 }
 
-TBL.createCell42 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
-	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
-	TBL.selectOption(fld, fldOptions.value, "Group", "group");
-	TBL.selectOption(fld, fldOptions.value, "Public", "public");
-  if (fldOptions.onchange)
-    fld.onclick = fldOptions.onchange;
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  return fld;
-}
-
-TBL.createCell44 = function (td, prefix, fldName, No, fldOptions, disabled) {
-  function cb(td, prefix, fldName, No, fldOptions, disabled, ndx) {
-  	var fld = OAT.Dom.create("input");
-    fld.type = 'checkbox';
-    fld.id = fldName;
-    fld.name = fld.id;
-    fld.value = 1;
-    if (fldOptions.value && fldOptions.value[ndx])
-      fld.checked = true;
-    if (fldOptions.onclick)
-      fld.onclick = fldOptions.onclick;
-    if (disabled)
-      fld.disabled = disabled;
-    td.appendChild(fld);
-  }
-  var suffix = '';
-  if (fldOptions.suffix)
-    suffix = fldOptions.suffix;
-  cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
-  cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
-  cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
-}
-
-TBL.createCell45 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
-  TBL.selectOption(fld, fldOptions.value, 'This object only', 0);
-	if (fldOptions.objectType == 'C') {
-	  TBL.selectOption(fld, fldOptions.value, 'This object, subfolders and files', 1);
-  	TBL.selectOption(fld, fldOptions.value, 'Subfolders and files', 2);
-  }
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.viewCell44 = function (td, prefix, fldName, No, fldOptions) {
-  TBL.createCell44(td, prefix, fldName, No, fldOptions, true);
-}
-
-TBL.clickCell44 = function (fld)
-{
-  var fldName = fld.name;
-  if (fldName.indexOf('_deny') != -1) {
-    fldName = fldName.replace('_deny', '_grant');
-    fldName = fldName.replace('fld_4', 'fld_3');
-  }
-  else if (fldName.indexOf('_grant') != -1) {
-    fldName = fldName.replace('_grant', '_deny');
-    fldName = fldName.replace('fld_3', 'fld_4');
-  }
-  $(fldName).checked = false;
-}
-
-TBL.changeCell42 = function (srcFld) {
+TBL.changeCell50 = function (srcFld) {
   var srcValue = $v(srcFld.name);
   var dstName = srcFld.name.replace('fld_1', 'fld_2');
   var dstFld = $(dstName);
@@ -341,6 +266,103 @@ TBL.changeCell42 = function (srcFld) {
   }
 }
 
+TBL.viewCell50 = function (td, prefix, fldName, No, fldOptions) {
+	if (fldOptions.value == "public") {
+	  td.innerHTML = "Public";
+	} else if (fldOptions.value == "group") {
+	  td.innerHTML = "Group";
+	} else {
+	  td.innerHTML = "Personal";
+	}
+}
+
+TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
+	var fld = OAT.Dom.create("select");
+	fld.name = fldName;
+	fld.id = fldName;
+	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
+	TBL.selectOption(fld, fldOptions.value, "Group", "group");
+	TBL.selectOption(fld, fldOptions.value, "Public", "public");
+  if (fldOptions.onchange)
+    fld.onclick = fldOptions.onchange;
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  if (document.forms[0].elements['sid']) {
+    td.appendChild(OAT.Dom.text(' '));
+    var img = OAT.Dom.image('/ods/images/select.gif');
+    img.id = fldName+'_img';
+    img.className = "pointer";
+    img.onclick = function (){TBL.webidShow(fld, fldOptions.form)};
+    if (fldOptions.imgCssText)
+      img.style.cssText = fldOptions.imgCssText;
+
+    td.appendChild(img);
+  }
+  return fld;
+}
+
+TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
+  function cb(td, prefix, fldName, No, fldOptions, disabled, ndx) {
+  	var fld = OAT.Dom.create("input");
+    fld.type = 'checkbox';
+    fld.id = fldName;
+    fld.name = fld.id;
+    fld.value = 1;
+    if (fldOptions.value && fldOptions.value[ndx])
+      fld.checked = true;
+    if (fldOptions.onclick)
+      fld.onclick = fldOptions.onclick;
+    if (disabled)
+      fld.disabled = disabled;
+    td.appendChild(fld);
+  }
+  var suffix = '';
+  if (fldOptions.suffix)
+    suffix = fldOptions.suffix;
+  cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
+  cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
+  // cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+}
+
+TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell52(td, prefix, fldName, No, fldOptions, true);
+  }
+
+TBL.clickCell52 = function (fld)
+{
+  var fldName = fld.name;
+  if (fldName.indexOf('_deny') != -1) {
+    fldName = fldName.replace('_deny', '_grant');
+    fldName = fldName.replace('fld_4', 'fld_3');
+  }
+  else if (fldName.indexOf('_grant') != -1) {
+    fldName = fldName.replace('_grant', '_deny');
+    fldName = fldName.replace('fld_3', 'fld_4');
+  }
+  $(fldName).checked = false;
+}
+
+TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  td.appendChild(OAT.Dom.text(' '));
+  var img = OAT.Dom.image('/ods/images/select.gif');
+  img.id = fldName+'_img';
+  img.className = "pointer";
+  img.onclick = function (){TBL.webidShow(fld)};
+  if (fldOptions.imgCssText)
+    img.style.cssText = fldOptions.imgCssText;
+
+  td.appendChild(img);
+  return fld;
+}
+
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
@@ -349,104 +371,13 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
-  img.src = '/ods/images/icons/trash_16.png';
+  img.src = 'images/icons/trash_16.png';
   img.alt = 'Delete row';
   img.title = fld.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
   fld.appendChild(OAT.Dom.text(' Delete'));
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createButton1 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = OAT.Dom.create("input");
-  fld.id = fldName;
-  fld.type = 'button';
-  fld.value = 'Remove';
-  fld.onclick = function(){TBL.deleteRow(prefix, No);};
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createButton40 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createButton0(td, prefix, fldName, No, fldOptions);
-  fld.onclick = function(){
-    var itemType = RDF.getItemType(No);
-    if (itemType) {
-      for (var i = 0; i < RDF.itemTypes.length; i++) {
-        if (RDF.itemTypes[i].id == itemType.id) {
-          RDF.itemTypes.splice(i, 1);
-          break;
-        }
-      }
-    }
-    TBL.deleteRow(prefix, No);
-  };
-  return fld;
-}
-
-TBL.createButtonAdd = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = OAT.Dom.create('span');
-  fld.id = fldName;
-  OAT.Dom.addClass(fld, 'button pointer');
-
-  var img = OAT.Dom.create('img');
-  img.src = '/ods/images/icons/add_16.png';
-  img.alt = 'Add row';
-  img.title = fld.alt;
-  OAT.Dom.addClass(img, 'button');
-
-  fld.appendChild(img);
-  fld.appendChild(OAT.Dom.text(' Add'));
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createButton41 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createButtonAdd(td, prefix, fldName, No, fldOptions);
-  fld.onclick = function(){RDF.addItemType(prefix, No);};
-
-  td.appendChild(fld);
-  return fld;
-}
-
-TBL.createButton42 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createButton0(td, prefix, fldName, No, fldOptions);
-  fld.onclick = function(){
-    var item = RDF.getItem(No);
-    if (item) {
-      if (RDF.checkItemInSelects(item)) {
-        RDF.removeItemInSelects(item);
-        var itemType = RDF.getItemTypeByItem(item);
-        for (var i = 0; i < itemType.items.length; i++) {
-          if (itemType.items[i].id == item.id) {
-            itemType.items.splice(i, 1);
-            break;
-          }
-        }
-        TBL.deleteRow(prefix, No);
-      }
-    } else {
-      TBL.deleteRow(prefix, No);
-    }
-  };
-  return fld;
-}
-
-TBL.createButton43 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createButtonAdd(td, prefix, fldName, No, fldOptions);
-  fld.onclick = function(){RDF.addItem(prefix, No);};
 
   td.appendChild(fld);
   return fld;

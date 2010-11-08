@@ -2987,6 +2987,37 @@ create procedure DB.DBA.Y_PATH_NAME (
 }
 ;
 
+create procedure DB.DBA.Y_DAV_PROP_PARAMS (
+  inout params any)
+{
+  declare N integer;
+  declare c_properties, c_seq, c_property, c_value, c_action any;
+
+  c_properties := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if (params[N] like 'c_fld_1_%')
+    {
+      c_seq := replace (params[N], 'c_fld_1_', '');
+      c_property := trim (params[N+1]);
+      if (c_property <> '')
+      {
+        c_value := trim (get_keyword ('c_fld_2_' || c_seq, params, ''));
+        {
+          declare exit handler for sqlstate '*' { goto _error; };
+          if (isarray (xml_tree (c_value, 0)))
+            c_value := serialize (xml_tree (c_value));
+        }
+      _error:;
+        c_action := get_keyword ('c_fld_3_' || c_seq, params, '');
+        c_properties := vector_concat (c_properties, vector (vector (c_property, c_value, c_action)));
+      }
+    }
+  }
+  return c_properties;
+}
+;
+
 create procedure DB.DBA.Y_DAV_PROP_SET (
   in path varchar,
   in propName varchar,
@@ -3025,6 +3056,39 @@ create procedure DB.DBA.Y_DAV_PROP_REMOVE (
 {
   DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
   return DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
+}
+;
+
+create procedure DB.DBA.Y_DAV_PROP_LIST (
+  in path varchar,
+  in propmask varchar := '%',
+  in skips varchar := null,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  declare uname, gname varchar;
+  declare props any;
+
+  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
+  props := DB.DBA.DAV_PROP_LIST(path, propmask, auth_name, auth_pwd);
+  if (isinteger(props) and (props < 0))
+    return vector ();
+
+  if (isnull (skips))
+    return props;
+
+  declare remains any;
+
+  remains := vector();
+  foreach(any prop in props) do
+  {
+    foreach(any skip in skips) do
+      if (prop[0] like skip)
+        goto _skip;
+    remains := vector_concat(remains, vector(prop));
+  _skip: ;
+  }
+  return remains;
 }
 ;
 
