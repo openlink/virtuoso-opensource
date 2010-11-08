@@ -319,6 +319,7 @@
                                     <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
                                       <v:item name="Content Type" value="MIME"/>
                                       <v:item name="URL" value="URL"/>
+                                      <v:item name="Entity Type" value="CLASS"/>
                                       <v:item name="HTTP protocol" value="HTTP"/>
                                     </v:select-list>
                                     <br />
