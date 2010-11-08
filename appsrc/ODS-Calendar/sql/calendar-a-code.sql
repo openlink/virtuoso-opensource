@@ -350,7 +350,7 @@ create procedure CAL.WA.iri_fix (
   {
     declare V any;
 
-    V := rfc1808_parse_uri (S);
+    V := rfc1808_parse_uri (cast (S as varchar));
     V [0] := 'https';
     V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
     S := DB.DBA.vspx_uri_compose (V);
@@ -3576,7 +3576,7 @@ create procedure CAL.WA.dashboard_rs (
                         E_UPDATED
                    from CAL.WA.EVENTS
                   where E_DOMAIN_ID = p0
-                    and E_PRIVACY >= p1
+                    and E_PRIVACY = p1
                   order by E_UPDATED desc
                 ) x
         ) do
@@ -4154,6 +4154,36 @@ create procedure CAL.WA.event_rights (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.event_check_privacy (
+  in my_domain_id integer,
+  in my_account_id integer,
+  in event_domain_id integer,
+  in event_id integer,
+  in event_privacy integer)
+{
+  -- my event
+  if (my_domain_id = event_domain_id)
+    return 1;
+
+  -- public event
+  if (event_privacy = 1)
+    return 1;
+
+  -- shared event
+  if ((event_privacy = 2) and exists (select 1
+                                        from CAL.WA.EVENTS,
+                                             CAL.WA.EVENT_GRANTS
+                                       where G_EVENT_ID = E_ID
+                                         and E_ID = event_id
+                                         and G_GRANTEE_ID = my_account_id))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.event_gmt2user (
   in pDate datetime,
   in pTimezone integer := 0)
@@ -4614,7 +4644,7 @@ create procedure CAL.WA.events_forPeriod (
   in pTaskMode integer := 0,
   in pRights varchar := '')
 {
-  declare dt_offset, dtTimezone integer;
+  declare dt_offset, dtTimezone, account_id integer;
   declare dtWeekStarts varchar;
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
 
@@ -4627,6 +4657,7 @@ create procedure CAL.WA.events_forPeriod (
   dtWeekStarts := CAL.WA.settings_weekStarts2 (pDomainID);
   dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), dtTimezone);
   dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), dtTimezone);
+  account_id := CAL.WA.domain_owner_id (pDomainID);
 
     if (pTaskMode)
     {
@@ -4645,6 +4676,7 @@ create procedure CAL.WA.events_forPeriod (
             and b.privacy = pPrivacy
             and a.E_DOMAIN_ID = b.CALENDAR_ID
             and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+            and CAL.WA.event_check_privacy (pDomainID, account_id, a.E_DOMAIN_ID, a.E_ID, a.E_PRIVACY)
             and a.E_KIND = 1
             and a.E_EVENT_START <  dtEnd
             and a.E_EVENT_END   > dtStart
@@ -4680,7 +4712,7 @@ create procedure CAL.WA.events_forPeriod (
         where b.domain_id = pDomainID
           and b.privacy = pPrivacy
           and a.E_DOMAIN_ID = b.CALENDAR_ID
-          and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+          and CAL.WA.event_check_privacy (pDomainID, account_id, a.E_DOMAIN_ID, a.E_ID, a.E_PRIVACY)
           and a.E_KIND = 0
           and (a.E_REPEAT = '' or a.E_REPEAT is null)
           and a.E_EVENT_START < dtEnd
@@ -4721,7 +4753,7 @@ create procedure CAL.WA.events_forPeriod (
         where b.domain_id = pDomainID
           and b.privacy = pPrivacy
           and a.E_DOMAIN_ID = b.CALENDAR_ID
-          and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+          and CAL.WA.event_check_privacy (pDomainID, account_id, a.E_DOMAIN_ID, a.E_ID, a.E_PRIVACY)
           and a.E_KIND = 0
           and a.E_REPEAT <> ''
           and a.E_EVENT_START < dtEnd
@@ -5232,7 +5264,7 @@ create procedure CAL.WA.search_sql (
        ' where b.domain_id = <DOMAIN_ID>     \n' ||
        '   and b.privacy = <PRIVACY>         \n' ||
        '   and a.E_DOMAIN_ID = b.CALENDAR_ID \n' ||
-       '   and a.E_PRIVACY >= b.CALENDAR_PRIVACY <TEXT> <TAGS> <WHERE> \n';
+       '   and CAL.WA.event_check_privacy (<DOMAIN_ID>, <ACCOUNT_ID>, a.E_DOMAIN_ID, a.E_ID, a.E_PRIVACY) <TEXT> <TAGS> <WHERE> \n';
 
   if (account_rights = '')
   {
@@ -5263,6 +5295,7 @@ create procedure CAL.WA.search_sql (
   }
   }
   S := replace (S, '<DOMAIN_ID>', cast (domain_id as varchar));
+  S := replace (S, '<ACCOUNT_ID>', cast (CAL.WA.domain_owner_id (domain_id) as varchar));
   S := replace (S, '<PRIVACY>', cast (privacy as varchar));;
   S := replace (S, '<TAGS>', '');
   S := replace (S, '<TEXT>', '');
@@ -5355,7 +5388,7 @@ create procedure CAL.WA.vcal_str2privacy (
   declare N integer;
   declare S, V any;
 
-  V := vector ('PUBLIC', 1, 'PRIVATE', 0);
+  V := vector ('SHARED', 2, 'PUBLIC', 1, 'PRIVATE', 0);
   S := cast (xquery_eval (xmlPath, xmlItem, 1) as varchar);
   for (N := 0; N < length (V); N := N + 2)
     if (lcase (S) = lcase (V[N]))
@@ -5618,12 +5651,26 @@ create procedure CAL.WA.vcal_str2reminder (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.export_vcal_reminder (
-  in eReminder integer,
+create procedure CAL.WA.export_vcal_privacy (
+  in privacy integer,
   inout sStream any)
 {
   declare V any;
 
+  if (is_empty_or_null (privacy))
+    return;
+
+  V := vector (2, 'SHARED', 1, 'PUBLIC', 0, 'PRIVATE');
+  http (sprintf ('CLASS:%s\r\n', get_keyword (privacy, V)));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.export_vcal_reminder (
+  in eReminder integer,
+  inout sStream any)
+{
   if (is_empty_or_null (eReminder))
     return;
 
@@ -5775,7 +5822,7 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_reminder (E_REMINDER, sStream);
         CAL.WA.export_vcal_attendees (E_ID, E_DOMAIN_ID, E_ATTENDEES, sStream);
         CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
-        CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+        CAL.WA.export_vcal_privacy (E_PRIVACY, sStream);
         http ('END:VEVENT\r\n', sStream);
       }
     }
@@ -5804,7 +5851,7 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
         CAL.WA.export_vcal_attendees (E_ID, E_DOMAIN_ID, E_ATTENDEES, sStream);
         CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
-        CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
+        CAL.WA.export_vcal_privacy (E_PRIVACY, sStream);
         http ('END:VTODO\r\n', sStream);
       }
     }

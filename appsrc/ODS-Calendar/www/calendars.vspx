@@ -77,6 +77,7 @@
     <vm:pagebody>
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
       <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
+      <?vsp http(sprintf('<input type="hidden" name="form"  id="form"  value="%s"/>', get_keyword('form', self.vc_page.vc_event.ve_params, 'F1'))); ?>
       <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
       <?vsp http(sprintf('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc'))); ?>
       <?vsp http(sprintf('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', self.vc_page.vc_event.ve_params, ''))); ?>
@@ -146,9 +147,6 @@
                 <th>
                   <?vsp self.sortColumn('Description', 'WAI_DESCRIPTION'); ?>
                 </th>
-                <th width="1%">
-                  <v:label value="Action" format="%s"/>
-                </th>
               </tr>
             </thead>
           </table>
@@ -158,18 +156,15 @@
 
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
-              <tr>
+              <tr onclick="rowSelected(this);" class="pointer">
                 <td nowrap="nowrap">
+                  <input name="s1_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('WAI_NAME') ?>" />
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_NAME')" format="%s"/>
                 </td>
                 <td nowrap="nowrap">
+                  <input name="s2_item" type="hidden" value="<?V (control as vspx_row_template).te_column_value('WAI_DESCRIPTION') ?>" />
                   <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')" format="%s"/>
                 </td>
-                  <td nowrap="nowrap">
-                  <v:text name="s1" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_NAME')"/>
-                  <v:text name="s2" type="hidden" value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')"/>
-                    <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
-                  </td>
               </tr>
             </table>
           </v:template>
