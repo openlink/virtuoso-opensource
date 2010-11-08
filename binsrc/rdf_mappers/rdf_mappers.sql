@@ -2873,8 +2873,8 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION (in graph_iri varc
 {
     declare qr, path any;
     declare tree, xt, xd, types, hdr any;
-    declare k, cnt, url, tmp varchar;
-    declare pos integer;
+    declare k, cnt, url, tmp, mime varchar;
+    declare pos, ord, ret integer;
     declare exit handler for sqlstate '*'
     {
         DB.DBA.RM_RDF_SPONGE_ERROR (current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
@@ -2899,7 +2899,18 @@ create procedure DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION (in graph_iri varc
     xd := serialize_to_UTF8_xml (xt);
     DB.DBA.RM_RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     DB.DBA.RM_ADD_PRV (current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), 'http://graph.facebook.com/');
-    return 0;
+    mime := get_keyword ('content-type', opts);
+    ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION');
+    ret := 1;
+    for select RM_PATTERN, RM_TYPE, RM_HOOK from DB.DBA.SYS_RDF_MAPPERS
+      where RM_ID > ord and RM_TYPE in ('URL', 'MIME') and RM_ENABLED = 1 order by RM_ID do
+	{
+	  if (RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) is not null)
+	    ret := 0;
+          else if (RM_TYPE = 'MIME' and mime is not null and RM_HOOK <> 'DB.DBA.RDF_LOAD_DAV_META' and regexp_match (RM_PATTERN, mime) is not null)
+            ret := 0;
+	}
+    return ret;
 }
 ;
 
@@ -6120,6 +6131,8 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
     }
   else if (new_origin_uri like 'http://cgi.ebay.com/%QQitemZ%QQ%')
     tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%sQQitemZ%sQQ%s', 0);
+  else if (new_origin_uri like 'http://cgi.ebay.com/%/eBayISAPI.dll?ViewItem&item=%')
+    tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%s/eBayISAPI.dll?ViewItem&item=%s', 0);
   else if (new_origin_uri like 'http://cgi.ebay.com/%/%?%')
     tmp := sprintf_inverse (new_origin_uri, 'http://cgi.ebay.com/%s/%s?%s', 0);
   else
@@ -6127,7 +6140,7 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
 
   api_key := ser_key;
 
-  if (tmp is null or length (tmp) <> 3 or not isstring (api_key))
+  if (tmp is null or not isstring (api_key))  -- length (tmp) <> 3
     return 0;
 
   item_id := tmp[1];
@@ -8057,6 +8070,21 @@ create procedure DB.DBA.RM_GRAPH_PT_CK (in graph_iri varchar, in dest varchar)
 }
 ;
 
+create procedure RM_CHECK_CLASS_MATCH (in pattern varchar, in graph varchar)
+{
+  declare x any;
+  for select "tp" from (sparql define input:storage "" 
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+  	select ?tp where { graph `iri(?:graph)` { ?doc foaf:primaryTopic ?s . ?s a ?tp }}) x do
+    {
+      x := rdfdesc_uri_curie ("tp");
+      if (regexp_match (pattern, x) is not null)
+	return 1;
+    }
+  return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
@@ -8102,6 +8130,10 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	{
 	  val_match := new_origin_uri;
 	}
+      else if (MC_TYPE = 'CLASS' and RM_CHECK_CLASS_MATCH (MC_PATTERN, coalesce (dest, graph_iri)))
+	{
+	  goto try_cartridge; 
+	}
       else
 	val_match := null;
 
@@ -8114,6 +8146,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	dbg_obj_prin1 ('Trying PP ', MC_HOOK);
       if (isstring (val_match) and regexp_match (MC_PATTERN, val_match) is not null)
 	{
+	  try_cartridge:
 	  if (__proc_exists (MC_HOOK) is null)
 	    goto try_next_mapper;
 

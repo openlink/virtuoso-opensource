@@ -68,6 +68,12 @@ og:latitude rdfs:subPropertyOf geo:lat .
 og:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
+<http://www.ontosearch.com/2008/02/ontosminer-ns/domain/common/english#Person> rdfs:subClassOf foaf:Person .
+<http://rdfs.org/ns/void#vocabulary> owl:equivalentProperty <http://www.openlinksw.com/schema/attribution#isDescribedUsing> .
+<http://www.rdfabout.com/rdf/schema/ussec/tradingSymbol> a owl:inverseFunctionalProperty . 
+<http://www.rdfabout.com/rdf/schema/ussec/cik> a owl:inverseFunctionalProperty .
+foaf:logo owl:subPropertyOf foaf:depiction .
+<http://umbel.org/umbel#isAbout> owl:equivalentProperty foaf:focus .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
