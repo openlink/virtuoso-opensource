@@ -41,7 +41,7 @@
     <vm:menu>
       <vm:menuitem value="Cartridges"/>
     </vm:menu>
-    <vm:header caption="Cartridges"/>
+    <vm:header caption="Extractor Cartridges"/>
     <vm:pagebody>
       <![CDATA[
 	      <script language="JavaScript" src="admin_utils.js"></script>
@@ -63,7 +63,7 @@
                     </colgroup>
                     <tr>
                       <td class="page_tab_selected" align="center" nowrap="1">
-                        Cartridges
+                        Extractor Cartridges
           		        </td>
       			          <?vsp if (check_package('rdf_mappers')) { ?>
                       <td class="page_tab" align="center" nowrap="1">

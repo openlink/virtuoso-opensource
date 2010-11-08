@@ -85,6 +85,7 @@
                     <tr>
 			<td valign="top">
 		   <!-- end of top security layout -->
+		   <div id="pki_form">
 		   <h3>CA Root Certificate Details</h3>
 		   <label>Country:</label> 
 		   	<v:text xhtml_size="100" value="" name="c" default_value="--self.c1"> 
@@ -187,6 +188,7 @@
        ]]></v:on-post>
 		</v:button>
 		   <!-- bottom of security layout -->
+                        </div> <!-- #pki_form -->
                       </td>
                     </tr>
                   </table>

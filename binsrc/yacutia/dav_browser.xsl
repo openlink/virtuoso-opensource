@@ -1529,9 +1529,13 @@ self.vc_data_bind (e);
                 ?>
                 <tr>
                   <td>
-                    <input type="checkbox" name="recurse" id="recurse"/>
                   </td>
-                  <td><label for="recurse">Apply changes to all subfolders and resources</label></td>
+                  <td>
+                    <label>
+                      <input type="checkbox" name="recurse"/>
+                      Apply changes to all subfolders and resources
+                    </label>
+                  </td>
                 </tr>
                 <?vsp
                   }
@@ -1539,244 +1543,41 @@ self.vc_data_bind (e);
                 <tr>
                   <th valign="top" nowrap="nowrap">WebDAV Properties</th>
                   <td>
-                    <table cellspacing="0">
-                      <tr>
-                        <td valign="top">
-                          <table cellspacing="0">
-                            <tr>
-                              <td>
-                                Predefined names
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <v:select-list name="xml_name" xhtml_size="3">
-                                  <v:before-data-bind>
-                                    <v:script>
-                                      <![CDATA[
-                                        declare prop_arr any;
-                                        declare _len, _ix integer;
-
-                                        (control as vspx_select_list).vsl_items:= vector ();
-                                        (control as vspx_select_list).vsl_item_values:= vector ();
-                                        (control as vspx_select_list).vsl_selected_inx := 0;
-                                        prop_arr := vector ('xml-sql', 0,
-                                                            'xml-sql-root', 0,
-                                                            'xml-sql-dtd', 0,
-                                                            'xml-sql-schema', 0,
-                                                            'xml-stylesheet', 0,
-                                                            'xper', 0);
-                                        _len := length (prop_arr);
-                                        for (_ix := 0; _ix < _len; _ix := _ix + 2)
-                                        {
-                                          (control as vspx_select_list).vsl_items :=
-                                            vector_concat ((control as vspx_select_list).vsl_items, vector (aref (prop_arr, _ix)));
-                                          (control as vspx_select_list).vsl_item_values :=
-                                            vector_concat ((control as vspx_select_list).vsl_item_values, vector (aref (prop_arr, _ix)));
-                                        }
-                                      ]]>
-                                    </v:script>
-                                  </v:before-data-bind>
-                                </v:select-list>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>Custom name</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <input type="text" name="cust_name" value=""/>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>Value</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <input type="text" name="xml_value" value=""/>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td align="right">
-                                <v:button action="simple" name="grant" value="Add">
-                                  <v:on-post>
-                                    <![CDATA[
-                            			    if (e.ve_initiator <> control)
-                            			      return;
-
-                                      declare cust_name, pname, pvalue, tp varchar;
-                                      declare _res_id, is_dir integer;
-
-                                      declare exit handler for sqlstate '*'
-                                      {
-                                        rollback work;
-                                        self.vc_is_valid := 0;
-                                        self.vc_error_message := __SQL_MESSAGE;
-                                        return;
-                                      };
-
-                                      if (right(self.source_dir, 1) = '/')
-                                      {
-                                        is_dir := 1;
-                                        _res_id := DAV_SEARCH_ID(self.source_dir, 'C');
-                                      }
-                                      else
-                                      {
-                                        is_dir := 0;
-                                        _res_id := DAV_SEARCH_ID(self.source_dir, 'R');
-                                      }
-                                      pname := get_keyword('xml_name', self.vc_page.vc_event.ve_params, '');
-                                      pvalue := get_keyword('xml_value', self.vc_page.vc_event.ve_params, '');
-                                      cust_name := trim(get_keyword('cust_name', params, ''));
-
-                                      if (cust_name is not null and cust_name <> '')
-                                        pname := cust_name;
-
-                                      declare idx integer;
-
-                                      idx := 0;
-                                      if (is_dir = 1)
-                                        tp := 'C';
-                                      else
-                                        tp := 'R';
-
-                                      if (pname = '')
-                                      {
-                                        self.vc_error_message := 'Property name should be supplied';
-                                        self.vc_is_valid := 0;
-                                        return;
-                                      }
-
-                                      if (exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = pname and PROP_PARENT_ID = _res_id and PROP_TYPE = tp))
-                                      {
-                                        self.vc_error_message := sprintf('The property "%s" of "%s" already exists.\nYou can remove or update existing', pname, self.source_dir);
-                                        self.vc_is_valid := 0;
-                                        return;
-                                      }
-                                      {
-                                        declare exit handler for sqlstate '*' { goto endser; };
-
-                                        if (isarray (xml_tree (pvalue, 0)))
-                                          pvalue := serialize(xml_tree(pvalue, 0));
-                                         endser:;
-                                      }
-                                      YAC_DAV_PROP_SET (self.source_dir, pname, pvalue, connection_get ('vspx_user'));
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                        <td valign="top">
                           <table>
                             <tr>
-                              <td>
-                                Actual properties
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <table border="1" cellspacing="0" cellpadding="3">
-                                  <tr>
-                                    <td/>
-                                    <td>Name</td>
-                                    <td>Value</td>
-                                  </tr>
+                        <td width="600px">
                                   <?vsp
-                                    declare inx, len, isf, id, tp integer;
-                                    declare pvalue varchar;
+                            declare N integer;
+                            declare properties any;
 
-                                    isf := 1;
-                                    id := _res_id;
-                                    if (is_dir = 1)
-                                      tp := 'C';
-                                    else
-                                      tp := 'R';
-
-                                    for select PROP_NAME, PROP_ID, blob_to_string (PROP_VALUE) as PROP_VALUE
-                                          from WS.WS.SYS_DAV_PROP
-                                         where PROP_PARENT_ID = id and
-                                               PROP_TYPE = tp do
-                                    {
-                                      isf := 0;
-                                      pvalue := deserialize (PROP_VALUE);
-
-                                      if (isarray (pvalue))
-                                      {
-                                        declare ses any;
-                                        ses := string_output ();
-                                        http_value (xml_tree_doc (pvalue), null, ses);
-                                        pvalue := string_output_string (ses);
-                                      }
-                                      else if (isstring (PROP_VALUE))
-                                        pvalue := PROP_VALUE;
-                                      else
-                                        pvalue := '';
+                            properties := DB.DBA.Y_DAV_PROP_LIST (self.source_dir, '%');
                                   ?>
+                          <table id="c_tbl" class="form-list" cellspacing="0">
                                   <tr>
-                                    <td>
-                                      <input type="checkbox" name="CB_<?V PROP_NAME ?>"/>
-                                    </td>
-                                    <td><?V PROP_NAME ?></td>
-                                    <td><?V pvalue ?></td>
+                              <th width="50%">Property</th>
+                              <th width="50%">Value</th>
+                              <th>Action</th>
                                   </tr>
-                                  <?vsp
-                                    }
-                                    if (isf)
-                                      http ('<tr><td colspan=4>No properties found</td></tr>');
-                                  ?>
-                                </table>
-                              </td>
-                            </tr>
-                            <?vsp
-                              if (isf = 0)
-                              {
-                            ?>
-                            <tr>
-                              <td align="right">
-                                <v:button action="simple" name="revoke" value="Delete">
-                                  <v:on-post>
+                            <tr id="c_tr_no"><td colspan="3"><b>No Properties</b></td></tr>
                                     <![CDATA[
-                            			    if (e.ve_initiator <> control)
-                            			      return;
-
-                                      declare _res_id, is_dir, idx integer;
-                                      declare pname, tp varchar;
-
-                                      declare exit handler for sqlstate '*'
-                                      {
-                                        rollback work;
-                                        self.vc_is_valid := 0;
-                                        self.vc_error_message := __SQL_MESSAGE;
-                                        return;
-                                      };
-                                      if (right(self.source_dir, 1) = '/')
-                                      {
-                                        is_dir := 1;
-                                        _res_id := DAV_SEARCH_ID (self.source_dir, 'C');
-                                        tp := 'C';
-                                      }
-                                      else
-                                      {
-                                        is_dir := 0;
-                                        _res_id := DAV_SEARCH_ID (self.source_dir, 'R');
-                                        tp := 'R';
-                                      }
-                                      idx := 0;
-                                      while (pname := adm_next_checkbox ('CB_', self.vc_page.vc_event.ve_params, idx))
-                                      {
-                                        YAC_DAV_PROP_REMOVE (self.source_dir, pname, connection_get ('vspx_user'));
-                                      }
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </td>
-                            </tr>
+                      		    <script type="text/javascript">
                             <?vsp
+                                for (N := 0; N < length (properties); N := N + 1)
+                                {
+                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], replace (properties[N][1], '\n', ' ')));
                               }
                             ?>
+                      		    </script>
+                      		  ]]>
                           </table>
+                        </td>
+                        <td valign="top" nowrap="nowrap">
+                          <span class="button pointer">
+                            <xsl:attribute name="onclick">
+                              TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}});
+                            </xsl:attribute>
+                            <img src="images/icons/add_16.png" border="0" class="button" alt="Add Property" title="Add Property" /> Add
+                          </span>
                         </td>
                       </tr>
                     </table>
@@ -1784,11 +1585,7 @@ self.vc_data_bind (e);
                 </tr>
                 <?vsp
                   }
-                ?>
-                <?vsp
-                  if (is_dir = 0)
-                  {
-                    if (DB.DBA.Y_VAD_CHECK('Framework') and DB.DBA.Y_VAD_CHECK('Briefcase'))
+                  if (DB.DBA.Y_VAD_CHECK('Framework'))
                     {
                 ?>
                 <tr>
@@ -1796,12 +1593,12 @@ self.vc_data_bind (e);
                   <td>
                     <table>
                       <tr>
-                        <td width="100%">
+                        <td width="600px">
                           <table id="f_tbl" class="form-list" style="width: 100%;" cellspacing="0">
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">Web Access<br />(R)ead, (W)rite, (C)ontrol</th>
+                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                               <th width="1%">Action</th>
                             </tr>
                             <tr id="f_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
@@ -1813,7 +1610,7 @@ self.vc_data_bind (e);
 
                                 aci_values := DB.DBA.Y_ACI_LOAD (self.source_dir);
                                 for (N := 0; N < length (aci_values); N := N + 1)
-                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("f", null, {fld_1: {mode: 42, value: "%s", onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 44, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
+                                  http (sprintf ('OAT.Loader.load([], function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
                               ?>
                       		    </script>
                       		  ]]>
@@ -1822,9 +1619,9 @@ self.vc_data_bind (e);
                         <td valign="top" nowrap="nowrap">
                           <span class="button pointer">
                             <xsl:attribute name="onclick">
-                              TBL.createRow('f', null, {fld_1: {mode: 42, onchange: function(){TBL.changeCell42(this);}}, fld_2: {mode: 43, className: '_validate_ _uri_'}, fld_3: {mode: 44, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});
+                              TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});
                             </xsl:attribute>
-                            <img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add
+                            <img src="images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add
                           </span>
                         </td>
                       </tr>
@@ -1833,6 +1630,8 @@ self.vc_data_bind (e);
                 </tr>
                 <?vsp
                     }
+                  if (is_dir = 0)
+                  {
                 ?>
                 <tr id="fi10">
                   <th valign="top" nowrap="nowrap">Versioning</th>
@@ -2322,7 +2121,7 @@ self.vc_data_bind (e);
                             }
                             commit work;
                           }
-                          if (is_dir = 0)
+                          else if (is_dir = 0)
                           {
                             declare _operm, full_path, _res_type varchar;
                             declare _own, _grp integer;
@@ -2342,7 +2141,7 @@ self.vc_data_bind (e);
                                 from WS.WS.SYS_DAV_RES
                                 where RES_ID = _res_id;
 
-                              declare dav_aci, cur_type1, cur_perms1 varchar;
+                              declare cur_type1, cur_perms1 varchar;
 
                               declare res_cur1 cursor for
                                 select RES_PERMS, RES_TYPE
@@ -2372,14 +2171,11 @@ self.vc_data_bind (e);
 
                             next_one1:
                               close res_cur1;
-                              if (DB.DBA.Y_VAD_CHECK('Framework') and DB.DBA.Y_VAD_CHECK('Briefcase'))
+                              if (self.source_dir <> full_path)
                               {
-                                dav_aci := DB.DBA.Y_ACI_N3 (DB.DBA.Y_ACI_PARAMS (params));
-                                YAC_DAV_PROP_REMOVE (self.source_dir, 'virt:aci_meta_n3', connection_get ('vspx_user'), 1);
-                                if (not isnull (dav_aci))
-                                  YAC_DAV_PROP_SET (self.source_dir, 'virt:aci_meta_n3', dav_aci, connection_get ('vspx_user'));
-                              }
                               YACUTIA_DAV_MOVE (self.source_dir, full_path, 1);
+                                self.source_dir := full_path;
+                              }
                             }
                             else
                             {
@@ -2388,6 +2184,29 @@ self.vc_data_bind (e);
                               return;
                             }
                           }
+                          -- WebDAV properties
+                          declare N, properties, c_properties, dav_aci any;
+
+                          properties := DB.DBA.Y_DAV_PROP_LIST (self.source_dir, '%');
+                          for (N := 0; N < length (properties); N := N + 1)
+                          {
+                            DB.DBA.Y_DAV_PROP_REMOVE (self.source_dir, properties[N][0]);
+                          }
+                          c_properties := DB.DBA.Y_DAV_PROP_PARAMS (params);
+                          for (N := 0; N < length (c_properties); N := N + 1)
+                          {
+                            DB.DBA.Y_DAV_PROP_SET (self.source_dir, c_properties[N][0], c_properties[N][1]);
+                          }
+
+                          -- acl
+                          if (DB.DBA.Y_VAD_CHECK('Framework'))
+                          {
+                            dav_aci := DB.DBA.Y_ACI_N3 (DB.DBA.Y_ACI_PARAMS (params));
+                            YAC_DAV_PROP_REMOVE (self.source_dir, 'virt:aci_meta_n3', connection_get ('vspx_user'), 1);
+                            if (not isnull (dav_aci))
+                              YAC_DAV_PROP_SET (self.source_dir, 'virt:aci_meta_n3', dav_aci, connection_get ('vspx_user'));
+                          }
+
                           self.command := 0;
                           self.ds_items.vc_data_bind(e);
                           if (self.ds_items1 is not null)
