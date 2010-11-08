@@ -22,6 +22,8 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#undef MALLOC_DEBUG
+
 #include "import_gate_virtuoso.h"
 #include "hosting.h"
 #include "sqlver.h"
@@ -237,6 +239,7 @@ virtm_http_handler (void *cli, char *err, int max_len,
   memset (&file_handle, 0, sizeof (file_handle));
   file_handle.type = ZEND_HANDLE_FILENAME;
   file_handle.filename = SG (request_info).path_translated;
+  file_handle.free_filename = 0;
 
   if (php_request_startup (TSRMLS_C) != FAILURE)
     {
@@ -249,9 +252,8 @@ virtm_http_handler (void *cli, char *err, int max_len,
   hret[1] = (box_t) strses_string (req.r_hdr_session);
   *head_ret = (char *) hret;
 
-  ret_str = strses_string (req.ret_session);
+  ret_str = req.ret_session;
 
-  strses_free (req.ret_session);
   strses_free (req.s_hdr_session);
   strses_free (req.r_hdr_session);
 
@@ -307,6 +309,7 @@ bif_php_str (caddr_t *qst, caddr_t *err, state_slot_t **args)
       memset (&file_handle, 0, sizeof (file_handle));
       file_handle.type = ZEND_HANDLE_FILENAME;
       file_handle.filename = tmpfn;
+      file_handle.free_filename = 0;
 
       php_execute_script (&file_handle TSRMLS_CC);
 
