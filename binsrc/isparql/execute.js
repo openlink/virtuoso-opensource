@@ -390,7 +390,7 @@ var QueryExec = function(optObj) {
 	if (val.restype == self.RESULT_TYPE.URI) {
 	    var a = OAT.Dom.create("a");
 	    a.innerHTML = self.store.simplify (val.value);
-	    a.href="#";
+	    a.href = val.value;
 	    self.processLink(a, val.value);
 	    return a;
 	}
@@ -482,6 +482,31 @@ var QueryExec = function(optObj) {
 	}
     };
 
+//
+// XXX produces URLs which are invalid
+//
+    
+    this.makePivotPermalink = function () {
+	var item = self.cache[self.cacheIndex];
+	var opts = item.opts;
+
+	a = OAT.Dom.create("a");
+	a.innerHTML = "Make Pivot";
+	var xparm = document.location.protocol + '//' + document.location.host + 
+	    "/sparql/?query=" + encodeURIComponent(opts.query) + 
+	    "&endpoint=" + opts.endpoint;
+	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+	xparm += "&format=text/cxml";
+	a.href = document.location.protocol + '//' + document.location.host + 
+	    '/PivotViewer/' + "?url=" + xparm;
+	a.target = "_blank";
+	var spc = OAT.Dom.create("span");
+	spc.innerHTML = "&nbsp;";
+
+	OAT.Dom.append([self.dom.result,spc,a]);
+    };
+
     this.makeExecPermalink = function () {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
@@ -506,6 +531,7 @@ var QueryExec = function(optObj) {
 	OAT.Dom.clear(self.dom.result);
 
 	self.makeExecPermalink ();
+	if (iSPARQL.Defaults.pivotInstalled) self.makePivotPermalink();
 	
 	var grid = new OAT.Grid (self.dom.result);
 	grid.createHeader(resSet.variables);
@@ -629,7 +655,7 @@ var QueryExec = function(optObj) {
 				if (val.match(/^(http|urn|doi)/i)) { /* a++ */
 					var a = OAT.Dom.create("a");
 					a.innerHTML = simplified_row[j];
-					a.href = "#";
+		    a.href = val;
 					var v = grid.rows[grid.rows.length-1].cells[j].value;
 					OAT.Dom.clear(v);
 					OAT.Dom.append([v,a]);
@@ -742,7 +768,9 @@ var QueryExec = function(optObj) {
 		self.mRDFCtr = OAT.Dom.create ("div");
 		self.mRDFCtr.id = "mini_rdf_ctr";
 	        OAT.Dom.clear (self.dom.result);
-		OAT.Dom.append ([self.dom.result, self.miniplnk, self.mRDFCtr]);
+		    OAT.Dom.append ([self.dom.result, self.miniplnk]);
+		    if (iSPARQL.Defaults.pivotInstalled) self.makePivotPermalink();
+		    OAT.Dom.append([self.dom.result, self.mRDFCtr]);
 		    self.mini = new OAT.RDFMini(self.mRDFCtr,{tabs:tabs,
 							      showSearch:false});
 		}
