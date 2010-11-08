@@ -126,6 +126,8 @@ DELETE FROM DB.DBA.WA_TYPES       WHERE WAT_NAME      = 'WEBLOG2'
 
 drop trigger SYS_USERS_BLOG_INFO_UP
 ;
+drop trigger BI_WAI_MEMBER_MODEL_UPD
+;
 
 -- NNTP
 DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.BLOG_NEWS_MSG_I')

@@ -7467,7 +7467,7 @@ ROUTING_PROCESS_BLOGS (in job_id int, in proto_id int, in dst varchar, in dst_id
         hdrs := BLOG_MAKE_MAIL_SUBJECT ('[Weblog post] '||_B_TITLE);
 
       for select BV_NAME, BV_E_MAIL, BV_POST_ID, BV_VIA_DOMAIN from SYS_BLOG_VISITORS
-         where BV_NOTIFY = 1 and BV_BLOG_ID = item_id
+         where BV_NOTIFY = 1 and BV_BLOG_ID = item_id and length (BV_E_MAIL)
           and (BV_POST_ID = _RL_POST_ID or length (BV_POST_ID) = 0)
         do
           {
