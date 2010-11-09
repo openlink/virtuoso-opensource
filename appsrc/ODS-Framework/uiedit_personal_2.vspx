@@ -307,7 +307,7 @@
             <v:select-list name="set_personal_2" xhtml_id="set_personal_2" value="0" xhtml_onchange='javascript: setSelectLists (this.value, this.form, "sel_")'>
               <v:item name="*no change*"  value="0" />
               <v:item name="public"  value="1" />
-              <v:item name="friends" value="2" />
+              <v:item name="acl" value="2" />
               <v:item name="private" value="3" />
             </v:select-list>
           </td>

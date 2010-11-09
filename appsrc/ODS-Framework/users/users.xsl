@@ -27,7 +27,7 @@
 
   <!-- ========================================================================== -->
   <xsl:template match="/">
-    <div>
+    <div class="vcard">
       <xsl:call-template name="personal"/>
       <xsl:call-template name="rsa"/>
       <xsl:call-template name="address"/>
@@ -47,9 +47,12 @@
       <table class="PF_form">
         <xsl:apply-templates select="user/nick"/>
         <xsl:apply-templates select="user/depiction"/>
+        <xsl:apply-templates select="user/title"/>
+        <xsl:apply-templates select="user/gender"/>
         <xsl:apply-templates select="user/name"/>
         <xsl:apply-templates select="user/firstName"/>
         <xsl:apply-templates select="user/family_name"/>
+        <xsl:apply-templates select="user/birthday"/>
       </table>
     </div>
   </xsl:template>
@@ -69,7 +72,7 @@
 
   <!-- ========================================================================== -->
   <xsl:template name="address">
-    <div>
+    <div class="adr">
       <div class="PF_header">Address Info</div>
       <table class="PF_form">
         <xsl:apply-templates select="user/country"/>
@@ -164,10 +167,29 @@
   <xsl:template name="profileLine">
     <xsl:param name="label"/>
     <xsl:param name="value"/>
+    <xsl:param name="RDFa"/>
+    <xsl:if test="$value != ''">
     <tr>
-      <th><xsl:value-of select="$label"/></th>
-      <td><xsl:value-of select="$value"/></td>
+        <th>
+          <xsl:value-of select="$label"/>
+        </th>
+        <td>
+          <xsl:choose>
+            <xsl:when test="$RDFa">
+              <span>
+                <xsl:attribute name="class">
+                  <xsl:value-of select="$RDFa"/>
+                </xsl:attribute>
+                <xsl:value-of select="$value"/>
+              </span>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$value"/>
+            </xsl:otherwise>
+          </xsl:choose>
+        </td>
     </tr>
+    </xsl:if>
   </xsl:template>
 
   <!-- ========================================================================== -->
@@ -191,6 +213,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Name</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">fn</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -198,6 +221,23 @@
   <xsl:template match="depiction">
     <xsl:call-template name="profileLinePhoto">
       <xsl:with-param name="label">Photo</xsl:with-param>
+      <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="title">
+    <xsl:call-template name="profileLine">
+      <xsl:with-param name="label">Title</xsl:with-param>
+      <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">honorific-prefix</xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="gender">
+    <xsl:call-template name="profileLine">
+      <xsl:with-param name="label">Gender</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -215,6 +255,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">First Name</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+       <xsl:with-param name="RDFa">given-name</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -223,6 +264,16 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Family Name</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">family-name</xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template match="birthday">
+    <xsl:call-template name="profileLine">
+      <xsl:with-param name="label">Birthday</xsl:with-param>
+      <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">bday</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -260,6 +311,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Country</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">country-name</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -268,6 +320,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Region</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">region</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -276,6 +329,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">City</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">locality</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -284,6 +338,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">PO Box</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">postal-code</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -292,6 +347,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Address</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">street-address</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -323,6 +379,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Phone</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">tel</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
@@ -331,6 +388,7 @@
     <xsl:call-template name="profileLine">
       <xsl:with-param name="label">Mail</xsl:with-param>
       <xsl:with-param name="value"><xsl:value-of select="."/></xsl:with-param>
+      <xsl:with-param name="RDFa">email</xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 

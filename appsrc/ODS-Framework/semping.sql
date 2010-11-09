@@ -80,7 +80,7 @@ create procedure CLI_PING (in src varchar, in tgt varchar)
 {
   declare aq any;
   -- debug code
-  dbg_obj_print ('CLI_PING:', current_proc_name (1));    
+  -- dbg_obj_print ('CLI_PING:', current_proc_name (1));
   if (registry_get ('semping-debug') = 'on') 
     {
       dbg_obj_print_vars (src, tgt);

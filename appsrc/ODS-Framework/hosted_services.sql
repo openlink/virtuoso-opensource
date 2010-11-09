@@ -518,6 +518,34 @@ wa_member_doinstcount()
 ;
 
 wa_exec_no_error ('
+  create table WA_GROUPS (
+    WAG_ID integer identity,
+    WAG_USER_ID integer,
+    WAG_GROUP_ID integer,
+
+    primary key (WAG_ID)
+  )
+');
+
+wa_exec_no_error ('
+  create unique index SK_WA_GROUPS_01 on WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID)
+');
+
+create procedure wa_groups_update () {
+
+  if (registry_get ('__wa_groups_update') = 'done')
+    return;
+
+  wa_exec_no_error ('insert into DB.DBA.WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID) select USER_ID, GROUP_ID from ODRIVE.WA.GROUPS');
+  wa_exec_no_error ('delete from ODRIVE.WA.GROUPS');
+  registry_set ('__wa_groups_update', 'done');
+}
+;
+
+wa_groups_acl_update()
+;
+
+wa_exec_no_error ('
   create table WA_GROUPS_ACL (
     WACL_ID integer identity,
     WACL_USER_ID integer not null,
@@ -3306,6 +3334,8 @@ wa_exec_no_error_log(
     WAUI_CERT_LOGIN integer default 0,  -- XXX: obsolete, see WA_USER_CERTS
     WAUI_CERT_FINGERPRINT varchar,	-- same as above
     WAUI_CERT long varbinary,		-- same as above
+    WAUI_ACL LONG VARCHAR,
+    WAUI_SALMON_KEY varchar, 
 
     primary key (WAUI_U_ID)
   )'
@@ -3355,6 +3385,9 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_CERT', 'long varbinary');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BPHONE_EXT', 'varchar(5)');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_ACL', 'LONG VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SALMON_KEY', 'VARCHAR');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
@@ -4200,6 +4233,9 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_CERT_LOGIN = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_CERT')
     UPDATE WA_USER_INFO SET WAUI_CERT = _data WHERE WAUI_U_ID = _uid;
+
+  else if (_key = 'WAUI_ACL')
+    UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
 
   return row_count ();
 
@@ -7888,6 +7924,22 @@ create procedure ods_uri_curie (in uri varchar)
   _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
 
   return _s;
+}
+;
+
+create procedure ods_user_keys (in username varchar)
+{
+  declare xenc_name, xenc_type varchar;
+  declare arr any;
+  result_names (xenc_name, xenc_type);
+  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+    return;
+  arr := USER_GET_OPTION (username, 'KEYS');
+  for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
+    {
+      if (length (arr[i]))
+        result (arr[i], arr[i+1][0]);
+    }
 }
 ;
 

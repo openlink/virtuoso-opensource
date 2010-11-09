@@ -107,6 +107,24 @@ create procedure "describe" (in "uri" varchar) __SOAP_HTTP 'application/xrd+xml'
       url := sioc..forum_iri (WAM_APP_TYPE, WAM_INST, uname);
       http (sprintf ('<Link rel="http://xmlns.com/foaf/0.1/made" href="%s" />\n', url));
     }
+  set_user_id (uname);
+  set_qualifier ('DB');
+  for select WAUI_SALMON_KEY from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname do
+    {
+      declare x any;
+      if (WAUI_SALMON_KEY is not null and xenc_key_exists (WAUI_SALMON_KEY))
+	{
+	  declare exit handler for sqlstate '*' { goto nextk; };
+	  x := xenc_pubkey_magic_export (WAUI_SALMON_KEY);
+	  http (sprintf ('  <Link rel="magic-public-key" href="data:application/magic-public-key,%s" />\n', replace (replace (x, '+', '-'), '/', '_')));
+	  nextk:;
+	}
+    }
+  --for select xenc_key, xenc_type from DB.DBA.ods_user_keys (username) (xenc_key varchar, xenc_type varchar) x where username = uname do
+  --  {
+  --  }
+  set_user_id ('dba');
+  http (sprintf ('  <Link rel="salmon" href="http://%s/ods/salmon" />\n', host));
   http ('</XRD>\n');
   return '';
 }
@@ -155,10 +173,10 @@ grant execute on ODS.DBA."host-meta" to ODS_API;
 grant execute on ODS.DBA."describe" to ODS_API;
 grant execute on ODS.DBA."certs" to ODS_API;
 
-create procedure WF_PROFILE_GET (in acct varchar)
+create procedure WF_USER_XRD_GET (in acct varchar)
 {
   declare mail, webid, domain, host_info, xrd, template, url any;
-  declare xt, xd, tmpcert, h any;
+  declare xt, xd, tmpcert, h, ret any;
 
   h := rfc1808_parse_uri (acct);
   if (h[0] = '' or h[0] = 'acct' or h[0] = 'mailto')
@@ -176,12 +194,22 @@ create procedure WF_PROFILE_GET (in acct varchar)
     };
 
   domain := subseq (mail, position ('@', mail));
+  commit work;
   host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
   xd := xtree_doc (host_info);
   template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
   url := replace (template, '{uri}', 'acct:' || mail);
   xrd := http_get (url);
   xd := xtree_doc (xrd);
+  return xd;
+}
+;
+
+create procedure WF_PROFILE_GET (in acct varchar)
+{
+  declare xt, xd any;
+
+  xd := WF_USER_XRD_GET (acct);
   xt := cast (xpath_eval ('/XRD/Link[@rel="http://webfinger.net/rel/profile-page"]/@href', xd) as varchar);
   return xt;
 }

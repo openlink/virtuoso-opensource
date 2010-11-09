@@ -24,6 +24,6 @@
 -->
 <v:page name="main_tabs_props" xmlns:v="http://www.openlinksw.com/vspx/">
     <v:item name="public" value="1" />
-    <v:item name="friends" value="2" />
+    <v:item name="acl" value="2" />
     <v:item name="private" value="3" />
 </v:page>

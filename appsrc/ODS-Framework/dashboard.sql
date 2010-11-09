@@ -363,7 +363,7 @@ create procedure WA_COMMON_DASHBOARD_SP (in inst_type varchar)
 
   result_names (inst_name, title, ts, author, url, uname, email);
   for select WAM_INST, WAI_INST, WAM_HOME_PAGE from WA_MEMBER, WA_INSTANCE where WAI_NAME = WAM_INST
-    and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = inst_type do
+    and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = inst_type option (loop) do
       {
 	inst := WAI_INST;
 	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
