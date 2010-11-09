@@ -11813,12 +11813,16 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warnings)
+bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warnings, shcompo_t *shc, query_t *qr)
 {
   char buf[80];
   if ((BOX_ELEMENTS (args) < 3) || !ssl_is_settable (args[1]))
     {
       dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+      if (NULL != shc)
+	shcompo_release (shc);
+      else
+	qr_free (qr);
       sqlr_resignal (err);
     }
   if (IS_POINTER (err))
@@ -12068,7 +12072,7 @@ qr_set:
 	dk_free_box (text);
       dk_free_tree (list_to_array (proc_resultset));
       dk_free_tree ((caddr_t) proc_comp);
-      res = bif_exec_error (qst, args, err, warnings);
+      res = bif_exec_error (qst, args, err, warnings, shc, qr);
       goto done;
     }
   if (text != _text)
@@ -12089,7 +12093,7 @@ qr_set:
       PROC_RESTORE_SAVED;
       dk_free_tree ((caddr_t) proc_comp);
       dk_free_tree (list_to_array (proc_resultset));
-      res = bif_exec_error (qst, args, err, warnings);
+      res = bif_exec_error (qst, args, err, warnings, shc, qr);
       goto done;
     }
 
@@ -12135,7 +12139,7 @@ qr_set:
 	      if (DV_TYPE_OF (qst_get (qst, args[7])) != DV_DB_NULL)
 		{
 		  res = bif_exec_error (qst, args,
-		      srv_make_new_error ("22005", "SR078", "The cursor parameter is not settable"), warnings);
+		      srv_make_new_error ("22005", "SR078", "The cursor parameter is not settable"), warnings, shc, qr);
 		  goto done;
 		}
 	    }
@@ -12161,7 +12165,7 @@ qr_set:
 		  dk_free_tree (list_to_array (rlist));
 		  lc_free (lc);
 		  res = bif_exec_error (qst, args,
-		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS), warnings);
+		      srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS), warnings, shc, qr);
 		  goto done;
 		}
 	    }
@@ -12176,7 +12180,7 @@ qr_set:
       lc_free (lc);
       if (err)
 	{
-	  res = bif_exec_error (qst, args, err, warnings);
+	  res = bif_exec_error (qst, args, err, warnings, shc, qr);
 	  goto done;
 	}
     }
@@ -12219,7 +12223,7 @@ qr_set:
 	  lc_free (lc);
 	  if (err)
 	    {
-	      res = bif_exec_error (qst, args, err, warnings);
+	      res = bif_exec_error (qst, args, err, warnings, shc, qr);
 	      goto done;
 	    }
 	}
@@ -12287,7 +12291,7 @@ bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (err)
     {
-      return (bif_exec_error (qst, args, err, NULL));
+      return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
     }
 
   if (qr->qr_select_node)
@@ -12357,7 +12361,7 @@ bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (err)
     {
-      return (bif_exec_error (qst, args, err, NULL));
+      return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
     }
   return (box_float (score));
 }
@@ -12376,11 +12380,11 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (n_args < 4)
   return bif_exec_error (qst, args,
-	srv_make_new_error ("22023", "SR079", "Too few arguments to exec_next(cursor, state, message, row)"), NULL);
+	srv_make_new_error ("22023", "SR079", "Too few arguments to exec_next(cursor, state, message, row)"), NULL, NULL, NULL);
 
   if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
   return bif_exec_error (qst, args,
-	srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"), NULL);
+	srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"), NULL, NULL, NULL);
 
   qr = (query_t *) handle[0];
   lc = (local_cursor_t *) handle[1];
@@ -12392,7 +12396,7 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     lc->lc_error = NULL;
     if (err)
   {
-	  return (bif_exec_error (qst, args, err, NULL));
+	  return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
   }
     else
     return (box_num(SQL_NO_DATA_FOUND));
@@ -12423,7 +12427,7 @@ bif_exec_close (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (DV_TYPE_OF (handle) != DV_EXEC_CURSOR || BOX_ELEMENTS(handle) != 3)
   return bif_exec_error (qst, args,
-	srv_make_new_error ("22023", "SR081", "Parameter 1 is not a valid local exec handle"), NULL);
+	srv_make_new_error ("22023", "SR081", "Parameter 1 is not a valid local exec handle"), NULL, NULL, NULL);
 
   qr = (query_t *) handle[0];
   lc = (local_cursor_t *) handle[1];
