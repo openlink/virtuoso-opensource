@@ -499,7 +499,7 @@ var QueryExec = function(optObj) {
 	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 	xparm += "&format=text/cxml";
 	a.href = document.location.protocol + '//' + document.location.host + 
-	    '/PivotViewer/' + "?url=" + xparm;
+	    '/PivotViewer/' + "?url=" + encodeURIComponent(xparm);
 	a.target = "_blank";
 	var spc = OAT.Dom.create("span");
 	spc.innerHTML = "&nbsp;";
