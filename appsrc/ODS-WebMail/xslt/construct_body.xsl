@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2009 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -37,36 +37,10 @@
     </xsl:choose>
   </xsl:variable>
   <!-- ====================================================================================== -->
-  <xsl:template match="message">Subject: <xsl:value-of select="subject"/>
-Date: <xsl:value-of select="to_snd_date"/>
-Reply-To: <xsl:apply-templates select="displayName"/><xsl:text> </xsl:text>&lt;<xsl:apply-templates select="replyTo"/>&gt;
-Message-ID: &lt;<xsl:value-of select="srv_msg_id"/>&gt;
-X-Priority: <xsl:value-of select="priority"/>
-    <xsl:apply-templates select="ref_id"/>
-X-MSMail-Priority: Normal
-<xsl:choose>
-  <xsl:when test="/message/signed = '1'">
-    <xsl:call-template name="mbody"/>
-  </xsl:when>
-  <xsl:otherwise>MIME-Version: 1.0
-Content-Type: <xsl:call-template name="content_type"/>;
+  <xsl:template match="message">Content-Type: <xsl:call-template name="content_type"/>;
 <xsl:call-template name="content_transfer_encoding"/>;
 
 <xsl:call-template name="mbody"/>
-</xsl:otherwise>
-</xsl:choose>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template match="address/addres_list/from | address/addres_list/to">
-    <xsl:call-template name="v_name"/><xsl:call-template name="v_email"/><xsl:if test="position() != last()">, </xsl:if>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template name="v_name">
-    <xsl:if test="name != ''">"<xsl:value-of select="name"/>" </xsl:if>
-  </xsl:template>
-  <!-- ====================================================================================== -->
-  <xsl:template name="v_email">
-    <xsl:if test="email != ''">&lt;<xsl:value-of select="email"/>&gt;</xsl:if>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template name="content_type">
