@@ -866,7 +866,7 @@ else if (length (self.catid))
         <script type="text/javascript" src="/weblog/public/scripts/plugins.js"></script>
       ]]>
       <xsl:apply-templates/>
-      <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Description" href="http://<?V self.host ?>/weblog/public/search.vspx?blogid=<?V self.blogid ?>&amp;type=text&amp;kwds=dir&amp;OpenSearch" />
+      <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Description" href="http://<?V self.host ?>/weblog/public/search.vspx?blogid=<?V self.blogid ?><?V '&amp;type=text&amp;kwds=dir&amp;OpenSearch' ?>" />
       <?vsp
         foreach (any f in self.custom_rss) do
 	  {

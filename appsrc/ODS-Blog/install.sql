@@ -1116,6 +1116,7 @@ http ('XMLELEMENT(\'webMaster\', BI_E_MAIL), \n', ses);
 http ('XMLELEMENT(\'copyright\', BLOG..blog_utf2wide (BI_COPYRIGHTS)), \n', ses);
 http ('XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (\'http://\' || BLOG.DBA.BLOG2_GET_HOST () || http_path() as "href", \'self\' as "rel", \'application/rss+xml\' as "type", BLOG..blog_utf2wide (BI_TITLE) as "title")), \n', ses);
 http ('(select XMLAGG (XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (SH_URL as "href", \'hub\' as "rel", \'PubSubHub\' as "title"))) from ODS.DBA.SVC_HOST, ODS.DBA.APP_PING_REG, DB.DBA.WA_INSTANCE where SH_PROTO = \'PubSubHub\' and SH_ID = AP_HOST_ID and AP_WAI_ID = WAI_ID and WAI_NAME = BI_WAI_NAME), \n', ses);
+http ('XMLELEMENT(\'http://www.w3.org/2005/Atom:link\', XMLATTRIBUTES (sprintf (\'http://%{WSHost}s/ods/salmon\') as "href", \'salmon\' as "rel")), \n', ses);
 http ('(select XMLAGG (XMLELEMENT (\'category\', BI_KWD)) from BLOG.DBA.BLOG_GET_BLOG_KWDS where kwds = BI_KEYWORDS) ,\n', ses);
 http ('\n', ses);
 http ('XMLELEMENT(\'language\', \'en-us\'), \n', ses);

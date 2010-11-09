@@ -570,6 +570,9 @@
 			    </v:check-box>
 			    <label for="ins_media">Insert Media Object</label>
 			</span>
+                                <br/>
+				<v:check-box name="salmon_ping" value="1" xhtml_id="salmon_ping"/>
+				<label for="salmon_ping">Notify everybody mentioned in the post</label>
 			<script type="text/javascript"><![CDATA[
 			    <!--
       			    if (oEditor)
@@ -866,6 +869,10 @@
 		      post_title,
 		      bdate);
                     self.preview_post_id := id;
+                    if (self.salmon_ping.ufl_selected)
+		      {
+                         ODS.DBA.sp_send_all_mentioned (self.owner_name, sioc..blog_post_iri (self.blogid, id), msg);
+		      }
                   }
                   else
 		  {
@@ -1352,6 +1359,10 @@
 		    <v:check-box name="semping1" value="on" initial-checked="0" xhtml_id="semping1"/>
 		    	<label for="semping1">Issue Semantic Pingback</label>
                 </div>
+		    <div>
+				<v:check-box name="salmon_ping" value="1" xhtml_id="salmon_ping"/>
+				<label for="salmon_ping">Notify everybody mentioned in the post</label>
+		    </div>
 		<div><v:check-box name="comment1_disable_html" enabled="--equ(length (self.sid), 0)" initial-checked="--equ(isnull(self.comm_ref), 0)" /><v:label value=" Contains Markup" name="comment1_disable_html_l1" enabled="--equ(length (self.sid), 0)"/> </div>
               </td>
             </tr>
@@ -1463,10 +1474,10 @@
                 self.warn1.vc_enabled := 1;
              }
 
-	  if (self.semping1.ufl_selected)
-	    {
 	      declare blog_iri, src_iri varchar; 
               src_iri := sioc..blog_comment_iri (self.blogid, self.postid, comm_id);
+	  if (self.semping1.ufl_selected)
+	    {
 	      if (not length (src_iri))
 	        {
                   rollback work;
@@ -1484,6 +1495,10 @@
                 {
 		  SEMPING..CLI_PING (src_iri, CL_LINK);
                 }		
+	    }
+	  if (self.salmon_ping.ufl_selected)
+	    {
+              ODS.DBA.sp_send_all_mentioned (self.owner_name, src_iri, self.comment2);
 	    }
                        self.comment2 := '';
 
