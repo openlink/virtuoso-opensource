@@ -542,9 +542,6 @@ create procedure wa_groups_update () {
 }
 ;
 
-wa_groups_acl_update()
-;
-
 wa_exec_no_error ('
   create table WA_GROUPS_ACL (
     WACL_ID integer identity,
