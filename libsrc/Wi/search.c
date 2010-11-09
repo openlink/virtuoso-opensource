@@ -3023,7 +3023,7 @@ itc_random_leaf (it_cursor_t * itc, buffer_desc_t *buf, dp_addr_t * leaf_ret)
     nth = sqlbif_rnd (&inx_rnd_seed) % pm->pm_count;
   else
     {
-      log_error ("itc>_sample: should not get pages with 0 entries in pm");
+      log_error ("itc_sample: should not get pages with 0 entries in pm");
       return DVC_INDEX_END;
     }
   row = page + pm->pm_entries[nth];

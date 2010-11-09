@@ -748,7 +748,7 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
       upd_rd.rd_leaf = 0;
       if (!buf->bd_is_write || buf->bd_readers)
 	GPF_T1 ("should have excl buffer in bm ins in row");
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
       if (buf->bd_writer != THREAD_CURRENT_THREAD)
 	GPF_T1 ("cur thread supposed to be the writer in ins bm row");
 #endif

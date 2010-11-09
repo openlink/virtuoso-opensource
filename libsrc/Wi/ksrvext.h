@@ -382,6 +382,9 @@ struct thread_s
   void *		thr_tmp_pool;
   int                   thr_attached;
   caddr_t		thr_dbg;
+#ifndef NDEBUG
+  void *		thr_pg_dbg;
+#endif
 };
 
 #define MAX_NESTED_FUTURES      20

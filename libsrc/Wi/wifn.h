@@ -72,7 +72,6 @@ void itc_free_owned_params (it_cursor_t * itc);
   placeholder_t * v = (placeholder_t*) dk_alloc_box_zero (sizeof (placeholder_t), DV_ITC); \
   v->itc_type = ITC_PLACEHOLDER;
 placeholder_t * plh_allocate ();
-buffer_desc_t * itc_reset (it_cursor_t * itc);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
 int dv_compare_spec (db_buf_t db, search_spec_t * spec, it_cursor_t * it);
 dp_addr_t leaf_pointer (db_buf_t row, dbe_key_t * key);
@@ -205,12 +204,14 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
         dbg_page_leave_inner (__FILE__,__LINE__,buf)
 #define itc_down_transit(it,buf,to) dbg_itc_down_transit (__FILE__,__LINE__,it, buf, to)
 #define itc_landed_down_transit(it,buf,to) dbg_itc_landed_down_transit (__FILE__,__LINE__,it, buf, to)
+#define itc_reset(itc) dbg_itc_reset (__FILE__,__LINE__, (itc))
 #else
 #define DBGP_NAME(nm) 		nm
 #define DBGP_PARAMS
 #define DBGP_ARGS
 #define DBGP_ARGS_0
 #endif
+buffer_desc_t * DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * itc);
 void DBGP_NAME (itc_down_transit) (DBGP_PARAMS it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
 void DBGP_NAME (itc_landed_down_transit) (DBGP_PARAMS it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);
 void itc_dive_transit (it_cursor_t * it, buffer_desc_t ** buf, dp_addr_t to);

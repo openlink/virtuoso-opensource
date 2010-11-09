@@ -350,7 +350,7 @@ page_release_read (buffer_desc_t * buf)
 	  if (PA_WRITE == waiting->itc_dive_mode)
 	    {
 	      /* if adaptive landing made this a write, then free no more cursors. */
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
 	      buf->bd_writer = waiting->itc_thread;
 #endif
 	      buf->bd_read_waiting = next;
@@ -394,7 +394,7 @@ page_release_writes (buffer_desc_t * buf)
 	  BUF_BOUNDS_CHECK (buf);
 	  waiting->itc_pl = buf->bd_pl;
 	  BD_SET_IS_WRITE (buf, 1);
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
 	  buf->bd_writer = waiting->itc_thread;
 #endif
 	  buf->bd_write_waiting = next;
@@ -569,7 +569,7 @@ itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       ITC_SEM_WAIT (itc);
       if (itc->itc_to_reset <= RWG_WAIT_DATA)
 	{
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
 	  buf->bd_writer = THREAD_CURRENT_THREAD;
 #endif
 	  itc->itc_pl = buf->bd_pl;
@@ -809,7 +809,10 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
       if (itm1 != itm2)
 	mutex_leave (&itm2->itm_mtx);
       if (BUF_NONE_WAITING (old_buf))
+	{
+	  BUF_DBG_LEAVE_INL (old_buf);
 	old_buf->bd_readers--;
+	}
       else
 	page_leave_inner (old_buf);
       /* If the itms were different, the target itm is already exited */
@@ -839,7 +842,10 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
       dest_buf->bd_readers++;
       mutex_leave (&itm2->itm_mtx);
       if (BUF_NONE_WAITING (old_buf))
+	{
+	  BUF_DBG_LEAVE_INL (old_buf);
 	old_buf->bd_readers--;
+	}
       else
 	page_leave_inner (old_buf);
       mutex_leave (&itm1->itm_mtx);
@@ -871,7 +877,10 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
       ADAPTIVE_READ_INC (itc, dest_buf);
       mutex_leave (&itm2->itm_mtx);
       if (BUF_NONE_WAITING (old_buf))
+	{
+	  BUF_DBG_LEAVE_INL (old_buf);
 	old_buf->bd_readers--;
+	}
       else
 	page_leave_inner (old_buf);
       mutex_leave (&itm1->itm_mtx);
@@ -1187,7 +1196,7 @@ it_root_image_invalidate (index_tree_t * tree)
 
 
 buffer_desc_t *
-itc_reset (it_cursor_t * it)
+DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
 {
   /* Enter to root in read mode and return the buffer */
   buffer_desc_t *buf;
@@ -1208,7 +1217,7 @@ itc_reset (it_cursor_t * it)
       if (it->itc_is_registered)
 	GPF_T1 ("should not be registered when resetting to a hi");
       ITC_IN_KNOWN_MAP (it, it->itc_tree->it_hash_first);
-        page_wait_access (it, it->itc_tree->it_hash_first, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
+        DBGP_NAME (page_wait_access) (DBGP_ARGS it, it->itc_tree->it_hash_first, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
 	ITC_LEAVE_MAPS (it);
 	it->itc_map_pos = DP_DATA + HASH_HEAD_LEN; /* offset into the page, not inx of page map */
       it->itc_page = buf->bd_page;
@@ -1226,7 +1235,8 @@ itc_reset (it_cursor_t * it)
       if (buf)
 	return buf;
     }
-  if (tree->it_is_single_page)
+  if (tree->it_is_single_page
+    )
     it->itc_dive_mode = PA_WRITE;
 
   for (;;)
@@ -1260,7 +1270,7 @@ itc_reset (it_cursor_t * it)
 	    }
 	}
       TC (tc_root_cache_miss);
-      page_wait_access (it, dp, NULL, &buf, it->itc_dive_mode, RWG_WAIT_KEY);
+      DBGP_NAME (page_wait_access) (DBGP_ARGS it, dp, NULL, &buf, it->itc_dive_mode, RWG_WAIT_KEY);
       if (buf == PF_OF_DELETED)
 	GPF_T1 ("The root page of an index is free do a crash dump for recovery.");
       if (it->itc_to_reset > RWG_WAIT_KEY)
@@ -1270,7 +1280,8 @@ itc_reset (it_cursor_t * it)
     }
   BUF_TOUCH (buf);
   if (!tree->it_is_single_page && !tree->it_root_image_version
-      && tree->it_key->key_id != KI_TEMP)
+      && tree->it_key->key_id != KI_TEMP
+     )
     {
       it_new_root_image (tree, buf);
     }

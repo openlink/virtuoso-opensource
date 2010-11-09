@@ -614,7 +614,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
        because conversion may read blob by blob_to_string() and its itc will enter map.
     */
     ITC_LEAVE_MAPS (main_itc);
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
     if (main_buf->bd_writer != THREAD_CURRENT_THREAD)
       GPF_T1 ("Must have write on buffer to check it");
 #endif

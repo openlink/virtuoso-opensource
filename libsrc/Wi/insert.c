@@ -344,7 +344,7 @@ pg_check_map_1 (buffer_desc_t * buf)
   /* for debug, copy the entries, the whole struct may overflow addr space. */
   if (!buf->bd_is_write && !wi_inst.wi_checkpoint_atomic)
     GPF_T1 ("must have written access to buffer to check it");
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
   if (buf->bd_is_write && buf->bd_writer != THREAD_CURRENT_THREAD)
     GPF_T1 ("Must have write on buffer to check it");
 #endif

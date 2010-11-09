@@ -1050,6 +1050,14 @@ extern resource_t * pm_rc_4;
 #define bd_is_dirty bdf.r.is_dirty
 #define bd_is_ro_cache bdf.r.is_ro_cache
 
+#ifdef MTX_DEBUG
+#define PAGE_DEBUG
+#endif
+
+#ifdef NDEBUG
+#undef PAGE_DEBUG
+#endif
+
 struct buffer_desc_s
 {
   /* Descriptor of a page buffer.  Read/write gate and other fields */
@@ -1109,22 +1117,52 @@ struct buffer_desc_s
 #define BUF_DBG_ENTER(buf) \
     do { \
       if (buf) { \
+	thread_t * __self = THREAD_CURRENT_THREAD; \
 	(buf)->bd_enter_file = file; \
 	(buf)->bd_enter_line = line; \
 	(buf)->bd_el_flag = 1; \
+	if (!__self->thr_pg_dbg) \
+	  __self->thr_pg_dbg = (void *) hash_table_allocate (31); \
+	sethash ((void *)(buf), (dk_hash_t *) __self->thr_pg_dbg, (void*)(ptrlong)(buf)->bd_page); \
       } \
     } while (0)
-#define BUF_DBG_LEAVE(buf) \
+#define BUF_DBG_LEAVE_1(buf, __file, __line) \
     do { \
       if (buf) { \
-	(buf)->bd_leave_file = file; \
-	(buf)->bd_leave_line = line; \
+	thread_t * __self = THREAD_CURRENT_THREAD; \
+	if (__self->thr_pg_dbg) { \
+	  remhash ((void*) (buf), (dk_hash_t *) __self->thr_pg_dbg); \
+	} else if ((buf)->bd_el_flag == 1) GPF_T1 ("Page not entered"); \
+	(buf)->bd_leave_file = __file; \
+	(buf)->bd_leave_line = __line; \
 	(buf)->bd_el_flag = 2; \
       } \
     } while (0)
+#define BUF_DBG_LEAVE(buf) BUF_DBG_LEAVE_1((buf), file, line)
+#define BUF_DBG_LEAVE_INL(buf) BUF_DBG_LEAVE_1((buf), __FILE__, __LINE__)
+
+#define THR_DBG_PAGE_CHECK \
+  do \
+  { \
+    thread_t * self = THREAD_CURRENT_THREAD; \
+    dk_hash_iterator_t hit; \
+    buffer_desc_t * buf; \
+    ptrlong page; \
+    dk_hash_iterator (&hit, (dk_hash_t *) self->thr_pg_dbg); \
+    while (NULL != self->thr_pg_dbg && dk_hit_next (&hit, (void**) &buf, (void**) &page)) \
+      { \
+	if (buf && buf->bd_tree && buf->bd_tree->it_key->key_id == KI_TEMP) continue; \
+	GPF_T1 ("Buffer left occupied after thread is done"); \
+      } \
+    if (NULL != self->thr_pg_dbg) clrhash ((dk_hash_t *) self->thr_pg_dbg); \
+  } \
+  while (0)
+
 #else
 #define BUF_DBG_ENTER(buf)
 #define BUF_DBG_LEAVE(buf)
+#define BUF_DBG_LEAVE_INL(buf)
+#define THR_DBG_PAGE_CHECK
 #endif
 
 #define bd_registered bn.registered

@@ -3796,6 +3796,7 @@ do_file:
 	  MP_DONE ();
 	  log_error ("non-empty MP after %s", ws->ws_path_string ? ws->ws_path_string : "<no-url>");
 	}
+      THR_DBG_PAGE_CHECK;
 
       if (!ws_check_rdf_accept (ws))
 	{
@@ -3890,6 +3891,7 @@ do_file:
       MP_DONE ();
       log_error ("non-empty MP after %s", ws->ws_path_string ? ws->ws_path_string : "<no-url>");
     }
+  THR_DBG_PAGE_CHECK;
   /* instead of connection_set (cli, con_dav_v_name, NULL);
    * we'll clear all connection settings if connection is dirty */
   ws_connection_vars_clear (cli);

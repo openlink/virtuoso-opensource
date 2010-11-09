@@ -132,6 +132,9 @@ struct thread_s
   void *		thr_sql_scs;
   int                   thr_attached;
   caddr_t		thr_dbg;
+#ifndef NDEBUG
+  void *		thr_pg_dbg;
+#endif  
 };
 
 
