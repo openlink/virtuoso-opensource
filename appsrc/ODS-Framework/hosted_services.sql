@@ -518,6 +518,34 @@ wa_member_doinstcount()
 ;
 
 wa_exec_no_error ('
+  create table WA_GROUPS (
+    WAG_ID integer identity,
+    WAG_USER_ID integer,
+    WAG_GROUP_ID integer,
+
+    primary key (WAG_ID)
+  )
+');
+
+wa_exec_no_error ('
+  create unique index SK_WA_GROUPS_01 on WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID)
+');
+
+create procedure wa_groups_update () {
+
+  if (registry_get ('__wa_groups_update') = 'done')
+    return;
+
+  wa_exec_no_error ('insert into DB.DBA.WA_GROUPS (WAG_USER_ID, WAG_GROUP_ID) select USER_ID, GROUP_ID from ODRIVE.WA.GROUPS');
+  wa_exec_no_error ('delete from ODRIVE.WA.GROUPS');
+  registry_set ('__wa_groups_update', 'done');
+}
+;
+
+wa_groups_acl_update()
+;
+
+wa_exec_no_error ('
   create table WA_GROUPS_ACL (
     WACL_ID integer identity,
     WACL_USER_ID integer not null,
