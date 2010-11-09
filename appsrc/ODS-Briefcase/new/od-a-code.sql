@@ -314,7 +314,6 @@ create procedure ODRIVE.WA.menu_tree ()
   <node     name="Browse"         url="home.vspx"          id="1"   tip="DAV Browser"               allowed="public guest reader author owner admin">
     <node   name="Settings"       url="settings.vspx"      id="11"  place="link"                    allowed="admin owner"/>
   </node>
-  <node     name="Groups"         url="groups.vspx"        id="2"   tip="Groups"                   allowed="admin owner"/>
   <node     name="Metadata"       url="vmds.vspx"          id="3"   tip="Metadata Administration"  allowed="admin owner">
     <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner"/>
     <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner"/>
@@ -516,7 +515,7 @@ create procedure ODRIVE.WA.iri_fix (
   {
     declare V any;
 
-    V := rfc1808_parse_uri (S);
+    V := rfc1808_parse_uri (cast (S as varchar));
     V [0] := 'https';
     V [1] := http_request_header (http_request_header(), 'Host', null, registry_get ('URIQADefaultHost'));
     S := DB.DBA.vspx_uri_compose (V);
@@ -1676,7 +1675,7 @@ create procedure ODRIVE.WA.odrive_group_own(
     return 1;
   if (isnull(user_name))
     user_name := ODRIVE.WA.account();
-  if (exists(select 1 from DB.DBA.SYS_USERS u1, ODRIVE.WA.GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.GROUP_ID and u1.U_IS_ROLE=1 and g.USER_ID=u2.U_ID and u2.U_NAME=user_name))
+  if (exists(select 1 from DB.DBA.SYS_USERS u1, DB.DBA.WA_GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.WAG_GROUP_ID and u1.U_IS_ROLE=1 and g.WAG_USER_ID=u2.U_ID and u2.U_NAME=user_name))
     return 1;
   return 0;
 }
