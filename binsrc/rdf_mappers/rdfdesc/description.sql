@@ -76,6 +76,9 @@ og:longitude rdfs:subPropertyOf geo:long .
 <http://www.rdfabout.com/rdf/schema/ussec/cik> a owl:inverseFunctionalProperty .
 foaf:logo owl:subPropertyOf foaf:depiction .
 <http://umbel.org/umbel#isAbout> owl:equivalentProperty foaf:focus .
+gr:name owl:equivalentProperty foaf:name .
+<http://poolparty.punkt.at/demozone/ont#title> rdfs:subPropertyOf virtrdf:label .
+<http://www.w3.org/2007/05/powder-s#describedby> owl:equivalentProperty <http://www.iana.org/assignments/relation/describedby> .
 ', '', 'virtrdf-label');
 
 rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
