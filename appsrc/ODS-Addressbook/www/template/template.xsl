@@ -109,8 +109,7 @@
     </xsl:for-each>
     <div style="padding: 0.5em;">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
+        <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
       </div>
       <v:form name="F1" type="simple" method="POST">
         <xsl:apply-templates select="vm:pagebody" />

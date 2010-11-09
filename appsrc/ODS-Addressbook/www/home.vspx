@@ -547,6 +547,7 @@
       <v:variable name="v_interests" type="varchar" default="''" />
       <v:variable name="v_relationships" type="varchar" default="''" />
       <v:variable name="v_acl" type="any" default="null" />
+      <v:variable name="v_certificate" type="any" default="null" />
 
       <v:variable name="v_mail" type="varchar" default="''" />
       <v:variable name="v_web" type="varchar" default="''" />
@@ -707,6 +708,7 @@
                   self.v_interests := '';
                   self.v_relationships := '';
                   self.v_acl := null;
+                  self.v_certificate := null;
                   self.v_photo_preview_path := '';
 
                     self.v_mail := '';
@@ -1500,6 +1502,7 @@
                          P_B_WEB,
                            P_TAGS,
                            P_ACL,
+                           P_CERTIFICATE,
                            C_ID,
                            C_NAME
                     into self.v_kind,
@@ -1557,6 +1560,7 @@
                          self.v_bWeb,
                            self.v_tags,
                            self.v_acl,
+                           self.v_certificate,
                            self.v_category_id,
                            self.v_category_name
                     from AB.WA.PERSONS
@@ -1598,14 +1602,15 @@
             <div id="a" class="c1">
               <div class="tabs">
                   <vm:if test="self.abAction <> 'view'">
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="0" caption="Import" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="0" caption="Import" />
                   </vm:if>
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="1" caption="Main" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="2" caption="Contact" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="3" caption="Home" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="4" caption="Business" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="5" caption="Relationships" />
-                  &nbsp;<vm:tabCaption tab="a" tabsCount="7" tabNo="6" caption="Sharing" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="1" caption="Main" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="2" caption="Contact" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="3" caption="Home" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="4" caption="Business" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="5" caption="Relationships" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="6" caption="Sharing" />
+                  &nbsp;<vm:tabCaption tab="a" tabsCount="8" tabNo="7" caption="X.509 Certificate" />
               </div>
                 <div class="contents vcard">
                   <vm:if test="self.abAction <> 'view'">
@@ -1632,7 +1637,7 @@
                       <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
                     <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Contact URI" />
+                          <v:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
                           <?vsp http (self.prepareField(AB.WA.utf2wide (SIOC..addressbook_contact_iri (self.domain_id, self.v_id)), 'uid', null)); ?>
@@ -2071,7 +2076,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_3" class="tabContent adr" style="display: none;">
+                  <div id="a_content_3" class="tabContent" style="display: none;">
                     <span class="type" style="display: none;">HOME</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2248,7 +2253,7 @@
                     </tr>
                   </table>
                 </div>
-                  <div id="a_content_4" class="tabContent adr" style="display: none;">
+                  <div id="a_content_4" class="tabContent" style="display: none;">
                     <span class="type" style="display: none;">WORK</span>
                   <table class="form-body" cellspacing="0">
                     <tr>
@@ -2615,6 +2620,53 @@
                     </table>
                     </fieldset>
                   </div>
+                  <div id="a_content_7" class="tabContent" style="display: none;">
+                    <table class="form-body" cellspacing="0">
+              	      <?vsp if (length (self.v_certificate)) { ?>
+                        <tr>
+                          <th width="25%">
+                            Subject
+                          </th>
+                          <td>
+                      		  <?vsp
+                		          http_value (get_certificate_info (2, cast(self.v_certificate as varchar), 0, ''));
+                		        ?>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th width="25%">
+                            Agent ID
+                          </th>
+                          <td>
+                      		  <?vsp
+              		            http_value (ODS.ODS_API.SSL_WEBID_GET (cast(self.v_certificate as varchar)));
+                		        ?>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th width="25%">
+                            Fingerprint
+                          </th>
+                          <td>
+                      		  <?vsp
+              		            http_value (get_certificate_info (6, cast(self.v_certificate as varchar), 0, ''));
+                		        ?>
+                          </td>
+                        </tr>
+             	        <?vsp } ?>
+                      <tr>
+                        <th width="25%" valign="top">
+                          <v:label for="ab_Certificate" value="Certificate" />
+                        </th>
+                        <td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:textarea name="ab_Certificate" null-value="" value="--self.v_certificate" xhtml_cols="70" xhtml_rows="20" />
+                          </vm:if>
+                          <?vsp self.viewField (self.v_certificate, null, null); ?>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
               </div>
             </div>
             <div class="new-form-footer">
@@ -2803,6 +2855,7 @@
                     self.v_bJob          := trim (self.ab_bJob.ufl_value);
                     self.v_bMail         := trim (self.ab_bMail.ufl_value);
                     self.v_bWeb          := trim (self.ab_bWeb.ufl_value);
+                      self.v_certificate   := trim (self.ab_certificate.ufl_value);
 
                       self.v_category_id   := AB.WA.category_update (self.domain_id, get_keyword ('ab_category_name', e.ve_params));
 
@@ -2868,6 +2921,7 @@
                     );
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_RELATIONSHIPS', self.v_relationships);
                       AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_ACL', self.v_acl);
+                      AB.WA.contact_update2 (self.v_id, self.domain_id, 'P_CERTIFICATE', self.v_certificate);
                     self.shareNode (self.v_id, self.v_grants, 1);
 
                     self.abAction := 'browse';
