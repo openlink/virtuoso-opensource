@@ -595,6 +595,50 @@
     ]]>
   </v:method>
 
+  <v:method name="shareNode" arglist="in event_id integer, in grants varchar, in override integer">
+    <![CDATA[
+      declare N, pos, id integer;
+      declare name, V any;
+
+      grants := replace(grants, ' ', '');
+      grants := replace(grants, ',,', ',');
+      grants := trim(grants, ',', '');
+      grants := grants || ',';
+      for (select U_ID, U_NAME from CAL.WA.EVENT_GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_EVENT_ID = event_id and G_GRANTEE_ID = U_ID) do
+      {
+        name := U_NAME;
+        id := U_ID;
+        pos := strstr(grants, name || ',');
+        if (isnull (pos))
+        {
+          if (override)
+            delete from CAL.WA.EVENT_GRANTS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = id and G_EVENT_ID = event_id;
+        } else {
+          grants := replace (grants, name || ',', '');
+        }
+      }
+      V := split_and_decode (trim (grants, ','), 0, '\0\0,');
+      for (N := 0; N < length (V); N := N + 1)
+      {
+        id := (select U_ID from SYS_USERS where U_NAME = V[N]);
+        if (not isnull(id))
+          insert into CAL.WA.EVENT_GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_EVENT_ID)
+            values(self.account_id, id, event_id);
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="shareSelect" arglist="in event_id integer">
+    <![CDATA[
+      declare grants any;
+
+      grants := '';
+      for (select U_ID, U_NAME from CAL.WA.EVENT_GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = CAL.WA.domain_owner_id (self.domain_id) and G_GRANTEE_ID = U_ID and G_EVENT_ID = event_id) do
+        grants := grants || cast (U_NAME as varchar) || ',';
+      return trim (grants, ',');
+    ]]>
+  </v:method>
+
   <v:method name="initNewEvent" arglist="">
     <![CDATA[
       declare pYear, pMonth, pDay, pHour, pMinute integer;
@@ -637,13 +681,14 @@
       self.v_reminder := 600;
       self.v_notes := '';
       self.v_acl := null;
+      self.v_grants := '';
     ]]>
   </v:method>
 
   <v:method name="saveEvent" arglist="">
     <![CDATA[
-      declare N integer;
-      declare tmp, params, sd, ed any;
+      declare N, M integer;
+      declare tmp, acl_users, params, sd, ed any;
 
       declare exit handler for SQLSTATE '*'
       {
@@ -666,6 +711,20 @@
       self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
       self.v_notes := trim (get_keyword ('e_notes', params, ''));
+      self.v_grants := '';
+      for (N := 0; N < length (params); N := N + 2)
+      {
+        if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          acl_users := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+          for (M := 0; M < length (acl_users); M := M + 1)
+          {
+            if (not isnull (CAL.WA.account_id (trim (acl_users[M]))))
+              self.v_grants := self.v_grants || ',' || acl_users[M];
+          }
+        }
+      }
+      self.v_grants := trim (self.v_grants, ',');
       self.v_acl := serialize (DB.DBA.wa_acl_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
@@ -780,6 +839,7 @@
         self.v_notes
       );
       CAL.WA.event_update_acl (self.v_id, self.v_acl);
+      self.shareNode (self.v_id, self.v_grants, 1);
 
       if (self.cScope = 'tasks')
         self.cScope := 'events';
@@ -803,12 +863,14 @@
       self.v_completed := null;
       self.v_notes := '';
       self.v_acl := null;
+      self.v_grants := '';
     ]]>
   </v:method>
 
   <v:method name="saveTask" arglist="">
     <![CDATA[
-      declare tmp, params any;
+      declare N, M integer;
+      declare acl_users, tmp, params any;
 
       declare exit handler for SQLSTATE '*'
       {
@@ -833,6 +895,20 @@
       self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
       self.v_notes := trim (get_keyword ('t_notes', params, ''));
+      self.v_grants := '';
+      for (N := 0; N < length (params); N := N + 2)
+      {
+        if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
+        {
+          acl_users := split_and_decode (trim (params[N+1]), 0, '\0\0,');
+          for (M := 0; M < length (acl_users); M := M + 1)
+          {
+            if (not isnull (CAL.WA.account_id (trim (acl_users[M]))))
+              self.v_grants := self.v_grants || ',' || acl_users[M];
+          }
+        }
+      }
+      self.v_grants := trim (self.v_grants, ',');
       self.v_acl := serialize (DB.DBA.wa_acl_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
@@ -896,6 +972,7 @@
         self.v_notes
       );
       CAL.WA.event_update_acl (self.v_id, self.v_acl);
+      self.shareNode (self.v_id, self.v_grants, 1);
     ]]>
   </v:method>
 
@@ -1070,6 +1147,7 @@
       <v:variable name="v_status" type="varchar" default="''"/>
       <v:variable name="v_notes" type="varchar" default="''" />
       <v:variable name="v_acl" type="any" default="null" />
+      <v:variable name="v_grants" type="any" default="null"/>
 
       <v:variable name="vg_id" type="any" default="null" />
       <v:variable name="vg_account_id" type="varchar" default="null" />
@@ -2294,6 +2372,7 @@
                  where E_ID = self.v_id;
 
                        self.v_attendees := CAL.WA.attendees_return (self.v_id);
+                       self.v_grants := self.shareSelect (self.v_id);
                  return;
               }
             _end:;
@@ -2310,7 +2389,7 @@
                   <div onclick="javascript: showTab('e', 4, 0);" class="tab " id="e_tab_0">Main</div>
                   <div onclick="javascript: showTab('e', 4, 1);" class="tab " id="e_tab_1">Repeats</div>
                   <div onclick="javascript: showTab('e', 4, 2);" class="tab " id="e_tab_2">Notes</div>
-                  <div onclick="javascript: showTab('e', 4, 3);" class="tab " id="e_tab_3" style="display: <?V case when self.v_privacy then '' else 'none' end ?>">Sharing</div>
+                  <div onclick="javascript: showTab('e', 4, 3);" class="tab " id="e_tab_3" style="display: <?V case when self.v_privacy > 1 then '' else 'none' end ?>">Sharing</div>
           </div>
           <div class="contents">
             <div id="e_content_0" class="tabContent" style="display: none;">
@@ -2475,8 +2554,9 @@
                           <vm:label for="e_privacy" value="--'Privacy'" />
                         </th>
                         <td>
-                            <v:select-list name="e_privacy" xhtml_onchange="javascript: (this.value == \'1\')? OAT.Dom.show(\'e_tab_3\'): OAT.Dom.hide(\'e_tab_3\');">
+                            <v:select-list name="e_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'e_tab_3\'): OAT.Dom.hide(\'e_tab_3\');">
                             <v:item value="0" name="Private" />
+                              <v:item value="2" name="ACL" />
                             <v:item value="1" name="Public" />
                             <v:before-data-bind>
                               <![CDATA[
@@ -2972,6 +3052,52 @@
               </table>
             </div>
                   <div id="e_content_3" class="tabContent" style="display: none;">
+                    <fieldset>
+                      <legend><b>ODS users</b></legend>
+                      <table class="form-body" cellspacing="0">
+                        <tr>
+                          <td style="width: 90%; background-color: white;">
+                            <table id="f_tbl" width="100%" cellspacing="0">
+                              <thead class="sortHeader">
+                                <tr>
+                                  <th width="100%">Value</th>
+                                  <th width="50px">Action</th>
+                                </tr>
+                              </thead>
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                                <?vsp
+                                  declare N, L integer;
+                                  declare acl_values any;
+
+                                  L := 0;
+                                  acl_values := split_and_decode (self.v_grants, 0, '\0\0,');
+                                  for (N := 0; N < length (acl_values); N := N + 1)
+                                  {
+                                    L := 1;
+                                    if (self.cAction <> 'view')
+                                    {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                    } else {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
+                                    }
+                                  }
+                                ?>
+                        		    </script>
+                        		  ]]>
+                              <tr id="f_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 1 else 2 end ?>"><b>No Shares</b></td></tr>
+                        		</table>
+                        	</td>
+                          <vm:if test="self.cAction <> 'view'">
+                            <td valign="top" nowrap="nowrap">
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                            </td>
+                          </vm:if>
+                        </tr>
+                      </table>
+                    </fieldset>
+                    <fieldset>
+                      <legend><b>WebID users</b></legend>
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
@@ -3022,6 +3148,7 @@
                         </vm:if>
                       </tr>
                     </table>
+                    </fieldset>
                   </div>
           </div>
         </div>
@@ -3270,6 +3397,7 @@
                  where E_ID = self.v_id;
 
                        self.v_attendees := CAL.WA.attendees_return (self.v_id);
+                       self.v_grants := self.shareSelect (self.v_id);
                  return;
               }
             _end:;
@@ -3285,7 +3413,7 @@
           <div class="tabs">
                   <div onclick="javascript: showTab('t', 4, 0);" class="tab " id="t_tab_0">Main</div>
                   <div onclick="javascript: showTab('t', 4, 1);" class="tab " id="t_tab_1">Notes</div>
-                  <div onclick="javascript: showTab('t', 4, 2);" class="tab " id="t_tab_2" style="display: <?V case when self.v_privacy then '' else 'none' end ?>">Sharing</div>
+                  <div onclick="javascript: showTab('t', 4, 2);" class="tab " id="t_tab_2" style="display: <?V case when self.v_privacy > 1 then '' else 'none' end ?>">Sharing</div>
           </div>
           <div class="contents">
             <div id="t_content_0" class="tabContent" style="display: none;">
@@ -3427,8 +3555,9 @@
                           <vm:label for="t_privacy" value="--'Privacy'" />
                         </th>
                         <td>
-                            <v:select-list name="t_privacy" xhtml_onchange="javascript: (this.value == \'1\')? OAT.Dom.show(\'t_tab_2\'): OAT.Dom.hide(\'t_tab_2\');">
+                            <v:select-list name="t_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'t_tab_2\'): OAT.Dom.hide(\'t_tab_2\');">
                             <v:item value="0" name="Private" />
+                              <v:item value="2" name="ACL" />
                             <v:item value="1" name="Public" />
                             <v:before-data-bind>
                               <![CDATA[
@@ -3491,6 +3620,52 @@
               </table>  
             </div>
                   <div id="t_content_2" class="tabContent" style="display: none;">
+                    <fieldset>
+                      <legend><b>ODS users</b></legend>
+                      <table class="form-body" cellspacing="0">
+                        <tr>
+                          <td style="width: 90%; background-color: white;">
+                            <table id="f_tbl" width="100%" cellspacing="0">
+                              <thead class="sortHeader">
+                                <tr>
+                                  <th width="100%">Value</th>
+                                  <th width="50px">Action</th>
+                                </tr>
+                              </thead>
+                        		  <![CDATA[
+                        		    <script type="text/javascript">
+                                <?vsp
+                                  declare N, L integer;
+                                  declare acl_values any;
+
+                                  L := 0;
+                                  acl_values := split_and_decode (self.v_grants, 0, '\0\0,');
+                                  for (N := 0; N < length (acl_values); N := N + 1)
+                                  {
+                                    L := 1;
+                                    if (self.cAction <> 'view')
+                                    {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                    } else {
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
+                                    }
+                                  }
+                                ?>
+                        		    </script>
+                        		  ]]>
+                              <tr id="f_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 1 else 2 end ?>"><b>No Shares</b></td></tr>
+                        		</table>
+                        	</td>
+                          <vm:if test="self.cAction <> 'view'">
+                            <td valign="top" nowrap="nowrap">
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                            </td>
+                          </vm:if>
+                        </tr>
+                      </table>
+                    </fieldset>
+                    <fieldset>
+                      <legend><b>WebID users</b></legend>
                     <table class="form-body" cellspacing="0">
                       <tr>
                         <td style="width: 90%; background-color: white;">
@@ -3541,6 +3716,7 @@
                         </vm:if>
                       </tr>
                     </table>
+                    </fieldset>
                   </div>
           </div>
         </div>
@@ -6033,7 +6209,7 @@
                         </th>
                         <td>
                           <v:text name="sg_account" null-value="--''" value="--self.vg_account" xhtml_class="textbox" />
-                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?params=sg_account:s1;',520)" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?form=F1&params=sg_account:s1;',520)" class="button" />
                         </td>
                       </tr>
                       <tr>
@@ -6345,7 +6521,7 @@
                         </th>
                         <td>
                           <v:text name="ss_calendar" xhtml_id="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
-                          <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
+                          <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?form=F1&params=ss_calendar:s1;',520)" class="button" />
                         </td>
                       </tr>
                       <tr>

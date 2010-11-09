@@ -110,8 +110,7 @@
     <div style="padding: 0.5em;">
       <xsl:if test="not @close or @close = 'yes'">
       <div style="padding: 0 0 0.5em 0;">
-          &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
-        <hr />
+          <span class="button pointer" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img class="button" src="/ods/images/icons/close_16.png" border="0" alt="Close" title="Close" /> Close</span>
       </div>
       </xsl:if>
       <v:form name="F1" type="simple" method="POST">

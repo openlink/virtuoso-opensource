@@ -156,7 +156,7 @@
 
           aSessInfo := CAL.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
-          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
+          self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
           self.owner_id := CAL.WA.domain_owner_id (self.domain_id);
           self.account_rights := get_keyword ('account_rights', aSessInfo);
 

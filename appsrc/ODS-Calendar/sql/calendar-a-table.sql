@@ -205,6 +205,7 @@ CAL.WA.exec_no_error ('
                                           -- 1 - Task
     E_PRIVACY integer default 0,          -- 0 - PRIVATE
                                           -- 1 - PUBLIC
+                                          -- 2 - ACL
     E_ATTENDEES integer default 0,        -- 0 - no attendees
                                           -- N - number of attendees
     E_SUBJECT varchar,
@@ -524,6 +525,31 @@ create procedure CAL.WA.tags_update (
   }
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.EVENT_GRANTS (
+    G_ID integer identity,
+    G_GRANTER_ID integer not null,
+    G_GRANTEE_ID integer not null,
+    G_EVENT_ID integer not null,
+
+    PRIMARY KEY (G_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENT_GRANTS_01 on CAL.WA.EVENT_GRANTS (G_GRANTER_ID, G_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENT_GRANTS_02 on CAL.WA.EVENT_GRANTS (G_GRANTEE_ID, G_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  alter table CAL.WA.EVENT_GRANTS add constraint FK_CAL_EVENT_GRANTS_01 FOREIGN KEY (G_EVENT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade
+');
 
 -------------------------------------------------------------------------------
 --
