@@ -1050,7 +1050,7 @@ extern resource_t * pm_rc_4;
 #define bd_is_dirty bdf.r.is_dirty
 #define bd_is_ro_cache bdf.r.is_ro_cache
 
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
 #define PAGE_DEBUG
 #endif
 
