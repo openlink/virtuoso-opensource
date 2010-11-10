@@ -1110,6 +1110,8 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     only_rdfa := 0;
   if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
     signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
+  if (get_keyword ('http-headers', options) is null)
+    options := vector_concat (options, vector ('http-headers', vector (req_hdr_arr, ret_hdr)));
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
     {
       --if (dest is null)
