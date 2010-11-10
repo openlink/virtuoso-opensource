@@ -2279,7 +2279,7 @@ bif_xenc_key_rsa_construct (caddr_t * qst, caddr_t * err_r, state_slot_t ** args
   caddr_t mod = bif_string_arg (qst, args, 1, me);
   caddr_t exp = bif_string_arg (qst, args, 2, me);
   caddr_t pexp = BOX_ELEMENTS (args) > 3 ? bif_string_arg (qst, args, 3, me) : 0;
-  BIGNUM *e, *n, *d = 0;
+  BIGNUM *e, *n;
   xenc_key_t * k;
   RSA *p, *pk = NULL;
 
@@ -6606,13 +6606,26 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len;
   caddr_t ret = NULL;
 
-  if (!key || !key->xek_x509)
+  if (!key)
     goto err;
 
   b = BIO_new (BIO_s_mem());
+  if (key->xek_x509)
+    {
   PEM_write_bio_X509 (b, key->xek_x509);
   if (pkey && key->xek_evp_private_key)
     PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, NULL, NULL, 0, NULL, NULL);
+    }
+  else if (key->xek_type == DSIG_KEY_RSA)
+    PEM_write_bio_RSAPrivateKey (b, key->xek_private_rsa, NULL, NULL, 0, NULL, NULL);
+  else if (key->xek_type == DSIG_KEY_DSA)
+    PEM_write_bio_DSAPrivateKey (b, key->xek_private_dsa, NULL, NULL, 0, NULL, NULL);
+  else
+    {
+      BIO_free (b);
+      goto err;
+    }
+
   len = BIO_get_mem_data (b, &data_ptr);
   if (len > 0 && data_ptr)
     {
@@ -6680,6 +6693,87 @@ bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   return ret;
 err:
   return NEW_DB_NULL;
+}
+
+static caddr_t
+BN2binbox (BIGNUM * x)
+{
+  size_t buf_len, n;
+  caddr_t buf;
+  buf_len = (size_t) BN_num_bytes (x);
+  buf = dk_alloc_box (buf_len, DV_BIN);
+  n = BN_bn2bin (x, (unsigned char *) buf);
+  if (n != buf_len)
+    GPF_T;
+  return buf;
+}
+
+/* encode BIN box to base64 and free the input box */
+static caddr_t
+xenc_encode_base64_binbox (caddr_t box, int free)
+{
+  caddr_t buf, ret;
+  int len = box_length (box);
+  if (!IS_BOX_POINTER (box))
+    return NULL;
+  buf = dk_alloc_box (len * 2, DV_BIN);
+  len = xenc_encode_base64 ((char *)box, buf, len);
+  ret = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (ret, buf, len);
+  ret[len] = 0;
+  dk_free_box (buf);
+  if (free)
+    dk_free_box (box);
+  return ret;
+}
+
+static caddr_t
+xenc_rsa_pub_magic (RSA * x)
+{
+  caddr_t ret;
+  caddr_t n = BN2binbox (x->n); /* modulus */
+  caddr_t e = BN2binbox (x->e); /* public exponent */
+  n = xenc_encode_base64_binbox (n, 1);
+  e = xenc_encode_base64_binbox (e, 1);
+  ret = dk_alloc_box (box_length (n) + box_length (e) + 4 /* two dots - one trailing zero + RSA prefix */, DV_STRING);
+  snprintf (ret, box_length (ret), "RSA.%s.%s", n, e);
+  dk_free_box (n);
+  dk_free_box (e);
+  return ret;
+}
+
+static caddr_t
+bif_xenc_pubkey_magic_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pubkey_magic_export");
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  caddr_t ret = NULL;
+  EVP_PKEY * k;
+
+  if (!key)
+    SQLR_NEW_KEY_ERROR (key_name);
+
+  if (key->xek_x509)
+    {
+      k = X509_get_pubkey (key->xek_x509);
+#ifdef EVP_PKEY_RSA
+      if (k->type == EVP_PKEY_RSA)
+	{
+	  RSA * x = k->pkey.rsa;
+	  ret = xenc_rsa_pub_magic (x);
+	}
+#endif
+      EVP_PKEY_free (k);
+    }
+  else if (key->xek_type == DSIG_KEY_RSA)
+    {
+       RSA * x = key->xek_rsa;
+       ret = xenc_rsa_pub_magic (x);
+    }
+  else
+    sqlr_new_error ("42000", "XENC..", "The key type is not supported for export.");
+
+  return ret;
 }
 
 static caddr_t
@@ -6836,6 +6930,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_pkcs12_export", bif_xenc_pkcs12_export);
   bif_define ("xenc_pem_export", bif_xenc_pem_export);
   bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
+  bif_define ("xenc_pubkey_magic_export", bif_xenc_pubkey_magic_export);
   bif_define ("xenc_SPKI_read", bif_xenc_SPKI_read);
 
 #ifdef _KERBEROS
