@@ -83,8 +83,9 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     '(https://docs.google.com/.*)',
     'URL', 'DB.DBA.RDF_LOAD_GOOGLE_DOCUMENT', null, 'Google (Documents)');
 
-insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
-	values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
+--insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+--	values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
 	values ('.*', 'URL', 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION', null, 'Facebook Open Graph');
@@ -502,12 +503,12 @@ create procedure DB.DBA.RM_MAPPERS_SET_ORDER ()
 	 }
      }
 
-   http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
+   --http := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION');
    html := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
    feed := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE');
    fb_og := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION');
 --   calais := (select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS');
-   top_arr := vector (http, html, feed, fb_og);
+   top_arr := vector (html, feed, fb_og);
 
    arr := (select DB.DBA.VECTOR_AGG (RM_PID) from DB.DBA.SYS_RDF_MAPPERS  where 0 = position (RM_PID, top_arr) order by RM_ID);
    inx := 1;
@@ -1605,116 +1606,6 @@ RDF_APERTURE_INIT ()
 ;
 
 -- cartridges
-
-create procedure DB.DBA.RDF_LOAD_HTTP_SESSION (
-    in graph_iri varchar,
-    in new_origin_uri varchar,
-    in dest varchar,
-    inout ret_body any,
-    inout aq any, inout ps any,
-    inout headers any,
-    inout opts any)
-{
-  declare req, resp any;
-  declare ses, tmp any;
-
-  declare meth, host, url, proto_ver, stat, resp_ver any;
-
-  ses := string_output ();
-  req := headers[0];
-  resp := headers[1];
-
-  host := http_request_header (req, 'Host');
-
-  tmp := split_and_decode (req[0], 0, '\0\0 ');
-  meth := tmp[0];
-  meth := lower (meth);
-  meth[0] := meth[0] - 32;
-
-  url := tmp[1];
-  proto_ver := substring (tmp[2], 6, 8);
-
-  tmp := rtrim (resp[0], '\r\n');
-  tmp := split_and_decode (resp[0], 0, '\0\0 ');
-  stat := tmp[1];
-  resp_ver := substring (tmp[0], 6, 8);
-
-  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:http="http://www.w3.org/2006/http#">\n', ses);
-
-  http ('<http:Connection rdf:ID="conn">\n', ses);
-  http ('  <http:connectionAuthority>'|| host ||'</http:connectionAuthority>\n', ses);
-  http ('    <http:request>\n', ses);
-  http ('    <http:Request rdf:about="#req0"/>\n', ses);
-  http ('  </http:request>\n', ses);
-  http ('</http:Connection>\n', ses);
-
-  http ('<http:'|| meth ||'Request rdf:ID="req0">\n', ses);
-  http (sprintf ('     <http:requestURI rdf:resource="%V"/>\n', DB.DBA.RM_SPONGE_DOC_IRI (new_origin_uri)), ses);
-  http ('  <http:abs_path>'|| url ||'</http:abs_path>\n', ses);
-  http ('  <http:version>'|| proto_ver ||'</http:version>\n', ses);
-  http ('  <http:header rdf:parseType="Collection">\n', ses);
-  -- loop over req from 1 - len
-  tmp := '';
-  for (declare i int, i := 1; i < length (req); i := i + 1)
-    {
-      tmp := tmp || trim (req[i], '\r\n') || '\r\n' ;
-    }
-  tmp := mime_tree (tmp);
-  tmp := tmp[0];
-  for (declare i int, i := 0; i < length (tmp); i := i + 2)
-    {
-      http ('<http:MessageHeader>\n', ses);
-      http ('  <http:fieldName rdf:resource="http://www.w3.org/2006/http-header#'||lower (tmp[i])||'"/>\n', ses);
-      http ('  <http:fieldValue>\n', ses);
-      http ('    <http:HeaderElement>\n', ses);
-      http ('     <http:elementName>'||tmp[i+1]||'</http:elementName>\n', ses);
-      http ('    </http:HeaderElement>\n', ses);
-      http ('  </http:fieldValue>\n', ses);
-      http ('</http:MessageHeader>\n', ses);
-    }
-
-
-  http ('  </http:header>\n', ses);
-  http ('  <http:response rdf:resource="#resp0"/>\n', ses);
-  http ('</http:'|| meth ||'Request>\n', ses);
-
-  http ('<http:Response rdf:ID="resp0">\n', ses);
-  http ('<http:responseCode rdf:resource="http://www.w3.org/2006/http#'||stat||'"/>\n', ses);
-  http ('  <http:version>'||resp_ver||'</http:version>\n', ses);
-  http ('  <http:header rdf:parseType="Collection">\n', ses);
-  -- loop over resp from 1 - len
-
-  tmp := '';
-  for (declare i int, i := 1; i < length (resp); i := i + 1)
-    {
-      tmp := tmp || trim (resp[i], '\r\n') || '\r\n' ;
-    }
-  tmp := mime_tree (tmp);
-  tmp := tmp[0];
-  for (declare i int, i := 0; i < length (tmp); i := i + 2)
-    {
-      http ('<http:MessageHeader>\n', ses);
-      http ('  <http:fieldName rdf:resource="http://www.w3.org/2006/http-header#'||lower (tmp[i])||'"/>\n', ses);
-      http ('  <http:fieldValue>\n', ses);
-      http ('    <http:HeaderElement>\n', ses);
-      http ('     <http:elementName>'||tmp[i+1]||'</http:elementName>\n', ses);
-      http ('    </http:HeaderElement>\n', ses);
-      http ('  </http:fieldValue>\n', ses);
-      http ('</http:MessageHeader>\n', ses);
-    }
-
-  http ('  </http:header>\n', ses);
-  http ('</http:Response>\n', ses);
-  http ('</rdf:RDF>\n', ses);
-
-  tmp := string_output_string (ses);
-
-  DB.DBA.RM_RDF_LOAD_RDFXML (tmp, new_origin_uri, coalesce (dest, graph_iri));
-
-  -- never stop the rest of handlers
-  return 0;
-}
-;
 
 create procedure FB_SIG (in params any, in secret any)
 {

@@ -5,7 +5,7 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
-   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr varchar;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn varchar;
    declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn int;
 
    set http_charset='utf-8';
@@ -240,6 +240,19 @@
    if (label like 'http%://%')
      label := rdfdesc_uri_curie (label);
    set isolation = 'uncommitted';
+   dsn := (SPARQL prefix h: <http://www.w3.org/2006/http#> prefix hh: <http://www.w3.org/2006/http-header#> 
+   	     select ?vo { graph `iri(?:_G)` { ?s ?p hh:content-location ; h:fieldValue ?v . ?v h:elementName ?vo } } LIMIT 1);
+   if (dsn is null)
+     {
+       if (strchr (_G, '#') is null)
+	 dsn := _G || '#';
+       else
+	 dsn := _G;
+     }
+   else
+     {
+       dsn := rfc1808_expand_uri (_G, dsn);
+     }
 ?>
 
 <!-- header -->
@@ -303,7 +316,7 @@
         </div>
         <div class="page-resource-uri">
 	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
-	    from Data Source : <a href="<?V _G ?>"><?V _G ?></a>, 
+	    from Data Source : <a href="<?V dsn ?>"><?V dsn ?></a>, 
 	    within Data Space : <a href="http://<?V dspace ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
