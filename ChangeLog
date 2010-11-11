@@ -1,3 +1,1544 @@
+2010-11-11 11:23  source
+
+	* Added special immutable setting for inf rules
+
+2010-11-10 15:45  source
+
+	* Fixed pass headers as options so every cartridge can read
+
+2010-11-10 12:00  source
+
+	* Added magic key export
+
+2010-11-10 11:59  source
+
+	* Fixed stack corruption on 64bit
+
+2010-11-09 21:47  source
+
+	* Fixed memleak when error is signalled
+
+2010-11-09 21:44  source
+
+	* Fixed avoid re-define
+
+2010-11-09 21:42  source
+
+	* Fixed remove call to SP before it is defined
+
+2010-11-09 20:19  source
+
+	* Fixed https access
+	* Fixed ACL UI
+
+2010-11-09 20:18  source
+
+	* Added support for SWD
+	* Added support for Salmon
+	* Added RDFa info
+	* Fixed key removal not working
+	* Fixed bad permissions for user's home directory creation
+	* Fixed no validator at this point
+	* Fixed sync user's pages
+	* Fixed salmon api
+	* Fixed move groups from briefcase into framework
+
+2010-11-09 20:15  source
+
+	* Added initial support for Salmon protocol
+	* Fixed check for email
+	* Fixed uninstall problem
+
+2010-11-09 20:12  source
+
+	* Added signed mails
+	* Fixed https access
+
+2010-11-09 20:12  source
+
+	* Fixed move groups from briefcase into ODS framework
+	* Fixed https access
+
+2010-11-09 20:11  source
+
+	* Fixed https access
+	* Fixed labels
+
+2010-11-09 20:11  source
+
+	* Fixed https access
+
+2010-11-09 20:01  source
+
+	* Fixed properly encode the query before passing it to PivotViewer
+
+2010-11-09 19:59  source
+
+	* Fixed more labels
+
+2010-11-09 10:59  source
+
+	* Fixed split part of MTX_DEBUG into PAGE_DEBUG
+
+2010-11-08 15:42  source
+
+	* Fixed prevent bad data to crash system during deserialization
+
+2010-11-08 12:37  source
+
+	* Added http://loc.openlinksw.com/sparql as registered endpoint
+	* Fixed URIs in resultview anchors
+
+2010-11-08 12:35  source
+
+	* Fixed return string session, rather than allocate string so it will
+	  handle large resources
+	* Fixed possible double free of temp filename
+	* Fixed issue with MALLOC_DEBUG
+
+2010-11-08 12:21  source
+
+	* Fixed ACL update
+
+2010-11-08 11:46  source
+
+	* Fixed minor issue
+
+2010-11-08 11:45  source
+
+	* Added ACL settings
+	* Added new type
+	* Added CORS options
+	* Fixed layout of cert generation form
+	* Fixed label of cartridges
+
+2010-11-08 11:26  source
+
+	file construct_body.xsl was added on branch V6_0_0-DEVEL on 2010-11-09 20:12:59 +0000
+
+2010-11-08 11:25  source
+
+	file SWD.sql was added on branch V6_0_0-DEVEL on 2010-11-09 20:18:21 +0000
+
+2010-11-08 11:08  source
+
+	* Added check by entity type
+
+2010-11-05 20:23  source
+
+	* Fixed check dp before processing
+
+2010-11-05 10:57  source
+
+	* Fixed explanation of rdf inf failures
+
+2010-11-05 10:56  source
+
+	* Fixed bad condition of extension, do not push local imports
+
+2010-11-05 10:54  source
+
+	* Fixed  /sparql/ endpoint to show/hide controls
+	* Fixed show supported formats depending on configuration
+
+2010-11-05 10:53  source
+
+	* Fixed CXML desc support
+
+2010-11-04 18:18  source
+
+	* Fixed typo
+
+2010-11-02 19:14  source
+
+	* Added cxml det
+
+2010-11-02 19:12  source
+
+	* Fixed top/skip should only work for  non-multistate
+	* Fixed recover when itc is unregistered
+
+2010-11-01 14:15  source
+
+	* FIxed only skip when initialized
+
+2010-10-29 14:12  source
+
+	* Fixed when pl stats collection is enabled, the hash must be
+	  protected in order to avoid crash
+
+2010-10-29 14:11  source
+
+	* Fixed when count/sum/avg and other aggregates make columns to be the
+	  respective type e.g. int or double, except when performing min/max
+	  on string, we turn off mem_cache_only, so they can goto disk
+
+2010-10-29 14:09  source
+
+	* Fixed unbalanced } outside ifdef
+
+2010-10-29 14:08  source
+
+	* Added function alias
+
+2010-10-29 14:08  source
+
+	* Fixed when selection list contains expressions with constants do
+	  not inline OJ
+
+2010-10-27 12:59  source
+
+	* Fixed issues with sparql fed
+
+2010-10-27 12:56  source
+
+	* Added new bif functions dict_iter_hash and dict_key_eq
+
+2010-10-27 12:55  source
+
+	* Added page enter debugging
+
+2010-10-27 12:53  source
+
+	* Added support for CORS
+
+2010-10-27 12:52  source
+
+	* Fixed check all the cos in gby to be numeric types
+
+2010-10-27 12:51  source
+
+	* Added debug line pragmas
+
+2010-10-27 12:50  source
+
+	* Fixed debug assert for itc_is_registered
+
+2010-10-25 13:23  source
+
+	* Fixed compiler warnings
+
+2010-10-25 13:19  source
+
+	* Fixed rdf boxes cmp
+	* Fixed rdf inf loading
+
+2010-10-25 13:15  source
+
+	* Fixed allow all users to have user_t so they can have their own
+	  encryption keys
+
+2010-10-25 12:38  source
+
+	file salmon.sql was added on branch V6_0_0-DEVEL on 2010-11-09 20:18:22 +0000
+
+2010-10-25 12:38  source
+
+	file uiedit_acl.vspx was added on branch V6_0_0-DEVEL on 2010-11-09 20:18:22 +0000
+
+2010-10-25 12:38  source
+
+	file uiedit_acls.vspx was added on branch V6_0_0-DEVEL on 2010-11-09 20:18:23 +0000
+
+2010-10-22 21:12  source
+
+	* Added contols to add text filters
+	* Added support for creating new ses with class iri filter
+	* Added choose type and start/continue facets browsing session to rdfdesc
+	* Fixed drop text constraint
+	* Fixed view types
+
+2010-10-22 16:34  source
+
+	* Fixed link warning
+
+2010-10-22 16:31  source
+
+	* Fixed issue with shadowing local variable in java hosting
+
+2010-10-22 14:58  source
+
+	* Fixed temporary disabled code
+
+2010-10-22 12:31  source
+
+	* Fixed single does not have a dpipe
+
+2010-10-22 10:28  source
+
+	* FIxed if dpipe before outer section, put the dpipe before the set
+	  ctr of the outer section and not after, else it may mess with the
+	  output of the dpipe
+
+2010-10-22 09:52  source
+
+	* Fixed missing symbol
+
+2010-10-22 09:50  source
+
+	* Fixed rb can be twice as it is a ref
+
+2010-10-20 16:04  source
+
+	* Fixed problem with extremely large XML doc
+
+2010-10-19 12:38  source
+
+	* Added dynamic resizing of result block
+
+2010-10-18 18:50  source
+
+	* Fixed issue with SPARQL CONSTRUCT/INSERT/DELETE/MODIFY queries
+
+2010-10-18 12:18  source
+
+	* Fixed when a page with free remap is found, indicate the trx should be killed
+	  rather than getting infinite loop
+	* Fixed extra debugging for page access
+
+2010-10-18 12:14  source
+
+	* Fixed when operation is count etc, aggregate returning a number
+	  does not do memcache only in order to avoid running out of memory
+
+2010-10-18 12:01  source
+
+	* Added new functions to ImageMagick plugin
+
+2010-10-15 11:37  source
+
+	* Fixed fct_label on v6 single
+
+2010-10-13 13:59  source
+
+	* Fixed the xe_make_copy is valid only for XMLTYPE, not for every UDT
+
+2010-10-13 13:59  source
+
+	* Fixed gpf
+
+2010-10-13 12:12  source
+
+	* Added rsh-sha256
+	* Added xenc_dsig_verify, xenc_dsig_sign and xenc_key_RDA_construct
+
+2010-10-13 12:11  source
+
+	* Removed old upgrade code
+
+2010-10-13 12:09  source
+
+	* Fixed BestBuy cartridge
+
+2010-10-13 12:07  source
+
+	* Added checks for value ranges
+	* Added paging through 'Related Collections' links
+
+2010-10-13 12:02  source
+
+	* Fixed minor issues
+
+2010-10-13 12:00  source
+
+	* Added ACL semantic ping
+	* Fixed encoding problems
+	* Fixed JS error
+
+2010-10-13 11:59  source
+
+	* Added ACL semantic ping
+	* Fixed encoding problems
+	* Optimized page load
+
+2010-10-13 11:58  source
+
+	* Fixed encoding problems
+	* Fixed and optimized users and webIDs
+	* Fixed sharings
+	* Optimized page load
+
+2010-10-13 10:36  source
+
+	* Added ACL semantic ping
+	* Fixed and optimized users and webIDs
+	* Fixed empty lists
+	* Fixed encoding problems
+	* Optimized page load
+
+2010-10-13 10:35  source
+
+	* Added ACL semantic ping
+	* Fixed encoding problems
+
+2010-10-13 10:34  source
+
+	* Added ACL semantic ping
+	* Fixed and optimized users and webIDs
+	* Fixed encoding problems
+	* Fixed empty lists
+	* Optimized page load
+
+2010-10-13 10:33  source
+
+	* Added ACL semantic ping
+	* Fixed and optimized users and webIDs
+	* Fixed JS map error
+	* Fixed JS errors
+	* Fixed tabs
+	* Fixed encoding problems
+
+2010-10-12 17:35  source
+
+	* Fixed bug when filer (num <>= (subq))
+
+2010-10-12 12:23  source
+
+	* Added support for latest tidylib
+
+2010-10-07 23:31  source
+
+	* Fixed some issues with dsig_verify
+
+2010-10-07 13:29  source
+
+	* Fixed new debug macro DK_ALLOC_BOX_DEBUG for basic integrety checks
+	  without overhead of full MALLOC_DEBUG
+
+2010-10-07 13:24  source
+
+	* Added item ACL
+	* Added ACL Inheritance
+	* Fixed update
+	* Fixed tag bug
+
+2010-10-07 13:07  source
+
+	* Fixed minor issue
+
+2010-10-07 13:02  source
+
+	file disconnect_16.png was added on branch V6_0_0-DEVEL on 2010-10-07 13:22:39 +0000
+
+2010-10-07 13:02  source
+
+	file link_16.png was added on branch V6_0_0-DEVEL on 2010-10-07 13:22:39 +0000
+
+2010-10-07 13:02  source
+
+	file ods_upstream.sql was added on branch V6_0_0-DEVEL on 2010-10-07 13:22:38 +0000
+
+2010-10-07 13:00  source
+
+	* Added ACL Inheritance
+	* Fixed updated UI
+
+2010-10-07 13:00  source
+
+	* Added ACL Inheritance
+	* Fixed binding the twitter and linkedin with their API
+	* Fixed IE password field size bug
+	* Fixed must quote vars from sparql
+	* Fixed swat0
+
+2010-10-07 12:58  source
+
+	* Added ACL Inheritance
+	* Fixed optimized progress bar
+	* Fixed read/unread actions
+	* Fixed encoding problem
+	* Fixed updated UI
+	* Removed deprecated icons
+
+2010-10-07 12:56  source
+
+	* Added ACL Inheritance
+	* Fixed ACL recalc bug
+	* Fixed updated UI
+
+2010-10-07 12:55  source
+
+	* Added ACL Inheritance
+	* Fixed optimized update
+	* Fixed sharing problem
+	* Fixed updated UI
+
+2010-10-07 12:54  source
+
+	* Added ACL Inheritance
+	* Fixed ACL recalc bug
+	* Fixed optimize progress bar
+	* Removed deprecated images
+
+2010-10-07 12:53  source
+
+	* Fixed swat0
+
+2010-10-07 12:44  source
+
+	* Updated documentation
+
+2010-10-07 12:20  source
+
+	* Added option not to convert HTML pages
+
+2010-10-06 21:39  source
+
+	* Added initial attribute/property value ranges conditional
+	* Added new XML element <value-range hi="" lo="" /> for facet browser
+	* Fixed make pivot bridge link conditional
+
+2010-10-06 21:37  source
+
+	* Fixed prevent buggy IRI to hit compiler
+
+2010-10-06 09:40  source
+
+	* Fixed problem compiling certain SPARQL constructions
+
+2010-10-06 09:35  source
+
+	* Added some new functions to XPATH virtual table
+	* Added optimizations to boolean expression evaluation
+
+2010-10-06 09:27  source
+
+	* Fixed added qualifier to stored proc creation
+
+2010-10-06 09:26  source
+
+	* Fixed moved some checks to header file for macro expansion
+
+2010-10-06 09:15  source
+
+	* Added support for CSV output mode
+
+2010-10-06 09:15  source
+
+	* Fixed compatibility with openssl 0.9.7
+
+2010-10-05 09:39  source
+
+	* Fixed when enlist starts we should have new xid or not listed
+
+2010-10-04 18:39  source
+
+	* Fixed if resource is not free e.q. count = 2 we most restore as other
+	  thread can kill it in the middle
+
+2010-10-04 14:40  source
+
+	* Fixed save should happen after checks, as jump would leave members
+	  NULL
+
+2010-09-27 22:37  source
+
+	* Fixed missing text from cache
+
+2010-09-27 19:41  source
+
+	* FIxed label
+
+2010-09-27 14:45  source
+
+	* Added linkblog pages
+	* Fixed smaller tweet me button on bottom
+	* Fixed template list
+
+2010-09-27 14:44  source
+
+	* Added ACL inheritance
+
+2010-09-27 14:44  source
+
+	* Fixed date update change in events/tasks
+
+2010-09-27 14:37  source
+
+	* Rebuild drivers
+
+2010-09-27 14:29  source
+
+	* Fixed issue with connection timeout
+
+2010-09-27 14:24  source
+
+	file linkblog.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:09 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_sec.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:40 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_val.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:41 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_ws.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:41 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_ann.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:39 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_bz.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:40 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_grp.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:40 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_ldap_include.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:40 +0000
+
+2010-09-27 14:23  source
+
+	file uiedit_nav.vspx was added on branch V6_0_0-DEVEL on 2010-09-27 14:45:40 +0000
+
+2010-09-27 14:23  source
+
+	* Fixed split uiedit into separate pages to get better response time
+	  when compiling
+	* Fixed 'Generate Certificate'
+
+2010-09-27 14:13  source
+
+	* Fixed minor issues
+
+2010-09-27 14:11  source
+
+	* Fixed ACL implementation
+
+2010-09-27 14:11  source
+
+	* Fixed take DynamicLocal into account
+
+2010-09-27 13:51  source
+
+	* FIxed client must not redefine mutex_enter as this will crash single
+
+2010-09-27 08:58  source
+
+	* Fixed use x-forwarded-for and remember it is forwarded
+
+2010-09-27 08:57  source
+
+	* Fixed use the redirect link for base when supplied
+
+2010-09-27 08:56  source
+
+	* Fixed check if m2 is a box
+
+2010-09-22 15:11  source
+
+	* Reverted patch
+
+2010-09-22 14:01  source
+
+	* Added xml_sign() for making pure XML signatures
+	* Added signature in host-meta xrd
+	* FIxed memleaks when doing xml signatures
+
+2010-09-22 13:56  source
+
+	* Fixed bad procedure name
+
+2010-09-22 13:06  source
+
+	* Fixed unified login pages
+	* Fixed upgraded ACL implementation
+	* Fixed Linkedin link
+
+2010-09-22 13:03  source
+
+	* Fixed upgraded ACL implementation
+
+2010-09-22 13:02  source
+
+	file summary.vspx was added on branch V6_0_0-DEVEL on 2010-09-22 13:56:50 +0000
+
+2010-09-22 13:02  source
+
+	* Added archive and summary pages
+	* Added new templates to vad
+
+2010-09-22 13:02  source
+
+	file archive.vspx was added on branch V6_0_0-DEVEL on 2010-09-22 13:56:49 +0000
+
+2010-09-22 13:02  source
+
+	file summary.vspx was added on branch V6_0_0-DEVEL on 2010-09-22 13:56:49 +0000
+
+2010-09-22 12:50  source
+
+	* Fixed minor issues
+
+2010-09-22 12:48  source
+
+	* Fixed vcard and vcal file import
+
+2010-09-22 12:48  source
+
+	* Fixed group ACL access
+
+2010-09-21 13:12  source
+
+	* Fixed load demo vad after tutorial
+
+2010-09-21 13:11  source
+
+	* Added missing file
+
+2010-09-21 11:34  source
+
+	* Fixed focus issue
+	* Fixed typo
+	* Fixed XRDS
+
+2010-09-21 11:33  source
+
+	file bg.png was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:52 +0000
+
+2010-09-21 11:33  source
+
+	file bg_page_title.png was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:33  source
+
+	file bg_page_title_inner.jpg was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:33  source
+
+	file default.css was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:52 +0000
+
+2010-09-21 11:33  source
+
+	file index.vspx was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:52 +0000
+
+2010-09-21 11:33  source
+
+	* Added new templates
+
+2010-09-21 11:33  source
+
+	file bg_content.png was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:33  source
+
+	file bg_header.png was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:33  source
+
+	file default.css was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:33  source
+
+	file index.vspx was added on branch V6_0_0-DEVEL on 2010-09-21 11:38:51 +0000
+
+2010-09-21 11:20  source
+
+	* Fixed serialize access to connection struct
+
+2010-09-20 10:14  source
+
+	* Fixed Id
+
+2010-09-20 09:51  source
+
+	* Added RDFa doctype
+	* Added new feature of fct to show certain graph
+
+2010-09-20 09:50  source
+
+	* Fixed http://dbpedia.org/property/name is not the name of the subject
+
+2010-09-20 09:23  source
+
+	* Added new feature of fct to show certain graph when fct is installed
+
+2010-09-20 09:20  source
+
+	file linkedin-large.png was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:56 +0000
+
+2010-09-20 09:20  source
+
+	file sign-in-with-twitter-d.png was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:56 +0000
+
+2010-09-20 09:20  source
+
+	file register.js was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:54 +0000
+
+2010-09-20 09:20  source
+
+	file twitter_login.vsp was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:55 +0000
+
+2010-09-20 09:20  source
+
+	file linkedin_login.vsp was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:53 +0000
+
+2010-09-20 09:20  source
+
+	file login.js was added on branch V6_0_0-DEVEL on 2010-09-20 09:25:53 +0000
+
+2010-09-20 09:20  source
+
+	* Added new login and register library
+	* Added WebID to 'My Profile'
+	* Added linkedin login
+	* Added new inde on OL accounts
+	* Added twitter login page
+	* Added login with Google account
+	* Fixed WebFinder to look at sameas
+	* Fixed X.509 certificates in user pages
+	* Fixed password problem
+	* Fixed group ACL access
+	* Fixed validation ACLs
+	* Fixed openID server parameters extraction
+	* Fixed create instance defaults
+	* Fixed use of timezone
+	* Fixed Safari and Chrome bug
+	* Fixed biographical date input
+
+2010-09-20 09:14  source
+
+	* Fixed filter problem with WebID
+
+2010-09-20 09:13  source
+
+	* Added ACL support for tasks
+	* Fixed group ACL access
+	* Fixed ACL table UI
+	* Fixed private access
+	* Fixed  validation ACLs
+
+2010-09-20 09:12  source
+
+	* Fixed group ACL access
+	* Fixed ACL group select
+	* Fixed ACL UI
+	* Fixed validation ACLs
+
+2010-09-20 09:11  source
+
+	* Added ACLs
+	* Fixed group ACL access
+	* Fixed private access
+
+2010-09-20 09:09  source
+
+	* Fixed group ACL access
+	* Fixed ACL table UI
+	* Fixed private access
+	* Fixed validation ACLs
+
+2010-09-20 08:55  source
+
+	* Added refresh=clean mode, to drop cache even if it is in the middle
+	  of sponging on another threads
+	* Added scheduler task to keep volume under some limit
+
+2010-09-20 08:27  source
+
+	* Fixed ACL testing now http returns 509
+
+2010-09-17 23:11  source
+
+	* Fixed when fct is installed, use the new feature of fct to show
+	  certain graphs
+
+2010-09-17 23:10  source
+
+	* Fixed hang in prefix check if there is single dot in prefix
+
+2010-09-17 23:10  source
+
+	* Fixed check log text should always be DV_STRING
+
+2010-09-17 23:08  source
+
+	* Added support for CXML
+
+2010-09-17 23:03  source
+
+	* Added strong optimization of SPARQL arithmatic and numerical
+	  comparisons
+
+2010-09-17 22:49  source
+
+	* Added initial support for RDB2RDF
+
+2010-09-17 22:05  source
+
+	* Added improvements for SPARQL-FED esp. to let XSLT access data
+	  from remote SPARQL endpoint
+
+2010-09-17 20:49  source
+
+	* Fixed rendezvous thread should never handle any signals
+
+2010-09-17 16:50  source
+
+	* Fixed moved include file to more appropriate place
+
+2010-09-17 16:48  source
+
+	* Fixed do not try when in V6 single mode
+
+2010-09-17 16:45  source
+
+	* Added new bifs that print start element, end elemend and empty
+	  element with some number of attributes. Attribute values are
+	  checked for NULL and print only non-NULLs to eliminate numerous
+	  IF statements in Virtuoso/PL
+
+2010-09-17 16:42  source
+
+	* Added bif that checks if some value is stored in given dictionary
+	  for a given key, without returning it. This is usefull if value is
+	  potentially big as it does not copy anything.
+
+2010-09-17 16:40  source
+
+	* Fixed let some string BIFs accept UNAME arguments
+
+2010-09-17 16:35  source
+
+	* Removed deprecated repl code
+
+2010-09-17 11:18  source
+
+	* Fixed isalnum needs unsigned char as negative values might trip asserts
+	  on some systems like Windows
+
+2010-09-15 23:54  source
+
+	* Fixed handling format like 2010-09-15T14:24:28Z without fraction part
+	* Fixed set local timezone
+
+2010-09-15 08:10  source
+
+	* Fixed redirects for tcn
+	* Fixed set default to html
+	* Fixed in order of browser preference
+
+2010-09-13 16:03  source
+
+	* Fixed issue with xs_q_4/foaf.vsp demo
+
+2010-09-09 19:19  source
+
+	* Added check
+
+2010-09-09 19:18  source
+
+	* FIxed print dict in dbg_* functions
+
+2010-09-09 16:02  source
+
+	* Fixed minor issue
+
+2010-09-09 15:32  source
+
+	* Added MIME types for .NET click-once, MS Office and MS WPF applications
+	* Added additional MIME types based on apache mime.types.txt
+
+2010-09-07 21:56  source
+
+	* Added geo for dbpedia
+	* Fixed wrong var names
+	* Fixed issue with IE
+	* Fixed deprecated call to OAT.Dom.applyStyle into OAT.Style.set
+	* Removed unused background
+
+2010-09-07 21:37  source
+
+	* Added fingerpoint hook
+
+2010-09-07 21:28  source
+
+	* Added oauth+openid hybrid
+	* Added JS validation routines
+	* Added fingerpoint hooks
+	* Fixed x509 order
+	* Fixed use ssl login if accessed via https
+	* Fixed https on endpoint
+	* Fixed openid for fingerpoint
+	* Fixed seeAlso lookups via WF/FP
+	* Fixed Facebook issues
+	* Fixed validation ACLs
+	* Fixed Gallery pane
+
+2010-09-07 21:28  source
+
+	file openid_oauth_test.vsp was added on branch V6_0_0-DEVEL on 2010-09-07 22:00:53 +0000
+
+2010-09-07 21:28  source
+
+	file validate.js was added on branch V6_0_0-DEVEL on 2010-09-07 22:00:54 +0000
+
+2010-09-07 21:24  source
+
+	* Fixed ACL
+
+2010-09-07 21:24  source
+
+	* Added ACL
+
+2010-09-07 21:23  source
+
+	* Fixed private access error
+
+2010-09-07 21:23  source
+
+	* Fixed private access error
+	* Fixed typo
+
+2010-09-07 19:55  source
+
+	* Minor fixes
+
+2010-09-07 19:55  source
+
+	* Added XRD meta
+
+2010-09-07 19:54  source
+
+	* Added attribution ontology
+
+2010-09-07 19:54  source
+
+	file attribution.owl was added on branch V6_0_0-DEVEL on 2010-09-07 21:58:11 +0000
+
+2010-09-01 12:57  source
+
+	file uiedit_groups.vspx was added on branch V6_0_0-DEVEL on 2010-09-07 22:00:53 +0000
+
+2010-09-01 12:57  source
+
+	file webid_select.vspx was added on branch V6_0_0-DEVEL on 2010-09-07 22:00:54 +0000
+
+2010-09-01 10:15  source
+
+	* Added support headers from url rewrite for static resources such
+	  as files
+
+2010-09-01 10:11  source
+
+	* Fixed link headers
+
+2010-08-31 12:12  source
+
+	* Added missing function
+
+2010-08-31 12:12  source
+
+	* Added support for IUD ops to XMLA endpoint
+
+2010-08-31 12:09  source
+
+	* Fixed return appropriate message based on the type of ACL result
+
+2010-08-31 11:45  source
+
+	* Added support for host-meta
+
+2010-08-30 13:46  source
+
+	* Updated documentation
+
+2010-08-30 13:37  source
+
+	* Fixed use short representations to make sorted by
+
+2010-08-30 13:35  source
+
+	* Fixed missing prototype
+
+2010-08-30 12:34  source
+
+	* Fixed use webfinger to do ssl authentication
+
+2010-08-30 12:21  source
+
+	* Fixed error message generation in execute
+	* Fixed encoding issue in directory listings generated from
+	  filesystem-hosted virtual directories
+
+2010-08-26 22:49  source
+
+	* FIxed i18n support for subject and address list
+
+2010-08-26 22:41  source
+
+	* Fixed typo
+
+2010-08-26 22:40  source
+
+	* Added Evri cartridge and ontology
+	* Added hNews cartridge
+
+2010-08-26 22:40  source
+
+	file evri2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-08-26 22:46:12 +0000
+
+2010-08-26 22:40  source
+
+	file hnews2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-08-26 22:46:12 +0000
+
+2010-08-26 22:40  source
+
+	file oplevri.owl was added on branch V6_0_0-DEVEL on 2010-08-26 22:46:12 +0000
+
+2010-08-26 22:34  source
+
+	* Added support for acct: scheme
+
+2010-08-26 22:33  source
+
+	* Added support for webfinger + OpenID
+	* Fixed login with webfinger
+	* Fixed login popup page
+	* Fixed sameAs validation values
+	* Fixed Facebook link
+	* Fixed iframe number
+	* Fixed certificate generator
+
+2010-08-26 22:30  source
+
+	* Fixed application settings page url
+
+2010-08-26 18:04  source
+
+	* Added support for host-meta
+
+2010-08-26 18:03  source
+
+	* Fixed if position is not valid, skip the iob and go to next
+
+2010-08-24 22:34  source
+
+	* Fixed set to NULL after free
+
+2010-08-22 16:04  source
+
+	* Added option for to validate in hours
+
+2010-08-22 13:06  source
+
+	* Added new SQL optimization trick to convert
+	  sprintf ('format', col0, col1, ..., colN) = exnp
+	  into more index friendly:
+	  ( col0 = sprintf_inverse ('format', expn, 2)[0] and
+	    col1 = sprintf_inverse ('format', expn, 2)[1] and ...
+	    colN = sprintf_inverse ('format', expn, 2)[N] )
+
+2010-08-20 10:12  source
+
+	* Fixed typo in BIF name
+	* Fixed SPARQL resultset output if some objects of an RDF storage are
+	  corrupted
+
+2010-08-20 10:10  source
+
+	* Fixed error on INSERT DATA with literals of non-default types
+
+2010-08-20 10:09  source
+
+	* Fixed issue with ill formed SPARQL requests send by SPARQL SERVICE
+	  clause with dynamic parameters
+
+2010-08-20 10:07  source
+
+	* Fixed issue parsing sparql function calls with zero arguments
+
+2010-08-18 08:41  source
+
+	* Fixed check dirsallowed before loading file
+
+2010-08-17 21:40  source
+
+	* Fixed use webfinger to do SSL authentication
+
+2010-08-17 18:29  source
+
+	* Added support to use webfinger for SSL authentication
+	* Disabled rel=me tweak
+
+2010-08-17 18:05  source
+
+	* Added Google Book cartridge
+
+2010-08-17 18:05  source
+
+	file google_book2rdf.xsl was added on branch V6_0_0-DEVEL on 2010-08-17 18:32:24 +0000
+
+2010-08-17 18:05  source
+
+	* Fixed use foaf ssl procedure
+
+2010-08-17 18:01  source
+
+	* Added get-certificate_info (10,cert,type, pass, 'subject field name
+	  e.g. emailAddress, OU etc.')
+
+2010-08-17 11:06  source
+
+	* FIxed sparql parse bug with NOT FROM NAMED queries like
+	  select distinct ?g ?p not from named virtrdf: where
+	  { graph ?g { ?s ?p ?o }}
+
+2010-08-17 10:23  source
+
+	* Fixed security issue in SPARQL
+	  A compiled and cached query may stay in its old state (not
+	  recompiled) after global security changes like
+	  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0) that should
+	  recompile most of queries cached for all users but it does not.
+
+2010-08-17 10:22  source
+
+	* Fixed build rules
+
+2010-08-17 09:25  source
+
+	* Fixed moved constant declarations of commonly used UNAMEs into
+	  separate file
+
+2010-08-16 10:10  source
+
+	* Added webfinger protocol
+	* Fixed cert gen on firefox with .net addon
+
+2010-08-16 10:09  source
+
+	* Fixed bug in re-install
+
+2010-08-16 10:07  source
+
+	* Fixed labels
+
+2010-08-16 10:07  source
+
+	* FIxed missing data for interval column
+
+2010-08-11 11:24  source
+
+	file webfinger.sql was added on branch V6_0_0-DEVEL on 2010-08-16 10:10:07 +0000
+
+2010-08-11 11:07  source
+
+	* Added support for define output:format "NT"
+
+2010-08-11 10:53  source
+
+	* Fixed issue with sparql subcode gen
+
+2010-08-10 18:47  source
+
+	* Fixed should not use escape here
+
+2010-08-10 18:45  source
+
+	* Added WebID share
+	* Fixed secure sponged VD setup
+
+2010-08-10 14:52  source
+
+	* Fixed wrong URL
+
+2010-08-10 07:04  source
+
+	file rdf_conf.vspx was added on branch V6_0_0-DEVEL on 2010-08-10 18:45:56 +0000
+
+2010-08-10 07:04  source
+
+	file tbl.js was added on branch V6_0_0-DEVEL on 2010-08-10 18:45:56 +0000
+
+2010-08-09 20:08  source
+
+	* Fixed some URL links
+
+2010-08-09 19:44  source
+
+	* Fixed support for source_uri attribute in sticker
+
+2010-08-08 11:55  source
+
+	* Fixed enhanced type recognition
+	* Fixed return errors when loading fails
+
+2010-08-08 11:55  source
+
+	* Fixed TOP has argument order of offset, limit
+
+2010-08-06 10:29  source
+
+	* Fixed issues with Rename
+	* Fixed issues with Upstreaming
+
+2010-08-06 10:04  source
+
+	file tbl.js was added on branch V6_0_0-DEVEL on 2010-08-06 10:30:03 +0000
+
+2010-08-06 10:03  source
+
+	* Added support for SSL and WebID
+
+2010-08-06 09:46  source
+
+	* Fixed skip constant ssl returned from temp table output
+
+2010-08-04 18:50  source
+
+	* Fixed clear conn vars after trx replay
+
+2010-08-04 09:34  source
+
+	* Updated documentation
+
+2010-08-04 07:37  source
+
+	* Added UI for rdb2rdf
+
+2010-08-04 07:37  source
+
+	* Fixed use subseq to handle blobs
+
+2010-08-04 07:35  source
+
+	* Fixed Activity log
+	* Fixed /about virtual dir
+	* Fixed rewrite http header in cert output
+
+2010-08-04 07:33  source
+
+	* Fixed Activity log
+	* Fixed file view
+	* Fixed filenames with .acl extension properties editing
+
+2010-08-04 07:32  source
+
+	* Fixed encoding problem
+
+2010-08-04 07:30  source
+
+	* Fixed Activity log
+
+2010-08-04 07:30  source
+
+	* Fixed Activity log
+	* Fixed uninstall DET folders
+	* Fixed 'ResFolder' type filters
+
+2010-08-04 07:10  source
+
+	* Added persistent xmlns UI
+
+2010-08-04 07:10  source
+
+	file persistent_xmlns.vspx was added on branch V6_0_0-DEVEL on 2010-08-04 07:38:10 +0000
+
+2010-08-04 07:03  source
+
+	* Added WebID based ACL support via https
+
+2010-08-04 07:02  source
+
+	* Fixed Tesco cartridge
+
+2010-08-04 07:02  source
+
+	file opltesco.owl was added on branch V6_0_0-DEVEL on 2010-08-04 07:39:47 +0000
+
+2010-08-04 06:58  source
+
+	* Fixed avoid errors later in process
+
+2010-08-04 06:53  source
+
+	* FIxed use X-Forwarded-Host when the instance is behind gateway
+
+2010-08-02 11:31  source
+
+	* Fixed when result from authentication is negative then return
+	  else WebID fals
+	* Fixed http auth checks
+
+2010-08-02 11:25  source
+
+	* Fixed keep mime hash in sync
+
+2010-08-02 11:23  source
+
+	* Fixed do not allow sponger to change log mode explicitly to no-lock and
+	  row-autocommit
+
+2010-08-02 11:20  source
+
+	* Added support for POP3 over SSL
+
+2010-08-02 07:40  source
+
+	* Added global X509 CA repository
+
+2010-07-29 16:25  source
+
+	* Updated documentation
+
+2010-07-29 16:17  source
+
+	* Fixed dynlocal format must be replaced by host as in host header
+
+2010-07-29 16:14  source
+
+	* Added common api FOAF_SSL_WEBID_GET
+	* Added setting for online certificate service
+	* Added https link in header
+	* Fixed online accounts
+	* Fixed WebID
+	* Fixed alt name can have multiple values
+
+2010-07-28 12:26  source
+
+	* Fixed size of res column to fit side menu on smaller screens like
+	 iPhone
+
+2010-07-28 12:10  source
+
+	* Fixed minor issues
+
+2010-07-26 21:01  source
+
+	* Fixed when http auth fails, must keep the http status as 401
+
+2010-07-26 12:59  source
+
+	* Fixed alt names can have multiple values
+	* Fixed paths creation
+	* Fixed users select
+	* Fixed renamed User Login to Identify Yourself
+
+2010-07-26 12:58  source
+
+	* Fixed path creation
+	* Fixed URLs
+	* Fixed users select
+
+2010-07-26 12:58  source
+
+	* Fixed path creation
+	* Fixed URLs
+
+2010-07-26 09:25  source
+
+	file select.gif was added on branch V6_0_0-DEVEL on 2010-07-26 12:59:16 +0000
+
+2010-07-23 19:44  source
+
+	* Fixed bug with WebDAVFS client
+
+2010-07-23 19:43  source
+
+	* Added continue handler to catch missing graph group signal
+
+2010-07-23 19:42  source
+
+	* Fixed URL after login
+	* FIxed view.vsp not found problem
+
+2010-07-23 19:39  source
+
+	* Adde additional endpoint
+	* Fixed splash screen
+	* Fixed error message when JavaScript is not available
+	* Fixed geo location
+
+2010-07-23 19:36  source
+
+	* Added new lock icon ref
+	* Fixed online services validation
+	* Fixed IE UI profile view
+	* Fixed multiple certificates in UI profile
+	* Fixed issue with "Creator of"
+	* Fixed image button for users pages
+	* Fixed browser related problems
+	* Fixed labels
+
+2010-07-23 19:31  source
+
+	* Removed deprecated files
+
+2010-07-23 15:56  source
+
+	* Fixed auth bug with WebDAVFS client
+
+2010-07-20 13:08  source
+
+	* Fixed minor issues
+
+2010-07-20 13:01  source
+
+	* Fixed WebKit problems with UI profile
+
+2010-07-20 13:01  source
+
+	* Fixed sync security profile
+
+2010-07-19 14:50  source
+
+	* Added discussion page rewrite rules
+	* Fixed change Member ID to User ID
+	* Fixed ODS to Digest in Login/Register form
+	* Fixed X.509 page for IE
+
+2010-07-19 14:48  source
+
+	* Fixed URLs
+
+2010-07-19 14:39  source
+
+	* Fixed missing dependency
+
+2010-07-19 14:39  source
+
+	* Fixed ordering to work with IE 7/8
+
+2010-07-19 07:12  source
+
+	* Fixed version
+
+2010-07-19 07:11  source
+
+	* Fixed some issues with sparql queries returning strings instead of IRIs
+
+2010-07-19 07:08  source
+
+	* Added explain if params are copied
+
+2010-07-19 07:08  source
+
+	* Fixed dir listing to use UTF-8 to show chars other than latin1
+
+2010-07-19 06:59  source
+
+	* Fixed issue with inferencing
+
+2010-07-19 06:59  source
+
+	* Fixed compiler warnings
+
+2010-07-14 21:18  source
+
+	* Fixed following checkpoint kill recovery remap extents may have
+	  allocated pages with no correspoinding logical page because recovery
+	  performs unremap. Therefor if em remap page is allocated in em but
+	  free in dbs freemap, disregards and reset em allocation, if no logical
+	  page. If logical page, concider the dbs freeset in errror and mark page
+	  as allocated.
+
 2010-07-09 15:57  source
 
 	* Updated version to 6.1.2 for final release
