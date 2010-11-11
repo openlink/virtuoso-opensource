@@ -1985,9 +1985,12 @@ create procedure AB.WA.ab_tree2(
   retValue := vector ();
 
   if ((node_type = 'u') and (node_id = -1))
-    for (select distinct U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
+  {
+    for (select distinct U_ID, U_NAME from AB..GRANTS_VIEW where id = user_id order by 2) do
+    {
       retValue := vector_concat(retValue, vector(U_NAME, AB.WA.make_node ('u', U_ID), AB.WA.make_path(path, 'u', U_ID)));
-
+    }
+  }
   return retValue;
 }
 ;
@@ -2006,8 +2009,10 @@ create procedure AB.WA.ab_node_has_childs (
   node_type := AB.WA.node_type(node);
 
   if ((node_type = 'u') and (node_id = -1))
-    if (exists (select 1 from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID))
+  {
+    if (exists (select 1 from AB..GRANTS_VIEW where id = user_id))
       return 1;
+  }
 
   return 0;
 }
@@ -5281,9 +5286,9 @@ create procedure AB.WA.search_sql (
          '  p.P_UPDATED     P_UPDATED    \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p,             \n' ||
-         '  AB.WA.GRANTS g               \n' ||
+         '  AB..GRANTS_PERSON_VIEW g     \n' ||
          'where p.P_ID = g.G_PERSON_ID   \n' ||
-         '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
+         '  and g.TO_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
   }
   S := 'select <MAX> * from (' || S || ') x';
   if (account_rights = '')

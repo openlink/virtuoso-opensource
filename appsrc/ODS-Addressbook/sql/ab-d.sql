@@ -70,6 +70,8 @@ AB.WA.exec_no_error ('DROP type wa_AddressBook');
 
 -- Views
 AB.WA.exec_no_error ('DROP view AB..TAGS_VIEW');
+AB.WA.exec_no_error ('DROP view AB..GRANDS_PERSON_VIEW');
+AB.WA.exec_no_error ('DROP view AB..GRANDS_VIEW');
 
 -- Registry
 registry_remove ('ab_path');
