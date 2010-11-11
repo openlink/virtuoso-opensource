@@ -90,7 +90,7 @@
         }
         return;
       }
-      if (self.v_mode not in ('simple', 'opensearch'))
+      if (self.v_mode in ('simple', 'opensearch'))
       {
         AB.WA.xml_set('MyContacts', data, 1);
       } else {

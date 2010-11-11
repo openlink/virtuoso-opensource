@@ -1144,10 +1144,8 @@
                                                         null                           P_TAGS,
                                                         null                           P_UPDATED,
                                                         null                           P_CREATED
-                                                   from AB.WA.GRANTS,
-                                                        DB.DBA.SYS_USERS
-                                                  where G_GRANTEE_ID = <USER_ID>
-                                                    and G_GRANTER_ID = U_ID) x
+                                                       from AB..GRANTS_VIEW
+                                                      where id = <USER_ID>) x
                                             where 1 = 1';
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
                       }
@@ -1161,10 +1159,10 @@
                                                         a.P_UPDATED                     P_UPDATED,
                                                         a.P_CREATED                     P_CREATED
                                                    from AB.WA.PERSONS a,
-                                                        AB.WA.GRANTS b
+                                                            AB..GRANTS_PERSON_VIEW b
                                                   where a.P_ID = b.G_PERSON_ID
-                                                    and b.G_GRANTER_ID = <ID>
-                                                    and b.G_GRANTEE_ID = <USER_ID>) x
+                                                        and b.FROM_ID = <ID>
+                                                        and b.TO_ID = <USER_ID>) x
                                             where 1 = 1';
                       control.ds_sql := replace(control.ds_sql, '<ID>', AB.WA.node_suffix(self.abNode));
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
@@ -1394,7 +1392,7 @@
                   </th>
                   <td>
                     <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=mc&amp;params=s_grants:s1;',520)" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?form=F1&dst=mc&amp;params=s_grants:s1;',520)" class="button" />
                     <input type="button" value="Clear" onclick="javascript: document.F1.elements['s_grants'].value = ''" class="button" />
                   </td>
                 </tr>
@@ -2547,7 +2545,7 @@
                                     L := 1;
                                     if (self.abAction <> 'view')
                                     {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', acl_values[N], 'U'));
                                     } else {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
                                     }
@@ -2560,7 +2558,7 @@
                         	</td>
                           <vm:if test="self.abAction <> 'view'">
                             <td valign="top" nowrap="nowrap">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1'}});" />
                             </td>
                           </vm:if>
                         </tr>
