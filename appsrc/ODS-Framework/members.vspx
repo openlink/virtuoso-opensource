@@ -38,13 +38,15 @@
       <![CDATA[
         select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, deserialize(WAI_ACL)
           into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc, self.iacl
-          from WA_INSTANCE
+          from DB.DBA.WA_INSTANCE
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
           self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
         if (self.instance_descr = 'Blog')
+        {
           self.ihome := self.inst.wa_home_url();
-        if (self.wa_type in ('oMail'))
+        }
+        else if (self.wa_type in ('oMail'))
         {
           declare tmp varchar;
 
@@ -88,6 +90,16 @@
         <h3 class="page_title">
           <v:label value="--self.iname"/>
         </h3>
+  		  <v:button name="mem_Back" value="''" action="simple" style="url" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Back to Applications';
+            ]]>
+          </v:before-render>
+ 		      <v:on-post>
+     			  self.vc_redirect ('services.vspx');
+ 		      </v:on-post>
+  		  </v:button>
         <v:template name="template_01" type="simple" enabled="--case when self.wa_type in ('oDrive', 'oMail', 'IM') or (self.imodel = 1) then 0 else 1 end">
           <fieldset>
             <legend><b>Members</b></legend>
@@ -733,6 +745,9 @@
       <?vsp
                         declare N integer;
 
+                        if (self.wa_type in ('oDrive'))
+                          self.iacl := ODRIVE.WA.aci_load (sprintf('/DAV/home/%s/', self.u_name));
+
                         for (N := 0; N < length (self.iacl); N := N + 1)
                         {
                           http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], self.iacl[N][1], case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
@@ -754,6 +769,10 @@
                   update DB.DBA.WA_INSTANCE
                      set WAI_ACL = serialize (self.iacl)
                    where WAI_ID = self.iid;
+
+                  if (self.wa_type in ('oDrive'))
+                    ODRIVE.WA.DAV_PROP_SET (sprintf('/DAV/home/%s/', self.u_name), 'virt:aci_meta_n3', ODRIVE.WA.aci_n3 (self.iacl));
+
                   commit work;
 
        		        self.vc_data_bind(e);

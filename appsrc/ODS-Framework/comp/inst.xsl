@@ -29,7 +29,7 @@
     <xsl:template match="vm:instance-settings">
 
       <tr>
-        <th><label for="ianame1"><?V self.instance_descr ?>:</label>
+        <th><label for="ianame1"><?V self.instance_descr ?></label>
           <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
         </th>
         <td colspan="2">
@@ -113,12 +113,13 @@
             declare domain any;
             domain:=null;
             domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-            if ((domain is null or length(domain)=0) and is_http_ctx ()) {
+            if ((domain is null or length(domain)=0) and is_http_ctx ())
+            {
               declare lines any;
               lines := http_request_header ();
               if (isarray (lines))
                 domain := http_request_header (lines, 'Host', null, null);
-            };
+            }
           ?>
           http://<?V domain||self.ihome?>
         </td>
@@ -129,7 +130,7 @@
             ?>
             <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
             <?vsp
-              };
+              }
             ?>
           </xsl:if>
         </td>

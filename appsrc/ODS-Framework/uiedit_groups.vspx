@@ -120,7 +120,7 @@
                           from DB.DBA.SYS_USERS a,
                                DB.DBA.WA_GROUPS b
                          where a.U_IS_ROLE   = 1
-                           and a.U_ID        = b.WAG_USER_ID
+                           and a.U_ID      = b.WAG_GROUP_ID
                            and b.WAG_ID      = self.fg_id;
 
                         self.fg_members := vector ();

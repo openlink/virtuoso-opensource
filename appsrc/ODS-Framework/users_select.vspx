@@ -231,7 +231,7 @@ input.button {
                   {
                     group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a where (a.U_IS_ROLE=1) and (upper(a.U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
                   } else {
-                    group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a, ODRIVE.WA.GROUPS b, DB.DBA.SYS_USERS c where (a.U_ID=b.GROUP_ID) and (a.U_IS_ROLE=1) and (b.USER_ID=c.U_ID) and (c.U_NAME=\'%s\') and (upper(a.U_NAME) like upper(\'%s\') and (a.U_ID<>5) and (a.U_ID<>6))', self.u_name, self.v_mask);
+                    group_sql := sprintf('select ''Group'' U_TYPE, a.U_NAME, coalesce(a.U_FULL_NAME, a.U_NAME) U_FULL_NAME from DB.DBA.SYS_USERS a, DB.DBA.WA_GROUPS b, DB.DBA.SYS_USERS c where (a.U_ID=b.WAG_GROUP_ID) and (a.U_IS_ROLE=1) and (b.WAG_USER_ID=c.U_ID) and (c.U_NAME=\'%s\') and (upper(a.U_NAME) like upper(\'%s\') and (a.U_ID<>5) and (a.U_ID<>6))', self.u_name, self.v_mask);
                   }
               }
               if (self.v_filter <> 'g')
