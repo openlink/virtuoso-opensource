@@ -102,10 +102,11 @@ void sec_user_disable (caddr_t u_name, int flag);
 int set_user_id (client_connection_t * cli, caddr_t name, caddr_t preserve_qual);
 
 #define USER_SHOULD_EXIST 0x1
-#define USER_SHOULD_BE_SQL_ENABLED 0x2
-#define USER_SHOULD_BE_DAV_ENABLED 0x4
-#define USER_NOBODY_IS_PERMITTED 0x8
-#define USER_SPARQL_IS_PERMITTED 0x10
+#define USER_SHOULD_BE_LOGIN_ENABLED 0x2
+#define USER_SHOULD_BE_SQL_ENABLED 0x4
+#define USER_SHOULD_BE_DAV_ENABLED 0x8
+#define USER_NOBODY_IS_PERMITTED 0x1000
+#define USER_SPARQL_IS_PERMITTED 0x2000
 extern caddr_t bif_user_id_or_name_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 extern user_t *bif_user_t_arg_int (caddr_t uid_or_uname, int nth, const char *func, int flags, int error_level);
 extern user_t *bif_user_t_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int flags, int error_level);
