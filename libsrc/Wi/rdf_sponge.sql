@@ -1402,6 +1402,12 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
               -- dbg_obj_princ ('immutable');
               goto graph_is_ready;
             }
+	  if (imm = 'inference-graphs' and exists (select 1 from DB.DBA.SYS_RDF_SCHEMA where RS_URI = dest))
+	    {
+              res_graph_iri := dest;
+              -- dbg_obj_princ ('immutable');
+              goto graph_is_ready;
+	    }
 	}
     }
   -- dbg_obj_princ ('will sponge...');
