@@ -1404,10 +1404,12 @@ wi_write_dirty (void)
 
 
 void
-dbs_backup_check (dbe_storage_t * dbs)
+dbs_backup_check (dbe_storage_t * dbs, int flag)
 {
 #if 1
   int n;
+  if (flag != CPT_INC_RESET)
+    return;
   for (n = 0; n < dbs->dbs_n_pages; n++)
     {
       int fl;
@@ -1877,7 +1879,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
     {
       dbs_cache_check (dbs, IT_CHECK_ALL);
-      dbs_backup_check (dbs);
+      dbs_backup_check (dbs, shutdown);
     }
   END_DO_SET();
 
@@ -1975,7 +1977,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
     {
       dbs_cache_check (dbs, IT_CHECK_POST);
-      dbs_backup_check (dbs);
+      dbs_backup_check (dbs, shutdown);
     }
   END_DO_SET();
   if (CPT_NORMAL == shutdown)
