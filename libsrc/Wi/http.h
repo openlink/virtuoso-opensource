@@ -365,6 +365,7 @@ void http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t hea
 void zlib_box_gzip_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret);
 
 extern caddr_t http_sys_find_best_accept_impl (caddr_t * qst, state_slot_t *ret_val_ssl, caddr_t accept_strg, caddr_t *supp, const char *fname);
+void ws_http_error (ws_connection_t * ws, const caddr_t code, const caddr_t message, const caddr_t uri, const caddr_t path);
 
 
 #ifdef _SSL

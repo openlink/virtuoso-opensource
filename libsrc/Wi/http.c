@@ -2037,6 +2037,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       code = "HTTP/1.1 509 Bandwidth Limit Exceeded";
       HTTP_SET_STATUS_LINE (ws, code, 1);
       strses_flush (ws->ws_strses);
+      ws_http_error (ws, "HTTP/1.1 509 Bandwidth Limit Exceeded", "Bandwidth Limit Exceeded", ws->ws_p_path_string, ws->ws_path_string);
       len = strses_length (ws->ws_strses);
     }
 
