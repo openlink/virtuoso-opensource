@@ -3946,6 +3946,12 @@ ws_soap (ws_connection_t * ws, int soap_version, caddr_t method_fld)
 
   if (!err)
     {
+      if (NULL == req_xml)
+	{
+	  err = ws_soap_error (ws->ws_strses, "300", "SOAPS", "Can\'t read the SOAP request",
+	      soap_version, uddi_action, &http_resp_code, NULL);
+	  goto end;
+	}
       /* In the following call of xml_make_tree() query_instance_t * is not needed: req_xml is non-BLOB. */
       if (DO_LOG(LOG_SOAP))
 	{
