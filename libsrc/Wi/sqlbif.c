@@ -12077,7 +12077,7 @@ qr_set:
     }
   if (text != _text)
     dk_free_box (text);
-  named_pars = qr_have_named_params (qr);
+  named_pars = IS_BOX_POINTER(params) && qr_have_named_params (qr);
   new_params = make_qr_exec_params(params, named_pars);
 
   err = qr_exec(qi->qi_client, qr, qi, NULL, NULL, &lc,
