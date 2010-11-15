@@ -481,7 +481,7 @@ sqlc_simple_case (sql_comp_t * sc, ST * tree, dk_set_t * code)
   int was_else = 0;
   jmp_label_t end = sqlc_new_label (sc);
   int n_exps = BOX_ELEMENTS (tree->_.comma_exp.exps);
-  state_slot_t *res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
+  state_slot_t *res = sqlc_new_temp (sc, "callretSimpleCASE", DV_UNKNOWN);
   state_slot_t *sel;
   int inx;
   ST **exps = tree->_.comma_exp.exps;
@@ -546,7 +546,7 @@ sqlc_searched_case (sql_comp_t * sc, ST * tree, dk_set_t * code)
   int was_else = 0;
   jmp_label_t end = sqlc_new_label (sc);
   int n_exps = BOX_ELEMENTS (tree->_.comma_exp.exps);
-  state_slot_t *res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
+  state_slot_t *res = sqlc_new_temp (sc, "callretSearchedCASE", DV_UNKNOWN);
   int inx;
   ST **exps = tree->_.comma_exp.exps;
   df_elt_t *dfe = sc->sc_so ? sqlo_df (sc->sc_so, tree) : NULL;
@@ -745,7 +745,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
 	state_slot_t *res = sqlc_check_const_call (sc, tree);
 	if (res)
 	  seg_return (res);
-	res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
+	if (NULL != tree->_.call.name)
+	  res = sqlc_new_temp (sc, tree->_.call.name, DV_UNKNOWN);
+	else
+	  res = sqlc_new_temp (sc, "callret", DV_UNKNOWN);
 	res->ssl_is_callret = 1;
 	tree = sqlo_udt_check_method_call (sc->sc_so, sc, tree);
 	sqlc_call_exp (sc, code, res, tree);

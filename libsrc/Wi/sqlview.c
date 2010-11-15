@@ -856,14 +856,14 @@ sqlc_copy_union_as (ST * exp, ST * as, int inx)
   return copy;
 }
 
-
 ST **
-sqlc_selection_names (ST * tree)
+sqlc_selection_names (ST * tree, int only_edit_tree)
 {
   int inx;
-  ST ** sel = (ST **) t_box_copy ((caddr_t) tree->_.select_stmt.selection);
+  ST ** sel = (only_edit_tree ? (ST **)(tree->_.select_stmt.selection) : (ST **) t_box_copy ((caddr_t)(tree->_.select_stmt.selection)));
   dk_set_t double_set = NULL;
   dk_set_t names_set = NULL;
+
   /*if (SQLO_ENABLE (sqlc_client()))*/
     {
       DO_BOX (ST *, exp, inx, sel)
@@ -893,15 +893,14 @@ next:;
 	  if (dk_set_member (double_set, (caddr_t) (ptrlong) inx))
 	    {
 	      char tname[100];
-
 	      snprintf (tname, sizeof (tname), "computed%d", inx);
+	      if (!only_edit_tree)
 	      sel[inx] = sqlc_copy_union_as (
-		  (ST*) t_list (3, COL_DOTTED,
-				NULL, t_box_string (tname)),
+		  (ST*) t_list (3, COL_DOTTED, NULL, t_box_string (tname)),
 		  exp, inx);
 	      exp->_.as_exp.name = t_box_string (tname);
 	    }
-	  else
+	  else if (!only_edit_tree)
 	    {
 	      sel[inx] = sqlc_copy_union_as (
 		  (ST*) t_list (3, COL_DOTTED,
@@ -913,6 +912,7 @@ next:;
 	{
 	  tree->_.select_stmt.selection[inx] = (caddr_t) t_list (5,
 	      BOP_AS, exp, NULL, t_box_string (exp->_.col_ref.name), NULL);
+	  if (!only_edit_tree)
 	  sel[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy_tree (exp->_.col_ref.name));
 	}
       else
@@ -920,6 +920,7 @@ next:;
 	  char tname[100];
 	  snprintf (tname, sizeof (tname), "computed%d", inx);
 	  tree->_.select_stmt.selection[inx] = (caddr_t) t_list (5, BOP_AS, tree->_.select_stmt.selection[inx], NULL, t_box_string (tname), NULL);
+	  if (!only_edit_tree)
 	  sel[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_string (tname));
 	}
     }
@@ -943,7 +944,7 @@ sqlc_union_dt_wrap (ST * tree)
       texp = sqlp_infoschema_redirect (t_listst (9,
 	    TABLE_EXP, t_list (1, t_list (3, DERIVED_TABLE, tree, t_box_string ("__"))),
 		   NULL, NULL, NULL, order, flags,opts, NULL));
-      sel = (ST*) t_list (5, SELECT_STMT, NULL, sqlc_selection_names (left), NULL,
+      sel = (ST*) t_list (5, SELECT_STMT, NULL, sqlc_selection_names (left, 0), NULL,
 			texp);
       return sel;
     }
@@ -976,7 +977,7 @@ sqlc_top_select_dt (sql_comp_t * sc, ST * tree)
   top = SEL_TOP (tree);
   if (top)
     {
-      ST * out_names = (ST *) sqlc_selection_names (tree);
+      ST * out_names = (ST *) sqlc_selection_names (tree, 0);
       sel = (ST*) /*list*/ t_list (5, SELECT_STMT, top, tree->_.select_stmt.selection, NULL,
 			tree->_.select_stmt.table_exp);
       texp = (ST*) /*list*/ t_list (9, TABLE_EXP,

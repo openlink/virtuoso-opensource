@@ -403,7 +403,7 @@ report_error:
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s.", proc_name);
+    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d", proc_name, (int)eff_g_id, (int)eff_u_id);
   if (1 || ins->_.call.kwds || 0 == param_len)
     {
       int formal_len = dk_set_length (proc->qr_parms);

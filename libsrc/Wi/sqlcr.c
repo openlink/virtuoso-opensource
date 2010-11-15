@@ -596,7 +596,7 @@ sqlc_top_select_wrap_dt (sql_comp_t * sc, ST * tree)
   top = SEL_TOP (tree);
   if (top)
     {
-      ST * out_names = (ST *) sqlc_selection_names (tree);
+      ST * out_names = (ST *) sqlc_selection_names (tree, 0);
       ST ** oby = tree->_.select_stmt.table_exp->_.table_exp.order_by;
       if (oby)
 	{

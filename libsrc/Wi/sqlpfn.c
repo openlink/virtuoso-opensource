@@ -1772,6 +1772,30 @@ sqlp_xml_select_flags (char * mode, char * elt)
   return v;
 }
 
+#if 0
+void
+sqlp_tweak_selection_names (ST * tree)
+{
+  ST ** sel;
+  int inx;
+  if (!ST_P (tree, SELECT_STMT))
+    return;
+  sel = (ST **)(tree->_.select_stmt.selection);
+  DO_BOX (ST *, exp, inx, sel)
+    {
+      int inx2;
+      if (!ST_P (exp, BOP_AS))
+        goto tweak; /* see below */
+      for (inx2 = inx; inx2--; /* no step */)
+        if (!strcmp (sel[inx2]->_.as_exp.name, exp->_.as_exp.name))
+          goto tweak; /* see below */
+    }
+  END_DO_BOX;
+  return;
+tweak:
+  sqlc_selection_names (tree, 1);
+}
+#endif
 
 ptrlong
 sqlp_bunion_flag (ST * l, ST * r, long f)
@@ -1781,6 +1805,23 @@ sqlp_bunion_flag (ST * l, ST * r, long f)
   return ((ptrlong) (f ||  lf || rf));
 }
 
+ST *
+sqlp_wpar_nonselect (ST *subq)
+{
+  ST *tbl_ref, *from_clause, *tbl_exp, **selection, *wrapped_subq;
+  char tname[100];
+  if (ST_P (subq, SELECT_STMT))
+    return subq;
+  snprintf (tname, sizeof (tname), "_subq_%ld", (long)((ptrlong)(subq)));
+  tbl_ref = t_listst (3, DERIVED_TABLE, sqlp_view_def (NULL, subq, 0), t_box_string (tname));
+  from_clause = t_listst (1, tbl_ref);
+  tbl_exp = sqlp_infoschema_redirect (t_listst (9, TABLE_EXP, from_clause, NULL, NULL, NULL, NULL, (ptrlong) 0, NULL, NULL));
+  selection = (ST **)t_list (1, t_listst (3, COL_DOTTED, (long) 0, STAR));
+  wrapped_subq = t_listst (5, SELECT_STMT, NULL,
+    sqlp_stars (sqlp_wrapper_sqlxml (selection), tbl_exp->_.table_exp.from) , NULL, tbl_exp);
+  sqlp_breakup (wrapped_subq);
+  return wrapped_subq;
+}
 
 ST *
 sqlp_inline_order_by (ST *tree, ST **oby)

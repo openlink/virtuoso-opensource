@@ -2240,8 +2240,8 @@ udt_sql_method_call (caddr_t *qst, sql_class_t *udt, caddr_t udi,
 	}
       if (!sec_udt_check_qst (udt, qst, GR_EXECUTE) &&
 	  !sec_proc_check (proc, eff_g_id, eff_u_id))
-	sqlr_new_error ("42000", "SR186", "No permission to execute method %s of type %s.",
-	    mtd->scm_name, mtd->scm_class->scl_name);
+	sqlr_new_error ("42000", "SR186", "No permission to execute method %s of type %s with user ID %d, group ID %d",
+	    mtd->scm_name, mtd->scm_class->scl_name, (int)eff_g_id, (int)eff_u_id );
 
       BOX_AUTO (ptmp, pars_auto, param_len, DV_ARRAY_OF_POINTER);
       pars = (caddr_t *) ptmp;
