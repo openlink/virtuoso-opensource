@@ -1102,6 +1102,7 @@ struct buffer_desc_s
   char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
   char *                bd_set_wr_file;
   long                  bd_set_wr_line;
+  thread_t *		bd_thr_el;
 #endif
 #ifdef PAGE_TRACE
   long		bd_trx_no;
@@ -1121,6 +1122,7 @@ struct buffer_desc_s
 	(buf)->bd_enter_file = file; \
 	(buf)->bd_enter_line = line; \
 	(buf)->bd_el_flag = 1; \
+	(buf)->bd_thr_el = __self; \
 	if (!__self->thr_pg_dbg) \
 	  __self->thr_pg_dbg = (void *) hash_table_allocate (31); \
 	sethash ((void *)(buf), (dk_hash_t *) __self->thr_pg_dbg, (void*)(ptrlong)(buf)->bd_page); \
@@ -1136,6 +1138,7 @@ struct buffer_desc_s
 	(buf)->bd_leave_file = __file; \
 	(buf)->bd_leave_line = __line; \
 	(buf)->bd_el_flag = 2; \
+	(buf)->bd_thr_el = __self; \
       } \
     } while (0)
 #define BUF_DBG_LEAVE(buf) BUF_DBG_LEAVE_1((buf), file, line)
