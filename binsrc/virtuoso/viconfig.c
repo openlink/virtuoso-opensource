@@ -2146,7 +2146,8 @@ failed:
   log (L_ERR, "If you are absolutely sure that this is not the case, please try");
   log (L_ERR, "to remove the file %s and start again.", c_lock_file);
 
-  close (lck_fd);
+  if (lck_fd >= 0)
+    close (lck_fd);
   lck_fd = -1;
 
   return -1;
