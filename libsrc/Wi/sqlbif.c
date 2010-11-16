@@ -103,6 +103,7 @@ extern void bif_soap_init (void);
 extern void bif_http_client_init (void);
 extern void bif_smtp_init (void);
 extern void bif_pop3_init (void);
+extern void bif_imap_init (void);
 extern void bif_nntp_init (void);
 extern void bif_regexp_init(void);
 extern void bif_crypto_init(void);

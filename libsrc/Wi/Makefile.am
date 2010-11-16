@@ -32,7 +32,7 @@ if WITH_KERBEROS
 endif
 
 if WITH_IMSG
-    IMSG_BIF= bif_pop3.c bif_nntp.c
+    IMSG_BIF= bif_pop3.c bif_imap.c bif_nntp.c
 endif
 
 if WITH_PLDEBUG
