@@ -1749,12 +1749,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
   declare exec_time, exec_db_activity any;
+  declare __debug_mode integer;
+  declare qtxt integer;
   declare save_mode, save_dir, fname varchar;
   declare save_dir_id any;
   declare help_topic varchar;
   -- dbg_obj_princ (path, params, lines);
   if (registry_get ('__sparql_endpoint_debug') = '1')
     {
+      __debug_mode := 1;
       for (declare i int, i := 0; i < length (params); i := i + 2)
         {
 	  if (isstring (params[i+1]))
@@ -1787,9 +1790,17 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   help_topic := get_keyword ('help', params, null);
   if (help_topic is not null)
     goto brief_help;
+
+  def_qry := get_keyword('qtxt', params, '');
+
+  if ('' = def_qry)
+    {
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
     def_qry := 'SELECT * WHERE {?s ?p ?o}';
+    }
+  else qtxt := 1;
+
   def_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
   save_mode := get_keyword ('save', params, null);
@@ -1843,14 +1854,21 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       DB.DBA.SPARQL_WSDL11 (lines);
       return;
     }
+
+  if (__debug_mode) dbg_printf ('%d', soap_ver);
+
   can_sponge := coalesce ((select top 1 1
       from DB.DBA.SYS_USERS as sup
         join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
         join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
       where sup.U_NAME = 'SPARQL' and sub.U_NAME = 'SPARQL_SPONGE' ), 0);
   can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
+
   paramcount := length (params);
-  if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and soap_ver = 0)
+
+  if ((0 = paramcount) or
+      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0) or
+      qtxt = 1)
     {
        declare redir varchar;
        redir := registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT');
