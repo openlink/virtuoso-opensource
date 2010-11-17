@@ -1115,12 +1115,12 @@ struct buffer_desc_s
 #define BUF_ROW(buf, pos) ((buf)->bd_buffer + (buf)->bd_content_map->pm_entries[pos])
 
 #ifdef PAGE_DEBUG
-#define BUF_DBG_ENTER(buf) \
+#define BUF_DBG_ENTER_1(buf, __file, __line) \
     do { \
       if (buf) { \
 	thread_t * __self = THREAD_CURRENT_THREAD; \
-	(buf)->bd_enter_file = file; \
-	(buf)->bd_enter_line = line; \
+	(buf)->bd_enter_file = __file; \
+	(buf)->bd_enter_line = __line; \
 	(buf)->bd_el_flag = 1; \
 	(buf)->bd_thr_el = __self; \
 	if (!__self->thr_pg_dbg) \
@@ -1134,7 +1134,8 @@ struct buffer_desc_s
 	thread_t * __self = THREAD_CURRENT_THREAD; \
 	if (__self->thr_pg_dbg) { \
 	  remhash ((void*) (buf), (dk_hash_t *) __self->thr_pg_dbg); \
-	} else if ((buf)->bd_el_flag == 1) GPF_T1 ("Page not entered"); \
+	} else if ((buf)->bd_el_flag == 1) \
+	  log_error ("Page debug info missing at %s:%ld, entered at %s:%ld", __file, __line, (buf)->bd_enter_file, (buf)->bd_enter_line); \
 	(buf)->bd_leave_file = __file; \
 	(buf)->bd_leave_line = __line; \
 	(buf)->bd_el_flag = 2; \
@@ -1143,6 +1144,8 @@ struct buffer_desc_s
     } while (0)
 #define BUF_DBG_LEAVE(buf) BUF_DBG_LEAVE_1((buf), file, line)
 #define BUF_DBG_LEAVE_INL(buf) BUF_DBG_LEAVE_1((buf), __FILE__, __LINE__)
+#define BUF_DBG_ENTER(buf) BUF_DBG_ENTER_1((buf), file, line)
+#define BUF_DBG_ENTER_INL(buf) BUF_DBG_ENTER_1((buf), __FILE__, __LINE__)
 
 #define THR_DBG_PAGE_CHECK \
   do \
@@ -1163,6 +1166,7 @@ struct buffer_desc_s
 
 #else
 #define BUF_DBG_ENTER(buf)
+#define BUF_DBG_ENTER_INL(buf)
 #define BUF_DBG_LEAVE(buf)
 #define BUF_DBG_LEAVE_INL(buf)
 #define THR_DBG_PAGE_CHECK

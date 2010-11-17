@@ -909,6 +909,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
   goto check_link_2;
  check_link:
   BUF_TOUCH (dest_buf);
+  BUF_DBG_ENTER_INL (dest_buf);
  check_link_2:
   back_link = LONG_REF (dest_buf->bd_buffer + DP_PARENT);
   itc->itc_page = dest_buf->bd_page;
