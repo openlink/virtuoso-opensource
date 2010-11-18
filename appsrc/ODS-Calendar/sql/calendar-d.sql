@@ -86,6 +86,7 @@ CAL.WA.exec_no_error('drop type wa_Calendar');
 -- Views
 CAL.WA.exec_no_error('drop view CAL..TAGS_VIEW');
 CAL.WA.exec_no_error('drop view CAL..MY_CALENDARS');
+CAL.WA.exec_no_error ('drop view CAL..EVENT_GRANTS_VIEW');
 
 -- Registry
 registry_remove ('calendar_path');

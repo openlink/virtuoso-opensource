@@ -388,7 +388,7 @@ function showTab(tabs, tabsCount, tabNo) {
 
 function windowShow(sPage, width, height) {
   if (width == null)
-    width = 500;
+		width = 700;
   if (height == null)
     height = 420;
 	sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value

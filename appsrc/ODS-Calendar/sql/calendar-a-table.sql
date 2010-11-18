@@ -553,6 +553,42 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.event_grants_procedure (
+  in to_id integer,
+  in event_id integer := null)
+{
+  declare c0 integer;
+
+  result_names (c0);
+  for (select distinct G_EVENT_ID
+         from CAL.WA.EVENT_GRANTS
+        where G_GRANTEE_ID = to_id
+          and (G_EVENT_ID = event_id or event_id is null)
+        order by 1) do
+  {
+    result (G_EVENT_ID);
+  }
+  for (select distinct G_EVENT_ID
+         from CAL.WA.EVENT_GRANTS a,
+              DB.DBA.SYS_ROLE_GRANTS c
+        where (a.G_EVENT_ID  = event_id or event_id is null)
+          and c.GI_SUPER     = to_id
+          and c.GI_GRANT     = a.G_GRANTEE_ID
+          and c.GI_DIRECT    = '1'
+        order by 1) do
+  {
+    result (G_EVENT_ID);
+  }
+}
+;
+
+CAL.WA.exec_no_error ('
+  create procedure view CAL..EVENT_GRANTS_VIEW as CAL.WA.event_grants_procedure (to_id, event_id) (G_EVENT_ID integer)
+')
+;
+
+-------------------------------------------------------------------------------
+--
 CAL.WA.exec_no_error ('
   create table CAL.WA.ALARMS (
     A_ID integer identity,
