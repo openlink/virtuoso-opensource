@@ -251,8 +251,10 @@ create procedure feed_act_head (in uid varchar, in srcId int, inout ses any)
 -- no alternate for now
 -- http (sprintf ('<link rel="alternate" type="text/html" href="%s"/>\n', url), ses);
   http (sprintf ('<link rel="self" type="application/atom+xml" href="%s"/>\n', url), ses);
-  if (DB.DBA.VAD_CHECK_VERSION ('pubsubhub') is not null)
-    http (sprintf ('<link rel="hub" href="http://%{WSHost}s/psh/"/>\n'), ses);
+  for select SH_URL from ODS.DBA.SVC_HOST where SH_PROTO = 'PubSubHub' do 
+    {
+      http (sprintf ('<link rel="hub" href="%s"/>\n', SH_URL), ses);
+    }
   http (sprintf ('<link rel="salmon" href="http://%{WSHost}s/ods/salmon"/>\n'), ses);
   http (sprintf ('<author><name>%s</name></author>\n', fname), ses);
 }
