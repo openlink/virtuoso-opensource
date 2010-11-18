@@ -571,6 +571,7 @@ RDF.ontologies['ibis'] = {"name": 'http://purl.org/ibis#', "hidden": 1};
 RDF.ontologies['ical'] = {"name": 'http://www.w3.org/2002/12/cal/icaltzd#'};
 RDF.ontologies['kuaba'] = {"name": 'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba'};
 RDF.ontologies['lsdis'] = {"name": 'http://lsdis.cs.uga.edu/projects/meteor-s/wsdl-s/ontologies/LSDIS_FInance.owl'};
+RDF.ontologies['like'] = {"name": 'http://ontologi.es/like#', "dependent": 'rev'};
 RDF.ontologies['mo'] = {"name": 'http://purl.org/ontology/mo/'};
 RDF.ontologies['movie'] = {"name": 'http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#'};
 RDF.ontologies['nao'] = {"name": 'http://www.semanticdesktop.org/ontologies/nao/'};
@@ -614,6 +615,7 @@ RDF.ontologies['rdfs'] =
 }
     ]
   };
+RDF.ontologies['rev'] = {"name": 'http://purl.org/stuff/rev#'};
 RDF.ontologies['rss'] = {"name": 'http://purl.org/rss/1.0/'};
 RDF.ontologies['scot'] = {"name": 'http://scot-project.org/scot/ns'};
 RDF.ontologies['sioc'] = {"name": 'http://rdfs.org/sioc/ns#'};
@@ -624,8 +626,10 @@ RDF.ontologies['wot'] = {"name": 'http://xmlns.com/wot/0.1/', "hidden": 1};
 RDF.ontologies['xhtml'] = {"name": 'http://www.w3.org/1999/xhtml', "hidden": 1};
 RDF.ontologies['xsd'] = {"name": 'http://www.w3.org/2001/XMLSchema#', "hidden": 1};
 
-RDF.loadOntology = function (ontologyName, cb)
+RDF.loadOntology = function (ontologyName, cb, options)
 {
+  var ontology = this.getOntologyByName(ontologyName);
+  var dependent = ontology.dependent;
   var prefix = this.ontologyPrefix(ontologyName);
   if (!prefix) {
     var N = 0;
@@ -638,7 +642,9 @@ RDF.loadOntology = function (ontologyName, cb)
   }
 
   // load ontology classes
-  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName)+'&prefix='+prefix;
+  var S = '/ods/api/ontology.classes?ontology='+encodeURIComponent(ontologyName);
+  if (dependent)
+    S += '&dependentOntology='+encodeURIComponent(this.getOntologyByPrefix(dependent).name);
   var x = function(data) {
     var o = null;
     try {
@@ -647,6 +653,7 @@ RDF.loadOntology = function (ontologyName, cb)
     if (o)
     {
       o.prefix = prefix;
+      o.dependent = dependent;
       RDF.ontologies[prefix] = o;
 
       // load objects (individuals)
@@ -659,10 +666,12 @@ RDF.loadOntology = function (ontologyName, cb)
         RDF.ontologies[prefix].objects = o;
       }
       OAT.AJAX.GET(S, '', x, {});
+      if (o.dependent)
+        RDF.loadOntology(RDF.getOntologyByPrefix(o.dependent).name, null, {async: false});
     }
     if (cb) {cb();}
   }
-  OAT.AJAX.GET(S, '', x, {});
+  OAT.AJAX.GET(S, '', x, options);
 }
 
 RDF.getOntologyByPrefix = function(prefix)
@@ -840,12 +849,16 @@ RDF.showItemTypes = function()
     }
     OAT.Dom.hide(noTR);
   } else {
+    OAT.Dom.unlink(prefix+'_throbber');
     OAT.Dom.show(noTR);
   }
 }
 
 RDF.showItemType = function(prefix, itemType)
 {
+  // hide throbber
+  OAT.Dom.unlink(prefix+'_throbber');
+
   var rowOptions = {No: itemType.id, fld_1: {mode: 43, cssText: ''}, fld_2: {mode: 42, value: itemType.ontology, showValue: itemType.ontology+' ('+RDF.ontologyPrefix(itemType.ontology)+')'}, btn_1: {mode: 40}};
   if (this.tableOptions && this.tableOptions.itemType) {
     var itemTypeOptions = this.tableOptions.itemType;
@@ -1326,11 +1339,13 @@ RDF.showPropertiesTable = function(item)
 
 RDF.changePropertyValue = function(obj)
 {
-  var S = obj.id;
-  var fldName = S.replace(/fld_1/, 'fld_2');
   var S = obj.parentNode.id;
+
+  var fldName = (obj.id).replace(/fld_1/, 'fld_2');
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'2');
   TBL.createCell48(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
+
+  var fldName = (obj.id).replace(/fld_1/, 'fld_3');
   var td = $(S.substr(0,S.lastIndexOf('_')+1)+'3');
   TBL.createCell47(td, '', fldName, 0, {item: obj.item, value: {name: obj.value}});
 }

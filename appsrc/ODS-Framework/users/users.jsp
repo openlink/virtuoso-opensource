@@ -403,6 +403,24 @@
           }
           $_formMode = "";
         }
+        else if (getParameter(items, request, "pf_update10") != null)
+        {
+          params = httpParam( "", "sid", $_sid) +
+                   httpParam("&", "realm", $_realm) +
+                   httpParam("&", "id", getParameter(items, request, "pf10_id")) +
+                   httpParam("&", "uri", getParameter(items, request, "pf10_uri")) +
+                   httpParam("&", "type", getParameter(items, request, "pf10_type")) +
+                   httpParam("&", "name", getParameter(items, request, "pf10_name")) +
+                   httpParam("&", "comment", getParameter(items, request, "pf10_comment")) +
+                   httpParam("&", "properties", getParameter(items, request, "items"));
+          $_retValue = httpRequest ("POST", "user.likes."+$_formMode, params);
+          if ($_retValue.indexOf("<failed>") == 0)
+          {
+		        $_document = createDocument($_retValue);
+            throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
+          $_formMode = "";
+        }
         else if (getParameter(items, request, "pf_update26") != null)
         {
           params = httpParam( "", "sid", $_sid) +
@@ -1167,16 +1185,17 @@
                 <div style="min-height: 180px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
-                      <li id="pf_tab_0_0" title="Import">Profile Import</li>
-                      <li id="pf_tab_0_1" title="Main">Main</li>
-                      <li id="pf_tab_0_2" title="Address">Address</li>
-                      <li id="pf_tab_0_3" title="Online Accounts">Online Accounts</li>
-                      <li id="pf_tab_0_4" title="Messaging Services">Messaging Services</li>
-                      <li id="pf_tab_0_5" title="Biographical Events">Biographical Events</li>
-                      <li id="pf_tab_0_6" title="Favorite Things">Favorite Things</li>
-                      <li id="pf_tab_0_7" title="Creator Of">Creator Of</li>
-                      <li id="pf_tab_0_8" title="My Offers">My Offers</li>
-                      <li id="pf_tab_0_9" title="Offers I Seek">Offers I Seek</li>
+                      <li id="pf_tab_0_0">Profile Import</li>
+                      <li id="pf_tab_0_1">Main</li>
+                      <li id="pf_tab_0_2">Address</li>
+                      <li id="pf_tab_0_3">Online Accounts</li>
+                      <li id="pf_tab_0_4">Messaging Services</li>
+                      <li id="pf_tab_0_5">Biographical Events</li>
+                      <li id="pf_tab_0_6">Favorite Things</li>
+                      <li id="pf_tab_0_7">Creator Of</li>
+                      <li id="pf_tab_0_8">My Offers</li>
+                      <li id="pf_tab_0_9">Offers I Seek</li>
+                      <li id="pf_tab_0_10">Offers I Seek</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
@@ -2171,6 +2190,11 @@
                   		        <td width="800px">
                                 <table id="ol_tbl" class="listing">
                                   <tbody id="ol_tbody">
+                                    <tr id="ol_throbber">
+                                      <td>
+                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
+                                      </td>
+                                    </tr>
                                   </tbody>
                                 </table>
                                 <input type="hidden" id="ol_no" name="ol_no" value="1" />
@@ -2250,6 +2274,11 @@
                   		        <td width="800px">
                                 <table id="wl_tbl" class="listing">
                                   <tbody id="wl_tbody">
+                                    <tr id="wl_throbber">
+                                      <td>
+                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
+                                      </td>
+                                    </tr>
                                   </tbody>
                                 </table>
                                 <input type="hidden" id="wl_no" name="wl_no" value="1" />
@@ -2262,6 +2291,109 @@
                           <div class="footer">
                             <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
                             <input type="submit" name="pf_update09" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf09');"/>
+                          </div>
+                        </div>
+                        <%
+                          }
+                        %>
+                      </div>
+                      <%
+                        }
+                        else if ($_formSubtab == 10)
+                        {
+                      %>
+                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
+                        <h3>Likes &amp; DisLikes</h3>
+                        <%
+                          if ($_formMode == "")
+                          {
+                        %>
+                        <div id="pf10_list">
+                          <div style="padding: 0 0 0.5em 0;">
+                            <span onclick="javascript: $('formMode').value = 'new'; $('page_form').submit();" class="button pointer"><img class="button" border="0" title="Add Like" alt="Add Like" src="/ods/images/icons/add_16.png"> Add</span>
+                          </div>
+                      	  <table id="pf10_tbl" class="listing">
+                      	    <thead>
+                      	      <tr class="listing_header_row">
+                        		    <th width="50%">URI</th>
+                        		    <th width="50%">Name</th>
+                        		    <th width="1%" nowrap="nowrap">Action</th>
+                      	      </tr>
+                            </thead>
+                      	    <tbody id="pf10_tbody">
+                              <script type="text/javascript">
+                                OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowLikes();});
+                              </script>
+                      	    </tbody>
+                          </table>
+                        </div>
+                        <%
+                          }
+                          else
+                          {
+                            out.print("<input type=\"hidden\" id=\"pf10_id\" name=\"pf10_id\" value=\"" + ((getParameter(items, request, "pf10_id") != null) ? getParameter(items, request, "pf10_id"): "0") + "\" />");
+                        %>
+                        <div id="pf10_form">
+                          <table class="form" cellspacing="5">
+                            <tr>
+                              <th width="25%">
+                                Type
+                              </th>
+                              <td>
+                                <select name="pf10_type" id="pf10_type">
+                                  <option value="L">Like</option>
+                                  <option value="DL">DisLike</option>
+                                </select>
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                URI
+                              </th>
+                              <td>
+                                <input type="text" name="pf10_uri" id="pf10_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Name
+                              </th>
+                              <td>
+                                <input type="text" name="pf10_name" id="pf10_name" value="" class="_validate_" style="width: 400px;">
+                              </td>
+                            </tr>
+                            <tr>
+                              <th>
+                                Comment
+                              </th>
+                              <td>
+                                <textarea name="pf10_comment" id="pf10_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                              </td>
+                            </tr>
+                  				  <tr>
+                  				    <th valign="top">
+                  		          Properties
+                  		        </th>
+                  		        <td width="800px">
+                                <table id="ld_tbl" class="listing">
+                                  <tbody id="ld_tbody">
+                                    <tr id="ld_throbber">
+                                      <td>
+                                        <img src="/ods/images/oat/Ajax_throbber.gif" />
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                                <input type="hidden" id="ld_no" name="ld_no" value="1" />
+                              </td>
+                            </tr>
+                          </table>
+                          <script type="text/javascript">
+                            OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowLike();});
+                          </script>
+                          <div class="footer">
+                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="needToConfirm = false;"/>
+                            <input type="submit" name="pf_update10" value="Save" onclick="myBeforeSubmit(); return validateInputs(this, 'pf10');"/>
                           </div>
                         </div>
                         <%

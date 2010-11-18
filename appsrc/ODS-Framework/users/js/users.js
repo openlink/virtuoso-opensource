@@ -491,7 +491,7 @@ function buildObjByChildNodes(elm) {
 var lfTab;
 var rfTab;
 var ufTab;
-var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5', 'pf_page_2_6']];
+var pfPages = [['pf_page_0_0', 'pf_page_0_1', 'pf_page_0_2', 'pf_page_0_3', 'pf_page_0_4', 'pf_page_0_5', 'pf_page_0_6', 'pf_page_0_7', 'pf_page_0_8', 'pf_page_0_9', 'pf_page_0_10'], ['pf_page_1_0', 'pf_page_1_1', 'pf_page_1_2', 'pf_page_1_3'], ['pf_page_2_0', 'pf_page_2_1', 'pf_page_2_2', 'pf_page_2_3', 'pf_page_2_4', 'pf_page_2_5', 'pf_page_2_6']];
 
 var setupWin;
 var cRDF;
@@ -684,6 +684,7 @@ function init() {
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
   }
+  /*
 	if ($("uf")) {
 		ufTab = new OAT.Tab("uf_content");
 		ufTab.add("uf_tab_0", "uf_page_0");
@@ -698,6 +699,7 @@ function init() {
       } catch (e) {}
     }
 	}
+  */
 	if ($('pf')) {
 	  var obj = $('formTab');
 	  if (!obj) {hiddenCreate('formSubtab', null, '0');}
@@ -719,6 +721,7 @@ function init() {
     OAT.Event.attach("pf_tab_0_7", 'click', function(){pfTabSelect('pf_tab_0_', 7);});
     OAT.Event.attach("pf_tab_0_8", 'click', function(){pfTabSelect('pf_tab_0_', 8);});
     OAT.Event.attach("pf_tab_0_9", 'click', function(){pfTabSelect('pf_tab_0_', 9);});
+    OAT.Event.attach("pf_tab_0_10",'click', function(){pfTabSelect('pf_tab_0_', 10);});
     pfTabInit('pf_tab_0_', $v('formSubtab'));
 
     OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 0);});
@@ -831,6 +834,16 @@ function mySubmit(prefix)
               + '&properties=' + encodeURIComponent(prepareItems('wl'));
     	OAT.AJAX.GET(S, '', function(data){pfShowSeeks();});
     }
+    if (prefix == 'pf10') {
+      var S = '/ods/api/user.likes.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+              + '&id=' + encodeURIComponent($v('pf10_id'))
+              + '&uri=' + encodeURIComponent($v('pf10_uri'))
+              + '&type=' + encodeURIComponent($v('pf10_type'))
+              + '&name=' + encodeURIComponent($v('pf10_name'))
+              + '&comment=' + encodeURIComponent($v('pf10_comment'))
+              + '&properties=' + encodeURIComponent(prepareItems('ld'));
+      OAT.AJAX.GET(S, '', function(data){pfShowLikes();});
+    }
     if (prefix == 'pf26') {
       var S = '/ods/api/user.certificates.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
               + '&id=' + encodeURIComponent($v('pf26_id'))
@@ -854,6 +867,8 @@ function submitItems()
       $('items').value = prepareItems('ol');
     if ($v('formTab') == '0' && $v('formSubtab') == '9' && $v('formMode') != '')
       $('items').value = prepareItems('wl');
+    if ($v('formTab') == '0' && $v('formSubtab') =='10' && $v('formMode') != '')
+      $('items').value = prepareItems('ld');
   }
 }
 
@@ -1232,6 +1247,8 @@ function pfEditListObject(prefix, id) {
       pfShowOffer('edit', id);
     if (prefix == 'pf09')
       pfShowSeek('edit', id);
+    if (prefix == 'pf10')
+      pfShowLike('edit', id);
     if (prefix == 'pf26')
       pfShowCertificate('edit', id);
     return false;
@@ -1296,6 +1313,18 @@ function pfShowSeek(mode, id) {
   pfShowItem('user.seeks.get', 'pf09', ['name', 'comment'], x);
 }
 
+function pfShowLike(mode, id) {
+  pfShowMode('pf10', mode, id);
+  var x = function(obj) {
+    $('ld_tbody').innerHTML = '';
+    RDF.tablePrefix = 'ld';
+    RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+    RDF.itemTypes = obj.properties;
+    RDF.showItemTypes();
+  }
+  pfShowItem('user.likes.get', 'pf10', ['uri', 'name'], x);
+}
+
 function pfShowCertificate(mode, id) {
   pfShowMode('pf26', mode, id);
   if (mode == 'new') {
@@ -1324,6 +1353,10 @@ function pfShowOffers() {
 
 function pfShowSeeks() {
   pfShowList('user.seeks.list', 'pf09', 'No Items', [1, 2], 0, function (data){pfShowSeeks();});
+}
+
+function pfShowLikes() {
+  pfShowList('user.likes.list', 'pf10', 'No Items', [1, 3], 0, function (data){pfShowLikes();});
 }
 
 function pfShowCertificates() {
@@ -2053,6 +2086,10 @@ function ufProfileCallback(data) {
       // seek
       if (($v('formTab') == "0") && ($v('formSubtab') == "9"))
         pfShowSeeks();
+
+      // likes
+      if (($v('formTab') == "0") && ($v('formSubtab') == "10"))
+        pfShowLikes();
 
       // seek
       if (($v('formTab') == "2") && ($v('formSubtab') == "6"))

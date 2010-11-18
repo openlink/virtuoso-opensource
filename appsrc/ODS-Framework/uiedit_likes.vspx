@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2010 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="foaf-import-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:variable name="ld_mode" type="varchar" default="'LD/browse'"/>
+
+	<v:variable name="ld_id" type="any" default="null" />
+	<v:variable name="ld_properties" type="any" default="null" />
+	<v:variable name="ld_newProperties" type="any" default="null" />
+
+	<v:form name="usr_personal_10" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <h3>Like &amp; DisLikes</h3>
+    <vm:if test="self.ld_mode = 'LD/browse'">
+      <?vsp
+        if (0)
+        {
+      ?>
+        <v:button name="ld_dButton" action="simple" value="Delete">
+          <v:on-post>
+            <![CDATA[
+              delete from DB.DBA.WA_USER_LIKES where WUL_ID = get_keyword ('ld_id', self.vc_page.vc_event.ve_params) and WUL_U_ID = self.u_id;
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      <?vsp
+        }
+      ?>
+      <input type="hidden" name="ld_id" id="ld_id" value="" />
+      <div style="padding: 0 0 0.5em 0;">
+        <v:button name="ld_aButton" action="simple" style="url" value="''" xhtml_class="img_button">
+          <v:before-render>
+            <![CDATA[
+              control.ufl_value := '<img src="images/icons/add_16.png" border="0" /> Add';
+            ]]>
+          </v:before-render>
+          <v:on-post>
+            <![CDATA[
+              self.ld_mode := 'LD/add';
+              self.ld_uri.ufl_value := null;
+              self.ld_type.ufl_value := null;
+              self.ld_name.ufl_value := null;
+              self.ld_comment.ufl_value := null;
+              self.ld_properties := ODS..jsonObject ();
+              self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', get_keyword ('products', self.ld_properties, vector ()))));
+
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+
+	    <v:data-set name="ld_ds"
+	                sql="select WUL_ID, WUL_URI, WUL_NAME from DB.DBA.WA_USER_LIKES where WUL_U_ID = :self.u_id"
+		              scrollable="1"
+		              editable="1"
+		              nrows="10">
+
+        <v:template name="ld_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+      	  <table class="listing" rules="groups">
+      	    <tr class="listing_header_row">
+      		    <th width="50%">URI</th>
+      		    <th width="50%">Name</th>
+      		    <th width="50px">Action</th>
+      	    </tr>
+          </table>
+        </v:template>
+
+        <v:template name="ld_ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="ld_ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr align="center">
+                <td colspan="3">No Likes/DisLikes</td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="ld_ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+            <table>
+  			      <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUL_URI')" format="%s" name="ld_ds_browse_1_label"/>
+                </td>
+                <td nowrap="nowrap" width="50%">
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WUL_NAME')" format="%s" name="ld_ds_browse_2_label"/>
+                </td>
+                <td nowrap="nowrap">
+                  <v:button name="ld_eButton" action="simple" style="url" value="''" xhtml_class="img_button">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_value := '<img src="images/icons/edit_16.png" border="0" alt="Edit Like" title="Edit Like"/> Edit';
+                      ]]>
+                    </v:before-render>
+                    <v:on-post>
+                      <![CDATA[
+                        self.ld_mode := 'LD/edit';
+                        self.ld_id := (control.vc_parent as vspx_row_template).te_column_value('WUL_ID');
+                        select WUL_URI,
+                               WUL_TYPE,
+                               WUL_NAME,
+                               WUL_COMMENT,
+                               deserialize (WUL_PROPERTIES)
+                          into self.ld_uri.ufl_value,
+                               self.ld_type.ufl_value,
+                               self.ld_name.ufl_value,
+                               self.ld_comment.ufl_value,
+                               self.ld_properties
+                          from DB.DBA.WA_USER_LIKES
+                         where WUL_ID = self.ld_id;
+
+                        self.ld_newProperties := vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', get_keyword ('products', self.ld_properties, vector ()))));
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <span class="button pointer" onclick="javascript: if (confirm('Are you sure you want to delete this record?')) {$('ld_id').value = <?V (control as vspx_row_template).te_column_value('WUL_ID') ?>; doPost('page_form', 'ld_dButton');}">
+                    <img class="button" src="/ods/images/icons/trash_16.png"/> Delete
+                  </span>
+  			        </td>
+  			      </tr>
+            </table>
+		      </v:template>
+		    </v:template>
+
+		    <v:template name="ld_ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+          <table>
+          </table>
+		    </v:template>
+	    </v:data-set>
+
+    </vm:if>
+
+    <vm:if test="self.ld_mode <> 'LD/browse'">
+  	  <div class="fm">
+				<table>
+				  <tr>
+				    <th width="100px">
+		          Type
+		        </th>
+		        <td>
+              <v:select-list name="ld_type" xhtml_id="ld_type">
+                <v:item name="Like" value="L"/>
+                <v:item name="DisLike" value="DL"/>
+              </v:select-list>
+            </td>
+          </tr>
+				  <tr>
+				    <th>
+		          URI
+		        </th>
+		        <td>
+              <v:text name="ld_uri" value="" xhtml_id="ld_uri" xhtml_size="50" xhtml_class="_validate_ _uri_" />
+            </td>
+          </tr>
+				  <tr>
+				    <th>
+		          Name
+		        </th>
+		        <td>
+              <v:text name="ld_name" value="" xhtml_id="ld_name" xhtml_size="50" xhtml_class="_validate_" />
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Comment
+		        </th>
+		        <td>
+              <v:textarea name="ld_comment" value="" xhtml_id="ld_comment" xhtml_rows="5" xhtml_cols="50"/>
+            </td>
+          </tr>
+				  <tr>
+				    <th valign="top">
+		          Properties
+		        </th>
+		        <td width="800px">
+              <table id="ld_tbl" class="listing">
+                <tbody id="ld_tbody">
+                  <tr id="ld_throbber">
+                    <td>
+                      <img src="/ods/images/oat/Ajax_throbber.gif" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <input type="hidden" id="ld_no" name="ld_no" value="1" />
+              <script type="text/javascript">
+                <![CDATA[
+                  ODSInitArray.push (function (){
+                    OAT.Loader.load(["ajax", "json", "combolist"], function(){
+                      RDF.tablePrefix = 'ld';
+                      RDF.tableOptions = {itemType: {fld_1: {cssText: "display: none;"}, btn_1: {cssText: "display: none;"}}};
+                      RDF.itemTypes = <?vsp http (replace (ODS..obj2json (self.ld_newProperties, 10), 'class:', 'className:')); ?>;
+                      RDF.showItemTypes();
+                    });
+                  });
+                ]]>
+              </script>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <br />
+    		      <v:button name="user_c_personal_10" value="Cancel" action="simple">
+    		        <v:on-post>
+                  self.ld_mode := 'LD/browse';
+                  self.vc_data_bind (e);
+    		        </v:on-post>
+    		      </v:button>
+    		      <v:button name="user_s_personal_10" value="--case when self.ld_mode = 'LD/add' then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
+    		        <v:on-post><![CDATA[
+                  if (self.vc_is_valid = 0)
+                    return;
+
+                  declare ontologies, IDs any;
+                  declare products any;
+
+                  IDs := vector ();
+                  ontologies := vector ();
+                  self.getItems ('ld', 'gr', ontologies, IDs);
+                  products := vector ();
+                  if (length (ontologies))
+                    products := get_keyword ('items', ontologies[0], vector());
+
+                  self.ld_properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+                  if (self.ld_mode = 'LD/add')
+                  {
+                    if (exists (select 1 from DB.DBA.WA_USER_LIKES where WUL_U_ID = self.u_id and WUL_NAME = self.ld_name.ufl_value))
+                    {
+                      self.vc_error_message := 'An "Like/DisLike" with same name already exists, please specify unique name.';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
+                      values (self.u_id, self.ld_uri.ufl_value, self.ld_type.ufl_value, self.ld_name.ufl_value, self.ld_comment.ufl_value, serialize (self.ld_properties));
+                  }
+                  else
+                  {
+                    update DB.DBA.WA_USER_LIKES
+                       set WUL_URI = self.ld_uri.ufl_value,
+                           WUL_TYPE = self.ld_type.ufl_value,
+                           WUL_NAME = self.ld_name.ufl_value,
+                           WUL_COMMENT = self.ld_comment.ufl_value,
+                           WUL_PROPERTIES = serialize (self.ld_properties)
+                     where WUL_ID = self.ld_id;
+                  }
+
+                  self.ld_mode := 'LD/browse';
+                  self.vc_data_bind (e);
+                ]]></v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </vm:if>
+	</v:form>
+</v:page>

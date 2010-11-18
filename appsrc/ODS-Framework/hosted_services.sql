@@ -3888,6 +3888,22 @@ create procedure wa_wishlist_upgrade()
 wa_wishlist_upgrade();
 
 wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_LIKES
+     (
+      WUL_ID integer identity,
+      WUL_U_ID integer,
+      WUL_TYPE varchar,
+      WUL_URI varchar,
+      WUL_NAME varchar,
+      WUL_COMMENT long varchar,
+      WUL_PROPERTIES long varchar,
+
+      primary key (WUL_ID)
+     )'
+);
+wa_exec_no_error('create unique index WA_USER_LIKES_USER on WA_USER_LIKES (WUL_U_ID, WUL_NAME)');
+
+wa_exec_no_error_log(
     'CREATE TABLE WA_USER_BIOEVENTS (
       WUB_ID integer identity,
       WUB_U_ID integer,

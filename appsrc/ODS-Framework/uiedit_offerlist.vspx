@@ -175,6 +175,11 @@
               <td width="800px">
                 <table id="ol_tbl" class="listing">
                   <tbody id="ol_tbody">
+                  <tr id="ol_throbber">
+                    <td>
+                      <img src="/ods/images/oat/Ajax_throbber.gif" />
+                    </td>
+                  </tr>
                   </tbody>
 			  </table>
                 <input type="hidden" id="ol_no" name="ol_no" value="1" />

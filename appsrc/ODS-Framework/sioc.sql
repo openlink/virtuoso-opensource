@@ -229,6 +229,16 @@ create procedure cert_iri (in s varchar)
   return concat ('http://www.w3.org/ns/auth/cert#', s);
 };
 
+create procedure rev_iri (in s varchar)
+{
+  return concat ('http://purl.org/stuff/rev#', s);
+};
+
+create procedure like_iri (in s varchar)
+{
+  return concat ('http://ontologi.es/like#', s);
+};
+
 create procedure rsa_iri (in s varchar)
 {
   return concat ('http://www.w3.org/ns/auth/rsa#', s);
@@ -463,6 +473,16 @@ create procedure wishlist_forum_iri (in wai_name varchar, in wai_member varchar)
   return forum_iri ('wishlist', wai_name, wai_member);
 };
 
+create procedure like_forum_iri (in wai_name varchar, in wai_member varchar)
+{
+  return forum_iri ('like', wai_name, wai_member);
+};
+
+create procedure dislike_forum_iri (in wai_name varchar, in wai_member varchar)
+{
+  return forum_iri ('dislike', wai_name, wai_member);
+};
+
 create procedure favorite_forum_iri (in wai_name varchar, in wai_member varchar)
 {
   return forum_iri ('favoritethings', wai_name, wai_member);
@@ -493,6 +513,8 @@ create procedure ods_sioc_forum_ext_type (in app varchar)
 	'Calendar',      ext_iri ('Calendar'),
 	'OfferList',     ext_iri ('OfferList'),
 	'WishList',      ext_iri ('WishList'),
+	'Likes',         ext_iri ('Likes'),
+	'DisLikes',      ext_iri ('DisLikes'),
 	'FavoriteThings',ext_iri ('FavoriteThings')
 	), app);
 };
@@ -517,6 +539,8 @@ create procedure ods_sioc_forum_type (in app varchar)
 	'Calendar',      'Container',
 	'OfferList',     'Container',
 	'WishList',      'Container',
+	'Likes',         'Container',
+	'DisLikes',      'Container',
 	'FavoriteThings','Container'
 	), app);
   return sioc_iri (pclazz);
@@ -635,6 +659,11 @@ create procedure offerlist_item_iri (in forum_iri varchar, in ID integer)
 };
 
 create procedure wishlist_item_iri (in forum_iri varchar, in ID integer)
+{
+  return forum_iri || '/' || cast (ID as varchar);
+};
+
+create procedure likes_item_iri (in forum_iri varchar, in ID integer)
 {
   return forum_iri || '/' || cast (ID as varchar);
 };
@@ -1487,6 +1516,97 @@ create procedure sioc_user_wishlist_delete (in user_id integer, in wl_id integer
   }
 };
 
+create procedure sioc_user_likes (in user_id integer, in l_id integer, in l_uri varchar, in l_type varchar, in l_name varchar, in l_comment varchar, in l_properties varchar)
+{
+  declare user_name any;
+  declare graph_iri, forum_iri, forum_name, like_property, user_iri, iri, obj any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  user_iri := user_iri (user_id);
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  if (l_type = 'L')
+  {
+    forum_iri := like_forum_iri (l_name, user_name);
+    forum_name := 'Likes';
+    like_property := 'likes';
+  } else {
+    forum_iri := dislike_forum_iri (l_name, user_name);
+    forum_name := 'DisLikes';
+    like_property := 'dislikes';
+  }
+  if (DB.DBA.is_empty_or_null (trim (l_comment)))
+    l_comment := l_name;
+  sioc_forum (graph_iri, graph_iri, forum_iri, l_name, forum_name, l_comment, null, user_name);
+  DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, like_iri (like_property), forum_iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, rdfs_iri ('seeAlso'), l_uri);
+
+  declare N integer;
+  declare tmp, products, properties, iri any;
+
+  products := get_keyword ('products', deserialize (l_properties));
+  foreach (any product in products) do
+  {
+    iri := likes_item_iri (forum_iri, get_keyword ('id', product));
+	  DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ODS.ODS_API."ontology.denormalize" (get_keyword ('className', product)));
+
+    properties := get_keyword ('properties', product);
+    foreach (any property in properties) do
+    {
+      declare propertyType, propertyName, propertyValue any;
+
+      propertyType := get_keyword ('type', property);
+      propertyValue := get_keyword ('value', property);
+      propertyName := ODS.ODS_API."ontology.denormalize" (get_keyword ('name', property));
+      if (propertyType = 'data')
+      {
+        --dbg_obj_princ ('data: ', iri, propertyName, propertyValue);
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, propertyName, propertyValue);
+      }
+      else if (propertyType = 'object')
+      {
+        --dbg_obj_princ ('obj: ', iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+        DB.DBA.ODS_QUAD_URI (graph_iri, iri, propertyName, ODS.ODS_API."ontology.denormalize" (propertyValue));
+      }
+    }
+  }
+}
+;
+
+create procedure sioc_user_likes_delete (in user_id integer, in l_id integer, in l_uri varchar, in l_type varchar, in l_name varchar, in l_comment varchar, in l_properties varchar)
+{
+  declare N integer;
+  declare user_name any;
+  declare graph_iri, forum_iri, iri, products any;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
+  graph_iri := get_graph ();
+  if (l_type = 'L')
+  {
+    forum_iri := like_forum_iri (l_name, user_name);
+  } else {
+    forum_iri := dislike_forum_iri (l_name, user_name);
+  }
+  delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+
+  products := get_keyword ('products', deserialize (l_properties));
+  for (N := 0; N < length (products); N := N + 1)
+  {
+    iri := likes_item_iri (forum_iri, N+1);
+    delete_quad_s_or_o (graph_iri, iri, iri);
+  }
+}
+;
+
 create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_type varchar, in f_label varchar, in f_uri varchar, in f_class varchar, in f_properties any)
 {
   declare user_name any;
@@ -2308,6 +2428,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  for select WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST where WUWL_U_ID = U_ID do
 		      {
           sioc_user_wishlist (WUWL_U_ID, WUWL_ID, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES);
+		    }
+		  for select WUL_U_ID, WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_U_ID = U_ID do
+		    {
+		      sioc_user_likes (WUL_U_ID, WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES);
 		    }
 		  notCreated := 1;
 		  for select WUF_U_ID, WUF_ID, WUF_TYPE, WUF_LABEL, WUF_URI, WUF_CLASS, WUF_PROPERTIES from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = U_ID do
@@ -3282,6 +3406,38 @@ create trigger WA_USER_WISHLIST_SIOC_D after delete on DB.DBA.WA_USER_WISHLIST r
     return;
   };
   sioc_user_wishlist_delete (O.WUWL_U_ID, O.WUWL_ID, O.WUWL_BARTER, O.WUWL_COMMENT, O.WUWL_PROPERTIES);
+};
+
+-- Offer List
+create trigger WA_USER_LIKES_SIOC_I after insert on DB.DBA.WA_USER_LIKES referencing new as N
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  sioc_user_likes (N.WUL_U_ID, N.WUL_ID, N.WUL_URI, N.WUL_TYPE, N.WUL_NAME, N.WUL_COMMENT, N.WUL_PROPERTIES);
+};
+
+create trigger WA_USER_LIKES_SIOC_U after update on DB.DBA.WA_USER_LIKES referencing old as O, new as N
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  sioc_user_likes_delete (O.WUL_U_ID, O.WUL_ID, O.WUL_URI, O.WUL_TYPE, O.WUL_NAME, O.WUL_COMMENT, O.WUL_PROPERTIES);
+  sioc_user_likes (N.WUL_U_ID, N.WUL_ID, N.WUL_URI, N.WUL_TYPE, N.WUL_NAME, N.WUL_COMMENT, N.WUL_PROPERTIES);
+};
+
+create trigger WA_USER_LIKES_SIOC_D after delete on DB.DBA.WA_USER_LIKES referencing old as O
+{
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  sioc_user_likes_delete (O.WUL_U_ID, O.WUL_ID, O.WUL_URI, O.WUL_TYPE, O.WUL_NAME, O.WUL_COMMENT, O.WUL_PROPERTIES);
 };
 
 -- Favorite Things
@@ -4696,6 +4852,8 @@ create procedure sioct_n3 ()
   http ('<http://rdfs.org/sioc/types#Wiki> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
   http ('<http://rdfs.org/sioc/types#WishList> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
   http ('<http://rdfs.org/sioc/types#OfferList> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Likes> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#DisLikes> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
   http ('<http://sw.deri.org/2005/04/wikipedia/wikiont.owl#Article> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
   http ('<http://usefulinc.com/ns/doap#Project> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   http ('<http://www.isi.edu/webscripter/communityreview/abstract-review-o#Review> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
@@ -5155,6 +5313,24 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
         union  
         {
             ?container foaf:maker ?person;
+              a sioct:Likes ;
+              rdfs:label ?label .
+            OPTIONAL { ?container sioc:container_of ?grSubject.
+                       ?grSubject ?grProperty ?grObject.
+                     } .
+          }
+          union
+          {
+            ?container foaf:maker ?person ;
+              a sioct:DisLikes ;
+              rdfs:label ?label .
+            OPTIONAL { ?container sioc:container_of ?grSubject.
+                       ?grSubject ?grProperty ?grObject.
+                     } .
+          }
+          union
+          {
+            ?container foaf:maker ?person ;
               a sioct:FavoriteThings .
             OPTIONAL {?container sioc:container_of ?grSubject.
                       ?grSubject ?grProperty ?grObject.

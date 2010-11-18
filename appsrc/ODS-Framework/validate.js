@@ -52,7 +52,7 @@ function validateURI(fld)
 {
   var regex = /^([a-z0-9+.-]+):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
   var mail = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value) && !acct.test(fld.value))
+  if (!regex.test(fld.value) && !mail.test(fld.value))
     return validateError(fld, 'Invalid URI address : ' + fld.value);
 
   return true;
