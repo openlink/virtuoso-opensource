@@ -28,6 +28,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,6 +44,7 @@
   xmlns:umbel="http://umbel.org/umbel#"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
+  xmlns:dcterms="&dcterms;"
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
   <xsl:param name="baseUri" />
