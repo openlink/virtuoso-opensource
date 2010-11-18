@@ -1730,7 +1730,11 @@ create procedure BMK.WA.shared_sql(
   {
     grants := BMK.WA.xml_get ('grants', data);
     grants := split_and_decode(trim(grants, ','), 0, '\0\0,');
-    for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = account_id and G_GRANTER_ID = U_ID order by G_GRANTER_ID) do
+    for (select G_ID as _GID from BMK..GRANTS_OBJECT_VIEW where GOW_TO = account_id) do
+    {
+      for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID, U_NAME
+             from BMK.WA.GRANTS, DB.DBA.SYS_USERS
+            where G_ID = _GID) do
     {
       if (length(grants) and not BMK.WA.vector_contains(grants, U_NAME))
         goto _skip;
@@ -1764,6 +1768,7 @@ create procedure BMK.WA.shared_sql(
       }
     _skip:;
   }
+}
 }
 }
 ;
@@ -3482,7 +3487,7 @@ create procedure BMK.WA.bmk_tree (
   }
   else if ((node_type = 'u') and (node_id = -1))
   {
-    for (select distinct U_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID order by 2) do
+    for (select distinct U_ID, U_NAME from BMK..GRANTS_VIEW where GW_ID = user_id order by 2) do
       retValue := vector_concat(retValue, vector(U_NAME, BMK.WA.make_node('u', U_ID), BMK.WA.make_path(path, 'u', U_ID)));
   }
   else if (node_type = 'f')
@@ -3497,7 +3502,7 @@ create procedure BMK.WA.bmk_tree (
   }
   else if ((node_type = 'u') and (node_id >= 0))
   {
-    for (select distinct F_ID, F_NAME from BMK.WA.FOLDER, BMK.WA.GRANTS where G_OBJECT_TYPE = 'F' and F_ID = G_OBJECT_ID and G_GRANTEE_ID = user_id and G_GRANTER_ID = node_id order by 2) do
+    for (select distinct F_ID, F_NAME from BMK.WA.FOLDER, BMK..GRANTS_OBJECT_VIEW where GOW_TYPE = 'F' and F_ID = G_OBJECT_ID and GOW_TO = user_id and GOW_FROM = node_id order by 2) do
       retValue := vector_concat(retValue, vector(F_NAME, BMK.WA.make_node('F', F_ID), BMK.WA.make_path(path, 'F', F_ID)));
   }
   else if (node_type = 'F')
@@ -3507,43 +3512,6 @@ create procedure BMK.WA.bmk_tree (
   }
   return retValue;
     }
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.bmk_node_has_childs (
-  in domain_id integer,
-  in user_id integer,
-  in node varchar,
-  in path varchar)
-{
-  declare node_type, node_id any;
-
-  node_id := BMK.WA.node_id(node);
-  node_type := BMK.WA.node_type(node);
-
-  if ((node_type = 'u') and (node_id = -1))
-    if (exists (select 1 from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = user_id and G_GRANTER_ID = U_ID))
-      return 1;
-
-  if (node_type = 'f')
-    if (exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and coalesce(F_PARENT_ID, -1) = coalesce(node_id, -1)))
-      return 1;
-
-  if ((node_type = 's') and (node_id = -1))
-    if (exists (select 1  from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id))
-      return 1;
-
-  if ((node_type = 'u') and (node_id >= 0))
-    if (exists (select 1  from BMK.WA.FOLDER, BMK.WA.GRANTS where G_OBJECT_TYPE = 'F' and F_ID = G_OBJECT_ID and G_GRANTEE_ID = user_id and G_GRANTER_ID = node_id))
-      return 1;
-
-  if (node_type = 'F')
-    if (exists (select 1  from BMK.WA.FOLDER where F_PARENT_ID = node_id))
-      return 1;
-
-  return 0;
-}
 ;
 
 -------------------------------------------------------------------------------

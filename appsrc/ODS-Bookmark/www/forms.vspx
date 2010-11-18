@@ -419,10 +419,8 @@
                                                   null                           _VISITED,
                                                   null                           _UPDATED,
                                                   null                           _CREATED
-                                             from BMK.WA.GRANTS,
-                                                  DB.DBA.SYS_USERS
-                                            where G_GRANTEE_ID = <USER_ID>
-                                   and G_GRANTER_ID = U_ID
+                                  from BMK..GRANTS_VIEW
+                                 where GW_ID = <USER_ID>
                                ) x
                                       where 1 = 1';
                 sql := replace(sql, '<USER_ID>', cast (self.account_id as varchar));
@@ -439,11 +437,11 @@
                                                   null                           _UPDATED,
                                                   null                           _CREATED
                                              from BMK.WA.FOLDER,
-                                                  BMK.WA.GRANTS
-                                            where G_OBJECT_TYPE = \'F\'
+                                      BMK..GRANTS_OBJECT_VIEW
+                                where GOW_TYPE = \'F\'
                                               and G_OBJECT_ID = F_ID
-                                              and G_GRANTER_ID = <ID>
-                                              and G_GRANTEE_ID = <USER_ID>
+                                  and GOW_FROM = <ID>
+                                  and GOW_TO = <USER_ID>
 
                                             union
 
@@ -455,13 +453,13 @@
                                                   a.BD_VISITED                     _VISITED,
                                                   a.BD_UPDATED                     _UPDATED,
                                                   a.BD_CREATED                     _CREATED
-                                             from BMK.WA.GRANTS d,
+                                 from BMK..GRANTS_OBJECT_VIEW d,
                                                   BMK.WA.BOOKMARK_DOMAIN a
                                                     join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID
-                                            where d.G_OBJECT_TYPE = \'B\'
+                                where d.GOW_TYPE = \'B\'
                                               and d.G_OBJECT_ID = a.BD_ID
-                                              and d.G_GRANTER_ID = <ID>
-                                  and d.G_GRANTEE_ID = <USER_ID>
+                                  and GOW_FROM = <ID>
+                                  and GOW_TO = <USER_ID>
                               ) x
                                       where 1 = 1';
                 sql := replace(sql, '<ID>', BMK.WA.node_suffix(self.bNode));
@@ -1373,7 +1371,7 @@
                               L := 1;
                               if (self.v_form <> 'Bookmark/View')
                               {
-                                http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', acl_values[N], 'U'));
                               } else {
                                 http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
                               }
@@ -1386,7 +1384,7 @@
                   	</td>
                     <vm:if test="self.v_form <> 'Bookmark/View'">
                       <td valign="top" nowrap="nowrap">
-                        <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                        <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1'}});" />
                       </td>
                     </vm:if>
                   </tr>
@@ -1491,7 +1489,7 @@
           ]]>
         </v:before-data-bind>
         <?vsp
-          http (sprintf ('<input type="hidden" name="f_id" id="sid" value="%d" />', self.v_id));
+          http (sprintf ('<input type="hidden" name="f_id" id="f_id" value="%d" />', self.v_id));
         ?>
         <div class="form-header">
           <v:label format="%s" value="--self.v_form"/>
@@ -1556,7 +1554,7 @@
               </th>
               <td>
                 <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=mc&amp;params=f_grants:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;dst=mc&amp;params=f_grants:s1;')" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['f_grants'].value = ''" class="button" />
               </td>
             </tr>
@@ -1615,7 +1613,7 @@
           ]]>
         </v:before-data-bind>
         <?vsp
-          http (sprintf ('<input type="hidden" name="s_id" id="sid" value="%d" />', self.v_id));
+          http (sprintf ('<input type="hidden" name="s_id" id="s_id" value="%d" />', self.v_id));
         ?>
         <div class="form-header">
           <v:label format="%s" value="--self.v_form"/>
@@ -1686,7 +1684,7 @@
               </th>
               <td>
                 <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=s&dst=mc&amp;params=s_grants:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&amp;mode=s_bmk&amp;dst=mc&amp;params=s_grants:s1;')" class="button" />
               </td>
             </tr>
           </table>
@@ -1829,7 +1827,7 @@
               </th>
               <td>
                 <v:text name="s_share" null-value="--''" value="--self.vs_share" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&mode=u&dst=mc&amp;params=s_share:s1;',520)" class="button" />
+                <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?form=F1&dst=mc&amp;params=s_share:s1;')" class="button" />
                 <input type="button" value="Clear" onClick="javascript: document.F1.elements['s_share'].value = ''" class="button" />
               </td>
             </tr>

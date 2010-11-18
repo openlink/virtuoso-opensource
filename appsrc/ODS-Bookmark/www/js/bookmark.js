@@ -366,7 +366,7 @@ function showTab(tabs, tabsCount, tabNo)
 function windowShow(sPage, width, height)
 {
   if (!width)
-    width = 520;
+    width = 700;
   if (!height)
     height = 420;
   sPage += urlParam("sid")+urlParam("realm");

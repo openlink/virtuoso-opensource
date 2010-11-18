@@ -86,6 +86,8 @@ BMK.WA.exec_no_error('drop type wa_bookmark');
 
 -- Views
 BMK.WA.exec_no_error('drop view BMK..TAGS_VIEW');
+BMK.WA.exec_no_error('drop view BMK..GRANTS_VIEW');
+BMK.WA.exec_no_error('drop view BMK..GRANTS_OBJECT_VIEW');
 
 -- Registry
 registry_remove ('_bookmark_path_');
