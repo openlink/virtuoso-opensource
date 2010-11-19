@@ -213,11 +213,11 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     long end_size, caddr_t mode, dk_set_t * ret_v, caddr_t folder_id, caddr_t * in, caddr_t * qst, long cert)
 {
   int rc;
-  volatile int inx, inx_mails;
-  unsigned int uid, number, message_begin;
+  volatile int inx_mails;
+  unsigned int uid, message_begin;
   volatile long size;
   dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
-  char num[11], resp[1024];
+  char resp[1024];
   char message[128], err_text[512], err_code[6], login_message[512], username[512], password[512];
   char end_msg[1] = ")";
   char *s, *ps;
@@ -517,7 +517,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   /* rename folder */
   if (!stricmp ("rename", mode))
     {
-      volatile int l, br, fl;
+      volatile int l;
       dtp_t type1, type2;
       if (in)
 	l = BOX_ELEMENTS (in);
@@ -574,7 +574,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	}
       if (inx_mails > 0)
 	{
-	  volatile int l, br, fl;
+	  volatile int l, br;
 	  dtp_t type;
 	  if (in)
 	    l = BOX_ELEMENTS (in);
@@ -722,7 +722,6 @@ bif_imap_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t mode = "";
   caddr_t err = NULL;
   long cert = 0;
-  long uid = 0;
   dk_set_t volatile uidl_mes = NULL;
   IO_SECT (qst);
   if (BOX_ELEMENTS (args) > 4)
@@ -736,7 +735,7 @@ bif_imap_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("08000", "IM013", "Argument 7 to imap_get must be a vector");
     }
   if (BOX_ELEMENTS (args) > 7)
-    cert = bif_long_arg (qst, args, 6, "imap_get");
+    cert = bif_long_arg (qst, args, 7, "imap_get");
   imap_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) & uidl_mes, folder_id, in_uidl, qst, cert);
   if (err)
     {
