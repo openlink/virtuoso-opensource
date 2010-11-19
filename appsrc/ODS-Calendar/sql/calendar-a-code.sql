@@ -4170,12 +4170,7 @@ create procedure CAL.WA.event_check_privacy (
     return 1;
 
   -- shared event
-  if ((event_privacy = 2) and exists (select 1
-                                        from CAL.WA.EVENTS,
-                                             CAL.WA.EVENT_GRANTS
-                                       where G_EVENT_ID = E_ID
-                                         and E_ID = event_id
-                                         and G_GRANTEE_ID = my_account_id))
+  if ((event_privacy = 2) and exists (select 1 from CAL..EVENT_GRANTS_VIEW a where a.EVENT_ID = event_id and a.TO_ID = my_account_id))
     return 1;
 
   return 0;

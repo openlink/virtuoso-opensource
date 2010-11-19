@@ -468,7 +468,7 @@
                             account_id := BMK.WA.domain_owner_id (domain_id);
                             uri := (control as vspx_row_template).te_rowset[4];
                             title := (control as vspx_row_template).te_rowset[3];
-                            title2 := BMK.WA.rdfa_value (sprintf ('%V', title), 'dc:title');
+                            title2 := BMK.WA.rdfa_value (sprintf ('%V', BMK.WA.utf2wide (title)), 'dc:title');
 
                             http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
@@ -646,7 +646,7 @@
                     </th>
                   <td>
                       <v:text name="f_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                    <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=s&dst=mc&amp;params=f_grants:s1;',520)" class="button" />
+                    <input type="button" value="Select" onClick="javascript: windowShow('/ods/users_select.vspx?mode=s_bmk&form=F1&dst=mc&amp;params=f_grants:s1;')" class="button" />
                   </td>
                 </tr>
               </table>

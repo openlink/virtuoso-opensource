@@ -3077,7 +3077,7 @@
                                     L := 1;
                                     if (self.cAction <> 'view')
                                     {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', acl_values[N], 'U'));
                                     } else {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
                                     }
@@ -3090,7 +3090,7 @@
                         	</td>
                           <vm:if test="self.cAction <> 'view'">
                             <td valign="top" nowrap="nowrap">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1'}});" />
                             </td>
                           </vm:if>
                         </tr>
@@ -3645,7 +3645,7 @@
                                     L := 1;
                                     if (self.cAction <> 'view')
                                     {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1", formMode: "u"}});});', acl_values[N], 'U'));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 1, value: "%s", form: "F1"}});});', acl_values[N], 'U'));
                                     } else {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}});});', acl_values[N]));
                                     }
@@ -3658,7 +3658,7 @@
                         	</td>
                           <vm:if test="self.cAction <> 'view'">
                             <td valign="top" nowrap="nowrap">
-                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1', formMode: 'u'}});" />
+                              <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Share" title="Add Share" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, form: 'F1'}});" />
                             </td>
                           </vm:if>
                         </tr>
@@ -6209,7 +6209,7 @@
                         </th>
                         <td>
                           <v:text name="sg_account" null-value="--''" value="--self.vg_account" xhtml_class="textbox" />
-                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?form=F1&params=sg_account:s1;',520)" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&form=F1&params=sg_account:s1;')" class="button" />
                         </td>
                       </tr>
                       <tr>
