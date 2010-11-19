@@ -6560,7 +6560,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
   declare get_feeds, add_html_meta, grddl_loop int;
-  declare base_url, ns_url, reg, doc_base, proxy_iri, cset varchar;
+  declare base_url, ns_url, reg, doc_base, proxy_iri, cset, dtd_sysuri  varchar;
   declare profile_trf, ns_trf, ext_profs, thisgr, cnt any;
   declare dict any;
 
@@ -6702,7 +6702,21 @@ try_grddl:
     goto ret;
   try_rdfa:;
   -- RDFa
+  if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
+    goto no_dtd_check;
+  dtd_sysuri := xtree_doc_get_dtd (xt, 1);
   thisgr := coalesce (dest, graph_iri);
+  if (dtd_sysuri = 'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd') 
+    {
+      declare exit handler for sqlstate '*' { goto try_grddl1; };
+      DB.DBA.RDF_LOAD_RDFA_1 (ret_body, new_origin_uri, thisgr, 0);
+      if (mdta) 
+	goto ret;
+      mdta := mdta + 1;
+    }
+  else if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1') -- only for tests
+    {
+      no_dtd_check:
   cnt := (sparql define input:storage "" select count(*) { graph `iri(?:thisgr)` { ?s ?p ?o }});
   {
       {
@@ -6727,6 +6741,10 @@ try_grddl:
   cnt := (sparql define input:storage "" select count(*) { graph `iri(?:thisgr)` { ?s ?p ?o }}) - cnt;
   if (cnt > 0)
     mdta := mdta + 1;
+    }
+  else if (mdta)
+    goto ret;
+  try_grddl1:
   -- /* GRDDL - plan A, eRDF going here */
   foreach (any prof in profs) do
     {
@@ -7961,12 +7979,13 @@ create procedure DB.DBA.RM_GRAPH_PT_CK (in graph_iri varchar, in dest varchar)
 }
 ;
 
-create procedure RM_CHECK_CLASS_MATCH (in pattern varchar, in graph varchar)
+create procedure RM_CHECK_CLASS_MATCH (in pattern varchar, in graph varchar, in new_origin_uri varchar)
 {
-  declare x any;
+  declare x, dociri any;
+  dociri := DB.DBA.RDF_SPONGE_PROXY_IRI (new_origin_uri);
   for select "tp" from (sparql define input:storage "" 
         prefix foaf: <http://xmlns.com/foaf/0.1/>
-  	select ?tp where { graph `iri(?:graph)` { ?doc foaf:primaryTopic ?s . ?s a ?tp }}) x do
+  	select ?tp where { graph `iri(?:graph)` { ?doc foaf:primaryTopic ?s . ?s a ?tp . filter (?s = iri(?:dociri)) }}) x do
     {
       x := rdfdesc_uri_curie ("tp");
       if (regexp_match (pattern, x) is not null)
@@ -7976,11 +7995,52 @@ create procedure RM_CHECK_CLASS_MATCH (in pattern varchar, in graph varchar)
 }
 ;
 
+create procedure DB.DBA.RM_GET_LABELS_INIT (in dest varchar, in graph_iri varchar, in new_origin_uri varchar, inout opts any)
+{
+  declare data, meta, state, message any;
+  declare qr, primary_topic, doc_iri, baseiri varchar;
+
+  primary_topic := DB.DBA.RDF_PROXY_ENTITY_IRI (graph_iri);
+  doc_iri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph_iri);
+  baseiri := DB.DBA.RM_GET_BASEURI (opts, graph_iri, dest);
+  graph_iri := coalesce (dest, graph_iri);
+  set isolation='uncommitted';
+  if (exists (sparql define input:storage "" 
+  	#define input:inference "virtrdf-label" 
+	prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	prefix gr: <http://purl.org/goodrelations/v1#>
+	select (1) 
+    	where { graph `iri(?:graph_iri)` { ?s a gr:ProductOrServicesSomeInstancesPlaceholder ; rdfs:label ?o . } }))
+    {
+      set isolation='committed';
+      return vector ();
+    }
+  set isolation='committed';
+  -- we first see if NEs extraction find something
+  qr := sprintf ('sparql define input:storage "" select ?o from <%s> where '||
+    	' { ?s <http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema#ResolvedName> ?o . filter isliteral (?o) }',
+	graph_iri);
+  state := '00000';
+  exec (qr, state, message, vector (), 0, meta, data);
+  if (state = '00000' and length (data) > 0)
+    return data;
+  state := '00000';
+  qr := sprintf ('sparql define input:storage "" define input:inference "virtrdf-label" '||
+  	' select distinct ?n ?s1 from <%s> where { ?s1 virtrdf:label ?n   . '||
+  	' filter (isLiteral (?n) && ?s1 in (<%s>, <%s>, <%s>)  && (lang (?n) = "en" || lang (?n) = "") && !(?n like "http://%%"))}', 
+  	graph_iri, primary_topic, doc_iri, new_origin_uri);
+  exec (qr, state, message, vector (), 0, meta, data);
+  if (state = '00000' and length (data) > 0)
+    return data;
+  return vector ();
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_origin_uri varchar, in dest varchar,
     inout ret_body any, in ret_content_type varchar, inout options any)
 {
   declare new_opts any;
-  declare dummy, spmode, triples, graph, tmp any;
+  declare dummy, spmode, triples, graph, tmp, labels any;
   declare rc int;
 
   dummy := null;
@@ -8008,6 +8068,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	  spmode := tmp;
         }	  
     }  
+  labels := DB.DBA.RM_GET_LABELS_INIT (dest, graph, new_origin_uri, options);
   for select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS, MC_API_TYPE 
     from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ do
     {
@@ -8021,7 +8082,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	{
 	  val_match := new_origin_uri;
 	}
-      else if (MC_TYPE = 'CLASS' and RM_CHECK_CLASS_MATCH (MC_PATTERN, coalesce (dest, graph_iri)))
+      else if (MC_TYPE = 'CLASS' and RM_CHECK_CLASS_MATCH (MC_PATTERN, coalesce (dest, graph_iri), new_origin_uri))
 	{
 	  goto try_cartridge; 
 	}
@@ -8047,7 +8108,7 @@ create procedure DB.DBA.RDF_LOAD_POST_PROCESS (in graph_iri varchar, in new_orig
 	    };
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    dbg_obj_prin1 ('Match PP ', MC_HOOK);
-	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type));
+	  new_opts := vector_concat (options, MC_OPTIONS, vector ('content-type', ret_content_type), vector ('extracted-labels', labels));
 	  commit work;
 	  st := msec_time ();
 	  rc := call (MC_HOOK) (graph_iri, new_origin_uri, dest, ret_body, dummy, dummy, MC_KEY, new_opts);
