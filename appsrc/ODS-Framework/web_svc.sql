@@ -64,6 +64,18 @@ DB.DBA.wa_add_col ('ODS.DBA.APP_PING_LOG', 'APL_FEED_URL', 'varchar default null
 
 DB.DBA.wa_exec_no_error_log('create index APP_PING_LOG_IDX1 on ODS.DBA.APP_PING_LOG (APL_STAT, APL_WAI_ID)');
 
+DB.DBA.wa_exec_no_error_log(
+'create table ACT_PING_LOG (
+    APL_HOST_ID int references SVC_HOST (SH_ID) on update cascade on delete cascade,
+    APL_URI IRI_ID,
+    APL_WA_ID int references DB.DBA.WA_ACTIVITIES (WA_ID) on update cascade on delete cascade,
+    APL_STAT int default 0,
+    APL_TS timestamp,
+    APL_SENT datetime,
+    APL_ERROR long varchar,
+    APL_SEQ integer identity,
+    primary key (APL_URI, APL_HOST_ID, APL_STAT, APL_SEQ))');
+
 insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (0, '', '--', '');
 
 insert soft SVC_HOST (SH_ID, SH_URL, SH_NAME, SH_PROTO) values (1, 'http://rpc.weblogs.com/RPC2', 'Weblog.com', 'xml-rpc');
@@ -315,6 +327,103 @@ create procedure PSH_SUBSCRIBE_LINK ()
 {
   return 'http://' || DB.DBA.WA_CNAME() || '/psh/subscribe.vsp';
 };
+
+create procedure PSH_ACTIVITY_PING (in ep_url varchar, in _feed_url varchar)
+{
+  declare hf, rc any;
+  rc := null;
+  declare exit handler for sqlstate '*'
+    {
+      return __SQL_MESSAGE;
+    };
+  http_get (ep_url, hf, 'POST', null, sprintf ('hub.mode=publish&hub.url=%U', _feed_url));
+  if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 204 %')
+    {
+      rc := hf[0];
+    }
+  return rc;
+}
+;
+
+create procedure SVC_PROCESS_ACT_PINGS ()
+{
+  declare _host_id, rc, dedl, seq int;
+  declare nam, use_pings, _url, _title, _feed_url varchar;
+  declare _inst DB.DBA.web_app;
+
+  declare cr cursor for select APL_HOST_ID, APL_URI, APL_SEQ from ACT_PING_LOG where APL_STAT = 0;
+
+  dedl := 0;
+
+  declare exit handler for sqlstate '40001'
+    {
+      rollback work;
+      close cr;
+      dedl := dedl + 1;
+      if (dedl < 5)
+	goto again;
+    };
+
+again:
+  whenever not found goto ret;
+  open cr (prefetch 1);
+  while (1)
+    {
+      _inst := null;
+      fetch cr into _host_id, _feed_url, seq;
+      commit work;
+      for select SH_URL, SH_PROTO, SH_METHOD, SH_NAME from SVC_HOST where SH_ID = _host_id and SH_PROTO = 'PubSubHub' do
+	  {
+	    rc := PSH_ACTIVITY_PING (SH_URL, id_to_iri (_feed_url));
+	    if (rc is not null)
+	      {
+		update ACT_PING_LOG set APL_ERROR = rc, APL_STAT = 2, APL_SENT = now ()
+		    where APL_URI = _feed_url and APL_HOST_ID = _host_id and APL_STAT = 0 and APL_SEQ = seq;
+		commit work;
+	      }
+	  }
+      update ACT_PING_LOG set APL_STAT = 1, APL_SENT = now () where APL_URI = _feed_url and APL_HOST_ID = _host_id and APL_STAT = 0 and APL_SEQ = seq;
+      commit work;
+      next:;
+    }
+  ret:
+  close cr;
+  return;
+};
+
+create trigger WA_ACTIVITIES_I after insert on DB.DBA.WA_ACTIVITIES referencing new as N
+{
+  declare url, cname, uid any;
+  cname := DB.DBA.WA_CNAME ();
+  uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WA_U_ID);
+  url := sprintf ('http://%s/activities/feeds/activities/user/%s/source/%d', cname, uid, N.WA_SRC_ID);
+  ACT_PING (N.WA_ID, url);
+}
+;
+
+create trigger WA_ACTIVITIES_U after update on DB.DBA.WA_ACTIVITIES referencing old as O, new as N
+{
+  declare url, cname, uid any;
+  cname := DB.DBA.WA_CNAME ();
+  uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WA_U_ID);
+  url := sprintf ('http://%s/activities/feeds/activities/user/%s', cname, uid);
+  ACT_PING (N.WA_ID, url);
+}
+;
+
+
+create procedure ACT_PING (in act_id varchar, in act_url varchar)
+{
+  declare act_iri any;
+  act_iri := iri_to_id (act_url);
+  for select SH_ID from ODS.DBA.SVC_HOST where SH_PROTO = 'PubSubHub' do 
+    {
+      if (not exists (select 1 from ACT_PING_LOG where APL_WA_ID = act_id and APL_HOST_ID = SH_ID and APL_STAT = 0 and APL_URI = act_iri))
+	insert into ACT_PING_LOG (APL_URI, APL_HOST_ID, APL_STAT, APL_WA_ID)
+	    values (act_iri, SH_ID, 0, act_id);
+    }
+};
+
 
 use DB;
 

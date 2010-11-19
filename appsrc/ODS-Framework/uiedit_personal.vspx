@@ -124,6 +124,7 @@
       <v:url name="p_url_7" xhtml_id="p_url_7" value="Creator Of" url="--sprintf('uiedit.vspx?page=1&tabNo=7')" xhtml_class="--case when self.tabNo = 7 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_8" xhtml_id="p_url_8" value="My Offers" url="--sprintf('uiedit.vspx?page=1&tabNo=8')" xhtml_class="--case when self.tabNo = 8 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_9" xhtml_id="p_url_9" value="Offers I Seek" url="--sprintf('uiedit.vspx?page=1&tabNo=9')" xhtml_class="--case when self.tabNo = 9 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_10" xhtml_id="p_url_10" value="Like & Dislikes" url="--sprintf('uiedit.vspx?page=1&tabNo=10')" xhtml_class="--case when self.tabNo = 10 then 'tabX activeTabX' else 'tabX' end"/>
       </div>
       <div class="contents">
       <v:template name="personal_template_0" type="simple" enabled="-- equ (self.tabNo, 0)">
@@ -155,6 +156,9 @@
       </v:template>
       <v:template name="personal_template_9" type="simple" enabled="-- equ (self.tabNo, 9)">
         <v:include url="uiedit_wishlist.vspx"/>
+      </v:template>
+      <v:template name="personal_template_10" type="simple" enabled="-- equ (self.tabNo, 10)">
+        <v:include url="uiedit_likes.vspx"/>
       </v:template>
         </div>
     </div>

@@ -494,14 +494,19 @@ create procedure dav_path_normalize (
 
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
-  in ontology varchar) __soap_http 'application/json'
+  in ontology varchar,
+  in dependentOntology varchar := null) __soap_http 'application/json'
 {
   declare S, data any;
-  declare tmp, classes, retValue any;
+  declare tmp, classes, retValue, dependency any;
 
   set_user_id ('dba');
   -- load ontology
   ODS.ODS_API."ontology.load" (ontology, 0);
+
+  dependency := '';
+  if (not isnull (dependentOntology))
+    dependency := sprintf (' || (str(?sc) like "%s%%")', dependentOntology);
 
   -- select classes ontology
   classes := vector ();
@@ -518,7 +523,7 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n          OPTIONAL ' ||
          '\n          { ' ||
          '\n            ?c rdfs:subClassOf ?sc .' ||
-         '\n            filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n              filter ((str(?sc) = \'\') || (((str(?sc) like "%s%%")%s) && not (str(?sc) like "nodeID://%%"))).' ||
          '\n          }.' ||
          '\n          filter (str(?c) like "%s%%").' ||
          '\n        }' ||
@@ -528,7 +533,7 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n            OPTIONAL ' ||
          '\n            { ' ||
          '\n              ?c rdfs:subClassOf ?sc .' ||
-         '\n              filter ((str(?sc) = \'\') || ((str(?sc) like "%s%%") && not (str(?sc) like "nodeID://%%"))).' ||
+         '\n              filter ((str(?sc) = \'\') || (((str(?sc) like "%s%%")%s) && not (str(?sc) like "nodeID://%%"))).' ||
          '\n            }.' ||
          '\n            filter (str(?c) like "%s%%").' ||
          '\n          }' ||
@@ -536,8 +541,10 @@ create procedure ODS.ODS_API."ontology.classes" (
          '\n  ORDER BY ?c ?sc',
          ontology,
          ontology,
+         dependency,
          ontology,
          ontology,
+         dependency,
          ontology);
   data := ODS.ODS_API."ontology.sparql" (S);
   foreach (any item in data) do
@@ -570,7 +577,7 @@ create procedure ODS.ODS_API."ontology.classProperties" (
          '\n SELECT ?p ?t ?r1' ||
          '\n   FROM <%s>' ||
          '\n  WHERE {' ||
-         '\n          {?p a owl:ObjectProperty} UNION {?p a owl:DatatypeProperty} .' ||
+         '\n          {?p a owl:ObjectProperty} UNION {?p a owl:DatatypeProperty} UNION {?p a owl:Property} .' ||
          '\n          ?p rdf:type ?t .' ||
          '\n          optional {?p rdfs:range ?r1} .' ||
          '\n            {' ||
@@ -744,12 +751,14 @@ create procedure ODS.ODS_API."ontology.array" ()
                  'gr',   'http://purl.org/goodrelations/v1#',
                  'ibis', 'http://purl.org/ibis#',
                  'ical', 'http://www.w3.org/2002/12/cal/icaltzd#',
+                 'like', 'http://ontologi.es/like#',
                  'mo',   'http://purl.org/ontology/mo/',
                  'movie','http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#',
                  'owl',  'http://www.w3.org/2002/07/owl#',
                  'rdf',  'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                  'rdfs', 'http://www.w3.org/2000/01/rdf-schema#',
                  'rel',  'http://purl.org/vocab/relationship/',
+                 'rev',  'http://purl.org/stuff/rev#',
                  'sioc', 'http://rdfs.org/sioc/ns#',
                  'sioct','http://rdfs.org/sioc/types#',
                  'xsd',  'http://www.w3.org/2001/XMLSchema#'
@@ -3769,6 +3778,158 @@ create procedure ODS.ODS_API."user.seeks.delete" (
 }
 ;
 
+create procedure ODS.ODS_API."user.likes.list" () __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  retValue := vector();
+  for (select WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_U_ID = _u_id) do
+  {
+    retValue := vector_concat (retValue, vector (vector (WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT)));
+  }
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.get" (
+  in id integer) __soap_http 'application/json'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare uri, type, name, comment, products, retValue any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  uri := '';
+  type := '';
+  name := '';
+  comment := '';
+  products := vector ();
+  for (select WUL_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES from DB.DBA.WA_USER_LIKES where WUL_ID = id) do
+  {
+    uri := WUL_URI;
+    type := WUL_TYPE;
+    name := WUL_NAME;
+    comment := WUL_COMMENT;
+    products := deserialize (WUL_PROPERTIES);
+  }
+  retValue := vector_concat (jsonObject (),
+                             vector (
+                                     'id', id,
+                                     'uri', uri,
+                                     'type', type,
+                                     'name', name,
+                                     'comment', comment,
+                                     'properties', vector (vector_concat (ODS..jsonObject (), vector ('id', '0', 'ontology', 'http://ontologi.es/like#', 'items', get_keyword ('products', products, vector ()))))
+                                    )
+                            );
+  return obj2json (retValue);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.update" (
+  in id integer,
+  in uri varchar,
+  in type varchar,
+  in name varchar,
+  in comment varchar,
+  in properties any) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare products, ontologies any;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  products := vector();
+  ontologies := json_parse (properties);
+  if (length(ontologies))
+    products := get_keyword ('items', ontologies[0], vector());
+  properties := vector_concat (ODS..jsonObject (), vector ('version', '1.0', 'products', products));
+  if (isnull (id))
+  {
+    insert into DB.DBA.WA_USER_LIKES (WUL_U_ID, WUL_URI, WUL_TYPE, WUL_NAME, WUL_COMMENT, WUL_PROPERTIES)
+      values (_u_id, uri, type, name, comment, serialize (properties));
+    id := (select max (WUL_ID) from DB.DBA.WA_USER_LIKES);
+  }
+  else
+  {
+    update DB.DBA.WA_USER_LIKES
+       set WUL_URI = uri,
+           WUL_TYPE = type,
+           WUL_NAME = name,
+           WUL_COMMENT = comment,
+           WUL_PROPERTIES = serialize (properties)
+     where WUL_ID = id;
+  }
+  return ods_serialize_int_res (id);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.new" (
+  in uri varchar,
+  in type varchar,
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.likes.update" (null, uri, type, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.edit" (
+  in id integer,
+  in uri varchar,
+  in type varchar,
+  in name varchar,
+  in comment varchar,
+  in properties any := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.likes.update" (id, uri, type, name, comment, properties);
+}
+;
+
+create procedure ODS.ODS_API."user.likes.delete" (
+  in id integer) __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare rc integer;
+  declare _u_id integer;
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  delete from DB.DBA.WA_USER_LIKES where WUL_ID = id and WUL_U_ID = _u_id;
+  rc := row_count ();
+
+  return ods_serialize_int_res (rc);
+}
+;
+
 create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'application/json'
 {
   declare uname varchar;
@@ -4872,6 +5033,11 @@ grant execute on ODS.ODS_API."user.seeks.get" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.new" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.seeks.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.list" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.get" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.new" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.edit" to ODS_API;
+grant execute on ODS.ODS_API."user.likes.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;

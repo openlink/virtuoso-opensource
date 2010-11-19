@@ -138,6 +138,10 @@ input.button {
         {
           self.v_filter := 'u';
         }
+        else if (self.v_mode like 's_%')
+        {
+          self.v_filter := 'u';
+        }
       ]]>
     </v:before-data-bind>
 
@@ -236,8 +240,13 @@ input.button {
               }
               if (self.v_filter <> 'g')
               {
+                  if (self.v_mode = 's_bmk')
+                  {
+                    user_sql := sprintf('select ''User'' U_TYPE, b.U_NAME, coalesce(b.U_FULL_NAME, \'\') U_FULL_NAME from BMK..GRANTS_VIEW a, DB.DBA.SYS_USERS b where (b.U_ACCOUNT_DISABLED=0) and upper(b.U_NAME) like upper(\'%s\') and a.GW_ID = %d and a.U_ID = b.U_ID', self.v_mask, self.u_id);
+                  } else {
                 user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (U_ACCOUNT_DISABLED=0) and (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6))', self.v_mask);
               }
+                }
                 if (user_sql = '')
                 {
                 control.ds_sql := group_sql;
@@ -306,7 +315,7 @@ input.button {
 
             <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table>
-                  <tr onclick="rowSelected(this);" class="pointer <?V case when mod(control.te_ctr,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+                  <tr onclick="rowSelected(this);" class="pointer <?V case when mod(control.te_ctr+1,2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
                     <vm:if test="self.isMultiple(self.v_dst)">
                     <td  align="center">
                       <?vsp
