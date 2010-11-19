@@ -906,6 +906,39 @@ self.vc_data_bind (e);
                     </select>
                   </td>
                 </tr>
+                <tr>
+                  <th>Folder type</th>
+                  <td>
+                    <select name="fdet">
+                      <?vsp
+		                    {
+                          declare _fidx any;
+                          declare _idx varchar;
+                          declare i integer;
+
+                          _idx := get_keyword('fdet', self.vc_page.vc_event.ve_params, '');
+                          _fidx := vector (
+                            '',                 'Normal',                        
+                            'ResFilter',        'Smart Folder',                  
+                            'CatFilter',        'Category Folder',               
+                            'PropFilter',       'Property Filter Folder',        
+                            'HostFs',           'Host FS Folders',               
+                            'oMail',            'WebMail Folders',               
+                            'News3',            'OFM Subscriptions',             
+                            'rdfSink',          'RDF Upload Folder',             
+                            'RDFData',          'RDF Data',                      
+                            'S3',               'Amazon S3',                     
+			    'DynaRes',          'Dynamic Resources'
+			    );
+                          for (i := 0; i < length (_fidx); i := i + 2)
+                          {
+                            http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
+                          }
+	                      }
+                      ?>
+                    </select>
+                  </td>
+                </tr>
 		            <?vsp } ?>
                 <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
                   <tr id="fi8">
@@ -965,7 +998,7 @@ self.vc_data_bind (e);
                         <![CDATA[
                           declare usr, grp vspx_select_list;
                           declare i, _uid, ownern, groupn integer;
-                          declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh varchar;
+                          declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh, _fdet varchar;
                   			  declare _file, _graph, is_ttl, is_xml any;
 
                   			  if (self.dst_sel.ufl_value = 'rdf')
@@ -1073,6 +1106,7 @@ self.vc_data_bind (e);
                             _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
                           _idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
                           _inh := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
+                          _fdet := get_keyword('fdet', self.vc_page.vc_event.ve_params, '');
                           _perms := concat(_perms, _idx);
                           declare ret int;
                           declare full_path varchar;
@@ -1104,7 +1138,8 @@ self.vc_data_bind (e);
                     				    ret, cname, full_path, sync_ver);
                       				}
                   		        set triggers off;
-                              update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh where COL_ID = ret;
+			      if (_fdet = '') _fdet := null;		
+                              update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh, COL_DET = _fdet where COL_ID = ret;
 			                        set triggers on;
                             }
                           }
@@ -1297,7 +1332,7 @@ self.vc_data_bind (e);
               <script type="text/javascript" src="tbl.js"><xsl:text> </xsl:text></script>
               <table>
                 <?vsp
-                  declare _name, perms, cur_user, _res_type, _inh varchar;
+                  declare _name, perms, cur_user, _res_type, _inh, _fdet varchar;
             		  declare _res_id, own_id, own_grp, uid, gid, is_dir integer;
 
             		  _inh := null;
@@ -1315,7 +1350,7 @@ self.vc_data_bind (e);
                   {
                     whenever not found goto nf1;
                     if (is_dir = 1)
-                      select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_INHERIT into _name, own_id, own_grp, perms, _inh from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
+                      select COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_INHERIT, COL_DET into _name, own_id, own_grp, perms, _inh, _fdet from WS.WS.SYS_DAV_COL where COL_ID = _res_id;
                     else
                       select RES_NAME, RES_OWNER, RES_GROUP, RES_PERMS, RES_TYPE into _name, own_id, own_grp, perms, _res_type from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
                   nf1:;
@@ -1475,6 +1510,39 @@ self.vc_data_bind (e);
 
                           _idx := _inh;
                           _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                          for (i := 0; i < length (_fidx); i := i + 2)
+                          {
+                            http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
+                          }
+	                      }
+                      ?>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Folder type</th>
+                  <td>
+                    <select name="fdet">
+                      <?vsp
+		                    {
+                          declare _fidx any;
+                          declare _idx varchar;
+                          declare i integer;
+
+                          _idx := _fdet;
+                          _fidx := vector (
+                            '',                 'Normal',                        
+                            'ResFilter',        'Smart Folder',                  
+                            'CatFilter',        'Category Folder',               
+                            'PropFilter',       'Property Filter Folder',        
+                            'HostFs',           'Host FS Folders',               
+                            'oMail',            'WebMail Folders',               
+                            'News3',            'OFM Subscriptions',             
+                            'rdfSink',          'RDF Upload Folder',             
+                            'RDFData',          'RDF Data',                      
+                            'S3',               'Amazon S3',                     
+			    'DynaRes',          'Dynamic Resources'
+			    );
                           for (i := 0; i < length (_fidx); i := i + 2)
                           {
                             http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
@@ -2000,7 +2068,7 @@ self.vc_data_bind (e);
                 			      return;
 
                           declare i, own_id, own_grp integer;
-                          declare mimetype, _recurse, _res_name varchar;
+                          declare mimetype, _recurse, _res_name, _fdet varchar;
                           declare _fidx, _file any;
                           declare _perms, _p, _idx varchar;
                           declare _res_id, is_dir, _inh integer;
@@ -2060,6 +2128,8 @@ self.vc_data_bind (e);
                           _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
                           _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
                           _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
+			  _fdet := get_keyword ('fdet', self.vc_page.vc_event.ve_params, '');
+			  if (_fdet = '') _fdet := null;
 
                           for (i := 0; i < 9; i := i + 1)
                           {
@@ -2085,8 +2155,8 @@ self.vc_data_bind (e);
 
                           if (is_dir = 1)
                           {
-                            exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ?, COL_INHERIT = ? where  COL_ID = ?',
-                                  state, msg, vector (_res_name, _perms, own_id, own_grp, _inh, _res_id), m_dta, res);
+                            exec ('update WS.WS.SYS_DAV_COL set COL_NAME = ?, COL_PERMS = ?, COL_OWNER = ?, COL_GROUP = ?, COL_INHERIT = ?, COL_DET = ? where COL_ID = ?',
+                                  state, msg, vector (_res_name, _perms, own_id, own_grp, _inh, _fdet, _res_id), m_dta, res);
 
                             if (_recurse)
                             {
