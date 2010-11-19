@@ -78,7 +78,7 @@
         </tr>
       </table>
       <div class="scroll_area">
-      <v:data-set name="data_set2" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE" nrows="1000" scrollable="1" cursor-type="keyset" edit="1">
+      <v:data-set name="data_set2" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE" nrows="1000" scrollable="1" cursor-type="dynamic" edit="1">
         <input type="hidden" name="page" value="2"/>
         <v:column name="VS_DESCR" />
         <v:column name="VS_HOST" />
