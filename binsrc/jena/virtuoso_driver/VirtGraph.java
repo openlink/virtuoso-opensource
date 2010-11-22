@@ -42,6 +42,9 @@ import virtuoso.jdbc3.VirtuosoDataSource;
 
 public class VirtGraph extends GraphBase
 {
+    static {
+        VirtuosoQueryEngine.register();
+    }
 
     static public final String DEFAULT = "virt:DEFAULT";
     protected String graphName;
