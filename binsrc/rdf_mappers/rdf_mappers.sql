@@ -6702,10 +6702,10 @@ try_grddl:
     goto ret;
   try_rdfa:;
   -- RDFa
+  thisgr := coalesce (dest, graph_iri);
   if (__proc_exists (fix_identifier_case ('xtree_doc_get_dtd'), 2) is null)
     goto no_dtd_check;
   dtd_sysuri := xtree_doc_get_dtd (xt, 1);
-  thisgr := coalesce (dest, graph_iri);
   if (dtd_sysuri = 'http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd') 
     {
       declare exit handler for sqlstate '*' { goto try_grddl1; };
