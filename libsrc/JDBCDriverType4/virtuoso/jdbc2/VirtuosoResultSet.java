@@ -182,7 +182,7 @@ public class VirtuosoResultSet implements ResultSet
     * @param metaData   The metadata of the result. (It can be null)
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred.
     */
-   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData) throws VirtuosoException
+   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean isPrepare) throws VirtuosoException
    {
       this.statement = statement;
       this.metaData = metaData;
@@ -199,7 +199,7 @@ public class VirtuosoResultSet implements ResultSet
       stmt_co_last_in_batch = false;
       //System.err.print ("init: rows :");
       //System.err.println (rows.toString());
-      process_result();
+      process_result(isPrepare);
       //System.err.print ("init: after process : rows :");
       //System.err.println (rows.toString());
    }
@@ -230,7 +230,7 @@ public class VirtuosoResultSet implements ResultSet
     *
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred
     */
-   protected void getMoreResults() throws VirtuosoException
+   protected void getMoreResults(boolean isPrepare) throws VirtuosoException
    {
      synchronized (statement.connection)
        {
@@ -244,7 +244,7 @@ public class VirtuosoResultSet implements ResultSet
 	 else
 	   rows.removeAllElements();
 	 // One more time
-	 process_result();
+	 process_result(isPrepare);
 	 more_result = true;
 	 //System.err.print ("more_results: after process : rows :");
 	 //System.err.println (rows.toString());
@@ -326,11 +326,11 @@ public class VirtuosoResultSet implements ResultSet
 	    statement.future = statement.connection.getFuture(
 		VirtuosoFuture.extendedfetch,args, statement.rpc_timeout);
 
-	    getMoreResults();
+	    getMoreResults(false);
 	    // Remove future
 	    //statement.connection.removeFuture(statement.future);
 	    if (statement.connection.getAutoCommit())
-	      process_result();
+	      process_result(false);
 	  }
       }
       catch(IOException e)
@@ -364,7 +364,7 @@ public class VirtuosoResultSet implements ResultSet
 	      case VirtuosoTypes.SQL_DELETE:
 		  do
 		    {
-		      pstmt.vresultSet.getMoreResults();
+		      pstmt.vresultSet.getMoreResults(false);
 		    }
 		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsDeleted = (pstmt.vresultSet.getUpdateCount() > 0);
@@ -378,7 +378,7 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      // Reset some flags
 		      pstmt.vresultSet.is_complete = pstmt.vresultSet.more_result = false;
-		      pstmt.vresultSet.process_result();
+		      pstmt.vresultSet.process_result(false);
 		    }
 		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsUpdated = (pstmt.vresultSet.getUpdateCount() > 0);
@@ -386,7 +386,7 @@ public class VirtuosoResultSet implements ResultSet
 	      case VirtuosoTypes.SQL_ADD:
 		  do
 		    {
-		      pstmt.vresultSet.getMoreResults();
+		      pstmt.vresultSet.getMoreResults(false);
 		    }
 		  while(!pstmt.vresultSet.isLastRow && isLastResult);
 		  rowIsInserted = (pstmt.vresultSet.getUpdateCount() > 0);
@@ -400,7 +400,7 @@ public class VirtuosoResultSet implements ResultSet
 		    {
 		      // Reset some flags
 		      pstmt.vresultSet.is_complete = pstmt.vresultSet.more_result = false;
-		      pstmt.vresultSet.process_result();
+		      pstmt.vresultSet.process_result(false);
 		    }
 		  while(pstmt.vresultSet.more_result());
 		  totalRows = pstmt.vresultSet.totalRows;
@@ -417,7 +417,7 @@ public class VirtuosoResultSet implements ResultSet
     *
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred;
     */
-   private void process_result() throws VirtuosoException
+   private void process_result(boolean isPrepare) throws VirtuosoException
    {
       Object curr;
       openlink.util.Vector result;
@@ -519,7 +519,7 @@ public class VirtuosoResultSet implements ResultSet
 		  //more_result = true;
                   //mutexMetaData.freeSem();
                   // Check if it's a prepared statement
-                  if(statement instanceof PreparedStatement)
+                  if(statement instanceof PreparedStatement && isPrepare)
                   {
                      Object obj = v.elementAt(3);
                      statement.objparams = null;
@@ -550,7 +550,9 @@ public class VirtuosoResultSet implements ResultSet
 #endif
 		       }
 		     else
-		       statement.parameters = null;
+		       {
+		         statement.parameters = null;
+		       }
                   }
                   break;
                case VirtuosoTypes.QA_ROWS_AFFECTED:
@@ -2205,7 +2207,7 @@ public class VirtuosoResultSet implements ResultSet
 			   stmt_current_of = -1;
 			   stmt_co_last_in_batch = false;
 		       }
-		       process_result ();
+		       process_result (false);
 		       //System.err.print ("fetch: after process : rows :");
 		       //System.err.println (rows.toString());
 		   }
