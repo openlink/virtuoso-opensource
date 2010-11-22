@@ -27,9 +27,11 @@ import java.io.File;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import org.openrdf.model.BNodeFactory;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.URIFactory;
 import org.openrdf.model.LiteralFactory;
+import org.openrdf.model.impl.BNodeFactoryImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.impl.LiteralFactoryImpl;
 import org.openrdf.model.impl.URIFactoryImpl;
@@ -57,6 +59,7 @@ public class VirtuosoRepository implements Repository {
 	
 	private URIFactory uf = new URIFactoryImpl();
 	private LiteralFactory lf = new LiteralFactoryImpl();
+	private BNodeFactory bf = new BNodeFactoryImpl();
 
 	File dataDir;
 	
@@ -376,7 +379,7 @@ public class VirtuosoRepository implements Repository {
 	 */
 	@Deprecated
 	public ValueFactory getValueFactory() {
-		return new ValueFactoryImpl(uf, lf);
+		return new ValueFactoryImpl(bf, uf, lf);
 	}
 
 	/**
