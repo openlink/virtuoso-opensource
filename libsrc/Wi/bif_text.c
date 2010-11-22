@@ -1461,14 +1461,22 @@ vtb_wordump (vt_batch_t * vtb, dk_session_t * ses)
 
 
 caddr_t
-vtb_strings (vt_batch_t * vtb, dk_session_t * ses)
+vtb_strings (vt_batch_t * vtb, dk_session_t * ses, caddr_t * err_ret)
 {
   word_batch_t * wb;
   int fill = 0;
   lenmem_t *lm;
-  caddr_t * res = (caddr_t*) dk_alloc_box
-    (sizeof (caddr_t) * 2 * vtb->vtb_words->ht_inserts, DV_ARRAY_OF_POINTER);
+  caddr_t * res;
+  size_t ret_len = sizeof (caddr_t) * 2 * vtb->vtb_words->ht_inserts;
   id_hash_iterator_t hit;
+
+  if (ret_len >= MAX_BOX_LENGTH)
+    {
+      if (err_ret)
+	err_ret [0] = srv_make_new_error ("22023", "FT...", "The result array too large");
+      return NULL;
+    }
+  res = (caddr_t*) dk_alloc_box (ret_len, DV_ARRAY_OF_POINTER);
   if (vtb->vtb_strings_taken)
     id_hash_clear (vtb->vtb_words);
   id_hash_iterator (&hit, vtb->vtb_words);
@@ -1528,7 +1536,7 @@ bif_vt_batch_strings (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    "vt_batch_strings needs a string_output as a second argument, not an argument of type %s (%d)",
 	    dv_type_title (out_dtp), out_dtp);
     }
-  return (vtb_strings (vtb, out));
+  return (vtb_strings (vtb, out, err_ret));
 }
 
 /*caddr_t
@@ -1544,7 +1552,7 @@ caddr_t
 bif_vt_batch_strings_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   vt_batch_t * vtb = bif_vtb_arg (qst, args, 0, "vt_batch_strings_array");
-  caddr_t *words = (caddr_t *)vtb_strings (vtb, NULL);
+  caddr_t *words = (caddr_t *)vtb_strings (vtb, NULL, err_ret);
   return (caddr_t)(words);
 }
 
@@ -1690,7 +1698,7 @@ vtb_destroy (vt_batch_t * vtb)
   if (vtb->vtb_ref_count)
     return 1;
   if (vtb->vtb_words->ht_inserts)
-    dk_free_tree (vtb_strings (vtb, NULL));
+    dk_free_tree (vtb_strings (vtb, NULL, NULL));
   id_hash_free (vtb->vtb_words);
   dk_free_box (vtb->vtb_min_word.lm_memblock);
   dk_free_box (vtb->vtb_max_word.lm_memblock);
