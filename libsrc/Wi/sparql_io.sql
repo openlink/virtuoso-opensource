@@ -243,10 +243,18 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   in expected_var_list any := null
   )
 {
+  declare quest_pos integer;
   declare req_uri, req_method, req_body, local_req_hdr, ret_body, ret_hdr any;
   declare ret_content_type, ret_known_content_type, ret_format varchar;
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT (', res_mode, res_make_obj, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metas, bnode_dict, ')');
+  quest_pos := strchr (service, '?');
   req_body := string_output();
+  if (quest_pos is not null)
+    {
+      http (subseq (service, quest_pos+1), req_body);
+      http ('&', req_body);
+      service := subseq (service, 0, quest_pos);
+    }
   http ('query=', req_body);
   http_url (query, 0, req_body);
   if (dflt_graph is not null and dflt_graph <> '')
@@ -311,7 +319,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       declare var_ctr, var_count integer;
       declare vect_acc any;
       declare row_inx integer;
-       -- dbg_obj_princ ('application/sparql-results+xml ret_body=', ret_body);
+      -- dbg_obj_princ ('application/sparql-results+xml ret_body=', ret_body); string_to_file ('DB.DBA.SPARQL_REXEC_INT.reply.xml', ret_body, -2);
       ret_xml := xtree_doc (ret_body, 0);
       var_list := xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] [xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"]
                                /rset:sparql/rset:head/rset:variable/@name | /rset2:sparql/rset2:head/rset2:variable/@name', ret_xml, 0);
@@ -1806,7 +1814,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   save_mode := get_keyword ('save', params, null);
   if (save_mode is not null and save_mode = 'display')
     save_mode := null;
-  else
+  else if (save_mode is not null)
     {
       save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
       if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
