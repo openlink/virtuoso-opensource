@@ -88,6 +88,12 @@ is_ok (char *resp)
     return 0;
   if (strlen (resp) > 2 && !strncmp ("DELETE", resp + 2, 6))
     return 0;
+  if (strlen (resp) > 2 && !strncmp ("CREATE", resp + 2, 6))
+    return 0;
+  if (strlen (resp) > 2 && !strncmp ("STORE", resp + 2, 5))
+    return 0;
+  if (strlen (resp) > 2 && !strncmp ("COPY", resp + 2, 4))
+    return 0;
   if (strlen (resp) > 2 && !strncmp ("EXPUNGE", resp + 2, 7))
     return 0;
   return 0;
@@ -221,6 +227,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   char message[128], err_text[512], err_code[6], login_message[512], username[512], password[512];
   char end_msg[1] = ")";
   char *s, *ps;
+	caddr_t target_folder_id = NULL;
   dk_session_t *msg = NULL;
 #ifdef _SSL
   SSL *ssl;
@@ -371,7 +378,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       SEND (ses, rc, message, "");
       while (1)
 	{
-	  IS_OK_NEXT (ses, resp, rc, "IM004", "SELECT command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM010", "DELETE command to remote IMAP server failed");
 	  if (strlen (resp) > 2 && !strncmp ("3 OK", resp, 4))
 	    break;
 	  if (strlen (resp) > 2 && !strncmp ("3 BAD", resp, 5))
@@ -390,6 +397,37 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       goto logout;
     }
 
+	if (!stricmp ("create", mode))
+	{
+		if (folder_id && strlen (folder_id) > 0)
+		snprintf (message, sizeof (message), "3 CREATE %s", folder_id);
+		else
+		{
+			strcpy_ck (err_code, "IM010");
+			strcpy_ck (err_text, "There must be folder name to create (6th argument)");
+			goto logout;
+		}
+		SEND (ses, rc, message, "");
+		while (1)
+		{
+			IS_OK_NEXT (ses, resp, rc, "IM010", "CREATE command to remote IMAP server failed");
+			if (strlen (resp) > 2 && !strncmp ("3 OK", resp, 4))
+			break;
+			if (strlen (resp) > 2 && !strncmp ("3 BAD", resp, 5))
+			{
+				strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_text, "Error during creation");
+				break;
+			}
+			if (strlen (resp) > 2 && !strncmp ("3 NO", resp, 4))
+			{
+				strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_text, "Folder does not exist");
+				break;
+			}
+		}
+		goto logout;
+	}
 
   /* list all messages' headers from selected folder */
   if (!stricmp ("select", mode) || !stricmp ("expunge", mode))
@@ -554,7 +592,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     }
 
   /*  manipuation with select messages in selected folder */
-  if (!stricmp ("fetch", mode) || !stricmp ("message_delete", mode))
+	if (!stricmp ("fetch", mode) || !stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
     {
       if (folder_id && strlen (folder_id) > 0)
 	snprintf (message, sizeof (message), "4 SELECT %s", folder_id);
@@ -575,23 +613,37 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       if (inx_mails > 0)
 	{
 	  volatile int l, br;
+			int start = 0;
 	  dtp_t type;
 	  if (in)
 	    l = BOX_ELEMENTS (in);
-	  for (br = 0; br < l; br++)
+			if (l < 1)
+			{
+				strcpy_ck (err_text, "No messages in list");
+				strcpy_ck (err_code, "PO010");
+				SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
+				goto logout;
+			}
+			if (!stricmp ("message_copy", mode))
+			{
+				target_folder_id = in[0];
+				start = 1;
+			}
+			for (br = start; br < l; br++)
 	    {
 	      type = DV_TYPE_OF (in[br]);
 	      if (!IS_INT_DTP (type))
 		{
 		  strcpy_ck (err_code, "IM010");
-		  strcpy_ck (err_text,
-		      "There must be integer items in vector of argument 7 (old folder name to rename and a new name)");
+					strcpy_ck (err_text, "There must be integer items in vector of argument 7");
 		  goto logout;
 		}
 	      if (!stricmp ("fetch", mode))
 		snprintf (message, sizeof (message), "5 UID FETCH %d BODY.PEEK[]", in[br]);
 	      if (!stricmp ("message_delete", mode))
 		snprintf (message, sizeof (message), "5 UID STORE %d +FLAGS(\\Deleted)", in[br]);
+				if (!stricmp ("message_copy", mode))
+					snprintf (message, sizeof (message), "5 UID COPY %d %s", in[br], target_folder_id);
 	      SEND (ses, rc, message, "");
 	      while (1)
 		{
