@@ -8420,7 +8420,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 #endif
       ssg->ssg_indent--;
     }
-  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && ((SELECT_L == tree->_.req_top.subtype) || has_limofs))
+  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_limofs))
     {
       ssg_newline (0);
       ssg_puts ("ORDER BY");

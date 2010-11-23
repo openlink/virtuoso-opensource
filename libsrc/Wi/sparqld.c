@@ -803,7 +803,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_puts ("HAVING ");
                 ssg_sdprint_tree (ssg, tree->_.req_top.having);
               }
-            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order) && ((SELECT_L == tree->_.req_top.subtype) || has_lim || has_ofs))
+            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_lim || has_ofs))
               {
                 ssg_newline (0);
                 ssg_puts ("ORDER BY ");
