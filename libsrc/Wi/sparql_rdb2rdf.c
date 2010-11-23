@@ -509,7 +509,7 @@ rdb2rdf_optree_dump (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, dk_session_t *se
                 case DV_UNAME: sprintf (buf, " <%s>", fld_const); SES_PRINT (ses, buf); break;
                 case DV_STRING: sprintf (buf, " '''%s'''", fld_const); SES_PRINT (ses, buf); break;
                 case DV_LONG_INT: sprintf (buf, " " BOXINT_FMT, (boxint)fld_const); SES_PRINT (ses, buf); break;
-                default: SES_PRINT (" const", buf); break;
+                default: SES_PRINT (ses, " const"); break;
                 }
             }
           else
