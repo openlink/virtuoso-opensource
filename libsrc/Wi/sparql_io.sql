@@ -2446,7 +2446,7 @@ host_found:
       return;
     }
 write_results:
-  if (save_mode is null)
+  if (save_mode is not null)
     {
       declare status any;
       if ((1 = length (metas[0])) and ('aggret-0' = metas[0][0][0]))
