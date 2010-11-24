@@ -85,6 +85,11 @@ namespace OpenLink.Data.Virtuoso
 		{
 			VirtuosoErrorCollection e = errors.CreateErrors ();
 			errors.Clear ();
+
+                        // Check for trasaction killed by server
+                        foreach (IVirtuosoError err in e)
+                        if (err.Message.Contains("SR175"))
+                          this.connection.OuterConnection.SetTransactionEnded();
 			return e;
 		}
 

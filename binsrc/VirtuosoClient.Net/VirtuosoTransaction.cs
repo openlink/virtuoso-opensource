@@ -44,12 +44,14 @@ namespace OpenLink.Data.Virtuoso
 		private VirtuosoConnection connection;
 		private IsolationLevel isolation;
 		private bool ended;
+		internal bool endedOnServer;
 
 		internal VirtuosoTransaction (VirtuosoConnection connection, System.Data.IsolationLevel isolation)
 		{
 			this.connection = connection;
 			this.isolation = isolation;
 			this.ended = false;
+			this.endedOnServer = false;
 		}
 
 		~VirtuosoTransaction ()
