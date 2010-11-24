@@ -973,6 +973,8 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
   if (not isstring (_content))
     return vector ();
 
+  if (tidy_external ())
+    _content := tidy_html (_content, 'output-xhtml:yes\r\ntidy-mark:no');
   _xml_tree := xml_tree (_content, 2);
   if (__tag (_xml_tree) <> 193)
     return WS.WS.GET_HREF_IN_ARRAY (_content, _d_imgs);
@@ -1922,6 +1924,8 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     }
   else if (_c_type = 'text/html')
     {
+      if (tidy_external ())
+	_content := tidy_html (_content, 'output-xhtml:yes\r\ntidy-mark:no');
       DB.DBA.RDF_LOAD_RDFA (_content, base, graph, 2);
     }
   if (isvector (udata) and isvector (get_keyword ('follow-property', udata)))
