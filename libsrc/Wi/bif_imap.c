@@ -693,6 +693,8 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 				SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 				goto logout;
 			      }
+								if (!stricmp ("message_delete", mode) || !stricmp ("message_copy", mode))
+									break;
 			    goto next_message;
 			  }
 			SES_PRINT (msg, ps);
