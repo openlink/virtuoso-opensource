@@ -514,7 +514,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       signal ('RDFZZ', sprintf (
           'DB.DBA.SPARQL_REXEC(''%.300s'', ...) returned Content-Type ''%.300s'' status ''%.300s''\n%.1000s',
           service, ret_content_type, ret_hdr[0],
-	  cast (xtree_doc (ret_body, 2) as varchar) ) );
+	  "LEFT" (cast (xtree_doc (ret_body, 2) as varchar), 1024) ) );
     }
   signal ('RDFZZ', sprintf (
       'DB.DBA.SPARQL_REXEC(''%.300s'', ...) returned unsupported Content-Type ''%.300s''',
