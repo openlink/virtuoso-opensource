@@ -399,6 +399,8 @@ struct dk_thread_s
   future_request_t *  dkt_requests[MAX_NESTED_FUTURES];
 };
 
+typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
+
 struct mutex_s
   {
     /* os specific handle */
