@@ -1078,7 +1078,7 @@ buf_unremap (buffer_desc_t * buf)
 
 
 void
-cpt_unremap_ram (int target)
+cpt_unremap_ram (int target, int * bufs_done_total)
 {
   /* take buffers that already happen to be in memory and unremap them, stop if quota met */
   DO_SET (index_tree_t *, it, &cpt_dbs->dbs_trees)
@@ -1092,6 +1092,7 @@ cpt_unremap_ram (int target)
 	      if (buf->bd_page != buf->bd_physical_page)
 		{
 		  buf_unremap (buf);
+		  *bufs_done_total += 1;
 		  if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
 		    {
 		      mutex_leave (&it->it_maps[inx].itm_mtx);
@@ -1109,7 +1110,7 @@ cpt_unremap_ram (int target)
 
 
 void
-cpt_em_unremap_read (extent_map_t * em, index_tree_t * it, int * bufs_done, int buf_quota, dk_set_t * bufs_list)
+cpt_em_unremap_read (extent_map_t * em, index_tree_t * it, int * bufs_done, int buf_quota, dk_set_t * bufs_list, int *bufs_done_total)
 {
   DO_EXT (ext, em)
     {
@@ -1121,6 +1122,7 @@ cpt_em_unremap_read (extent_map_t * em, index_tree_t * it, int * bufs_done, int 
 	continue;
       dk_set_push (bufs_list, (void*) bufs);
       *bufs_done += BOX_ELEMENTS (bufs);
+      *bufs_done_total += BOX_ELEMENTS (bufs);
       if (*bufs_done > buf_quota)
 	goto enough_read;
     }
@@ -1161,12 +1163,12 @@ cpt_unremap_bufs (it_cursor_t * itc, dk_set_t * bufs_list)
 
 
 void
-em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_done, int buf_quota, int target, dk_set_t * bufs_list)
+em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_done, int buf_quota, int target, dk_set_t * bufs_list, int *bufs_done_total)
 {
   for (;;)
     {
       int l1 = dk_set_length (*bufs_list);
-      cpt_em_unremap_read (em, it, bufs_done, buf_quota, bufs_list);
+      cpt_em_unremap_read (em, it, bufs_done, buf_quota, bufs_list, bufs_done_total);
       if (l1 == dk_set_length (*bufs_list))
 	break;
       if (*bufs_done > buf_quota)
@@ -1218,7 +1220,7 @@ void dbs_cache_check (dbe_storage_t * dbs, int mode);
 void
 cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 {
-  int bufs_done = 0, buf_quota = main_bufs / 4, target;
+  int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
   DO_HT (ptrlong, log, ptrlong, phys, dbs->dbs_cpt_remap)
@@ -1228,10 +1230,11 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
   END_DO_HT;
   target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
  again:
-  cpt_unremap_ram (target);
+  bufs_done_total = 0;
+  cpt_unremap_ram (target, &bufs_done_total);
   if (cpt_dbs->dbs_cpt_remap->ht_count > target)
     {
-      em_unremap (dbs->dbs_cpt_tree, itc, dbs->dbs_extent_map, &bufs_done, buf_quota, target, &bufs_list);
+      em_unremap (dbs->dbs_cpt_tree, itc, dbs->dbs_extent_map, &bufs_done, buf_quota, target, &bufs_list, &bufs_done_total);
       cpt_unremap_bufs (itc, &bufs_list);
       bufs_done = 0;
       cpt_place_buffers ();
@@ -1239,7 +1242,7 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 	{
 	  if (it->it_extent_map != dbs->dbs_extent_map && it->it_extent_map)
 	    {
-	      em_unremap (it, itc, it->it_extent_map, &bufs_done, buf_quota, target, &bufs_list);
+	      em_unremap (it, itc, it->it_extent_map, &bufs_done, buf_quota, target, &bufs_list, &bufs_done_total);
 	      if (cpt_dbs->dbs_cpt_remap->ht_count <= target)
 		break;
 	    }
@@ -1248,7 +1251,7 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
       cpt_unremap_bufs (itc, &bufs_list);
     }
   bp_flush_all ();
-  if (cpt_dbs->dbs_cpt_remap->ht_count > target)
+  if (bufs_done_total && cpt_dbs->dbs_cpt_remap->ht_count > target)
     goto again;
   iq_shutdown (IQ_STOP);
   /* verify all unremaps are written.  shutdown exityy with bufs in iq will lose the pages, very corrupt, often visible as bad parent linkand sometimes as just lost updates.  */
