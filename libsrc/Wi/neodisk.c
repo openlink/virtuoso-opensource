@@ -1216,6 +1216,9 @@ cpt_place_buffers ()
 
 
 void dbs_cache_check (dbe_storage_t * dbs, int mode);
+long cpt_remap_free_logical_pages;
+long cpt_reamp_free_physical_pages;
+long cpt_reamp_free_pages;
 
 void
 cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
@@ -1223,8 +1226,20 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
   int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
+  cpt_remap_free_logical_pages = cpt_reamp_free_physical_pages = cpt_reamp_free_pages = 0;
   DO_HT (ptrlong, log, ptrlong, phys, dbs->dbs_cpt_remap)
     {
+#ifndef NDEBUG
+      int pf, lf;
+      pf = dbs_is_free_page (dbs, phys);
+      lf = dbs_is_free_page (dbs, log);
+      if (pf && lf)
+	cpt_reamp_free_pages++;
+      else if (pf)
+	cpt_reamp_free_physical_pages++;
+      else if (lf)
+	cpt_remap_free_logical_pages++;
+#endif
       sethash ((void*)phys, cpt_remap_reverse, (void*)log);
     }
   END_DO_HT;
