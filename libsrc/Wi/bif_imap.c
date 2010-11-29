@@ -35,15 +35,20 @@
 #include <stddef.h>
 #include "xml.h"
 
-#define IS_OK_NEXT(ses, resp, rc, err_c, err_t)  \
+#define IS_OK_NEXT(ses, resp, rc, err_c, err_t, need_logout)  \
 	CATCH_READ_FAIL (ses) \
 	  { \
 	    resp[0] = 0; \
-	    strncpy (err_text, err_t, sizeof(err_text)); \
-	    strncpy (err_code, err_c, sizeof(err_code)); \
 	    rc = dks_read_line (ses, resp, sizeof (resp)); \
 	    if (is_ok (resp)) \
+		{ \
+			strncpy (err_text, err_t, sizeof(err_text)); \
+			strncpy (err_code, err_c, sizeof(err_code)); \
+			if (need_logout) \
+				goto logout; \
+			else \
 	      goto error_end; \
+	  } \
 	  } \
 	FAILED \
 	  { \
@@ -281,7 +286,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   msg = strses_allocate ();
   /* send AUTHORIZATION */
 
-  IS_OK_NEXT (ses, resp, rc, "IM003", "No response from remote POP3 server");
+	IS_OK_NEXT (ses, resp, rc, "IM003", "No response from remote IMAP server", 0);
 
   imap_quote_string (username, sizeof (username), user);
   imap_quote_string (password, sizeof (password), pass);
@@ -289,7 +294,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   snprintf (login_message, sizeof (login_message), " %s %s", username, password);
 
   SEND (ses, rc, "1 LOGIN ", login_message);
-  IS_OK_NEXT (ses, resp, rc, "IM004", "Could not login to remote IMAP server");
+	IS_OK_NEXT (ses, resp, rc, "IM004", "Could not login to remote IMAP server. Please check user or password parameters.", 0);
 
   inx_mails = 0;
   size = 0;
@@ -298,7 +303,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   SEND (ses, rc, "2 CAPABILITY", "");
   while (1)
     {
-      IS_OK_NEXT (ses, resp, rc, "IM002", "CAPABILITY command to remote IMAP server failed");
+		IS_OK_NEXT (ses, resp, rc, "IM005", "CAPABILITY command to remote IMAP server failed", 1);
       if (strlen (resp) > 2 && !strncmp ("2 OK", resp, 4))
 	break;
     }
@@ -324,8 +329,8 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      ps = imap_next_word (ps);
 	    else
 	      {
-		strcpy_ck (err_text, "Some error");
-		strcpy_ck (err_code, "PO010");
+					strcpy_ck (err_text, "Some error in the list of folders");
+					strcpy_ck (err_code, "IM006");
 		SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		goto logout;
 	      }
@@ -333,7 +338,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	    if (tcpses_check_disk_error (msg, qst, 0))
 	      {
 		strcpy_ck (err_text, "Server error in accessing temp file");
-		strcpy_ck (err_code, "PO010");
+					strcpy_ck (err_code, "IM007");
 		SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		goto logout;
 	      }
@@ -342,14 +347,14 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	if (tcpses_check_disk_error (msg, NULL, 0))
 	  {
 	    strcpy_ck (err_text, "Server error in accessing temp file");
-	    strcpy_ck (err_code, "PO010");
+				strcpy_ck (err_code, "IM008");
 	    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 	    goto logout;
 	  }
 	if (!STRSES_CAN_BE_STRING (msg))
 	  {
 	    strcpy_ck (err_text, "Server error in storing data into a string session");
-	    strcpy_ck (err_code, "PO010");
+				strcpy_ck (err_code, "IM009");
 	    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 	    goto logout;
 	  }
@@ -371,25 +376,25 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	snprintf (message, sizeof (message), "3 DELETE %s", folder_id);
       else
 	{
-	  strcpy_ck (err_code, "IM010");
+			strcpy_ck (err_code, "IM011");
 	  strcpy_ck (err_text, "There must be folder name to delete (6th argument)");
 	  goto logout;
 	}
       SEND (ses, rc, message, "");
       while (1)
 	{
-			IS_OK_NEXT (ses, resp, rc, "IM010", "DELETE command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM012", "DELETE command to remote IMAP server failed", 1);
 	  if (strlen (resp) > 2 && !strncmp ("3 OK", resp, 4))
 	    break;
 	  if (strlen (resp) > 2 && !strncmp ("3 BAD", resp, 5))
 	    {
-	      strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_code, "IM013");
 	      strcpy_ck (err_text, "Error during deletion");
 	      break;
 	    }
 	  if (strlen (resp) > 2 && !strncmp ("3 NO", resp, 4))
 	    {
-	      strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_code, "IM014");
 	      strcpy_ck (err_text, "Folder does not exist");
 	      break;
 	    }
@@ -403,25 +408,25 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		snprintf (message, sizeof (message), "3 CREATE %s", folder_id);
 		else
 		{
-			strcpy_ck (err_code, "IM010");
+			strcpy_ck (err_code, "IM015");
 			strcpy_ck (err_text, "There must be folder name to create (6th argument)");
 			goto logout;
 		}
 		SEND (ses, rc, message, "");
 		while (1)
 		{
-			IS_OK_NEXT (ses, resp, rc, "IM010", "CREATE command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM016", "CREATE command to remote IMAP server failed", 1);
 			if (strlen (resp) > 2 && !strncmp ("3 OK", resp, 4))
 			break;
 			if (strlen (resp) > 2 && !strncmp ("3 BAD", resp, 5))
 			{
-				strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_code, "IM017");
 				strcpy_ck (err_text, "Error during creation");
 				break;
 			}
 			if (strlen (resp) > 2 && !strncmp ("3 NO", resp, 4))
 			{
-				strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_code, "IM018");
 				strcpy_ck (err_text, "Folder does not exist");
 				break;
 			}
@@ -439,7 +444,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       SEND (ses, rc, message, "");
       while (1)
 	{
-	  IS_OK_NEXT (ses, resp, rc, "IM004", "SELECT command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM019", "SELECT command to remote IMAP server failed", 1);
 	  ps = resp;
 	  s = imap_next_word (ps);
 	  ps = imap_next_word (s);
@@ -454,18 +459,18 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	  SEND (ses, rc, message, "");
 	  while (1)
 	    {
-	      IS_OK_NEXT (ses, resp, rc, "IM004", "EXPUNGE command to remote IMAP server failed");
+				IS_OK_NEXT (ses, resp, rc, "IM020", "EXPUNGE command to remote IMAP server failed", 1);
 	      if (strlen (resp) > 2 && !strncmp ("5 OK", resp, 4))
 		break;
 	      if (strlen (resp) > 2 && !strncmp ("5 BAD", resp, 5))
 		{
-		  strcpy_ck (err_code, "IM010");
+					strcpy_ck (err_code, "IM021");
 		  strcpy_ck (err_text, "Error during deletion");
 		  break;
 		}
 	      if (strlen (resp) > 2 && !strncmp ("5 NO", resp, 4))
 		{
-		  strcpy_ck (err_code, "IM010");
+					strcpy_ck (err_code, "IM022");
 		  strcpy_ck (err_text, "Folder does not exist");
 		  break;
 		}
@@ -509,7 +514,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			else
 			  {
 			    strcpy_ck (err_text, "Some error");
-			    strcpy_ck (err_code, "PO010");
+								strcpy_ck (err_code, "IM023");
 			    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			    goto logout;
 			  }
@@ -518,7 +523,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		    if (tcpses_check_disk_error (msg, qst, 0))
 		      {
 			strcpy_ck (err_text, "Server error in accessing temp file");
-			strcpy_ck (err_code, "PO010");
+							strcpy_ck (err_code, "IM024");
 			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			goto logout;
 		      }
@@ -528,14 +533,14 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		if (tcpses_check_disk_error (msg, NULL, 0))
 		  {
 		    strcpy_ck (err_text, "Server error in accessing temp file");
-		    strcpy_ck (err_code, "PO010");
+						strcpy_ck (err_code, "IM025");
 		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		    goto logout;
 		  }
 		if (!STRSES_CAN_BE_STRING (msg))
 		  {
 		    strcpy_ck (err_text, "Server error in storing data into a string session");
-		    strcpy_ck (err_code, "PO010");
+						strcpy_ck (err_code, "IM026");
 		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		    goto logout;
 		  }
@@ -543,7 +548,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      }
 	      FAILED
 	      {
-		strcpy_ck (err_code, "IM010");
+					strcpy_ck (err_code, "IM027");
 		strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
 		goto error_end;
 	      }
@@ -561,7 +566,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	l = BOX_ELEMENTS (in);
       if (l != 2)
 	{
-	  strcpy_ck (err_code, "IM010");
+			strcpy_ck (err_code, "IM028");
 	  strcpy_ck (err_text, "There must be 2 string items in vector of argument 7 (old folder name to rename and a new name)");
 	  goto logout;
 	}
@@ -569,7 +574,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       type2 = DV_TYPE_OF (in[1]);
       if (!IS_STRING_DTP (type1) || !IS_STRING_DTP (type2))
 	{
-	  strcpy_ck (err_code, "IM010");
+			strcpy_ck (err_code, "IM029");
 	  strcpy_ck (err_text, "There must be 2 string items in vector of argument 7 (old folder name to rename and a new name)");
 	  goto logout;
 	}
@@ -577,12 +582,12 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       SEND (ses, rc, message, "");
       while (1)
 	{
-	  IS_OK_NEXT (ses, resp, rc, "IM004", "RENAME command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM030", "RENAME command to remote IMAP server failed", 1);
 	  if (strlen (resp) > 2 && !strncmp ("4 OK", resp, 4))
 	    break;
 	  if (strlen (resp) > 2 && (!strncmp ("4 BAD", resp, 5) || !strncmp ("4 NO", resp, 4)))
 	    {
-	      strcpy_ck (err_code, "IM010");
+				strcpy_ck (err_code, "IM031");
 	      strcpy_ck (err_text, "Re-naming failed");
 	      goto logout;
 	      break;
@@ -601,7 +606,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       SEND (ses, rc, message, "");
       while (1)
 	{
-	  IS_OK_NEXT (ses, resp, rc, "IM004", "SELECT command to remote IMAP server failed");
+			IS_OK_NEXT (ses, resp, rc, "IM032", "SELECT command to remote IMAP server failed", 1);
 	  ps = resp;
 	  s = imap_next_word (ps);
 	  ps = imap_next_word (s);
@@ -620,7 +625,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			if (l < 1)
 			{
 				strcpy_ck (err_text, "No messages in list");
-				strcpy_ck (err_code, "PO010");
+				strcpy_ck (err_code, "IM033");
 				SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 				goto logout;
 			}
@@ -634,7 +639,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      type = DV_TYPE_OF (in[br]);
 	      if (!IS_INT_DTP (type))
 		{
-		  strcpy_ck (err_code, "IM010");
+					strcpy_ck (err_code, "IM034");
 					strcpy_ck (err_text, "There must be integer items in vector of argument 7");
 		  goto logout;
 		}
@@ -658,13 +663,13 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		    if (strlen (resp) > 2 && !strncmp ("5 BAD", resp, 5))
 		      {
 			strcpy_ck (err_text, "Error in IMAP command UID STORE");
-			strcpy_ck (err_code, "PO010");
+							strcpy_ck (err_code, "IM035");
 			break;
 		      }
 		    if (strlen (resp) > 2 && !strncmp ("5 NO", resp, 4))
 		      {
 			strcpy_ck (err_text, "Error in IMAP command UID STORE");
-			strcpy_ck (err_code, "PO010");
+							strcpy_ck (err_code, "IM036");
 			break;
 		      }
 		    while (strncmp (end_msg, resp, sizeof (end_msg)))
@@ -689,7 +694,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			    else
 			      {
 				strcpy_ck (err_text, "Some error");
-				strcpy_ck (err_code, "PO010");
+									strcpy_ck (err_code, "IM037");
 				SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 				goto logout;
 			      }
@@ -701,7 +706,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 			if (tcpses_check_disk_error (msg, qst, 0))
 			  {
 			    strcpy_ck (err_text, "Server error in accessing temp file");
-			    strcpy_ck (err_code, "PO010");
+								strcpy_ck (err_code, "IM038");
 			    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			    goto logout;
 			  }
@@ -712,14 +717,14 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		    if (tcpses_check_disk_error (msg, NULL, 0))
 		      {
 			strcpy_ck (err_text, "Server error in accessing temp file");
-			strcpy_ck (err_code, "PO010");
+							strcpy_ck (err_code, "IM039");
 			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			goto logout;
 		      }
 		    if (!STRSES_CAN_BE_STRING (msg))
 		      {
 			strcpy_ck (err_text, "Server error in storing data into a string session");
-			strcpy_ck (err_code, "PO010");
+							strcpy_ck (err_code, "IM040");
 			SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 			goto logout;
 		      }
@@ -727,7 +732,7 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  }
 		  FAILED
 		  {
-		    strcpy_ck (err_code, "IM010");
+						strcpy_ck (err_code, "IM041");
 		    strcpy_ck (err_text, "Failed reading output of FETCH command on remote IMAP server");
 		    goto error_end;
 		  }
@@ -737,30 +742,30 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	}
       goto logout;
     }
+	else if (strlen (mode) > 0 && stricmp ("", mode))
+	{
+		strcpy_ck (err_code, "IM042");
+		strcpy_ck (err_text, "No such command (5th parameter) in protocol");
+		*err_ret = srv_make_new_error ("08006", err_code, "%s: %s", err_text, mode);
+	}
 logout:
   /* QUIT from pop3 server */
   SEND (ses, rc, "9 LOGOUT", "");
   while (1)
     {
-      IS_OK_NEXT (ses, resp, rc, "IM006", "Could not LOGOUT from remote IMAP server");
+		IS_OK_NEXT (ses, resp, rc, "IM043", "Could not LOGOUT from remote IMAP server", 0);
       if (strlen (resp) > 2 && !strncmp ("9 OK", resp, 4))
 	break;
     }
-  strses_free (msg);
-  PrpcDisconnect (ses);
-  PrpcSessionFree (ses);
-  SSL_CTX_free (ssl_ctx);
-  return;
 error_end:
+	if (err_code[0] != 0)
+		*err_ret = srv_make_new_error ("08006", err_code, "%s", err_text);
   strses_free (msg);
   PrpcDisconnect (ses);
   PrpcSessionFree (ses);
   SSL_CTX_free (ssl_ctx);
-  if (err_code[0] != 0)
-    *err_ret = srv_make_new_error ("08006", err_code, "%s", err_text);
-  else
-    *err_ret = srv_make_new_error ("08006", "PO014", "Misc. error in connection in imap_get");
   return;
+	/* *err_ret = srv_make_new_error ("08006", "IM044", "Misc. error in connection in imap_get"); */
 }
 
 static caddr_t
