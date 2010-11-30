@@ -2039,6 +2039,13 @@ pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it)
   return DVC_MATCH;
 }
 
+#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 10))
+#define PREFETCH \
+  guess = (at_or_above + below) / 2; \
+  __builtin_prefetch (page + map->pm_entries[guess])
+#else
+#define PREFETCH
+#endif
 
 int
 itc_page_split_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
@@ -2055,6 +2062,7 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
   int guess;
   int at_or_above_res = -100;
   key_ver_t kv;
+  PREFETCH;
   if (it->itc_dive_mode == PA_READ ? buf->bd_is_write : !buf->bd_is_write)
     GPF_T1 ("split search supposed to be in read mode");
   if (map->pm_count == 0)
@@ -2115,6 +2123,7 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	{
 	case DVC_LESS:
 	  at_or_above = guess;
+	  PREFETCH;
 	  at_or_above_res = res;
 	  break;
 	case DVC_MATCH:	/* row found, dependent not checked */
@@ -2127,10 +2136,12 @@ itc_page_split_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	    {
 	      below = guess;
 	    }
+	  PREFETCH;
 	  break;
 
 	case DVC_GREATER:
 	  below = guess;
+	  PREFETCH;
 	  break;
 	default: GPF_T1 ("key_cmp_t can't return that");
 	}
@@ -2199,6 +2210,7 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
       it->itc_map_pos = ITC_AT_END;
       return DVC_GREATER;
     }
+  PREFETCH;
   for (;;)
     {
       if ((below - at_or_above) <= 1)
@@ -2252,6 +2264,7 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	{
 	case DVC_LESS:
 	  at_or_above = guess;
+	  PREFETCH;
 	  at_or_above_res = res;
 	  break;
 	case DVC_MATCH:	/* row found, dependent not checked */
@@ -2273,6 +2286,7 @@ itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	  return res;
 	case DVC_GREATER:
 	  below = guess;
+	  PREFETCH;
 	  break;
 	    default: GPF_T1 ("can't have this res for key_cmp_t");
 	}
