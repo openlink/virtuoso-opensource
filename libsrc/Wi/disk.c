@@ -3550,7 +3550,7 @@ wi_open_dbs ()
 extern dk_mutex_t * log_write_mtx;
 extern   dk_mutex_t * transit_list_mtx;
 
-int32 bdf_is_avail_mask;
+int64 bdf_is_avail_mask;
 
 void
 wi_open (char *mode)
@@ -3579,7 +3579,7 @@ wi_open (char *mode)
   wi_inst.wi_n_bps = (short) BOX_ELEMENTS (wi_inst.wi_bps);
   {
     buffer_desc_t bd;
-    bd.bdf.flags = 0xffffffff;
+    bd.bdf.flags = 0xffffffffffffffff;
     bd.bdf.r.is_read_aside = 0;
     bdf_is_avail_mask = bd.bdf.flags;
   }

@@ -1062,14 +1062,15 @@ struct buffer_desc_s
 {
   /* Descriptor of a page buffer.  Read/write gate and other fields */
   union {
-    int32	flags; /* allow testing for all 0's with a single compare.  All zeros mens candidate for reuse. */
+    int64	flags; /* allow testing for all 0's with a single compare.  All zeros mens candidate for reuse. */
     struct {
       short readers; /* count of threads with read access */
-      bitf_t	is_write:1;  /* if any thread the exclusive owner of this */
-      bitf_t	being_read:1; /* is the buffer allocated for a page and awaiting the data coming from disk */
-      bitf_t	is_dirty:1; /* Content changed since last written to disk */
-      bitf_t			is_ro_cache:1;
-      bitf_t			is_read_aside;
+      /* the below flagss are chars and not bit fields.  If bit fields, there is a read+write for setting and cache coherence will not protect against a change of a bit between the read and the write.  So for cache coherency the flags must be individually settable so that you do not end up setting neighbor flags to their former values.  The write will hit an obsolete cache line and will reload the line but the other bits will still come from the read that was done before the change.  */
+      char	is_write;  /* if any thread the exclusive owner of this */
+      char	being_read; /* is the buffer allocated for a page and awaiting the data coming from disk */
+      char	is_dirty; /* Content changed since last written to disk */
+      char	is_ro_cache;
+      char	is_read_aside;
     } r;
   } bdf;
   bp_ts_t		bd_timestamp; /* Timestamp for estimating age for buffer reuse */
@@ -1409,7 +1410,7 @@ typedef struct ra_req_s
   } ra_req_t;
 
 
-extern int32 bdf_is_avail_mask; /* all bits on except read aside flag which does not affect reusability */
+extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does not affect reusability */
 
 #ifdef MTX_DEBUG
 #define BUF_NEEDS_DELTA(b) 1
