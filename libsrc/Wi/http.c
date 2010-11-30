@@ -5270,8 +5270,10 @@ void
 http_session_used (dk_session_t * ses, char * host, long peer_max_timeout)
 {
   ws_cached_connection_t * proxy_cache = NULL;
+  mutex_enter (ws_cache_mtx);
   if (!host || (((long) dk_set_length (ws_proxy_cache)) >= http_max_cached_proxy_connections))
     {
+      mutex_leave (ws_cache_mtx);
       PrpcDisconnect (ses);
       PrpcSessionFree (ses);
       return;
@@ -5282,7 +5284,6 @@ http_session_used (dk_session_t * ses, char * host, long peer_max_timeout)
   proxy_cache->hit = get_msec_real_time ();
   proxy_cache->timeout = peer_max_timeout > 0 ? peer_max_timeout : http_proxy_connection_cache_timeout;
 
-  mutex_enter (ws_cache_mtx);
   dk_set_push (&ws_proxy_cache, (void *) proxy_cache);
   tws_cached_connections++;
   tws_cached_connections_in_use--;
