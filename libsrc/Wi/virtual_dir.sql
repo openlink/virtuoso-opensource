@@ -1027,6 +1027,16 @@ ext_http_proxy (in url varchar := null,
   if (header is not null)
     req_hdr := header;
 
+  if (0 = length (url))
+    {
+      http_rewrite();
+      http_request_status ('HTTP/1.1 400 Bad request');
+      proxy_sp_html_error_page ('Error: insufficient no of params',
+        		        'Insufficient number of parameters',
+                                'This service expects "url" input argument which is not supplied.');
+      return '';
+    }
+
   arr := rfc1808_parse_uri (url);
   arr[5] := '';
 
