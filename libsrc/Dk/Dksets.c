@@ -456,4 +456,17 @@ list_to_array (dk_set_t l)
 {
   return dbg_list_to_array (__FILE__, __LINE__, l);
 }
+
+#undef copy_list_to_array
+caddr_t
+copy_list_to_array (dk_set_t l)
+{
+  return dbg_copy_list_to_array (__FILE__, __LINE__, l);
+}
+#undef revlist_to_array
+caddr_t
+revlist_to_array (dk_set_t l)
+{
+  return dbg_revlist_to_array (__FILE__, __LINE__, l);
+}
 #endif
