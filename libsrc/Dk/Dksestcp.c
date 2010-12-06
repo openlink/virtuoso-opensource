@@ -226,7 +226,7 @@ dk_parse_address (char *str)
 }
 
 
-static char addrinfo[100];
+static char addrinfo[256];
 
 #define SEPARATOR " :"
 
@@ -289,7 +289,7 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
 
   {
     char *stringplace;
-    char localstring[50];
+    char localstring[256];
     strncpy (localstring, addrinfo, sizeof (localstring));
     localstring[sizeof (localstring) - 1] = 0;
     stringplace = strtok_r (localstring, SEPARATOR, &strs);
