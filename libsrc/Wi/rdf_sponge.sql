@@ -454,25 +454,33 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
   ret_dt_date := http_string_date (ret_date, NULL, NULL);
   ret_dt_expires := http_string_date (ret_expires, NULL, now());
   ret_dt_last_modified := http_string_date (ret_last_modif, NULL, now());
+  -- if no cache directive we say it is now
   if (http_request_header (ret_hdr, 'Pragma', null, null) = 'no-cache' or
     http_request_header (ret_hdr, 'Cache-Control', null, null) like 'no-cache%' )
     ret_dt_expires := now ();
+  -- if not modified and no last given we take old last modified
   if (ret_304_not_modified and ret_dt_last_modified is null)
     ret_dt_last_modified := old_last_modified;
+  -- if we have date given
   if (ret_dt_date is not null)
     {
+      -- we calculate on which date it expiry
       if (ret_dt_expires is not null)
         ret_dt_expires := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_expires);
+      -- if we have last modified we calculate based on date given
       if (ret_dt_last_modified is not null)
         ret_dt_last_modified := dateadd ('second', datediff ('second', ret_dt_date, now()), ret_dt_last_modified);
     }
+  -- if we have expires and it is less tand date we reset to null
   if (ret_dt_expires is not null and
     (ret_dt_expires < coalesce (ret_dt_date, ret_dt_last_modified, now ())) )
     ret_dt_expires := NULL;
+  -- new expiration is expires date if not null
   if (ret_dt_expires is not null)
     new_expiration := ret_dt_expires;
   else
     {
+      -- we have date and last modified but not expires, so we calculate based on date and modified date
       if (ret_dt_date is not null and ret_dt_last_modified is not null and (ret_dt_date >= ret_dt_last_modified))
         new_expiration := dateadd ('second',
 		__min (
@@ -483,9 +491,11 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
     }
   if (ret_304_not_modified)
     {
+      -- if not modified and we have explicit refresh, we use explicit
       if (new_expiration is null and explicit_refresh is not null)
         new_expiration := dateadd ('second', 0.7 * explicit_refresh, now());
 
+      -- we take less from new expiration and expilicit refresh
       if (ret_dt_expires is null and new_expiration is not null and explicit_refresh is not null)
         new_expiration := __min (new_expiration, dateadd ('second', explicit_refresh, now()));
     }
@@ -569,7 +579,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare req_hdr varchar;
   declare ret_body, ret_content_type, ret_etag, ret_last_modified, ret_date, ret_last_modif, ret_expires varchar;
   declare get_proxy varchar;
-  declare ret_dt_date, ret_dt_last_modified, ret_dt_expires datetime;
+  declare ret_dt_date, ret_dt_last_modified, ret_dt_expires, expiration, min_expiration datetime;
   declare ret_304_not_modified integer;
   declare parser_rc, max_refresh int;
   declare stat, msg varchar;
@@ -590,6 +600,9 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   else if (isstring (explicit_refresh))
     explicit_refresh := atoi (explicit_refresh);
+  min_expiration := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MinExpiration'), '-1'));
+  if (min_expiration < 0)
+    min_expiration := null;
   set isolation='serializable';
   whenever not found goto add_new_origin;
   select HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_LAST_ETAG,
@@ -807,11 +820,14 @@ resp_received:
     new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now()); -- assuming that expiration is at least 1000 times larger than load time.
   if (ret_dt_expires is null and explicit_refresh is not null)
     new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
+  expiration := coalesce (ret_dt_expires, new_expiration, now());
+  if (explicit_refresh is null and min_expiration is not null)
+    expiration := __max (dateadd ('second', min_expiration, now()), expiration);
   commit work;
   update DB.DBA.SYS_HTTP_SPONGE
   set HS_LAST_LOAD = now(), HS_LAST_ETAG = new_last_etag, HS_LAST_READ = now(),
     HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
-    HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
+    HS_EXPIRATION = expiration,
     HS_LAST_MODIFIED = ret_dt_last_modified,
     HS_DOWNLOAD_SIZE = new_download_size,
     HS_DOWNLOAD_MSEC_TIME = load_end_msec - load_begin_msec,
