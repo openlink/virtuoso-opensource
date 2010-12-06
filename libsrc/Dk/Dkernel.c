@@ -483,6 +483,34 @@ int prpc_disable_burst_mode = 0;
 int prpc_force_burst_mode = 0;
 int prpc_self_signal_initialized = 0;
 
+static void
+check_inputs_for_errors (int eno, int protocol)
+{
+#ifndef WIN32
+  int s, n;
+again:
+  for (n = 0; eno == EBADF && n < last_session; n++)
+    {
+      dk_session_t *ses = served_sessions[n];
+      if (ses && is_protocol (ses->dks_session, protocol))
+	{
+	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
+	      SESSION_SCH_DATA (ses)->sio_default_read_ready_action ||
+	      SESSION_SCH_DATA (ses)->sio_random_write_ready_action)
+	    {
+	      s = DKS_SOCK (ses);
+	      if (-1 == fcntl (s, F_GETFL))
+		{
+		  log_error ("Bad file descriptor (%d) in served sessions, removing", s);
+		  remove_from_served_sessions (ses);
+		  goto again;
+		}
+	    }
+	}
+    }
+#endif
+}
+
 static int
 check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_t select_fun, int protocol)
 {
@@ -553,6 +581,8 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 
   if (rc < 0)
     {
+      int eno = errno;
+      check_inputs_for_errors (eno, protocol); 
       PROCESS_ALLOW_SCHEDULE ();
       return 0;
     }
