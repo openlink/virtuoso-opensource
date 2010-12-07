@@ -463,7 +463,7 @@
   <v:method name="saveData" arglist="">
     <![CDATA[
       declare N, M integer;
-      declare suffix, tmp, acl, acl_users, params any;
+      declare suffix, tmp, tmpValue, acl, acl_users, params any;
 
       params := self.vc_page.vc_event.ve_params;
 
@@ -484,11 +484,14 @@
         }
         else if ((params [N] like 'b_fld_1_%') and (trim (params [N+1]) <> ''))
         {
-          if (not AB.WA.vector_contains (tmp, trim (params [N+1])))
+          suffix := replace (params [N], 'b_fld_1_', '');
+          tmpValue := trim (params [N+1]) || ';' || trim (get_keyword ('b_fld_2_'||suffix, params, '')) || '\n';
+          if (not AB.WA.vector_contains (tmp, tmpValue))
           {
-            tmp := vector_concat (tmp, vector (trim (params [N+1])));
-            self.v_relationships := self.v_relationships || trim (params [N+1]) || '\n';
+            tmp := vector_concat (tmp, vector (tmpValue));
+            self.v_relationships := self.v_relationships || tmpValue;
           }
+
         }
         else if ((params [N] like 'f_fld_1_%') and (trim (params [N+1]) <> ''))
         {
@@ -706,7 +709,7 @@
                     self.v_foaf := '';
                   self.v_photo := '';
                   self.v_interests := '';
-                  self.v_relationships := '';
+                  self.v_relationships := 'foaf:knows;' || AB.WA.account_sioc_url (self.domain_id);
                   self.v_acl := null;
                   self.v_certificate := null;
                   self.v_photo_preview_path := '';
@@ -1620,11 +1623,10 @@
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_foaf" xhtml_id="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
-                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('ab_foaf')); return false;" class="button" />
+                            <v:text name="x_foaf" xhtml_id="x_foaf" value="" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <input type="button" value="Import" onclick="javascript: AB.getFOAFData($v('x_foaf')); return false;" class="button" />
                             <img id="ab_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
                           </vm:if>
-                          <?vsp self.viewField (self.v_foaf, '', null); ?>
                         </td>
                       </tr>
                     </table>
@@ -1632,26 +1634,27 @@
                   </vm:if>
                   <div id="a_content_1" class="tabContent" style="display: none;">
                     <table class="form-body n" cellspacing="0">
-                      <vm:if test="(self.abAction = 'view') or (self.abAction = 'edit')">
+                      <vm:if test="self.abAction in ('view', 'edit')">
                     <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Profile Document URL" />
+                          Contact URI
                         </th>
                         <td>
                           <?vsp http (self.prepareField(AB.WA.utf2wide (SIOC..addressbook_contact_iri (self.domain_id, self.v_id)), 'uid', null)); ?>
                         </td>
                       </tr>
                       </vm:if>
-                      <vm:if test="self.abAction = 'view'">
                       <tr>
                         <th>
                           <v:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
+                          <vm:if test="self.abAction <> 'view'">
+                            <v:text name="ab_foaf" xhtml_id="ab_foaf" value="--self.v_foaf" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                          </vm:if>
                           <?vsp self.viewField (self.v_foaf, '', null); ?>
                         </td>
                       </tr>
-                      </vm:if>
                       <tr>
                         <th>
                           <v:label for="ab_iri" value="WebID" />
@@ -2479,11 +2482,12 @@
                   <div id="a_content_5" class="tabContent" style="display: none;">
                     <table class="form-body" cellspacing="0">
                       <tr>
-                        <td style="width: 40em; background-color: white;">
+                        <td style="width: 60em; background-color: white;">
                           <table id="b_tbl" width="100%" cellspacing="0">
                             <thead class="sortHeader">
                               <tr>
-                                <th>Relationship</th>
+                                <th width="50%">Relationship</th>
+                                <th width="50%">URI</th>
                                 <vm:if test="self.abAction <> 'view'">
                                   <th width="50px">Action</th>
                                 </vm:if>
@@ -2492,28 +2496,29 @@
                       		  <![CDATA[
                       		    <script type="text/javascript">
                             <?vsp
-                                declare N integer;
+                                declare owner_iri integer;
 
-                              N := 0;
-                              for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = self.v_relationships) do
+                                owner_iri := AB.WA.account_sioc_url (self.domain_id);
+                                for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.v_relationships) do
                               {
-                                N := N + 1;
+                                  if (DB.DBA.is_empty_or_null (fld2))
+                                    fld2 := owner_iri;
                               if (self.abAction <> 'view')
                                   {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_"}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("b", null, {fld_1: {mode: 20, value: "%s", className: "_validate_"}, fld_2: {value: "%s", className: "_validate_ _uri_"}});});', fld1, fld2));
                                   } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("b", {fld_1: {value: "%s"}});});', relationship));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("b", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', fld1, fld2));
                                   }
                                 }
                             ?>
                       		    </script>
                       		  ]]>
-                            <tr id="b_tr_no" style="display: <?V case when N=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 1 else 2 end ?>"><b>No Relationships</b></td></tr>
+                            <tr id="b_tr_no"><td colspan="<?V case when self.abAction='view' then 2 else 3 end ?>"><b>No Relationships</b></td></tr>
                           </table>
                         </td>
                         <vm:if test="self.abAction <> 'view'">
                           <td valign="top" nowrap="nowrap">
-                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_'}});" />
+                            <img class="pointer" src="/ods/images/icons/add_16.png" border="0" alt="Add Relationship" title="Add Relationship" onclick="javascript: TBL.createRow('b', null, {fld_1: {mode: 20, className: '_validate_'}, fld_2: {className: '_validate_ _uri_'}});" />
                           </td>
                         </vm:if>
                       </tr>

@@ -596,7 +596,7 @@ AB.trim = function(sString, sChar) {
 }
 
 AB.getFOAFData = function(iri) {
-  var S = '/ods/api/user.getFOAFData?foafIRI='+encodeURIComponent(iri);
+	var S = '/ods/api/user.getFOAFData?spongerMode=1&foafIRI=' + encodeURIComponent(iri);
   var x = function(data) {
     var o = null;
     try {
@@ -606,8 +606,9 @@ AB.getFOAFData = function(iri) {
 		}
 		if (o && o.iri) {
 			if (confirm('New data for \'' + o.iri + '\' is founded. Would you like to import discovered data into the corresponding contact details fields?')) {
+				AB.setFOAFValue(o.personalProfileDocument, 'ab_foaf');
         AB.setFOAFValue(o.iri, 'ab_iri');
-				AB.setFOAFValue(o.nickName, 'ab_name');
+				AB.setFOAFValue(o.nick, 'ab_name');
 				AB.setFOAFValue(o.title, 'ab_title');
         AB.setFOAFValue(o.name, 'ab_fullName');
         AB.setFOAFValue(o.firstName, 'ab_fName');
@@ -638,25 +639,23 @@ AB.getFOAFData = function(iri) {
         }
         // intersts
 				if (o.interest) {
-          var S = o.interest.split ("\n");
-					for ( var i = 0; i < S.length; i++) {
-            var T = S[i].split(";");
-						if (T.length > 0 && T[0].length > 0) {
-              if (T.length == 1)
-                T.push('');
-							TBL.createRow('a', null, {
-								fld1 : {
-								  mode : 0,
-									value : T[0],
-									className : '_validate_ _url_',
-									onBlur: function() {validateField(this);}
-								},
-								fld2 : {
-								  mode : 0,
-									value : T[1]
-								}
-							});
+					for (var i = 0; i < o.interest.length; i++) {
+						TBL.createRow('a',
+						              null,
+						              {fld_1 : {value: o.interest[i].value, className: '_validate_ _url_', onBlur: function() {validateField(this);}},
+								           fld_2 : {value: o.interest[i].label}
+								          }
+								         );
+					}
+				}
+				if (o.knows) {
+					for (var i = 0; i < o.knows.length; i++) {
+						TBL.createRow('b',
+						              null,
+                          {fld_1: {mode: 20, value: 'foaf:knows', className: "_validate_"},
+                           fld_2: {value: o.knows[i].value, className: "_validate_ _uri_"}
       }
+                         );
     }
   }
       }

@@ -487,11 +487,13 @@ create procedure contact_insert (
     }
     if (not DB.DBA.is_empty_or_null (relationships))
     {
-      for (select relationship from DB.DBA.WA_USER_INTERESTS (txt) (relationship varchar) P where txt = relationships) do
+      for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = relationships) do
   	  {
-  	    if (length (relationship))
+  	    if (length (fld1))
   	    {
-  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, ODS.ODS_API."ontology.denormalize"(relationship), person_iri);
+          if (DB.DBA.is_empty_or_null (fld2))
+            fld2 := person_iri;
+  	      DB.DBA.ODS_QUAD_URI (graph_iri, iri, ODS.ODS_API."ontology.denormalize"(fld1), fld2);
   	    }
   	  }
     }
