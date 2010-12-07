@@ -252,12 +252,7 @@
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Biographical Events</li>
-                      <li id="pf_tab_0_6">Favorite Things</li>
-                      <li id="pf_tab_0_7">Creator Of</li>
-                      <li id="pf_tab_0_8">My Offers</li>
-                      <li id="pf_tab_0_9">Offers I Seek</li>
-                      <li id="pf_tab_0_10">Likes &amp; DisLikes</li>
+                      <li id="pf_tab_0_5">Others</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
@@ -862,6 +857,18 @@
                       </div>
 
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
+                        <ul id="pf_tabs_0_5" class="tabs">
+                          <li id="pf_tab_0_5_0">Biographical Events</li>
+                          <li id="pf_tab_0_5_1">Others</li>
+                          <li id="pf_tab_0_5_2">Favorite Things</li>
+                          <li id="pf_tab_0_5_3">Creator Of</li>
+                          <li id="pf_tab_0_5_4">My Offers</li>
+                          <li id="pf_tab_0_5_5">Offers I Seek</li>
+                          <li id="pf_tab_0_5_6">Likes &amp; DisLikes</li>
+                          <li id="pf_tab_0_5_7">Social Network</li>
+                        </ul>
+                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -892,32 +899,112 @@
                         </table>
                       </div>
 
-                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                            <h3>Owns</h3>
+                            <div id="pf051_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: pfShowOwn('new', '0');" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
+                              </div>
+                          	  <table id="pf051_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf051_tbody">
+                          	    </tbody>
+                              </table>
+                            </div>
+                            <div id="pf051_form" style="display: none;">
+                              <table class="form" cellspacing="5">
+                  		    		  <tr>
+                                  <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf051_flag" id="pf051_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf051_name" id="pf051_name" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Comment
+                                  </th>
+                                  <td>
+                                    <textarea name="pf051_comment" id="pf051_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                  </td>
+                                </tr>
+                  		    		  <tr>
+                  		    		    <th valign="top">
+                  		              Products
+                  		            </th>
+                  		            <td width="800px">
+                                    <table id="ow_tbl" class="listing">
+                                      <tbody id="ow_tbody">
+                                      </tbody>
+                                    </table>
+                                    <input type="hidden" id="ow_no" name="ow_no" value="1" />
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf051');"/>
+                                <input type="submit" name="pf_update051" value="Save" onclick="return mySubmit('pf051');"/>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
-                        <div id="pf06_list">
+                            <div id="pf052_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowFavorite('new', '0');" class="button pointer"><img class="button" border="0" title="Add Favorite" alt="Add Favorite" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf06_tbl" class="listing">
+                          	  <table id="pf052_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
-                        		    <th>Label</th>
-                        		    <th>URI</th>
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf06_tbody">
+                          	    <tbody id="pf052_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf06_form" style="display: none;">
+                            <div id="pf052_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf052_flag" id="pf052_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Label (*)
                                     </th>
                               <td>
-                                <input type="text" name="pf06_label" id="pf06_label" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf052_label" id="pf052_label" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -925,7 +1012,7 @@
                                 External URI
                                     </th>
                               <td>
-                                <input type="text" name="pf06_uri" id="pf06_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf052_uri" id="pf052_uri" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                                   </tr>
                             <tr>
@@ -941,18 +1028,19 @@
                           </tr>
                         </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf06');"/>
-                            <input type="submit" name="pf_update06" value="Save" onclick="return mySubmit('pf06');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf052');"/>
+                                <input type="submit" name="pf_update052" value="Save" onclick="return mySubmit('pf052');"/>
                           </div>
                         </div>
                       </div>
-                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
-                        <div id="pf07_list">
+                            <div id="pf053_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowMade('new', '0');" class="button pointer"><img class="button" border="0" title="Add Creator Of" alt="Add Creator Of" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf07_tbl" class="listing">
+                          	  <table id="pf053_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
                         		    <th>Property</th>
@@ -960,11 +1048,11 @@
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf07_tbody">
+                          	    <tbody id="pf053_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf07_form" style="display: none;">
+                            <div id="pf053_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
@@ -975,7 +1063,7 @@
                                   function p_init ()
                                   {
                                     var fld = new OAT.Combolist([]);
-                                    fld.input.name = 'pf07_property';
+                                        fld.input.name = 'pf053_property';
                                     fld.input.id = fld.input.name;
                                     fld.input.style.width = "400px";
                                     $("if_opt").appendChild(fld.div);
@@ -992,7 +1080,7 @@
                                 URI
                               </th>
                               <td>
-                                <input type="text" name="pf07_url" id="pf07_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
+                                    <input type="text" name="pf053_url" id="pf053_url" value="" class="_validate_ _url_ _canEmpty_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -1000,7 +1088,7 @@
                                 Description (*)
                               </th>
                               <td>
-                                <textarea name="pf07_description" id="pf07_description" style="width: 400px;"></textarea>
+                                    <textarea name="pf053_description" id="pf053_description" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                             <tr>
@@ -1011,37 +1099,50 @@
                             </tr>
                           </table>
                       <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf07');"/>
-                            <input type="submit" name="pf_update07" value="Save" onclick="return mySubmit('pf07');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf053');"/>
+                                <input type="submit" name="pf_update053" value="Save" onclick="return mySubmit('pf053');"/>
                           </div>
                         </div>
                       </div>
-                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
-                        <div id="pf08_list">
+                            <div id="pf054_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowOffer('new', '0');" class="button pointer"><img class="button" border="0" title="Add Offer" alt="Add Offer" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf08_tbl" class="listing">
+                          	  <table id="pf054_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf08_tbody">
+                          	    <tbody id="pf054_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf08_form" style="display: none;">
+                            <div id="pf054_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                  		              Access
                               </th>
                               <td>
-                                <input type="text" name="pf08_name" id="pf08_name" value="" class="_validate_" style="width: 400px;">
+                                    <select name="pf054_flag" id="pf054_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf054_name" id="pf054_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -1049,7 +1150,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf08_comment" id="pf08_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf054_comment" id="pf054_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -1066,37 +1167,50 @@
                             </tr>
                           </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf08');"/>
-                            <input type="submit" name="pf_update08" value="Save" onclick="return mySubmit('pf08');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf054');"/>
+                                <input type="submit" name="pf_update054" value="Save" onclick="return mySubmit('pf054');"/>
                           </div>
                         </div>
                       </div>
-                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
+
+                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
-                        <div id="pf09_list">
+                            <div id="pf055_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowSeek('new', '0');" class="button pointer"><img class="button" border="0" title="Add Seek" alt="Add Seek" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf09_tbl" class="listing">
+                          	  <table id="pf055_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th>Name</th>
-                        		    <th>Description</th>
+                            		    <th width="50%">Name</th>
+                            		    <th width="50%">Description</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf09_tbody">
+                          	    <tbody id="pf055_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf09_form" style="display: none;">
+                            <div id="pf055_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
-                                Name
+                  		              Access
                               </th>
                               <td>
-                                <input type="text" name="pf09_name" id="pf09_name" value="" class="_validate_" style="width: 400px;">
+                                    <select name="pf055_flag" id="pf055_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Name (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf055_name" id="pf055_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -1104,7 +1218,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf09_comment" id="pf09_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf055_comment" id="pf055_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -1121,38 +1235,51 @@
                             </tr>
                           </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf09');"/>
-                            <input type="submit" name="pf_update09" value="Save" onclick="return mySubmit('pf09');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf055');"/>
+                                <input type="submit" name="pf_update055" value="Save" onclick="return mySubmit('pf055');"/>
                           </div>
                         </div>
                       </div>
 
-                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
+                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
                         <h3>Likes &amp; DisLikes</h3>
-                        <div id="pf10_list">
+                            <div id="pf056_list">
                           <div style="padding: 0 0 0.5em 0;">
                             <span onclick="javascript: pfShowLike('new', '0');" class="button pointer"><img class="button" border="0" title="Add Like" alt="Add Like" src="/ods/images/icons/add_16.png"> Add</span>
                           </div>
-                      	  <table id="pf10_tbl" class="listing">
+                          	  <table id="pf056_tbl" class="listing">
                       	    <thead>
                       	      <tr class="listing_header_row">
-                        		    <th width="50%">URI</th>
-                        		    <th width="50%">Name</th>
+                            		    <th width="10%">Type</th>
+                            		    <th width="45%">URI</th>
+                            		    <th width="45%">Name</th>
                         		    <th width="1%" nowrap="nowrap">Action</th>
                       	      </tr>
                             </thead>
-                      	    <tbody id="pf10_tbody">
+                          	    <tbody id="pf056_tbody">
                       	    </tbody>
                           </table>
                         </div>
-                        <div id="pf10_form" style="display: none;">
+                            <div id="pf056_form" style="display: none;">
                           <table class="form" cellspacing="5">
                             <tr>
                               <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf056_flag" id="pf056_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
                                 Type
                               </th>
                               <td>
-                                <select name="pf10_type" id="pf10_type">
+                                    <select name="pf056_type" id="pf056_type">
                                   <option value="L">Like</option>
                                   <option value="DL">DisLike</option>
                                 </select>
@@ -1160,18 +1287,18 @@
                             </tr>
                             <tr>
                               <th>
-                                URI
+                                    URI (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_uri" id="pf10_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                    <input type="text" name="pf056_uri" id="pf056_uri" value="" class="_validate_ _uri_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
                               <th>
-                                Name
+                                    Name (*)
                               </th>
                               <td>
-                                <input type="text" name="pf10_name" id="pf10_name" value="" class="_validate_" style="width: 400px;">
+                                    <input type="text" name="pf056_name" id="pf056_name" value="" class="_validate_" style="width: 400px;">
                               </td>
                             </tr>
                             <tr>
@@ -1179,7 +1306,7 @@
                                 Comment
                               </th>
                               <td>
-                                <textarea name="pf10_comment" id="pf10_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
+                                    <textarea name="pf056_comment" id="pf056_comment" class="_validate_ _canEmpty_" style="width: 400px;"></textarea>
                               </td>
                             </tr>
                   				  <tr>
@@ -1196,8 +1323,115 @@
                             </tr>
                           </table>
                           <div class="footer">
-                            <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf10');"/>
-                            <input type="submit" name="pf_update10" value="Save" onclick="return mySubmit('pf10');"/>
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf056');"/>
+                                <input type="submit" name="pf_update056" value="Save" onclick="return mySubmit('pf056');"/>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                            <h3>Knows</h3>
+                            <div id="pf057_list">
+                              <div style="padding: 0 0 0.5em 0;">
+                                <span onclick="javascript: pfShowKnow('new', '0');" class="button pointer"><img class="button" border="0" title="Add Know" alt="Add Know" src="/ods/images/icons/add_16.png"> Add</span>
+                                <span onclick="javascript: pfShowKnow('import', '0');" class="button pointer"><img class="button" border="0" title="Import Know" alt="Add Know" src="/ods/images/icons/add_16.png"> Import</span>
+                              </div>
+                          	  <table id="pf057_tbl" class="listing">
+                          	    <thead>
+                          	      <tr class="listing_header_row">
+                            		    <th width="50%">Label</th>
+                            		    <th width="50%">URI</th>
+                            		    <th width="1%" nowrap="nowrap">Action</th>
+                          	      </tr>
+                                </thead>
+                          	    <tbody id="pf057_tbody">
+                          	    </tbody>
+                              </table>
+                            </div>
+                            <div id="pf057_import" style="display: none;">
+                              <table>
+                      				  <tr>
+                      				    <th width="100px">
+                      		          Source
+                      		        </th>
+                                  <td>
+                                    <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                  </th><td>
+                                    <table class="listing" id="k_tbl">
+                                      <thead>
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            Access
+                                          </th>
+                                          <th width="50%">
+                                            URI
+                                          </th>
+                                          <th width="50%">
+                                            Label
+                                          </th>
+                                          <th width="65px">
+                                            Action
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr id="k_tr_no">
+                                           <td colspan="3">
+                                             <b>No downloaded items</b>
+                                           </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf057');"/>
+                                <input type="submit" name="pf_update057" value="Import" onclick="return mySubmit('pf057');"/>
+                              </div>
+                            </div>
+                            <div id="pf057_form" style="display: none;">
+                              <table class="form" cellspacing="5">
+                  		    		  <tr>
+                                  <th width="25%">
+                  		              Access
+                  		            </th>
+                  		            <td>
+                                    <select name="pf057_flag" id="pf057_flag">
+                                      <option value="1">public</option>
+                                      <option value="2">acl</option>
+                                      <option value="3">private</option>
+                                    </select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    URI (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_uri" id="pf057_uri" value="" class="_validate_ _uri_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <th>
+                                    Label (*)
+                                  </th>
+                                  <td>
+                                    <input type="text" name="pf057_label" id="pf057_label" value="" class="_validate_" style="width: 400px;">
+                                  </td>
+                                </tr>
+                              </table>
+                              <div class="footer">
+                                <input type="submit" name="pf_cancel2" value="Cancel" onclick="return myCancel('pf057');"/>
+                                <input type="submit" name="pf_update057" value="Save" onclick="return mySubmit('pf057');"/>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

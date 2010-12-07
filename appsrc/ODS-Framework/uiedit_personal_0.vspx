@@ -74,6 +74,54 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="show_data" arglist="inout data any, inout labels any">
+    <![CDATA[
+      declare N, M integer;
+      declare format varchar;
+      declare value any;
+
+      for (N := 0; N < length (data); N := N + 1)
+  	  {
+  	    format := '%s';
+        for (M := 0; M < length (labels); M := M + 1)
+    	  {
+    	    value := get_keyword (labels[M], data[N]);
+    	    if (length (value))
+    	    {
+     	      http (sprintf (format, value));
+    	      format := ' (%s)';
+    	    }
+   	    }
+ 	      http ('<br />');
+  	  }
+	  ]]>
+	</v:method>
+
+  <v:method name="data2string" arglist="inout data any, inout labels any">
+    <![CDATA[
+      declare N, M integer;
+      declare S, format varchar;
+      declare value any;
+
+      S := '';
+      for (N := 0; N < length (data); N := N + 1)
+  	  {
+  	    format := '';
+        for (M := 0; M < length (labels); M := M + 1)
+    	  {
+    	    value := get_keyword (labels[M], data[N]);
+    	    if (length (value))
+    	    {
+            S := S || value || format;
+    	      format := ';';
+    	    }
+   	    }
+        S := S || '\n';
+  	  }
+  	  return S;
+	  ]]>
+	</v:method>
+
   <v:method name="savePersonal_0" arglist="">
     <![CDATA[
       declare params any;
@@ -85,14 +133,14 @@
       if (self.iMode = 0)
       {
         commit work;
-        if (self.i_source_0.ufl_selected)
+        if (self.i_source_0.ufl_selected or (self.iLDAP = 0))
         {
           declare data any;
 
           self.i_source := 0;
-          data := ODS.ODS_API.get_foaf_data_array (self.foaf_url.ufl_value, 0);
+          data := ODS.ODS_API.getFOAFDataArray (self.foaf_url.ufl_value, 0);
           if (length (data) = 0)
-            data := ODS.ODS_API.get_foaf_data_array (self.foaf_url.ufl_value, 1);
+            data := ODS.ODS_API.getFOAFDataArray (self.foaf_url.ufl_value, 1);
           if (length (data) = 0)
           {
             self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
@@ -120,6 +168,7 @@
           self.iTopicInterests := get_keyword ('topic_interest', data);
           self.iOnlineAccounts := get_keyword ('onlineAccounts', data);
           self.iSameAs := get_keyword ('sameAs', data);
+          self.iKnows := get_keyword ('knows', data);
           self.iTags := get_keyword ('tags', data);
 
           self.iMode := 1;
@@ -245,33 +294,63 @@
         if (get_keyword ('cb_item_iLng', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.iLng);
         if (get_keyword ('cb_item_iTags', params, '0') = '1')
+        {
           if (not isnull (self.iTags))
           {
             self.iTags := DB.DBA.WA_TAG_PREPARE(self.iTags);
             if (DB.DBA.WA_VALIDATE_TAGS(self.iTags))
               WA_USER_TAG_SET(http_nobody_uid(), self.u_id, self.iTags);
           }
+        }
         if (get_keyword ('cb_item_iSameAs', params, '0') = '1')
-          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.iSameAs);
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.data2string (self.iSameAs, vector ('value')));
         if (get_keyword ('cb_item_iResume', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_RESUME', self.iResume);
         if (get_keyword ('cb_item_iInterests', params, '0') = '1')
-          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.iInterests);
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.data2string (self.iInterests, vector ('value', 'label')));
         if (get_keyword ('cb_item_iTopicInterests', params, '0') = '1')
-          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.iTopicInterests);
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.data2string (self.iTopicInterests, vector ('value', 'label')));
         if (get_keyword ('cb_item_iOnlineAccounts', params, '0') = '1')
+        {
           if (length (self.iOnlineAccounts))
           {
+            declare fld1, fld2 any;
+
             delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id;
-            for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iOnlineAccounts) do
+            foreach (any item in self.iOnlineAccounts) do
         	  {
+              fld1 := get_keyword ('value', item);
         	    if (length (fld1))
         	    {
+                fld2 := get_keyword ('url', item);
                 insert into DB.DBA.WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID, WUO_TYPE)
                   values (fld1, fld2, self.u_id, 'P');
         	    }
         	  }
           }
+        }
+        if (get_keyword ('cb_item_iKnows', params, '0') = '1')
+        {
+          if (length (self.iKnows))
+          {
+            declare fld1, fld2 any;
+
+            delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id;
+            foreach (any item in self.iKnows) do
+        	  {
+              fld1 := get_keyword ('value', item);
+        	    if (length (fld1))
+        	    {
+                if (not exists (select 1 from DB.DBA.WA_USER_KNOWS where WUK_U_ID = self.u_id and WUK_URI = fld1))
+                {
+                  fld2 := get_keyword ('nick', item, get_keyword ('name', item, ''));
+                  insert into DB.DBA.WA_USER_KNOWS (WUK_U_ID, WUK_FLAG, WUK_URI, WUK_LABEL)
+                    values (self.u_id, '1', fld1, fld2);
+                }
+        	    }
+        	  }
+          }
+        }
         commit work;
         self.iMode := 0;
       }
@@ -279,6 +358,7 @@
   </v:method>
 
   <v:variable name="iMode" type="integer" default="0"/>
+  <v:variable name="iLDAP" type="integer" default="0"/>
 
   <v:variable name="iTitle" type="varchar" default="null" />
   <v:variable name="iName" type="varchar" default="null" />
@@ -297,10 +377,11 @@
   <v:variable name="iHomepage" type="varchar" default="null" />
   <v:variable name="iPhone" type="varchar" default="null" />
   <v:variable name="iResume" type="varchar" default="null" />
-  <v:variable name="iInterests" type="varchar" default="null" />
-  <v:variable name="iTopicInterests" type="varchar" default="null" />
-  <v:variable name="iOnlineAccounts" type="varchar" default="null" />
-  <v:variable name="iSameAs" type="varchar" default="null" />
+  <v:variable name="iInterests" type="any" default="null" />
+  <v:variable name="iTopicInterests" type="any" default="null" />
+  <v:variable name="iOnlineAccounts" type="any" default="null" />
+  <v:variable name="iSameAs" type="any" default="null" />
+  <v:variable name="iKnows" type="any" default="null" />
   <v:variable name="iTags" type="varchar" default="null" />
 
   <v:variable name="i_source" type="any" default="-1" />
@@ -315,6 +396,7 @@
         self.usr_personal_0.vc_focus := 1;
         self.usr_personal_0.vc_set_childs_focus(1, e);
       }
+      self.iLDAP := (select count(*) from LDAP..LDAP_SERVERS where LS_USER_ID = self.u_id);
     ]]>
   </v:before-data-bind>
 
@@ -324,22 +406,25 @@
         <table class="ctl_grp">
           <tr>
             <td nowrap="nowrap">
-              <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
+              <label>
+                <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_style="--case when self.iLDAP > 0 then '' else 'display: none' end">
                 <v:before-render>
                   <![CDATA[
                     control.ufl_selected := either (lte(self.i_source, 0), 1, 0);
                   ]]>
                 </v:before-render>
               </v:radio-button>
-              <![CDATA[&nbsp;]]>
-              <b><label for="i_source_0">Profile Document URL</label></b>
+                <b>Profile Document URL</b>
+              </label>
             </td>
             <td>
-              <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_onfocus="javascript: document.forms[0].i_source[0].checked=true;" xhtml_size="70"/>
+              <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_onfocus="javascript: $(\'i_source_0\').checked=true;" xhtml_size="70"/>
             </td>
           </tr>
+          <v:template name="iTemplate_x" type="simple" condition="self.iLDAP">
           <tr>
             <td nowrap="nowrap">
+                <label>
               <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
                 <v:before-render>
                   <![CDATA[
@@ -347,8 +432,8 @@
                   ]]>
                 </v:before-render>
               </v:radio-button>
-              <![CDATA[&nbsp;]]>
-              <b><label for="i_source_1">LDAP Server</label></b>
+                  <b>LDAP Server</b>
+                </label>
             </td>
             <td>
               <v:data-list name="f_lName"
@@ -356,9 +441,10 @@
                            key-column="LS_NAME"
                            value-column="LS_NAME"
                            sql="select '' as LS_NAME from SYS_USERS where U_ID = 0 union all select LS_NAME from LDAP..LDAP_SERVERS where LS_USER_ID = self.u_id"
-                           xhtml_onfocus="javascript: document.forms[0].i_source[1].checked=true;" />
+                             xhtml_onfocus="javascript: $(\'i_source_1\').checked=true;" />
             </td>
           </tr>
+          </v:template>
         </table>
       </v:template>
       <v:template name="iTemplate_0" type="simple" condition="self.iMode">
@@ -496,78 +582,35 @@
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iSameAs" id="cb_item_iSameAs" value="1" /></td>
               <td valign="top">Other Personal URIs (WebIDs)</td>
-              <td>
-                <?vsp
-                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iSameAs) do
-              	  {
-              	    if (length (fld1))
-              	    {
-              	      http (fld1);
-              	      http ('<br />');
-              	    }
-              	  }
-                ?>
-              </td>
+              <td><?vsp self.show_data (self.iSameAs, vector ('value')); ?></td>
             </tr>
           </v:template>
           <v:template name="iTemplate_17" type="simple" condition="length (self.iInterests)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iInterests" id="cb_item_iInterests" value="1" /></td>
               <td valign="top">Resource URI indicating thing of interest</td>
-              <td>
-                <?vsp
-                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iInterests) do
-              	  {
-              	    if (length (fld1))
-              	    {
-              	      http (fld1);
-              	      if (length (fld2))
-              		      http (sprintf (' (%s)', fld2));
-              	      http ('<br />');
-              	    }
-              	  }
-                ?>
-              </td>
+              <td><?vsp self.show_data (self.iInterests, vector ('value', 'label')); ?></td>
             </tr>
           </v:template>
           <v:template name="iTemplate_18" type="simple" condition="length (self.iTopicInterests)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iTopicInterests" id="cb_item_iTopicInterests" value="1" /></td>
               <td valign="top">Web page URL indicating a topic of interest   </td>
-              <td>
-                <?vsp
-                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iTopicInterests) do
-              	  {
-              	    if (length (fld1))
-              	    {
-              	      http (fld1);
-              	      if (length (fld2))
-              		      http (sprintf (' (%s)', fld2));
-              	      http ('<br />');
-              	    }
-              	  }
-                ?>
-              </td>
+              <td><?vsp self.show_data (self.iTopicInterests, vector ('value', 'label')); ?></td>
             </tr>
           </v:template>
           <v:template name="iTemplate_19" type="simple" condition="length (self.iOnlineAccounts)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iOnlineAccounts" id="cb_item_iOnlineAccounts" value="1" /></td>
               <td valign="top">Online Accounts</td>
-              <td>
-                <?vsp
-                  for (select fld1, fld2 from DB.DBA.WA_USER_INTERESTS (txt) (fld1 varchar, fld2 varchar) P where txt = self.iOnlineAccounts) do
-              	  {
-              	    if (length (fld1))
-              	    {
-              	      http (fld1);
-              	      if (length (fld2))
-              		      http (sprintf (' (%s)', fld2));
-              	      http ('<br />');
-              	    }
-              	  }
-                ?>
-              </td>
+              <td><?vsp self.show_data (self.iOnlineAccounts, vector ('value', 'url')); ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_21" type="simple" condition="length (self.iKnows)">
+            <tr>
+              <td valign="top"><input type="checkbox" name="cb_item_iKnows" id="cb_item_iKnows" value="1" /></td>
+              <td valign="top">Knows URIs</td>
+              <td><?vsp self.show_data (self.iKnows, vector ('value')); ?></td>
             </tr>
           </v:template>
         </table>

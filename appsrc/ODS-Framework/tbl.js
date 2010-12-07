@@ -248,12 +248,20 @@ TBL.deleteRow = function (prefix, No, ask) {
   OAT.Dom.unlink(prefix+'_tr_'+No+'_items');
   OAT.Dom.unlink(prefix+'_tr_'+No+'_properties');
     var No = parseInt($(prefix+'_no').value);
-    for (var N = 0; N < No; N++)
-    {
+  for (var N = 0; N < No; N++) {
       if ($(prefix+'_tr_'+N))
         return;
     }
     OAT.Dom.show(prefix+'_tr_no');
+  return true;
+}
+
+TBL.clean = function (prefix) {
+  var No = parseInt($(prefix+'_no').value);
+  for (var N = 0; N < No; N++)
+    OAT.Dom.unlink(prefix+'_tr_'+N);
+
+  OAT.Dom.show(prefix+'_tr_no');
   return true;
 }
 
@@ -330,6 +338,16 @@ TBL.createCell3 = function (td, prefix, fldName, No, fldOptions) {
   return fld;
 }
 
+TBL.createCell4 = function (td, prefix, fldName, No, fldOptions) {
+	var fld = TBL.createCellSelect(fldName);
+  TBL.selectOption(fld, fldOptions.value, 'public', '1');
+  TBL.selectOption(fld, fldOptions.value, 'acl', '2');
+  TBL.selectOption(fld, fldOptions.value, 'private', '3');
+
+  td.appendChild(fld);
+  return fld;
+}
+
 TBL.createCell10 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName, onchange: TBL.setServiceUrl});
   fld.input.setAttribute("autocomplete", "off");
@@ -357,6 +375,7 @@ TBL.createCell11 = function (td, prefix, fldName, No, fldOptions) {
 TBL.createCell20 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCellCombolist(td, fldOptions.value, {name: fldName});
 
+	fld.addOption('foaf:knows');
 	fld.addOption('rel:acquaintanceOf');
 	fld.addOption('rel:ambivalentOf');
 	fld.addOption('rel:ancestorOf');

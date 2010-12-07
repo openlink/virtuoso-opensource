@@ -66,6 +66,7 @@
     <vm:pagewrapper vm_onunload="checkPageLeave (document.forms['page_form'])">
       <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
       <v:variable name="tabNo" type="integer" param-name="tabNo" default="0"/>
+      <v:variable name="tabSubNo" type="integer" param-name="tabSubNo" default="0"/>
       <v:variable name="pg" type="integer" param-name="page" default="1"/>
       <v:variable name="is_org" type="integer" default="0" />
       <vm:rawheader caption="Edit your personal data"/>
@@ -139,6 +140,7 @@ function checkRest (form, sel)
           <input type="hidden" name="dirty_force_global" id="dirty_force_global" value="<?vsp http(get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')); ?>"/>
           <input type="hidden" name="page" value="<?V self.pg ?>"/>
           <input type="hidden" name="tabNo" id="tabNo" value="<?V self.tabNo ?>"/>
+          <input type="hidden" name="tabSubNo" id="tabSubNo" value="<?V self.tabSubNo ?>"/>
         </div>
     <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
     <tr valign='top'>

@@ -3821,7 +3821,9 @@ wa_exec_no_error_log(
     'CREATE TABLE WA_USER_OFFERLIST
      (
       WUOL_ID integer identity,
-      WUOL_U_ID int,
+      WUOL_U_ID integer,
+      WUOL_TYPE char(1) default \'1\',
+      WUOL_FLAG char(1) default \'1\',
       WUOL_OFFER varchar,
       WUOL_COMMENT long varchar,
       WUOL_PROPERTIES long varchar,
@@ -3829,7 +3831,20 @@ wa_exec_no_error_log(
       primary key (WUOL_ID)
      )'
 );
-wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_OFFER)');
+wa_add_col('DB.DBA.WA_USER_OFFERLIST', 'WUOL_FLAG', 'char(1) default \'1\'');
+wa_add_col('DB.DBA.WA_USER_OFFERLIST', 'WUOL_TYPE', 'char(1) default \'1\'');
+wa_exec_no_error('drop index WA_USER_OFFERLIST_USER');
+wa_exec_no_error('create unique index WA_USER_OFFERLIST_USER on WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_OFFER)');
+
+alter table DB.DBA.WA_USER_OFFERLIST modify column WUOL_FLAG char(1) default '1';
+alter table DB.DBA.WA_USER_OFFERLIST modify column WUOL_TYPE char(1) default '1';
+update DB.DBA.WA_USER_OFFERLIST set WUOL_FLAG = '1' where WUOL_FLAG is null;
+update DB.DBA.WA_USER_OFFERLIST set WUOL_TYPE = '1' where WUOL_TYPE is null;
+
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_I');
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_U');
+wa_exec_no_error('DROP TRIGGER DB.DBA.WA_USER_WISHLIST_SIOC_D');
+
 
 create procedure wa_offerlist_upgrade()
 {
@@ -3851,47 +3866,22 @@ create procedure wa_offerlist_upgrade()
 ;
 wa_offerlist_upgrade();
 
-wa_exec_no_error_log (
-    'CREATE TABLE WA_USER_WISHLIST
-     (
-      WUWL_ID integer identity,
-      WUWL_U_ID int,
-      WUWL_BARTER varchar,
-      WUWL_PROPERTY varchar,
-      WUWL_COMMENT long varchar,
-      WUWL_PROPERTIES long varchar,
-
-      primary key (WUWL_ID)
-     )'
-);
-wa_add_col ('DB.DBA.WA_USER_WISHLIST', 'WUWL_PROPERTIES', 'long varchar');
-wa_exec_no_error('create unique index WA_USER_WISHLIST_USER on WA_USER_WISHLIST (WUWL_U_ID, WUWL_BARTER)');
-
-create procedure wa_wishlist_upgrade()
+create procedure wa_offerlist_upgrade()
 {
-  declare id integer;
-  declare obj any;
-
-  if (registry_get ('__wa_wishlist_upgrade') = 'done')
+  if (registry_get ('__wa_offerlist_upgrade2') = 'done')
     return;
-  registry_set ('__wa_wishlist_upgrade', 'done');
+  registry_set ('__wa_offerlist_upgrade2', 'done');
 
-  for (select WUWL_ID, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST) do
-  {
-    id := WUWL_ID;
-    obj := grUpdate (WUWL_PROPERTIES);
-    obj := vector_concat (subseq (soap_box_structure ('x', 1), 0, 2), vector ('version', '1.0', 'products', obj));
-    update DB.DBA.WA_USER_WISHLIST set WUWL_PROPERTIES = serialize (obj) where WUWL_ID = id;
-  }
+  wa_exec_no_error('insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES) select WUWL_U_ID, \'2\', WUWL_FLAG, WUWL_BARTER, WUWL_COMMENT, WUWL_PROPERTIES from DB.DBA.WA_USER_WISHLIST');
 }
 ;
-wa_wishlist_upgrade();
+wa_offerlist_upgrade();
 
 wa_exec_no_error_log(
-    'CREATE TABLE WA_USER_LIKES
-     (
+    'CREATE TABLE WA_USER_LIKES (
       WUL_ID integer identity,
       WUL_U_ID integer,
+      WUL_FLAG char(1),
       WUL_TYPE varchar,
       WUL_URI varchar,
       WUL_NAME varchar,
@@ -3901,7 +3891,22 @@ wa_exec_no_error_log(
       primary key (WUL_ID)
      )'
 );
+wa_add_col ('DB.DBA.WA_USER_LIKES', 'WUL_FLAG', 'char(1)');
 wa_exec_no_error('create unique index WA_USER_LIKES_USER on WA_USER_LIKES (WUL_U_ID, WUL_NAME)');
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_KNOWS (
+      WUK_ID int identity,
+      WUK_U_ID integer NOT NULL,
+      WUK_FLAG char(1) default \'1\',
+      WUK_LABEL varchar,
+      WUK_URI varchar NOT NULL,
+      primary key (WUK_ID)
+     )'
+)
+;
+wa_exec_no_error_log ('create unique index WA_USER_KNOWS_USER on DB.DBA.WA_USER_KNOWS (WUK_U_ID, WUK_URI)');
+
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_BIOEVENTS (
@@ -3920,6 +3925,7 @@ wa_exec_no_error_log(
     'CREATE TABLE WA_USER_FAVORITES (
       WUF_ID integer identity,
       WUF_U_ID integer,
+      WUF_FLAG char(1),
       WUF_TYPE varchar,
       WUF_CLASS varchar,
       WUF_PROPERTIES long varchar,
@@ -3932,6 +3938,7 @@ wa_exec_no_error_log(
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_TYPE', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_CLASS', 'varchar');
 wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_PROPERTIES', 'long varchar');
+wa_add_col ('DB.DBA.WA_USER_FAVORITES', 'WUF_FLAG', 'char(1)');
 wa_exec_no_error('create index WA_USER_FAVORITES_USER on WA_USER_FAVORITES (WUF_U_ID)');
 
 create procedure wa_favorites_upgrade()
